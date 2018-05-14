@@ -1,7 +1,6 @@
 set_failed_anchor: &set_failed
   do:
   - task: on_failure_set_failed
-    tags: ["ccp"]
     config:
       platform: linux
       image_resource:
@@ -13,24 +12,23 @@ set_failed_anchor: &set_failed
         - name: ccp_src
         - name: terraform
       run:
-        path: 'ccp_src/aws/ccp_failed_test.sh'
+        path: 'ccp_src/google/ccp_failed_test.sh'
       params:
+        GOOGLE_CREDENTIALS: {{google-service-account-key}}
+        GOOGLE_PROJECT_ID: {{google-project-id}}
+        GOOGLE_ZONE: {{google-zone}}
+        GOOGLE_SERVICE_ACCOUNT: {{google-service-account}}
         AWS_ACCESS_KEY_ID: {{tf-machine-access-key-id}}
         AWS_SECRET_ACCESS_KEY: {{tf-machine-secret-access-key}}
         AWS_DEFAULT_REGION: {{tf-machine-region}}
-        BUCKET_PATH: clusters/
+        BUCKET_PATH: clusters-google/
         BUCKET_NAME: {{tf-bucket-name}}
 
 resource_types:
-  - name: gcs-resource
+  - name: terraform
     type: docker-image
     source:
-      repository: frodenas/gcs-resource
-
-- name: terraform
-  type: docker-image
-  source:
-    repository: ljfranklin/terraform-resource
+      repository: ljfranklin/terraform-resource
 
 resources:
 - name: terraform
@@ -39,12 +37,15 @@ resources:
     env:
       AWS_ACCESS_KEY_ID: {{tf-machine-access-key-id}}
       AWS_SECRET_ACCESS_KEY: {{tf-machine-secret-access-key}}
+      GOOGLE_CREDENTIALS: {{google-service-account-key}}
+    vars:
+      project_id: {{google-project-id}}
     storage:
       access_key_id: {{tf-machine-access-key-id}}
       secret_access_key: {{tf-machine-secret-access-key}}
       region_name: {{aws-region}}
-      bucket: {{tf-bucket-name}}
-      bucket_path: clusters/
+      bucket: gpdb5-pipeline-dynamic-terraform
+      bucket_path: clusters-google/
 
 - name: ccp_src
   type: git
@@ -52,7 +53,6 @@ resources:
     branch: {{ccp-git-branch}}
     private_key: {{ccp-git-key}}
     uri: {{ccp-git-remote}}
-    tag_filter: 1.6.0
 
 - name: gpdb_src
   type: git
@@ -90,21 +90,11 @@ resources:
     secret_access_key: {{bucket-secret-access-key}}
     versioned_file: bin_gpdb_centos/bin_gpdb.tar.gz
 
-- name: sqldump
-  type: s3
-  source:
-    access_key_id: {{sqldump-bucket-access-key-id}}
-    bucket: {{sqldump-bucket-name}}
-    region_name: {{aws-region}}
-    secret_access_key: {{sqldump-bucket-secret-access-key}}
-    versioned_file: dump.sql.xz
-
-- name: perf_src
+- name: gpupgrade_src
   type: git
   source:
-    branch: dev/pg_upgrade
-    private_key: {{perf-git-key}}
-    uri: {{perf-git-remote}}
+    branch: {{gpupgrade-git-branch}}
+    uri: https://github.com/greenplum-db/gpupgrade
     ignore_paths:
     - README*
 
@@ -116,59 +106,50 @@ resources:
 
 jobs:
 
-- name: create_2_node_cluster
+- name: create_multinode_cluster
   ensure:
     <<: *set_failed
   max_in_flight: 1
   plan:
   - aggregate:
     - get: ccp_src
-      tags: ["ccp"]
     - get: gpdb_src
-      tags: ["ccp"]
-    - get: perf_src
-      tags: ["ccp"]
+    - get: gpupgrade_src
     - get: centos-gpdb-dev-6
-      tags: ["ccp"]
     - get: bin_gpdb4_centos6
-      tags: ["ccp"]
     - get: bin_gpdb5_centos6
-      tags: ["ccp"]
       trigger: true
     - get: bin_gpdb6_centos6
-      tags: ["ccp"]
-      trigger: true
-    - get: sqldump
-      tags: ["ccp"]
       trigger: true
   - put: terraform
-    tags: ["ccp"]
     params:
       action: create
       delete_on_failure: true
       generate_random_name: true
-      terraform_source: ccp_src/aws/
+      terraform_source: ccp_src/google/
       vars:
-        aws_instance-node-instance_type: m4.large
-        platform: centos6
+        instance_type: n1-standard-2
+        PLATFORM: centos6
         ccp_reap_minutes: 240
         number_of_nodes: 2
 
   - task: gen_cluster
-    tags: ["ccp"]
     file: ccp_src/ci/tasks/gen_cluster.yml
     params:
       AWS_ACCESS_KEY_ID: {{tf-machine-access-key-id}}
       AWS_SECRET_ACCESS_KEY: {{tf-machine-secret-access-key}}
       AWS_DEFAULT_REGION: {{aws-region}}
-      BUCKET_PATH: clusters/
+      BUCKET_PATH: clusters-google/
       BUCKET_NAME: {{tf-bucket-name}}
-      platform: centos6
+      CLOUD_PROVIDER: google
+      PLATFORM: centos6
     input_mapping:
       gpdb_binary: {{initial-cluster-gpdb-binary}}
 
-  - task: test_upgrade
-    tags: ["ccp"]
+  - task: gpinitsystem
+    file: ccp_src/ci/tasks/gpinitsystem.yml
+
+  - task: setup_clusters
     config:
       platform: linux
       image_resource:
@@ -180,14 +161,12 @@ jobs:
       - name: terraform
       - name: ccp_src
       - name: cluster_env_files
-      - name: perf_src
+      - name: gpupgrade_src
       - name: {{upgraded-cluster-gpdb-binary}}
-      - name: sqldump
       run:
-        path: perf_src/test_upgrade.sh
+        path: gpupgrade_src/pipelines/setup_clusters.sh
         args:
           - 2
           - {{upgraded-cluster-gpdb-binary}}
-          - sqldump/dump.sql.xz
       params:
         DEBUG_UPGRADE: {{enable-debug-output}}
