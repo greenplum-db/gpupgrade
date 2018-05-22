@@ -84,6 +84,7 @@ enum StepStatus {
 
 message CheckConfigRequest {
     int32 dbPort = 1;
+    string oldBinDir = 2;
 }
 
 // Consider removing the status as errors are/should be put on the error field.
@@ -133,6 +134,7 @@ message PrepareShutdownClustersReply {}
 
 message PrepareInitClusterRequest {
     int32 dbPort = 1;
+    string newBinDir = 2;
 }
 message PrepareInitClusterReply {}
 

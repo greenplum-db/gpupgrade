@@ -16,7 +16,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-func SaveTargetClusterConfig(dbConnector *dbconn.DBConn, stateDir string) error {
+func SaveTargetClusterConfig(dbConnector *dbconn.DBConn, stateDir string, newBinDir string) error {
 	segConfig := make(configutils.SegmentConfiguration, 0)
 	var configQuery string
 
@@ -37,7 +37,12 @@ func SaveTargetClusterConfig(dbConnector *dbconn.DBConn, stateDir string) error 
 		return errors.New(errMsg)
 	}
 
-	err = SaveQueryResultToJSON(&segConfig, configFile)
+	clusterConfig := configutils.ClusterConfig{
+		SegConfig: segConfig,
+		BinDir:    newBinDir,
+	}
+
+	err = SaveQueryResultToJSON(&clusterConfig, configFile)
 	if err != nil {
 		return err
 	}
@@ -57,7 +62,7 @@ func (h *HubClient) PrepareInitCluster(ctx context.Context, in *pb.PrepareInitCl
 	}
 	dbConnector.Version.Initialize(dbConnector)
 
-	err = SaveTargetClusterConfig(dbConnector, h.conf.StateDir)
+	err = SaveTargetClusterConfig(dbConnector, h.conf.StateDir, in.NewBinDir)
 	if err != nil {
 		gplog.Error(err.Error())
 		return &pb.PrepareInitClusterReply{}, err

@@ -1,7 +1,6 @@
 package services_test
 
 import (
-	"errors"
 	"io/ioutil"
 	"os"
 
@@ -52,17 +51,6 @@ var _ = Describe("PrepareShutdownClusters", func() {
 
 		_, err := hub.PrepareShutdownClusters(nil, &pb.PrepareShutdownClustersRequest{})
 		Expect(err).To(BeNil())
-	})
-
-	It("fails if the cluster configuration setup can't be loaded", func() {
-
-		clusterPair := &mockClusterPair{
-			InitErr: errors.New("boom"),
-		}
-		hub := services.NewHub(clusterPair, &reader, grpc.DialContext, nil, conf)
-
-		_, err := hub.PrepareShutdownClusters(nil, &pb.PrepareShutdownClustersRequest{})
-		Expect(err).To(MatchError("boom"))
 	})
 
 	It("logs message if EitherPostmasterRunning returns false", func() {

@@ -17,9 +17,9 @@ func NewConfigChecker(client pb.CliToHubClient) ConfigChecker {
 	}
 }
 
-func (req ConfigChecker) Execute(dbPort int) error {
+func (req ConfigChecker) Execute(dbPort int, oldBinDir string) error {
 	_, err := req.client.CheckConfig(context.Background(),
-		&pb.CheckConfigRequest{DbPort: int32(dbPort)})
+		&pb.CheckConfigRequest{DbPort: int32(dbPort), OldBinDir: oldBinDir})
 	if err != nil {
 		gplog.Error("ERROR - gRPC call to hub failed")
 		return err

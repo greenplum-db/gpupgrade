@@ -23,11 +23,13 @@ var _ = Describe("Hub prepare init-cluster", func() {
 		mock        sqlmock.Sqlmock
 		dir         string
 		err         error
-		queryResult = `[{"address":"mdw","content":-1,"datadir":"/data/master/gpseg-1","dbid":1,"hostname":"mdw","mode":"s","status":"u","port":15432,"preferred_role":"p","role":"p"},` +
-			`{"address":"sdw1","content":0,"datadir":"/data/primary/gpseg-0","dbid":2,"hostname":"sdw1","mode":"s","status":"u","port":25432,"preferred_role":"p","role":"p"}]`
+		newBinDir  string
+		queryResult = `{"SegConfig":[{"address":"mdw","content":-1,"datadir":"/data/master/gpseg-1","dbid":1,"hostname":"mdw","mode":"s","status":"u","port":15432,"preferred_role":"p","role":"p"},` +
+			`{"address":"sdw1","content":0,"datadir":"/data/primary/gpseg-0","dbid":2,"hostname":"sdw1","mode":"s","status":"u","port":25432,"preferred_role":"p","role":"p"}],"BinDir":"/tmp"}`
 	)
 
 	BeforeEach(func() {
+		newBinDir = "/tmp"
 		dbConnector, mock = testhelper.CreateAndConnectMockDB(1)
 		dir, err = ioutil.TempDir("", "")
 		Expect(err).ToNot(HaveOccurred())
@@ -45,7 +47,7 @@ var _ = Describe("Hub prepare init-cluster", func() {
 			return fakeConfigAndVersionFile, nil
 		}
 
-		err = services.SaveTargetClusterConfig(dbConnector, dir)
+		err = services.SaveTargetClusterConfig(dbConnector, dir, newBinDir)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(string(fakeConfigAndVersionFile.Contents())).To(ContainSubstring(queryResult))
 	})
@@ -58,7 +60,7 @@ var _ = Describe("Hub prepare init-cluster", func() {
 			return fakeConfigAndVersionFile, nil
 		}
 
-		err = services.SaveTargetClusterConfig(dbConnector, dir)
+		err = services.SaveTargetClusterConfig(dbConnector, dir, newBinDir)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(string(fakeConfigAndVersionFile.Contents())).To(ContainSubstring(queryResult))
@@ -69,7 +71,7 @@ var _ = Describe("Hub prepare init-cluster", func() {
 			return nil, errors.New("failed to write config file")
 		}
 
-		err := services.SaveTargetClusterConfig(dbConnector, dir)
+		err := services.SaveTargetClusterConfig(dbConnector, dir, newBinDir)
 		Expect(err).To(HaveOccurred())
 	})
 
@@ -81,7 +83,7 @@ var _ = Describe("Hub prepare init-cluster", func() {
 			return gbytes.NewBuffer(), nil
 		}
 
-		err := services.SaveTargetClusterConfig(dbConnector, dir)
+		err := services.SaveTargetClusterConfig(dbConnector, dir, newBinDir)
 		Expect(err).To(HaveOccurred())
 		Expect(err).To(MatchError("Unable to execute query " + configQuery + ". Err: fail config query"))
 	})

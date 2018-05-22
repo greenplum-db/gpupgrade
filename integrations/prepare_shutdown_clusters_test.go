@@ -16,6 +16,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"github.com/greenplum-db/gpupgrade/hub/cluster"
+	"fmt"
 )
 
 var _ = Describe("prepare shutdown-clusters", func() {
@@ -26,6 +27,8 @@ var _ = Describe("prepare shutdown-clusters", func() {
 		commandExecer *testutils.FakeCommandExecer
 		outChan       chan []byte
 		errChan       chan error
+		oldBinDir     string
+		newBinDir     string
 	)
 
 	BeforeEach(func() {
@@ -33,16 +36,19 @@ var _ = Describe("prepare shutdown-clusters", func() {
 		dir, err = ioutil.TempDir("", "")
 		Expect(err).ToNot(HaveOccurred())
 
-		config := `[{
+		oldBinDir = "/old/tmp"
+		newBinDir = "/new/tmp"
+
+		config := `{"SegConfig":[{
 			  "datadir": "/some/data/dir",
 			  "content": -1,
 			  "dbid": 1,
 			  "hostname": "localhost",
 			  "port": 5432
-			}]`
+			}],"BinDir":"%s"}`
 
-		testutils.WriteOldConfig(dir, config)
-		testutils.WriteNewConfig(dir, config)
+		testutils.WriteOldConfig(dir, fmt.Sprintf(config, oldBinDir))
+		testutils.WriteNewConfig(dir, fmt.Sprintf(config, newBinDir))
 
 		port, err = testutils.GetOpenPort()
 		Expect(err).ToNot(HaveOccurred())
@@ -65,12 +71,13 @@ var _ = Describe("prepare shutdown-clusters", func() {
 			Out: outChan,
 			Err: errChan,
 		})
-		clusterPair := &cluster.Pair{
-			OldMasterPort: 5432,
-			NewMasterPort:6432,
-			OldMasterDataDirectory: "/old/data/dir",
-			NewMasterDataDirectory: "/new/data/dir",
-		}
+		clusterPair := cluster.NewClusterPair(dir, commandExecer.Exec)
+
+		clusterPair.OldMasterPort = 25437
+		clusterPair.NewMasterPort = 35437
+		clusterPair.OldMasterDataDirectory = "/old/datadir"
+		clusterPair.NewMasterDataDirectory = "/new/datadir"
+
 		hub = services.NewHub(clusterPair, &reader, grpc.DialContext, commandExecer.Exec, conf)
 		go hub.Start()
 	})
@@ -86,9 +93,6 @@ var _ = Describe("prepare shutdown-clusters", func() {
 		mockAgent.StatusConversionResponse = &pb.CheckConversionStatusReply{
 			Statuses: []string{},
 		}
-
-		oldBinDir := "/tmpOld"
-		newBinDir := "/tmpNew"
 
 		Expect(runStatusUpgrade()).To(ContainSubstring("PENDING - Shutdown clusters"))
 
@@ -111,9 +115,6 @@ var _ = Describe("prepare shutdown-clusters", func() {
 		mockAgent.StatusConversionResponse = &pb.CheckConversionStatusReply{
 			Statuses: []string{},
 		}
-
-		oldBinDir := "/tmpOld"
-		newBinDir := "/tmpNew"
 
 		commandExecer.SetOutput(&testutils.FakeCommand{
 			Out: outChan,

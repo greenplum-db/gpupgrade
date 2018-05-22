@@ -25,24 +25,32 @@ type Pair struct {
 	newPostmasterRunning   bool
 }
 
-func (cp *Pair) Init(baseDir, oldBinDir, newBinDir string, execer helpers.CommandExecer) error {
-	var err error
-	cp.oldBinDir = oldBinDir
-	cp.newBinDir = newBinDir
-	cp.commandExecer = execer
+func NewClusterPair(basedir string, execer helpers.CommandExecer) *Pair {
+	clusterPair := &Pair{
+		commandExecer: execer,
+	}
+	clusterPair.init(basedir)
+	return clusterPair
+}
 
-	oldConfReader := configutils.Reader{}
-	oldConfReader.OfOldClusterConfig(baseDir)
-	err = oldConfReader.Read()
+func (cp *Pair) init(baseDir string) error {
+	var err error
+
+	cp.oldClusterReader = configutils.Reader{}
+	cp.oldClusterReader.OfOldClusterConfig(baseDir)
+	err = cp.oldClusterReader.Read()
 	if err != nil {
 		return fmt.Errorf("couldn't read old config file: %+v", err)
 	}
-	newConfReader := configutils.Reader{}
-	newConfReader.OfNewClusterConfig(baseDir)
-	err = newConfReader.Read()
+	cp.newClusterReader = configutils.Reader{}
+	cp.newClusterReader.OfNewClusterConfig(baseDir)
+	err = cp.newClusterReader.Read()
 	if err != nil {
 		return fmt.Errorf("couldn't read new config file: %+v", err)
 	}
+
+	cp.oldBinDir = cp.oldClusterReader.GetBinDir()
+	cp.newBinDir = cp.newClusterReader.GetBinDir()
 
 	cp.OldMasterPort, cp.NewMasterPort, err = cp.GetMasterPorts()
 	if err != nil {
@@ -135,7 +143,7 @@ func (cp *Pair) GetMasterPorts() (int, int, error) {
 	if cp.OldMasterPort != 0 {
 		oldMasterPort = cp.OldMasterPort
 	} else {
-		oldMasterPort := cp.oldClusterReader.GetPortForSegment(masterDbID)
+		oldMasterPort = cp.oldClusterReader.GetPortForSegment(masterDbID)
 		if oldMasterPort == -1 {
 			return -1, -1, errors.New("could not find port from old config")
 		}
@@ -143,7 +151,7 @@ func (cp *Pair) GetMasterPorts() (int, int, error) {
 	if cp.NewMasterPort != 0 {
 		newMasterPort = cp.NewMasterPort
 	} else {
-		newMasterPort := cp.newClusterReader.GetPortForSegment(masterDbID)
+		newMasterPort = cp.newClusterReader.GetPortForSegment(masterDbID)
 		if newMasterPort == -1 {
 			return -1, -1, errors.New("could not find port from new config")
 		}
@@ -157,7 +165,7 @@ func (cp *Pair) GetMasterDataDirs() (string, string, error) {
 	if cp.OldMasterDataDirectory != "" {
 		oldMasterDataDir = cp.OldMasterDataDirectory
 	} else {
-		oldMasterDataDir := cp.oldClusterReader.GetMasterDataDir()
+		oldMasterDataDir = cp.oldClusterReader.GetMasterDataDir()
 		if oldMasterDataDir == "" {
 			return "", "", errors.New("could not find old master data directory")
 		}
@@ -165,7 +173,7 @@ func (cp *Pair) GetMasterDataDirs() (string, string, error) {
 	if cp.NewMasterDataDirectory != "" {
 		newMasterDataDir = cp.NewMasterDataDirectory
 	} else {
-		newMasterDataDir := cp.newClusterReader.GetMasterDataDir()
+		newMasterDataDir = cp.newClusterReader.GetMasterDataDir()
 		if newMasterDataDir == "" {
 			return "", "", errors.New("could not find new master data directory")
 		}

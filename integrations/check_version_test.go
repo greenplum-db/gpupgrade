@@ -11,5 +11,6 @@ var _ = Describe("check version", func() {
 		checkVersionSession := runCommand("check", "version")
 		Expect(checkVersionSession).Should(Exit(1))
 		Expect(string(checkVersionSession.Out.Contents())).To(Equal("Required flag(s) \"master-host\" have/has not been set\n"))
+
 	})
 })

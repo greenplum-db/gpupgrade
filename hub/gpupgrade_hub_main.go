@@ -40,7 +40,9 @@ func main() {
 			commandExecer := func(command string, vars ...string) helpers.Command {
 				return exec.Command(command, vars...)
 			}
-			hub := services.NewHub(&cluster.Pair{}, &reader, grpc.DialContext, commandExecer, conf)
+
+			clusterPair := cluster.NewClusterPair(conf.StateDir, commandExecer)
+			hub := services.NewHub(clusterPair, &reader, grpc.DialContext, commandExecer, conf)
 			hub.Start()
 
 			hub.Stop()

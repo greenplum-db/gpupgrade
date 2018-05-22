@@ -10,32 +10,37 @@ import (
 )
 
 const (
-	SAMPLE_JSON = `[{
-    "address": "briarwood",
-    "content": 2,
-    "datadir": "/Users/pivotal/workspace/gpdb/gpAux/gpdemo/datadirs/dbfast_mirror3/demoDataDir2",
-    "dbid": 7,
-    "hostname": "briarwood",
-    "mode": "s",
-    "port": 25437,
-    "preferred_role": "m",
-    "role": "m",
-    "status": "u"
-  },
-  {
-    "address": "aspen",
-    "content": 1,
-    "datadir": "/Users/pivotal/workspace/gpdb/gpAux/gpdemo/datadirs/dbfast_mirror2/demoDataDir1",
-    "dbid": 6,
-    "hostname": "aspen.pivotal",
-    "mode": "s",
-    "port": 25436,
-    "preferred_role": "m",
-    "role": "m",
-    "status": "u"
-  }]`
+	SAMPLE_JSON = `{
+	"SegConfig": [{
+			"address": "briarwood",
+			"content": 2,
+			"datadir": "/Users/pivotal/workspace/gpdb/gpAux/gpdemo/datadirs/dbfast_mirror3/demoDataDir2",
+			"dbid": 7,
+			"hostname": "briarwood",
+			"mode": "s",
+			"port": 25437,
+			"preferred_role": "m",
+			"role": "m",
+			"status": "u"
+		},
+		{
+			"address": "aspen",
+			"content": 1,
+			"datadir": "/Users/pivotal/workspace/gpdb/gpAux/gpdemo/datadirs/dbfast_mirror2/demoDataDir1",
+			"dbid": 6,
+			"hostname": "aspen.pivotal",
+			"mode": "s",
+			"port": 25436,
+			"preferred_role": "m",
+			"role": "m",
+			"status": "u"
+		}
+	],
+	"BinDir": "/sample/tmp"}
+`
 
-	MASTER_ONLY_JSON = `[{
+	MASTER_ONLY_JSON = `{
+	"SegConfig": [{
 		"address": "briarwood",
 		"content": -1,
 		"datadir": "/old/datadir",
@@ -47,10 +52,12 @@ const (
 		"role": "m",
 		"san_mounts": null,
 		"status": "u"
-	}]
+	}],
+	"BinDir": "/old/tmp"}
 `
 
-	NEW_MASTER_JSON = `[{
+	NEW_MASTER_JSON = `{
+	"SegConfig": [{
 		"address": "aspen",
 		"content": -1,
 		"datadir": "/new/datadir",
@@ -62,7 +69,8 @@ const (
 		"role": "m",
 		"san_mounts": null,
 		"status": "u"
-	}]
+	}],
+	"BinDir": "/new/tmp"}
 `
 )
 

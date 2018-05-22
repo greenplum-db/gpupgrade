@@ -26,11 +26,13 @@ var _ = Describe("Hub check config", func() {
 		mock        sqlmock.Sqlmock
 		dir         string
 		err         error
-		queryResult = `[{"address":"mdw","content":-1,"datadir":"/data/master/gpseg-1","dbid":1,"hostname":"mdw","mode":"s","status":"u","port":15432,"preferred_role":"p","role":"p"},` +
-			`{"address":"sdw1","content":0,"datadir":"/data/primary/gpseg-0","dbid":2,"hostname":"sdw1","mode":"s","status":"u","port":25432,"preferred_role":"p","role":"p"}]`
+		oldBinDir   string
+		queryResult = `{"SegConfig":[{"address":"mdw","content":-1,"datadir":"/data/master/gpseg-1","dbid":1,"hostname":"mdw","mode":"s","status":"u","port":15432,"preferred_role":"p","role":"p"},` +
+			`{"address":"sdw1","content":0,"datadir":"/data/primary/gpseg-0","dbid":2,"hostname":"sdw1","mode":"s","status":"u","port":25432,"preferred_role":"p","role":"p"}],"BinDir":"/tmp"}`
 	)
 
 	BeforeEach(func() {
+		oldBinDir = "/tmp"
 		dbConnector, mock = testhelper.CreateAndConnectMockDB(1)
 		dir, err = ioutil.TempDir("", "")
 		Expect(err).ToNot(HaveOccurred())
@@ -54,7 +56,7 @@ var _ = Describe("Hub check config", func() {
 			return fakeConfigFile, nil
 		}
 
-		err := services.SaveOldClusterConfig(dbConnector, dir)
+		err := services.SaveOldClusterConfig(dbConnector, dir, oldBinDir)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(string(fakeConfigFile.Contents())).To(ContainSubstring(queryResult))
@@ -73,7 +75,7 @@ var _ = Describe("Hub check config", func() {
 			return fakeConfigFile, nil
 		}
 
-		err := services.SaveOldClusterConfig(dbConnector, dir)
+		err := services.SaveOldClusterConfig(dbConnector, dir, oldBinDir)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(string(fakeConfigFile.Contents())).To(ContainSubstring(queryResult))
@@ -84,7 +86,7 @@ var _ = Describe("Hub check config", func() {
 			return nil, errors.New("failed to write config file")
 		}
 
-		err := services.SaveOldClusterConfig(dbConnector, dir)
+		err := services.SaveOldClusterConfig(dbConnector, dir, oldBinDir)
 		Expect(err).To(HaveOccurred())
 	})
 
@@ -96,7 +98,7 @@ var _ = Describe("Hub check config", func() {
 			return gbytes.NewBuffer(), nil
 		}
 
-		err := services.SaveOldClusterConfig(dbConnector, dir)
+		err := services.SaveOldClusterConfig(dbConnector, dir, oldBinDir)
 		Expect(err).To(HaveOccurred())
 		Expect(err).To(MatchError("Unable to execute query " + configQuery + ". Err: fail config query"))
 	})

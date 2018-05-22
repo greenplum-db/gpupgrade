@@ -35,11 +35,11 @@ var _ = Describe("upgrade share oids", func() {
 		dir, err = ioutil.TempDir("", "")
 		Expect(err).ToNot(HaveOccurred())
 
-		config := `[{
+		config := `{"SegConfig":[{
 			"dbid": 1,
 			"port": 5432,
 			"host": "localhost"
-		}]`
+		}],"BinDir":"/tmp"}`
 
 		testutils.WriteOldConfig(dir, config)
 		testutils.WriteNewConfig(dir, config)

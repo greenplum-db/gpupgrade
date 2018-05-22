@@ -68,7 +68,7 @@ var _ = Describe("prepare", func() {
 			port := os.Getenv("PGPORT")
 			Expect(port).ToNot(BeEmpty())
 
-			session := runCommand("prepare", "init-cluster", "--port", port)
+			session := runCommand("prepare", "init-cluster", "--port", port, "--new-bindir", "/tmp")
 			Eventually(session).Should(Exit(0))
 
 			Expect(runStatusUpgrade()).To(ContainSubstring("COMPLETE - Initialize upgrade target cluster"))
@@ -85,6 +85,6 @@ var _ = Describe("prepare", func() {
 	It("fails if the port flag is missing", func() {
 		prepareStartAgentsSession := runCommand("prepare", "init-cluster")
 		Expect(prepareStartAgentsSession).Should(Exit(1))
-		Expect(string(prepareStartAgentsSession.Out.Contents())).To(Equal("Required flag(s) \"port\" have/has not been set\n"))
+		Expect(string(prepareStartAgentsSession.Out.Contents())).To(Equal("Required flag(s) \"new-bindir\", \"port\" have/has not been set\n"))
 	})
 })

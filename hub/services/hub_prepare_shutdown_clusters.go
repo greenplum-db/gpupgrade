@@ -14,12 +14,6 @@ func (h *HubClient) PrepareShutdownClusters(ctx context.Context, in *pb.PrepareS
 	gplog.Info("starting PrepareShutdownClusters()")
 
 	// will be initialized for future uses also? We think so -- it should
-	err := h.clusterPair.Init(h.conf.StateDir, in.OldBinDir, in.NewBinDir, h.commandExecer)
-	if err != nil {
-		gplog.Error("An occurred during cluster pair init: %v", err)
-		return &pb.PrepareShutdownClustersReply{}, err
-	}
-
 	if h.clusterPair.EitherPostmasterRunning() {
 		pathToGpstopStateDir := path.Join(h.conf.StateDir, "gpstop")
 		go h.clusterPair.StopEverything(pathToGpstopStateDir)

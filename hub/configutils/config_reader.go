@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/greenplum-db/gpupgrade/utils"
+	"github.com/greenplum-db/gp-common-go-libs/gplog"
 
 	"github.com/pkg/errors"
 )
@@ -13,6 +14,7 @@ type Reader struct {
 	config        SegmentConfiguration
 	fileLocation  string
 	mu            sync.RWMutex
+	binDir        string
 	isInitialized bool
 }
 
@@ -43,18 +45,25 @@ func (reader *Reader) Read() error {
 	defer reader.mu.RUnlock()
 
 	if reader.fileLocation == "" {
+		gplog.Error("Reader file location unknown")
 		return errors.New("Reader file location unknown")
 	}
 
 	contents, err := utils.System.ReadFile(reader.fileLocation)
 
 	if err != nil {
+		gplog.Error(err.Error())
 		return errors.New(err.Error())
 	}
-	err = json.Unmarshal([]byte(contents), &reader.config)
+	clusterConfig := ClusterConfig{}
+	err = json.Unmarshal([]byte(contents), &clusterConfig)
 	if err != nil {
+		gplog.Error(err.Error())
 		return errors.New(err.Error())
 	}
+	reader.config = clusterConfig.SegConfig
+	reader.binDir = clusterConfig.BinDir
+
 	return nil
 }
 
@@ -142,4 +151,32 @@ func (reader *Reader) GetMaster() *Segment {
 		}
 	}
 	return nilSegment
+}
+
+func (reader *Reader) GetBinDir() string {
+	reader.mu.RLock()
+	defer reader.mu.RUnlock()
+
+	if len(reader.config) == 0 {
+		err := reader.Read()
+		if err != nil {
+			return ""
+		}
+	}
+
+	return reader.binDir
+}
+
+func (reader *Reader) GetBaseDir() string {
+	reader.mu.RLock()
+	defer reader.mu.RUnlock()
+
+	if len(reader.config) == 0 {
+		err := reader.Read()
+		if err != nil {
+			return ""
+		}
+	}
+
+	return reader.fileLocation
 }

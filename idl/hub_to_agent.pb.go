@@ -581,8 +581,9 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// Client API for Agent service
-
+// AgentClient is the client API for Agent service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type AgentClient interface {
 	CheckUpgradeStatus(ctx context.Context, in *CheckUpgradeStatusRequest, opts ...grpc.CallOption) (*CheckUpgradeStatusReply, error)
 	CheckConversionStatus(ctx context.Context, in *CheckConversionStatusRequest, opts ...grpc.CallOption) (*CheckConversionStatusReply, error)
@@ -601,7 +602,7 @@ func NewAgentClient(cc *grpc.ClientConn) AgentClient {
 
 func (c *agentClient) CheckUpgradeStatus(ctx context.Context, in *CheckUpgradeStatusRequest, opts ...grpc.CallOption) (*CheckUpgradeStatusReply, error) {
 	out := new(CheckUpgradeStatusReply)
-	err := grpc.Invoke(ctx, "/idl.Agent/CheckUpgradeStatus", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/idl.Agent/CheckUpgradeStatus", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -610,7 +611,7 @@ func (c *agentClient) CheckUpgradeStatus(ctx context.Context, in *CheckUpgradeSt
 
 func (c *agentClient) CheckConversionStatus(ctx context.Context, in *CheckConversionStatusRequest, opts ...grpc.CallOption) (*CheckConversionStatusReply, error) {
 	out := new(CheckConversionStatusReply)
-	err := grpc.Invoke(ctx, "/idl.Agent/CheckConversionStatus", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/idl.Agent/CheckConversionStatus", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -619,7 +620,7 @@ func (c *agentClient) CheckConversionStatus(ctx context.Context, in *CheckConver
 
 func (c *agentClient) CheckDiskUsageOnAgents(ctx context.Context, in *CheckDiskUsageRequestToAgent, opts ...grpc.CallOption) (*CheckDiskUsageReplyFromAgent, error) {
 	out := new(CheckDiskUsageReplyFromAgent)
-	err := grpc.Invoke(ctx, "/idl.Agent/CheckDiskUsageOnAgents", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/idl.Agent/CheckDiskUsageOnAgents", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -628,7 +629,7 @@ func (c *agentClient) CheckDiskUsageOnAgents(ctx context.Context, in *CheckDiskU
 
 func (c *agentClient) PingAgents(ctx context.Context, in *PingAgentsRequest, opts ...grpc.CallOption) (*PingAgentsReply, error) {
 	out := new(PingAgentsReply)
-	err := grpc.Invoke(ctx, "/idl.Agent/PingAgents", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/idl.Agent/PingAgents", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -637,7 +638,7 @@ func (c *agentClient) PingAgents(ctx context.Context, in *PingAgentsRequest, opt
 
 func (c *agentClient) UpgradeConvertPrimarySegments(ctx context.Context, in *UpgradeConvertPrimarySegmentsRequest, opts ...grpc.CallOption) (*UpgradeConvertPrimarySegmentsReply, error) {
 	out := new(UpgradeConvertPrimarySegmentsReply)
-	err := grpc.Invoke(ctx, "/idl.Agent/UpgradeConvertPrimarySegments", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/idl.Agent/UpgradeConvertPrimarySegments", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}

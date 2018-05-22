@@ -60,6 +60,7 @@ func addFlagOptions() {
 	addFlagOptionsToConvertMaster()
 	addFlagOptionsToValidateStartCluster()
 	addFlagOptionsToConvertPrimaries()
+	addFlagOptionsToConfig()
 }
 
 func addFlagOptionsToConvertMaster() {
@@ -86,9 +87,16 @@ func addFlagOptionsToCheck() {
 	check.MarkPersistentFlagRequired("master-host")
 }
 
+func addFlagOptionsToConfig() {
+	subConfig.PersistentFlags().StringVar(&oldBinDir, "old-bindir", "", "install directory for old gpdb version")
+	subConfig.MarkPersistentFlagRequired("old-bindir")
+}
+
 func addFlagOptionsToInitCluster() {
 	subInitCluster.Flags().IntVar(&newClusterDbPort, "port", -1, "port for Greenplum on new master")
 	subInitCluster.MarkFlagRequired("port")
+	subInitCluster.Flags().StringVar(&newBinDir, "new-bindir", "", "install directory for new gpdb version")
+	subInitCluster.MarkFlagRequired("new-bindir")
 }
 
 func addFlagOptionsToShutdownClusters() {

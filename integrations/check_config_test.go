@@ -64,7 +64,7 @@ var _ = Describe("check config", func() {
 	Describe("when a greenplum master db on localhost is up and running", func() {
 		It("happy: the database configuration is saved to a specified location", func() {
 			//testutils.WriteSampleConfigVersion(dir)
-			session := runCommand("check", "config", "--master-host", "localhost")
+			session := runCommand("check", "config", "--master-host", "localhost", "--old-bindir", "/tmp")
 			if session.ExitCode() != 0 {
 				fmt.Println("make sure greenplum is running")
 			}
@@ -85,6 +85,6 @@ var _ = Describe("check config", func() {
 	It("fails if the --master-host flag is missing", func() {
 		checkConfigSession := runCommand("check", "config")
 		Expect(checkConfigSession).Should(Exit(1))
-		Expect(string(checkConfigSession.Out.Contents())).To(Equal("Required flag(s) \"master-host\" have/has not been set\n"))
+		Expect(string(checkConfigSession.Out.Contents())).To(Equal("Required flag(s) \"master-host\", \"old-bindir\" have/has not been set\n"))
 	})
 })

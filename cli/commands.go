@@ -132,7 +132,7 @@ var subInitCluster = &cobra.Command{
 		}
 		client := pb.NewCliToHubClient(conn)
 		preparer := commanders.NewPreparer(client)
-		err := preparer.InitCluster(newClusterDbPort)
+		err := preparer.InitCluster(newClusterDbPort, newBinDir)
 		if err != nil {
 			gplog.Error(err.Error())
 			os.Exit(1)
@@ -243,7 +243,7 @@ var subConfig = &cobra.Command{
 			os.Exit(1)
 		}
 		client := pb.NewCliToHubClient(conn)
-		err := commanders.NewConfigChecker(client).Execute(dbPort)
+		err := commanders.NewConfigChecker(client).Execute(dbPort, oldBinDir)
 		if err != nil {
 			gplog.Error(err.Error())
 			os.Exit(1)

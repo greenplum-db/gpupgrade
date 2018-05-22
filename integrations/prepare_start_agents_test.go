@@ -52,7 +52,7 @@ var _ = Describe("prepare", func() {
 
 		pgPort := os.Getenv("PGPORT")
 
-		clusterConfig := fmt.Sprintf(`[{
+		clusterConfig := fmt.Sprintf(`{"SegConfig":[{
               "content": -1,
               "dbid": 1,
               "hostname": "localhost",
@@ -62,7 +62,7 @@ var _ = Describe("prepare", func() {
               "role": "m",
               "status": "u",
               "port": %s
-        }]`, dir, pgPort)
+        }],"BinDir":"/tmp"}`, dir, pgPort)
 
 		testutils.WriteOldConfig(dir, clusterConfig)
 		go hub.Start()

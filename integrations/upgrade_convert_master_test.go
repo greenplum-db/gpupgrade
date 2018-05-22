@@ -50,19 +50,19 @@ var _ = Describe("upgrade convert master", func() {
 		newBinDir, err = ioutil.TempDir("", "")
 		Expect(err).ToNot(HaveOccurred())
 
-		oldConfig := `[{
+		oldConfig := `{"SegConfig":[{
 			"dbid": 1,
 			"port": 5432,
 			"host": "localhost"
-		}]`
+		}],"BinDir":"/tmp"}`
 
 		testutils.WriteOldConfig(dir, oldConfig)
 
-		newConfig := `[{
+		newConfig := `{"SegConfig":[{
 			"dbid": 1,
 			"port": 6432,
 			"host": "localhost"
-		}]`
+		}],"BinDir":"/tmp"}`
 
 		testutils.WriteNewConfig(dir, newConfig)
 

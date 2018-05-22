@@ -3,10 +3,10 @@ package services
 import (
 	pb "github.com/greenplum-db/gpupgrade/idl"
 
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/pkg/errors"
 
 	"golang.org/x/net/context"
+	"github.com/greenplum-db/gp-common-go-libs/gplog"
 )
 
 type Bootstrapper struct {

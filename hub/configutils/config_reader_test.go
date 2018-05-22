@@ -72,5 +72,12 @@ var _ = Describe("configutils reader", func() {
 			Expect(len(hostnames)).Should(Equal(1))
 			Expect(configReader.GetHostnames()).Should(ContainElement("briarwood"))
 		})
+
+		It("returns its bindir", func() {
+			testutils.WriteSampleConfig(dir)
+			err := configReader.Read()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(configReader.GetBinDir()).Should(ContainSubstring("/tmp"))
+		})
 	})
 })

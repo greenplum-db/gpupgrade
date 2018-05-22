@@ -15,6 +15,11 @@ import (
 //"role": "m",
 //"status": "u"
 
+type ClusterConfig struct {
+	SegConfig SegmentConfiguration
+	BinDir    string
+}
+
 type SegmentConfiguration []Segment
 
 type Segment struct {

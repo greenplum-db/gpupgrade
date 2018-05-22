@@ -55,8 +55,8 @@ func (p Preparer) StartHub() error {
 	return nil
 }
 
-func (p Preparer) InitCluster(dbPort int) error {
-	_, err := p.client.PrepareInitCluster(context.Background(), &pb.PrepareInitClusterRequest{DbPort: int32(dbPort)})
+func (p Preparer) InitCluster(dbPort int, newBinDir string) error {
+	_, err := p.client.PrepareInitCluster(context.Background(), &pb.PrepareInitClusterRequest{DbPort: int32(dbPort), NewBinDir: newBinDir})
 	if err != nil {
 		return err
 	}

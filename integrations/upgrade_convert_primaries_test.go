@@ -46,7 +46,7 @@ var _ = Describe("upgrade convert primaries", func() {
 		segmentDataDir := os.Getenv("MASTER_DATA_DIRECTORY")
 		Expect(port).ToNot(Equal(""), "MASTER_DATA_DIRECTORY needs to be set!")
 
-		config := fmt.Sprintf(`[{
+		config := fmt.Sprintf(`{"SegConfig":[{
 			"content": 1,
 			"dbid": 2,
 			"hostname": "localhost",
@@ -56,7 +56,7 @@ var _ = Describe("upgrade convert primaries", func() {
 			"role": "p",
 			"status": "u",
 			"port": 12345
-		}]`, segmentDataDir)
+		}],"BinDir":"/tmp"}`, segmentDataDir)
 
 		testutils.WriteOldConfig(dir, config)
 		testutils.WriteNewConfig(dir, config)

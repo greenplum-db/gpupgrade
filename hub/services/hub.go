@@ -33,7 +33,6 @@ type reader interface {
 	GetPortForSegment(segmentDbid int) int
 }
 type pairOperator interface {
-	Init(string, string, string, helpers.CommandExecer) error
 	StopEverything(string)
 	GetPortsAndDataDirForReconfiguration() (int, int, string)
 	EitherPostmasterRunning() bool

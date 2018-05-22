@@ -72,7 +72,7 @@ var _ = Describe("status", func() {
 
 	Describe("conversion", func() {
 		It("Displays status information for all segments", func() {
-			config := `[{
+			config := `{"SegConfig":[{
   			  "content": 2,
   			  "dbid": 7,
   			  "hostname": "localhost"
@@ -81,7 +81,7 @@ var _ = Describe("status", func() {
   			  "content": -1,
   			  "dbid": 1,
   			  "hostname": "localhost"
-  			}]`
+  			}],"BinDir":"/tmp"}`
 
 			testutils.WriteOldConfig(dir, config)
 

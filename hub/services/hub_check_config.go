@@ -57,7 +57,7 @@ func (h *HubClient) CheckConfig(ctx context.Context,
 	}
 	dbConnector.Version.Initialize(dbConnector)
 
-	err = SaveOldClusterConfig(dbConnector, h.conf.StateDir)
+	err = SaveOldClusterConfig(dbConnector, h.conf.StateDir, in.OldBinDir)
 	if err != nil {
 		gplog.Error(err.Error())
 		return &pb.CheckConfigReply{}, err
@@ -68,7 +68,7 @@ func (h *HubClient) CheckConfig(ctx context.Context,
 	return successReply, nil
 }
 
-func SaveOldClusterConfig(dbConnector *dbconn.DBConn, stateDir string) error {
+func SaveOldClusterConfig(dbConnector *dbconn.DBConn, stateDir string, oldBinDir string) error {
 	err := os.MkdirAll(stateDir, 0700)
 	if err != nil {
 		return err
@@ -93,7 +93,12 @@ func SaveOldClusterConfig(dbConnector *dbconn.DBConn, stateDir string) error {
 		return errors.New(errMsg)
 	}
 
-	err = SaveQueryResultToJSON(&segConfig, configFileHandle)
+	configJSON := &configutils.ClusterConfig{
+		SegConfig: segConfig,
+		BinDir:    oldBinDir,
+	}
+
+	err = SaveQueryResultToJSON(configJSON, configFileHandle)
 	if err != nil {
 		return err
 	}

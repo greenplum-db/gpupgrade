@@ -5,11 +5,11 @@
 package mock_idl
 
 import (
-	"github.com/golang/mock/gomock"
-	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-	"github.com/greenplum-db/gpupgrade/idl"
-	"reflect"
+	gomock "github.com/golang/mock/gomock"
+	idl "github.com/greenplum-db/gpupgrade/idl"
+	context "golang.org/x/net/context"
+	grpc "google.golang.org/grpc"
+	reflect "reflect"
 )
 
 // MockAgentClient is a mock of AgentClient interface

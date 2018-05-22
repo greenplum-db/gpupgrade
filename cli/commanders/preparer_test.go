@@ -83,10 +83,10 @@ var _ = Describe("preparer", func() {
 			testStdout, _, _ := testhelper.SetupTestLogger()
 			client.EXPECT().PrepareInitCluster(
 				gomock.Any(),
-				&pb.PrepareInitClusterRequest{DbPort: int32(11111)},
+				&pb.PrepareInitClusterRequest{DbPort: int32(11111), NewBinDir: "/tmp"},
 			).Return(&pb.PrepareInitClusterReply{}, nil)
 			preparer := commanders.NewPreparer(client)
-			err := preparer.InitCluster(11111)
+			err := preparer.InitCluster(11111, "/tmp")
 			Expect(err).To(BeNil())
 			Eventually(testStdout).Should(gbytes.Say("Gleaning the new cluster config"))
 		})
