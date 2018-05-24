@@ -16,6 +16,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
+	"github.com/greenplum-db/gpupgrade/testutils"
 )
 
 var _ = Describe("PrepareShutdownClusters", func() {
@@ -23,6 +24,7 @@ var _ = Describe("PrepareShutdownClusters", func() {
 		reader  configutils.Reader
 		conf    *services.HubConfig
 		testLog *gbytes.Buffer
+		stubRemoteExecutor *testutils.StubRemoteExecutor
 	)
 	BeforeEach(func() {
 		_, _, testLog = testhelper.SetupTestLogger()
@@ -35,6 +37,7 @@ var _ = Describe("PrepareShutdownClusters", func() {
 		conf = &services.HubConfig{
 			StateDir: dir,
 		}
+		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
 	})
 
 	AfterEach(func() {
@@ -47,14 +50,14 @@ var _ = Describe("PrepareShutdownClusters", func() {
 		clusterPair := &mockClusterPair{
 			RunningPostmaster: true,
 		}
-		hub := services.NewHub(clusterPair, &reader, grpc.DialContext, nil, conf)
+		hub := services.NewHub(clusterPair, &reader, grpc.DialContext, nil, conf, stubRemoteExecutor)
 
 		_, err := hub.PrepareShutdownClusters(nil, &pb.PrepareShutdownClustersRequest{})
 		Expect(err).To(BeNil())
 	})
 
 	It("logs message if EitherPostmasterRunning returns false", func() {
-		hub := services.NewHub(&mockClusterPair{}, &reader, grpc.DialContext, nil, conf)
+		hub := services.NewHub(&mockClusterPair{}, &reader, grpc.DialContext, nil, conf, stubRemoteExecutor)
 
 		_, err := hub.PrepareShutdownClusters(nil, &pb.PrepareShutdownClustersRequest{})
 		Expect(err).To(BeNil())

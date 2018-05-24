@@ -24,9 +24,9 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type UpgradeConvertPrimarySegmentsRequest struct {
-	OldBinDir            string         `protobuf:"bytes,1,opt,name=oldBinDir" json:"oldBinDir,omitempty"`
-	NewBinDir            string         `protobuf:"bytes,2,opt,name=newBinDir" json:"newBinDir,omitempty"`
-	DataDirPairs         []*DataDirPair `protobuf:"bytes,3,rep,name=dataDirPairs" json:"dataDirPairs,omitempty"`
+	OldBinDir            string         `protobuf:"bytes,1,opt,name=OldBinDir" json:"OldBinDir,omitempty"`
+	NewBinDir            string         `protobuf:"bytes,2,opt,name=NewBinDir" json:"NewBinDir,omitempty"`
+	DataDirPairs         []*DataDirPair `protobuf:"bytes,3,rep,name=DataDirPairs" json:"DataDirPairs,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_unrecognized     []byte         `json:"-"`
 	XXX_sizecache        int32          `json:"-"`
@@ -36,7 +36,7 @@ func (m *UpgradeConvertPrimarySegmentsRequest) Reset()         { *m = UpgradeCon
 func (m *UpgradeConvertPrimarySegmentsRequest) String() string { return proto.CompactTextString(m) }
 func (*UpgradeConvertPrimarySegmentsRequest) ProtoMessage()    {}
 func (*UpgradeConvertPrimarySegmentsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_2ba90bfa15900549, []int{0}
+	return fileDescriptor_hub_to_agent_1ea90a78242ea64d, []int{0}
 }
 func (m *UpgradeConvertPrimarySegmentsRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpgradeConvertPrimarySegmentsRequest.Unmarshal(m, b)
@@ -78,11 +78,11 @@ func (m *UpgradeConvertPrimarySegmentsRequest) GetDataDirPairs() []*DataDirPair 
 }
 
 type DataDirPair struct {
-	OldDataDir           string   `protobuf:"bytes,1,opt,name=oldDataDir" json:"oldDataDir,omitempty"`
-	NewDataDir           string   `protobuf:"bytes,2,opt,name=newDataDir" json:"newDataDir,omitempty"`
-	OldPort              int32    `protobuf:"varint,3,opt,name=oldPort" json:"oldPort,omitempty"`
-	NewPort              int32    `protobuf:"varint,4,opt,name=newPort" json:"newPort,omitempty"`
-	Content              int32    `protobuf:"varint,5,opt,name=content" json:"content,omitempty"`
+	OldDataDir           string   `protobuf:"bytes,1,opt,name=OldDataDir" json:"OldDataDir,omitempty"`
+	NewDataDir           string   `protobuf:"bytes,2,opt,name=NewDataDir" json:"NewDataDir,omitempty"`
+	OldPort              int32    `protobuf:"varint,3,opt,name=OldPort" json:"OldPort,omitempty"`
+	NewPort              int32    `protobuf:"varint,4,opt,name=NewPort" json:"NewPort,omitempty"`
+	Content              int32    `protobuf:"varint,5,opt,name=Content" json:"Content,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -92,7 +92,7 @@ func (m *DataDirPair) Reset()         { *m = DataDirPair{} }
 func (m *DataDirPair) String() string { return proto.CompactTextString(m) }
 func (*DataDirPair) ProtoMessage()    {}
 func (*DataDirPair) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_2ba90bfa15900549, []int{1}
+	return fileDescriptor_hub_to_agent_1ea90a78242ea64d, []int{1}
 }
 func (m *DataDirPair) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DataDirPair.Unmarshal(m, b)
@@ -157,7 +157,7 @@ func (m *UpgradeConvertPrimarySegmentsReply) Reset()         { *m = UpgradeConve
 func (m *UpgradeConvertPrimarySegmentsReply) String() string { return proto.CompactTextString(m) }
 func (*UpgradeConvertPrimarySegmentsReply) ProtoMessage()    {}
 func (*UpgradeConvertPrimarySegmentsReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_2ba90bfa15900549, []int{2}
+	return fileDescriptor_hub_to_agent_1ea90a78242ea64d, []int{2}
 }
 func (m *UpgradeConvertPrimarySegmentsReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpgradeConvertPrimarySegmentsReply.Unmarshal(m, b)
@@ -187,7 +187,7 @@ func (m *PingAgentsRequest) Reset()         { *m = PingAgentsRequest{} }
 func (m *PingAgentsRequest) String() string { return proto.CompactTextString(m) }
 func (*PingAgentsRequest) ProtoMessage()    {}
 func (*PingAgentsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_2ba90bfa15900549, []int{3}
+	return fileDescriptor_hub_to_agent_1ea90a78242ea64d, []int{3}
 }
 func (m *PingAgentsRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PingAgentsRequest.Unmarshal(m, b)
@@ -217,7 +217,7 @@ func (m *PingAgentsReply) Reset()         { *m = PingAgentsReply{} }
 func (m *PingAgentsReply) String() string { return proto.CompactTextString(m) }
 func (*PingAgentsReply) ProtoMessage()    {}
 func (*PingAgentsReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_2ba90bfa15900549, []int{4}
+	return fileDescriptor_hub_to_agent_1ea90a78242ea64d, []int{4}
 }
 func (m *PingAgentsReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PingAgentsReply.Unmarshal(m, b)
@@ -247,7 +247,7 @@ func (m *CheckUpgradeStatusRequest) Reset()         { *m = CheckUpgradeStatusReq
 func (m *CheckUpgradeStatusRequest) String() string { return proto.CompactTextString(m) }
 func (*CheckUpgradeStatusRequest) ProtoMessage()    {}
 func (*CheckUpgradeStatusRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_2ba90bfa15900549, []int{5}
+	return fileDescriptor_hub_to_agent_1ea90a78242ea64d, []int{5}
 }
 func (m *CheckUpgradeStatusRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CheckUpgradeStatusRequest.Unmarshal(m, b)
@@ -268,7 +268,7 @@ func (m *CheckUpgradeStatusRequest) XXX_DiscardUnknown() {
 var xxx_messageInfo_CheckUpgradeStatusRequest proto.InternalMessageInfo
 
 type CheckUpgradeStatusReply struct {
-	ProcessList          string   `protobuf:"bytes,1,opt,name=process_list,json=processList" json:"process_list,omitempty"`
+	ProcessList          string   `protobuf:"bytes,1,opt,name=ProcessList" json:"ProcessList,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -278,7 +278,7 @@ func (m *CheckUpgradeStatusReply) Reset()         { *m = CheckUpgradeStatusReply
 func (m *CheckUpgradeStatusReply) String() string { return proto.CompactTextString(m) }
 func (*CheckUpgradeStatusReply) ProtoMessage()    {}
 func (*CheckUpgradeStatusReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_2ba90bfa15900549, []int{6}
+	return fileDescriptor_hub_to_agent_1ea90a78242ea64d, []int{6}
 }
 func (m *CheckUpgradeStatusReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CheckUpgradeStatusReply.Unmarshal(m, b)
@@ -306,8 +306,8 @@ func (m *CheckUpgradeStatusReply) GetProcessList() string {
 }
 
 type CheckConversionStatusRequest struct {
-	Segments             []*SegmentInfo `protobuf:"bytes,1,rep,name=segments" json:"segments,omitempty"`
-	Hostname             string         `protobuf:"bytes,2,opt,name=hostname" json:"hostname,omitempty"`
+	Segments             []*SegmentInfo `protobuf:"bytes,1,rep,name=Segments" json:"Segments,omitempty"`
+	Hostname             string         `protobuf:"bytes,2,opt,name=Hostname" json:"Hostname,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_unrecognized     []byte         `json:"-"`
 	XXX_sizecache        int32          `json:"-"`
@@ -317,7 +317,7 @@ func (m *CheckConversionStatusRequest) Reset()         { *m = CheckConversionSta
 func (m *CheckConversionStatusRequest) String() string { return proto.CompactTextString(m) }
 func (*CheckConversionStatusRequest) ProtoMessage()    {}
 func (*CheckConversionStatusRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_2ba90bfa15900549, []int{7}
+	return fileDescriptor_hub_to_agent_1ea90a78242ea64d, []int{7}
 }
 func (m *CheckConversionStatusRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CheckConversionStatusRequest.Unmarshal(m, b)
@@ -352,9 +352,9 @@ func (m *CheckConversionStatusRequest) GetHostname() string {
 }
 
 type SegmentInfo struct {
-	Content              int32    `protobuf:"varint,1,opt,name=content" json:"content,omitempty"`
-	Dbid                 int32    `protobuf:"varint,2,opt,name=dbid" json:"dbid,omitempty"`
-	DataDir              string   `protobuf:"bytes,3,opt,name=dataDir" json:"dataDir,omitempty"`
+	Content              int32    `protobuf:"varint,1,opt,name=Content" json:"Content,omitempty"`
+	Dbid                 int32    `protobuf:"varint,2,opt,name=Dbid" json:"Dbid,omitempty"`
+	DataDir              string   `protobuf:"bytes,3,opt,name=DataDir" json:"DataDir,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -364,7 +364,7 @@ func (m *SegmentInfo) Reset()         { *m = SegmentInfo{} }
 func (m *SegmentInfo) String() string { return proto.CompactTextString(m) }
 func (*SegmentInfo) ProtoMessage()    {}
 func (*SegmentInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_2ba90bfa15900549, []int{8}
+	return fileDescriptor_hub_to_agent_1ea90a78242ea64d, []int{8}
 }
 func (m *SegmentInfo) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SegmentInfo.Unmarshal(m, b)
@@ -406,7 +406,7 @@ func (m *SegmentInfo) GetDataDir() string {
 }
 
 type CheckConversionStatusReply struct {
-	Statuses             []string `protobuf:"bytes,1,rep,name=statuses" json:"statuses,omitempty"`
+	Statuses             []string `protobuf:"bytes,1,rep,name=Statuses" json:"Statuses,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -416,7 +416,7 @@ func (m *CheckConversionStatusReply) Reset()         { *m = CheckConversionStatu
 func (m *CheckConversionStatusReply) String() string { return proto.CompactTextString(m) }
 func (*CheckConversionStatusReply) ProtoMessage()    {}
 func (*CheckConversionStatusReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_2ba90bfa15900549, []int{9}
+	return fileDescriptor_hub_to_agent_1ea90a78242ea64d, []int{9}
 }
 func (m *CheckConversionStatusReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CheckConversionStatusReply.Unmarshal(m, b)
@@ -444,8 +444,8 @@ func (m *CheckConversionStatusReply) GetStatuses() []string {
 }
 
 type FileSysUsage struct {
-	Filesystem           string   `protobuf:"bytes,1,opt,name=filesystem" json:"filesystem,omitempty"`
-	Usage                float64  `protobuf:"fixed64,2,opt,name=usage" json:"usage,omitempty"`
+	Filesystem           string   `protobuf:"bytes,1,opt,name=Filesystem" json:"Filesystem,omitempty"`
+	Usage                float64  `protobuf:"fixed64,2,opt,name=Usage" json:"Usage,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -455,7 +455,7 @@ func (m *FileSysUsage) Reset()         { *m = FileSysUsage{} }
 func (m *FileSysUsage) String() string { return proto.CompactTextString(m) }
 func (*FileSysUsage) ProtoMessage()    {}
 func (*FileSysUsage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_2ba90bfa15900549, []int{10}
+	return fileDescriptor_hub_to_agent_1ea90a78242ea64d, []int{10}
 }
 func (m *FileSysUsage) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FileSysUsage.Unmarshal(m, b)
@@ -489,68 +489,68 @@ func (m *FileSysUsage) GetUsage() float64 {
 	return 0
 }
 
-type CheckDiskUsageRequestToAgent struct {
+type CheckDiskSpaceRequestToAgent struct {
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *CheckDiskUsageRequestToAgent) Reset()         { *m = CheckDiskUsageRequestToAgent{} }
-func (m *CheckDiskUsageRequestToAgent) String() string { return proto.CompactTextString(m) }
-func (*CheckDiskUsageRequestToAgent) ProtoMessage()    {}
-func (*CheckDiskUsageRequestToAgent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_2ba90bfa15900549, []int{11}
+func (m *CheckDiskSpaceRequestToAgent) Reset()         { *m = CheckDiskSpaceRequestToAgent{} }
+func (m *CheckDiskSpaceRequestToAgent) String() string { return proto.CompactTextString(m) }
+func (*CheckDiskSpaceRequestToAgent) ProtoMessage()    {}
+func (*CheckDiskSpaceRequestToAgent) Descriptor() ([]byte, []int) {
+	return fileDescriptor_hub_to_agent_1ea90a78242ea64d, []int{11}
 }
-func (m *CheckDiskUsageRequestToAgent) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_CheckDiskUsageRequestToAgent.Unmarshal(m, b)
+func (m *CheckDiskSpaceRequestToAgent) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CheckDiskSpaceRequestToAgent.Unmarshal(m, b)
 }
-func (m *CheckDiskUsageRequestToAgent) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_CheckDiskUsageRequestToAgent.Marshal(b, m, deterministic)
+func (m *CheckDiskSpaceRequestToAgent) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CheckDiskSpaceRequestToAgent.Marshal(b, m, deterministic)
 }
-func (dst *CheckDiskUsageRequestToAgent) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CheckDiskUsageRequestToAgent.Merge(dst, src)
+func (dst *CheckDiskSpaceRequestToAgent) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CheckDiskSpaceRequestToAgent.Merge(dst, src)
 }
-func (m *CheckDiskUsageRequestToAgent) XXX_Size() int {
-	return xxx_messageInfo_CheckDiskUsageRequestToAgent.Size(m)
+func (m *CheckDiskSpaceRequestToAgent) XXX_Size() int {
+	return xxx_messageInfo_CheckDiskSpaceRequestToAgent.Size(m)
 }
-func (m *CheckDiskUsageRequestToAgent) XXX_DiscardUnknown() {
-	xxx_messageInfo_CheckDiskUsageRequestToAgent.DiscardUnknown(m)
+func (m *CheckDiskSpaceRequestToAgent) XXX_DiscardUnknown() {
+	xxx_messageInfo_CheckDiskSpaceRequestToAgent.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_CheckDiskUsageRequestToAgent proto.InternalMessageInfo
+var xxx_messageInfo_CheckDiskSpaceRequestToAgent proto.InternalMessageInfo
 
-type CheckDiskUsageReplyFromAgent struct {
-	ListOfFileSysUsage   []*FileSysUsage `protobuf:"bytes,1,rep,name=list_of_file_sys_usage,json=listOfFileSysUsage" json:"list_of_file_sys_usage,omitempty"`
+type CheckDiskSpaceReplyFromAgent struct {
+	ListOfFileSysUsage   []*FileSysUsage `protobuf:"bytes,1,rep,name=ListOfFileSysUsage" json:"ListOfFileSysUsage,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
 	XXX_unrecognized     []byte          `json:"-"`
 	XXX_sizecache        int32           `json:"-"`
 }
 
-func (m *CheckDiskUsageReplyFromAgent) Reset()         { *m = CheckDiskUsageReplyFromAgent{} }
-func (m *CheckDiskUsageReplyFromAgent) String() string { return proto.CompactTextString(m) }
-func (*CheckDiskUsageReplyFromAgent) ProtoMessage()    {}
-func (*CheckDiskUsageReplyFromAgent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_2ba90bfa15900549, []int{12}
+func (m *CheckDiskSpaceReplyFromAgent) Reset()         { *m = CheckDiskSpaceReplyFromAgent{} }
+func (m *CheckDiskSpaceReplyFromAgent) String() string { return proto.CompactTextString(m) }
+func (*CheckDiskSpaceReplyFromAgent) ProtoMessage()    {}
+func (*CheckDiskSpaceReplyFromAgent) Descriptor() ([]byte, []int) {
+	return fileDescriptor_hub_to_agent_1ea90a78242ea64d, []int{12}
 }
-func (m *CheckDiskUsageReplyFromAgent) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_CheckDiskUsageReplyFromAgent.Unmarshal(m, b)
+func (m *CheckDiskSpaceReplyFromAgent) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CheckDiskSpaceReplyFromAgent.Unmarshal(m, b)
 }
-func (m *CheckDiskUsageReplyFromAgent) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_CheckDiskUsageReplyFromAgent.Marshal(b, m, deterministic)
+func (m *CheckDiskSpaceReplyFromAgent) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CheckDiskSpaceReplyFromAgent.Marshal(b, m, deterministic)
 }
-func (dst *CheckDiskUsageReplyFromAgent) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CheckDiskUsageReplyFromAgent.Merge(dst, src)
+func (dst *CheckDiskSpaceReplyFromAgent) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CheckDiskSpaceReplyFromAgent.Merge(dst, src)
 }
-func (m *CheckDiskUsageReplyFromAgent) XXX_Size() int {
-	return xxx_messageInfo_CheckDiskUsageReplyFromAgent.Size(m)
+func (m *CheckDiskSpaceReplyFromAgent) XXX_Size() int {
+	return xxx_messageInfo_CheckDiskSpaceReplyFromAgent.Size(m)
 }
-func (m *CheckDiskUsageReplyFromAgent) XXX_DiscardUnknown() {
-	xxx_messageInfo_CheckDiskUsageReplyFromAgent.DiscardUnknown(m)
+func (m *CheckDiskSpaceReplyFromAgent) XXX_DiscardUnknown() {
+	xxx_messageInfo_CheckDiskSpaceReplyFromAgent.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_CheckDiskUsageReplyFromAgent proto.InternalMessageInfo
+var xxx_messageInfo_CheckDiskSpaceReplyFromAgent proto.InternalMessageInfo
 
-func (m *CheckDiskUsageReplyFromAgent) GetListOfFileSysUsage() []*FileSysUsage {
+func (m *CheckDiskSpaceReplyFromAgent) GetListOfFileSysUsage() []*FileSysUsage {
 	if m != nil {
 		return m.ListOfFileSysUsage
 	}
@@ -569,8 +569,8 @@ func init() {
 	proto.RegisterType((*SegmentInfo)(nil), "idl.SegmentInfo")
 	proto.RegisterType((*CheckConversionStatusReply)(nil), "idl.CheckConversionStatusReply")
 	proto.RegisterType((*FileSysUsage)(nil), "idl.FileSysUsage")
-	proto.RegisterType((*CheckDiskUsageRequestToAgent)(nil), "idl.CheckDiskUsageRequestToAgent")
-	proto.RegisterType((*CheckDiskUsageReplyFromAgent)(nil), "idl.CheckDiskUsageReplyFromAgent")
+	proto.RegisterType((*CheckDiskSpaceRequestToAgent)(nil), "idl.CheckDiskSpaceRequestToAgent")
+	proto.RegisterType((*CheckDiskSpaceReplyFromAgent)(nil), "idl.CheckDiskSpaceReplyFromAgent")
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -587,7 +587,7 @@ const _ = grpc.SupportPackageIsVersion4
 type AgentClient interface {
 	CheckUpgradeStatus(ctx context.Context, in *CheckUpgradeStatusRequest, opts ...grpc.CallOption) (*CheckUpgradeStatusReply, error)
 	CheckConversionStatus(ctx context.Context, in *CheckConversionStatusRequest, opts ...grpc.CallOption) (*CheckConversionStatusReply, error)
-	CheckDiskUsageOnAgents(ctx context.Context, in *CheckDiskUsageRequestToAgent, opts ...grpc.CallOption) (*CheckDiskUsageReplyFromAgent, error)
+	CheckDiskSpaceOnAgents(ctx context.Context, in *CheckDiskSpaceRequestToAgent, opts ...grpc.CallOption) (*CheckDiskSpaceReplyFromAgent, error)
 	PingAgents(ctx context.Context, in *PingAgentsRequest, opts ...grpc.CallOption) (*PingAgentsReply, error)
 	UpgradeConvertPrimarySegments(ctx context.Context, in *UpgradeConvertPrimarySegmentsRequest, opts ...grpc.CallOption) (*UpgradeConvertPrimarySegmentsReply, error)
 }
@@ -618,9 +618,9 @@ func (c *agentClient) CheckConversionStatus(ctx context.Context, in *CheckConver
 	return out, nil
 }
 
-func (c *agentClient) CheckDiskUsageOnAgents(ctx context.Context, in *CheckDiskUsageRequestToAgent, opts ...grpc.CallOption) (*CheckDiskUsageReplyFromAgent, error) {
-	out := new(CheckDiskUsageReplyFromAgent)
-	err := c.cc.Invoke(ctx, "/idl.Agent/CheckDiskUsageOnAgents", in, out, opts...)
+func (c *agentClient) CheckDiskSpaceOnAgents(ctx context.Context, in *CheckDiskSpaceRequestToAgent, opts ...grpc.CallOption) (*CheckDiskSpaceReplyFromAgent, error) {
+	out := new(CheckDiskSpaceReplyFromAgent)
+	err := c.cc.Invoke(ctx, "/idl.Agent/CheckDiskSpaceOnAgents", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -650,7 +650,7 @@ func (c *agentClient) UpgradeConvertPrimarySegments(ctx context.Context, in *Upg
 type AgentServer interface {
 	CheckUpgradeStatus(context.Context, *CheckUpgradeStatusRequest) (*CheckUpgradeStatusReply, error)
 	CheckConversionStatus(context.Context, *CheckConversionStatusRequest) (*CheckConversionStatusReply, error)
-	CheckDiskUsageOnAgents(context.Context, *CheckDiskUsageRequestToAgent) (*CheckDiskUsageReplyFromAgent, error)
+	CheckDiskSpaceOnAgents(context.Context, *CheckDiskSpaceRequestToAgent) (*CheckDiskSpaceReplyFromAgent, error)
 	PingAgents(context.Context, *PingAgentsRequest) (*PingAgentsReply, error)
 	UpgradeConvertPrimarySegments(context.Context, *UpgradeConvertPrimarySegmentsRequest) (*UpgradeConvertPrimarySegmentsReply, error)
 }
@@ -695,20 +695,20 @@ func _Agent_CheckConversionStatus_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Agent_CheckDiskUsageOnAgents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CheckDiskUsageRequestToAgent)
+func _Agent_CheckDiskSpaceOnAgents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckDiskSpaceRequestToAgent)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AgentServer).CheckDiskUsageOnAgents(ctx, in)
+		return srv.(AgentServer).CheckDiskSpaceOnAgents(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/idl.Agent/CheckDiskUsageOnAgents",
+		FullMethod: "/idl.Agent/CheckDiskSpaceOnAgents",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AgentServer).CheckDiskUsageOnAgents(ctx, req.(*CheckDiskUsageRequestToAgent))
+		return srv.(AgentServer).CheckDiskSpaceOnAgents(ctx, req.(*CheckDiskSpaceRequestToAgent))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -762,8 +762,8 @@ var _Agent_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Agent_CheckConversionStatus_Handler,
 		},
 		{
-			MethodName: "CheckDiskUsageOnAgents",
-			Handler:    _Agent_CheckDiskUsageOnAgents_Handler,
+			MethodName: "CheckDiskSpaceOnAgents",
+			Handler:    _Agent_CheckDiskSpaceOnAgents_Handler,
 		},
 		{
 			MethodName: "PingAgents",
@@ -778,45 +778,44 @@ var _Agent_serviceDesc = grpc.ServiceDesc{
 	Metadata: "hub_to_agent.proto",
 }
 
-func init() { proto.RegisterFile("hub_to_agent.proto", fileDescriptor_hub_to_agent_2ba90bfa15900549) }
+func init() { proto.RegisterFile("hub_to_agent.proto", fileDescriptor_hub_to_agent_1ea90a78242ea64d) }
 
-var fileDescriptor_hub_to_agent_2ba90bfa15900549 = []byte{
-	// 591 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x54, 0x5d, 0x6f, 0x12, 0x41,
-	0x14, 0xed, 0x4a, 0xd1, 0x72, 0x69, 0xa2, 0x1d, 0x6b, 0x5d, 0x57, 0x44, 0x3a, 0x69, 0x22, 0x26,
-	0x86, 0x87, 0xea, 0x83, 0x0f, 0x7d, 0xd1, 0x62, 0x13, 0x13, 0x93, 0x92, 0xa5, 0x3c, 0x9a, 0x75,
-	0x61, 0x87, 0x65, 0xd2, 0x65, 0x66, 0xdd, 0x19, 0x24, 0xfb, 0x4f, 0x4c, 0xfc, 0x59, 0xfe, 0x21,
-	0x33, 0x1f, 0xc0, 0x10, 0xa0, 0xf6, 0x6d, 0xef, 0x39, 0xe7, 0xde, 0xb9, 0x7b, 0xee, 0x9d, 0x01,
-	0x34, 0x99, 0x0d, 0x23, 0xc9, 0xa3, 0x38, 0x25, 0x4c, 0x76, 0xf2, 0x82, 0x4b, 0x8e, 0x2a, 0x34,
-	0xc9, 0xf0, 0x6f, 0x0f, 0xce, 0x06, 0x79, 0x5a, 0xc4, 0x09, 0xb9, 0xe4, 0xec, 0x17, 0x29, 0x64,
-	0xaf, 0xa0, 0xd3, 0xb8, 0x28, 0xfb, 0x24, 0x9d, 0x12, 0x26, 0x45, 0x48, 0x7e, 0xce, 0x88, 0x90,
-	0xa8, 0x01, 0x35, 0x9e, 0x25, 0x9f, 0x29, 0xeb, 0xd2, 0xc2, 0xf7, 0x5a, 0x5e, 0xbb, 0x16, 0xae,
-	0x00, 0xc5, 0x32, 0x32, 0xb7, 0xec, 0x03, 0xc3, 0x2e, 0x01, 0xf4, 0x01, 0x0e, 0x93, 0x58, 0xc6,
-	0x5d, 0x5a, 0xf4, 0x62, 0x5a, 0x08, 0xbf, 0xd2, 0xaa, 0xb4, 0xeb, 0xe7, 0x4f, 0x3a, 0x34, 0xc9,
-	0x3a, 0xdd, 0x15, 0x11, 0xae, 0xa9, 0xf0, 0x1f, 0x0f, 0xea, 0x0e, 0x8b, 0x9a, 0x00, 0x3c, 0x4b,
-	0x2c, 0x62, 0x5b, 0x70, 0x10, 0xc5, 0x33, 0x32, 0x5f, 0xf0, 0xa6, 0x09, 0x07, 0x41, 0x3e, 0x3c,
-	0xe2, 0x59, 0xd2, 0xe3, 0x85, 0xf4, 0x2b, 0x2d, 0xaf, 0x5d, 0x0d, 0x17, 0xa1, 0x62, 0x18, 0x99,
-	0x6b, 0x66, 0xdf, 0x30, 0x36, 0x54, 0xcc, 0x88, 0x33, 0x49, 0x98, 0xf4, 0xab, 0x86, 0xb1, 0x21,
-	0x3e, 0x03, 0xfc, 0x1f, 0xdf, 0xf2, 0xac, 0xc4, 0x4f, 0xe1, 0xa8, 0x47, 0x59, 0xfa, 0x29, 0x75,
-	0xac, 0xc4, 0x47, 0xf0, 0xd8, 0x05, 0x95, 0xee, 0x25, 0xbc, 0xb8, 0x9c, 0x90, 0xd1, 0xad, 0x2d,
-	0xd9, 0x97, 0xb1, 0x9c, 0x2d, 0xf5, 0x17, 0xf0, 0x7c, 0x1b, 0x99, 0x67, 0x25, 0x3a, 0x85, 0xc3,
-	0xbc, 0xe0, 0x23, 0x22, 0x44, 0x94, 0x51, 0x21, 0xad, 0x2b, 0x75, 0x8b, 0x7d, 0xa3, 0x42, 0xe2,
-	0x09, 0x34, 0x74, 0xb6, 0x69, 0x53, 0x50, 0xce, 0xd6, 0xaa, 0xa3, 0x77, 0x70, 0x20, 0x6c, 0xcf,
-	0xbe, 0xe7, 0x0c, 0xc6, 0xfe, 0xc8, 0x57, 0x36, 0xe6, 0xe1, 0x52, 0x81, 0x02, 0x38, 0x98, 0x70,
-	0x21, 0x59, 0x3c, 0x25, 0xd6, 0xe2, 0x65, 0x8c, 0x07, 0x50, 0x77, 0x92, 0x5c, 0xef, 0xbc, 0x35,
-	0xef, 0x10, 0x82, 0xfd, 0x64, 0x48, 0x13, 0x5d, 0xa0, 0x1a, 0xea, 0x6f, 0xa5, 0xb6, 0xd3, 0xd7,
-	0xd3, 0xa9, 0x85, 0x8b, 0x10, 0x7f, 0x84, 0x60, 0xc7, 0x0f, 0x28, 0x07, 0x02, 0x38, 0x10, 0x3a,
-	0x24, 0xa6, 0xfd, 0x5a, 0xb8, 0x8c, 0x71, 0x17, 0x0e, 0xaf, 0x68, 0x46, 0xfa, 0xa5, 0x18, 0x88,
-	0x38, 0x25, 0x6a, 0x43, 0xc6, 0x34, 0x23, 0xa2, 0x14, 0x92, 0x4c, 0x17, 0x1b, 0xb4, 0x42, 0xd0,
-	0x31, 0x54, 0x67, 0x4a, 0xa8, 0x1b, 0xf3, 0x42, 0x13, 0xe0, 0xa6, 0x35, 0xb0, 0x4b, 0xc5, 0xad,
-	0xae, 0x63, 0x9d, 0xbb, 0xe1, 0x7a, 0x82, 0x98, 0x6c, 0xf2, 0x79, 0x56, 0x5e, 0x15, 0x7c, 0xaa,
-	0x79, 0xf4, 0x05, 0x4e, 0xd4, 0x6c, 0x22, 0x3e, 0x8e, 0xd4, 0x59, 0x91, 0x28, 0x45, 0x64, 0x8e,
-	0x31, 0x76, 0x1f, 0x69, 0xbb, 0xdd, 0x46, 0x43, 0xa4, 0x12, 0xae, 0xc7, 0x2e, 0x76, 0xfe, 0xb7,
-	0x02, 0x55, 0x53, 0xf0, 0x06, 0xd0, 0xe6, 0x3e, 0xa0, 0xa6, 0x2e, 0xb3, 0x73, 0x8b, 0x82, 0xc6,
-	0x4e, 0x5e, 0x2d, 0xe0, 0x1e, 0xfa, 0x0e, 0xcf, 0xb6, 0xda, 0x8c, 0x4e, 0x57, 0x89, 0x3b, 0x76,
-	0x28, 0x78, 0x7d, 0x97, 0xc4, 0x94, 0xff, 0x01, 0x27, 0xeb, 0x2e, 0x5d, 0x33, 0x73, 0x01, 0xdc,
-	0xfa, 0x3b, 0x2c, 0x0e, 0xb6, 0x4b, 0x5c, 0x97, 0xf1, 0x1e, 0xba, 0x00, 0x58, 0x5d, 0x2b, 0x74,
-	0xa2, 0x53, 0x36, 0x2e, 0x5f, 0x70, 0xbc, 0x81, 0x9b, 0xfe, 0x66, 0xf0, 0xea, 0xce, 0xfb, 0x8c,
-	0xde, 0xea, 0xc4, 0xfb, 0xbc, 0x95, 0xc1, 0x9b, 0xfb, 0x48, 0xf5, 0xb1, 0xc3, 0x87, 0xfa, 0x2d,
-	0x7e, 0xff, 0x2f, 0x00, 0x00, 0xff, 0xff, 0x5e, 0x35, 0x61, 0x89, 0xa1, 0x05, 0x00, 0x00,
+var fileDescriptor_hub_to_agent_1ea90a78242ea64d = []byte{
+	// 573 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x54, 0xdd, 0x8e, 0xd2, 0x40,
+	0x14, 0xde, 0xda, 0x45, 0xe1, 0xb0, 0x89, 0x32, 0xae, 0x6b, 0xad, 0x88, 0x38, 0xd9, 0x44, 0x4c,
+	0x0c, 0x17, 0xab, 0x17, 0x26, 0x7a, 0xb3, 0xd2, 0x6c, 0x34, 0x31, 0x40, 0xca, 0x72, 0x69, 0xd6,
+	0x42, 0x67, 0xcb, 0x64, 0x4b, 0xa7, 0x76, 0x06, 0x49, 0xdf, 0xc4, 0xc4, 0xc7, 0xf2, 0x85, 0x4c,
+	0x67, 0xa6, 0x30, 0x04, 0x58, 0xf7, 0x8e, 0xef, 0xe7, 0x1c, 0x4e, 0xbf, 0x39, 0x33, 0x80, 0x66,
+	0x8b, 0xc9, 0x95, 0x60, 0x57, 0x41, 0x44, 0x12, 0xd1, 0x4d, 0x33, 0x26, 0x18, 0xb2, 0x69, 0x18,
+	0xe3, 0xdf, 0x16, 0x9c, 0x8e, 0xd3, 0x28, 0x0b, 0x42, 0xd2, 0x63, 0xc9, 0x2f, 0x92, 0x89, 0x61,
+	0x46, 0xe7, 0x41, 0x96, 0x8f, 0x48, 0x34, 0x27, 0x89, 0xe0, 0x3e, 0xf9, 0xb9, 0x20, 0x5c, 0xa0,
+	0x26, 0xd4, 0x06, 0x71, 0xf8, 0x99, 0x26, 0x1e, 0xcd, 0x1c, 0xab, 0x6d, 0x75, 0x6a, 0xfe, 0x9a,
+	0x28, 0xd4, 0x3e, 0x59, 0x6a, 0xf5, 0x9e, 0x52, 0x57, 0x04, 0x7a, 0x0f, 0x47, 0x5e, 0x20, 0x02,
+	0x8f, 0x66, 0xc3, 0x80, 0x66, 0xdc, 0xb1, 0xdb, 0x76, 0xa7, 0x7e, 0xf6, 0xa8, 0x4b, 0xc3, 0xb8,
+	0x6b, 0x08, 0xfe, 0x86, 0x0b, 0xff, 0xb1, 0xa0, 0x6e, 0x10, 0xa8, 0x05, 0x30, 0x88, 0x43, 0xcd,
+	0xe8, 0x11, 0x0c, 0xa6, 0xd0, 0xfb, 0x64, 0x59, 0xea, 0x6a, 0x08, 0x83, 0x41, 0x0e, 0x3c, 0x18,
+	0xc4, 0xe1, 0x90, 0x65, 0xc2, 0xb1, 0xdb, 0x56, 0xa7, 0xe2, 0x97, 0xb0, 0x50, 0xfa, 0x64, 0x29,
+	0x95, 0x43, 0xa5, 0x68, 0x58, 0x28, 0x3d, 0x96, 0x08, 0x92, 0x08, 0xa7, 0xa2, 0x14, 0x0d, 0xf1,
+	0x29, 0xe0, 0xff, 0xe4, 0x96, 0xc6, 0x39, 0x7e, 0x0c, 0x8d, 0x21, 0x4d, 0xa2, 0xf3, 0xc8, 0x88,
+	0x12, 0x37, 0xe0, 0xa1, 0x49, 0x16, 0xbe, 0xe7, 0xf0, 0xac, 0x37, 0x23, 0xd3, 0x1b, 0xdd, 0x72,
+	0x24, 0x02, 0xb1, 0x58, 0xf9, 0x3f, 0xc2, 0xd3, 0x5d, 0x62, 0x1a, 0xe7, 0xa8, 0x0d, 0xf5, 0x61,
+	0xc6, 0xa6, 0x84, 0xf3, 0x6f, 0x94, 0x0b, 0x1d, 0x8a, 0x49, 0xe1, 0x19, 0x34, 0x65, 0xb1, 0x9a,
+	0x92, 0x53, 0x96, 0x6c, 0x34, 0x47, 0x6f, 0xa1, 0x5a, 0x8e, 0xec, 0x58, 0xc6, 0xb9, 0x68, 0xf2,
+	0x6b, 0x72, 0xcd, 0xfc, 0x95, 0x03, 0xb9, 0x50, 0xfd, 0xc2, 0xb8, 0x48, 0x82, 0x39, 0xd1, 0x09,
+	0xaf, 0x30, 0x1e, 0x43, 0xdd, 0x28, 0x32, 0xa3, 0xb3, 0x36, 0xa2, 0x43, 0x08, 0x0e, 0xbd, 0x09,
+	0x0d, 0x65, 0x83, 0x8a, 0x2f, 0x7f, 0x17, 0xee, 0xf2, 0xe4, 0x6c, 0xd9, 0xb7, 0x84, 0xf8, 0x03,
+	0xb8, 0x7b, 0x3e, 0xa0, 0x08, 0xc0, 0x85, 0xaa, 0x82, 0x44, 0x8d, 0x5f, 0xf3, 0x57, 0x18, 0x7b,
+	0x70, 0x74, 0x41, 0x63, 0x32, 0xca, 0xf9, 0x98, 0x07, 0x11, 0x29, 0x16, 0xa4, 0xc0, 0x3c, 0xe7,
+	0x82, 0xcc, 0xcb, 0x05, 0x5a, 0x33, 0xe8, 0x18, 0x2a, 0xd2, 0x28, 0x07, 0xb3, 0x7c, 0x05, 0x70,
+	0x4b, 0x07, 0xe8, 0x51, 0x7e, 0x33, 0x4a, 0x83, 0x29, 0xd1, 0xc9, 0x5d, 0x32, 0x79, 0x80, 0x38,
+	0xd8, 0xd6, 0xd3, 0x38, 0xbf, 0xc8, 0xd8, 0x5c, 0xea, 0xe8, 0x1c, 0x50, 0x71, 0x10, 0x83, 0x6b,
+	0x73, 0x16, 0x1d, 0x75, 0x43, 0x46, 0x6d, 0x0a, 0xfe, 0x0e, 0xf3, 0xd9, 0x5f, 0x1b, 0x2a, 0xaa,
+	0xd9, 0x25, 0xa0, 0xed, 0x55, 0x40, 0x2d, 0xd9, 0x66, 0xef, 0x02, 0xb9, 0xcd, 0xbd, 0x7a, 0xb1,
+	0x7b, 0x07, 0xe8, 0x3b, 0x3c, 0xd9, 0x19, 0x31, 0x7a, 0xb5, 0x2e, 0xdc, 0xb3, 0x3f, 0xee, 0xcb,
+	0xdb, 0x2c, 0xaa, 0xfd, 0x0f, 0x38, 0xd9, 0x4c, 0x68, 0x90, 0xa8, 0xdd, 0x37, 0xfb, 0xef, 0x89,
+	0xd7, 0xdd, 0x6d, 0x31, 0x13, 0xc6, 0x07, 0xe8, 0x13, 0xc0, 0xfa, 0x46, 0xa1, 0x13, 0x59, 0xb2,
+	0x75, 0xef, 0xdc, 0xe3, 0x2d, 0x5e, 0xcd, 0xb7, 0x80, 0x17, 0xb7, 0x5e, 0x65, 0xf4, 0x46, 0x16,
+	0xde, 0xe5, 0x99, 0x74, 0x5f, 0xdf, 0xc5, 0x2a, 0xff, 0x76, 0x72, 0x5f, 0x3e, 0xc3, 0xef, 0xfe,
+	0x05, 0x00, 0x00, 0xff, 0xff, 0x84, 0x4b, 0xef, 0x04, 0x9c, 0x05, 0x00, 0x00,
 }

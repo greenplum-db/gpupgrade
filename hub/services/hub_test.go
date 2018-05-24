@@ -13,16 +13,18 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
-var _ = Describe("HubClient", func() {
+var _ = Describe("Hub", func() {
 	var (
 		reader *testutils.SpyReader
 		agentA *testutils.MockAgentServer
 		port   int
+		stubRemoteExecutor *testutils.StubRemoteExecutor
 	)
 
 	BeforeEach(func() {
 		reader = &testutils.SpyReader{}
 		agentA, port = testutils.NewMockAgentServer()
+		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
 	})
 
 	AfterEach(func() {
@@ -35,7 +37,7 @@ var _ = Describe("HubClient", func() {
 		reader.Hostnames = []string{"localhost"}
 		hub := services.NewHub(nil, reader, grpc.DialContext, nil, &services.HubConfig{
 			HubToAgentPort: port,
-		})
+		}, stubRemoteExecutor)
 		go hub.Start()
 
 		By("creating connections")
@@ -55,7 +57,7 @@ var _ = Describe("HubClient", func() {
 		reader.Hostnames = []string{"localhost", "localhost"}
 		hub := services.NewHub(nil, reader, grpc.DialContext, nil, &services.HubConfig{
 			HubToAgentPort: port,
-		})
+		}, stubRemoteExecutor)
 
 		conns, err := hub.AgentConns()
 		Expect(err).ToNot(HaveOccurred())
@@ -71,7 +73,7 @@ var _ = Describe("HubClient", func() {
 
 		hub := services.NewHub(nil, reader, grpc.DialContext, nil, &services.HubConfig{
 			HubToAgentPort: port,
-		})
+		}, stubRemoteExecutor)
 
 		newConns, err := hub.AgentConns()
 		Expect(err).ToNot(HaveOccurred())
@@ -88,7 +90,7 @@ var _ = Describe("HubClient", func() {
 		reader.Hostnames = []string{"localhost"}
 		hub := services.NewHub(nil, reader, grpc.DialContext, nil, &services.HubConfig{
 			HubToAgentPort: port,
-		})
+		}, stubRemoteExecutor)
 
 		conns, err := hub.AgentConns()
 		Expect(err).ToNot(HaveOccurred())
@@ -106,7 +108,7 @@ var _ = Describe("HubClient", func() {
 		reader.Hostnames = []string{"localhost"}
 		hub := services.NewHub(nil, reader, grpc.DialContext, nil, &services.HubConfig{
 			HubToAgentPort: port,
-		})
+		}, stubRemoteExecutor)
 
 		agentA.Stop()
 
@@ -120,7 +122,7 @@ var _ = Describe("HubClient", func() {
 		reader.Hostnames = []string{"example"}
 		hub := services.NewHub(nil, reader, grpc.DialContext, nil, &services.HubConfig{
 			HubToAgentPort: port,
-		})
+		}, stubRemoteExecutor)
 
 		_, err := hub.AgentConns()
 		Expect(err).To(HaveOccurred())
@@ -128,7 +130,7 @@ var _ = Describe("HubClient", func() {
 
 	It("returns an error if the config reader fails", func() {
 		reader.Err = errors.New("error occurred while getting hostnames")
-		hub := services.NewHub(nil, reader, nil, nil, &services.HubConfig{})
+		hub := services.NewHub(nil, reader, nil, nil, &services.HubConfig{}, stubRemoteExecutor)
 
 		_, err := hub.AgentConns()
 		Expect(err).To(HaveOccurred())

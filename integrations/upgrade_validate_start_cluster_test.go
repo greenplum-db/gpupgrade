@@ -21,10 +21,11 @@ import (
 var _ = Describe("upgrade validate-start-cluster", func() {
 	var (
 		dir           string
-		hub           *services.HubClient
+		hub           *services.Hub
 		commandExecer *testutils.FakeCommandExecer
 		outChan       chan []byte
 		errChan       chan error
+		stubRemoteExecutor *testutils.StubRemoteExecutor
 	)
 
 	BeforeEach(func() {
@@ -51,7 +52,8 @@ var _ = Describe("upgrade validate-start-cluster", func() {
 			Err: errChan,
 		})
 
-		hub = services.NewHub(&cluster.Pair{}, &reader, grpc.DialContext, commandExecer.Exec, conf)
+		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
+		hub = services.NewHub(&cluster.Pair{}, &reader, grpc.DialContext, commandExecer.Exec, conf, stubRemoteExecutor)
 		go hub.Start()
 	})
 

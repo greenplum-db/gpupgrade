@@ -7,7 +7,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-func (h *HubClient) Ping(ctx context.Context, in *pb.PingRequest) (*pb.PingReply, error) {
+func (h *Hub) Ping(ctx context.Context, in *pb.PingRequest) (*pb.PingReply, error) {
 	gplog.Info("starting Ping")
 	return &pb.PingReply{}, nil
 }

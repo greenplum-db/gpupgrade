@@ -17,10 +17,10 @@ const (
 	diskUsageWarningLimit = 80
 )
 
-func (h *HubClient) CheckDiskUsage(ctx context.Context,
-	in *pb.CheckDiskUsageRequest) (*pb.CheckDiskUsageReply, error) {
+func (h *Hub) CheckDiskSpace(ctx context.Context,
+	in *pb.CheckDiskSpaceRequest) (*pb.CheckDiskSpaceReply, error) {
 
-	gplog.Info("starting CheckDiskUsage")
+	gplog.Info("starting CheckDiskSpace")
 	var replyMessages []string
 	reader := configutils.Reader{}
 	// We don't care whether this the old json vs the new json because we're
@@ -28,7 +28,7 @@ func (h *HubClient) CheckDiskUsage(ctx context.Context,
 	reader.OfOldClusterConfig(h.conf.StateDir)
 	hostnames, err := reader.GetHostnames()
 	if err != nil {
-		return &pb.CheckDiskUsageReply{}, err
+		return &pb.CheckDiskSpaceReply{}, err
 	}
 	var clients []configutils.ClientAndHostname
 	for i := 0; i < len(hostnames); i++ {
@@ -41,16 +41,16 @@ func (h *HubClient) CheckDiskUsage(ctx context.Context,
 			replyMessages = append(replyMessages, "ERROR: couldn't get gRPC conn to "+hostnames[i])
 		}
 	}
-	replyMessages = append(replyMessages, GetDiskUsageFromSegmentHosts(clients)...)
+	replyMessages = append(replyMessages, GetDiskSpaceFromSegmentHosts(clients)...)
 
-	return &pb.CheckDiskUsageReply{SegmentFileSysUsage: replyMessages}, nil
+	return &pb.CheckDiskSpaceReply{SegmentFileSysUsage: replyMessages}, nil
 }
 
-func GetDiskUsageFromSegmentHosts(clients []configutils.ClientAndHostname) []string {
+func GetDiskSpaceFromSegmentHosts(clients []configutils.ClientAndHostname) []string {
 	replyMessages := []string{}
 	for i := 0; i < len(clients); i++ {
-		reply, err := clients[i].Client.CheckDiskUsageOnAgents(context.Background(),
-			&pb.CheckDiskUsageRequestToAgent{})
+		reply, err := clients[i].Client.CheckDiskSpaceOnAgents(context.Background(),
+			&pb.CheckDiskSpaceRequestToAgent{})
 		if err != nil {
 			gplog.Error(err.Error())
 			replyMessages = append(replyMessages, "Could not get disk usage from: "+clients[i].Hostname)

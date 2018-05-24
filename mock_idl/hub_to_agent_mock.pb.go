@@ -71,22 +71,22 @@ func (mr *MockAgentClientMockRecorder) CheckConversionStatus(ctx, in interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckConversionStatus", reflect.TypeOf((*MockAgentClient)(nil).CheckConversionStatus), varargs...)
 }
 
-// CheckDiskUsageOnAgents mocks base method
-func (m *MockAgentClient) CheckDiskUsageOnAgents(ctx context.Context, in *idl.CheckDiskUsageRequestToAgent, opts ...grpc.CallOption) (*idl.CheckDiskUsageReplyFromAgent, error) {
+// CheckDiskSpaceOnAgents mocks base method
+func (m *MockAgentClient) CheckDiskSpaceOnAgents(ctx context.Context, in *idl.CheckDiskSpaceRequestToAgent, opts ...grpc.CallOption) (*idl.CheckDiskSpaceReplyFromAgent, error) {
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "CheckDiskUsageOnAgents", varargs...)
-	ret0, _ := ret[0].(*idl.CheckDiskUsageReplyFromAgent)
+	ret := m.ctrl.Call(m, "CheckDiskSpaceOnAgents", varargs...)
+	ret0, _ := ret[0].(*idl.CheckDiskSpaceReplyFromAgent)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// CheckDiskUsageOnAgents indicates an expected call of CheckDiskUsageOnAgents
-func (mr *MockAgentClientMockRecorder) CheckDiskUsageOnAgents(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+// CheckDiskSpaceOnAgents indicates an expected call of CheckDiskSpaceOnAgents
+func (mr *MockAgentClientMockRecorder) CheckDiskSpaceOnAgents(ctx, in interface{}, opts ...interface{}) *gomock.Call {
 	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckDiskUsageOnAgents", reflect.TypeOf((*MockAgentClient)(nil).CheckDiskUsageOnAgents), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckDiskSpaceOnAgents", reflect.TypeOf((*MockAgentClient)(nil).CheckDiskSpaceOnAgents), varargs...)
 }
 
 // PingAgents mocks base method
@@ -174,17 +174,17 @@ func (mr *MockAgentServerMockRecorder) CheckConversionStatus(arg0, arg1 interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckConversionStatus", reflect.TypeOf((*MockAgentServer)(nil).CheckConversionStatus), arg0, arg1)
 }
 
-// CheckDiskUsageOnAgents mocks base method
-func (m *MockAgentServer) CheckDiskUsageOnAgents(arg0 context.Context, arg1 *idl.CheckDiskUsageRequestToAgent) (*idl.CheckDiskUsageReplyFromAgent, error) {
-	ret := m.ctrl.Call(m, "CheckDiskUsageOnAgents", arg0, arg1)
-	ret0, _ := ret[0].(*idl.CheckDiskUsageReplyFromAgent)
+// CheckDiskSpaceOnAgents mocks base method
+func (m *MockAgentServer) CheckDiskSpaceOnAgents(arg0 context.Context, arg1 *idl.CheckDiskSpaceRequestToAgent) (*idl.CheckDiskSpaceReplyFromAgent, error) {
+	ret := m.ctrl.Call(m, "CheckDiskSpaceOnAgents", arg0, arg1)
+	ret0, _ := ret[0].(*idl.CheckDiskSpaceReplyFromAgent)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// CheckDiskUsageOnAgents indicates an expected call of CheckDiskUsageOnAgents
-func (mr *MockAgentServerMockRecorder) CheckDiskUsageOnAgents(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckDiskUsageOnAgents", reflect.TypeOf((*MockAgentServer)(nil).CheckDiskUsageOnAgents), arg0, arg1)
+// CheckDiskSpaceOnAgents indicates an expected call of CheckDiskSpaceOnAgents
+func (mr *MockAgentServerMockRecorder) CheckDiskSpaceOnAgents(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckDiskSpaceOnAgents", reflect.TypeOf((*MockAgentServer)(nil).CheckDiskSpaceOnAgents), arg0, arg1)
 }
 
 // PingAgents mocks base method

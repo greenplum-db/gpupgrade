@@ -14,13 +14,16 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
 	"google.golang.org/grpc"
+	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
+	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
+	"time"
 )
 
 // needs the cli and the hub
 var _ = Describe("check config", func() {
 	var (
 		dir            string
-		hub            *services.HubClient
+		hub            *services.Hub
 		commandExecer  *testutils.FakeCommandExecer
 		hubToAgentPort int
 	)
@@ -52,7 +55,12 @@ var _ = Describe("check config", func() {
 		commandExecer = &testutils.FakeCommandExecer{}
 		commandExecer.SetOutput(&testutils.FakeCommand{})
 
-		hub = services.NewHub(&cluster.Pair{}, &reader, grpc.DialContext, commandExecer.Exec, conf)
+		clusterSsher := cluster_ssher.NewClusterSsher(
+			upgradestatus.NewChecklistManager(conf.StateDir),
+			services.NewPingerManager(conf.StateDir, 500*time.Millisecond),
+			commandExecer.Exec,
+		)
+		hub = services.NewHub(&cluster.Pair{}, &reader, grpc.DialContext, commandExecer.Exec, conf, clusterSsher)
 		go hub.Start()
 	})
 

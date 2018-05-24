@@ -9,7 +9,7 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 )
 
-func (s *AgentServer) CheckDiskUsageOnAgents(ctx context.Context, in *pb.CheckDiskUsageRequestToAgent) (*pb.CheckDiskUsageReplyFromAgent, error) {
+func (s *AgentServer) CheckDiskSpaceOnAgents(ctx context.Context, in *pb.CheckDiskSpaceRequestToAgent) (*pb.CheckDiskSpaceReplyFromAgent, error) {
 	gplog.Info("got a check disk command from the hub")
 	diskUsage, err := s.GetDiskUsage()
 	if err != nil {
@@ -20,7 +20,7 @@ func (s *AgentServer) CheckDiskUsageOnAgents(ctx context.Context, in *pb.CheckDi
 	for k, v := range diskUsage {
 		listDiskUsages = append(listDiskUsages, &pb.FileSysUsage{Filesystem: k, Usage: v})
 	}
-	return &pb.CheckDiskUsageReplyFromAgent{ListOfFileSysUsage: listDiskUsages}, nil
+	return &pb.CheckDiskSpaceReplyFromAgent{ListOfFileSysUsage: listDiskUsages}, nil
 }
 
 // diskUsage() wraps a pair of calls to the gosigar library.

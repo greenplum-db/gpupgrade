@@ -15,13 +15,16 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
+	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
+	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
+	"time"
 )
 
 // the `prepare start-hub` tests are currently in master_only_integration_test
 var _ = Describe("prepare", func() {
 	var (
 		dir           string
-		hub           *services.HubClient
+		hub           *services.Hub
 		commandExecer *testutils.FakeCommandExecer
 	)
 
@@ -43,7 +46,12 @@ var _ = Describe("prepare", func() {
 		commandExecer = &testutils.FakeCommandExecer{}
 		commandExecer.SetOutput(&testutils.FakeCommand{})
 
-		hub = services.NewHub(&cluster.Pair{}, &reader, grpc.DialContext, commandExecer.Exec, conf)
+		clusterSsher := cluster_ssher.NewClusterSsher(
+			upgradestatus.NewChecklistManager(conf.StateDir),
+			services.NewPingerManager(conf.StateDir, 500*time.Millisecond),
+			commandExecer.Exec,
+		)
+		hub = services.NewHub(&cluster.Pair{}, &reader, grpc.DialContext, commandExecer.Exec, conf, clusterSsher)
 		go hub.Start()
 	})
 

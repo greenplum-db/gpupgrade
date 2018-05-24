@@ -13,7 +13,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-func (h *HubClient) StatusUpgrade(ctx context.Context, in *pb.StatusUpgradeRequest) (*pb.StatusUpgradeReply, error) {
+func (h *Hub) StatusUpgrade(ctx context.Context, in *pb.StatusUpgradeRequest) (*pb.StatusUpgradeReply, error) {
 	gplog.Info("starting StatusUpgrade")
 
 	checkConfigStatePath := filepath.Join(h.conf.StateDir, "cluster_config.json")

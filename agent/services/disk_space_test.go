@@ -35,7 +35,7 @@ var _ = Describe("CommandListener", func() {
 		}
 		listener := &services.AgentServer{GetDiskUsage: getDiskUsage}
 
-		resp, err := listener.CheckDiskUsageOnAgents(nil, &pb.CheckDiskUsageRequestToAgent{})
+		resp, err := listener.CheckDiskSpaceOnAgents(nil, &pb.CheckDiskSpaceRequestToAgent{})
 		Expect(err).To(BeNil())
 		for _, val := range resp.ListOfFileSysUsage {
 			if val.Filesystem == "/data" {
@@ -51,7 +51,7 @@ var _ = Describe("CommandListener", func() {
 			return nil, errors.New("fake error")
 		}
 		listener := &services.AgentServer{GetDiskUsage: getDiskUsage}
-		_, err := listener.CheckDiskUsageOnAgents(nil, &pb.CheckDiskUsageRequestToAgent{})
+		_, err := listener.CheckDiskSpaceOnAgents(nil, &pb.CheckDiskSpaceRequestToAgent{})
 		Expect(err).To(HaveOccurred())
 		Expect(string(testLogFile.Contents())).To(ContainSubstring("fake error"))
 	})

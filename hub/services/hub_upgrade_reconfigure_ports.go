@@ -15,7 +15,7 @@ const (
 		"mv %[3]s/postgresql.conf.updated %[3]s/postgresql.conf"
 )
 
-func (h *HubClient) UpgradeReconfigurePorts(ctx context.Context, in *pb.UpgradeReconfigurePortsRequest) (*pb.UpgradeReconfigurePortsReply, error) {
+func (h *Hub) UpgradeReconfigurePorts(ctx context.Context, in *pb.UpgradeReconfigurePortsRequest) (*pb.UpgradeReconfigurePortsReply, error) {
 	gplog.Info("Started processing reconfigure-ports request")
 
 	c := upgradestatus.NewChecklistManager(h.conf.StateDir)

@@ -23,7 +23,7 @@ import (
 var _ = Describe("upgrade convert master", func() {
 	var (
 		dir           string
-		hub           *services.HubClient
+		hub           *services.Hub
 		mockAgent     *testutils.MockAgentServer
 		commandExecer *testutils.FakeCommandExecer
 		oldDataDir    string
@@ -33,6 +33,7 @@ var _ = Describe("upgrade convert master", func() {
 
 		outChan chan []byte
 		errChan chan error
+		stubRemoteExecutor *testutils.StubRemoteExecutor
 	)
 
 	BeforeEach(func() {
@@ -89,7 +90,8 @@ var _ = Describe("upgrade convert master", func() {
 			Err: errChan,
 		})
 
-		hub = services.NewHub(&cluster.Pair{}, &reader, grpc.DialContext, commandExecer.Exec, conf)
+		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
+		hub = services.NewHub(&cluster.Pair{}, &reader, grpc.DialContext, commandExecer.Exec, conf, stubRemoteExecutor)
 		go hub.Start()
 	})
 

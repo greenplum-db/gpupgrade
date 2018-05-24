@@ -63,10 +63,10 @@ func (m *MockAgentServer) CheckConversionStatus(ctx context.Context, in *pb.Chec
 	return m.StatusConversionResponse, err
 }
 
-func (m *MockAgentServer) CheckDiskUsageOnAgents(context.Context, *pb.CheckDiskUsageRequestToAgent) (*pb.CheckDiskUsageReplyFromAgent, error) {
+func (m *MockAgentServer) CheckDiskSpaceOnAgents(context.Context, *pb.CheckDiskSpaceRequestToAgent) (*pb.CheckDiskSpaceReplyFromAgent, error) {
 	m.increaseCalls()
 
-	return &pb.CheckDiskUsageReplyFromAgent{}, nil
+	return &pb.CheckDiskSpaceReplyFromAgent{}, nil
 }
 
 func (m *MockAgentServer) PingAgents(context.Context, *pb.PingAgentsRequest) (*pb.PingAgentsReply, error) {

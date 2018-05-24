@@ -50,7 +50,7 @@ func SaveTargetClusterConfig(dbConnector *dbconn.DBConn, stateDir string, newBin
 	return nil
 }
 
-func (h *HubClient) PrepareInitCluster(ctx context.Context, in *pb.PrepareInitClusterRequest) (*pb.PrepareInitClusterReply, error) {
+func (h *Hub) PrepareInitCluster(ctx context.Context, in *pb.PrepareInitClusterRequest) (*pb.PrepareInitClusterReply, error) {
 	gplog.Info("starting PrepareInitCluster()")
 
 	dbConnector := db.NewDBConn("localhost", int(in.DbPort), "template1")

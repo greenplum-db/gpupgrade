@@ -12,7 +12,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-func (h *HubClient) UpgradeShareOids(ctx context.Context, in *pb.UpgradeShareOidsRequest) (*pb.UpgradeShareOidsReply, error) {
+func (h *Hub) UpgradeShareOids(ctx context.Context, in *pb.UpgradeShareOidsRequest) (*pb.UpgradeShareOidsReply, error) {
 	gplog.Info("Started processing share-oids request")
 
 	go h.shareOidFiles()
@@ -20,7 +20,7 @@ func (h *HubClient) UpgradeShareOids(ctx context.Context, in *pb.UpgradeShareOid
 	return &pb.UpgradeShareOidsReply{}, nil
 }
 
-func (h *HubClient) shareOidFiles() {
+func (h *Hub) shareOidFiles() {
 	c := upgradestatus.NewChecklistManager(h.conf.StateDir)
 	shareOidsStep := "share-oids"
 

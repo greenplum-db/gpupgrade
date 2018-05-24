@@ -7,7 +7,7 @@ import (
 	agentServices "github.com/greenplum-db/gpupgrade/agent/services"
 	"github.com/greenplum-db/gpupgrade/hub/cluster"
 	"github.com/greenplum-db/gpupgrade/hub/configutils"
-	hubServices "github.com/greenplum-db/gpupgrade/hub/services"
+	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/testutils"
 
 	"github.com/onsi/gomega/gbytes"
@@ -22,9 +22,10 @@ import (
 var _ = Describe("status", func() {
 	var (
 		dir           string
-		hub           *hubServices.HubClient
+		hub           *services.Hub
 		agent         *agentServices.AgentServer
 		commandExecer *testutils.FakeCommandExecer
+		stubRemoteExecutor *testutils.StubRemoteExecutor
 	)
 
 	BeforeEach(func() {
@@ -49,7 +50,7 @@ var _ = Describe("status", func() {
 		port, err = testutils.GetOpenPort()
 		Expect(err).ToNot(HaveOccurred())
 
-		conf := &hubServices.HubConfig{
+		conf := &services.HubConfig{
 			CliToHubPort:   port,
 			HubToAgentPort: agentPort,
 			StateDir:       dir,
@@ -59,7 +60,8 @@ var _ = Describe("status", func() {
 		commandExecer = &testutils.FakeCommandExecer{}
 		commandExecer.SetOutput(&testutils.FakeCommand{})
 
-		hub = hubServices.NewHub(&cluster.Pair{}, &reader, grpc.DialContext, commandExecer.Exec, conf)
+		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
+		hub = services.NewHub(&cluster.Pair{}, &reader, grpc.DialContext, commandExecer.Exec, conf, stubRemoteExecutor)
 		go hub.Start()
 	})
 

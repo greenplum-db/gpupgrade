@@ -7,17 +7,17 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 )
 
-type DiskUsageChecker struct {
+type DiskSpaceChecker struct {
 	client pb.CliToHubClient
 }
 
-func NewDiskUsageChecker(client pb.CliToHubClient) DiskUsageChecker {
-	return DiskUsageChecker{client: client}
+func NewDiskSpaceChecker(client pb.CliToHubClient) DiskSpaceChecker {
+	return DiskSpaceChecker{client: client}
 }
 
-func (req DiskUsageChecker) Execute() error {
-	reply, err := req.client.CheckDiskUsage(context.Background(),
-		&pb.CheckDiskUsageRequest{})
+func (req DiskSpaceChecker) Execute() error {
+	reply, err := req.client.CheckDiskSpace(context.Background(),
+		&pb.CheckDiskSpaceRequest{})
 	if err != nil {
 		gplog.Error("ERROR - gRPC call to hub failed")
 		return err

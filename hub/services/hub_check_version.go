@@ -13,7 +13,7 @@ const (
 	MINIMUM_VERSION = "4.3.9"
 )
 
-func (h *HubClient) CheckVersion(ctx context.Context,
+func (h *Hub) CheckVersion(ctx context.Context,
 	in *pb.CheckVersionRequest) (*pb.CheckVersionReply, error) {
 
 	gplog.Info("starting CheckVersion")

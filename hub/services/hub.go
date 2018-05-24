@@ -11,7 +11,6 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/helpers"
 	"github.com/greenplum-db/gpupgrade/hub/configutils"
-	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -38,15 +37,20 @@ type pairOperator interface {
 	EitherPostmasterRunning() bool
 }
 
-type HubClient struct {
-	Bootstrapper
+type RemoteExecutor interface {
+	VerifySoftware(hosts []string)
+	Start(hosts []string)
+}
+
+type Hub struct {
 	conf *HubConfig
 
-	agentConns    []*Connection
-	clusterPair   pairOperator
-	configreader  reader
-	grpcDialer    dialer
-	commandExecer helpers.CommandExecer
+	agentConns     []*Connection
+	clusterPair    pairOperator
+	configreader   reader
+	grpcDialer     dialer
+	commandExecer  helpers.CommandExecer
+	remoteExecutor RemoteExecutor
 
 	mu      sync.Mutex
 	server  *grpc.Server
@@ -67,32 +71,25 @@ type HubConfig struct {
 	LogDir         string
 }
 
-func NewHub(pair pairOperator, configReader reader, grpcDialer dialer, execer helpers.CommandExecer, conf *HubConfig) *HubClient {
+func NewHub(pair pairOperator, configReader reader, grpcDialer dialer, execer helpers.CommandExecer, conf *HubConfig, executor RemoteExecutor) *Hub {
 	// refactor opportunity -- don't use this pattern,
 	// use different types or separate functions for old/new or set the config path at reader initialization time
 	configReader.OfOldClusterConfig(conf.StateDir)
 
-	h := &HubClient{
+	h := &Hub{
 		stopped:       make(chan struct{}, 1),
 		conf:          conf,
 		clusterPair:   pair,
 		configreader:  configReader,
 		grpcDialer:    grpcDialer,
 		commandExecer: execer,
-		Bootstrapper: Bootstrapper{
-			hostnameGetter: configReader,
-			remoteExecutor: NewClusterSsher(
-				upgradestatus.NewChecklistManager(conf.StateDir),
-				NewPingerManager(conf.StateDir, 500*time.Millisecond),
-				execer,
-			),
-		},
+		remoteExecutor: executor,
 	}
 
 	return h
 }
 
-func (h *HubClient) Start() {
+func (h *Hub) Start() {
 	lis, err := net.Listen("tcp", ":"+strconv.Itoa(h.conf.CliToHubPort))
 	if err != nil {
 		gplog.Fatal(err, "failed to listen")
@@ -115,7 +112,7 @@ func (h *HubClient) Start() {
 	h.stopped <- struct{}{}
 }
 
-func (h *HubClient) Stop() {
+func (h *Hub) Stop() {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -126,7 +123,7 @@ func (h *HubClient) Stop() {
 	}
 }
 
-func (h *HubClient) AgentConns() ([]*Connection, error) {
+func (h *Hub) AgentConns() ([]*Connection, error) {
 	if h.agentConns != nil {
 		err := h.ensureConnsAreReady()
 		if err != nil {
@@ -162,7 +159,7 @@ func (h *HubClient) AgentConns() ([]*Connection, error) {
 	return h.agentConns, nil
 }
 
-func (h *HubClient) ensureConnsAreReady() error {
+func (h *Hub) ensureConnsAreReady() error {
 	var hostnames []string
 	for i := 0; i < 3; i++ {
 		ready := 0
@@ -184,7 +181,7 @@ func (h *HubClient) ensureConnsAreReady() error {
 	return fmt.Errorf("the connections to the following hosts were not ready: %s", strings.Join(hostnames, ","))
 }
 
-func (h *HubClient) closeConns() {
+func (h *Hub) closeConns() {
 	for _, conn := range h.agentConns {
 		defer conn.CancelContext()
 		err := conn.Conn.Close()
@@ -194,7 +191,7 @@ func (h *HubClient) closeConns() {
 	}
 }
 
-func (h *HubClient) segmentsByHost() map[string]configutils.SegmentConfiguration {
+func (h *Hub) segmentsByHost() map[string]configutils.SegmentConfiguration {
 	segments := h.configreader.GetSegmentConfiguration()
 
 	segmentsByHost := make(map[string]configutils.SegmentConfiguration)

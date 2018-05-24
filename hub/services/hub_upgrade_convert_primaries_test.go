@@ -22,13 +22,14 @@ var _ = Describe("hub.UpgradeConvertPrimaries()", func() {
 		dir           string
 		commandExecer *testutils.FakeCommandExecer
 		reader        *testutils.SpyReader
-		hub           *services.HubClient
+		hub           *services.Hub
 		mockAgent     *testutils.MockAgentServer
 		segmentConfs  chan configutils.SegmentConfiguration
 		port          int
 		request       *pb.UpgradeConvertPrimariesRequest
 		oldConf       configutils.SegmentConfiguration
 		newConf       configutils.SegmentConfiguration
+		stubRemoteExecutor *testutils.StubRemoteExecutor
 	)
 
 	BeforeEach(func() {
@@ -72,7 +73,8 @@ var _ = Describe("hub.UpgradeConvertPrimaries()", func() {
 		commandExecer = &testutils.FakeCommandExecer{}
 		commandExecer.SetOutput(&testutils.FakeCommand{})
 
-		hub = services.NewHub(nil, reader, grpc.DialContext, commandExecer.Exec, conf)
+		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
+		hub = services.NewHub(nil, reader, grpc.DialContext, commandExecer.Exec, conf, stubRemoteExecutor)
 	})
 	AfterEach(func() {
 		utils.System = utils.InitializeSystemFunctions()

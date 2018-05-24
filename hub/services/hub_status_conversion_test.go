@@ -20,8 +20,9 @@ import (
 
 var _ = Describe("hub", func() {
 	var (
-		hubClient *services.HubClient
+		hubClient *services.Hub
 		agentA    *testutils.MockAgentServer
+		stubRemoteExecutor *testutils.StubRemoteExecutor
 	)
 
 	BeforeEach(func() {
@@ -51,8 +52,9 @@ var _ = Describe("hub", func() {
 		conf := &services.HubConfig{
 			HubToAgentPort: port,
 		}
+		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
 
-		hubClient = services.NewHub(nil, reader, grpc.DialContext, nil, conf)
+		hubClient = services.NewHub(nil, reader, grpc.DialContext, nil, conf, stubRemoteExecutor)
 	})
 
 	AfterEach(func() {

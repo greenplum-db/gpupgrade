@@ -1,4 +1,4 @@
-package services
+package cluster_ssher
 
 import (
 	"fmt"

@@ -49,7 +49,7 @@ func (m *MockHubClient) CheckVersion(ctx context.Context, in *pb.CheckVersionReq
 	return nil, nil
 }
 
-func (m *MockHubClient) CheckDiskUsage(ctx context.Context, in *pb.CheckDiskUsageRequest, opts ...grpc.CallOption) (*pb.CheckDiskUsageReply, error) {
+func (m *MockHubClient) CheckDiskSpace(ctx context.Context, in *pb.CheckDiskSpaceRequest, opts ...grpc.CallOption) (*pb.CheckDiskSpaceReply, error) {
 	return nil, nil
 }
 

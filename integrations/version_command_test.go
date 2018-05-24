@@ -22,8 +22,9 @@ import (
 var _ = Describe("version command", func() {
 	var (
 		dir           string
-		hub           *services.HubClient
+		hub           *services.Hub
 		commandExecer *testutils.FakeCommandExecer
+		stubRemoteExecutor *testutils.StubRemoteExecutor
 	)
 
 	BeforeEach(func() {
@@ -44,7 +45,8 @@ var _ = Describe("version command", func() {
 		commandExecer = &testutils.FakeCommandExecer{}
 		commandExecer.SetOutput(&testutils.FakeCommand{})
 
-		hub = services.NewHub(&cluster.Pair{}, &reader, grpc.DialContext, commandExecer.Exec, conf)
+		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
+		hub = services.NewHub(&cluster.Pair{}, &reader, grpc.DialContext, commandExecer.Exec, conf, stubRemoteExecutor)
 		go hub.Start()
 	})
 

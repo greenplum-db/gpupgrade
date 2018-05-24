@@ -32,16 +32,16 @@ var _ = Describe("object count tests", func() {
 	})
 
 	Describe("GetDiskUsageFromSegmentHosts", func() {
-		It("returns err msg when unable to call CheckDiskUsageOnAgents on segment host", func() {
+		It("returns err msg when unable to call CheckDiskSpaceOnAgents on segment host", func() {
 			var clients []configutils.ClientAndHostname
 
-			client.EXPECT().CheckDiskUsageOnAgents(
+			client.EXPECT().CheckDiskSpaceOnAgents(
 				gomock.Any(),
-				&pb.CheckDiskUsageRequestToAgent{},
-			).Return(&pb.CheckDiskUsageReplyFromAgent{}, errors.New("couldn't connect to hub"))
+				&pb.CheckDiskSpaceRequestToAgent{},
+			).Return(&pb.CheckDiskSpaceReplyFromAgent{}, errors.New("couldn't connect to hub"))
 			clients = append(clients, configutils.ClientAndHostname{Client: client, Hostname: "doesnotexist"})
 
-			messages := services.GetDiskUsageFromSegmentHosts(clients)
+			messages := services.GetDiskSpaceFromSegmentHosts(clients)
 			Expect(len(messages)).To(Equal(1))
 			Expect(messages[0]).To(ContainSubstring("Could not get disk usage from: "))
 		})
@@ -53,13 +53,13 @@ var _ = Describe("object count tests", func() {
 			expectedFilesystemsUsage = append(expectedFilesystemsUsage, &pb.FileSysUsage{Filesystem: "first filesystem", Usage: 90.4})
 			expectedFilesystemsUsage = append(expectedFilesystemsUsage, &pb.FileSysUsage{Filesystem: "/second/filesystem", Usage: 24.2})
 
-			client.EXPECT().CheckDiskUsageOnAgents(
+			client.EXPECT().CheckDiskSpaceOnAgents(
 				gomock.Any(),
-				&pb.CheckDiskUsageRequestToAgent{},
-			).Return(&pb.CheckDiskUsageReplyFromAgent{ListOfFileSysUsage: expectedFilesystemsUsage}, nil)
+				&pb.CheckDiskSpaceRequestToAgent{},
+			).Return(&pb.CheckDiskSpaceReplyFromAgent{ListOfFileSysUsage: expectedFilesystemsUsage}, nil)
 			clients = append(clients, configutils.ClientAndHostname{Client: client, Hostname: "doesnotexist"})
 
-			messages := services.GetDiskUsageFromSegmentHosts(clients)
+			messages := services.GetDiskSpaceFromSegmentHosts(clients)
 			Expect(len(messages)).To(Equal(1))
 			Expect(messages[0]).To(ContainSubstring("diskspace check - doesnotexist - WARNING first filesystem 90.4 use"))
 		})
@@ -71,13 +71,13 @@ var _ = Describe("object count tests", func() {
 			expectedFilesystemsUsage = append(expectedFilesystemsUsage, &pb.FileSysUsage{Filesystem: "first filesystem", Usage: 70.4})
 			expectedFilesystemsUsage = append(expectedFilesystemsUsage, &pb.FileSysUsage{Filesystem: "/second/filesystem", Usage: 24.2})
 
-			client.EXPECT().CheckDiskUsageOnAgents(
+			client.EXPECT().CheckDiskSpaceOnAgents(
 				gomock.Any(),
-				&pb.CheckDiskUsageRequestToAgent{},
-			).Return(&pb.CheckDiskUsageReplyFromAgent{ListOfFileSysUsage: expectedFilesystemsUsage}, nil)
+				&pb.CheckDiskSpaceRequestToAgent{},
+			).Return(&pb.CheckDiskSpaceReplyFromAgent{ListOfFileSysUsage: expectedFilesystemsUsage}, nil)
 			clients = append(clients, configutils.ClientAndHostname{Client: client, Hostname: "doesnotexist"})
 
-			messages := services.GetDiskUsageFromSegmentHosts(clients)
+			messages := services.GetDiskSpaceFromSegmentHosts(clients)
 			Expect(len(messages)).To(Equal(1))
 			Expect(messages[0]).To(ContainSubstring("diskspace check - doesnotexist - OK"))
 		})

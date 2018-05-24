@@ -8,7 +8,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-func (h *HubClient) StatusConversion(ctx context.Context, in *pb.StatusConversionRequest) (*pb.StatusConversionReply, error) {
+func (h *Hub) StatusConversion(ctx context.Context, in *pb.StatusConversionRequest) (*pb.StatusConversionReply, error) {
 	conns, err := h.AgentConns()
 	if err != nil {
 		return &pb.StatusConversionReply{}, err

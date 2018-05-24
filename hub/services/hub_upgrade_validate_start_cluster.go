@@ -12,7 +12,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-func (h *HubClient) UpgradeValidateStartCluster(ctx context.Context,
+func (h *Hub) UpgradeValidateStartCluster(ctx context.Context,
 	in *pb.UpgradeValidateStartClusterRequest) (*pb.UpgradeValidateStartClusterReply, error) {
 	gplog.Info("Started processing validate-start-cluster request")
 
@@ -21,7 +21,7 @@ func (h *HubClient) UpgradeValidateStartCluster(ctx context.Context,
 	return &pb.UpgradeValidateStartClusterReply{}, nil
 }
 
-func (h *HubClient) startNewCluster(newBinDir string, newDataDir string) {
+func (h *Hub) startNewCluster(newBinDir string, newDataDir string) {
 	gplog.Error(h.conf.StateDir)
 	c := upgradestatus.NewChecklistManager(h.conf.StateDir)
 	err := c.ResetStateDir("validate-start-cluster")

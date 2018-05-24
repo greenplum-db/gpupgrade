@@ -7,7 +7,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/hub/cluster"
 	"github.com/greenplum-db/gpupgrade/hub/configutils"
-	hubServices "github.com/greenplum-db/gpupgrade/hub/services"
+	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/testutils"
 
 	"google.golang.org/grpc"
@@ -21,12 +21,13 @@ var _ = Describe("upgrade reconfigure ports", func() {
 
 	var (
 		dir       string
-		hub       *hubServices.HubClient
+		hub       *services.Hub
 		hubExecer *testutils.FakeCommandExecer
 		agentPort int
 
 		outChan chan []byte
 		errChan chan error
+		stubRemoteExecutor *testutils.StubRemoteExecutor
 	)
 
 	BeforeEach(func() {
@@ -49,7 +50,7 @@ var _ = Describe("upgrade reconfigure ports", func() {
 		port, err = testutils.GetOpenPort()
 		Expect(err).ToNot(HaveOccurred())
 
-		conf := &hubServices.HubConfig{
+		conf := &services.HubConfig{
 			CliToHubPort:   port,
 			HubToAgentPort: agentPort,
 			StateDir:       dir,
@@ -65,7 +66,8 @@ var _ = Describe("upgrade reconfigure ports", func() {
 			Err: errChan,
 		})
 
-		hub = hubServices.NewHub(&cluster.Pair{}, &reader, grpc.DialContext, hubExecer.Exec, conf)
+		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
+		hub = services.NewHub(&cluster.Pair{}, &reader, grpc.DialContext, hubExecer.Exec, conf, stubRemoteExecutor)
 		go hub.Start()
 	})
 

@@ -5,23 +5,23 @@ package idl;
 service Agent {
     rpc CheckUpgradeStatus (CheckUpgradeStatusRequest) returns (CheckUpgradeStatusReply) {}
     rpc CheckConversionStatus (CheckConversionStatusRequest) returns (CheckConversionStatusReply) {}
-    rpc CheckDiskUsageOnAgents (CheckDiskUsageRequestToAgent) returns (CheckDiskUsageReplyFromAgent) {}
+    rpc CheckDiskSpaceOnAgents (CheckDiskSpaceRequestToAgent) returns (CheckDiskSpaceReplyFromAgent) {}
     rpc PingAgents (PingAgentsRequest) returns (PingAgentsReply) {}
     rpc UpgradeConvertPrimarySegments (UpgradeConvertPrimarySegmentsRequest) returns (UpgradeConvertPrimarySegmentsReply) {}
 }
 
 message UpgradeConvertPrimarySegmentsRequest {
-    string oldBinDir = 1;
-    string newBinDir = 2;
-    repeated DataDirPair dataDirPairs = 3;
+    string OldBinDir = 1;
+    string NewBinDir = 2;
+    repeated DataDirPair DataDirPairs = 3;
 }
 
 message DataDirPair {
-    string oldDataDir = 1;
-    string newDataDir = 2;
-    int32  oldPort    = 3;
-    int32  newPort    = 4;
-    int32  content    = 5;
+    string OldDataDir = 1;
+    string NewDataDir = 2;
+    int32  OldPort    = 3;
+    int32  NewPort    = 4;
+    int32  Content    = 5;
 }
 
 message UpgradeConvertPrimarySegmentsReply {}
@@ -32,31 +32,31 @@ message PingAgentsReply {}
 message CheckUpgradeStatusRequest {}
 
 message CheckUpgradeStatusReply {
-    string process_list = 1;
+    string ProcessList = 1;
 }
 
 message CheckConversionStatusRequest {
-    repeated SegmentInfo segments = 1;
-	string hostname = 2;
+    repeated SegmentInfo Segments = 1;
+	string Hostname = 2;
 }
 
 message SegmentInfo {
-	int32 content  = 1;
-	int32 dbid     = 2;
-	string dataDir = 3;
+	int32 Content  = 1;
+	int32 Dbid     = 2;
+	string DataDir = 3;
 }
 
 message CheckConversionStatusReply {
-    repeated string statuses = 1;
+    repeated string Statuses = 1;
 }
 
 message FileSysUsage {
-    string filesystem = 1;
-    double usage = 2;
+    string Filesystem = 1;
+    double Usage = 2;
 }
 
-message CheckDiskUsageRequestToAgent {}
+message CheckDiskSpaceRequestToAgent {}
 
-message CheckDiskUsageReplyFromAgent {
-    repeated FileSysUsage list_of_file_sys_usage = 1;
+message CheckDiskSpaceReplyFromAgent {
+    repeated FileSysUsage ListOfFileSysUsage = 1;
 }

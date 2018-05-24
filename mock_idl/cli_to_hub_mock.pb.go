@@ -161,22 +161,22 @@ func (mr *MockCliToHubClientMockRecorder) CheckVersion(ctx, in interface{}, opts
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckVersion", reflect.TypeOf((*MockCliToHubClient)(nil).CheckVersion), varargs...)
 }
 
-// CheckDiskUsage mocks base method
-func (m *MockCliToHubClient) CheckDiskUsage(ctx context.Context, in *idl.CheckDiskUsageRequest, opts ...grpc.CallOption) (*idl.CheckDiskUsageReply, error) {
+// CheckDiskSpace mocks base method
+func (m *MockCliToHubClient) CheckDiskSpace(ctx context.Context, in *idl.CheckDiskSpaceRequest, opts ...grpc.CallOption) (*idl.CheckDiskSpaceReply, error) {
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "CheckDiskUsage", varargs...)
-	ret0, _ := ret[0].(*idl.CheckDiskUsageReply)
+	ret := m.ctrl.Call(m, "CheckDiskSpace", varargs...)
+	ret0, _ := ret[0].(*idl.CheckDiskSpaceReply)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// CheckDiskUsage indicates an expected call of CheckDiskUsage
-func (mr *MockCliToHubClientMockRecorder) CheckDiskUsage(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+// CheckDiskSpace indicates an expected call of CheckDiskSpace
+func (mr *MockCliToHubClientMockRecorder) CheckDiskSpace(ctx, in interface{}, opts ...interface{}) *gomock.Call {
 	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckDiskUsage", reflect.TypeOf((*MockCliToHubClient)(nil).CheckDiskUsage), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckDiskSpace", reflect.TypeOf((*MockCliToHubClient)(nil).CheckDiskSpace), varargs...)
 }
 
 // PrepareInitCluster mocks base method
@@ -437,17 +437,17 @@ func (mr *MockCliToHubServerMockRecorder) CheckVersion(arg0, arg1 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckVersion", reflect.TypeOf((*MockCliToHubServer)(nil).CheckVersion), arg0, arg1)
 }
 
-// CheckDiskUsage mocks base method
-func (m *MockCliToHubServer) CheckDiskUsage(arg0 context.Context, arg1 *idl.CheckDiskUsageRequest) (*idl.CheckDiskUsageReply, error) {
-	ret := m.ctrl.Call(m, "CheckDiskUsage", arg0, arg1)
-	ret0, _ := ret[0].(*idl.CheckDiskUsageReply)
+// CheckDiskSpace mocks base method
+func (m *MockCliToHubServer) CheckDiskSpace(arg0 context.Context, arg1 *idl.CheckDiskSpaceRequest) (*idl.CheckDiskSpaceReply, error) {
+	ret := m.ctrl.Call(m, "CheckDiskSpace", arg0, arg1)
+	ret0, _ := ret[0].(*idl.CheckDiskSpaceReply)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// CheckDiskUsage indicates an expected call of CheckDiskUsage
-func (mr *MockCliToHubServerMockRecorder) CheckDiskUsage(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckDiskUsage", reflect.TypeOf((*MockCliToHubServer)(nil).CheckDiskUsage), arg0, arg1)
+// CheckDiskSpace indicates an expected call of CheckDiskSpace
+func (mr *MockCliToHubServerMockRecorder) CheckDiskSpace(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckDiskSpace", reflect.TypeOf((*MockCliToHubServer)(nil).CheckDiskSpace), arg0, arg1)
 }
 
 // PrepareInitCluster mocks base method

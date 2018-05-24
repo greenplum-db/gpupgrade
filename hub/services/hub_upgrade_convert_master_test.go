@@ -21,10 +21,11 @@ var _ = Describe("ConvertMasterHub", func() {
 	var (
 		dir           string
 		commandExecer *testutils.FakeCommandExecer
-		hub           *services.HubClient
+		hub           *services.Hub
 		outChan       chan []byte
 		errChan       chan error
 		portChan      chan int
+		stubRemoteExecutor *testutils.StubRemoteExecutor
 	)
 
 	BeforeEach(func() {
@@ -48,7 +49,8 @@ var _ = Describe("ConvertMasterHub", func() {
 			Out: outChan,
 		})
 
-		hub = services.NewHub(nil, reader, grpc.DialContext, commandExecer.Exec, conf)
+		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
+		hub = services.NewHub(nil, reader, grpc.DialContext, commandExecer.Exec, conf, stubRemoteExecutor)
 	})
 
 	AfterEach(func() {

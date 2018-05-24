@@ -33,12 +33,12 @@ var _ = Describe("object count tests", func() {
 		It("logs and returns error if connection to hub fails", func() {
 			_, _, testLogFile := testhelper.SetupTestLogger()
 
-			client.EXPECT().CheckDiskUsage(
+			client.EXPECT().CheckDiskSpace(
 				gomock.Any(),
-				&pb.CheckDiskUsageRequest{},
-			).Return(&pb.CheckDiskUsageReply{}, errors.New("couldn't connect to hub"))
+				&pb.CheckDiskSpaceRequest{},
+			).Return(&pb.CheckDiskSpaceReply{}, errors.New("couldn't connect to hub"))
 
-			request := commanders.NewDiskUsageChecker(client)
+			request := commanders.NewDiskSpaceChecker(client)
 			err := request.Execute()
 
 			Expect(err).ToNot(BeNil())
@@ -53,12 +53,12 @@ var _ = Describe("object count tests", func() {
 			//to log a percent sign, use %% to avoid logger substitution
 			expectedFilesystemsUsage = append(expectedFilesystemsUsage, "diskspace check - hostD  - WARNING /data 90%% use")
 
-			client.EXPECT().CheckDiskUsage(
+			client.EXPECT().CheckDiskSpace(
 				gomock.Any(),
-				&pb.CheckDiskUsageRequest{},
-			).Return(&pb.CheckDiskUsageReply{SegmentFileSysUsage: expectedFilesystemsUsage}, nil)
+				&pb.CheckDiskSpaceRequest{},
+			).Return(&pb.CheckDiskSpaceReply{SegmentFileSysUsage: expectedFilesystemsUsage}, nil)
 
-			request := commanders.NewDiskUsageChecker(client)
+			request := commanders.NewDiskSpaceChecker(client)
 			err := request.Execute()
 
 			Expect(err).To(BeNil())

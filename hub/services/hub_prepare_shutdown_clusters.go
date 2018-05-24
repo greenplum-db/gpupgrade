@@ -10,7 +10,7 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 )
 
-func (h *HubClient) PrepareShutdownClusters(ctx context.Context, in *pb.PrepareShutdownClustersRequest) (*pb.PrepareShutdownClustersReply, error) {
+func (h *Hub) PrepareShutdownClusters(ctx context.Context, in *pb.PrepareShutdownClustersRequest) (*pb.PrepareShutdownClustersReply, error) {
 	gplog.Info("starting PrepareShutdownClusters()")
 
 	// will be initialized for future uses also? We think so -- it should

@@ -22,11 +22,12 @@ import (
 var _ = Describe("UpgradeReconfigurePorts", func() {
 	var (
 		reader        *testutils.SpyReader
-		hub           *services.HubClient
+		hub           *services.Hub
 		dir           string
 		commandExecer *testutils.FakeCommandExecer
 		errChan       chan error
 		outChan       chan []byte
+		stubRemoteExecutor *testutils.StubRemoteExecutor
 	)
 
 	BeforeEach(func() {
@@ -60,9 +61,10 @@ var _ = Describe("UpgradeReconfigurePorts", func() {
 			OldMasterDataDirectory: "/old/datadir",
 			NewMasterDataDirectory: "/new/datadir",
 		}
+		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
 		hub = services.NewHub(clusterPair, reader, grpc.DialContext, commandExecer.Exec, &services.HubConfig{
 			StateDir: dir,
-		})
+		}, stubRemoteExecutor)
 	})
 
 	AfterEach(func() {

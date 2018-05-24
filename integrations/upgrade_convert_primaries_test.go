@@ -22,7 +22,7 @@ import (
 var _ = Describe("upgrade convert primaries", func() {
 	var (
 		dir                string
-		hub                *services.HubClient
+		hub                *services.Hub
 		agent              *agentServices.AgentServer
 		hubCommandExecer   *testutils.FakeCommandExecer
 		agentCommandExecer *testutils.FakeCommandExecer
@@ -31,6 +31,7 @@ var _ = Describe("upgrade convert primaries", func() {
 		oidFile            string
 		hubOutChan         chan []byte
 		agentOutChan       chan []byte
+		stubRemoteExecutor *testutils.StubRemoteExecutor
 	)
 
 	BeforeEach(func() {
@@ -86,7 +87,8 @@ var _ = Describe("upgrade convert primaries", func() {
 			Out: hubOutChan,
 		})
 
-		hub = services.NewHub(&cluster.Pair{}, &reader, grpc.DialContext, hubCommandExecer.Exec, conf)
+		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
+		hub = services.NewHub(&cluster.Pair{}, &reader, grpc.DialContext, hubCommandExecer.Exec, conf, stubRemoteExecutor)
 		go hub.Start()
 
 		agentOutChan = make(chan []byte, 10)

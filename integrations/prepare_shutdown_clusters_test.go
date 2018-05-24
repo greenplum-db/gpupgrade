@@ -22,13 +22,14 @@ import (
 var _ = Describe("prepare shutdown-clusters", func() {
 	var (
 		dir           string
-		hub           *services.HubClient
+		hub           *services.Hub
 		mockAgent     *testutils.MockAgentServer
 		commandExecer *testutils.FakeCommandExecer
 		outChan       chan []byte
 		errChan       chan error
 		oldBinDir     string
 		newBinDir     string
+		stubRemoteExecutor *testutils.StubRemoteExecutor
 	)
 
 	BeforeEach(func() {
@@ -78,7 +79,8 @@ var _ = Describe("prepare shutdown-clusters", func() {
 		clusterPair.OldMasterDataDirectory = "/old/datadir"
 		clusterPair.NewMasterDataDirectory = "/new/datadir"
 
-		hub = services.NewHub(clusterPair, &reader, grpc.DialContext, commandExecer.Exec, conf)
+		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
+		hub = services.NewHub(clusterPair, &reader, grpc.DialContext, commandExecer.Exec, conf, stubRemoteExecutor)
 		go hub.Start()
 	})
 

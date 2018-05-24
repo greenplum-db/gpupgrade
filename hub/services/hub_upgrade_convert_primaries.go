@@ -11,7 +11,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-func (h *HubClient) UpgradeConvertPrimaries(ctx context.Context, in *pb.UpgradeConvertPrimariesRequest) (*pb.UpgradeConvertPrimariesReply, error) {
+func (h *Hub) UpgradeConvertPrimaries(ctx context.Context, in *pb.UpgradeConvertPrimariesRequest) (*pb.UpgradeConvertPrimariesReply, error) {
 	conns, err := h.AgentConns()
 	if err != nil {
 		gplog.Error("Error connecting to the agents. Err: %v", err)
@@ -53,7 +53,7 @@ func (h *HubClient) UpgradeConvertPrimaries(ctx context.Context, in *pb.UpgradeC
 	return &pb.UpgradeConvertPrimariesReply{}, err
 }
 
-func (h *HubClient) getDataDirPairs() (map[string][]*pb.DataDirPair, error) {
+func (h *Hub) getDataDirPairs() (map[string][]*pb.DataDirPair, error) {
 	dataDirPairMap := make(map[string][]*pb.DataDirPair)
 	h.configreader.OfOldClusterConfig(h.conf.StateDir)
 	oldConfig := h.configreader.GetSegmentConfiguration()

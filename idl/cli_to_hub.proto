@@ -10,7 +10,7 @@ service CliToHub {
     rpc CheckSeginstall(CheckSeginstallRequest) returns (CheckSeginstallReply) {}
     rpc CheckObjectCount(CheckObjectCountRequest) returns (CheckObjectCountReply) {}
     rpc CheckVersion(CheckVersionRequest) returns (CheckVersionReply) {}
-    rpc CheckDiskUsage(CheckDiskUsageRequest) returns (CheckDiskUsageReply) {}
+    rpc CheckDiskSpace(CheckDiskSpaceRequest) returns (CheckDiskSpaceReply) {}
     rpc PrepareInitCluster(PrepareInitClusterRequest) returns (PrepareInitClusterReply) {}
     rpc PrepareShutdownClusters(PrepareShutdownClustersRequest) returns (PrepareShutdownClustersReply) {}
     rpc UpgradeConvertMaster(UpgradeConvertMasterRequest) returns (UpgradeConvertMasterReply) {}
@@ -89,7 +89,7 @@ message CheckConfigRequest {
 
 // Consider removing the status as errors are/should be put on the error field.
 message CheckConfigReply {
-    string configStatus  = 1;
+    string ConfigStatus  = 1;
 }
 
 message CheckSeginstallRequest {}
@@ -108,7 +108,7 @@ message CheckObjectCountRequest {
 }
 
 message CheckObjectCountReply {
-    repeated CountPerDb list_of_counts = 1;
+    repeated CountPerDb ListOfCounts = 1;
 }
 
 message CheckVersionRequest {
@@ -120,21 +120,21 @@ message CheckVersionReply {
     bool IsVersionCompatible = 1;
 }
 
-message CheckDiskUsageRequest {}
+message CheckDiskSpaceRequest {}
 
-message CheckDiskUsageReply {
+message CheckDiskSpaceReply {
     repeated string SegmentFileSysUsage = 1;
 }
 
 message PrepareShutdownClustersRequest {
-    string oldBinDir = 1;
-    string newBinDir = 2;
+    string OldBinDir = 1;
+    string NewBinDir = 2;
 }
 message PrepareShutdownClustersReply {}
 
 message PrepareInitClusterRequest {
-    int32 dbPort = 1;
-    string newBinDir = 2;
+    int32 DbPort = 1;
+    string NewBinDir = 2;
 }
 message PrepareInitClusterReply {}
 

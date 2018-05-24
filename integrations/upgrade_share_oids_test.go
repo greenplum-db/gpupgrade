@@ -21,13 +21,14 @@ import (
 var _ = Describe("upgrade share oids", func() {
 	var (
 		dir       string
-		hub       *hubServices.HubClient
+		hub       *hubServices.Hub
 		agent     *agentServices.AgentServer
 		hubExecer *testutils.FakeCommandExecer
 		agentPort int
 
 		outChan chan []byte
 		errChan chan error
+		stubRemoteExecutor *testutils.StubRemoteExecutor
 	)
 
 	BeforeEach(func() {
@@ -77,7 +78,8 @@ var _ = Describe("upgrade share oids", func() {
 			Err: errChan,
 		})
 
-		hub = hubServices.NewHub(&cluster.Pair{}, &reader, grpc.DialContext, hubExecer.Exec, conf)
+		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
+		hub = hubServices.NewHub(&cluster.Pair{}, &reader, grpc.DialContext, hubExecer.Exec, conf, stubRemoteExecutor)
 		go hub.Start()
 	})
 

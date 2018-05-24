@@ -20,13 +20,14 @@ import (
 
 var _ = Describe("status upgrade", func() {
 	var (
-		hub                      *services.HubClient
+		hub                      *services.Hub
 		fakeStatusUpgradeRequest *pb.StatusUpgradeRequest
 		dir                      string
 		commandExecer            *testutils.FakeCommandExecer
 		errChan                  chan error
 		outChan                  chan []byte
 		mockAgent                *testutils.MockAgentServer
+		stubRemoteExecutor *testutils.StubRemoteExecutor
 	)
 
 	BeforeEach(func() {
@@ -53,7 +54,8 @@ var _ = Describe("status upgrade", func() {
 			Err: errChan,
 			Out: outChan,
 		})
-		hub = services.NewHub(nil, &reader, grpc.DialContext, commandExecer.Exec, conf)
+		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
+		hub = services.NewHub(nil, &reader, grpc.DialContext, commandExecer.Exec, conf, stubRemoteExecutor)
 	})
 
 	AfterEach(func() {

@@ -44,7 +44,7 @@ var CONFIGQUERY6 = `SELECT
 	WHERE role = 'p'
 	ORDER BY content;`
 
-func (h *HubClient) CheckConfig(ctx context.Context,
+func (h *Hub) CheckConfig(ctx context.Context,
 	in *pb.CheckConfigRequest) (*pb.CheckConfigReply, error) {
 	gplog.Info("starting CheckConfig()")
 

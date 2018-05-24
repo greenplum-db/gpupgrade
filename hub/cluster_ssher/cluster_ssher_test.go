@@ -1,4 +1,4 @@
-package services_test
+package cluster_ssher_test
 
 import (
 	"os"
@@ -9,9 +9,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/greenplum-db/gpupgrade/hub/services"
-
 	"github.com/pkg/errors"
+	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
 )
 
 var _ = Describe("ClusterSsher", func() {
@@ -36,7 +35,7 @@ var _ = Describe("ClusterSsher", func() {
 			errChan <- errors.New("host not found")
 
 			cw := newSpyChecklistWriter()
-			clusterSsher := services.NewClusterSsher(cw, newSpyAgentPinger(), commandExecer.Exec)
+			clusterSsher := cluster_ssher.NewClusterSsher(cw, newSpyAgentPinger(), commandExecer.Exec)
 			clusterSsher.VerifySoftware([]string{"doesnt matter"})
 
 			Expect(cw.freshStateDirs).To(ContainElement("seginstall"))
@@ -49,7 +48,7 @@ var _ = Describe("ClusterSsher", func() {
 			outChan <- []byte("completed")
 
 			cw := newSpyChecklistWriter()
-			clusterSsher := services.NewClusterSsher(cw, newSpyAgentPinger(), commandExecer.Exec)
+			clusterSsher := cluster_ssher.NewClusterSsher(cw, newSpyAgentPinger(), commandExecer.Exec)
 			clusterSsher.VerifySoftware([]string{"doesnt matter"})
 
 			Expect(commandExecer.Command()).To(Equal("ssh"))
@@ -75,7 +74,7 @@ var _ = Describe("ClusterSsher", func() {
 			errChan <- errors.New("host not found")
 
 			cw := newSpyChecklistWriter()
-			clusterSsher := services.NewClusterSsher(cw, newSpyAgentPinger(), commandExecer.Exec)
+			clusterSsher := cluster_ssher.NewClusterSsher(cw, newSpyAgentPinger(), commandExecer.Exec)
 			clusterSsher.Start([]string{"doesnt matter"})
 
 			Expect(commandExecer.Command()).To(Equal("ssh"))

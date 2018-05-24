@@ -20,11 +20,12 @@ import (
 var _ = Describe("UpgradeShareOids", func() {
 	var (
 		reader        *testutils.SpyReader
-		hub           *services.HubClient
+		hub           *services.Hub
 		dir           string
 		commandExecer *testutils.FakeCommandExecer
 		errChan       chan error
 		outChan       chan []byte
+		stubRemoteExecutor *testutils.StubRemoteExecutor
 	)
 
 	BeforeEach(func() {
@@ -43,10 +44,10 @@ var _ = Describe("UpgradeShareOids", func() {
 			Err: errChan,
 			Out: outChan,
 		})
-
+		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
 		hub = services.NewHub(nil, reader, grpc.DialContext, commandExecer.Exec, &services.HubConfig{
 			StateDir: dir,
-		})
+		}, stubRemoteExecutor)
 	})
 
 	AfterEach(func() {
