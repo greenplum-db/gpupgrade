@@ -88,9 +88,11 @@ install_agent :
 				echo 'Successfully copied gpupgrade_agent to $(GPHOME) on all segments'; \
 			else \
 				echo 'Failed to copy gpupgrade_agent to $(GPHOME)'; \
+				exit 1; \
 			fi; \
 		else \
 			echo 'Database is not running, please start the database and run this make target again'; \
+			exit 1; \
 		fi; \
 		rm /tmp/seg_hosts
 
