@@ -59,6 +59,7 @@ var _ = Describe("prepare", func() {
 		hub = services.NewHub(&cluster.Pair{}, &reader, grpc.DialContext, commandExecer.Exec, conf, clusterSsher)
 
 		pgPort := os.Getenv("PGPORT")
+		Expect(pgPort).ToNot(Equal(""), "Please set PGPORT to a useful value and rerun the tests.")
 
 		clusterConfig := fmt.Sprintf(`{"SegConfig":[{
               "content": -1,
