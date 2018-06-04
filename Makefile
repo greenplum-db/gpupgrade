@@ -66,27 +66,23 @@ protobuf :
 		mockgen -source idl/hub_to_agent.pb.go  > mock_idl/hub_to_agent_mock.pb.go
 
 PACKAGES := $(addsuffix -package,agent cli hub)
+PREFIX = $($(OS)_PREFIX)
+POSTFIX = $($(OS)_POSTFIX)
 
-.PHONY: build $(PACKAGES)
+.PHONY: build build_linux build_mac $(PACKAGES)
 
 build: $(PACKAGES)
+
+build_linux: OS := LINUX
+build_mac: OS := MAC
+build_linux build_mac: build
 
 agent-package: EXE_NAME := $(AGENT)
 cli-package: EXE_NAME := $(CLI)
 hub-package: EXE_NAME := $(HUB)
 
 $(PACKAGES): %-package:
-	go build $(GOFLAGS) -o $(BIN_DIR)/$(EXE_NAME) -ldflags $(UPGRADE_VERSION_STR) github.com/greenplum-db/gpupgrade/$*
-
-build_linux :
-		$(LINUX_PREFIX) go build $(GOFLAGS) -o $(BIN_DIR)/$(AGENT)$(LINUX_POSTFIX) -ldflags $(UPGRADE_VERSION_STR) $(AGENT_PACKAGE)
-		$(LINUX_PREFIX) go build $(GOFLAGS) -o $(BIN_DIR)/$(CLI)$(LINUX_POSTFIX) -ldflags $(UPGRADE_VERSION_STR) $(CLI_PACKAGE)
-		$(LINUX_PREFIX) go build $(GOFLAGS) -o $(BIN_DIR)/$(HUB)$(LINUX_POSTFIX) -ldflags $(UPGRADE_VERSION_STR) $(HUB_PACKAGE)
-
-build_mac:
-		$(MAC_PREFIX) go build $(GOFLAGS) -o $(BIN_DIR)/$(AGENT)$(MAC_POSTFIX) -ldflags $(UPGRADE_VERSION_STR) $(AGENT_PACKAGE)
-		$(MAC_PREFIX) go build $(GOFLAGS) -o $(BIN_DIR)/$(CLI)$(MAC_POSTFIX) -ldflags $(UPGRADE_VERSION_STR) $(CLI_PACKAGE)
-		$(MAC_PREFIX) go build $(GOFLAGS) -o $(BIN_DIR)/$(HUB)$(MAC_POSTFIX) -ldflags $(UPGRADE_VERSION_STR) $(HUB_PACKAGE)
+	$(PREFIX) go build $(GOFLAGS) -o $(BIN_DIR)/$(EXE_NAME)$(POSTFIX) -ldflags $(UPGRADE_VERSION_STR) github.com/greenplum-db/gpupgrade/$*
 
 install_agent :
 		@psql -t -d template1 -c 'SELECT DISTINCT hostname FROM gp_segment_configuration WHERE content != -1' > /tmp/seg_hosts 2>/dev/null; \
