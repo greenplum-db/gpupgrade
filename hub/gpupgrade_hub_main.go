@@ -62,6 +62,14 @@ func main() {
 	RootCmd.PersistentFlags().StringVar(&logdir, "log-directory", "", "gpupgrade_hub log directory")
 
 	if err := RootCmd.Execute(); err != nil {
+		if gplog.GetLogger() == nil {
+			// In case we didn't get through RootCmd.Execute(), set up logging
+			// here. Otherwise we crash.
+			// XXX it'd be really nice to have a "ReinitializeLogging" building
+			// block somewhere.
+			gplog.InitializeLogging("gpupgrade_hub", "")
+		}
+
 		gplog.Error(err.Error())
 		os.Exit(1)
 	}
