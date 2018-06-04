@@ -84,7 +84,7 @@ hub-package: EXE_NAME := $(HUB)
 $(PACKAGES): %-package:
 	$(PREFIX) go build $(GOFLAGS) -o $(BIN_DIR)/$(EXE_NAME)$(POSTFIX) -ldflags $(UPGRADE_VERSION_STR) github.com/greenplum-db/gpupgrade/$*
 
-install_agent :
+install_agent: agent-package
 		@psql -t -d template1 -c 'SELECT DISTINCT hostname FROM gp_segment_configuration WHERE content != -1' > /tmp/seg_hosts 2>/dev/null; \
 		if [ $$? -eq 0 ]; then \
 			gpscp -f /tmp/seg_hosts $(BIN_DIR)/$(AGENT) =:$(GPHOME)/bin/$(AGENT); \
@@ -98,7 +98,7 @@ install_agent :
 		fi; \
 		rm /tmp/seg_hosts
 
-install : build install_agent
+install: cli-package hub-package install_agent
 		cp -p $(BIN_DIR)/$(CLI) $(GPHOME)/bin/$(CLI)
 		cp -p $(BIN_DIR)/$(HUB) $(GPHOME)/bin/$(HUB)
 
