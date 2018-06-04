@@ -65,10 +65,18 @@ protobuf :
 		mockgen -source idl/cli_to_hub.pb.go  > mock_idl/cli_to_hub_mock.pb.go
 		mockgen -source idl/hub_to_agent.pb.go  > mock_idl/hub_to_agent_mock.pb.go
 
-build :
-		go build $(GOFLAGS) -o $(BIN_DIR)/$(AGENT) -ldflags $(UPGRADE_VERSION_STR) $(AGENT_PACKAGE)
-		go build $(GOFLAGS) -o $(BIN_DIR)/$(CLI) -ldflags $(UPGRADE_VERSION_STR) $(CLI_PACKAGE)
-		go build $(GOFLAGS) -o $(BIN_DIR)/$(HUB) -ldflags $(UPGRADE_VERSION_STR) $(HUB_PACKAGE)
+PACKAGES := $(addsuffix -package,agent cli hub)
+
+.PHONY: build $(PACKAGES)
+
+build: $(PACKAGES)
+
+agent-package: EXE_NAME := $(AGENT)
+cli-package: EXE_NAME := $(CLI)
+hub-package: EXE_NAME := $(HUB)
+
+$(PACKAGES): %-package:
+	go build $(GOFLAGS) -o $(BIN_DIR)/$(EXE_NAME) -ldflags $(UPGRADE_VERSION_STR) github.com/greenplum-db/gpupgrade/$*
 
 build_linux :
 		$(LINUX_PREFIX) go build $(GOFLAGS) -o $(BIN_DIR)/$(AGENT)$(LINUX_POSTFIX) -ldflags $(UPGRADE_VERSION_STR) $(AGENT_PACKAGE)
