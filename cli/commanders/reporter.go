@@ -46,7 +46,7 @@ func (r *Reporter) OverallUpgradeStatus() error {
 	status, err := r.client.StatusUpgrade(context.Background(), &pb.StatusUpgradeRequest{})
 	if err != nil {
 		// find some way to expound on the error message? Integration test failing because we no longer log here
-		return errors.New("Unable to connect to hub: " + err.Error())
+		return errors.New("Failed to retrieve status from hub: " + err.Error())
 	}
 
 	if len(status.GetListOfUpgradeStepStatuses()) == 0 {
