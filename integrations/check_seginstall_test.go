@@ -1,17 +1,15 @@
 package integrations_test
 
 import (
-	"github.com/greenplum-db/gpupgrade/hub/cluster"
-	"github.com/greenplum-db/gpupgrade/hub/services"
-	pb "github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/testutils"
-
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
+	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
+	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/testutils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
@@ -30,14 +28,6 @@ var _ = Describe("check", func() {
 	BeforeEach(func() {
 		var err error
 
-		config := `"SegConfig":[{
-			"content": 2,
-			"dbid": 7,
-			"hostname": "localhost"
-		}],"BinDir":"/tmp/bin"`
-		testutils.WriteOldConfig(testStateDir, config)
-		testutils.WriteNewConfig(testStateDir, config)
-
 		port, err = testutils.GetOpenPort()
 		Expect(err).ToNot(HaveOccurred())
 
@@ -49,10 +39,6 @@ var _ = Describe("check", func() {
 			HubToAgentPort: agentPort,
 			StateDir:       testStateDir,
 		}
-		reader := &testutils.SpyReader{
-			Hostnames: []string{"localhost"},
-		}
-
 		outChan = make(chan []byte, 2)
 		errChan = make(chan error, 2)
 
@@ -67,7 +53,7 @@ var _ = Describe("check", func() {
 			services.NewPingerManager(conf.StateDir, 500*time.Millisecond),
 			commandExecer.Exec,
 		)
-		hub = services.NewHub(&cluster.Pair{}, reader, grpc.DialContext, commandExecer.Exec, conf, clusterSsher)
+		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, commandExecer.Exec, conf, clusterSsher)
 		go hub.Start()
 	})
 

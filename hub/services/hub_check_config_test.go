@@ -3,15 +3,15 @@ package services_test
 import (
 	"database/sql/driver"
 	"errors"
-	"io"
+	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 
 	"github.com/greenplum-db/gpupgrade/hub/services"
+	"github.com/greenplum-db/gpupgrade/utils"
 
+	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
-	"github.com/greenplum-db/gp-common-go-libs/operating"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -27,97 +27,103 @@ var _ = Describe("Hub check config", func() {
 		dir         string
 		err         error
 		oldBinDir   string
-		queryResult = `{"SegConfig":[{"address":"mdw","content":-1,"datadir":"/data/master/gpseg-1","dbid":1,"hostname":"mdw","mode":"s","status":"u","port":15432,"preferred_role":"p","role":"p"},` +
-			`{"address":"sdw1","content":0,"datadir":"/data/primary/gpseg-0","dbid":2,"hostname":"sdw1","mode":"s","status":"u","port":25432,"preferred_role":"p","role":"p"}],"BinDir":"/tmp"}`
+		queryResult = `{"SegConfigs":[{"DbID":1,"ContentID":-1,"Port":15432,"Hostname":"mdw","DataDir":"/data/master/gpseg-1"},` +
+			`{"DbID":2,"ContentID":0,"Port":25432,"Hostname":"sdw1","DataDir":"/data/primary/gpseg0"}],"BinDir":"/tmp"}`
+		clusterPair *services.ClusterPair
 	)
 
+	var expectedClusterPair *services.ClusterPair
 	BeforeEach(func() {
 		oldBinDir = "/tmp"
 		dbConnector, mock = testhelper.CreateAndConnectMockDB(1)
 		dir, err = ioutil.TempDir("", "")
 		Expect(err).ToNot(HaveOccurred())
-		operating.System = operating.InitializeSystemFunctions()
+		utils.System = utils.InitializeSystemFunctions()
+		clusterPair = &services.ClusterPair{}
+		expectedClusterPair = &services.ClusterPair{
+			OldCluster: &cluster.Cluster{
+				ContentIDs: []int{-1, 0},
+				Segments: map[int]cluster.SegConfig{
+					-1: {DbID: 1, ContentID: -1, Port: 15432, Hostname: "mdw", DataDir: "/data/master/gpseg-1"},
+					0:  {DbID: 2, ContentID: 0, Port: 25432, Hostname: "sdw1", DataDir: "/data/primary/gpseg0"},
+				},
+				Executor: &cluster.GPDBExecutor{},
+			},
+			OldBinDir: oldBinDir,
+		}
 	})
 
 	AfterEach(func() {
-		operating.System = operating.InitializeSystemFunctions()
+		utils.System = utils.InitializeSystemFunctions()
 	})
 
 	It("successfully writes config for GPDB 6", func() {
 		testhelper.SetDBVersion(dbConnector, "6.0.0")
 
-		configQuery := services.CONFIGQUERY6
-
-		mock.ExpectQuery(configQuery).WillReturnRows(getFakeConfigRows())
+		mock.ExpectQuery("SELECT .*").WillReturnRows(getFakeConfigRows())
 
 		fakeConfigFile := gbytes.NewBuffer()
 
-		operating.System.OpenFileWrite = func(name string, flag int, perm os.FileMode) (io.WriteCloser, error) {
-			return fakeConfigFile, nil
+		utils.System.WriteFile = func(filename string, data []byte, perm os.FileMode) error {
+			fmt.Fprint(fakeConfigFile, string(data))
+			ioutil.WriteFile(filename, data, perm)
+			return nil
 		}
 
-		err := services.SaveOldClusterConfig(dbConnector, dir, oldBinDir)
+		err := services.SaveOldClusterConfig(clusterPair, dbConnector, dir, oldBinDir)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(string(fakeConfigFile.Contents())).To(ContainSubstring(queryResult))
+		Expect(clusterPair).To(Equal(expectedClusterPair))
 	})
 
 	// The database is running, master-host is provided, and connection is successful
 	// writes the resulting rows according to however the provided writer does it
 	It("successfully writes config for GPDB 4 and 5", func() {
-		configQuery := services.CONFIGQUERY5
-
-		mock.ExpectQuery(configQuery).WillReturnRows(getFakeConfigRows())
+		mock.ExpectQuery("SELECT .*").WillReturnRows(getFakeConfigRows())
 
 		fakeConfigFile := gbytes.NewBuffer()
 
-		operating.System.OpenFileWrite = func(name string, flag int, perm os.FileMode) (io.WriteCloser, error) {
-			return fakeConfigFile, nil
+		utils.System.WriteFile = func(filename string, data []byte, perm os.FileMode) error {
+			fmt.Fprint(fakeConfigFile, string(data))
+			ioutil.WriteFile(filename, data, perm)
+			return nil
 		}
 
-		err := services.SaveOldClusterConfig(dbConnector, dir, oldBinDir)
+		err := services.SaveOldClusterConfig(clusterPair, dbConnector, dir, oldBinDir)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(string(fakeConfigFile.Contents())).To(ContainSubstring(queryResult))
+		Expect(clusterPair).To(Equal(expectedClusterPair))
 	})
 
-	It("fails to get config file handle", func() {
-		operating.System.OpenFileWrite = func(name string, flag int, perm os.FileMode) (io.WriteCloser, error) {
-			return nil, errors.New("failed to write config file")
+	It("fails to write file", func() {
+		utils.System.WriteFile = func(filename string, data []byte, perm os.FileMode) error {
+			return errors.New("failed to write config file")
 		}
 
-		err := services.SaveOldClusterConfig(dbConnector, dir, oldBinDir)
+		err := services.SaveOldClusterConfig(clusterPair, dbConnector, dir, oldBinDir)
 		Expect(err).To(HaveOccurred())
 	})
 
 	It("db.Select query for cluster config fails", func() {
-		configQuery := services.CONFIGQUERY5
-		mock.ExpectQuery(configQuery).WillReturnError(errors.New("fail config query"))
+		mock.ExpectQuery("SELECT .*").WillReturnError(errors.New("fail config query"))
 
-		operating.System.OpenFileWrite = func(name string, flag int, perm os.FileMode) (io.WriteCloser, error) {
-			return gbytes.NewBuffer(), nil
+		utils.System.WriteFile = func(filename string, data []byte, perm os.FileMode) error {
+			return nil
 		}
 
-		err := services.SaveOldClusterConfig(dbConnector, dir, oldBinDir)
+		err := services.SaveOldClusterConfig(clusterPair, dbConnector, dir, oldBinDir)
 		Expect(err).To(HaveOccurred())
-		Expect(err).To(MatchError("Unable to execute query " + configQuery + ". Err: fail config query"))
-	})
-
-	It("fails to save query result to file", func() {
-		// To force a write error in SaveQueryResultToJSON we create the file with read only mode
-		fileHandle, err := operating.System.OpenFileWrite(filepath.Join(dir, "readOnlyFile"), os.O_RDONLY|os.O_CREATE, 0400)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = services.SaveQueryResultToJSON(nil, fileHandle)
-		Expect(err).To(HaveOccurred())
+		Expect(err).To(MatchError("Unable to get segment configuration for old cluster: fail config query"))
 	})
 })
 
 // Construct sqlmock in-memory rows that are structured properly
 func getFakeConfigRows() *sqlmock.Rows {
-	header := []string{"address", "content", "datadir", "dbid", "hostname", "mode", "status", "port", "preferred_role", "role"}
-	fakeConfigRow := []driver.Value{"mdw", -1, "/data/master/gpseg-1", 1, "mdw", "s", "u", 15432, "p", "p"}
-	fakeConfigRow2 := []driver.Value{"sdw1", 0, "/data/primary/gpseg-0", 2, "sdw1", "s", "u", 25432, "p", "p"}
+	header := []string{"dbid", "contentid", "port", "hostname", "datadir"}
+	fakeConfigRow := []driver.Value{1, -1, 15432, "mdw", "/data/master/gpseg-1"}
+	fakeConfigRow2 := []driver.Value{2, 0, 25432, "sdw1", "/data/primary/gpseg0"}
 	rows := sqlmock.NewRows(header)
 	heapfakeResult := rows.AddRow(fakeConfigRow...).AddRow(fakeConfigRow2...)
 	return heapfakeResult

@@ -1,52 +1,20 @@
 package services
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
-	"os"
 
+	"github.com/greenplum-db/gp-common-go-libs/cluster"
+	"github.com/greenplum-db/gp-common-go-libs/dbconn"
+	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/greenplum-db/gpupgrade/db"
-	"github.com/greenplum-db/gpupgrade/hub/configutils"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
-
-	"github.com/greenplum-db/gp-common-go-libs/dbconn"
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
-	"github.com/greenplum-db/gp-common-go-libs/operating"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 )
 
-var CONFIGQUERY5 = `SELECT
-	s.content,
-	s.hostname,
-	e.fselocation as datadir,
-	s.dbid,
-	s.preferred_role,
-	s.role,
-	s.port
-	FROM gp_segment_configuration s
-	JOIN pg_filespace_entry e ON s.dbid = e.fsedbid
-	JOIN pg_filespace f ON e.fsefsoid = f.oid
-	WHERE s.role = 'p' AND f.fsname = 'pg_system'
-	ORDER BY s.content;`
-
-var CONFIGQUERY6 = `SELECT
-	content,
-	hostname,
-	datadir,
-	dbid,
-	preferred_role,
-	role,
-	port
-	FROM gp_segment_configuration
-	WHERE role = 'p'
-	ORDER BY content;`
-
-func (h *Hub) CheckConfig(ctx context.Context,
-	in *pb.CheckConfigRequest) (*pb.CheckConfigReply, error) {
+func (h *Hub) CheckConfig(ctx context.Context, in *pb.CheckConfigRequest) (*pb.CheckConfigReply, error) {
 	gplog.Info("starting CheckConfig()")
 
 	c := upgradestatus.NewChecklistManager(h.conf.StateDir)
@@ -71,7 +39,7 @@ func (h *Hub) CheckConfig(ctx context.Context,
 	}
 	dbConnector.Version.Initialize(dbConnector)
 
-	err = SaveOldClusterConfig(dbConnector, h.conf.StateDir, in.OldBinDir)
+	err = SaveOldClusterConfig(h.clusterPair, dbConnector, h.conf.StateDir, in.OldBinDir)
 	if err != nil {
 		c.MarkFailed(checkConfigStep)
 		gplog.Error(err.Error())
@@ -84,52 +52,15 @@ func (h *Hub) CheckConfig(ctx context.Context,
 	return successReply, nil
 }
 
-func SaveOldClusterConfig(dbConnector *dbconn.DBConn, stateDir string, oldBinDir string) error {
-	configQuery := CONFIGQUERY6
-	if dbConnector.Version.Before("6") {
-		configQuery = CONFIGQUERY5
-	}
-
-	configFile := configutils.GetConfigFilePath(stateDir)
-	configFileHandle, err := operating.System.OpenFileWrite(configFile, os.O_CREATE|os.O_WRONLY, 0700)
+func SaveOldClusterConfig(clusterPair *ClusterPair, dbConnector *dbconn.DBConn, stateDir string, oldBinDir string) error {
+	segConfigs, err := cluster.GetSegmentConfiguration(dbConnector)
 	if err != nil {
-		errMsg := fmt.Sprintf("Unable to write to config file %s. Err: %s", configFile, err.Error())
+		errMsg := fmt.Sprintf("Unable to get segment configuration for old cluster: %s", err.Error())
 		return errors.New(errMsg)
 	}
+	clusterPair.OldCluster = cluster.NewCluster(segConfigs)
+	clusterPair.OldBinDir = oldBinDir
 
-	segConfig := make(configutils.SegmentConfiguration, 0)
-	err = dbConnector.Select(&segConfig, configQuery)
-	if err != nil {
-		errMsg := fmt.Sprintf("Unable to execute query %s. Err: %s", configQuery, err.Error())
-		return errors.New(errMsg)
-	}
-
-	configJSON := &configutils.ClusterConfig{
-		SegConfig: segConfig,
-		BinDir:    oldBinDir,
-	}
-
-	err = SaveQueryResultToJSON(configJSON, configFileHandle)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// public for testing purposes
-func SaveQueryResultToJSON(structure interface{}, fileHandle io.WriteCloser) error {
-	byteArr, err := json.Marshal(structure)
-	if err != nil {
-		errMsg := fmt.Sprintf("Unable to marshal query results to JSON. Err: %s", err.Error())
-		return errors.New(errMsg)
-	}
-
-	_, err = fileHandle.Write(byteArr)
-	if err != nil {
-		errMsg := fmt.Sprintf("Unable to write query results to file. Err: %s", err.Error())
-		return errors.New(errMsg)
-	}
-
-	return nil
+	err = clusterPair.WriteOldConfig(stateDir)
+	return err
 }

@@ -9,12 +9,11 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	"github.com/greenplum-db/gpupgrade/hub/configutils"
 	"github.com/greenplum-db/gpupgrade/hub/services"
 
+	"github.com/greenplum-db/gpupgrade/utils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 var _ = Describe("hub pings agents test", func() {
@@ -28,7 +27,7 @@ var _ = Describe("hub pings agents test", func() {
 		ctrl = gomock.NewController(GinkgoT())
 		client = mockpb.NewMockAgentClient(ctrl)
 		pingerManager = &services.PingerManager{
-			RPCClients:       []configutils.ClientAndHostname{{Client: client, Hostname: "doesnotexist"}},
+			RPCClients:       []services.ClientAndHostname{{Client: client, Hostname: "doesnotexist"}},
 			NumRetries:       10,
 			PauseBeforeRetry: 1 * time.Millisecond,
 		}

@@ -4,15 +4,14 @@ import (
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	mockpb "github.com/greenplum-db/gpupgrade/mock_idl"
 
-	"github.com/greenplum-db/gpupgrade/hub/configutils"
 	"github.com/greenplum-db/gpupgrade/hub/services"
 
 	"github.com/golang/mock/gomock"
 
+	"github.com/greenplum-db/gpupgrade/utils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
-	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 var _ = Describe("object count tests", func() {
@@ -33,13 +32,13 @@ var _ = Describe("object count tests", func() {
 
 	Describe("GetDiskUsageFromSegmentHosts", func() {
 		It("returns err msg when unable to call CheckDiskSpaceOnAgents on segment host", func() {
-			var clients []configutils.ClientAndHostname
+			var clients []services.ClientAndHostname
 
 			client.EXPECT().CheckDiskSpaceOnAgents(
 				gomock.Any(),
 				&pb.CheckDiskSpaceRequestToAgent{},
 			).Return(&pb.CheckDiskSpaceReplyFromAgent{}, errors.New("couldn't connect to hub"))
-			clients = append(clients, configutils.ClientAndHostname{Client: client, Hostname: "doesnotexist"})
+			clients = append(clients, services.ClientAndHostname{Client: client, Hostname: "doesnotexist"})
 
 			messages := services.GetDiskSpaceFromSegmentHosts(clients)
 			Expect(len(messages)).To(Equal(1))
@@ -47,7 +46,7 @@ var _ = Describe("object count tests", func() {
 		})
 
 		It("lists filesystems above usage threshold", func() {
-			var clients []configutils.ClientAndHostname
+			var clients []services.ClientAndHostname
 
 			var expectedFilesystemsUsage []*pb.FileSysUsage
 			expectedFilesystemsUsage = append(expectedFilesystemsUsage, &pb.FileSysUsage{Filesystem: "first filesystem", Usage: 90.4})
@@ -57,7 +56,7 @@ var _ = Describe("object count tests", func() {
 				gomock.Any(),
 				&pb.CheckDiskSpaceRequestToAgent{},
 			).Return(&pb.CheckDiskSpaceReplyFromAgent{ListOfFileSysUsage: expectedFilesystemsUsage}, nil)
-			clients = append(clients, configutils.ClientAndHostname{Client: client, Hostname: "doesnotexist"})
+			clients = append(clients, services.ClientAndHostname{Client: client, Hostname: "doesnotexist"})
 
 			messages := services.GetDiskSpaceFromSegmentHosts(clients)
 			Expect(len(messages)).To(Equal(1))
@@ -65,7 +64,7 @@ var _ = Describe("object count tests", func() {
 		})
 
 		It("lists hosts for which all filesystems are below usage threshold", func() {
-			var clients []configutils.ClientAndHostname
+			var clients []services.ClientAndHostname
 
 			var expectedFilesystemsUsage []*pb.FileSysUsage
 			expectedFilesystemsUsage = append(expectedFilesystemsUsage, &pb.FileSysUsage{Filesystem: "first filesystem", Usage: 70.4})
@@ -75,7 +74,7 @@ var _ = Describe("object count tests", func() {
 				gomock.Any(),
 				&pb.CheckDiskSpaceRequestToAgent{},
 			).Return(&pb.CheckDiskSpaceReplyFromAgent{ListOfFileSysUsage: expectedFilesystemsUsage}, nil)
-			clients = append(clients, configutils.ClientAndHostname{Client: client, Hostname: "doesnotexist"})
+			clients = append(clients, services.ClientAndHostname{Client: client, Hostname: "doesnotexist"})
 
 			messages := services.GetDiskSpaceFromSegmentHosts(clients)
 			Expect(len(messages)).To(Equal(1))

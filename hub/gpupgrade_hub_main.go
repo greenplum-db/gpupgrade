@@ -3,19 +3,15 @@ package main
 import (
 	"os"
 	"os/exec"
-
-	"github.com/greenplum-db/gpupgrade/helpers"
-	"github.com/greenplum-db/gpupgrade/hub/cluster"
-	"github.com/greenplum-db/gpupgrade/hub/configutils"
-	"github.com/greenplum-db/gpupgrade/hub/services"
-	"github.com/greenplum-db/gpupgrade/utils"
-
 	"runtime/debug"
 	"time"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
+	"github.com/greenplum-db/gpupgrade/helpers"
 	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
+	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
+	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 )
@@ -39,20 +35,15 @@ func main() {
 				StateDir:       utils.GetStateDir(),
 				LogDir:         logdir,
 			}
-			reader := configutils.NewReader()
-
 			commandExecer := func(command string, vars ...string) helpers.Command {
 				return exec.Command(command, vars...)
 			}
-
-			clusterPair := cluster.NewClusterPair(conf.StateDir, commandExecer)
-
 			clusterSsher := cluster_ssher.NewClusterSsher(
 				upgradestatus.NewChecklistManager(conf.StateDir),
 				services.NewPingerManager(conf.StateDir, 500*time.Millisecond),
 				commandExecer,
 			)
-			hub := services.NewHub(clusterPair, &reader, grpc.DialContext, commandExecer, conf, clusterSsher)
+			hub := services.NewHub(&services.ClusterPair{}, grpc.DialContext, commandExecer, conf, clusterSsher)
 			hub.Start()
 
 			hub.Stop()

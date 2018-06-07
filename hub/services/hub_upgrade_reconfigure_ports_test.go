@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/greenplum-db/gpupgrade/hub/cluster"
+	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -21,12 +21,11 @@ import (
 
 var _ = Describe("UpgradeReconfigurePorts", func() {
 	var (
-		reader        *testutils.SpyReader
-		hub           *services.Hub
-		dir           string
-		commandExecer *testutils.FakeCommandExecer
-		errChan       chan error
-		outChan       chan []byte
+		hub                *services.Hub
+		dir                string
+		commandExecer      *testutils.FakeCommandExecer
+		errChan            chan error
+		outChan            chan []byte
 		stubRemoteExecutor *testutils.StubRemoteExecutor
 	)
 
@@ -44,9 +43,6 @@ var _ = Describe("UpgradeReconfigurePorts", func() {
 				return []byte(testutils.NEW_MASTER_JSON), nil
 			}
 		}
-		reader = &testutils.SpyReader{
-			Hostnames: []string{"hostone", "hosttwo"},
-		}
 
 		errChan = make(chan error, 2)
 		outChan = make(chan []byte, 2)
@@ -55,14 +51,10 @@ var _ = Describe("UpgradeReconfigurePorts", func() {
 			Err: errChan,
 			Out: outChan,
 		})
-		clusterPair := &cluster.Pair{
-			OldMasterPort:          25437,
-			NewMasterPort:          35437,
-			OldMasterDataDirectory: "/old/datadir",
-			NewMasterDataDirectory: "/new/datadir",
-		}
+		clusterPair := testutils.CreateSampleClusterPair()
+		clusterPair.OldCluster.Segments[1] = cluster.SegConfig{Hostname: "hosttwo"}
 		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
-		hub = services.NewHub(clusterPair, reader, grpc.DialContext, commandExecer.Exec, &services.HubConfig{
+		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, &services.HubConfig{
 			StateDir: dir,
 		}, stubRemoteExecutor)
 	})
@@ -79,7 +71,7 @@ var _ = Describe("UpgradeReconfigurePorts", func() {
 		Expect(commandExecer.Calls()[0]).To(ContainSubstring(fmt.Sprintf(services.SedAndMvString, 35437, 25437, "/new/datadir")))
 	})
 
-	It("returns err is reconfigure cmd fails", func() {
+	It("returns err if reconfigure cmd fails", func() {
 		errChan <- errors.New("boom")
 		reply, err := hub.UpgradeReconfigurePorts(nil, &pb.UpgradeReconfigurePortsRequest{})
 		Expect(reply).To(BeNil())

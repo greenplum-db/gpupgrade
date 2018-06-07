@@ -19,21 +19,16 @@ import (
 
 var _ = Describe("ConvertMasterHub", func() {
 	var (
-		dir           string
-		commandExecer *testutils.FakeCommandExecer
-		hub           *services.Hub
-		outChan       chan []byte
-		errChan       chan error
-		portChan      chan int
+		dir                string
+		commandExecer      *testutils.FakeCommandExecer
+		hub                *services.Hub
+		outChan            chan []byte
+		errChan            chan error
 		stubRemoteExecutor *testutils.StubRemoteExecutor
+		clusterPair        *services.ClusterPair
 	)
 
 	BeforeEach(func() {
-		portChan = make(chan int, 2)
-		reader := &testutils.SpyReader{
-			Port: portChan,
-		}
-
 		var err error
 		dir, err = ioutil.TempDir("", "")
 		Expect(err).ToNot(HaveOccurred())
@@ -48,9 +43,9 @@ var _ = Describe("ConvertMasterHub", func() {
 			Err: errChan,
 			Out: outChan,
 		})
-
+		clusterPair = testutils.CreateSampleClusterPair()
 		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
-		hub = services.NewHub(nil, reader, grpc.DialContext, commandExecer.Exec, conf, stubRemoteExecutor)
+		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, conf, stubRemoteExecutor)
 	})
 
 	AfterEach(func() {
@@ -59,9 +54,6 @@ var _ = Describe("ConvertMasterHub", func() {
 	})
 
 	It("returns with no error when convert master runs successfully", func() {
-		portChan <- 5432
-		portChan <- 6432
-
 		_, err := hub.UpgradeConvertMaster(nil, &pb.UpgradeConvertMasterRequest{
 			OldBinDir:  "/old/path/bin",
 			OldDataDir: "old/data/dir",
@@ -77,20 +69,8 @@ var _ = Describe("ConvertMasterHub", func() {
 			"unset PGHOST; unset PGPORT; cd " + pgupgrade_dir +
 				` && nohup /new/path/bin/pg_upgrade --old-bindir=/old/path/bin ` +
 				`--old-datadir=old/data/dir --new-bindir=/new/path/bin ` +
-				`--new-datadir=new/data/dir --old-port=5432 --new-port=6432 --dispatcher-mode --progress`,
+				`--new-datadir=new/data/dir --old-port=25437 --new-port=35437 --dispatcher-mode --progress`,
 		}))
-	})
-
-	It("returns an error when one master port cannot be found", func() {
-		portChan <- 5432
-
-		_, err := hub.UpgradeConvertMaster(nil, &pb.UpgradeConvertMasterRequest{
-			OldBinDir:  "/old/path/bin",
-			OldDataDir: "old/data/dir",
-			NewBinDir:  "/new/path/bin",
-			NewDataDir: "new/data/dir",
-		})
-		Expect(err).To(HaveOccurred())
 	})
 
 	It("returns an error when convert master fails", func() {

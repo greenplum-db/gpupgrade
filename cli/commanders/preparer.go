@@ -10,12 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/greenplum-db/gpupgrade/hub/configutils"
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 
+	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
-	"github.com/greenplum-db/gp-common-go-libs/operating"
 )
 
 type Preparer struct {
@@ -117,20 +116,9 @@ func DoInit(stateDir string, oldBinDir string) error {
 		return err
 	}
 
-	configFile := configutils.GetConfigFilePath(stateDir)
-	configFileHandle, err := operating.System.OpenFileWrite(configFile, os.O_CREATE|os.O_WRONLY, 0700)
-	if err != nil {
-		errMsg := fmt.Sprintf("Unable to write to config file %s. Err: %s", configFile, err.Error())
-		return errors.New(errMsg)
-	}
-	defer configFileHandle.Close()
-
-	segConfig := make(configutils.SegmentConfiguration, 0)
-
-	configJSON := &configutils.ClusterConfig{
-		SegConfig: segConfig,
-		BinDir:    oldBinDir,
-	}
-
-	return services.SaveQueryResultToJSON(configJSON, configFileHandle)
+	cp := &services.ClusterPair{}
+	cp.OldCluster = &cluster.Cluster{}
+	cp.OldCluster.ContentIDs = []int{}
+	cp.OldBinDir = oldBinDir
+	return cp.WriteOldConfig(stateDir)
 }

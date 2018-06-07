@@ -14,9 +14,10 @@ func (h *Hub) PrepareShutdownClusters(ctx context.Context, in *pb.PrepareShutdow
 	gplog.Info("starting PrepareShutdownClusters()")
 
 	// will be initialized for future uses also? We think so -- it should
-	if h.clusterPair.EitherPostmasterRunning() {
+	oldPostmasterRunning, newPostmasterRunning := h.clusterPair.EitherPostmasterRunning()
+	if oldPostmasterRunning || newPostmasterRunning {
 		pathToGpstopStateDir := path.Join(h.conf.StateDir, "gpstop")
-		go h.clusterPair.StopEverything(pathToGpstopStateDir)
+		go h.clusterPair.StopEverything(pathToGpstopStateDir, oldPostmasterRunning, newPostmasterRunning)
 	} else {
 		gplog.Info("PrepareShutdownClusters: neither postmaster was running, nothing to do")
 	}

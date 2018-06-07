@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/greenplum-db/gpupgrade/hub/configutils"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -22,19 +21,12 @@ func (h *Hub) CheckDiskSpace(ctx context.Context,
 
 	gplog.Info("starting CheckDiskSpace")
 	var replyMessages []string
-	reader := configutils.Reader{}
-	// We don't care whether this the old json vs the new json because we're
-	// just checking the hosts anyways.
-	reader.OfOldClusterConfig(h.conf.StateDir)
-	hostnames, err := reader.GetHostnames()
-	if err != nil {
-		return &pb.CheckDiskSpaceReply{}, err
-	}
-	var clients []configutils.ClientAndHostname
+	hostnames := h.clusterPair.GetHostnames()
+	var clients []ClientAndHostname
 	for i := 0; i < len(hostnames); i++ {
 		conn, err := grpc.Dial(hostnames[i]+":"+strconv.Itoa(h.conf.HubToAgentPort), grpc.WithInsecure())
 		if err == nil {
-			clients = append(clients, configutils.ClientAndHostname{Client: pb.NewAgentClient(conn), Hostname: hostnames[i]})
+			clients = append(clients, ClientAndHostname{Client: pb.NewAgentClient(conn), Hostname: hostnames[i]})
 			defer conn.Close()
 		} else {
 			gplog.Error(err.Error())
@@ -46,7 +38,7 @@ func (h *Hub) CheckDiskSpace(ctx context.Context,
 	return &pb.CheckDiskSpaceReply{SegmentFileSysUsage: replyMessages}, nil
 }
 
-func GetDiskSpaceFromSegmentHosts(clients []configutils.ClientAndHostname) []string {
+func GetDiskSpaceFromSegmentHosts(clients []ClientAndHostname) []string {
 	replyMessages := []string{}
 	for i := 0; i < len(clients); i++ {
 		reply, err := clients[i].Client.CheckDiskSpaceOnAgents(context.Background(),

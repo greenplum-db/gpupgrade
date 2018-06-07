@@ -2,9 +2,9 @@ package services
 
 import (
 	"fmt"
+	"sort"
 	"sync"
 
-	"github.com/greenplum-db/gpupgrade/hub/configutils"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -55,48 +55,37 @@ func (h *Hub) UpgradeConvertPrimaries(ctx context.Context, in *pb.UpgradeConvert
 
 func (h *Hub) getDataDirPairs() (map[string][]*pb.DataDirPair, error) {
 	dataDirPairMap := make(map[string][]*pb.DataDirPair)
-	h.configreader.OfOldClusterConfig(h.conf.StateDir)
-	oldConfig := h.configreader.GetSegmentConfiguration()
-
-	h.configreader.OfNewClusterConfig(h.conf.StateDir)
-	newConfig := h.configreader.GetSegmentConfiguration()
-
-	oldConfigMap := make(map[int]configutils.Segment)
-	for _, segment := range oldConfig {
-		if segment.PreferredRole == "p" && segment.Content != -1 {
-			oldConfigMap[segment.Content] = segment
+	oldContents := h.clusterPair.OldCluster.ContentIDs
+	newContents := h.clusterPair.NewCluster.ContentIDs
+	if len(oldContents) != len(newContents) {
+		return nil, fmt.Errorf("Content IDs do not match between old and new clusters")
+	}
+	sort.Ints(oldContents)
+	sort.Ints(newContents)
+	for i := range oldContents {
+		if oldContents[i] != newContents[i] {
+			return nil, fmt.Errorf("Content IDs do not match between old and new clusters")
 		}
 	}
 
-	newConfigMap := make(map[int]configutils.Segment)
-	for _, segment := range newConfig {
-		if segment.PreferredRole == "p" && segment.Content != -1 {
-			newConfigMap[segment.Content] = segment
+	for _, contentID := range h.clusterPair.OldCluster.ContentIDs {
+		if contentID == -1 {
+			continue
 		}
-	}
-
-	for contentID, oldSegment := range oldConfigMap {
-		newSegment, exists := newConfigMap[contentID]
-		if !exists {
-			return nil, fmt.Errorf("could not find "+
-				"new data directory to match with old data directory for content id %v", contentID)
+		oldSeg := h.clusterPair.OldCluster.Segments[contentID]
+		newSeg := h.clusterPair.NewCluster.Segments[contentID]
+		if oldSeg.Hostname != newSeg.Hostname {
+			return nil, fmt.Errorf("old and new primary segments with content ID %d do not have matching hostnames", contentID)
 		}
-
-		hostname := oldSegment.Hostname
-		if oldSegment.Hostname != newSegment.Hostname {
-			return nil, fmt.Errorf("old and new "+
-				"primary segments with content ID %v do not have matching hostnames", contentID)
-		}
-
 		dataPair := &pb.DataDirPair{
-			OldDataDir: oldSegment.Datadir,
-			NewDataDir: newSegment.Datadir,
-			OldPort:    int32(oldSegment.Port),
-			NewPort:    int32(newSegment.Port),
+			OldDataDir: oldSeg.DataDir,
+			NewDataDir: newSeg.DataDir,
+			OldPort:    int32(oldSeg.Port),
+			NewPort:    int32(newSeg.Port),
 			Content:    int32(contentID),
 		}
 
-		dataDirPairMap[hostname] = append(dataDirPairMap[hostname], dataPair)
+		dataDirPairMap[oldSeg.Hostname] = append(dataDirPairMap[oldSeg.Hostname], dataPair)
 	}
 
 	return dataDirPairMap, nil

@@ -45,7 +45,7 @@
     "operating",
     "testhelper"
   ]
-  revision = "59afcbb8e0ba298a796b2cd1537ec894b2a1d185"
+  revision = "e1ff11c5bc81a9412a4cf9484e0131c781fa031e"
 
 [[projects]]
   name = "github.com/inconshreveable/mousetrap"
@@ -95,7 +95,7 @@
     "reporters/stenographer/support/go-isatty",
     "types"
   ]
-  revision = "9008c7b79f9636c46a0a945141020124702f0ecf"
+  revision = "c73579c58881b5ba90d3b08f6ac59cb1c909d6dd"
 
 [[projects]]
   name = "github.com/onsi/gomega"
@@ -261,6 +261,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ab2c98b5a86507ca75156134223eb80792dfae2789c752b2c435bee9d11f51ca"
+  inputs-digest = "9d2dddd636005507f9f0f75f2a78aabdff8164d8de2eef4df01ddcd8e2edfc9c"
   solver-name = "gps-cdcl"
   solver-version = 1

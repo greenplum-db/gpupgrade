@@ -33,10 +33,7 @@ func (h *Hub) shareOidFiles() {
 		gplog.Error("error from MarkInProgress " + err.Error())
 	}
 
-	hostnames, err := h.configreader.GetHostnames()
-	if err != nil {
-		gplog.Error("error from reading config" + err.Error())
-	}
+	hostnames := h.clusterPair.GetHostnames()
 
 	user := "gpadmin"
 	rsyncFlags := "-rzpogt"

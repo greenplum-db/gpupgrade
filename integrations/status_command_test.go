@@ -2,11 +2,12 @@ package integrations_test
 
 import (
 	"os"
+	"time"
 
 	agentServices "github.com/greenplum-db/gpupgrade/agent/services"
-	"github.com/greenplum-db/gpupgrade/hub/cluster"
-	"github.com/greenplum-db/gpupgrade/hub/configutils"
-	"github.com/greenplum-db/gpupgrade/hub/services"
+	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
+	hubServices "github.com/greenplum-db/gpupgrade/hub/services"
+	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/testutils"
 
 	"github.com/onsi/gomega/gbytes"
@@ -21,10 +22,9 @@ import (
 
 var _ = Describe("status", func() {
 	var (
-		hub                *services.Hub
-		agent              *agentServices.AgentServer
-		commandExecer      *testutils.FakeCommandExecer
-		stubRemoteExecutor *testutils.StubRemoteExecutor
+		hub           *hubServices.Hub
+		agent         *agentServices.AgentServer
+		commandExecer *testutils.FakeCommandExecer
 	)
 
 	BeforeEach(func() {
@@ -45,18 +45,20 @@ var _ = Describe("status", func() {
 		port, err = testutils.GetOpenPort()
 		Expect(err).ToNot(HaveOccurred())
 
-		conf := &services.HubConfig{
+		conf := &hubServices.HubConfig{
 			CliToHubPort:   port,
 			HubToAgentPort: agentPort,
 			StateDir:       testStateDir,
 		}
-		reader := configutils.NewReader()
-
 		commandExecer = &testutils.FakeCommandExecer{}
 		commandExecer.SetOutput(&testutils.FakeCommand{})
 
-		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
-		hub = services.NewHub(&cluster.Pair{}, &reader, grpc.DialContext, commandExecer.Exec, conf, stubRemoteExecutor)
+		clusterSsher := cluster_ssher.NewClusterSsher(
+			upgradestatus.NewChecklistManager(conf.StateDir),
+			hubServices.NewPingerManager(conf.StateDir, 500*time.Millisecond),
+			commandExecer.Exec,
+		)
+		hub = hubServices.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, commandExecer.Exec, conf, clusterSsher)
 		go hub.Start()
 	})
 
@@ -68,20 +70,7 @@ var _ = Describe("status", func() {
 
 	Describe("conversion", func() {
 		It("Displays status information for all segments", func() {
-			config := `{"SegConfig":[{
-  			  "content": 2,
-  			  "dbid": 7,
-  			  "hostname": "localhost"
-  			},
-  			{
-  			  "content": -1,
-  			  "dbid": 1,
-  			  "hostname": "localhost"
-  			}],"BinDir":"/tmp"}`
-
-			testutils.WriteOldConfig(testStateDir, config)
-
-			pathToSegUpgrade := filepath.Join(testStateDir, "pg_upgrade", "seg-2")
+			pathToSegUpgrade := filepath.Join(testStateDir, "pg_upgrade", "seg-0")
 			err := os.MkdirAll(pathToSegUpgrade, 0700)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -94,7 +83,7 @@ var _ = Describe("status", func() {
 			Eventually(statusSession).Should(Exit(0))
 
 			Eventually(statusSession).Should(gbytes.Say("PENDING - DBID 1 - CONTENT ID -1 - MASTER - .+"))
-			Eventually(statusSession).Should(gbytes.Say("COMPLETE - DBID 7 - CONTENT ID 2 - PRIMARY - .+"))
+			Eventually(statusSession).Should(gbytes.Say("COMPLETE - DBID 2 - CONTENT ID 0 - PRIMARY - .+"))
 		})
 	})
 

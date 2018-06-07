@@ -1,30 +1,32 @@
 package services_test
 
 import (
+	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/testutils"
 
-	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 
+	"github.com/greenplum-db/gpupgrade/utils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 var _ = Describe("Hub", func() {
 	var (
-		reader *testutils.SpyReader
-		agentA *testutils.MockAgentServer
-		port   int
+		agentA             *testutils.MockAgentServer
+		port               int
 		stubRemoteExecutor *testutils.StubRemoteExecutor
+		clusterPair        *services.ClusterPair
 	)
 
 	BeforeEach(func() {
-		reader = &testutils.SpyReader{}
 		agentA, port = testutils.NewMockAgentServer()
 		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
+		clusterPair = &services.ClusterPair{
+			OldCluster: testutils.CreateSampleCluster(-1, 25437, "localhost", "/old/datadir"),
+		}
 	})
 
 	AfterEach(func() {
@@ -34,8 +36,7 @@ var _ = Describe("Hub", func() {
 
 	It("closes open connections when shutting down", func(done Done) {
 		defer close(done)
-		reader.Hostnames = []string{"localhost"}
-		hub := services.NewHub(nil, reader, grpc.DialContext, nil, &services.HubConfig{
+		hub := services.NewHub(clusterPair, grpc.DialContext, nil, &services.HubConfig{
 			HubToAgentPort: port,
 		}, stubRemoteExecutor)
 		go hub.Start()
@@ -54,8 +55,8 @@ var _ = Describe("Hub", func() {
 	})
 
 	It("retrieves the agent connections from the config file reader", func() {
-		reader.Hostnames = []string{"localhost", "localhost"}
-		hub := services.NewHub(nil, reader, grpc.DialContext, nil, &services.HubConfig{
+		clusterPair.OldCluster.Segments[1] = cluster.SegConfig{Hostname: "localhost"}
+		hub := services.NewHub(clusterPair, grpc.DialContext, nil, &services.HubConfig{
 			HubToAgentPort: port,
 		}, stubRemoteExecutor)
 
@@ -64,14 +65,10 @@ var _ = Describe("Hub", func() {
 
 		Eventually(func() connectivity.State { return conns[0].Conn.GetState() }).Should(Equal(connectivity.Ready))
 		Expect(conns[0].Hostname).To(Equal("localhost"))
-		Eventually(func() connectivity.State { return conns[1].Conn.GetState() }).Should(Equal(connectivity.Ready))
-		Expect(conns[1].Hostname).To(Equal("localhost"))
 	})
 
 	It("saves grpc connections for future calls", func() {
-		reader.Hostnames = []string{"localhost"}
-
-		hub := services.NewHub(nil, reader, grpc.DialContext, nil, &services.HubConfig{
+		hub := services.NewHub(clusterPair, grpc.DialContext, nil, &services.HubConfig{
 			HubToAgentPort: port,
 		}, stubRemoteExecutor)
 
@@ -87,8 +84,7 @@ var _ = Describe("Hub", func() {
 	})
 
 	It("returns an error if any connections have non-ready states", func() {
-		reader.Hostnames = []string{"localhost"}
-		hub := services.NewHub(nil, reader, grpc.DialContext, nil, &services.HubConfig{
+		hub := services.NewHub(clusterPair, grpc.DialContext, nil, &services.HubConfig{
 			HubToAgentPort: port,
 		}, stubRemoteExecutor)
 
@@ -105,8 +101,7 @@ var _ = Describe("Hub", func() {
 	})
 
 	It("returns an error if any connections have non-ready states when first dialing", func() {
-		reader.Hostnames = []string{"localhost"}
-		hub := services.NewHub(nil, reader, grpc.DialContext, nil, &services.HubConfig{
+		hub := services.NewHub(clusterPair, grpc.DialContext, nil, &services.HubConfig{
 			HubToAgentPort: port,
 		}, stubRemoteExecutor)
 
@@ -119,18 +114,10 @@ var _ = Describe("Hub", func() {
 	It("returns an error if the grpc dialer to the agent throws an error", func() {
 		agentA.Stop()
 
-		reader.Hostnames = []string{"example"}
-		hub := services.NewHub(nil, reader, grpc.DialContext, nil, &services.HubConfig{
+		clusterPair.OldCluster.Segments[0] = cluster.SegConfig{Hostname: "example"}
+		hub := services.NewHub(clusterPair, grpc.DialContext, nil, &services.HubConfig{
 			HubToAgentPort: port,
 		}, stubRemoteExecutor)
-
-		_, err := hub.AgentConns()
-		Expect(err).To(HaveOccurred())
-	})
-
-	It("returns an error if the config reader fails", func() {
-		reader.Err = errors.New("error occurred while getting hostnames")
-		hub := services.NewHub(nil, reader, nil, nil, &services.HubConfig{}, stubRemoteExecutor)
 
 		_, err := hub.AgentConns()
 		Expect(err).To(HaveOccurred())

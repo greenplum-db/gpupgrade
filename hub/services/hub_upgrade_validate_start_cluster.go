@@ -38,8 +38,7 @@ func (h *Hub) startNewCluster(newBinDir string, newDataDir string) {
 		return
 	}
 
-	commandArgs := fmt.Sprintf("PYTHONPATH=%s && %s/gpstart -a -d %s", os.Getenv("PYTHONPATH"), newBinDir, newDataDir)
-	_, err = h.commandExecer("bash", "-c", commandArgs).Output()
+	_, err = h.clusterPair.OldCluster.ExecuteLocalCommand(fmt.Sprintf("PYTHONPATH=%s && %s/gpstart -a -d %s", os.Getenv("PYTHONPATH"), newBinDir, newDataDir))
 	if err != nil {
 		gplog.Error(err.Error())
 		cmErr := c.MarkFailed("validate-start-cluster")

@@ -1,21 +1,16 @@
 package integrations_test
 
 import (
-	"fmt"
 	"os"
 	"strings"
 	"sync"
-
-	"github.com/greenplum-db/gpupgrade/hub/cluster"
-	"github.com/greenplum-db/gpupgrade/hub/configutils"
-	"github.com/greenplum-db/gpupgrade/hub/services"
-	pb "github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/testutils"
-
 	"time"
 
 	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
+	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
+	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/testutils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
@@ -42,8 +37,6 @@ var _ = Describe("prepare", func() {
 			HubToAgentPort: agentPort,
 			StateDir:       testStateDir,
 		}
-		reader := configutils.NewReader()
-
 		commandExecer = &testutils.FakeCommandExecer{}
 		commandExecer.SetOutput(&testutils.FakeCommand{})
 
@@ -52,24 +45,11 @@ var _ = Describe("prepare", func() {
 			services.NewPingerManager(conf.StateDir, 500*time.Millisecond),
 			commandExecer.Exec,
 		)
-		hub = services.NewHub(&cluster.Pair{}, &reader, grpc.DialContext, commandExecer.Exec, conf, clusterSsher)
+		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, commandExecer.Exec, conf, clusterSsher)
 
 		pgPort := os.Getenv("PGPORT")
 		Expect(pgPort).ToNot(Equal(""), "Please set PGPORT to a useful value and rerun the tests.")
 
-		clusterConfig := fmt.Sprintf(`{"SegConfig":[{
-              "content": -1,
-              "dbid": 1,
-              "hostname": "localhost",
-              "datadir": "%s",
-              "mode": "s",
-              "preferred_role": "m",
-              "role": "m",
-              "status": "u",
-              "port": %s
-        }],"BinDir":"/tmp"}`, testStateDir, pgPort)
-
-		testutils.WriteOldConfig(testStateDir, clusterConfig)
 		go hub.Start()
 	})
 

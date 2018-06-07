@@ -21,9 +21,9 @@ func (h *Hub) StatusConversion(ctx context.Context, in *pb.StatusConversionReque
 		var agentSegments []*pb.SegmentInfo
 		for _, segment := range segments[conn.Hostname] {
 			agentSegments = append(agentSegments, &pb.SegmentInfo{
-				Content: int32(segment.Content),
-				Dbid:    int32(segment.Dbid),
-				DataDir: segment.Datadir,
+				Content: int32(segment.ContentID),
+				Dbid:    int32(segment.DbID),
+				DataDir: segment.DataDir,
 			})
 		}
 

@@ -6,7 +6,10 @@ import (
 	"net"
 	"os"
 
-	"github.com/greenplum-db/gpupgrade/hub/configutils"
+	"github.com/greenplum-db/gp-common-go-libs/cluster"
+	"github.com/greenplum-db/gp-common-go-libs/dbconn"
+	"github.com/greenplum-db/gp-common-go-libs/testhelper"
+	"github.com/greenplum-db/gpupgrade/hub/services"
 )
 
 const (
@@ -80,6 +83,36 @@ func Check(msg string, e error) {
 	}
 }
 
+func CreateSampleCluster(contentID int, port int, hostname string, datadir string) *cluster.Cluster {
+	return &cluster.Cluster{
+		ContentIDs: []int{contentID},
+		Segments: map[int]cluster.SegConfig{
+			contentID: cluster.SegConfig{ContentID: contentID, Port: port, Hostname: hostname, DataDir: datadir},
+		},
+	}
+}
+
+func CreateSampleClusterPair() *services.ClusterPair {
+	cp := &services.ClusterPair{
+		OldCluster: CreateSampleCluster(-1, 25437, "hostone", "/old/datadir"),
+		NewCluster: CreateSampleCluster(-1, 35437, "", "/new/datadir"),
+	}
+	cp.OldCluster.Executor = &testhelper.TestExecutor{}
+	return cp
+}
+
+func InitClusterPairFromDB() *services.ClusterPair {
+	conn := dbconn.NewDBConnFromEnvironment("postgres")
+	conn.MustConnect(1)
+	conn.Version.Initialize(conn)
+	cp := &services.ClusterPair{}
+	cp.OldCluster = cluster.NewCluster(cluster.MustGetSegmentConfiguration(conn))
+	cp.OldBinDir = "/non/existent/path"
+	cp.NewCluster = cp.OldCluster
+	cp.NewBinDir = cp.OldBinDir
+	return cp
+}
+
 func WriteSampleConfig(base string) {
 	WriteOldConfig(base, SAMPLE_JSON)
 }
@@ -87,15 +120,15 @@ func WriteSampleConfig(base string) {
 func WriteOldConfig(base, jsonConfig string) {
 	err := os.MkdirAll(base, 0700)
 	Check("cannot create old sample dir", err)
-	err = ioutil.WriteFile(configutils.GetConfigFilePath(base), []byte(jsonConfig), 0600)
-	Check("cannot write old sample configutils", err)
+	err = ioutil.WriteFile(base+"cluster_config.json", []byte(jsonConfig), 0600)
+	Check("cannot write old sample config", err)
 }
 
 func WriteNewConfig(base, jsonConfig string) {
 	err := os.MkdirAll(base, 0700)
 	Check("cannot create new sample dir", err)
-	err = ioutil.WriteFile(configutils.GetNewClusterConfigFilePath(base), []byte(jsonConfig), 0600)
-	Check("cannot write new sample configutils", err)
+	err = ioutil.WriteFile(base+"new_cluster_config.json", []byte(jsonConfig), 0600)
+	Check("cannot write new sample config", err)
 }
 
 func GetOpenPort() (int, error) {

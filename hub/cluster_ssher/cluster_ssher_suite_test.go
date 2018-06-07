@@ -1,14 +1,14 @@
 package cluster_ssher
 
 import (
-"testing"
+	"testing"
 
-"github.com/greenplum-db/gpupgrade/utils"
+	"github.com/greenplum-db/gpupgrade/utils"
 
-"github.com/greenplum-db/gp-common-go-libs/testhelper"
+	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 
-. "github.com/onsi/ginkgo"
-. "github.com/onsi/gomega"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 func TestCommands(t *testing.T) {

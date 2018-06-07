@@ -5,9 +5,9 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/greenplum-db/gpupgrade/hub/cluster"
-	"github.com/greenplum-db/gpupgrade/hub/configutils"
+	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
 	"github.com/greenplum-db/gpupgrade/hub/services"
+	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/testutils"
 
 	. "github.com/onsi/ginkgo"
@@ -19,9 +19,8 @@ import (
 
 var _ = Describe("version command", func() {
 	var (
-		hub                *services.Hub
-		commandExecer      *testutils.FakeCommandExecer
-		stubRemoteExecutor *testutils.StubRemoteExecutor
+		hub           *services.Hub
+		commandExecer *testutils.FakeCommandExecer
 	)
 
 	BeforeEach(func() {
@@ -35,13 +34,15 @@ var _ = Describe("version command", func() {
 			HubToAgentPort: 6416,
 			StateDir:       testStateDir,
 		}
-		reader := configutils.NewReader()
-
 		commandExecer = &testutils.FakeCommandExecer{}
 		commandExecer.SetOutput(&testutils.FakeCommand{})
 
-		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
-		hub = services.NewHub(&cluster.Pair{}, &reader, grpc.DialContext, commandExecer.Exec, conf, stubRemoteExecutor)
+		clusterSsher := cluster_ssher.NewClusterSsher(
+			upgradestatus.NewChecklistManager(conf.StateDir),
+			services.NewPingerManager(conf.StateDir, 500*time.Millisecond),
+			commandExecer.Exec,
+		)
+		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, commandExecer.Exec, conf, clusterSsher)
 		go hub.Start()
 	})
 

@@ -34,6 +34,7 @@ type SystemFunctions struct {
 	Remove       func(name string) error
 	RemoveAll    func(name string) error
 	ReadFile     func(filename string) ([]byte, error)
+	WriteFile    func(filename string, data []byte, perm os.FileMode) error
 	Stat         func(name string) (os.FileInfo, error)
 	FilePathGlob func(pattern string) ([]string, error)
 	Create       func(name string) (*os.File, error)
@@ -55,6 +56,7 @@ func InitializeSystemFunctions() *SystemFunctions {
 		Stat:         os.Stat,
 		FilePathGlob: filepath.Glob,
 		ReadFile:     ioutil.ReadFile,
+		WriteFile:    ioutil.WriteFile,
 		Create:       os.Create,
 	}
 }

@@ -45,12 +45,7 @@ func (h *Hub) convertMaster(in *pb.UpgradeConvertMasterRequest) error {
 		return errors.New(errMsg)
 	}
 
-	oldMasterPort, newMasterPort, err := h.getMasterPorts()
-	if err != nil {
-		errMsg := fmt.Sprint("pg_upgrade failed to run: ", err)
-		gplog.Error(errMsg)
-		return errors.New(errMsg)
-	}
+	oldMasterPort, newMasterPort := h.clusterPair.GetMasterPorts()
 
 	upgradeCmdArgs := fmt.Sprintf("unset PGHOST; unset PGPORT; cd %s && nohup %s "+
 		"--old-bindir=%s --old-datadir=%s --new-bindir=%s --new-datadir=%s --old-port=%d --new-port=%d --dispatcher-mode --progress",
@@ -77,20 +72,4 @@ func (h *Hub) convertMaster(in *pb.UpgradeConvertMasterRequest) error {
 	gplog.Info("Found no errors when starting the upgrade")
 
 	return nil
-}
-
-func (h *Hub) getMasterPorts() (int, int, error) {
-	h.configreader.OfOldClusterConfig(h.conf.StateDir)
-	oldPort := h.configreader.GetPortForSegment(1)
-	if oldPort == -1 {
-		return -1, -1, errors.New("failed to get old port")
-	}
-
-	h.configreader.OfNewClusterConfig(h.conf.StateDir)
-	newPort := h.configreader.GetPortForSegment(1)
-	if newPort == -1 {
-		return -1, -1, errors.New("failed to get new port")
-	}
-
-	return oldPort, newPort, nil
 }

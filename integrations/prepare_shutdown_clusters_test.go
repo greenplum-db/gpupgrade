@@ -1,49 +1,33 @@
 package integrations_test
 
 import (
-	"strings"
+	"errors"
+	"time"
 
-	"github.com/greenplum-db/gpupgrade/hub/configutils"
+	"github.com/greenplum-db/gp-common-go-libs/testhelper"
+	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
 	"github.com/greenplum-db/gpupgrade/hub/services"
+	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
-
-	"fmt"
-
-	"github.com/greenplum-db/gpupgrade/hub/cluster"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 )
 
 var _ = Describe("prepare shutdown-clusters", func() {
 	var (
-		hub                *services.Hub
-		mockAgent          *testutils.MockAgentServer
-		commandExecer      *testutils.FakeCommandExecer
-		outChan            chan []byte
-		errChan            chan error
-		oldBinDir          string
-		newBinDir          string
-		stubRemoteExecutor *testutils.StubRemoteExecutor
+		hub           *services.Hub
+		mockAgent     *testutils.MockAgentServer
+		commandExecer *testutils.FakeCommandExecer
+		outChan       chan []byte
+		errChan       chan error
+		clusterPair   *services.ClusterPair
+		testExecutor  *testhelper.TestExecutor
 	)
 
 	BeforeEach(func() {
-		oldBinDir = "/old/tmp"
-		newBinDir = "/new/tmp"
-
-		config := `{"SegConfig":[{
-			  "datadir": "/some/data/dir",
-			  "content": -1,
-			  "dbid": 1,
-			  "hostname": "localhost",
-			  "port": 5432
-			}],"BinDir":"%s"}`
-
-		testutils.WriteOldConfig(testStateDir, fmt.Sprintf(config, oldBinDir))
-		testutils.WriteNewConfig(testStateDir, fmt.Sprintf(config, newBinDir))
 
 		var err error
 		port, err = testutils.GetOpenPort()
@@ -57,8 +41,6 @@ var _ = Describe("prepare shutdown-clusters", func() {
 			HubToAgentPort: agentPort,
 			StateDir:       testStateDir,
 		}
-		reader := configutils.NewReader()
-
 		outChan = make(chan []byte, 5)
 		errChan = make(chan error, 5)
 
@@ -67,15 +49,17 @@ var _ = Describe("prepare shutdown-clusters", func() {
 			Out: outChan,
 			Err: errChan,
 		})
-		clusterPair := cluster.NewClusterPair(testStateDir, commandExecer.Exec)
-
-		clusterPair.OldMasterPort = 25437
-		clusterPair.NewMasterPort = 35437
-		clusterPair.OldMasterDataDirectory = "/old/datadir"
-		clusterPair.NewMasterDataDirectory = "/new/datadir"
-
-		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
-		hub = services.NewHub(clusterPair, &reader, grpc.DialContext, commandExecer.Exec, conf, stubRemoteExecutor)
+		clusterPair = testutils.InitClusterPairFromDB()
+		testExecutor = &testhelper.TestExecutor{}
+		clusterPair.OldCluster.Executor = testExecutor
+		clusterPair.OldBinDir = "/tmpOld"
+		clusterPair.NewBinDir = "/tmpNew"
+		clusterSsher := cluster_ssher.NewClusterSsher(
+			upgradestatus.NewChecklistManager(conf.StateDir),
+			services.NewPingerManager(conf.StateDir, 500*time.Millisecond),
+			commandExecer.Exec,
+		)
+		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, conf, clusterSsher)
 		go hub.Start()
 	})
 
@@ -92,18 +76,14 @@ var _ = Describe("prepare shutdown-clusters", func() {
 
 		Expect(runStatusUpgrade()).To(ContainSubstring("PENDING - Shutdown clusters"))
 
-		commandExecer.SetOutput(&testutils.FakeCommand{
-			Out: outChan,
-			Err: errChan,
-		})
-		outChan <- []byte("pid1")
-
-		prepareShutdownClustersSession := runCommand("prepare", "shutdown-clusters", "--old-bindir", oldBinDir, "--new-bindir", newBinDir)
+		prepareShutdownClustersSession := runCommand("prepare", "shutdown-clusters", "--old-bindir", clusterPair.OldBinDir, "--new-bindir", clusterPair.NewBinDir)
 		Eventually(prepareShutdownClustersSession).Should(Exit(0))
 
-		allCalls := strings.Join(commandExecer.Calls(), "")
-		Expect(allCalls).To(ContainSubstring(oldBinDir + "/gpstop -a"))
-		Expect(allCalls).To(ContainSubstring(newBinDir + "/gpstop -a"))
+		Expect(testExecutor.NumExecutions).To(Equal(4))
+		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("pgrep"))
+		Expect(testExecutor.LocalCommands[1]).To(ContainSubstring("pgrep"))
+		Expect(testExecutor.LocalCommands[2]).To(ContainSubstring(clusterPair.OldBinDir + "/gpstop -a"))
+		Expect(testExecutor.LocalCommands[3]).To(ContainSubstring(clusterPair.NewBinDir + "/gpstop -a"))
 		Eventually(runStatusUpgrade).Should(ContainSubstring("COMPLETE - Shutdown clusters"))
 	})
 
@@ -112,22 +92,19 @@ var _ = Describe("prepare shutdown-clusters", func() {
 			Statuses: []string{},
 		}
 
-		commandExecer.SetOutput(&testutils.FakeCommand{
-			Out: outChan,
-			Err: errChan,
-		})
 		Expect(runStatusUpgrade()).To(ContainSubstring("PENDING - Shutdown clusters"))
 
-		errChan <- nil
-		errChan <- nil
-		errChan <- errors.New("start failed")
+		testExecutor.ErrorOnExecNum = 4
+		testExecutor.LocalError = errors.New("start failed")
 
-		prepareShutdownClustersSession := runCommand("prepare", "shutdown-clusters", "--old-bindir", oldBinDir, "--new-bindir", newBinDir)
+		prepareShutdownClustersSession := runCommand("prepare", "shutdown-clusters", "--old-bindir", clusterPair.OldBinDir, "--new-bindir", clusterPair.NewBinDir)
 		Eventually(prepareShutdownClustersSession).Should(Exit(0))
 
-		allCalls := strings.Join(commandExecer.Calls(), "")
-		Expect(allCalls).To(ContainSubstring(oldBinDir + "/gpstop -a"))
-		Expect(allCalls).To(ContainSubstring(newBinDir + "/gpstop -a"))
+		Expect(testExecutor.NumExecutions).To(Equal(4))
+		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("pgrep"))
+		Expect(testExecutor.LocalCommands[1]).To(ContainSubstring("pgrep"))
+		Expect(testExecutor.LocalCommands[2]).To(ContainSubstring(clusterPair.OldBinDir + "/gpstop -a"))
+		Expect(testExecutor.LocalCommands[3]).To(ContainSubstring(clusterPair.NewBinDir + "/gpstop -a"))
 		Eventually(runStatusUpgrade).Should(ContainSubstring("FAILED - Shutdown clusters"))
 	})
 

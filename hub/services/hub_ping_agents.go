@@ -1,8 +1,8 @@
 package services
 
 import (
-	"github.com/greenplum-db/gpupgrade/hub/configutils"
 	pb "github.com/greenplum-db/gpupgrade/idl"
+	"google.golang.org/grpc"
 
 	"time"
 
@@ -10,18 +10,46 @@ import (
 	"golang.org/x/net/context"
 )
 
+const (
+	// todo generalize to any host
+	port = "6416"
+)
+
+type ClientAndHostname struct {
+	Client   pb.AgentClient
+	Hostname string
+}
+
 type PingerManager struct {
-	RPCClients       []configutils.ClientAndHostname
+	RPCClients       []ClientAndHostname
 	NumRetries       int
 	PauseBeforeRetry time.Duration
 }
 
-func NewPingerManager(baseDir string, t time.Duration) *PingerManager {
-	rpcClients, err := configutils.GetClients(baseDir)
-	if err != nil {
-		return &PingerManager{}
+// nolint: unparam
+// We leave stateDir as an argument for now because it doesn't function correctly at the moment,
+// and we're going to refactor it later and we don't want to change all the calls now.
+func NewPingerManager(stateDir string, t time.Duration) *PingerManager {
+	// TODO: Do this *after* the hub exists
+	//rpcClients := GetClients(pair.GetHostnames())
+	//return &PingerManager{rpcClients, 10, t}
+	return &PingerManager{[]ClientAndHostname{}, 10, t}
+}
+
+func GetClients(hostnames []string) []ClientAndHostname {
+	var clients []ClientAndHostname
+	for i := 0; i < len(hostnames); i++ {
+		conn, err := grpc.Dial(hostnames[i]+":"+port, grpc.WithInsecure())
+		if err != nil {
+			gplog.Error(err.Error())
+		}
+		clientAndHost := ClientAndHostname{
+			Client:   pb.NewAgentClient(conn),
+			Hostname: hostnames[i],
+		}
+		clients = append(clients, clientAndHost)
 	}
-	return &PingerManager{rpcClients, 10, t}
+	return clients
 }
 
 func (agent *PingerManager) PingPollAgents() error {

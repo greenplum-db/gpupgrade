@@ -4,7 +4,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/greenplum-db/gpupgrade/hub/configutils"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -21,21 +20,25 @@ func (h *Hub) StatusUpgrade(ctx context.Context, in *pb.StatusUpgradeRequest) (*
 	// XXX why do we ignore the error?
 	checkconfigStatus, _ := checkconfigState.GetStatus()
 
-	prepareInitStatus, _ := GetPrepareNewClusterConfigStatus(h.conf.StateDir)
+	prepareInitStatus, _ := h.GetPrepareNewClusterConfigStatus()
 
 	seginstallStatePath := filepath.Join(h.conf.StateDir, "seginstall")
+	gplog.Debug("looking for seginstall state at %s", seginstallStatePath)
 	seginstallState := upgradestatus.NewStateCheck(seginstallStatePath, pb.UpgradeSteps_SEGINSTALL)
 	seginstallStatus, _ := seginstallState.GetStatus()
 
 	gpstopStatePath := filepath.Join(h.conf.StateDir, "gpstop")
+	gplog.Debug("looking for gpstop state at %s", gpstopStatePath)
 	clusterPair := upgradestatus.NewShutDownClusters(gpstopStatePath, h.commandExecer)
 	shutdownClustersStatus, _ := clusterPair.GetStatus()
 
 	pgUpgradePath := filepath.Join(h.conf.StateDir, "pg_upgrade")
-	convertMaster := upgradestatus.NewPGUpgradeStatusChecker(pgUpgradePath, h.configreader.GetMasterDataDir(), h.commandExecer)
+	gplog.Debug("looking for pg_upgrade state at %s", pgUpgradePath)
+	convertMaster := upgradestatus.NewPGUpgradeStatusChecker(pgUpgradePath, h.clusterPair.OldCluster.GetDirForContent(-1), h.commandExecer)
 	masterUpgradeStatus, _ := convertMaster.GetStatus()
 
 	startAgentsStatePath := filepath.Join(h.conf.StateDir, "start-agents")
+	gplog.Debug("looking for start-agents state at %s", startAgentsStatePath)
 	prepareStartAgentsState := upgradestatus.NewStateCheck(startAgentsStatePath, pb.UpgradeSteps_PREPARE_START_AGENTS)
 	startAgentsStatus, _ := prepareStartAgentsState.GetStatus()
 
@@ -83,9 +86,9 @@ func (h *Hub) StatusUpgrade(ctx context.Context, in *pb.StatusUpgradeRequest) (*
 	}, nil
 }
 
-func GetPrepareNewClusterConfigStatus(base string) (*pb.UpgradeStepStatus, error) {
+func (h *Hub) GetPrepareNewClusterConfigStatus() (*pb.UpgradeStepStatus, error) {
 	/* Treat all stat failures as cannot find file. Conceal worse failures atm.*/
-	_, err := utils.System.Stat(configutils.GetNewClusterConfigFilePath(base))
+	_, err := utils.System.Stat(GetNewConfigFilePath(h.conf.StateDir))
 
 	if err != nil {
 		gplog.Debug("%v", err)

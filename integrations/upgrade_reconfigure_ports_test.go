@@ -2,10 +2,11 @@ package integrations_test
 
 import (
 	"errors"
+	"time"
 
-	"github.com/greenplum-db/gpupgrade/hub/cluster"
-	"github.com/greenplum-db/gpupgrade/hub/configutils"
+	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
 	"github.com/greenplum-db/gpupgrade/hub/services"
+	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/testutils"
 
 	"google.golang.org/grpc"
@@ -22,9 +23,8 @@ var _ = Describe("upgrade reconfigure ports", func() {
 		hubExecer *testutils.FakeCommandExecer
 		agentPort int
 
-		outChan            chan []byte
-		errChan            chan error
-		stubRemoteExecutor *testutils.StubRemoteExecutor
+		outChan chan []byte
+		errChan chan error
 	)
 
 	BeforeEach(func() {
@@ -51,8 +51,6 @@ var _ = Describe("upgrade reconfigure ports", func() {
 			StateDir:       testStateDir,
 		}
 
-		reader := configutils.NewReader()
-
 		outChan = make(chan []byte, 10)
 		errChan = make(chan error, 10)
 		hubExecer = &testutils.FakeCommandExecer{}
@@ -61,8 +59,12 @@ var _ = Describe("upgrade reconfigure ports", func() {
 			Err: errChan,
 		})
 
-		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
-		hub = services.NewHub(&cluster.Pair{}, &reader, grpc.DialContext, hubExecer.Exec, conf, stubRemoteExecutor)
+		clusterSsher := cluster_ssher.NewClusterSsher(
+			upgradestatus.NewChecklistManager(conf.StateDir),
+			services.NewPingerManager(conf.StateDir, 500*time.Millisecond),
+			hubExecer.Exec,
+		)
+		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, hubExecer.Exec, conf, clusterSsher)
 		go hub.Start()
 	})
 

@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/greenplum-db/gpupgrade/helpers"
-	"github.com/greenplum-db/gpupgrade/hub/configutils"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 
+	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
@@ -23,20 +23,6 @@ var DialTimeout = 3 * time.Second
 
 type dialer func(ctx context.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error)
 
-type reader interface {
-	GetHostnames() ([]string, error)
-	GetSegmentConfiguration() configutils.SegmentConfiguration
-	OfOldClusterConfig(baseDir string)
-	OfNewClusterConfig(baseDir string)
-	GetMasterDataDir() string
-	GetPortForSegment(segmentDbid int) int
-}
-type pairOperator interface {
-	StopEverything(string)
-	GetPortsAndDataDirForReconfiguration() (int, int, string)
-	EitherPostmasterRunning() bool
-}
-
 type RemoteExecutor interface {
 	VerifySoftware(hosts []string)
 	Start(hosts []string)
@@ -46,8 +32,7 @@ type Hub struct {
 	conf *HubConfig
 
 	agentConns     []*Connection
-	clusterPair    pairOperator
-	configreader   reader
+	clusterPair    *ClusterPair
 	grpcDialer     dialer
 	commandExecer  helpers.CommandExecer
 	remoteExecutor RemoteExecutor
@@ -71,18 +56,13 @@ type HubConfig struct {
 	LogDir         string
 }
 
-func NewHub(pair pairOperator, configReader reader, grpcDialer dialer, execer helpers.CommandExecer, conf *HubConfig, executor RemoteExecutor) *Hub {
-	// refactor opportunity -- don't use this pattern,
-	// use different types or separate functions for old/new or set the config path at reader initialization time
-	configReader.OfOldClusterConfig(conf.StateDir)
-
+func NewHub(pair *ClusterPair, grpcDialer dialer, execer helpers.CommandExecer, conf *HubConfig, executor RemoteExecutor) *Hub {
 	h := &Hub{
-		stopped:       make(chan struct{}, 1),
-		conf:          conf,
-		clusterPair:   pair,
-		configreader:  configReader,
-		grpcDialer:    grpcDialer,
-		commandExecer: execer,
+		stopped:        make(chan struct{}, 1),
+		conf:           conf,
+		clusterPair:    pair,
+		grpcDialer:     grpcDialer,
+		commandExecer:  execer,
 		remoteExecutor: executor,
 	}
 
@@ -134,11 +114,7 @@ func (h *Hub) AgentConns() ([]*Connection, error) {
 		return h.agentConns, nil
 	}
 
-	hostnames, err := h.configreader.GetHostnames()
-	if err != nil {
-		gplog.Error("GetHostnames failed: ", err)
-		return nil, err
-	}
+	hostnames := h.clusterPair.GetHostnames()
 
 	for _, host := range hostnames {
 		ctx, cancelFunc := context.WithTimeout(context.Background(), DialTimeout)
@@ -191,14 +167,12 @@ func (h *Hub) closeConns() {
 	}
 }
 
-func (h *Hub) segmentsByHost() map[string]configutils.SegmentConfiguration {
-	segments := h.configreader.GetSegmentConfiguration()
-
-	segmentsByHost := make(map[string]configutils.SegmentConfiguration)
-	for _, segment := range segments {
+func (h *Hub) segmentsByHost() map[string][]cluster.SegConfig {
+	segmentsByHost := make(map[string][]cluster.SegConfig)
+	for _, segment := range h.clusterPair.OldCluster.Segments {
 		host := segment.Hostname
 		if len(segmentsByHost[host]) == 0 {
-			segmentsByHost[host] = []configutils.Segment{segment}
+			segmentsByHost[host] = []cluster.SegConfig{segment}
 		} else {
 			segmentsByHost[host] = append(segmentsByHost[host], segment)
 		}
