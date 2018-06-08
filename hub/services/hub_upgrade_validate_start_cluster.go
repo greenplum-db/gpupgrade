@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	pb "github.com/greenplum-db/gpupgrade/idl"
-
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
+	pb "github.com/greenplum-db/gpupgrade/idl"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/net/context"
@@ -22,7 +21,7 @@ func (h *Hub) UpgradeValidateStartCluster(ctx context.Context,
 }
 
 func (h *Hub) startNewCluster(newBinDir string, newDataDir string) {
-	gplog.Error(h.conf.StateDir)
+	gplog.Debug(h.conf.StateDir)
 	c := upgradestatus.NewChecklistManager(h.conf.StateDir)
 	err := c.ResetStateDir("validate-start-cluster")
 	if err != nil {

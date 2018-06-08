@@ -9,8 +9,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/pkg/errors"
 	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
+	"github.com/pkg/errors"
 )
 
 var _ = Describe("ClusterSsher", func() {
@@ -34,21 +34,21 @@ var _ = Describe("ClusterSsher", func() {
 			outChan <- []byte("stdout/stderr message")
 			errChan <- errors.New("host not found")
 
-			cw := newSpyChecklistWriter()
+			cw := testutils.NewMockChecklistManager()
 			clusterSsher := cluster_ssher.NewClusterSsher(cw, newSpyAgentPinger(), commandExecer.Exec)
+			Expect(cw.IsPending("seginstall")).To(BeTrue())
 			clusterSsher.VerifySoftware([]string{"doesnt matter"})
 
-			Expect(cw.freshStateDirs).To(ContainElement("seginstall"))
-			Expect(cw.stepsMarkedInProgress).To(ContainElement("seginstall"))
-			Expect(cw.stepsMarkedFailed).To(ContainElement("seginstall"))
-			Expect(cw.stepsMarkedCompleted).ToNot(ContainElement("seginstall"))
+			Expect(cw.WasReset("seginstall")).To(BeTrue())
+			Expect(cw.IsFailed("seginstall")).To(BeTrue())
 		})
 
 		It("indicates that it is in progress, completed on the hub filesystem", func() {
 			outChan <- []byte("completed")
 
-			cw := newSpyChecklistWriter()
+			cw := testutils.NewMockChecklistManager()
 			clusterSsher := cluster_ssher.NewClusterSsher(cw, newSpyAgentPinger(), commandExecer.Exec)
+			Expect(cw.IsPending("seginstall")).To(BeTrue())
 			clusterSsher.VerifySoftware([]string{"doesnt matter"})
 
 			Expect(commandExecer.Command()).To(Equal("ssh"))
@@ -61,10 +61,8 @@ var _ = Describe("ClusterSsher", func() {
 				pathToAgent,
 			}))
 
-			Expect(cw.freshStateDirs).To(ContainElement("seginstall"))
-			Expect(cw.stepsMarkedInProgress).To(ContainElement("seginstall"))
-			Expect(cw.stepsMarkedFailed).ToNot(ContainElement("seginstall"))
-			Expect(cw.stepsMarkedCompleted).To(ContainElement("seginstall"))
+			Expect(cw.WasReset("seginstall")).To(BeTrue())
+			Expect(cw.IsComplete("seginstall")).To(BeTrue())
 		})
 	})
 
@@ -73,8 +71,9 @@ var _ = Describe("ClusterSsher", func() {
 			outChan <- []byte("stdout/stderr message")
 			errChan <- errors.New("host not found")
 
-			cw := newSpyChecklistWriter()
+			cw := testutils.NewMockChecklistManager()
 			clusterSsher := cluster_ssher.NewClusterSsher(cw, newSpyAgentPinger(), commandExecer.Exec)
+			Expect(cw.IsPending("start-agents")).To(BeTrue())
 			clusterSsher.Start([]string{"doesnt matter"})
 
 			Expect(commandExecer.Command()).To(Equal("ssh"))
@@ -87,10 +86,8 @@ var _ = Describe("ClusterSsher", func() {
 				"sh -c '. " + pathToGreenplumPathScript + " ; nohup " + pathToAgent + " > /dev/null 2>&1 & '",
 			}))
 
-			Expect(cw.freshStateDirs).To(ContainElement("start-agents"))
-			Expect(cw.stepsMarkedInProgress).To(ContainElement("start-agents"))
-			Expect(cw.stepsMarkedFailed).ToNot(ContainElement("start-agents"))
-			Expect(cw.stepsMarkedCompleted).To(ContainElement("start-agents"))
+			Expect(cw.WasReset("start-agents")).To(BeTrue())
+			Expect(cw.IsComplete("start-agents")).To(BeTrue())
 		})
 	})
 })
@@ -102,36 +99,5 @@ func newSpyAgentPinger() *spyAgentPinger {
 }
 
 func (s *spyAgentPinger) PingPollAgents() error {
-	return nil
-}
-
-type spyChecklistWriter struct {
-	freshStateDirs        []string
-	stepsMarkedInProgress []string
-	stepsMarkedFailed     []string
-	stepsMarkedCompleted  []string
-}
-
-func newSpyChecklistWriter() *spyChecklistWriter {
-	return &spyChecklistWriter{}
-}
-
-func (s *spyChecklistWriter) MarkFailed(step string) error {
-	s.stepsMarkedFailed = append(s.stepsMarkedFailed, step)
-	return nil
-}
-
-func (s *spyChecklistWriter) MarkComplete(step string) error {
-	s.stepsMarkedCompleted = append(s.stepsMarkedCompleted, step)
-	return nil
-}
-
-func (s *spyChecklistWriter) MarkInProgress(step string) error {
-	s.stepsMarkedInProgress = append(s.stepsMarkedInProgress, step)
-	return nil
-}
-
-func (s *spyChecklistWriter) ResetStateDir(step string) error {
-	s.freshStateDirs = append(s.freshStateDirs, step)
 	return nil
 }

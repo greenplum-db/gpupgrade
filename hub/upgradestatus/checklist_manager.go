@@ -1,8 +1,9 @@
 package upgradestatus
 
 import (
-	"github.com/greenplum-db/gpupgrade/utils"
 	"path"
+
+	"github.com/greenplum-db/gpupgrade/utils"
 
 	"os"
 	"path/filepath"
