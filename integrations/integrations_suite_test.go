@@ -69,7 +69,8 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = BeforeEach(func() {
-	testWorkspaceDir, err := ioutil.TempDir("", "")
+	var err error
+	testWorkspaceDir, err = ioutil.TempDir("", "")
 	Expect(err).ToNot(HaveOccurred())
 	testStateDir = filepath.Join(testWorkspaceDir, ".gpupgrade")
 	os.Setenv("GPUPGRADE_HOME", testStateDir)
