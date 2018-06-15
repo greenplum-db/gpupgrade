@@ -2,9 +2,7 @@ package testutils
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
-	"os"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
@@ -13,35 +11,6 @@ import (
 )
 
 const (
-	SAMPLE_JSON = `{
-	"SegConfig": [{
-			"address": "briarwood",
-			"content": 2,
-			"datadir": "/Users/pivotal/workspace/gpdb/gpAux/gpdemo/datadirs/dbfast_mirror3/demoDataDir2",
-			"dbid": 7,
-			"hostname": "briarwood",
-			"mode": "s",
-			"port": 25437,
-			"preferred_role": "m",
-			"role": "m",
-			"status": "u"
-		},
-		{
-			"address": "aspen",
-			"content": 1,
-			"datadir": "/Users/pivotal/workspace/gpdb/gpAux/gpdemo/datadirs/dbfast_mirror2/demoDataDir1",
-			"dbid": 6,
-			"hostname": "aspen.pivotal",
-			"mode": "s",
-			"port": 25436,
-			"preferred_role": "m",
-			"role": "m",
-			"status": "u"
-		}
-	],
-	"BinDir": "/sample/tmp"}
-`
-
 	MASTER_ONLY_JSON = `{
 	"SegConfig": [{
 		"address": "briarwood",
@@ -111,24 +80,6 @@ func InitClusterPairFromDB() *services.ClusterPair {
 	cp.NewCluster = cp.OldCluster
 	cp.NewBinDir = cp.OldBinDir
 	return cp
-}
-
-func WriteSampleConfig(base string) {
-	WriteOldConfig(base, SAMPLE_JSON)
-}
-
-func WriteOldConfig(base, jsonConfig string) {
-	err := os.MkdirAll(base, 0700)
-	Check("cannot create old sample dir", err)
-	err = ioutil.WriteFile(base+"cluster_config.json", []byte(jsonConfig), 0600)
-	Check("cannot write old sample config", err)
-}
-
-func WriteNewConfig(base, jsonConfig string) {
-	err := os.MkdirAll(base, 0700)
-	Check("cannot create new sample dir", err)
-	err = ioutil.WriteFile(base+"new_cluster_config.json", []byte(jsonConfig), 0600)
-	Check("cannot write new sample config", err)
 }
 
 func GetOpenPort() (int, error) {

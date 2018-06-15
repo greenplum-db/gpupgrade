@@ -47,22 +47,6 @@ var _ = Describe("upgrade convert master", func() {
 		newBinDir, err = ioutil.TempDir("", "")
 		Expect(err).ToNot(HaveOccurred())
 
-		oldConfig := `[{
-			"dbid": 1,
-			"port": 5432,
-			"host": "localhost"
-		}]`
-
-		testutils.WriteOldConfig(testStateDir, oldConfig)
-
-		newConfig := `[{
-			"dbid": 1,
-			"port": 6432,
-			"host": "localhost"
-		}]`
-
-		testutils.WriteNewConfig(testStateDir, newConfig)
-
 		port, err = testutils.GetOpenPort()
 		Expect(err).ToNot(HaveOccurred())
 

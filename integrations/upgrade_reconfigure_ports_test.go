@@ -30,15 +30,6 @@ var _ = Describe("upgrade reconfigure ports", func() {
 	BeforeEach(func() {
 		var err error
 
-		config := `[{
-			"dbid": 1,
-			"port": 5432,
-			"host": "localhost"
-		}]`
-
-		testutils.WriteOldConfig(testStateDir, config)
-		testutils.WriteNewConfig(testStateDir, config)
-
 		agentPort, err = testutils.GetOpenPort()
 		Expect(err).ToNot(HaveOccurred())
 

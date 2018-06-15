@@ -42,22 +42,7 @@ var _ = Describe("upgrade convert primaries", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		segmentDataDir := os.Getenv("MASTER_DATA_DIRECTORY")
-		Expect(port).ToNot(Equal(""), "MASTER_DATA_DIRECTORY needs to be set!")
-
-		config := fmt.Sprintf(`[{
-			"content": 1,
-			"dbid": 2,
-			"hostname": "localhost",
-			"datadir": "%s",
-			"mode": "s",
-			"preferred_role": "p",
-			"role": "p",
-			"status": "u",
-			"port": 12345
-		}]`, segmentDataDir)
-
-		testutils.WriteOldConfig(testStateDir, config)
-		testutils.WriteNewConfig(testStateDir, config)
+		Expect(segmentDataDir).ToNot(Equal(""), "MASTER_DATA_DIRECTORY needs to be set!")
 
 		err = os.MkdirAll(filepath.Join(testStateDir, "pg_upgrade"), 0700)
 		Expect(err).ToNot(HaveOccurred())
