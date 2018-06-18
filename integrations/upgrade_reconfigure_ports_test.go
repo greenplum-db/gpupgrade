@@ -25,6 +25,7 @@ var _ = Describe("upgrade reconfigure ports", func() {
 
 		outChan chan []byte
 		errChan chan error
+		cm      *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -50,12 +51,13 @@ var _ = Describe("upgrade reconfigure ports", func() {
 			Err: errChan,
 		})
 
+		cm = testutils.NewMockChecklistManager()
 		clusterSsher := cluster_ssher.NewClusterSsher(
-			upgradestatus.NewChecklistManager(conf.StateDir),
+			cm,
 			services.NewPingerManager(conf.StateDir, 500*time.Millisecond),
 			hubExecer.Exec,
 		)
-		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, hubExecer.Exec, conf, clusterSsher)
+		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, hubExecer.Exec, conf, clusterSsher, cm)
 		go hub.Start()
 	})
 
@@ -67,25 +69,24 @@ var _ = Describe("upgrade reconfigure ports", func() {
 	})
 
 	It("updates status PENDING to COMPLETE if successful", func() {
-		Expect(runStatusUpgrade()).To(ContainSubstring("PENDING - Adjust upgrade cluster ports"))
+		Expect(cm.IsPending(upgradestatus.RECONFIGURE_PORTS)).To(BeTrue())
 
 		upgradeReconfigurePortsSession := runCommand("upgrade", "reconfigure-ports")
 		Eventually(upgradeReconfigurePortsSession).Should(Exit(0))
 
 		Expect(hubExecer.Calls()[0]).To(ContainSubstring("sed"))
 
-		Expect(runStatusUpgrade()).To(ContainSubstring("COMPLETE - Adjust upgrade cluster ports"))
+		Expect(cm.IsComplete(upgradestatus.RECONFIGURE_PORTS)).To(BeTrue())
 
 	})
 
 	It("updates status to FAILED if it fails to run", func() {
-		Expect(runStatusUpgrade()).To(ContainSubstring("PENDING - Adjust upgrade cluster ports"))
 
+		Expect(cm.IsPending(upgradestatus.RECONFIGURE_PORTS)).To(BeTrue())
 		errChan <- errors.New("fake test error, reconfigure-ports failed")
 
 		upgradeShareOidsSession := runCommand("upgrade", "reconfigure-ports")
 		Eventually(upgradeShareOidsSession).Should(Exit(1))
-
-		Eventually(runStatusUpgrade()).Should(ContainSubstring("FAILED - Adjust upgrade cluster ports"))
+		Expect(cm.IsFailed(upgradestatus.RECONFIGURE_PORTS)).To(BeTrue())
 	})
 })

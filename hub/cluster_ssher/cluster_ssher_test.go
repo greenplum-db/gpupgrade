@@ -29,7 +29,16 @@ var _ = Describe("ClusterSsher", func() {
 		})
 	})
 
-	Describe("VerifySoftware", func() {
+	// TODO: The story that is in charge of removing the cluster_ssher
+	// needs to:
+	// 1. move the VerifySoftware() into the hub_check_seginstall file.
+	// 2. rewrite these tests to use the checklist manager attached to the hub.
+	// 3. Use the localExecers attached to the clusters and not use the
+	//    commandExecer in clusterssher
+	// 4. rewrite these tests in hub_check_seginstall file.
+	// 5. same thing for the start-agents.
+
+	XDescribe("VerifySoftware", func() {
 		It("indicates that it is in progress, failed on the hub filesystem", func() {
 			outChan <- []byte("stdout/stderr message")
 			errChan <- errors.New("host not found")

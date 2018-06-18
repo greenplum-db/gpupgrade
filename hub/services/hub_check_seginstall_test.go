@@ -40,7 +40,7 @@ var _ = Describe("PrepareSeginstall", func() {
 			Err: errChan,
 			Out: outChan,
 		})
-		hub = services.NewHub(testutils.CreateSampleClusterPair(), grpc.DialContext, commandExecer.Exec, conf, stubRemoteExecutor)
+		hub = services.NewHub(testutils.CreateSampleClusterPair(), grpc.DialContext, commandExecer.Exec, conf, stubRemoteExecutor, testutils.NewMockChecklistManager())
 	})
 
 	Describe("CheckSeginstall", func() {

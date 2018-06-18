@@ -21,16 +21,16 @@ func (h *Hub) UpgradeShareOids(ctx context.Context, in *pb.UpgradeShareOidsReque
 }
 
 func (h *Hub) shareOidFiles() {
-	c := upgradestatus.NewChecklistManager(h.conf.StateDir)
-	shareOidsStep := "share-oids"
 
-	err := c.ResetStateDir(shareOidsStep)
+	err := h.checklistWriter.ResetStateDir(upgradestatus.SHARE_OIDS)
 	if err != nil {
 		gplog.Error("error from ResetStateDir " + err.Error())
+		return
 	}
-	err = c.MarkInProgress(shareOidsStep)
+	err = h.checklistWriter.MarkInProgress(upgradestatus.SHARE_OIDS)
 	if err != nil {
 		gplog.Error("error from MarkInProgress " + err.Error())
+		return
 	}
 
 	hostnames := h.clusterPair.GetHostnames()
@@ -54,12 +54,19 @@ func (h *Hub) shareOidFiles() {
 				out = string(output)
 			}
 			gplog.Error("share oids failed %s: %s", out, err)
-
-			c.MarkFailed(shareOidsStep)
 			anyFailed = true
 		}
 	}
-	if !anyFailed {
-		c.MarkComplete(shareOidsStep)
+	if anyFailed {
+		h.checklistWriter.MarkFailed(upgradestatus.SHARE_OIDS)
+		if err != nil {
+			gplog.Error("error from MarkFailed " + err.Error())
+		}
+	} else {
+		h.checklistWriter.MarkComplete(upgradestatus.SHARE_OIDS)
+		if err != nil {
+			gplog.Error("error from MarkComplete " + err.Error())
+		}
 	}
+
 }

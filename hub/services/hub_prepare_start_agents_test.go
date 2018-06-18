@@ -21,6 +21,7 @@ var _ = Describe("PrepareStartAgents", func() {
 		outChan            chan []byte
 		errChan            chan error
 		hub                *services.Hub
+		cm                 *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -38,8 +39,9 @@ var _ = Describe("PrepareStartAgents", func() {
 			Err: errChan,
 			Out: outChan,
 		})
+		cm := testutils.NewMockChecklistManager()
 		clusterPair := testutils.CreateSampleClusterPair()
-		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, conf, stubRemoteExecutor)
+		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, conf, stubRemoteExecutor, cm)
 	})
 
 	Describe("PrepareStartAgents", func() {

@@ -36,9 +36,11 @@ var _ = Describe("Hub", func() {
 
 	It("closes open connections when shutting down", func(done Done) {
 		defer close(done)
-		hub := services.NewHub(clusterPair, grpc.DialContext, nil, &services.HubConfig{
+		hubConfig := &services.HubConfig{
 			HubToAgentPort: port,
-		}, stubRemoteExecutor)
+		}
+		hub := services.NewHub(clusterPair, grpc.DialContext, nil, hubConfig,
+			stubRemoteExecutor, nil)
 		go hub.Start()
 
 		By("creating connections")
@@ -56,9 +58,11 @@ var _ = Describe("Hub", func() {
 
 	It("retrieves the agent connections from the config file reader", func() {
 		clusterPair.OldCluster.Segments[1] = cluster.SegConfig{Hostname: "localhost"}
-		hub := services.NewHub(clusterPair, grpc.DialContext, nil, &services.HubConfig{
+		hubConfig := &services.HubConfig{
 			HubToAgentPort: port,
-		}, stubRemoteExecutor)
+		}
+		hub := services.NewHub(clusterPair, grpc.DialContext, nil, hubConfig,
+			stubRemoteExecutor, nil)
 
 		conns, err := hub.AgentConns()
 		Expect(err).ToNot(HaveOccurred())
@@ -68,9 +72,11 @@ var _ = Describe("Hub", func() {
 	})
 
 	It("saves grpc connections for future calls", func() {
-		hub := services.NewHub(clusterPair, grpc.DialContext, nil, &services.HubConfig{
+		hubConfig := &services.HubConfig{
 			HubToAgentPort: port,
-		}, stubRemoteExecutor)
+		}
+		hub := services.NewHub(clusterPair, grpc.DialContext, nil, hubConfig,
+			stubRemoteExecutor, nil)
 
 		newConns, err := hub.AgentConns()
 		Expect(err).ToNot(HaveOccurred())
@@ -84,9 +90,11 @@ var _ = Describe("Hub", func() {
 	})
 
 	It("returns an error if any connections have non-ready states", func() {
-		hub := services.NewHub(clusterPair, grpc.DialContext, nil, &services.HubConfig{
+		hubConfig := &services.HubConfig{
 			HubToAgentPort: port,
-		}, stubRemoteExecutor)
+		}
+		hub := services.NewHub(clusterPair, grpc.DialContext, nil, hubConfig,
+			stubRemoteExecutor, nil)
 
 		conns, err := hub.AgentConns()
 		Expect(err).ToNot(HaveOccurred())
@@ -101,9 +109,11 @@ var _ = Describe("Hub", func() {
 	})
 
 	It("returns an error if any connections have non-ready states when first dialing", func() {
-		hub := services.NewHub(clusterPair, grpc.DialContext, nil, &services.HubConfig{
+		hubConfig := &services.HubConfig{
 			HubToAgentPort: port,
-		}, stubRemoteExecutor)
+		}
+		hub := services.NewHub(clusterPair, grpc.DialContext, nil, hubConfig,
+			stubRemoteExecutor, nil)
 
 		agentA.Stop()
 
@@ -115,9 +125,11 @@ var _ = Describe("Hub", func() {
 		agentA.Stop()
 
 		clusterPair.OldCluster.Segments[0] = cluster.SegConfig{Hostname: "example"}
-		hub := services.NewHub(clusterPair, grpc.DialContext, nil, &services.HubConfig{
+		hubConfig := &services.HubConfig{
 			HubToAgentPort: port,
-		}, stubRemoteExecutor)
+		}
+		hub := services.NewHub(clusterPair, grpc.DialContext, nil, hubConfig,
+			stubRemoteExecutor, nil)
 
 		_, err := hub.AgentConns()
 		Expect(err).To(HaveOccurred())

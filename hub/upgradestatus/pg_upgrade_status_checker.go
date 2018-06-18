@@ -11,6 +11,7 @@ import (
 	"regexp"
 
 	"fmt"
+
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 )
 
@@ -60,7 +61,6 @@ func (c *ConvertMaster) GetStatus() *pb.UpgradeStepStatus {
 		}
 		return masterUpgradeStatus
 	}
-
 	masterUpgradeStatus = &pb.UpgradeStepStatus{
 		Step:   pb.UpgradeSteps_MASTERUPGRADE,
 		Status: pb.StepStatus_FAILED,

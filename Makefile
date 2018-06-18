@@ -20,7 +20,7 @@ MAC_PREFIX := env GOOS=darwin GOARCH=amd64
 LINUX_POSTFIX := .linux.$(BRANCH)
 MAC_POSTFIX := .darwin.$(BRANCH)
 
-GOFLAGS :=
+GOFLAGS := -gcflags="all=-N -l"
 
 dependencies :
 		go get -u github.com/golang/protobuf/protoc-gen-go

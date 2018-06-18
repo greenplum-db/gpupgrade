@@ -68,6 +68,15 @@ func shutdownStatus(s Step, h *Hub) *pb.UpgradeStepStatus {
 
 // pgUpgradeStatus checks the pg_upgrade progress files for its status.
 func pgUpgradeStatus(s Step, h *Hub) *pb.UpgradeStepStatus {
+	status := &pb.UpgradeStepStatus{
+		Step: s.StepCode,
+	}
+	// We don't need to check the pg_upgrade status if there's no configuration yet
+	checkConfigStep := Step{upgradestatus.CONFIG, pb.UpgradeSteps_CHECK_CONFIG, stateCheckStatus}
+	if checkConfigStep.getStatus(checkConfigStep, h).Status != pb.StepStatus_COMPLETE {
+		status.Status = pb.StepStatus_PENDING
+		return status
+	}
 	state := upgradestatus.NewPGUpgradeStatusChecker(s.StatePath(h), h.clusterPair.OldCluster.GetDirForContent(-1), h.commandExecer)
 	return state.GetStatus()
 }
@@ -75,14 +84,23 @@ func pgUpgradeStatus(s Step, h *Hub) *pb.UpgradeStepStatus {
 // conversionStatus queries all segments for their upgrade status and
 // consolidates them into a single pass/fail.
 func conversionStatus(s Step, h *Hub) *pb.UpgradeStepStatus {
-	// FIXME: this status query involves RPC communication; we should almost
-	// certainly not be ignoring an error here.
-	conversionStatus, _ := h.StatusConversion(nil, &pb.StatusConversionRequest{})
 	status := &pb.UpgradeStepStatus{
 		Step: s.StepCode,
 	}
-
-	statuses := strings.Join(conversionStatus.GetConversionStatuses(), " ")
+	// We can't check the status of agent processes if the agents haven't been started yet
+	startAgentsStep := Step{upgradestatus.START_AGENTS, pb.UpgradeSteps_PREPARE_START_AGENTS, stateCheckStatus}
+	if startAgentsStep.getStatus(startAgentsStep, h).Status != pb.StepStatus_COMPLETE {
+		status.Status = pb.StepStatus_PENDING
+		return status
+	}
+	// We can't determine the actual status if there's an error, so we log it and return PENDING
+	conversionStatus, err := h.StatusConversion(nil, &pb.StatusConversionRequest{})
+	if err != nil {
+		gplog.Error("Could not get primary conversion status: %s", err)
+		status.Status = pb.StepStatus_PENDING
+		return status
+	}
+	statuses := strings.Join(conversionStatus.GetConversionStatuses(), "\n")
 	if strings.Contains(statuses, "FAILED") {
 		status.Status = pb.StepStatus_FAILED
 	} else if strings.Contains(statuses, "RUNNING") {
@@ -114,6 +132,7 @@ func (h *Hub) StatusUpgrade(ctx context.Context, in *pb.StatusUpgradeRequest) (*
 	statuses := make([]*pb.UpgradeStepStatus, len(steps))
 
 	for i, desc := range steps {
+		gplog.Info("Checking %s...", desc.Name)
 		statuses[i] = desc.Status(h)
 	}
 

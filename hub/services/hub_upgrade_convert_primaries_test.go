@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io/ioutil"
 
+	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -19,16 +20,16 @@ import (
 
 var _ = Describe("hub.UpgradeConvertPrimaries()", func() {
 	var (
-		dir                string
-		commandExecer      *testutils.FakeCommandExecer
-		hub                *services.Hub
-		mockAgent          *testutils.MockAgentServer
-		port               int
-		request            *pb.UpgradeConvertPrimariesRequest
-		oldCluster         *cluster.Cluster
-		newCluster         *cluster.Cluster
-		clusterPair        *services.ClusterPair
-		stubRemoteExecutor *testutils.StubRemoteExecutor
+		dir           string
+		commandExecer *testutils.FakeCommandExecer
+		hub           *services.Hub
+		mockAgent     *testutils.MockAgentServer
+		port          int
+		request       *pb.UpgradeConvertPrimariesRequest
+		oldCluster    *cluster.Cluster
+		newCluster    *cluster.Cluster
+		clusterPair   *services.ClusterPair
+		cm            *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -72,8 +73,9 @@ var _ = Describe("hub.UpgradeConvertPrimaries()", func() {
 		commandExecer = &testutils.FakeCommandExecer{}
 		commandExecer.SetOutput(&testutils.FakeCommand{})
 
-		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
-		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, conf, stubRemoteExecutor)
+		cm = testutils.NewMockChecklistManager()
+		clusterSsher := cluster_ssher.NewClusterSsher(cm, nil, nil)
+		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, conf, clusterSsher, cm)
 	})
 	AfterEach(func() {
 		utils.System = utils.InitializeSystemFunctions()

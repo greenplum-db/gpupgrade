@@ -27,6 +27,7 @@ var _ = Describe("UpgradeReconfigurePorts", func() {
 		errChan            chan error
 		outChan            chan []byte
 		stubRemoteExecutor *testutils.StubRemoteExecutor
+		cm                 *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -54,9 +55,12 @@ var _ = Describe("UpgradeReconfigurePorts", func() {
 		clusterPair := testutils.CreateSampleClusterPair()
 		clusterPair.OldCluster.Segments[1] = cluster.SegConfig{Hostname: "hosttwo"}
 		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
-		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, &services.HubConfig{
+		hubConfig := &services.HubConfig{
 			StateDir: dir,
-		}, stubRemoteExecutor)
+		}
+		cm = testutils.NewMockChecklistManager()
+		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec,
+			hubConfig, stubRemoteExecutor, cm)
 	})
 
 	AfterEach(func() {

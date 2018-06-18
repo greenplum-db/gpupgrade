@@ -23,6 +23,7 @@ var _ = Describe("hub", func() {
 		agentA             *testutils.MockAgentServer
 		stubRemoteExecutor *testutils.StubRemoteExecutor
 		clusterPair        *services.ClusterPair
+		cm                 *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -42,7 +43,8 @@ var _ = Describe("hub", func() {
 		}
 		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
 
-		hub = services.NewHub(clusterPair, grpc.DialContext, nil, conf, stubRemoteExecutor)
+		cm := testutils.NewMockChecklistManager()
+		hub = services.NewHub(clusterPair, grpc.DialContext, nil, conf, stubRemoteExecutor, cm)
 	})
 
 	AfterEach(func() {

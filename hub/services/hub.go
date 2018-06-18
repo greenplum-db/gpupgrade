@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/greenplum-db/gpupgrade/helpers"
+	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
@@ -31,11 +32,12 @@ type RemoteExecutor interface {
 type Hub struct {
 	conf *HubConfig
 
-	agentConns     []*Connection
-	clusterPair    *ClusterPair
-	grpcDialer     dialer
-	commandExecer  helpers.CommandExecer
-	remoteExecutor RemoteExecutor
+	agentConns      []*Connection
+	clusterPair     *ClusterPair
+	grpcDialer      dialer
+	commandExecer   helpers.CommandExecer
+	remoteExecutor  RemoteExecutor
+	checklistWriter cluster_ssher.ChecklistWriter
 
 	mu      sync.Mutex
 	server  *grpc.Server
@@ -56,14 +58,15 @@ type HubConfig struct {
 	LogDir         string
 }
 
-func NewHub(pair *ClusterPair, grpcDialer dialer, execer helpers.CommandExecer, conf *HubConfig, executor RemoteExecutor) *Hub {
+func NewHub(pair *ClusterPair, grpcDialer dialer, execer helpers.CommandExecer, conf *HubConfig, executor RemoteExecutor, checklistWriter cluster_ssher.ChecklistWriter) *Hub {
 	h := &Hub{
-		stopped:        make(chan struct{}, 1),
-		conf:           conf,
-		clusterPair:    pair,
-		grpcDialer:     grpcDialer,
-		commandExecer:  execer,
-		remoteExecutor: executor,
+		stopped:         make(chan struct{}, 1),
+		conf:            conf,
+		clusterPair:     pair,
+		grpcDialer:      grpcDialer,
+		commandExecer:   execer,
+		remoteExecutor:  executor,
+		checklistWriter: checklistWriter,
 	}
 
 	return h

@@ -10,7 +10,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/testutils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gbytes"
 	. "github.com/onsi/gomega/gexec"
 	"google.golang.org/grpc"
 )
@@ -20,6 +19,7 @@ var _ = Describe("prepare", func() {
 	var (
 		hub           *services.Hub
 		commandExecer *testutils.FakeCommandExecer
+		cm            *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -34,13 +34,14 @@ var _ = Describe("prepare", func() {
 		}
 		commandExecer = &testutils.FakeCommandExecer{}
 		commandExecer.SetOutput(&testutils.FakeCommand{})
+		cm = testutils.NewMockChecklistManager()
 		clusterSsher := cluster_ssher.NewClusterSsher(
-			upgradestatus.NewChecklistManager(conf.StateDir),
+			cm,
 			services.NewPingerManager(conf.StateDir, 500*time.Millisecond),
 			commandExecer.Exec,
 		)
 
-		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, commandExecer.Exec, conf, clusterSsher)
+		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, commandExecer.Exec, conf, clusterSsher, cm)
 		go hub.Start()
 	})
 
@@ -57,16 +58,15 @@ var _ = Describe("prepare", func() {
 		in which case it won't need the port, but would still generate new_cluster_config
 	*/
 	It("can save the database configuration json under the name 'new cluster'", func() {
-		statusSessionPending := runCommand("status", "upgrade")
-		Eventually(statusSessionPending).Should(gbytes.Say("PENDING - Initialize upgrade target cluster"))
-
 		port := os.Getenv("PGPORT")
 		Expect(port).ToNot(BeEmpty())
+
+		Expect(cm.IsPending(upgradestatus.INIT_CLUSTER)).To(BeTrue())
 
 		session := runCommand("prepare", "init-cluster", "--port", port, "--new-bindir", "/non/existent/path")
 		Eventually(session).Should(Exit(0))
 
-		Expect(runStatusUpgrade()).To(ContainSubstring("COMPLETE - Initialize upgrade target cluster"))
+		Expect(cm.IsComplete(upgradestatus.INIT_CLUSTER)).To(BeTrue())
 
 		cp := &services.ClusterPair{}
 		err := cp.ReadNewConfig(testStateDir)

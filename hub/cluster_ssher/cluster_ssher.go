@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/greenplum-db/gpupgrade/helpers"
+	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 )
@@ -37,9 +38,8 @@ func NewClusterSsher(cw ChecklistWriter, ap AgentPinger, commandExecer helpers.C
 
 func (c *ClusterSsher) VerifySoftware(hostnames []string) {
 	agentPath := filepath.Join(os.Getenv("GPHOME"), "bin", "gpupgrade_agent")
-	statedir := "seginstall"
-	anyFailed := c.remoteExec(hostnames, statedir, []string{"ls", agentPath})
-	handleStatusLogging(c, statedir, anyFailed)
+	anyFailed := c.remoteExec(hostnames, upgradestatus.SEGINSTALL, []string{"ls", agentPath})
+	handleStatusLogging(c, upgradestatus.SEGINSTALL, anyFailed)
 }
 
 func (c *ClusterSsher) Start(hostnames []string) {
@@ -56,7 +56,7 @@ func (c *ClusterSsher) Start(hostnames []string) {
 	var err error
 	err = c.AgentPinger.PingPollAgents()
 	anyFailed := err != nil
-	handleStatusLogging(c, statedir, anyFailed)
+	handleStatusLogging(c, upgradestatus.START_AGENTS, anyFailed)
 }
 
 func (c *ClusterSsher) remoteExec(hostnames []string, statedir string, command []string) bool {

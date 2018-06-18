@@ -1,9 +1,10 @@
 package upgradestatus
 
 import (
+	"path/filepath"
+
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
-	"path/filepath"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 )
@@ -57,7 +58,6 @@ func (c StateCheck) GetStatus() *pb.UpgradeStepStatus {
 			return c.newStatus(pb.StepStatus_RUNNING)
 		}
 	}
-
 	return c.newStatus(pb.StepStatus_PENDING)
 }
 

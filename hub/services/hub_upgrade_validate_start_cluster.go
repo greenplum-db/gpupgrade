@@ -23,14 +23,14 @@ func (h *Hub) UpgradeValidateStartCluster(ctx context.Context,
 func (h *Hub) startNewCluster(newBinDir string, newDataDir string) {
 	gplog.Debug(h.conf.StateDir)
 	c := upgradestatus.NewChecklistManager(h.conf.StateDir)
-	err := c.ResetStateDir("validate-start-cluster")
+	err := c.ResetStateDir(upgradestatus.VALIDATE_START_CLUSTER)
 	if err != nil {
 		gplog.Error("failed to reset the state dir for validate-start-cluster")
 
 		return
 	}
 
-	err = c.MarkInProgress("validate-start-cluster")
+	err = c.MarkInProgress(upgradestatus.VALIDATE_START_CLUSTER)
 	if err != nil {
 		gplog.Error("failed to record in-progress for validate-start-cluster")
 
@@ -40,7 +40,7 @@ func (h *Hub) startNewCluster(newBinDir string, newDataDir string) {
 	_, err = h.clusterPair.OldCluster.ExecuteLocalCommand(fmt.Sprintf("PYTHONPATH=%s && %s/gpstart -a -d %s", os.Getenv("PYTHONPATH"), newBinDir, newDataDir))
 	if err != nil {
 		gplog.Error(err.Error())
-		cmErr := c.MarkFailed("validate-start-cluster")
+		cmErr := c.MarkFailed(upgradestatus.VALIDATE_START_CLUSTER)
 		if cmErr != nil {
 			gplog.Error("failed to record failed for validate-start-cluster")
 		}
@@ -48,7 +48,7 @@ func (h *Hub) startNewCluster(newBinDir string, newDataDir string) {
 		return
 	}
 
-	err = c.MarkComplete("validate-start-cluster")
+	err = c.MarkComplete(upgradestatus.VALIDATE_START_CLUSTER)
 	if err != nil {
 		gplog.Error("failed to record completed for validate-start-cluster")
 		return

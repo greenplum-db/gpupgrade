@@ -7,12 +7,10 @@ import (
 	"path/filepath"
 
 	"github.com/greenplum-db/gpupgrade/helpers"
-	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/pkg/errors"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 )
 
 type ClusterPair struct {
@@ -119,69 +117,6 @@ func (cp *ClusterPair) WriteOldConfig(baseDir string) error {
 
 func (cp *ClusterPair) WriteNewConfig(baseDir string) error {
 	return WriteClusterConfig(GetNewConfigFilePath(baseDir), cp.NewCluster, cp.NewBinDir)
-}
-
-func convert(b bool) string {
-	if b {
-		return "is"
-	}
-	return "is not"
-}
-
-func (cp *ClusterPair) StopEverything(pathToGpstopStateDir string, oldPostmasterRunning bool, newPostmasterRunning bool) {
-	logmsg := "Shutting down clusters. The old cluster %s running. The new cluster %s running."
-	gplog.Info(fmt.Sprintf(logmsg, convert(oldPostmasterRunning), convert(newPostmasterRunning)))
-	checklistManager := upgradestatus.NewChecklistManager(pathToGpstopStateDir)
-
-	if oldPostmasterRunning {
-		cp.stopCluster(checklistManager, "gpstop.old", cp.OldBinDir, cp.OldCluster.GetDirForContent(-1))
-	}
-
-	if newPostmasterRunning {
-		cp.stopCluster(checklistManager, "gpstop.new", cp.NewBinDir, cp.NewCluster.GetDirForContent(-1))
-	}
-}
-
-func (cp *ClusterPair) EitherPostmasterRunning() (bool, bool) {
-	oldPostmasterRunning := cp.IsPostmasterRunning(cp.OldCluster.GetDirForContent(-1))
-	newPostmasterRunning := cp.IsPostmasterRunning(cp.NewCluster.GetDirForContent(-1))
-
-	return oldPostmasterRunning, newPostmasterRunning
-}
-
-func (cp *ClusterPair) IsPostmasterRunning(masterDataDir string) bool {
-	checkPidCmd := fmt.Sprintf("pgrep -F %s/postmaster.pid", masterDataDir)
-
-	_, err := cp.OldCluster.ExecuteLocalCommand(checkPidCmd)
-	if err != nil {
-		gplog.Error("Could not determine whether the cluster with MASTER_DATA_DIRECTORY: %s is running: %+v",
-			masterDataDir, err)
-		return false
-	}
-	return true
-}
-
-func (cp *ClusterPair) stopCluster(stateManager *upgradestatus.ChecklistManager, step string, binDir string, masterDataDir string) {
-	stateManager.ResetStateDir(step)
-	err := stateManager.MarkInProgress(step)
-	if err != nil {
-		gplog.Error(err.Error())
-		return
-	}
-
-	gpstopShellArgs := fmt.Sprintf("source %s/../greenplum_path.sh; %s/gpstop -a -d %s",
-		binDir, binDir, masterDataDir)
-	gplog.Info("gpstop args: %+v", gpstopShellArgs)
-	_, err = cp.OldCluster.ExecuteLocalCommand(gpstopShellArgs)
-
-	gplog.Info("finished stopping %s", step)
-	if err != nil {
-		gplog.Error(err.Error())
-		stateManager.MarkFailed(step)
-		return
-	}
-
-	stateManager.MarkComplete(step)
 }
 
 func (cp *ClusterPair) GetPortsAndDataDirForReconfiguration() (int, int, string) {

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -19,13 +20,13 @@ import (
 
 var _ = Describe("ConvertMasterHub", func() {
 	var (
-		dir                string
-		commandExecer      *testutils.FakeCommandExecer
-		hub                *services.Hub
-		outChan            chan []byte
-		errChan            chan error
-		stubRemoteExecutor *testutils.StubRemoteExecutor
-		clusterPair        *services.ClusterPair
+		dir           string
+		commandExecer *testutils.FakeCommandExecer
+		hub           *services.Hub
+		outChan       chan []byte
+		errChan       chan error
+		clusterPair   *services.ClusterPair
+		cm            *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -44,8 +45,9 @@ var _ = Describe("ConvertMasterHub", func() {
 			Out: outChan,
 		})
 		clusterPair = testutils.CreateSampleClusterPair()
-		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
-		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, conf, stubRemoteExecutor)
+		cm = testutils.NewMockChecklistManager()
+		clusterSsher := cluster_ssher.NewClusterSsher(cm, nil, nil)
+		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, conf, clusterSsher, cm)
 	})
 
 	AfterEach(func() {

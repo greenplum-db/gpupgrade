@@ -30,8 +30,9 @@ var _ = Describe("upgrade convert primaries", func() {
 		newBinDir          string
 		oidFile            string
 		hubOutChan         chan []byte
-		agentOutChan       chan []byte
+		agentCommandOutput chan []byte
 		clusterPair        *services.ClusterPair
+		cm                 *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -73,19 +74,20 @@ var _ = Describe("upgrade convert primaries", func() {
 			hubCommandExecer.Exec,
 		)
 		clusterPair = testutils.InitClusterPairFromDB()
-		hub = services.NewHub(clusterPair, grpc.DialContext, hubCommandExecer.Exec, conf, clusterSsher)
+		hub = services.NewHub(clusterPair, grpc.DialContext, hubCommandExecer.Exec, conf, clusterSsher, cm)
 		go hub.Start()
 
-		agentOutChan = make(chan []byte, 10)
+		agentCommandOutput = make(chan []byte, 12)
 
 		agentCommandExecer = &testutils.FakeCommandExecer{}
 		agentCommandExecer.SetOutput(&testutils.FakeCommand{
-			Out: agentOutChan,
+			Out: agentCommandOutput,
 		})
 		agent = agentServices.NewAgentServer(agentCommandExecer.Exec, agentServices.AgentConfig{
 			Port:     6416,
 			StateDir: testStateDir,
 		})
+		setStateFile(testStateDir, "start-agents", "completed")
 		go agent.Start()
 	})
 
@@ -95,15 +97,13 @@ var _ = Describe("upgrade convert primaries", func() {
 		Expect(checkPortIsAvailable(port)).To(BeTrue())
 	})
 
-	// The primary status conversion logic is borked and returning master status instead
-	// TODO: Fix status checking logic
-	XIt("updates status PENDING to RUNNING then to COMPLETE if successful", func() {
-		//Expect(clusterPair).To(BeNil())
+	It("updates status PENDING to RUNNING then to COMPLETE if successful", func() {
 		Expect(runStatusUpgrade()).To(ContainSubstring("PENDING - Primary segment upgrade"))
 		hubOutChan <- []byte("TEST")
 
-		agentOutChan <- []byte("combined output")
-		agentOutChan <- []byte("pid1")
+		agentCommandOutput <- []byte("run pg_upgrade for segment 0")
+		agentCommandOutput <- []byte("run pg_upgrade for segment 1")
+		agentCommandOutput <- []byte("run pg_upgrade for segment 2")
 
 		upgradeConvertPrimaries := runCommand(
 			"upgrade",
@@ -113,23 +113,32 @@ var _ = Describe("upgrade convert primaries", func() {
 		)
 		Expect(upgradeConvertPrimaries).To(Exit(0))
 
-		fmt.Println("Log:", string(testlog.Contents()))
-
+		agentCommandOutput <- []byte("pgrep for running pg_upgrade for segment 0")
+		agentCommandOutput <- []byte("pgrep for running pg_upgrade for segment 1")
+		agentCommandOutput <- []byte("pgrep for running pg_upgrade for segment 2")
 		Expect(runStatusUpgrade()).To(ContainSubstring("RUNNING - Primary segment upgrade"))
 
-		f, err := os.Create(filepath.Join(testStateDir, "pg_upgrade", "seg-1", ".done"))
-		Expect(err).ToNot(HaveOccurred())
-		f.Write([]byte("Upgrade complete\n"))
-		f.Close()
+		for i := range []int{0, 1, 2} {
+			f, err := os.Create(filepath.Join(testStateDir, "pg_upgrade", fmt.Sprintf("seg-%d", i), ".done"))
+			Expect(err).ToNot(HaveOccurred())
+			f.Write([]byte("Upgrade complete\n"))
+			f.Close()
+		}
 
-		allCalls := strings.Join(agentCommandExecer.Calls(), "")
+		allCalls := strings.Join(agentCommandExecer.Calls(), " ")
 		Expect(allCalls).To(ContainSubstring(newBinDir + "/pg_upgrade"))
 
+		// Return no PIDs when pgrep checks if pg_upgrade is running
+		agentCommandOutput <- []byte("")
+		agentCommandOutput <- []byte("")
+		agentCommandOutput <- []byte("")
 		Expect(runStatusUpgrade()).To(ContainSubstring("COMPLETE - Primary segment upgrade"))
 	})
 
 	It("updates status to FAILED if it fails to run", func() {
 		Expect(runStatusUpgrade()).To(ContainSubstring("PENDING - Primary segment upgrade"))
+		setStateFile(testStateDir, "pg_upgrade/seg-0", "1.failed")
+		agentCommandOutput <- []byte("combined output")
 
 		upgradeConvertPrimaries := runCommand(
 			"upgrade",
@@ -148,3 +157,12 @@ var _ = Describe("upgrade convert primaries", func() {
 		Expect(string(upgradeConvertPrimaries.Out.Contents())).To(Equal("Required flag(s) \"new-bindir\", \"old-bindir\" have/has not been set\n"))
 	})
 })
+
+func setStateFile(dir string, step string, state string) {
+	err := os.MkdirAll(filepath.Join(dir, step), os.ModePerm)
+	Expect(err).ToNot(HaveOccurred())
+
+	f, err := os.Create(filepath.Join(dir, step, state))
+	Expect(err).ToNot(HaveOccurred())
+	f.Close()
+}

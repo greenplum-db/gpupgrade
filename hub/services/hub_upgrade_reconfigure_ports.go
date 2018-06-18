@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 
@@ -18,14 +19,11 @@ const (
 func (h *Hub) UpgradeReconfigurePorts(ctx context.Context, in *pb.UpgradeReconfigurePortsRequest) (*pb.UpgradeReconfigurePortsReply, error) {
 	gplog.Info("Started processing reconfigure-ports request")
 
-	c := upgradestatus.NewChecklistManager(h.conf.StateDir)
-	reconfigurePortsStep := "reconfigure-ports"
-
-	err := c.ResetStateDir(reconfigurePortsStep)
+	err := h.checklistWriter.ResetStateDir(upgradestatus.RECONFIGURE_PORTS)
 	if err != nil {
 		gplog.Error("error from ResetStateDir " + err.Error())
 	}
-	err = c.MarkInProgress(reconfigurePortsStep)
+	err = h.checklistWriter.MarkInProgress(upgradestatus.RECONFIGURE_PORTS)
 	if err != nil {
 		gplog.Error("error from MarkInProgress " + err.Error())
 	}
@@ -42,12 +40,12 @@ func (h *Hub) UpgradeReconfigurePorts(ctx context.Context, in *pb.UpgradeReconfi
 		}
 		gplog.Error("reconfigure-ports failed %s: %s", out, err)
 
-		c.MarkFailed(reconfigurePortsStep)
+		h.checklistWriter.MarkFailed(upgradestatus.RECONFIGURE_PORTS)
 		return nil, err
 	}
 
 	gplog.Info("reconfigure-ports succeeded")
-	c.MarkComplete(reconfigurePortsStep)
+	h.checklistWriter.MarkComplete(upgradestatus.RECONFIGURE_PORTS)
 
 	return &pb.UpgradeReconfigurePortsReply{}, nil
 }

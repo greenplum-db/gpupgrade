@@ -2,7 +2,6 @@ package integrations_test
 
 import (
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
@@ -23,6 +22,7 @@ var _ = Describe("check", func() {
 		commandExecer *testutils.FakeCommandExecer
 		outChan       chan []byte
 		errChan       chan error
+		cm            *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -48,12 +48,14 @@ var _ = Describe("check", func() {
 			Err: errChan,
 		})
 
+		cm = testutils.NewMockChecklistManager()
 		clusterSsher := cluster_ssher.NewClusterSsher(
-			upgradestatus.NewChecklistManager(conf.StateDir),
+			cm,
 			services.NewPingerManager(conf.StateDir, 500*time.Millisecond),
 			commandExecer.Exec,
 		)
-		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, commandExecer.Exec, conf, clusterSsher)
+
+		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, commandExecer.Exec, conf, clusterSsher, cm)
 		go hub.Start()
 	})
 
@@ -77,28 +79,14 @@ var _ = Describe("check", func() {
 				Statuses: []string{},
 			}
 
-			Expect(runStatusUpgrade()).To(ContainSubstring("PENDING - Install binaries on segments"))
-
-			trigger := make(chan struct{}, 2)
-			commandExecer.SetTrigger(trigger)
-
-			wg := &sync.WaitGroup{}
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				defer GinkgoRecover()
-
-				Eventually(runStatusUpgrade).Should(ContainSubstring("RUNNING - Install binaries on segments"))
-				trigger <- struct{}{}
-			}()
+			Expect(cm.IsPending(upgradestatus.SEGINSTALL)).To(BeTrue())
 
 			checkSeginstallSession := runCommand("check", "seginstall", "--master-host", "localhost")
 			Eventually(checkSeginstallSession).Should(Exit(0))
-			wg.Wait()
 
 			Expect(commandExecer.Command()).To(Equal("ssh"))
 			Expect(strings.Join(commandExecer.Args(), "")).To(ContainSubstring("ls"))
-			Eventually(runStatusUpgrade).Should(ContainSubstring("COMPLETE - Install binaries on segments"))
+			Expect(cm.IsComplete(upgradestatus.SEGINSTALL)).To(BeTrue())
 		})
 	})
 

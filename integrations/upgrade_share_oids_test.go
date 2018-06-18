@@ -26,6 +26,7 @@ var _ = Describe("upgrade share oids", func() {
 
 		outChan chan []byte
 		errChan chan error
+		cm      *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -62,12 +63,13 @@ var _ = Describe("upgrade share oids", func() {
 			Err: errChan,
 		})
 
+		cm = testutils.NewMockChecklistManager()
 		clusterSsher := cluster_ssher.NewClusterSsher(
-			upgradestatus.NewChecklistManager(conf.StateDir),
+			cm,
 			hubServices.NewPingerManager(conf.StateDir, 500*time.Millisecond),
 			hubExecer.Exec,
 		)
-		hub = hubServices.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, hubExecer.Exec, conf, clusterSsher)
+		hub = hubServices.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, hubExecer.Exec, conf, clusterSsher, cm)
 		go hub.Start()
 	})
 
@@ -80,30 +82,24 @@ var _ = Describe("upgrade share oids", func() {
 	})
 
 	It("updates status PENDING to RUNNING then to COMPLETE if successful", func() {
-		Expect(runStatusUpgrade()).To(ContainSubstring("PENDING - Copy OID files from master to segments"))
 
-		trigger := make(chan struct{}, 1)
-		hubExecer.SetTrigger(trigger)
+		Expect(cm.IsPending(upgradestatus.SHARE_OIDS)).To(BeTrue())
 
 		upgradeShareOidsSession := runCommand("upgrade", "share-oids")
 		Eventually(upgradeShareOidsSession).Should(Exit(0))
 
-		Eventually(runStatusUpgrade()).Should(ContainSubstring("RUNNING - Copy OID files from master to segments"))
-		trigger <- struct{}{}
-
 		Expect(hubExecer.Calls()[0]).To(ContainSubstring("rsync"))
+		Expect(cm.IsComplete(upgradestatus.SHARE_OIDS)).To(BeTrue())
 
-		Expect(runStatusUpgrade()).To(ContainSubstring("COMPLETE - Copy OID files from master to segments"))
 	})
 
 	It("updates status to FAILED if it fails to run", func() {
-		Expect(runStatusUpgrade()).To(ContainSubstring("PENDING - Copy OID files from master to segments"))
 
+		Expect(cm.IsPending(upgradestatus.SHARE_OIDS)).To(BeTrue())
 		errChan <- errors.New("fake test error, share oid failed to send files")
 
 		upgradeShareOidsSession := runCommand("upgrade", "share-oids")
 		Eventually(upgradeShareOidsSession).Should(Exit(0))
-
-		Eventually(runStatusUpgrade()).Should(ContainSubstring("FAILED - Copy OID files from master to segments"))
+		Expect(cm.IsFailed(upgradestatus.SHARE_OIDS)).To(BeTrue())
 	})
 })

@@ -25,6 +25,7 @@ var _ = Describe("status", func() {
 		hub           *hubServices.Hub
 		agent         *agentServices.AgentServer
 		commandExecer *testutils.FakeCommandExecer
+		cm            *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -58,7 +59,7 @@ var _ = Describe("status", func() {
 			hubServices.NewPingerManager(conf.StateDir, 500*time.Millisecond),
 			commandExecer.Exec,
 		)
-		hub = hubServices.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, commandExecer.Exec, conf, clusterSsher)
+		hub = hubServices.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, commandExecer.Exec, conf, clusterSsher, cm)
 		go hub.Start()
 	})
 

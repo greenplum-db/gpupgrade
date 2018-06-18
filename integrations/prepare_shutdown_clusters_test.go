@@ -18,13 +18,15 @@ import (
 
 var _ = Describe("prepare shutdown-clusters", func() {
 	var (
-		hub           *services.Hub
-		mockAgent     *testutils.MockAgentServer
-		commandExecer *testutils.FakeCommandExecer
-		outChan       chan []byte
-		errChan       chan error
-		clusterPair   *services.ClusterPair
-		testExecutor  *testhelper.TestExecutor
+		hub             *services.Hub
+		mockAgent       *testutils.MockAgentServer
+		commandExecer   *testutils.FakeCommandExecer
+		outChan         chan []byte
+		errChan         chan error
+		clusterPair     *services.ClusterPair
+		testExecutorOld *testhelper.TestExecutor
+		testExecutorNew *testhelper.TestExecutor
+		cm              *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -50,16 +52,19 @@ var _ = Describe("prepare shutdown-clusters", func() {
 			Err: errChan,
 		})
 		clusterPair = testutils.InitClusterPairFromDB()
-		testExecutor = &testhelper.TestExecutor{}
-		clusterPair.OldCluster.Executor = testExecutor
+		testExecutorOld = &testhelper.TestExecutor{}
+		testExecutorNew = &testhelper.TestExecutor{}
+		clusterPair.OldCluster.Executor = testExecutorOld
+		clusterPair.NewCluster.Executor = testExecutorNew
 		clusterPair.OldBinDir = "/tmpOld"
 		clusterPair.NewBinDir = "/tmpNew"
+		cm = testutils.NewMockChecklistManager()
 		clusterSsher := cluster_ssher.NewClusterSsher(
-			upgradestatus.NewChecklistManager(conf.StateDir),
+			cm,
 			services.NewPingerManager(conf.StateDir, 500*time.Millisecond),
 			commandExecer.Exec,
 		)
-		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, conf, clusterSsher)
+		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, conf, clusterSsher, cm)
 		go hub.Start()
 	})
 
@@ -68,23 +73,25 @@ var _ = Describe("prepare shutdown-clusters", func() {
 		mockAgent.Stop()
 	})
 
-	It("updates status PENDING and then to COMPLETE if successful", func(done Done) {
-		defer close(done)
+	It("updates status PENDING, RUNNING then COMPLETE if successful", func() {
 		mockAgent.StatusConversionResponse = &pb.CheckConversionStatusReply{
 			Statuses: []string{},
 		}
 
-		Expect(runStatusUpgrade()).To(ContainSubstring("PENDING - Shutdown clusters"))
+		Expect(cm.IsPending(upgradestatus.SHUTDOWN_CLUSTERS)).To(BeTrue())
 
 		prepareShutdownClustersSession := runCommand("prepare", "shutdown-clusters", "--old-bindir", clusterPair.OldBinDir, "--new-bindir", clusterPair.NewBinDir)
 		Eventually(prepareShutdownClustersSession).Should(Exit(0))
 
-		Expect(testExecutor.NumExecutions).To(Equal(4))
-		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("pgrep"))
-		Expect(testExecutor.LocalCommands[1]).To(ContainSubstring("pgrep"))
-		Expect(testExecutor.LocalCommands[2]).To(ContainSubstring(clusterPair.OldBinDir + "/gpstop -a"))
-		Expect(testExecutor.LocalCommands[3]).To(ContainSubstring(clusterPair.NewBinDir + "/gpstop -a"))
-		Eventually(runStatusUpgrade).Should(ContainSubstring("COMPLETE - Shutdown clusters"))
+		Expect(testExecutorOld.NumExecutions).To(Equal(2))
+		Expect(testExecutorOld.LocalCommands[0]).To(ContainSubstring("pgrep"))
+		Expect(testExecutorOld.LocalCommands[1]).To(ContainSubstring(clusterPair.OldBinDir + "/gpstop -a"))
+
+		Expect(testExecutorNew.NumExecutions).To(Equal(2))
+		Expect(testExecutorNew.LocalCommands[0]).To(ContainSubstring("pgrep"))
+		Expect(testExecutorNew.LocalCommands[1]).To(ContainSubstring(clusterPair.NewBinDir + "/gpstop -a"))
+
+		Expect(cm.IsComplete(upgradestatus.SHUTDOWN_CLUSTERS)).To(BeTrue())
 	})
 
 	It("updates status to FAILED if it fails to run", func() {
@@ -92,20 +99,23 @@ var _ = Describe("prepare shutdown-clusters", func() {
 			Statuses: []string{},
 		}
 
-		Expect(runStatusUpgrade()).To(ContainSubstring("PENDING - Shutdown clusters"))
+		Expect(cm.IsPending(upgradestatus.SHUTDOWN_CLUSTERS)).To(BeTrue())
 
-		testExecutor.ErrorOnExecNum = 4
-		testExecutor.LocalError = errors.New("start failed")
+		testExecutorOld.ErrorOnExecNum = 2
+		testExecutorNew.ErrorOnExecNum = 2
+		testExecutorOld.LocalError = errors.New("stop failed")
+		testExecutorNew.LocalError = errors.New("stop failed")
 
 		prepareShutdownClustersSession := runCommand("prepare", "shutdown-clusters", "--old-bindir", clusterPair.OldBinDir, "--new-bindir", clusterPair.NewBinDir)
 		Eventually(prepareShutdownClustersSession).Should(Exit(0))
 
-		Expect(testExecutor.NumExecutions).To(Equal(4))
-		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("pgrep"))
-		Expect(testExecutor.LocalCommands[1]).To(ContainSubstring("pgrep"))
-		Expect(testExecutor.LocalCommands[2]).To(ContainSubstring(clusterPair.OldBinDir + "/gpstop -a"))
-		Expect(testExecutor.LocalCommands[3]).To(ContainSubstring(clusterPair.NewBinDir + "/gpstop -a"))
-		Eventually(runStatusUpgrade).Should(ContainSubstring("FAILED - Shutdown clusters"))
+		Expect(testExecutorOld.NumExecutions).To(Equal(2))
+		Expect(testExecutorOld.LocalCommands[0]).To(ContainSubstring("pgrep"))
+		Expect(testExecutorOld.LocalCommands[1]).To(ContainSubstring(clusterPair.OldBinDir + "/gpstop -a"))
+		Expect(testExecutorOld.NumExecutions).To(Equal(2))
+		Expect(testExecutorNew.LocalCommands[0]).To(ContainSubstring("pgrep"))
+		Expect(testExecutorNew.LocalCommands[1]).To(ContainSubstring(clusterPair.NewBinDir + "/gpstop -a"))
+		Expect(cm.IsFailed(upgradestatus.SHUTDOWN_CLUSTERS)).To(BeTrue())
 	})
 
 	It("fails if the --old-bindir or --new-bindir flags are missing", func() {

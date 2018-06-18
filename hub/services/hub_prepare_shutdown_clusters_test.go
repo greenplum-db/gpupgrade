@@ -6,10 +6,7 @@ import (
 	"os"
 
 	"github.com/greenplum-db/gpupgrade/hub/services"
-	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
-
-	"google.golang.org/grpc"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -24,6 +21,7 @@ var _ = Describe("PrepareShutdownClusters", func() {
 		testLog            *gbytes.Buffer
 		stubRemoteExecutor *testutils.StubRemoteExecutor
 		clusterPair        *services.ClusterPair
+		cm                 *testutils.MockChecklistManager
 	)
 	BeforeEach(func() {
 		_, _, testLog = testhelper.SetupTestLogger()
@@ -38,28 +36,64 @@ var _ = Describe("PrepareShutdownClusters", func() {
 		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
 		clusterPair = testutils.CreateSampleClusterPair()
 		clusterPair.OldCluster.Executor = &testhelper.TestExecutor{}
+		cm = testutils.NewMockChecklistManager()
 	})
 
 	AfterEach(func() {
 		utils.InitializeSystemFunctions()
 	})
 
-	// ignoring the go routine
-	It("returns successfully ", func() {
-		hub := services.NewHub(clusterPair, grpc.DialContext, nil, conf, stubRemoteExecutor)
+	It("isPostmasterRunning() succeeds", func() {
+		testExecutor := &testhelper.TestExecutor{}
 
-		_, err := hub.PrepareShutdownClusters(nil, &pb.PrepareShutdownClustersRequest{})
-		Expect(err).To(BeNil())
+		cluster := testutils.CreateSampleCluster(-1, 25437, "hostone",
+			"/master/datadir")
+		cluster.Executor = testExecutor
+		postmasterRunning := services.IsPostmasterRunning(cluster)
+		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("pgrep"))
+		Expect(postmasterRunning).To(BeTrue())
 	})
 
-	It("logs message if EitherPostmasterRunning returns false", func() {
-		clusterPair.OldCluster.Executor = &testhelper.TestExecutor{
-			LocalError: errors.New("generic error"),
-		}
-		hub := services.NewHub(clusterPair, grpc.DialContext, nil, conf, stubRemoteExecutor)
+	It("isPostmasterRunning() fails", func() {
+		testExecutor := &testhelper.TestExecutor{}
+		testExecutor.LocalError = errors.New("some error message")
 
-		_, err := hub.PrepareShutdownClusters(nil, &pb.PrepareShutdownClustersRequest{})
-		Expect(err).To(BeNil())
-		Expect(testLog.Contents()).To(ContainSubstring("PrepareShutdownClusters: neither postmaster was running, nothing to do"))
+		cluster := testutils.CreateSampleCluster(-1, 25437, "hostone",
+			"/master/datadir")
+		cluster.Executor = testExecutor
+		postmasterRunning := services.IsPostmasterRunning(cluster)
+		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("pgrep"))
+		Expect(postmasterRunning).To(BeFalse())
 	})
+
+	It("stopCluster() succeesfully shuts down cluster", func() {
+		testExecutor := &testhelper.TestExecutor{}
+
+		cluster := testutils.CreateSampleCluster(-1, 25437, "hostone",
+			"/master/datadir")
+		cluster.Executor = testExecutor
+
+		err := services.StopCluster(cluster, "/fake/bindir")
+
+		Expect(testExecutor.NumExecutions).To(Equal(2))
+		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("pgrep"))
+		Expect(testExecutor.LocalCommands[1]).To(ContainSubstring("gpstop"))
+		Expect(err).ToNot(HaveOccurred())
+	})
+
+	It("stopCluster() detects that cluster is already shutdown", func() {
+		testExecutor := &testhelper.TestExecutor{}
+		testExecutor.LocalError = errors.New("some error message")
+
+		cluster := testutils.CreateSampleCluster(-1, 25437, "hostone",
+			"/master/datadir")
+		cluster.Executor = testExecutor
+
+		err := services.StopCluster(cluster, "/fake/bindir")
+
+		Expect(testExecutor.NumExecutions).To(Equal(1))
+		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("pgrep"))
+		Expect(err).ToNot(HaveOccurred())
+	})
+
 })

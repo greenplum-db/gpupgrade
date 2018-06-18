@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/greenplum-db/gpupgrade/db"
+	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 
@@ -36,11 +37,14 @@ func SaveTargetClusterConfig(clusterPair *ClusterPair, dbConnector *dbconn.DBCon
 func (h *Hub) PrepareInitCluster(ctx context.Context, in *pb.PrepareInitClusterRequest) (*pb.PrepareInitClusterReply, error) {
 	gplog.Info("starting PrepareInitCluster()")
 
+	h.checklistWriter.MarkInProgress(upgradestatus.INIT_CLUSTER)
+
 	dbConnector := db.NewDBConn("localhost", int(in.DbPort), "template1")
 	defer dbConnector.Close()
 	err := dbConnector.Connect(1)
 	if err != nil {
 		gplog.Error(err.Error())
+		h.checklistWriter.MarkFailed(upgradestatus.INIT_CLUSTER)
 		return &pb.PrepareInitClusterReply{}, utils.DatabaseConnectionError{Parent: err}
 	}
 	dbConnector.Version.Initialize(dbConnector)
@@ -48,8 +52,10 @@ func (h *Hub) PrepareInitCluster(ctx context.Context, in *pb.PrepareInitClusterR
 	err = SaveTargetClusterConfig(h.clusterPair, dbConnector, h.conf.StateDir, in.NewBinDir)
 	if err != nil {
 		gplog.Error(err.Error())
+		h.checklistWriter.MarkFailed(upgradestatus.INIT_CLUSTER)
 		return &pb.PrepareInitClusterReply{}, err
 	}
 
+	h.checklistWriter.MarkComplete(upgradestatus.INIT_CLUSTER)
 	return &pb.PrepareInitClusterReply{}, nil
 }

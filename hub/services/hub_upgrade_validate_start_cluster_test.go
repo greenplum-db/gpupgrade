@@ -51,9 +51,11 @@ var _ = Describe("upgrade validate start cluster", func() {
 		testExecutor = &testhelper.TestExecutor{}
 		clusterPair.OldCluster.Executor = testExecutor
 		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
-		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, &services.HubConfig{
+		hubConfig := &services.HubConfig{
 			StateDir: dir,
-		}, stubRemoteExecutor)
+		}
+		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec,
+			hubConfig, stubRemoteExecutor, nil)
 	})
 
 	AfterEach(func() {

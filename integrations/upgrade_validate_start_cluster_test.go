@@ -1,9 +1,7 @@
 package integrations_test
 
 import (
-	"fmt"
 	"io/ioutil"
-	"sync"
 	"time"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
@@ -27,6 +25,7 @@ var _ = Describe("upgrade validate-start-cluster", func() {
 		errChan       chan error
 		clusterPair   *services.ClusterPair
 		testExecutor  *testhelper.TestExecutor
+		cm            *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -49,15 +48,16 @@ var _ = Describe("upgrade validate-start-cluster", func() {
 			Err: errChan,
 		})
 
+		cm = testutils.NewMockChecklistManager()
 		clusterSsher := cluster_ssher.NewClusterSsher(
-			upgradestatus.NewChecklistManager(conf.StateDir),
+			cm,
 			services.NewPingerManager(conf.StateDir, 500*time.Millisecond),
 			commandExecer.Exec,
 		)
 		clusterPair = testutils.InitClusterPairFromDB()
 		testExecutor = &testhelper.TestExecutor{}
 		clusterPair.OldCluster.Executor = testExecutor
-		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, conf, clusterSsher)
+		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, conf, clusterSsher, cm)
 		go hub.Start()
 	})
 
@@ -66,35 +66,22 @@ var _ = Describe("upgrade validate-start-cluster", func() {
 		Expect(checkPortIsAvailable(port)).To(BeTrue())
 	})
 
-	// This test hangs while checking for RUNNING
-	// TODO: Refactor test once all integration tests are refactore to use MockChecklistManager
-	XIt("updates status PENDING to RUNNING then to COMPLETE if successful", func(done Done) {
+	It("updates status PENDING to RUNNING then to COMPLETE if successful", func(done Done) {
 		defer close(done)
 		newBinDir, err := ioutil.TempDir("", "")
 		Expect(err).ToNot(HaveOccurred())
 		newDataDir, err := ioutil.TempDir("", "")
 		Expect(err).ToNot(HaveOccurred())
 
-		fmt.Println(string(testlog.Contents()))
-		Expect(runStatusUpgrade()).To(ContainSubstring("PENDING - Validate the upgraded cluster can start up"))
-
-		wg := &sync.WaitGroup{}
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			defer GinkgoRecover()
-
-			Eventually(runStatusUpgrade).Should(ContainSubstring("RUNNING - Validate the upgraded cluster can start up"))
-		}()
+		Expect(cm.IsPending(upgradestatus.VALIDATE_START_CLUSTER)).To(BeTrue())
 
 		session := runCommand("upgrade", "validate-start-cluster", "--new-bindir", newBinDir, "--new-datadir", newDataDir)
 		Eventually(session).Should(Exit(0))
-		wg.Wait()
 
-		fmt.Printf("\n%+v", commandExecer)
 		Expect(testExecutor.NumExecutions).To(Equal(1))
 		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("gpstart"))
-		Eventually(runStatusUpgrade).Should(ContainSubstring("COMPLETE - Validate the upgraded cluster can start up"))
+		Expect(cm.IsPending(upgradestatus.VALIDATE_START_CLUSTER)).To(BeTrue())
+
 	})
 
 	It("updates status to FAILED if it fails to run", func() {
@@ -103,7 +90,7 @@ var _ = Describe("upgrade validate-start-cluster", func() {
 		newDataDir, err := ioutil.TempDir("", "")
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(runStatusUpgrade()).To(ContainSubstring("PENDING - Validate the upgraded cluster can start up"))
+		Expect(cm.IsPending(upgradestatus.VALIDATE_START_CLUSTER)).To(BeTrue())
 
 		testExecutor.LocalError = errors.New("start failed")
 
@@ -112,7 +99,7 @@ var _ = Describe("upgrade validate-start-cluster", func() {
 
 		Expect(testExecutor.NumExecutions).To(Equal(1))
 		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("gpstart"))
-		Eventually(runStatusUpgrade).Should(ContainSubstring("FAILED - Validate the upgraded cluster can start up"))
+		Expect(cm.IsPending(upgradestatus.VALIDATE_START_CLUSTER)).To(BeTrue())
 	})
 
 	It("fails if the --new-bindir or --new-datadir flags are missing", func() {

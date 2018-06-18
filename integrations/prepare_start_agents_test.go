@@ -3,7 +3,6 @@ package integrations_test
 import (
 	"os"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
@@ -22,6 +21,7 @@ var _ = Describe("prepare", func() {
 		hub           *services.Hub
 		mockAgent     *testutils.MockAgentServer
 		commandExecer *testutils.FakeCommandExecer
+		cm            *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -40,12 +40,13 @@ var _ = Describe("prepare", func() {
 		commandExecer = &testutils.FakeCommandExecer{}
 		commandExecer.SetOutput(&testutils.FakeCommand{})
 
+		cm = testutils.NewMockChecklistManager()
 		clusterSsher := cluster_ssher.NewClusterSsher(
-			upgradestatus.NewChecklistManager(conf.StateDir),
+			cm,
 			services.NewPingerManager(conf.StateDir, 500*time.Millisecond),
 			commandExecer.Exec,
 		)
-		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, commandExecer.Exec, conf, clusterSsher)
+		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, commandExecer.Exec, conf, clusterSsher, cm)
 
 		pgPort := os.Getenv("PGPORT")
 		Expect(pgPort).ToNot(Equal(""), "Please set PGPORT to a useful value and rerun the tests.")
@@ -67,28 +68,14 @@ var _ = Describe("prepare", func() {
 				Statuses: []string{},
 			}
 
-			Expect(runStatusUpgrade()).To(ContainSubstring("PENDING - Agents Started on Cluster"))
-
-			trigger := make(chan struct{}, 1)
-			commandExecer.SetTrigger(trigger)
-
-			wg := &sync.WaitGroup{}
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				defer GinkgoRecover()
-
-				Eventually(runStatusUpgrade).Should(ContainSubstring("RUNNING - Agents Started on Cluster"))
-				trigger <- struct{}{}
-			}()
+			Expect(cm.IsPending(upgradestatus.START_AGENTS)).To(BeTrue())
 
 			prepareStartAgentsSession := runCommand("prepare", "start-agents")
 			Eventually(prepareStartAgentsSession).Should(Exit(0))
-			wg.Wait()
 
 			Expect(commandExecer.Command()).To(Equal("ssh"))
 			Expect(strings.Join(commandExecer.Args(), "")).To(ContainSubstring("nohup"))
-			Eventually(runStatusUpgrade).Should(ContainSubstring("COMPLETE - Agents Started on Cluster"))
+			Expect(cm.IsComplete(upgradestatus.START_AGENTS)).To(BeTrue())
 		})
 	})
 })

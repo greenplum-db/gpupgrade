@@ -21,6 +21,7 @@ var _ = Describe("version command", func() {
 	var (
 		hub           *services.Hub
 		commandExecer *testutils.FakeCommandExecer
+		cm            *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -42,7 +43,7 @@ var _ = Describe("version command", func() {
 			services.NewPingerManager(conf.StateDir, 500*time.Millisecond),
 			commandExecer.Exec,
 		)
-		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, commandExecer.Exec, conf, clusterSsher)
+		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, commandExecer.Exec, conf, clusterSsher, cm)
 		go hub.Start()
 	})
 
