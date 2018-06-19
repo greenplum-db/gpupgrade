@@ -37,11 +37,6 @@ var _ = Describe("upgrade convert primaries", func() {
 
 	BeforeEach(func() {
 		var err error
-		oldBinDir, err = ioutil.TempDir("", "")
-		Expect(err).ToNot(HaveOccurred())
-		newBinDir, err = ioutil.TempDir("", "")
-		Expect(err).ToNot(HaveOccurred())
-
 		segmentDataDir := os.Getenv("MASTER_DATA_DIRECTORY")
 		Expect(segmentDataDir).ToNot(Equal(""), "MASTER_DATA_DIRECTORY needs to be set!")
 

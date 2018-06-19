@@ -352,7 +352,7 @@ var subValidateStartCluster = &cobra.Command{
 		}
 
 		client := pb.NewCliToHubClient(conn)
-		err := commanders.NewUpgrader(client).ValidateStartCluster(newDataDir, newBinDir)
+		err := commanders.NewUpgrader(client).ValidateStartCluster()
 		if err != nil {
 			gplog.Error(err.Error())
 			os.Exit(1)

@@ -60,11 +60,8 @@ func (u *Upgrader) ShareOids() error {
 	return nil
 }
 
-func (u *Upgrader) ValidateStartCluster(newDataDir string, newBinDir string) error {
-	_, err := u.client.UpgradeValidateStartCluster(context.Background(), &pb.UpgradeValidateStartClusterRequest{
-		NewDataDir: newDataDir,
-		NewBinDir:  newBinDir,
-	})
+func (u *Upgrader) ValidateStartCluster() error {
+	_, err := u.client.UpgradeValidateStartCluster(context.Background(), &pb.UpgradeValidateStartClusterRequest{})
 	if err != nil {
 		gplog.Error(err.Error())
 		return err

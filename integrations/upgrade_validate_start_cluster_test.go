@@ -56,7 +56,7 @@ var _ = Describe("upgrade validate-start-cluster", func() {
 		)
 		clusterPair = testutils.InitClusterPairFromDB()
 		testExecutor = &testhelper.TestExecutor{}
-		clusterPair.OldCluster.Executor = testExecutor
+		clusterPair.NewCluster.Executor = testExecutor
 		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, conf, clusterSsher, cm)
 		go hub.Start()
 	})
@@ -68,14 +68,9 @@ var _ = Describe("upgrade validate-start-cluster", func() {
 
 	It("updates status PENDING to RUNNING then to COMPLETE if successful", func(done Done) {
 		defer close(done)
-		newBinDir, err := ioutil.TempDir("", "")
-		Expect(err).ToNot(HaveOccurred())
-		newDataDir, err := ioutil.TempDir("", "")
-		Expect(err).ToNot(HaveOccurred())
-
 		Expect(cm.IsPending(upgradestatus.VALIDATE_START_CLUSTER)).To(BeTrue())
 
-		session := runCommand("upgrade", "validate-start-cluster", "--new-bindir", newBinDir, "--new-datadir", newDataDir)
+		session := runCommand("upgrade", "validate-start-cluster")
 		Eventually(session).Should(Exit(0))
 
 		Expect(testExecutor.NumExecutions).To(Equal(1))
@@ -85,26 +80,15 @@ var _ = Describe("upgrade validate-start-cluster", func() {
 	})
 
 	It("updates status to FAILED if it fails to run", func() {
-		newBinDir, err := ioutil.TempDir("", "")
-		Expect(err).ToNot(HaveOccurred())
-		newDataDir, err := ioutil.TempDir("", "")
-		Expect(err).ToNot(HaveOccurred())
-
 		Expect(cm.IsPending(upgradestatus.VALIDATE_START_CLUSTER)).To(BeTrue())
 
 		testExecutor.LocalError = errors.New("start failed")
 
-		session := runCommand("upgrade", "validate-start-cluster", "--new-bindir", newBinDir, "--new-datadir", newDataDir)
+		session := runCommand("upgrade", "validate-start-cluster")
 		Eventually(session).Should(Exit(0))
 
 		Expect(testExecutor.NumExecutions).To(Equal(1))
 		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("gpstart"))
 		Expect(cm.IsPending(upgradestatus.VALIDATE_START_CLUSTER)).To(BeTrue())
-	})
-
-	It("fails if the --new-bindir or --new-datadir flags are missing", func() {
-		session := runCommand("upgrade", "validate-start-cluster")
-		Expect(session).Should(Exit(1))
-		Expect(string(session.Out.Contents())).To(Equal("Required flag(s) \"new-bindir\", \"new-datadir\" have/has not been set\n"))
 	})
 })

@@ -108,10 +108,6 @@ func addFlagOptionsToShutdownClusters() {
 }
 
 func addFlagOptionsToValidateStartCluster() {
-	subValidateStartCluster.Flags().StringVar(&newDataDir, "new-datadir", "", "data directory for new gpdb version")
-	subValidateStartCluster.MarkFlagRequired("new-datadir")
-	subValidateStartCluster.Flags().StringVar(&newBinDir, "new-bindir", "", "install directory for new gpdb version")
-	subValidateStartCluster.MarkFlagRequired("new-bindir")
 }
 
 func addFlagOptionsToInit() {

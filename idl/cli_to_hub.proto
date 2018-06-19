@@ -33,10 +33,7 @@ message UpgradeConvertPrimariesReply {}
 message UpgradeShareOidsRequest {}
 message UpgradeShareOidsReply {}
 
-message UpgradeValidateStartClusterRequest {
-    string NewBinDir = 1;
-    string NewDataDir = 2;
-}
+message UpgradeValidateStartClusterRequest {}
 message UpgradeValidateStartClusterReply {}
 
 message PingRequest {}

@@ -112,10 +112,7 @@ var _ = Describe("upgrade validate start cluster", func() {
 	It("sets status to FAILED when the validate start cluster request returns an error", func() {
 		testExecutor.LocalError = errors.New("some error")
 
-		_, err := hub.UpgradeValidateStartCluster(nil, &pb.UpgradeValidateStartClusterRequest{
-			NewBinDir:  "bin",
-			NewDataDir: "data",
-		})
+		_, err := hub.UpgradeValidateStartCluster(nil, &pb.UpgradeValidateStartClusterRequest{})
 		Expect(err).ToNot(HaveOccurred())
 
 		stateChecker := upgradestatus.NewStateCheck(

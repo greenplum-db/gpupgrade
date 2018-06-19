@@ -11,16 +11,15 @@ import (
 	"golang.org/x/net/context"
 )
 
-func (h *Hub) UpgradeValidateStartCluster(ctx context.Context,
-	in *pb.UpgradeValidateStartClusterRequest) (*pb.UpgradeValidateStartClusterReply, error) {
+func (h *Hub) UpgradeValidateStartCluster(ctx context.Context, in *pb.UpgradeValidateStartClusterRequest) (*pb.UpgradeValidateStartClusterReply, error) {
 	gplog.Info("Started processing validate-start-cluster request")
 
-	go h.startNewCluster(in.NewBinDir, in.NewDataDir)
+	go h.startNewCluster()
 
 	return &pb.UpgradeValidateStartClusterReply{}, nil
 }
 
-func (h *Hub) startNewCluster(newBinDir string, newDataDir string) {
+func (h *Hub) startNewCluster() {
 	gplog.Debug(h.conf.StateDir)
 	c := upgradestatus.NewChecklistManager(h.conf.StateDir)
 	err := c.ResetStateDir(upgradestatus.VALIDATE_START_CLUSTER)
@@ -37,7 +36,9 @@ func (h *Hub) startNewCluster(newBinDir string, newDataDir string) {
 		return
 	}
 
-	_, err = h.clusterPair.OldCluster.ExecuteLocalCommand(fmt.Sprintf("PYTHONPATH=%s && %s/gpstart -a -d %s", os.Getenv("PYTHONPATH"), newBinDir, newDataDir))
+	newBinDir := h.clusterPair.NewBinDir
+	newDataDir := h.clusterPair.NewCluster.GetDirForContent(-1)
+	_, err = h.clusterPair.NewCluster.ExecuteLocalCommand(fmt.Sprintf("PYTHONPATH=%s && %s/gpstart -a -d %s", os.Getenv("PYTHONPATH"), newBinDir, newDataDir))
 	if err != nil {
 		gplog.Error(err.Error())
 		cmErr := c.MarkFailed(upgradestatus.VALIDATE_START_CLUSTER)
