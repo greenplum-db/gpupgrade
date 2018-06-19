@@ -69,8 +69,8 @@ var _ = Describe("upgrade validate start cluster", func() {
 
 		Eventually(func() bool { return cm.IsComplete("validate-start-cluster") }).Should(BeTrue())
 		Expect(testExecutor.NumExecutions).To(Equal(1))
-		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("PYTHONPATH="))
-		-Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("&& bin/gpstart -a -d data"))
+		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("source /new/bindir/../greenplum_path.sh"))
+		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("/new/bindir/gpstart -a -d /new/datadir"))
 	})
 
 	It("sets status to FAILED when the validate start cluster request returns an error", func() {

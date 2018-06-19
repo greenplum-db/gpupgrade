@@ -2,7 +2,6 @@ package services
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	pb "github.com/greenplum-db/gpupgrade/idl"
@@ -38,7 +37,7 @@ func (h *Hub) startNewCluster() {
 
 	newBinDir := h.clusterPair.NewBinDir
 	newDataDir := h.clusterPair.NewCluster.GetDirForContent(-1)
-	_, err = h.clusterPair.NewCluster.ExecuteLocalCommand(fmt.Sprintf("PYTHONPATH=%s && %s/gpstart -a -d %s", os.Getenv("PYTHONPATH"), newBinDir, newDataDir))
+	_, err = h.clusterPair.NewCluster.ExecuteLocalCommand(fmt.Sprintf("source %s/../greenplum_path.sh; %s/gpstart -a -d %s", newBinDir, newBinDir, newDataDir))
 	if err != nil {
 		gplog.Error(err.Error())
 		cmErr := c.MarkFailed(upgradestatus.VALIDATE_START_CLUSTER)
