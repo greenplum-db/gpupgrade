@@ -39,7 +39,7 @@ var _ = Describe("PrepareStartAgents", func() {
 			Err: errChan,
 			Out: outChan,
 		})
-		cm := testutils.NewMockChecklistManager()
+		cm = testutils.NewMockChecklistManager()
 		clusterPair := testutils.CreateSampleClusterPair()
 		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, conf, stubRemoteExecutor, cm)
 	})

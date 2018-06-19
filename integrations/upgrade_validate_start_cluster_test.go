@@ -1,7 +1,6 @@
 package integrations_test
 
 import (
-	"io/ioutil"
 	"time"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
@@ -75,7 +74,7 @@ var _ = Describe("upgrade validate-start-cluster", func() {
 
 		Expect(testExecutor.NumExecutions).To(Equal(1))
 		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("gpstart"))
-		Expect(cm.IsPending(upgradestatus.VALIDATE_START_CLUSTER)).To(BeTrue())
+		Expect(cm.IsComplete(upgradestatus.VALIDATE_START_CLUSTER)).To(BeTrue())
 
 	})
 
@@ -89,6 +88,6 @@ var _ = Describe("upgrade validate-start-cluster", func() {
 
 		Expect(testExecutor.NumExecutions).To(Equal(1))
 		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("gpstart"))
-		Expect(cm.IsPending(upgradestatus.VALIDATE_START_CLUSTER)).To(BeTrue())
+		Expect(cm.IsFailed(upgradestatus.VALIDATE_START_CLUSTER)).To(BeTrue())
 	})
 })

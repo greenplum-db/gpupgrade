@@ -21,7 +21,7 @@ func (h *Hub) UpgradeValidateStartCluster(ctx context.Context, in *pb.UpgradeVal
 
 func (h *Hub) startNewCluster() {
 	gplog.Debug(h.conf.StateDir)
-	c := upgradestatus.NewChecklistManager(h.conf.StateDir)
+	c := h.checklistWriter
 	err := c.ResetStateDir(upgradestatus.VALIDATE_START_CLUSTER)
 	if err != nil {
 		gplog.Error("failed to reset the state dir for validate-start-cluster")

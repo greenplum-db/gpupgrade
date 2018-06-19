@@ -2,13 +2,12 @@ package services_test
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"sync"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
+	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	pb "github.com/greenplum-db/gpupgrade/idl"
@@ -23,14 +22,14 @@ import (
 
 var _ = Describe("upgrade validate start cluster", func() {
 	var (
-		hub                *services.Hub
-		dir                string
-		commandExecer      *testutils.FakeCommandExecer
-		errChan            chan error
-		outChan            chan []byte
-		stubRemoteExecutor *testutils.StubRemoteExecutor
-		clusterPair        *services.ClusterPair
-		testExecutor       *testhelper.TestExecutor
+		hub           *services.Hub
+		dir           string
+		commandExecer *testutils.FakeCommandExecer
+		errChan       chan error
+		outChan       chan []byte
+		clusterPair   *services.ClusterPair
+		testExecutor  *testhelper.TestExecutor
+		cm            *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -49,13 +48,12 @@ var _ = Describe("upgrade validate start cluster", func() {
 
 		clusterPair = testutils.CreateSampleClusterPair()
 		testExecutor = &testhelper.TestExecutor{}
-		clusterPair.OldCluster.Executor = testExecutor
-		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
-		hubConfig := &services.HubConfig{
+		clusterPair.NewCluster.Executor = testExecutor
+		cm = testutils.NewMockChecklistManager()
+		clusterSsher := cluster_ssher.NewClusterSsher(cm, nil, nil)
+		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, &services.HubConfig{
 			StateDir: dir,
-		}
-		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec,
-			hubConfig, stubRemoteExecutor, nil)
+		}, clusterSsher, cm)
 	})
 
 	AfterEach(func() {
@@ -63,50 +61,16 @@ var _ = Describe("upgrade validate start cluster", func() {
 		os.RemoveAll(dir)
 	})
 
-	//This test is flaking... It will be rewritten once the checklist manager refactor comes in.
-	XIt("sets status to COMPLETE when validate start cluster request has been made and returns no error", func() {
-		stateChecker := upgradestatus.NewStateCheck(
-			filepath.Join(dir, "validate-start-cluster"),
-			pb.UpgradeSteps_VALIDATE_START_CLUSTER,
-		)
+	It("sets status to COMPLETE when validate start cluster request has been made and returns no error", func() {
+		Expect(cm.IsPending("validate-start-cluster")).To(BeTrue())
 
-		trigger := make(chan struct{}, 1)
-		commandExecer.SetTrigger(trigger)
-
-		fmt.Println("1")
-		wg := &sync.WaitGroup{}
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			defer GinkgoRecover()
-
-			Eventually(stateChecker.GetStatus).Should(Equal(&pb.UpgradeStepStatus{
-				Step:   pb.UpgradeSteps_VALIDATE_START_CLUSTER,
-				Status: pb.StepStatus_RUNNING,
-			}))
-			trigger <- struct{}{}
-		}()
-		fmt.Println("2")
-
-		_, err := hub.UpgradeValidateStartCluster(nil, &pb.UpgradeValidateStartClusterRequest{
-			NewBinDir:  "bin",
-			NewDataDir: "data",
-		})
-		fmt.Println("3")
+		_, err := hub.UpgradeValidateStartCluster(nil, &pb.UpgradeValidateStartClusterRequest{})
 		Expect(err).ToNot(HaveOccurred())
-		wg.Wait()
 
-		fmt.Println("4")
+		Eventually(func() bool { return cm.IsComplete("validate-start-cluster") }).Should(BeTrue())
 		Expect(testExecutor.NumExecutions).To(Equal(1))
 		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("PYTHONPATH="))
-		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("&& bin/gpstart -a -d data"))
-
-		fmt.Println("5")
-		Eventually(stateChecker.GetStatus).Should(Equal(&pb.UpgradeStepStatus{
-			Step:   pb.UpgradeSteps_VALIDATE_START_CLUSTER,
-			Status: pb.StepStatus_COMPLETE,
-		}))
-		fmt.Println("6")
+		-Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("&& bin/gpstart -a -d data"))
 	})
 
 	It("sets status to FAILED when the validate start cluster request returns an error", func() {

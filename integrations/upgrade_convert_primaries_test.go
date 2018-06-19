@@ -2,7 +2,6 @@ package integrations_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -64,7 +63,7 @@ var _ = Describe("upgrade convert primaries", func() {
 		})
 
 		clusterSsher := cluster_ssher.NewClusterSsher(
-			upgradestatus.NewChecklistManager(conf.StateDir),
+			cm,
 			services.NewPingerManager(conf.StateDir, 500*time.Millisecond),
 			hubCommandExecer.Exec,
 		)

@@ -43,7 +43,7 @@ var _ = Describe("hub", func() {
 		}
 		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
 
-		cm := testutils.NewMockChecklistManager()
+		cm = testutils.NewMockChecklistManager()
 		hub = services.NewHub(clusterPair, grpc.DialContext, nil, conf, stubRemoteExecutor, cm)
 	})
 
