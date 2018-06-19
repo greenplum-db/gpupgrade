@@ -21,7 +21,6 @@ var _ = Describe("PrepareStartAgents", func() {
 		outChan            chan []byte
 		errChan            chan error
 		hub                *services.Hub
-		cm                 *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
