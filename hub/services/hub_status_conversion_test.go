@@ -23,7 +23,6 @@ var _ = Describe("hub", func() {
 		agentA             *testutils.MockAgentServer
 		stubRemoteExecutor *testutils.StubRemoteExecutor
 		clusterPair        *services.ClusterPair
-		cm                 *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
