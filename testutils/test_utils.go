@@ -68,7 +68,8 @@ func CreateSampleClusterPair() *services.ClusterPair {
 	}
 	cp.OldCluster.Executor = &testhelper.TestExecutor{}
 	cp.NewCluster.Executor = &testhelper.TestExecutor{}
-
+	cp.OldBinDir = "/old/bindir"
+	cp.NewBinDir = "/new/bindir"
 	return cp
 }
 
@@ -79,9 +80,9 @@ func InitClusterPairFromDB() *services.ClusterPair {
 	cp := &services.ClusterPair{}
 	segConfig := cluster.MustGetSegmentConfiguration(conn)
 	cp.OldCluster = cluster.NewCluster(segConfig)
-	cp.OldBinDir = "/non/existent/old/path"
+	cp.OldBinDir = "/old/bindir"
 	cp.NewCluster = cluster.NewCluster(segConfig)
-	cp.NewBinDir = "/non/existent/new/path"
+	cp.NewBinDir = "/new/bindir"
 	return cp
 }
 

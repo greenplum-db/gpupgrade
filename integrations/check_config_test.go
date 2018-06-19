@@ -46,7 +46,7 @@ var _ = Describe("check config", func() {
 	})
 
 	It("happy: the database configuration is saved to a specified location", func() {
-		session := runCommand("check", "config", "--master-host", "localhost", "--old-bindir", "/non/existent/path")
+		session := runCommand("check", "config", "--master-host", "localhost", "--old-bindir", "/old/bin/dir")
 		if session.ExitCode() != 0 {
 			fmt.Println("make sure greenplum is running")
 		}

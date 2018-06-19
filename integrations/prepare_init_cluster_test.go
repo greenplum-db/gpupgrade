@@ -62,8 +62,7 @@ var _ = Describe("prepare", func() {
 		Expect(port).ToNot(BeEmpty())
 
 		Expect(cm.IsPending(upgradestatus.INIT_CLUSTER)).To(BeTrue())
-
-		session := runCommand("prepare", "init-cluster", "--port", port, "--new-bindir", "/non/existent/path")
+		session := runCommand("prepare", "init-cluster", "--port", port, "--new-bindir", "/new/bin/dir")
 		Eventually(session).Should(Exit(0))
 
 		Expect(cm.IsComplete(upgradestatus.INIT_CLUSTER)).To(BeTrue())

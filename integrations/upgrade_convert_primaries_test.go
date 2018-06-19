@@ -10,7 +10,6 @@ import (
 	agentServices "github.com/greenplum-db/gpupgrade/agent/services"
 	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
 	"github.com/greenplum-db/gpupgrade/hub/services"
-	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/testutils"
 
 	. "github.com/onsi/ginkgo"
@@ -25,8 +24,6 @@ var _ = Describe("upgrade convert primaries", func() {
 		agent              *agentServices.AgentServer
 		hubCommandExecer   *testutils.FakeCommandExecer
 		agentCommandExecer *testutils.FakeCommandExecer
-		oldBinDir          string
-		newBinDir          string
 		oidFile            string
 		hubOutChan         chan []byte
 		agentCommandOutput chan []byte
@@ -102,8 +99,8 @@ var _ = Describe("upgrade convert primaries", func() {
 		upgradeConvertPrimaries := runCommand(
 			"upgrade",
 			"convert-primaries",
-			"--old-bindir", oldBinDir,
-			"--new-bindir", newBinDir,
+			"--old-bindir", "/old/bindir",
+			"--new-bindir", "/new/bindir",
 		)
 		Expect(upgradeConvertPrimaries).To(Exit(0))
 
@@ -137,8 +134,8 @@ var _ = Describe("upgrade convert primaries", func() {
 		upgradeConvertPrimaries := runCommand(
 			"upgrade",
 			"convert-primaries",
-			"--old-bindir", oldBinDir,
-			"--new-bindir", newBinDir,
+			"--old-bindir", "/old/bindir",
+			"--new-bindir", "/new/bindir",
 		)
 		Expect(upgradeConvertPrimaries).Should(Exit(0))
 
