@@ -72,7 +72,6 @@
   revision = "88edab0803230a3898347e77b474f8c1820a1f20"
 
 [[projects]]
-  branch = "master"
   name = "github.com/onsi/ginkgo"
   packages = [
     ".",
@@ -95,7 +94,8 @@
     "reporters/stenographer/support/go-isatty",
     "types"
   ]
-  revision = "c73579c58881b5ba90d3b08f6ac59cb1c909d6dd"
+  revision = "fa5fabab2a1bfbd924faf4c067d07ae414e2aedf"
+  version = "v1.5.0"
 
 [[projects]]
   name = "github.com/onsi/gomega"
@@ -135,19 +135,6 @@
   packages = ["."]
   revision = "e57e3eeb33f795204c1ca35f56c44f83227c6e66"
   version = "v1.0.0"
-
-[[projects]]
-  branch = "master"
-  name = "golang.org/x/crypto"
-  packages = [
-    "curve25519",
-    "ed25519",
-    "ed25519/internal/edwards25519",
-    "internal/chacha20",
-    "poly1305",
-    "ssh"
-  ]
-  revision = "91a49db82a88618983a78a06c1cbd4e00ab749ab"
 
 [[projects]]
   branch = "master"
@@ -261,6 +248,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "9d2dddd636005507f9f0f75f2a78aabdff8164d8de2eef4df01ddcd8e2edfc9c"
+  inputs-digest = "d4d488dd285feaaee3212fdfee085bf0d580a8022f6de9d6feec1771259d97a4"
   solver-name = "gps-cdcl"
   solver-version = 1
