@@ -47,7 +47,7 @@ var _ = Describe("PrepareSeginstall", func() {
 		It("returns a gRPC reply object, if the software verification gets underway asynch", func() {
 			_, err := hub.CheckSeginstall(nil, &pb.CheckSeginstallRequest{})
 			Expect(err).ToNot(HaveOccurred())
-			Eventually(stubRemoteExecutor.VerifySoftwareHosts).Should(Receive(Equal([]string{"hostone"})))
+			Eventually(commandExecer.GetNumInvocations).Should(Equal(1))
 		})
 	})
 })
