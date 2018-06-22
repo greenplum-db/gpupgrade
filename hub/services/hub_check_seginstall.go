@@ -2,71 +2,64 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 
+	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
+	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 )
 
 // grpc generated function signature requires ctx and in params.
 // nolint: unparam
-func (h *Hub) CheckSeginstall(ctx context.Context, in *pb.CheckSeginstallRequest) (*pb.CheckSeginstallReply, error) {
-	gplog.Info("starting CheckSeginstall()")
-	hostnames := h.clusterPair.GetHostnames()
+func (h *Hub) CheckSeginstall(ctx context.Context, in *idl.CheckSeginstallRequest) (*idl.CheckSeginstallReply, error) {
+	gplog.Info("Running CheckSeginstall()")
+
+	err := h.checklistWriter.ResetStateDir(upgradestatus.SEGINSTALL)
+	if err != nil {
+		gplog.Error(err.Error())
+		return &idl.CheckSeginstallReply{}, err
+	}
+
+	err = h.checklistWriter.MarkInProgress(upgradestatus.SEGINSTALL)
+	if err != nil {
+		gplog.Error(err.Error())
+		return &idl.CheckSeginstallReply{}, err
+	}
+
+	go VerifyAgentsInstalled(h.clusterPair, h.checklistWriter)
+
+	return &idl.CheckSeginstallReply{}, nil
+}
+
+func VerifyAgentsInstalled(cp *ClusterPair, cw cluster_ssher.ChecklistWriter) {
+	// TODO: if this finds nothing, should we err out? do a fallback check based on $GPHOME?
+	var err error
+	logStr := "check gpupgrade_agent is installed in GPHOME on master and hosts"
 	agentPath := filepath.Join(os.Getenv("GPHOME"), "bin", "gpupgrade_agent")
-	command := []string{"ls", agentPath}
-	go func() {
-		var anyFailed = false
-		err := h.checklistWriter.ResetStateDir(upgradestatus.SEGINSTALL)
-		if err != nil {
-			gplog.Error(err.Error())
-			//For MMVP, return here, but maybe should log more info
-			goto fail
-		}
-		err = h.checklistWriter.MarkInProgress(upgradestatus.SEGINSTALL)
-		if err != nil {
-			gplog.Error(err.Error())
-			//For MMVP, return here, but maybe should log more info
-			goto fail
-		}
+	returnLsCommand := func(contentID int) string { return "ls " + agentPath }
+	remoteOutput := cp.OldCluster.GenerateAndExecuteCommand(logStr, returnLsCommand, cluster.ON_HOSTS_AND_MASTER)
 
-		//default assumption: GPDB is installed on the same path on all hosts in cluster
-		//we're looking for gpupgrade_agent as proof that the new binary is installed
-		//TODO: if this finds nothing, should we err out? do a fallback check based on $GPHOME?
-		for _, hostname := range hostnames {
-			sshArgs := []string{"-o", "StrictHostKeyChecking=no", hostname}
-			sshArgs = append(sshArgs, command...)
-			output, err := h.commandExecer("ssh", sshArgs...).CombinedOutput()
-			//TODO: fix the string formatting. don't include untrusted output in the format string
-			if err != nil {
-				errText := "Couldn't run %s on %s:"
-				if output != nil {
-					errText += string(output)
-				}
-				gplog.Error(errText, command, hostname)
-				anyFailed = true
-			}
-		}
-		if anyFailed {
-			goto fail
-		}
+	errStr := "Failed to find all gpupgrade_agents"
+	errMessage := func(contentID int) string {
+		return fmt.Sprintf("Could not find gpupgrade_agent on segment with contentID %d", contentID)
+	}
+	cp.OldCluster.CheckClusterError(remoteOutput, errStr, errMessage, true)
 
-		err = h.checklistWriter.MarkComplete(upgradestatus.SEGINSTALL)
+	if remoteOutput.NumErrors > 0 {
+		err = cw.MarkFailed(upgradestatus.SEGINSTALL)
 		if err != nil {
 			gplog.Error(err.Error())
+			return
 		}
+	}
+
+	err = cw.MarkComplete(upgradestatus.SEGINSTALL)
+	if err != nil {
+		gplog.Error(err.Error())
 		return
-
-	fail:
-		err = h.checklistWriter.MarkFailed(upgradestatus.SEGINSTALL)
-		if err != nil {
-			gplog.Error(err.Error())
-		}
-	}()
-
-	// go h.remoteExecutor.VerifySoftware(h.clusterPair.GetHostnames())
-
-	return &pb.CheckSeginstallReply{}, nil
+	}
 }

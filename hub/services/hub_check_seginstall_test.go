@@ -1,53 +1,46 @@
 package services_test
 
 import (
+	"fmt"
+	"os"
+
+	"github.com/greenplum-db/gp-common-go-libs/cluster"
+	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	_ "github.com/greenplum-db/gpupgrade/hub/services"
 
 	"github.com/greenplum-db/gpupgrade/hub/services"
-	pb "github.com/greenplum-db/gpupgrade/idl"
-
-	"io/ioutil"
 
 	"github.com/greenplum-db/gpupgrade/testutils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"google.golang.org/grpc"
 )
 
-var _ = Describe("PrepareSeginstall", func() {
+var _ = Describe("hub CheckSeginstall", func() {
 
 	var (
-		dir                string
-		stubRemoteExecutor *testutils.StubRemoteExecutor
-		commandExecer      *testutils.FakeCommandExecer
-		outChan            chan []byte
-		errChan            chan error
-		hub                *services.Hub
+		cp *services.ClusterPair
+		cm *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
-		var err error
-		dir, err = ioutil.TempDir("", "")
-		Expect(err).ToNot(HaveOccurred())
-		conf := &services.HubConfig{
-			StateDir: dir,
-		}
-		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
-		errChan = make(chan error, 2)
-		outChan = make(chan []byte, 2)
-		commandExecer = &testutils.FakeCommandExecer{}
-		commandExecer.SetOutput(&testutils.FakeCommand{
-			Err: errChan,
-			Out: outChan,
-		})
-		hub = services.NewHub(testutils.CreateSampleClusterPair(), grpc.DialContext, commandExecer.Exec, conf, stubRemoteExecutor, testutils.NewMockChecklistManager())
+		cp = testutils.CreateSampleClusterPair()
+		cm = testutils.NewMockChecklistManager()
 	})
 
-	Describe("CheckSeginstall", func() {
-		It("returns a gRPC reply object, if the software verification gets underway asynch", func() {
-			_, err := hub.CheckSeginstall(nil, &pb.CheckSeginstallRequest{})
-			Expect(err).ToNot(HaveOccurred())
-			Eventually(commandExecer.GetNumInvocations).Should(Equal(1))
-		})
+	It("shells out to cluster and verifies gpupgrade_agent is installed on master and hosts", func() {
+		cp.OldCluster = testutils.CreateMultinodeSampleCluster()
+		testExecutor := &testhelper.TestExecutor{}
+		testExecutor.ClusterOutput = &cluster.RemoteOutput{}
+		cp.OldCluster.Executor = testExecutor
+
+		services.VerifyAgentsInstalled(cp, cm)
+
+		Expect(testExecutor.NumExecutions).To(Equal(1))
+
+		lsCmd := fmt.Sprintf("ls %s/bin/gpupgrade_agent", os.Getenv("GPHOME"))
+		clusterCommands := testExecutor.ClusterCommands[0]
+		for _, command := range clusterCommands {
+			Expect(command).To(ContainElement(lsCmd))
+		}
 	})
 })

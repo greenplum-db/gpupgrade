@@ -52,6 +52,17 @@ func Check(msg string, e error) {
 	}
 }
 
+func CreateMultinodeSampleCluster() *cluster.Cluster {
+	return &cluster.Cluster{
+		ContentIDs: []int{-1, 0, 1},
+		Segments: map[int]cluster.SegConfig{
+			-1: cluster.SegConfig{ContentID: -1, Port: 15432, Hostname: "hostone", DataDir: "/data/master"},
+			0:  cluster.SegConfig{ContentID: 0, Port: 25432, Hostname: "hosttwo", DataDir: "/data/seg1"},
+			1:  cluster.SegConfig{ContentID: 1, Port: 25433, Hostname: "hostthree", DataDir: "/data/seg2"},
+		},
+	}
+}
+
 func CreateSampleCluster(contentID int, port int, hostname string, datadir string) *cluster.Cluster {
 	return &cluster.Cluster{
 		ContentIDs: []int{contentID},

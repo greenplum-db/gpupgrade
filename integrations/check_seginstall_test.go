@@ -1,13 +1,13 @@
 package integrations_test
 
 import (
-	"strings"
-	"time"
+	"fmt"
+	"os"
 
-	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
+	"github.com/greenplum-db/gp-common-go-libs/cluster"
+	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -15,53 +15,33 @@ import (
 	"google.golang.org/grpc"
 )
 
-var _ = Describe("check", func() {
+var _ = Describe("check seginstall", func() {
 	var (
-		hub           *services.Hub
-		mockAgent     *testutils.MockAgentServer
-		commandExecer *testutils.FakeCommandExecer
-		outChan       chan []byte
-		errChan       chan error
-		cm            *testutils.MockChecklistManager
+		hub *services.Hub
+		cm  *testutils.MockChecklistManager
+		cp  *services.ClusterPair
+		err error
 	)
 
 	BeforeEach(func() {
-		var err error
-
+		// The function runCommand depends on this port
 		port, err = testutils.GetOpenPort()
 		Expect(err).ToNot(HaveOccurred())
 
-		var agentPort int
-		mockAgent, agentPort = testutils.NewMockAgentServer()
-
 		conf := &services.HubConfig{
-			CliToHubPort:   port,
-			HubToAgentPort: agentPort,
-			StateDir:       testStateDir,
+			CliToHubPort: port,
+			StateDir:     testStateDir,
 		}
-		outChan = make(chan []byte, 2)
-		errChan = make(chan error, 2)
 
-		commandExecer = &testutils.FakeCommandExecer{}
-		commandExecer.SetOutput(&testutils.FakeCommand{
-			Out: outChan,
-			Err: errChan,
-		})
-
+		cp = testutils.CreateSampleClusterPair()
 		cm = testutils.NewMockChecklistManager()
-		clusterSsher := cluster_ssher.NewClusterSsher(
-			cm,
-			services.NewPingerManager(conf.StateDir, 500*time.Millisecond),
-			commandExecer.Exec,
-		)
 
-		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, commandExecer.Exec, conf, clusterSsher, cm)
+		hub = services.NewHub(cp, grpc.DialContext, nil, conf, nil, cm)
 		go hub.Start()
 	})
 
 	AfterEach(func() {
 		hub.Stop()
-		mockAgent.Stop()
 	})
 
 	// `gpupgrade check seginstall` verifies that the user has installed the software on all hosts
@@ -73,21 +53,27 @@ var _ = Describe("check", func() {
 	// setup in `integrations_suite_test.go` to replicate the real-world scenario of "install binaries side-by-side".
 	//
 	// TODO: This test might be interesting to run multi-node; for that, figure out how "installation" should be done
-	Describe("seginstall", func() {
-		It("updates status PENDING to RUNNING then to COMPLETE if successful", func() {
-			mockAgent.StatusConversionResponse = &pb.CheckConversionStatusReply{
-				Statuses: []string{},
-			}
+	It("updates status PENDING to RUNNING then to COMPLETE if successful", func() {
+		cp.OldCluster = testutils.CreateMultinodeSampleCluster()
+		testExecutor := &testhelper.TestExecutor{}
+		testExecutor.ClusterOutput = &cluster.RemoteOutput{}
+		cp.OldCluster.Executor = testExecutor
 
-			Expect(cm.IsPending(upgradestatus.SEGINSTALL)).To(BeTrue())
+		Expect(cm.IsPending(upgradestatus.SEGINSTALL)).To(BeTrue())
 
-			checkSeginstallSession := runCommand("check", "seginstall", "--master-host", "localhost")
-			Eventually(checkSeginstallSession).Should(Exit(0))
+		checkSeginstallSession := runCommand("check", "seginstall", "--master-host", "localhost")
+		Eventually(checkSeginstallSession).Should(Exit(0))
 
-			Expect(commandExecer.Command()).To(Equal("ssh"))
-			Expect(strings.Join(commandExecer.Args(), "")).To(ContainSubstring("ls"))
-			Expect(cm.IsComplete(upgradestatus.SEGINSTALL)).To(BeTrue())
-		})
+		// These assertions are identical to the ones in the hub_check_seginstall unit tests but just to be safe we are leaving it in.
+		Expect(testExecutor.NumExecutions).To(Equal(1))
+
+		lsCmd := fmt.Sprintf("ls %s/bin/gpupgrade_agent", os.Getenv("GPHOME"))
+		clusterCommands := testExecutor.ClusterCommands[0]
+		for _, command := range clusterCommands {
+			Expect(command).To(ContainElement(lsCmd))
+		}
+
+		Expect(cm.IsComplete(upgradestatus.SEGINSTALL)).To(BeTrue())
 	})
 
 	It("fails if the --master-host flag is missing", func() {
