@@ -1,14 +1,13 @@
 package integrations_test
 
 import (
+	"fmt"
 	"os"
-	"strings"
-	"time"
 
-	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
+	"github.com/greenplum-db/gp-common-go-libs/cluster"
+	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -16,66 +15,55 @@ import (
 	"google.golang.org/grpc"
 )
 
-var _ = Describe("prepare", func() {
+var _ = Describe("prepare start-agents", func() {
 	var (
-		hub           *services.Hub
-		mockAgent     *testutils.MockAgentServer
-		commandExecer *testutils.FakeCommandExecer
-		cm            *testutils.MockChecklistManager
+		hub *services.Hub
+		cm  *testutils.MockChecklistManager
+		cp  *services.ClusterPair
+		err error
 	)
 
 	BeforeEach(func() {
-		var agentPort int
-		mockAgent, agentPort = testutils.NewMockAgentServer()
-
-		var err error
+		// The function runCommand depends on this port
 		port, err = testutils.GetOpenPort()
 		Expect(err).ToNot(HaveOccurred())
 
 		conf := &services.HubConfig{
-			CliToHubPort:   port,
-			HubToAgentPort: agentPort,
-			StateDir:       testStateDir,
+			CliToHubPort: port,
+			StateDir:     testStateDir,
 		}
-		commandExecer = &testutils.FakeCommandExecer{}
-		commandExecer.SetOutput(&testutils.FakeCommand{})
 
+		cp = testutils.CreateSampleClusterPair()
 		cm = testutils.NewMockChecklistManager()
-		clusterSsher := cluster_ssher.NewClusterSsher(
-			cm,
-			services.NewPingerManager(conf.StateDir, 500*time.Millisecond),
-			commandExecer.Exec,
-		)
-		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, commandExecer.Exec, conf, clusterSsher, cm)
 
-		pgPort := os.Getenv("PGPORT")
-		Expect(pgPort).ToNot(Equal(""), "Please set PGPORT to a useful value and rerun the tests.")
-
+		hub = services.NewHub(cp, grpc.DialContext, nil, conf, nil, cm)
 		go hub.Start()
 	})
 
 	AfterEach(func() {
 		hub.Stop()
-		mockAgent.Stop()
-		Expect(checkPortIsAvailable(port)).To(BeTrue())
 	})
 
-	Describe("start-agents", func() {
-		It("updates status PENDING to RUNNING then to COMPLETE if successful", func(done Done) {
-			defer close(done)
+	It("updates status PENDING to RUNNING then to COMPLETE if successful", func() {
+		cp.OldCluster = testutils.CreateMultinodeSampleCluster()
+		testExecutor := &testhelper.TestExecutor{}
+		testExecutor.ClusterOutput = &cluster.RemoteOutput{}
+		cp.OldCluster.Executor = testExecutor
 
-			mockAgent.StatusConversionResponse = &pb.CheckConversionStatusReply{
-				Statuses: []string{},
-			}
+		Expect(cm.IsPending(upgradestatus.START_AGENTS)).To(BeTrue())
 
-			Expect(cm.IsPending(upgradestatus.START_AGENTS)).To(BeTrue())
+		prepareStartAgentsSession := runCommand("prepare", "start-agents")
+		Eventually(prepareStartAgentsSession).Should(Exit(0))
 
-			prepareStartAgentsSession := runCommand("prepare", "start-agents")
-			Eventually(prepareStartAgentsSession).Should(Exit(0))
+		// These assertions are identical to the ones in the prepare_start_agent unit tests but just to be safe we are leaving it in.
+		Expect(testExecutor.NumExecutions).To(Equal(1))
 
-			Expect(commandExecer.Command()).To(Equal("ssh"))
-			Expect(strings.Join(commandExecer.Args(), "")).To(ContainSubstring("--daemonize"))
-			Expect(cm.IsComplete(upgradestatus.START_AGENTS)).To(BeTrue())
-		})
+		startAgentsCmd := fmt.Sprintf("%s/bin/gpupgrade_agent --daemonize", os.Getenv("GPHOME"))
+		clusterCommands := testExecutor.ClusterCommands[0]
+		for _, command := range clusterCommands {
+			Expect(command).To(ContainElement(startAgentsCmd))
+		}
+
+		Expect(cm.IsComplete(upgradestatus.START_AGENTS)).To(BeTrue())
 	})
 })

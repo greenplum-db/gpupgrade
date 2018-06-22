@@ -1,56 +1,46 @@
 package services_test
 
 import (
+	"fmt"
+	"os"
+
+	"github.com/greenplum-db/gp-common-go-libs/cluster"
+	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	_ "github.com/greenplum-db/gpupgrade/hub/services"
 
 	"github.com/greenplum-db/gpupgrade/hub/services"
 
-	"io/ioutil"
-
 	"github.com/greenplum-db/gpupgrade/testutils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"google.golang.org/grpc"
 )
 
-var _ = Describe("PrepareStartAgents", func() {
+var _ = Describe("hub PrepareStartAgents", func() {
+
 	var (
-		dir                string
-		stubRemoteExecutor *testutils.StubRemoteExecutor
-		commandExecer      *testutils.FakeCommandExecer
-		outChan            chan []byte
-		errChan            chan error
-		hub                *services.Hub
-		cm                 *testutils.MockChecklistManager
+		cp *services.ClusterPair
+		cm *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
-		var err error
-		dir, err = ioutil.TempDir("", "")
-		Expect(err).ToNot(HaveOccurred())
-		conf := &services.HubConfig{
-			StateDir: dir,
-		}
-		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
-		errChan = make(chan error, 2)
-		outChan = make(chan []byte, 2)
-		commandExecer = &testutils.FakeCommandExecer{}
-		commandExecer.SetOutput(&testutils.FakeCommand{
-			Err: errChan,
-			Out: outChan,
-		})
+		cp = testutils.CreateSampleClusterPair()
 		cm = testutils.NewMockChecklistManager()
-		clusterPair := testutils.CreateSampleClusterPair()
-		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, conf, stubRemoteExecutor, cm)
 	})
 
-	Describe("PrepareStartAgents", func() {
-		It("returns a gRPC object", func() {
-			reply, err := hub.PrepareStartAgents(nil, nil)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(reply).ToNot(BeNil())
-			Eventually(stubRemoteExecutor.StartHosts).Should(Receive(Equal([]string{"hostone"})))
-		})
-	})
+	It("shells out to cluster and runs gpupgrade_agent", func() {
+		cp.OldCluster = testutils.CreateMultinodeSampleCluster()
+		testExecutor := &testhelper.TestExecutor{}
+		testExecutor.ClusterOutput = &cluster.RemoteOutput{}
+		cp.OldCluster.Executor = testExecutor
 
+		services.StartAgents(cp, cm)
+
+		Expect(testExecutor.NumExecutions).To(Equal(1))
+
+		startAgentsCmd := fmt.Sprintf("%s/bin/gpupgrade_agent --daemonize", os.Getenv("GPHOME"))
+		clusterCommands := testExecutor.ClusterCommands[0]
+		for _, command := range clusterCommands {
+			Expect(command).To(ContainElement(startAgentsCmd))
+		}
+	})
 })
