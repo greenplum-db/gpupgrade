@@ -12,7 +12,6 @@ import (
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/greenplum-db/gpupgrade/helpers"
-	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -85,13 +84,7 @@ func main() {
 				return exec.Command(command, vars...)
 			}
 			cm := upgradestatus.NewChecklistManager(conf.StateDir)
-			clusterSsher := cluster_ssher.NewClusterSsher(
-				cm,
-				services.NewPingerManager(conf.StateDir, 500*time.Millisecond),
-				commandExecer,
-			)
-
-			hub := services.NewHub(&services.ClusterPair{}, grpc.DialContext, commandExecer, conf, clusterSsher, cm)
+			hub := services.NewHub(&services.ClusterPair{}, grpc.DialContext, commandExecer, conf, cm)
 			if daemon {
 				hub.MakeDaemon()
 			}

@@ -2,9 +2,7 @@ package integrations_test
 
 import (
 	"os"
-	"time"
 
-	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -35,13 +33,7 @@ var _ = Describe("prepare", func() {
 		commandExecer = &testutils.FakeCommandExecer{}
 		commandExecer.SetOutput(&testutils.FakeCommand{})
 		cm = testutils.NewMockChecklistManager()
-		clusterSsher := cluster_ssher.NewClusterSsher(
-			cm,
-			services.NewPingerManager(conf.StateDir, 500*time.Millisecond),
-			commandExecer.Exec,
-		)
-
-		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, commandExecer.Exec, conf, clusterSsher, cm)
+		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, commandExecer.Exec, conf, cm)
 		go hub.Start()
 	})
 

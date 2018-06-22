@@ -8,7 +8,6 @@ import (
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
-	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/idl"
 )
@@ -35,9 +34,10 @@ func (h *Hub) CheckSeginstall(ctx context.Context, in *idl.CheckSeginstallReques
 	return &idl.CheckSeginstallReply{}, nil
 }
 
-func VerifyAgentsInstalled(cp *ClusterPair, cw cluster_ssher.ChecklistWriter) {
-	// TODO: if this finds nothing, should we err out? do a fallback check based on $GPHOME?
+func VerifyAgentsInstalled(cp *ClusterPair, cw ChecklistWriter) {
 	var err error
+
+	// TODO: if this finds nothing, should we err out? do a fallback check based on $GPHOME?
 	logStr := "check gpupgrade_agent is installed in GPHOME on master and hosts"
 	agentPath := filepath.Join(os.Getenv("GPHOME"), "bin", "gpupgrade_agent")
 	returnLsCommand := func(contentID int) string { return "ls " + agentPath }

@@ -37,7 +37,7 @@ var _ = Describe("check config", func() {
 		commandExecer.SetOutput(&testutils.FakeCommand{})
 
 		cm := testutils.NewMockChecklistManager()
-		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, commandExecer.Exec, conf, nil, cm)
+		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, commandExecer.Exec, conf, cm)
 		go hub.Start()
 	})
 

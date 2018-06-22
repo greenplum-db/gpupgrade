@@ -2,10 +2,8 @@ package integrations_test
 
 import (
 	"errors"
-	"time"
 
 	agentServices "github.com/greenplum-db/gpupgrade/agent/services"
-	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
 	hubServices "github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -64,12 +62,7 @@ var _ = Describe("upgrade share oids", func() {
 		})
 
 		cm = testutils.NewMockChecklistManager()
-		clusterSsher := cluster_ssher.NewClusterSsher(
-			cm,
-			hubServices.NewPingerManager(conf.StateDir, 500*time.Millisecond),
-			hubExecer.Exec,
-		)
-		hub = hubServices.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, hubExecer.Exec, conf, clusterSsher, cm)
+		hub = hubServices.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, hubExecer.Exec, conf, cm)
 		go hub.Start()
 	})
 

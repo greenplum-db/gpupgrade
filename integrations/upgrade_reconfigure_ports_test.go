@@ -2,9 +2,7 @@ package integrations_test
 
 import (
 	"errors"
-	"time"
 
-	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -52,12 +50,7 @@ var _ = Describe("upgrade reconfigure ports", func() {
 		})
 
 		cm = testutils.NewMockChecklistManager()
-		clusterSsher := cluster_ssher.NewClusterSsher(
-			cm,
-			services.NewPingerManager(conf.StateDir, 500*time.Millisecond),
-			hubExecer.Exec,
-		)
-		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, hubExecer.Exec, conf, clusterSsher, cm)
+		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, hubExecer.Exec, conf, cm)
 		go hub.Start()
 	})
 

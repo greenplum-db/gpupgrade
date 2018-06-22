@@ -27,7 +27,6 @@ var _ = Describe("status upgrade", func() {
 		errChan                  chan error
 		outChan                  chan []byte
 		mockAgent                *testutils.MockAgentServer
-		stubRemoteExecutor       *testutils.StubRemoteExecutor
 		clusterPair              *services.ClusterPair
 	)
 
@@ -52,10 +51,9 @@ var _ = Describe("status upgrade", func() {
 			Err: errChan,
 			Out: outChan,
 		})
-		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
 		clusterPair = testutils.CreateSampleClusterPair()
 		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec,
-			conf, stubRemoteExecutor, nil)
+			conf, nil)
 	})
 
 	AfterEach(func() {

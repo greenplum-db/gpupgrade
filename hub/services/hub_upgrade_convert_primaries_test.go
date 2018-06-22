@@ -4,7 +4,6 @@ import (
 	"errors"
 	"io/ioutil"
 
-	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -74,8 +73,7 @@ var _ = Describe("hub.UpgradeConvertPrimaries()", func() {
 		commandExecer.SetOutput(&testutils.FakeCommand{})
 
 		cm = testutils.NewMockChecklistManager()
-		clusterSsher := cluster_ssher.NewClusterSsher(cm, nil, nil)
-		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, conf, clusterSsher, cm)
+		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, conf, cm)
 	})
 	AfterEach(func() {
 		utils.System = utils.InitializeSystemFunctions()

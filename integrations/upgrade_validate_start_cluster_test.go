@@ -1,10 +1,7 @@
 package integrations_test
 
 import (
-	"time"
-
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -48,15 +45,10 @@ var _ = Describe("upgrade validate-start-cluster", func() {
 		})
 
 		cm = testutils.NewMockChecklistManager()
-		clusterSsher := cluster_ssher.NewClusterSsher(
-			cm,
-			services.NewPingerManager(conf.StateDir, 500*time.Millisecond),
-			commandExecer.Exec,
-		)
 		clusterPair = testutils.InitClusterPairFromDB()
 		testExecutor = &testhelper.TestExecutor{}
 		clusterPair.NewCluster.Executor = testExecutor
-		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, conf, clusterSsher, cm)
+		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, conf, cm)
 		go hub.Start()
 	})
 

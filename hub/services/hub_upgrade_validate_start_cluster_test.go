@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	pb "github.com/greenplum-db/gpupgrade/idl"
@@ -49,10 +48,9 @@ var _ = Describe("upgrade validate start cluster", func() {
 		testExecutor = &testhelper.TestExecutor{}
 		clusterPair.NewCluster.Executor = testExecutor
 		cm = testutils.NewMockChecklistManager()
-		clusterSsher := cluster_ssher.NewClusterSsher(cm, nil, nil)
 		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, &services.HubConfig{
 			StateDir: dir,
-		}, clusterSsher, cm)
+		}, cm)
 	})
 
 	AfterEach(func() {

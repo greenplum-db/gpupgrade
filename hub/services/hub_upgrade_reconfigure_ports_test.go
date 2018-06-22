@@ -21,13 +21,12 @@ import (
 
 var _ = Describe("UpgradeReconfigurePorts", func() {
 	var (
-		hub                *services.Hub
-		dir                string
-		commandExecer      *testutils.FakeCommandExecer
-		errChan            chan error
-		outChan            chan []byte
-		stubRemoteExecutor *testutils.StubRemoteExecutor
-		cm                 *testutils.MockChecklistManager
+		hub           *services.Hub
+		dir           string
+		commandExecer *testutils.FakeCommandExecer
+		errChan       chan error
+		outChan       chan []byte
+		cm            *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -54,13 +53,11 @@ var _ = Describe("UpgradeReconfigurePorts", func() {
 		})
 		clusterPair := testutils.CreateSampleClusterPair()
 		clusterPair.OldCluster.Segments[1] = cluster.SegConfig{Hostname: "hosttwo"}
-		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
 		hubConfig := &services.HubConfig{
 			StateDir: dir,
 		}
 		cm = testutils.NewMockChecklistManager()
-		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec,
-			hubConfig, stubRemoteExecutor, cm)
+		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, hubConfig, cm)
 	})
 
 	AfterEach(func() {

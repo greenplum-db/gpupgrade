@@ -5,10 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	agentServices "github.com/greenplum-db/gpupgrade/agent/services"
-	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/testutils"
 
@@ -59,13 +57,8 @@ var _ = Describe("upgrade convert primaries", func() {
 			Out: hubOutChan,
 		})
 
-		clusterSsher := cluster_ssher.NewClusterSsher(
-			cm,
-			services.NewPingerManager(conf.StateDir, 500*time.Millisecond),
-			hubCommandExecer.Exec,
-		)
 		clusterPair = testutils.InitClusterPairFromDB()
-		hub = services.NewHub(clusterPair, grpc.DialContext, hubCommandExecer.Exec, conf, clusterSsher, cm)
+		hub = services.NewHub(clusterPair, grpc.DialContext, hubCommandExecer.Exec, conf, cm)
 		go hub.Start()
 
 		agentCommandOutput = make(chan []byte, 12)

@@ -19,11 +19,10 @@ import (
 
 var _ = Describe("hub", func() {
 	var (
-		hub                *services.Hub
-		agentA             *testutils.MockAgentServer
-		stubRemoteExecutor *testutils.StubRemoteExecutor
-		clusterPair        *services.ClusterPair
-		cm                 *testutils.MockChecklistManager
+		hub         *services.Hub
+		agentA      *testutils.MockAgentServer
+		clusterPair *services.ClusterPair
+		cm          *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -41,10 +40,9 @@ var _ = Describe("hub", func() {
 		conf := &services.HubConfig{
 			HubToAgentPort: port,
 		}
-		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
 
 		cm = testutils.NewMockChecklistManager()
-		hub = services.NewHub(clusterPair, grpc.DialContext, nil, conf, stubRemoteExecutor, cm)
+		hub = services.NewHub(clusterPair, grpc.DialContext, nil, conf, cm)
 	})
 
 	AfterEach(func() {

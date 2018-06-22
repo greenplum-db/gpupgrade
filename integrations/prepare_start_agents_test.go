@@ -36,7 +36,7 @@ var _ = Describe("prepare start-agents", func() {
 		cp = testutils.CreateSampleClusterPair()
 		cm = testutils.NewMockChecklistManager()
 
-		hub = services.NewHub(cp, grpc.DialContext, nil, conf, nil, cm)
+		hub = services.NewHub(cp, grpc.DialContext, nil, conf, cm)
 		go hub.Start()
 	})
 

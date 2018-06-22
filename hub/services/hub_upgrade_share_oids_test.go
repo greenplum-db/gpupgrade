@@ -20,14 +20,13 @@ import (
 
 var _ = Describe("UpgradeShareOids", func() {
 	var (
-		hub                *services.Hub
-		dir                string
-		commandExecer      *testutils.FakeCommandExecer
-		errChan            chan error
-		outChan            chan []byte
-		stubRemoteExecutor *testutils.StubRemoteExecutor
-		clusterPair        *services.ClusterPair
-		cm                 *testutils.MockChecklistManager
+		hub           *services.Hub
+		dir           string
+		commandExecer *testutils.FakeCommandExecer
+		errChan       chan error
+		outChan       chan []byte
+		clusterPair   *services.ClusterPair
+		cm            *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -45,13 +44,11 @@ var _ = Describe("UpgradeShareOids", func() {
 			Err: errChan,
 			Out: outChan,
 		})
-		stubRemoteExecutor = testutils.NewStubRemoteExecutor()
 		hubConfig := &services.HubConfig{
 			StateDir: dir,
 		}
 		cm = testutils.NewMockChecklistManager()
-		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec,
-			hubConfig, stubRemoteExecutor, cm)
+		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, hubConfig, cm)
 	})
 
 	AfterEach(func() {

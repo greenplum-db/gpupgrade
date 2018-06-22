@@ -2,10 +2,8 @@ package integrations_test
 
 import (
 	"errors"
-	"time"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	pb "github.com/greenplum-db/gpupgrade/idl"
@@ -59,12 +57,7 @@ var _ = Describe("prepare shutdown-clusters", func() {
 		clusterPair.OldBinDir = "/tmpOld"
 		clusterPair.NewBinDir = "/tmpNew"
 		cm = testutils.NewMockChecklistManager()
-		clusterSsher := cluster_ssher.NewClusterSsher(
-			cm,
-			services.NewPingerManager(conf.StateDir, 500*time.Millisecond),
-			commandExecer.Exec,
-		)
-		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, conf, clusterSsher, cm)
+		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, conf, cm)
 		go hub.Start()
 	})
 

@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/greenplum-db/gpupgrade/helpers"
-	"github.com/greenplum-db/gpupgrade/hub/cluster_ssher"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
@@ -38,7 +37,7 @@ type Hub struct {
 	grpcDialer      dialer
 	commandExecer   helpers.CommandExecer
 	remoteExecutor  RemoteExecutor
-	checklistWriter cluster_ssher.ChecklistWriter
+	checklistWriter ChecklistWriter
 
 	mu      sync.Mutex
 	server  *grpc.Server
@@ -60,14 +59,20 @@ type HubConfig struct {
 	LogDir         string
 }
 
-func NewHub(pair *ClusterPair, grpcDialer dialer, execer helpers.CommandExecer, conf *HubConfig, executor RemoteExecutor, checklistWriter cluster_ssher.ChecklistWriter) *Hub {
+type ChecklistWriter interface {
+	MarkInProgress(string) error
+	ResetStateDir(string) error
+	MarkFailed(string) error
+	MarkComplete(string) error
+}
+
+func NewHub(pair *ClusterPair, grpcDialer dialer, execer helpers.CommandExecer, conf *HubConfig, checklistWriter ChecklistWriter) *Hub {
 	h := &Hub{
 		stopped:         make(chan struct{}, 1),
 		conf:            conf,
 		clusterPair:     pair,
 		grpcDialer:      grpcDialer,
 		commandExecer:   execer,
-		remoteExecutor:  executor,
 		checklistWriter: checklistWriter,
 	}
 
