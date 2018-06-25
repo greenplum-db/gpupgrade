@@ -2,12 +2,12 @@ package services
 
 import (
 	"context"
-
 	"errors"
 	"fmt"
+	"path/filepath"
+
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	pb "github.com/greenplum-db/gpupgrade/idl"
-	"path/filepath"
 )
 
 func (s *AgentServer) CheckConversionStatus(ctx context.Context, in *pb.CheckConversionStatusRequest) (*pb.CheckConversionStatusReply, error) {

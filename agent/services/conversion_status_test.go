@@ -1,6 +1,10 @@
 package services_test
 
 import (
+	"io/ioutil"
+	"os"
+	"path/filepath"
+
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -11,9 +15,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"io/ioutil"
-	"os"
-	"path/filepath"
 )
 
 var _ = Describe("CommandListener", func() {

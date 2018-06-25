@@ -1,8 +1,9 @@
 package utils
 
 import (
-	"github.com/pkg/errors"
 	"os/user"
+
+	"github.com/pkg/errors"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

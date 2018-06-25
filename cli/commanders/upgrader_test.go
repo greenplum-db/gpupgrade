@@ -10,10 +10,11 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
+	"github.com/greenplum-db/gpupgrade/utils"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
-	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 var _ = Describe("reporter", func() {

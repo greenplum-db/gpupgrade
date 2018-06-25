@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 	"net"
+	"os"
 	"strconv"
 	"sync"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	"os"
 )
 
 type AgentServer struct {

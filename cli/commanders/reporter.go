@@ -3,6 +3,7 @@ package commanders
 import (
 	"context"
 	"fmt"
+
 	pb "github.com/greenplum-db/gpupgrade/idl"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"

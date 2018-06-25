@@ -39,7 +39,6 @@ depend : dependencies
 
 format :
 		goimports -w .
-		gofmt -s -w .
 
 lint :
 		! gofmt -l agent/ cli/ db/ helpers/ hub/ install/ integrations/ shellparsers/ testutils/ utils/ | read

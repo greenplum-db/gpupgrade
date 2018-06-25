@@ -1,17 +1,18 @@
 package commanders_test
 
 import (
+	"errors"
+
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	mockpb "github.com/greenplum-db/gpupgrade/mock_idl"
 
-	"errors"
-
 	"github.com/golang/mock/gomock"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
+	"github.com/greenplum-db/gpupgrade/utils"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 var _ bool = Describe("object count tests", func() {

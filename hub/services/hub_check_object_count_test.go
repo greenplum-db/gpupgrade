@@ -2,14 +2,16 @@ package services_test
 
 import (
 	"database/sql/driver"
+
 	"github.com/greenplum-db/gpupgrade/hub/services"
 
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
+	"github.com/greenplum-db/gpupgrade/utils"
+	"gopkg.in/DATA-DOG/go-sqlmock.v1"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"gopkg.in/DATA-DOG/go-sqlmock.v1"
-	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 var _ = Describe("hub", func() {
