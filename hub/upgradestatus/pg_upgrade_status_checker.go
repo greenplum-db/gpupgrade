@@ -45,38 +45,36 @@ func NewPGUpgradeStatusChecker(segType SegmentType, pgUpgradePath, oldDataDir st
 	- when a new pg_upgrade is started it deletes all *.done and *.inprogress files
 */
 func (c *ConvertSegment) GetStatus() *pb.UpgradeStepStatus {
-	var masterUpgradeStatus *pb.UpgradeStepStatus
+	//make default reply object
+	upgradeStatus := &pb.UpgradeStepStatus{
+		Status: pb.StepStatus_FAILED,
+	}
+	//update Step in reply object to match the conversion
+	if c.segType == MASTER {
+		upgradeStatus.Step = pb.UpgradeSteps_MASTERUPGRADE
+	} else if c.segType == PRIMARY {
+		upgradeStatus.Step = pb.UpgradeSteps_CONVERT_PRIMARIES
+	}
 	pgUpgradePath := c.pgUpgradePath
 
+	//update Status in reply object
 	if _, err := utils.System.Stat(pgUpgradePath); utils.System.IsNotExist(err) {
-		masterUpgradeStatus = &pb.UpgradeStepStatus{
-			Step:   pb.UpgradeSteps_MASTERUPGRADE,
-			Status: pb.StepStatus_PENDING,
-		}
-		return masterUpgradeStatus
+		upgradeStatus.Status = pb.StepStatus_PENDING
+		return upgradeStatus
 	}
 
 	if c.pgUpgradeRunning() {
-		masterUpgradeStatus = &pb.UpgradeStepStatus{
-			Step:   pb.UpgradeSteps_MASTERUPGRADE,
-			Status: pb.StepStatus_RUNNING,
-		}
-		return masterUpgradeStatus
+		upgradeStatus.Status = pb.StepStatus_RUNNING
+		return upgradeStatus
 	}
 
 	if !inProgressFilesExist(pgUpgradePath) && c.IsUpgradeComplete(pgUpgradePath) {
-		masterUpgradeStatus = &pb.UpgradeStepStatus{
-			Step:   pb.UpgradeSteps_MASTERUPGRADE,
-			Status: pb.StepStatus_COMPLETE,
-		}
-		return masterUpgradeStatus
-	}
-	masterUpgradeStatus = &pb.UpgradeStepStatus{
-		Step:   pb.UpgradeSteps_MASTERUPGRADE,
-		Status: pb.StepStatus_FAILED,
+		upgradeStatus.Status = pb.StepStatus_COMPLETE
+		return upgradeStatus
 	}
 
-	return masterUpgradeStatus
+	//return default
+	return upgradeStatus
 }
 
 func (c *ConvertSegment) pgUpgradeRunning() bool {
