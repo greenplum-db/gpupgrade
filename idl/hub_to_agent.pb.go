@@ -24,9 +24,9 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type UpgradeConvertPrimarySegmentsRequest struct {
-	OldBinDir            string         `protobuf:"bytes,1,opt,name=OldBinDir" json:"OldBinDir,omitempty"`
-	NewBinDir            string         `protobuf:"bytes,2,opt,name=NewBinDir" json:"NewBinDir,omitempty"`
-	DataDirPairs         []*DataDirPair `protobuf:"bytes,3,rep,name=DataDirPairs" json:"DataDirPairs,omitempty"`
+	OldBinDir            string         `protobuf:"bytes,1,opt,name=OldBinDir,proto3" json:"OldBinDir,omitempty"`
+	NewBinDir            string         `protobuf:"bytes,2,opt,name=NewBinDir,proto3" json:"NewBinDir,omitempty"`
+	DataDirPairs         []*DataDirPair `protobuf:"bytes,3,rep,name=DataDirPairs,proto3" json:"DataDirPairs,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_unrecognized     []byte         `json:"-"`
 	XXX_sizecache        int32          `json:"-"`
@@ -78,11 +78,11 @@ func (m *UpgradeConvertPrimarySegmentsRequest) GetDataDirPairs() []*DataDirPair 
 }
 
 type DataDirPair struct {
-	OldDataDir           string   `protobuf:"bytes,1,opt,name=OldDataDir" json:"OldDataDir,omitempty"`
-	NewDataDir           string   `protobuf:"bytes,2,opt,name=NewDataDir" json:"NewDataDir,omitempty"`
-	OldPort              int32    `protobuf:"varint,3,opt,name=OldPort" json:"OldPort,omitempty"`
-	NewPort              int32    `protobuf:"varint,4,opt,name=NewPort" json:"NewPort,omitempty"`
-	Content              int32    `protobuf:"varint,5,opt,name=Content" json:"Content,omitempty"`
+	OldDataDir           string   `protobuf:"bytes,1,opt,name=OldDataDir,proto3" json:"OldDataDir,omitempty"`
+	NewDataDir           string   `protobuf:"bytes,2,opt,name=NewDataDir,proto3" json:"NewDataDir,omitempty"`
+	OldPort              int32    `protobuf:"varint,3,opt,name=OldPort,proto3" json:"OldPort,omitempty"`
+	NewPort              int32    `protobuf:"varint,4,opt,name=NewPort,proto3" json:"NewPort,omitempty"`
+	Content              int32    `protobuf:"varint,5,opt,name=Content,proto3" json:"Content,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -268,7 +268,7 @@ func (m *CheckUpgradeStatusRequest) XXX_DiscardUnknown() {
 var xxx_messageInfo_CheckUpgradeStatusRequest proto.InternalMessageInfo
 
 type CheckUpgradeStatusReply struct {
-	ProcessList          string   `protobuf:"bytes,1,opt,name=ProcessList" json:"ProcessList,omitempty"`
+	ProcessList          string   `protobuf:"bytes,1,opt,name=ProcessList,proto3" json:"ProcessList,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -306,8 +306,8 @@ func (m *CheckUpgradeStatusReply) GetProcessList() string {
 }
 
 type CheckConversionStatusRequest struct {
-	Segments             []*SegmentInfo `protobuf:"bytes,1,rep,name=Segments" json:"Segments,omitempty"`
-	Hostname             string         `protobuf:"bytes,2,opt,name=Hostname" json:"Hostname,omitempty"`
+	Segments             []*SegmentInfo `protobuf:"bytes,1,rep,name=Segments,proto3" json:"Segments,omitempty"`
+	Hostname             string         `protobuf:"bytes,2,opt,name=Hostname,proto3" json:"Hostname,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_unrecognized     []byte         `json:"-"`
 	XXX_sizecache        int32          `json:"-"`
@@ -352,9 +352,9 @@ func (m *CheckConversionStatusRequest) GetHostname() string {
 }
 
 type SegmentInfo struct {
-	Content              int32    `protobuf:"varint,1,opt,name=Content" json:"Content,omitempty"`
-	Dbid                 int32    `protobuf:"varint,2,opt,name=Dbid" json:"Dbid,omitempty"`
-	DataDir              string   `protobuf:"bytes,3,opt,name=DataDir" json:"DataDir,omitempty"`
+	Content              int32    `protobuf:"varint,1,opt,name=Content,proto3" json:"Content,omitempty"`
+	Dbid                 int32    `protobuf:"varint,2,opt,name=Dbid,proto3" json:"Dbid,omitempty"`
+	DataDir              string   `protobuf:"bytes,3,opt,name=DataDir,proto3" json:"DataDir,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -406,7 +406,7 @@ func (m *SegmentInfo) GetDataDir() string {
 }
 
 type CheckConversionStatusReply struct {
-	Statuses             []string `protobuf:"bytes,1,rep,name=Statuses" json:"Statuses,omitempty"`
+	Statuses             []string `protobuf:"bytes,1,rep,name=Statuses,proto3" json:"Statuses,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -444,8 +444,8 @@ func (m *CheckConversionStatusReply) GetStatuses() []string {
 }
 
 type FileSysUsage struct {
-	Filesystem           string   `protobuf:"bytes,1,opt,name=Filesystem" json:"Filesystem,omitempty"`
-	Usage                float64  `protobuf:"fixed64,2,opt,name=Usage" json:"Usage,omitempty"`
+	Filesystem           string   `protobuf:"bytes,1,opt,name=Filesystem,proto3" json:"Filesystem,omitempty"`
+	Usage                float64  `protobuf:"fixed64,2,opt,name=Usage,proto3" json:"Usage,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -520,7 +520,7 @@ func (m *CheckDiskSpaceRequestToAgent) XXX_DiscardUnknown() {
 var xxx_messageInfo_CheckDiskSpaceRequestToAgent proto.InternalMessageInfo
 
 type CheckDiskSpaceReplyFromAgent struct {
-	ListOfFileSysUsage   []*FileSysUsage `protobuf:"bytes,1,rep,name=ListOfFileSysUsage" json:"ListOfFileSysUsage,omitempty"`
+	ListOfFileSysUsage   []*FileSysUsage `protobuf:"bytes,1,rep,name=ListOfFileSysUsage,proto3" json:"ListOfFileSysUsage,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
 	XXX_unrecognized     []byte          `json:"-"`
 	XXX_sizecache        int32           `json:"-"`
@@ -645,8 +645,7 @@ func (c *agentClient) UpgradeConvertPrimarySegments(ctx context.Context, in *Upg
 	return out, nil
 }
 
-// Server API for Agent service
-
+// AgentServer is the server API for Agent service.
 type AgentServer interface {
 	CheckUpgradeStatus(context.Context, *CheckUpgradeStatusRequest) (*CheckUpgradeStatusReply, error)
 	CheckConversionStatus(context.Context, *CheckConversionStatusRequest) (*CheckConversionStatusReply, error)

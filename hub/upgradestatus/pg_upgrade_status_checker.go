@@ -15,14 +15,14 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 )
 
-type ConvertMaster struct {
+type ConvertSegment struct {
 	pgUpgradePath string
 	oldDataDir    string
 	commandExecer helpers.CommandExecer
 }
 
-func NewPGUpgradeStatusChecker(pgUpgradePath, oldDataDir string, execer helpers.CommandExecer) ConvertMaster {
-	return ConvertMaster{
+func NewPGUpgradeStatusChecker(pgUpgradePath, oldDataDir string, execer helpers.CommandExecer) ConvertSegment {
+	return ConvertSegment{
 		pgUpgradePath: pgUpgradePath,
 		oldDataDir:    oldDataDir,
 		commandExecer: execer,
@@ -34,7 +34,7 @@ func NewPGUpgradeStatusChecker(pgUpgradePath, oldDataDir string, execer helpers.
 	- pg_upgrade will not fail without error before writing an inprogress file
 	- when a new pg_upgrade is started it deletes all *.done and *.inprogress files
 */
-func (c *ConvertMaster) GetStatus() *pb.UpgradeStepStatus {
+func (c *ConvertSegment) GetStatus() *pb.UpgradeStepStatus {
 	var masterUpgradeStatus *pb.UpgradeStepStatus
 	pgUpgradePath := c.pgUpgradePath
 
@@ -69,7 +69,7 @@ func (c *ConvertMaster) GetStatus() *pb.UpgradeStepStatus {
 	return masterUpgradeStatus
 }
 
-func (c *ConvertMaster) pgUpgradeRunning() bool {
+func (c *ConvertSegment) pgUpgradeRunning() bool {
 	//if pgrep doesnt find target, ExecCmdOutput will return empty byte array and err.Error()="exit status 1"
 	command := fmt.Sprintf("pg_upgrade | grep --old-datadir=%s", c.oldDataDir)
 	pgUpgradePids, err := c.commandExecer("pgrep", command).Output()
@@ -93,7 +93,7 @@ func inProgressFilesExist(pgUpgradePath string) bool {
 	return true
 }
 
-func (c ConvertMaster) IsUpgradeComplete(pgUpgradePath string) bool {
+func (c ConvertSegment) IsUpgradeComplete(pgUpgradePath string) bool {
 	doneFiles, doneErr := utils.System.FilePathGlob(pgUpgradePath + "/*.done")
 	if doneFiles == nil {
 		return false
