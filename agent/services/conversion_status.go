@@ -20,6 +20,7 @@ func (s *AgentServer) CheckConversionStatus(ctx context.Context, in *pb.CheckCon
 	var master string
 	for _, segment := range in.GetSegments() {
 		conversionStatus := upgradestatus.NewPGUpgradeStatusChecker(
+			upgradestatus.PRIMARY,
 			filepath.Join(s.conf.StateDir, "pg_upgrade", fmt.Sprintf("seg-%d", segment.GetContent())),
 			segment.GetDataDir(),
 			s.commandExecer,

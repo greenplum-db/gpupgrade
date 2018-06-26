@@ -77,7 +77,7 @@ func pgUpgradeStatus(s Step, h *Hub) *pb.UpgradeStepStatus {
 		status.Status = pb.StepStatus_PENDING
 		return status
 	}
-	state := upgradestatus.NewPGUpgradeStatusChecker(s.StatePath(h), h.clusterPair.OldCluster.GetDirForContent(-1), h.commandExecer)
+	state := upgradestatus.NewPGUpgradeStatusChecker(upgradestatus.MASTER, s.StatePath(h), h.clusterPair.OldCluster.GetDirForContent(-1), h.commandExecer)
 	return state.GetStatus()
 }
 

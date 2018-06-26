@@ -15,14 +15,24 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 )
 
+// Type of segment being upgraded
+type SegmentType int
+
+const (
+	MASTER SegmentType = iota
+	PRIMARY
+)
+
 type ConvertSegment struct {
+	segType       SegmentType
 	pgUpgradePath string
 	oldDataDir    string
 	commandExecer helpers.CommandExecer
 }
 
-func NewPGUpgradeStatusChecker(pgUpgradePath, oldDataDir string, execer helpers.CommandExecer) ConvertSegment {
+func NewPGUpgradeStatusChecker(segType SegmentType, pgUpgradePath, oldDataDir string, execer helpers.CommandExecer) ConvertSegment {
 	return ConvertSegment{
+		segType:       segType,
 		pgUpgradePath: pgUpgradePath,
 		oldDataDir:    oldDataDir,
 		commandExecer: execer,

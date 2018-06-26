@@ -48,7 +48,7 @@ var _ = Describe("pg_upgrade status checker", func() {
 		utils.System.IsNotExist = func(error) bool {
 			return true
 		}
-		subject := upgradestatus.NewPGUpgradeStatusChecker("/tmp", "", commandExecer.Exec)
+		subject := upgradestatus.NewPGUpgradeStatusChecker(upgradestatus.MASTER, "/tmp", "", commandExecer.Exec)
 		status := subject.GetStatus()
 		Expect(status.Status).To(Equal(pb.StepStatus_PENDING))
 
@@ -64,7 +64,7 @@ var _ = Describe("pg_upgrade status checker", func() {
 
 		outChan <- []byte("I'm running")
 
-		subject := upgradestatus.NewPGUpgradeStatusChecker("/tmp", "", commandExecer.Exec)
+		subject := upgradestatus.NewPGUpgradeStatusChecker(upgradestatus.MASTER, "/tmp", "", commandExecer.Exec)
 		status := subject.GetStatus()
 		Expect(status.Status).To(Equal(pb.StepStatus_RUNNING))
 	})
@@ -106,7 +106,7 @@ var _ = Describe("pg_upgrade status checker", func() {
 			return os.Open(filename)
 		}
 
-		subject := upgradestatus.NewPGUpgradeStatusChecker("/tmp", "/data/dir", commandExecer.Exec)
+		subject := upgradestatus.NewPGUpgradeStatusChecker(upgradestatus.MASTER, "/tmp", "/data/dir", commandExecer.Exec)
 		status := subject.GetStatus()
 		Expect(status.Status).To(Equal(pb.StepStatus_COMPLETE))
 
@@ -126,7 +126,7 @@ var _ = Describe("pg_upgrade status checker", func() {
 
 		errChan <- errors.New("pg_upgrade failed")
 
-		subject := upgradestatus.NewPGUpgradeStatusChecker("/tmp", "", commandExecer.Exec)
+		subject := upgradestatus.NewPGUpgradeStatusChecker(upgradestatus.MASTER, "/tmp", "", commandExecer.Exec)
 		status := subject.GetStatus()
 		Expect(status.Status).To(Equal(pb.StepStatus_FAILED))
 	})
