@@ -1,9 +1,11 @@
 package services_test
 
 import (
-	"github.com/greenplum-db/gp-common-go-libs/cluster"
+	"errors"
+
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"golang.org/x/net/context"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
@@ -53,8 +55,7 @@ var _ = Describe("Hub", func() {
 		Eventually(func() connectivity.State { return conns[0].Conn.GetState() }).Should(Equal(connectivity.Shutdown))
 	})
 
-	It("retrieves the agent connections from the config file reader", func() {
-		clusterPair.OldCluster.Segments[1] = cluster.SegConfig{Hostname: "localhost"}
+	It("retrieves the agent connections for the hosts in the cluster", func() {
 		hubConfig := &services.HubConfig{
 			HubToAgentPort: port,
 		}
@@ -84,6 +85,7 @@ var _ = Describe("Hub", func() {
 		Expect(newConns[0]).To(Equal(savedConns[0]))
 	})
 
+	// XXX This test takes 1.5 seconds because of EnsureConnsAreReady(...)
 	It("returns an error if any connections have non-ready states", func() {
 		hubConfig := &services.HubConfig{
 			HubToAgentPort: port,
@@ -103,27 +105,18 @@ var _ = Describe("Hub", func() {
 	})
 
 	It("returns an error if any connections have non-ready states when first dialing", func() {
+		mockDialer := func(ctx context.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+			return nil, errors.New("grpc dialer error")
+		}
+
 		hubConfig := &services.HubConfig{
 			HubToAgentPort: port,
 		}
-		hub := services.NewHub(clusterPair, grpc.DialContext, nil, hubConfig, nil)
 
-		agentA.Stop()
+		hub := services.NewHub(clusterPair, mockDialer, nil, hubConfig, nil)
 
 		_, err := hub.AgentConns()
 		Expect(err).To(HaveOccurred())
 	})
 
-	It("returns an error if the grpc dialer to the agent throws an error", func() {
-		agentA.Stop()
-
-		clusterPair.OldCluster.Segments[0] = cluster.SegConfig{Hostname: "example"}
-		hubConfig := &services.HubConfig{
-			HubToAgentPort: port,
-		}
-		hub := services.NewHub(clusterPair, grpc.DialContext, nil, hubConfig, nil)
-
-		_, err := hub.AgentConns()
-		Expect(err).To(HaveOccurred())
-	})
 })

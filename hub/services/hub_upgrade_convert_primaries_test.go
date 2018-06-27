@@ -124,15 +124,6 @@ var _ = Describe("hub.UpgradeConvertPrimaries()", func() {
 
 		Expect(mockAgent.NumberOfCalls()).To(Equal(1))
 	})
-
-	It("returns an error if the agent is inaccessible", func() {
-		mockAgent.Stop()
-
-		_, err := hub.UpgradeConvertPrimaries(nil, request)
-		Expect(err).To(HaveOccurred())
-
-		Expect(mockAgent.NumberOfCalls()).To(Equal(0))
-	})
 })
 
 func newSegment(content int, hostname, dataDir string, port int) cluster.SegConfig {

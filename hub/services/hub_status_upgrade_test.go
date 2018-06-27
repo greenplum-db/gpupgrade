@@ -11,6 +11,7 @@ import (
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils"
+	"golang.org/x/net/context"
 
 	"google.golang.org/grpc"
 
@@ -52,7 +53,11 @@ var _ = Describe("status upgrade", func() {
 			Out: outChan,
 		})
 		clusterPair = testutils.CreateSampleClusterPair()
-		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec,
+		// Mock so statusConversion doesn't need to wait 3 seconds before erroring out.
+		mockDialer := func(ctx context.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+			return nil, errors.New("grpc dial err")
+		}
+		hub = services.NewHub(clusterPair, mockDialer, commandExecer.Exec,
 			conf, nil)
 	})
 

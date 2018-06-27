@@ -75,13 +75,6 @@ var _ = Describe("hub", func() {
 		}))
 	})
 
-	It("returns an error when AgentConns returns an error", func() {
-		agentA.Stop()
-
-		_, err := hub.StatusConversion(nil, &pb.StatusConversionRequest{})
-		Expect(err).To(HaveOccurred())
-	})
-
 	It("returns an error when Agent server returns an error", func() {
 		agentA.Err <- errors.New("any error")
 

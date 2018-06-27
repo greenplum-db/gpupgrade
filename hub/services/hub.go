@@ -12,6 +12,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/helpers"
 	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/pkg/errors"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -22,7 +23,7 @@ import (
 
 var DialTimeout = 3 * time.Second
 
-type dialer func(ctx context.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error)
+type Dialer func(ctx context.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error)
 
 type RemoteExecutor interface {
 	VerifySoftware(hosts []string)
@@ -34,7 +35,7 @@ type Hub struct {
 
 	agentConns      []*Connection
 	clusterPair     *ClusterPair
-	grpcDialer      dialer
+	grpcDialer      Dialer
 	commandExecer   helpers.CommandExecer
 	remoteExecutor  RemoteExecutor
 	checklistWriter ChecklistWriter
@@ -66,7 +67,7 @@ type ChecklistWriter interface {
 	MarkComplete(string) error
 }
 
-func NewHub(pair *ClusterPair, grpcDialer dialer, execer helpers.CommandExecer, conf *HubConfig, checklistWriter ChecklistWriter) *Hub {
+func NewHub(pair *ClusterPair, grpcDialer Dialer, execer helpers.CommandExecer, conf *HubConfig, checklistWriter ChecklistWriter) *Hub {
 	h := &Hub{
 		stopped:         make(chan struct{}, 1),
 		conf:            conf,
@@ -129,7 +130,7 @@ func (h *Hub) Stop() {
 
 func (h *Hub) AgentConns() ([]*Connection, error) {
 	if h.agentConns != nil {
-		err := h.ensureConnsAreReady()
+		err := EnsureConnsAreReady(h.agentConns)
 		if err != nil {
 			gplog.Error("ensureConnsAreReady failed: ", err)
 			return nil, err
@@ -139,13 +140,12 @@ func (h *Hub) AgentConns() ([]*Connection, error) {
 	}
 
 	hostnames := h.clusterPair.GetHostnames()
-
 	for _, host := range hostnames {
 		ctx, cancelFunc := context.WithTimeout(context.Background(), DialTimeout)
-		// grpc.WithBlock() is potentially slowing down the tests. Leaving it in to keep tests green.
 		conn, err := h.grpcDialer(ctx, host+":"+strconv.Itoa(h.conf.HubToAgentPort), grpc.WithInsecure(), grpc.WithBlock())
 		if err != nil {
-			gplog.Error("grpcDialer failed: ", err)
+			err = errors.New(fmt.Sprintf("grpcDialer failed: %s", err.Error()))
+			gplog.Error(err.Error())
 			cancelFunc()
 			return nil, err
 		}
@@ -159,19 +159,17 @@ func (h *Hub) AgentConns() ([]*Connection, error) {
 	return h.agentConns, nil
 }
 
-func (h *Hub) ensureConnsAreReady() error {
+func EnsureConnsAreReady(agentConns []*Connection) error {
 	var hostnames []string
 	for i := 0; i < 3; i++ {
-		ready := 0
-		for _, conn := range h.agentConns {
-			if conn.Conn.GetState() == connectivity.Ready {
-				ready++
-			} else {
+		hostnames = []string{}
+		for _, conn := range agentConns {
+			if conn.Conn.GetState() != connectivity.Ready {
 				hostnames = append(hostnames, conn.Hostname)
 			}
 		}
 
-		if ready == len(h.agentConns) {
+		if len(hostnames) == 0 {
 			return nil
 		}
 
