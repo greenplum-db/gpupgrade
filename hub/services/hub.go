@@ -160,23 +160,18 @@ func (h *Hub) AgentConns() ([]*Connection, error) {
 }
 
 func EnsureConnsAreReady(agentConns []*Connection) error {
-	var hostnames []string
-	for i := 0; i < 3; i++ {
-		hostnames = []string{}
-		for _, conn := range agentConns {
-			if conn.Conn.GetState() != connectivity.Ready {
-				hostnames = append(hostnames, conn.Hostname)
-			}
+	hostnames := []string{}
+	for _, conn := range agentConns {
+		if conn.Conn.GetState() != connectivity.Ready {
+			hostnames = append(hostnames, conn.Hostname)
 		}
-
-		if len(hostnames) == 0 {
-			return nil
-		}
-
-		time.Sleep(500 * time.Millisecond)
 	}
 
-	return fmt.Errorf("the connections to the following hosts were not ready: %s", strings.Join(hostnames, ","))
+	if len(hostnames) > 0 {
+		return fmt.Errorf("the connections to the following hosts were not ready: %s", strings.Join(hostnames, ","))
+	}
+
+	return nil
 }
 
 func (h *Hub) closeConns() {
