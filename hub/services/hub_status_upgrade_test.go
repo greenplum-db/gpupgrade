@@ -68,7 +68,7 @@ var _ = Describe("status upgrade", func() {
 
 	// This is probably wonky because the convert primaries state check mechanism is
 	// using the MASTERUPGRADE step when upgrading primaries and needs to be fixed
-	XIt("responds with the statuses of the steps based on files on disk", func() {
+	It("responds with the statuses of the steps based on files on disk", func() {
 		setStateFile(dir, "check-config", "completed")
 		setStateFile(dir, "seginstall", "completed")
 		setStateFile(dir, "start-agents", "completed")
@@ -100,7 +100,7 @@ var _ = Describe("status upgrade", func() {
 					Status: pb.StepStatus_PENDING,
 				}, {
 					Step:   pb.UpgradeSteps_PREPARE_START_AGENTS,
-					Status: pb.StepStatus_PENDING,
+					Status: pb.StepStatus_COMPLETE,
 				}, {
 					Step:   pb.UpgradeSteps_SHARE_OIDS,
 					Status: pb.StepStatus_FAILED,
@@ -109,13 +109,12 @@ var _ = Describe("status upgrade", func() {
 					Status: pb.StepStatus_PENDING,
 				}, {
 					Step:   pb.UpgradeSteps_CONVERT_PRIMARIES,
-					Status: pb.StepStatus_RUNNING,
+					Status: pb.StepStatus_PENDING,
 				}, {
 					Step:   pb.UpgradeSteps_RECONFIGURE_PORTS,
 					Status: pb.StepStatus_PENDING,
 				},
-			},
-		))
+			}))
 	})
 
 	// TODO: Get rid of these tests once full rewritten test coverage exists
