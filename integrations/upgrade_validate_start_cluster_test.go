@@ -5,6 +5,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/utils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -19,7 +20,7 @@ var _ = Describe("upgrade validate-start-cluster", func() {
 		commandExecer *testutils.FakeCommandExecer
 		outChan       chan []byte
 		errChan       chan error
-		clusterPair   *services.ClusterPair
+		clusterPair   *utils.ClusterPair
 		testExecutor  *testhelper.TestExecutor
 		cm            *testutils.MockChecklistManager
 	)

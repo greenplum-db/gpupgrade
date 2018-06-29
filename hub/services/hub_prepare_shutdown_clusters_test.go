@@ -20,7 +20,7 @@ var _ = Describe("PrepareShutdownClusters", func() {
 		conf               *services.HubConfig
 		testLog            *gbytes.Buffer
 		stubRemoteExecutor *testutils.StubRemoteExecutor
-		clusterPair        *services.ClusterPair
+		clusterPair        *utils.ClusterPair
 		cm                 *testutils.MockChecklistManager
 	)
 	BeforeEach(func() {

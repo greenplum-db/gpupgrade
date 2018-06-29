@@ -24,7 +24,7 @@ var _ = Describe("ConvertMasterHub", func() {
 		hub           *services.Hub
 		outChan       chan []byte
 		errChan       chan error
-		clusterPair   *services.ClusterPair
+		clusterPair   *utils.ClusterPair
 		cm            *testutils.MockChecklistManager
 	)
 

@@ -10,6 +10,7 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 // grpc generated function signature requires ctx and in params.
@@ -34,7 +35,7 @@ func (h *Hub) CheckSeginstall(ctx context.Context, in *idl.CheckSeginstallReques
 	return &idl.CheckSeginstallReply{}, nil
 }
 
-func VerifyAgentsInstalled(cp *ClusterPair, cw ChecklistWriter) {
+func VerifyAgentsInstalled(cp *utils.ClusterPair, cw ChecklistWriter) {
 	var err error
 
 	// TODO: if this finds nothing, should we err out? do a fallback check based on $GPHOME?

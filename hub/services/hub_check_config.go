@@ -52,7 +52,7 @@ func (h *Hub) CheckConfig(ctx context.Context, in *pb.CheckConfigRequest) (*pb.C
 	return successReply, nil
 }
 
-func SaveOldClusterConfig(clusterPair *ClusterPair, dbConnector *dbconn.DBConn, stateDir string, oldBinDir string) error {
+func SaveOldClusterConfig(clusterPair *utils.ClusterPair, dbConnector *dbconn.DBConn, stateDir string, oldBinDir string) error {
 	segConfigs, err := cluster.GetSegmentConfiguration(dbConnector)
 	if err != nil {
 		errMsg := fmt.Sprintf("Unable to get segment configuration for old cluster: %s", err.Error())

@@ -9,6 +9,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/utils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
@@ -19,7 +20,7 @@ var _ = Describe("check seginstall", func() {
 	var (
 		hub *services.Hub
 		cm  *testutils.MockChecklistManager
-		cp  *services.ClusterPair
+		cp  *utils.ClusterPair
 		err error
 	)
 

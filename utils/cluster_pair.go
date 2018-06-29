@@ -1,4 +1,4 @@
-package services
+package utils
 
 import (
 	"encoding/json"
@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 
 	"github.com/greenplum-db/gpupgrade/helpers"
-	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/pkg/errors"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
@@ -56,7 +55,7 @@ type ClusterConfig struct {
 }
 
 func ReadClusterConfig(configFilePath string) (*cluster.Cluster, string, error) {
-	contents, err := utils.System.ReadFile(configFilePath)
+	contents, err := System.ReadFile(configFilePath)
 	if err != nil {
 		return nil, "", err
 	}
@@ -84,7 +83,7 @@ func WriteClusterConfig(configFilePath string, c *cluster.Cluster, binDir string
 	// will not truncate the original file, and it provides an atomic write
 	tempFilePath := configFilePath + ".tmp"
 	defer os.Remove(tempFilePath)
-	err = utils.System.WriteFile(tempFilePath, contents, 0644)
+	err = System.WriteFile(tempFilePath, contents, 0644)
 	if err != nil {
 		errMsg := fmt.Sprintf("Unable to write temp config file: %s", err.Error())
 		return errors.New(errMsg)

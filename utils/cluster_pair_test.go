@@ -1,10 +1,9 @@
-package services_test
+package utils_test
 
 import (
 	"io/ioutil"
 	"os"
 
-	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils"
 
@@ -16,7 +15,7 @@ import (
 var _ = Describe("ClusterPair", func() {
 	var (
 		filesLaidDown []string
-		clusterPair   *services.ClusterPair
+		clusterPair   *utils.ClusterPair
 		testExecutor  *testhelper.TestExecutor
 		testStateDir  string
 		err           error
@@ -42,8 +41,8 @@ var _ = Describe("ClusterPair", func() {
 	Describe("WriteClusterConfig", func() {
 		It("successfully write cluster config to disk if no file exists", func() {
 			sampleCluster := testutils.CreateSampleCluster(-1, 25437, "hostone", "/old/datadir")
-			configFilePath := services.GetConfigFilePath(testStateDir)
-			err := services.WriteClusterConfig(configFilePath, sampleCluster, "/old/bin/dir")
+			configFilePath := utils.GetConfigFilePath(testStateDir)
+			err := utils.WriteClusterConfig(configFilePath, sampleCluster, "/old/bin/dir")
 			Expect(err).ToNot(HaveOccurred())
 
 			_, err = os.Open(configFilePath)
@@ -52,7 +51,7 @@ var _ = Describe("ClusterPair", func() {
 
 		It("successfully write cluster config to disk if file already exists and truncates the rest of the data", func() {
 			sampleCluster := testutils.CreateSampleCluster(-1, 25437, "hostone", "/old/datadir")
-			configFilePath := services.GetConfigFilePath(testStateDir)
+			configFilePath := utils.GetConfigFilePath(testStateDir)
 
 			f, err := os.OpenFile(configFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 			Expect(err).ToNot(HaveOccurred())
@@ -64,13 +63,13 @@ Curabitur nibh nunc, molestie vitae lectus nec, fermentum consequat est. Etiam i
 Duis volutpat libero sit amet hendrerit rhoncus. Praesent euismod facilisis elit a tincidunt. Sed porttitor ultrices libero vel imperdiet. Etiam auctor lacinia vehicula. Maecenas ornare, ligula nec consequat vulputate, ex elit lobortis arcu, ut faucibus risus orci vehicula magna. Sed eu porta massa. Praesent fringilla enim id libero suscipit, vitae molestie erat bibendum. Vivamus eu augue in.`
 			_, err = f.Write([]byte(trash_data))
 
-			err = services.WriteClusterConfig(configFilePath, sampleCluster, "/old/bin/dir")
+			err = utils.WriteClusterConfig(configFilePath, sampleCluster, "/old/bin/dir")
 			Expect(err).ToNot(HaveOccurred())
 
 			_, err = os.Open(configFilePath)
 			Expect(err).ToNot(HaveOccurred())
 
-			_, _, err = services.ReadClusterConfig(configFilePath)
+			_, _, err = utils.ReadClusterConfig(configFilePath)
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})

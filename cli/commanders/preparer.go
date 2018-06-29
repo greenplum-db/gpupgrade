@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/greenplum-db/gpupgrade/hub/services"
 	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -120,7 +120,7 @@ func DoInit(stateDir string, oldBinDir string) error {
 		return err
 	}
 
-	cp := &services.ClusterPair{}
+	cp := &utils.ClusterPair{}
 	cp.OldCluster = &cluster.Cluster{}
 	cp.OldCluster.ContentIDs = []int{}
 	cp.OldBinDir = oldBinDir

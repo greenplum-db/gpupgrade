@@ -28,7 +28,7 @@ var _ = Describe("status upgrade", func() {
 		errChan                  chan error
 		outChan                  chan []byte
 		mockAgent                *testutils.MockAgentServer
-		clusterPair              *services.ClusterPair
+		clusterPair              *utils.ClusterPair
 	)
 
 	BeforeEach(func() {

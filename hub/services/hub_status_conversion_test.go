@@ -21,7 +21,7 @@ var _ = Describe("hub", func() {
 	var (
 		hub         *services.Hub
 		agentA      *testutils.MockAgentServer
-		clusterPair *services.ClusterPair
+		clusterPair *utils.ClusterPair
 		cm          *testutils.MockChecklistManager
 	)
 
@@ -29,7 +29,7 @@ var _ = Describe("hub", func() {
 		var port int
 		agentA, port = testutils.NewMockAgentServer()
 
-		clusterPair = &services.ClusterPair{
+		clusterPair = &utils.ClusterPair{
 			OldCluster: &cluster.Cluster{
 				Segments: map[int]cluster.SegConfig{
 					0: {DbID: 2, ContentID: 0, Hostname: "localhost", DataDir: "/first/data/dir"},

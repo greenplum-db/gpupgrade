@@ -29,18 +29,18 @@ var _ = Describe("Hub check config", func() {
 		oldBinDir   string
 		queryResult = `{"SegConfigs":[{"DbID":1,"ContentID":-1,"Port":15432,"Hostname":"mdw","DataDir":"/data/master/gpseg-1"},` +
 			`{"DbID":2,"ContentID":0,"Port":25432,"Hostname":"sdw1","DataDir":"/data/primary/gpseg0"}],"BinDir":"/tmp"}`
-		clusterPair *services.ClusterPair
+		clusterPair *utils.ClusterPair
 	)
 
-	var expectedClusterPair *services.ClusterPair
+	var expectedClusterPair *utils.ClusterPair
 	BeforeEach(func() {
 		oldBinDir = "/tmp"
 		dbConnector, mock = testhelper.CreateAndConnectMockDB(1)
 		dir, err = ioutil.TempDir("", "")
 		Expect(err).ToNot(HaveOccurred())
 		utils.System = utils.InitializeSystemFunctions()
-		clusterPair = &services.ClusterPair{}
-		expectedClusterPair = &services.ClusterPair{
+		clusterPair = &utils.ClusterPair{}
+		expectedClusterPair = &utils.ClusterPair{
 			OldCluster: &cluster.Cluster{
 				ContentIDs: []int{-1, 0},
 				Segments: map[int]cluster.SegConfig{

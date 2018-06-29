@@ -84,7 +84,7 @@ func main() {
 				return exec.Command(command, vars...)
 			}
 			cm := upgradestatus.NewChecklistManager(conf.StateDir)
-			hub := services.NewHub(&services.ClusterPair{}, grpc.DialContext, commandExecer, conf, cm)
+			hub := services.NewHub(&utils.ClusterPair{}, grpc.DialContext, commandExecer, conf, cm)
 			if daemon {
 				hub.MakeDaemon()
 			}

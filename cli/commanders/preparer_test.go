@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
-	"github.com/greenplum-db/gpupgrade/hub/services"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	mockpb "github.com/greenplum-db/gpupgrade/mock_idl"
 
@@ -134,7 +133,7 @@ var _ = Describe("preparer", func() {
 			err = commanders.DoInit(stateDir, "/does/not/exist")
 			Expect(err).To(BeNil())
 
-			cp := &services.ClusterPair{}
+			cp := &utils.ClusterPair{}
 			cp.ReadOldConfig(stateDir)
 			Expect(cp.OldBinDir).To(Equal("/does/not/exist"))
 		})

@@ -143,7 +143,7 @@ func (h *Hub) StatusUpgrade(ctx context.Context, in *pb.StatusUpgradeRequest) (*
 
 func (h *Hub) GetPrepareNewClusterConfigStatus() *pb.UpgradeStepStatus {
 	/* Treat all stat failures as cannot find file. Conceal worse failures atm.*/
-	_, err := utils.System.Stat(GetNewConfigFilePath(h.conf.StateDir))
+	_, err := utils.System.Stat(utils.GetNewConfigFilePath(h.conf.StateDir))
 
 	if err != nil {
 		gplog.Debug("%v", err)

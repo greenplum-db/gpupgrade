@@ -25,7 +25,7 @@ var _ = Describe("UpgradeShareOids", func() {
 		commandExecer *testutils.FakeCommandExecer
 		errChan       chan error
 		outChan       chan []byte
-		clusterPair   *services.ClusterPair
+		clusterPair   *utils.ClusterPair
 		cm            *testutils.MockChecklistManager
 	)
 

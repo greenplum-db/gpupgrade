@@ -12,6 +12,8 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/helpers"
 	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/utils"
+
 	"github.com/pkg/errors"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
@@ -34,7 +36,7 @@ type Hub struct {
 	conf *HubConfig
 
 	agentConns      []*Connection
-	clusterPair     *ClusterPair
+	clusterPair     *utils.ClusterPair
 	grpcDialer      Dialer
 	commandExecer   helpers.CommandExecer
 	remoteExecutor  RemoteExecutor
@@ -67,7 +69,7 @@ type ChecklistWriter interface {
 	MarkComplete(string) error
 }
 
-func NewHub(pair *ClusterPair, grpcDialer Dialer, execer helpers.CommandExecer, conf *HubConfig, checklistWriter ChecklistWriter) *Hub {
+func NewHub(pair *utils.ClusterPair, grpcDialer Dialer, execer helpers.CommandExecer, conf *HubConfig, checklistWriter ChecklistWriter) *Hub {
 	h := &Hub{
 		stopped:         make(chan struct{}, 1),
 		conf:            conf,

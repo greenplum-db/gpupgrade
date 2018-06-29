@@ -27,7 +27,7 @@ var _ = Describe("hub.UpgradeConvertPrimaries()", func() {
 		request       *pb.UpgradeConvertPrimariesRequest
 		oldCluster    *cluster.Cluster
 		newCluster    *cluster.Cluster
-		clusterPair   *services.ClusterPair
+		clusterPair   *utils.ClusterPair
 		cm            *testutils.MockChecklistManager
 	)
 
@@ -60,7 +60,7 @@ var _ = Describe("hub.UpgradeConvertPrimaries()", func() {
 				-1: newSegment(-1, "localhost", "new/master", 44),
 			},
 		}
-		clusterPair = &services.ClusterPair{
+		clusterPair = &utils.ClusterPair{
 			OldCluster: oldCluster,
 			NewCluster: newCluster,
 		}

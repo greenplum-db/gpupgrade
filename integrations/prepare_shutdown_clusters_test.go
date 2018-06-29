@@ -8,6 +8,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/utils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
@@ -21,7 +22,7 @@ var _ = Describe("prepare shutdown-clusters", func() {
 		commandExecer   *testutils.FakeCommandExecer
 		outChan         chan []byte
 		errChan         chan error
-		clusterPair     *services.ClusterPair
+		clusterPair     *utils.ClusterPair
 		testExecutorOld *testhelper.TestExecutor
 		testExecutorNew *testhelper.TestExecutor
 		cm              *testutils.MockChecklistManager

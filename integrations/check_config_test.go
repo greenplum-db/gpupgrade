@@ -5,6 +5,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/utils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -52,7 +53,7 @@ var _ = Describe("check config", func() {
 		}
 		Expect(session).To(Exit(0))
 
-		cp := &services.ClusterPair{}
+		cp := &utils.ClusterPair{}
 		err := cp.ReadOldConfig(testStateDir)
 		testutils.Check("cannot read config", err)
 

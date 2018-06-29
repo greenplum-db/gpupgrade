@@ -7,7 +7,7 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-	"github.com/greenplum-db/gpupgrade/hub/services"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 const (
@@ -72,8 +72,8 @@ func CreateSampleCluster(contentID int, port int, hostname string, datadir strin
 	}
 }
 
-func CreateSampleClusterPair() *services.ClusterPair {
-	cp := &services.ClusterPair{
+func CreateSampleClusterPair() *utils.ClusterPair {
+	cp := &utils.ClusterPair{
 		OldCluster: CreateSampleCluster(-1, 25437, "hostone", "/old/datadir"),
 		NewCluster: CreateSampleCluster(-1, 35437, "", "/new/datadir"),
 	}
@@ -84,11 +84,11 @@ func CreateSampleClusterPair() *services.ClusterPair {
 	return cp
 }
 
-func InitClusterPairFromDB() *services.ClusterPair {
+func InitClusterPairFromDB() *utils.ClusterPair {
 	conn := dbconn.NewDBConnFromEnvironment("postgres")
 	conn.MustConnect(1)
 	conn.Version.Initialize(conn)
-	cp := &services.ClusterPair{}
+	cp := &utils.ClusterPair{}
 	segConfig := cluster.MustGetSegmentConfiguration(conn)
 	cp.OldCluster = cluster.NewCluster(segConfig)
 	cp.OldBinDir = "/old/bindir"

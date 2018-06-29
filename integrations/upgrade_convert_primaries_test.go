@@ -9,6 +9,7 @@ import (
 	agentServices "github.com/greenplum-db/gpupgrade/agent/services"
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/utils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -25,7 +26,7 @@ var _ = Describe("upgrade convert primaries", func() {
 		oidFile            string
 		hubOutChan         chan []byte
 		agentCommandOutput chan []byte
-		clusterPair        *services.ClusterPair
+		clusterPair        *utils.ClusterPair
 		cm                 *testutils.MockChecklistManager
 	)
 

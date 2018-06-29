@@ -27,8 +27,8 @@ var _ = Describe("Hub prepare init-cluster", func() {
 		newBinDir   string
 		queryResult = `{"SegConfigs":[{"DbID":1,"ContentID":-1,"Port":15432,"Hostname":"mdw","DataDir":"/data/master/gpseg-1"},` +
 			`{"DbID":2,"ContentID":0,"Port":25432,"Hostname":"sdw1","DataDir":"/data/primary/gpseg0"}],"BinDir":"/tmp"}`
-		clusterPair         *services.ClusterPair
-		expectedClusterPair *services.ClusterPair
+		clusterPair         *utils.ClusterPair
+		expectedClusterPair *utils.ClusterPair
 	)
 
 	BeforeEach(func() {
@@ -37,8 +37,8 @@ var _ = Describe("Hub prepare init-cluster", func() {
 		dir, err = ioutil.TempDir("", "")
 		Expect(err).ToNot(HaveOccurred())
 		utils.System = utils.InitializeSystemFunctions()
-		clusterPair = &services.ClusterPair{}
-		expectedClusterPair = &services.ClusterPair{
+		clusterPair = &utils.ClusterPair{}
+		expectedClusterPair = &utils.ClusterPair{
 			NewCluster: &cluster.Cluster{
 				ContentIDs: []int{-1, 0},
 				Segments: map[int]cluster.SegConfig{

@@ -25,7 +25,7 @@ var _ = Describe("upgrade validate start cluster", func() {
 		commandExecer *testutils.FakeCommandExecer
 		errChan       chan error
 		outChan       chan []byte
-		clusterPair   *services.ClusterPair
+		clusterPair   *utils.ClusterPair
 		testExecutor  *testhelper.TestExecutor
 		cm            *testutils.MockChecklistManager
 	)

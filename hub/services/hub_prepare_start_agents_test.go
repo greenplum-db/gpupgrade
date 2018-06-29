@@ -7,6 +7,7 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	_ "github.com/greenplum-db/gpupgrade/hub/services"
+	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gpupgrade/hub/services"
 
@@ -18,7 +19,7 @@ import (
 var _ = Describe("hub PrepareStartAgents", func() {
 
 	var (
-		cp *services.ClusterPair
+		cp *utils.ClusterPair
 		cm *testutils.MockChecklistManager
 	)
 

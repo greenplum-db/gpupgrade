@@ -6,6 +6,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/utils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
@@ -59,7 +60,7 @@ var _ = Describe("prepare", func() {
 
 		Expect(cm.IsComplete(upgradestatus.INIT_CLUSTER)).To(BeTrue())
 
-		cp := &services.ClusterPair{}
+		cp := &utils.ClusterPair{}
 		err := cp.ReadNewConfig(testStateDir)
 		Expect(err).ToNot(HaveOccurred())
 

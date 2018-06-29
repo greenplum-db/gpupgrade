@@ -19,12 +19,12 @@ var _ = Describe("Hub", func() {
 	var (
 		agentA      *testutils.MockAgentServer
 		port        int
-		clusterPair *services.ClusterPair
+		clusterPair *utils.ClusterPair
 	)
 
 	BeforeEach(func() {
 		agentA, port = testutils.NewMockAgentServer()
-		clusterPair = &services.ClusterPair{
+		clusterPair = &utils.ClusterPair{
 			OldCluster: testutils.CreateSampleCluster(-1, 25437, "localhost", "/old/datadir"),
 		}
 	})

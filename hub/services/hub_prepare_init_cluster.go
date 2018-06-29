@@ -16,7 +16,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-func SaveTargetClusterConfig(clusterPair *ClusterPair, dbConnector *dbconn.DBConn, stateDir string, newBinDir string) error {
+func SaveTargetClusterConfig(clusterPair *utils.ClusterPair, dbConnector *dbconn.DBConn, stateDir string, newBinDir string) error {
 	err := os.MkdirAll(stateDir, 0700)
 	if err != nil {
 		return err
