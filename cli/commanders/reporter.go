@@ -30,10 +30,9 @@ var UpgradeStepsMessage = map[pb.UpgradeSteps]string{
 	pb.UpgradeSteps_PREPARE_START_AGENTS:   "- Agents Started on Cluster",
 	pb.UpgradeSteps_MASTERUPGRADE:          "- Run pg_upgrade on master",
 	pb.UpgradeSteps_STOPPED_CLUSTER:        "- Shutdown clusters",
-	pb.UpgradeSteps_CONVERSION:             "- Run pg_upgrade on segments",
+	pb.UpgradeSteps_CONVERT_PRIMARIES:      "- Primary segment upgrade",
 	pb.UpgradeSteps_SHARE_OIDS:             "- Copy OID files from master to segments",
 	pb.UpgradeSteps_VALIDATE_START_CLUSTER: "- Validate the upgraded cluster can start up",
-	pb.UpgradeSteps_CONVERT_PRIMARIES:      "- Primary segment upgrade",
 	pb.UpgradeSteps_RECONFIGURE_PORTS:      "- Adjust upgrade cluster ports",
 }
 
