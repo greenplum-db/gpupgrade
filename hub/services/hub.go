@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/greenplum-db/gpupgrade/helpers"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 
@@ -38,7 +37,6 @@ type Hub struct {
 	agentConns      []*Connection
 	clusterPair     *utils.ClusterPair
 	grpcDialer      Dialer
-	commandExecer   helpers.CommandExecer
 	remoteExecutor  RemoteExecutor
 	checklistWriter ChecklistWriter
 
@@ -69,13 +67,12 @@ type ChecklistWriter interface {
 	MarkComplete(string) error
 }
 
-func NewHub(pair *utils.ClusterPair, grpcDialer Dialer, execer helpers.CommandExecer, conf *HubConfig, checklistWriter ChecklistWriter) *Hub {
+func NewHub(pair *utils.ClusterPair, grpcDialer Dialer, conf *HubConfig, checklistWriter ChecklistWriter) *Hub {
 	h := &Hub{
 		stopped:         make(chan struct{}, 1),
 		conf:            conf,
 		clusterPair:     pair,
 		grpcDialer:      grpcDialer,
-		commandExecer:   execer,
 		checklistWriter: checklistWriter,
 	}
 

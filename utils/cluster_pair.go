@@ -6,23 +6,20 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/greenplum-db/gpupgrade/helpers"
 	"github.com/pkg/errors"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
 )
 
 type ClusterPair struct {
-	OldCluster    *cluster.Cluster
-	NewCluster    *cluster.Cluster
-	OldBinDir     string
-	NewBinDir     string
-	CommandExecer helpers.CommandExecer
+	OldCluster *cluster.Cluster
+	NewCluster *cluster.Cluster
+	OldBinDir  string
+	NewBinDir  string
 }
 
-func (cp *ClusterPair) Init(baseDir, OldBinDir, NewBinDir string, execer helpers.CommandExecer) error {
+func (cp *ClusterPair) Init(baseDir, OldBinDir, NewBinDir string) error {
 	var err error
-	cp.CommandExecer = execer
 
 	err = cp.ReadOldConfig(baseDir)
 	if err != nil {

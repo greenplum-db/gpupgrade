@@ -7,18 +7,18 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/greenplum-db/gpupgrade/helpers"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 
+	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
 
 type AgentServer struct {
-	GetDiskUsage  func() (map[string]float64, error)
-	commandExecer helpers.CommandExecer
-	conf          AgentConfig
+	GetDiskUsage func() (map[string]float64, error)
+	executor     cluster.Executor
+	conf         AgentConfig
 
 	mu      sync.Mutex
 	server  *grpc.Server
@@ -32,12 +32,12 @@ type AgentConfig struct {
 	StateDir string
 }
 
-func NewAgentServer(execer helpers.CommandExecer, conf AgentConfig) *AgentServer {
+func NewAgentServer(executor cluster.Executor, conf AgentConfig) *AgentServer {
 	return &AgentServer{
-		GetDiskUsage:  diskUsage,
-		commandExecer: execer,
-		conf:          conf,
-		stopped:       make(chan struct{}, 1),
+		GetDiskUsage: diskUsage,
+		executor:     executor,
+		conf:         conf,
+		stopped:      make(chan struct{}, 1),
 	}
 }
 

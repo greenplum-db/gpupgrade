@@ -11,7 +11,6 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
-	"github.com/greenplum-db/gpupgrade/helpers"
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -80,11 +79,8 @@ func main() {
 				StateDir:       utils.GetStateDir(),
 				LogDir:         logdir,
 			}
-			commandExecer := func(command string, vars ...string) helpers.Command {
-				return exec.Command(command, vars...)
-			}
 			cm := upgradestatus.NewChecklistManager(conf.StateDir)
-			hub := services.NewHub(&utils.ClusterPair{}, grpc.DialContext, commandExecer, conf, cm)
+			hub := services.NewHub(&utils.ClusterPair{}, grpc.DialContext, conf, cm)
 			if daemon {
 				hub.MakeDaemon()
 			}

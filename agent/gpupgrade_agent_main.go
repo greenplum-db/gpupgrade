@@ -9,9 +9,9 @@ import (
 
 	"golang.org/x/crypto/ssh/terminal"
 
+	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/greenplum-db/gpupgrade/agent/services"
-	"github.com/greenplum-db/gpupgrade/helpers"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/spf13/cobra"
 )
@@ -80,11 +80,7 @@ func main() {
 				StateDir: statedir,
 			}
 
-			commandExecer := func(command string, vars ...string) helpers.Command {
-				return exec.Command(command, vars...)
-			}
-
-			agentServer := services.NewAgentServer(commandExecer, conf)
+			agentServer := services.NewAgentServer(&cluster.GPDBExecutor{}, conf)
 			if daemon {
 				agentServer.MakeDaemon()
 			}
