@@ -45,7 +45,7 @@
     "operating",
     "testhelper"
   ]
-  revision = "e1ff11c5bc81a9412a4cf9484e0131c781fa031e"
+  revision = "a51003cc3ea7222978cb52aaab8232f8fffb5c27"
 
 [[projects]]
   name = "github.com/inconshreveable/mousetrap"
