@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	pb "github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
@@ -19,30 +18,22 @@ import (
 
 var _ = Describe("CommandListener", func() {
 	var (
-		agent         *services.AgentServer
-		commandExecer *testutils.FakeCommandExecer
-		outChan       chan []byte
-		errChan       chan error
-		dir           string
+		agent        *services.AgentServer
+		testExecutor *testhelper.TestExecutor
+		dir          string
 	)
 
 	BeforeEach(func() {
 		testhelper.SetupTestLogger()
 
-		outChan = make(chan []byte, 2)
-		errChan = make(chan error, 2)
-		commandExecer = &testutils.FakeCommandExecer{}
-		commandExecer.SetOutput(&testutils.FakeCommand{
-			Out: outChan,
-			Err: errChan,
-		})
+		testExecutor = &testhelper.TestExecutor{}
 
 		var err error
 		dir, err = ioutil.TempDir("", "")
 		Expect(err).ToNot(HaveOccurred())
 
 		agentConfig := services.AgentConfig{StateDir: dir}
-		agent = services.NewAgentServer(commandExecer.Exec, agentConfig)
+		agent = services.NewAgentServer(testExecutor, agentConfig)
 	})
 
 	AfterEach(func() {
@@ -78,7 +69,7 @@ var _ = Describe("CommandListener", func() {
 		Expect(err).ToNot(HaveOccurred())
 		fd.Close()
 
-		outChan <- []byte("pid1")
+		testExecutor.LocalOutput = "pid1"
 
 		status, err := agent.CheckConversionStatus(nil, &pb.CheckConversionStatusRequest{
 			Segments: []*pb.SegmentInfo{{

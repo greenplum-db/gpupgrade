@@ -62,7 +62,7 @@ func initStatus(s Step, h *Hub) *pb.UpgradeStepStatus {
 
 // shutdownStatus checks whether all clusters have been stopped.
 func shutdownStatus(s Step, h *Hub) *pb.UpgradeStepStatus {
-	state := upgradestatus.NewShutDownClusters(s.StatePath(h), h.commandExecer)
+	state := upgradestatus.NewShutDownClusters(s.StatePath(h), h.clusterPair.OldCluster.Executor)
 	return state.GetStatus()
 }
 
@@ -77,7 +77,7 @@ func pgUpgradeStatus(s Step, h *Hub) *pb.UpgradeStepStatus {
 		status.Status = pb.StepStatus_PENDING
 		return status
 	}
-	state := upgradestatus.NewPGUpgradeStatusChecker(upgradestatus.MASTER, s.StatePath(h), h.clusterPair.OldCluster.GetDirForContent(-1), h.commandExecer)
+	state := upgradestatus.NewPGUpgradeStatusChecker(upgradestatus.MASTER, s.StatePath(h), h.clusterPair.OldCluster.GetDirForContent(-1), h.clusterPair.OldCluster.Executor)
 	return state.GetStatus()
 }
 

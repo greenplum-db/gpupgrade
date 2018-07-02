@@ -9,9 +9,7 @@ import (
 )
 
 func (s *AgentServer) CheckUpgradeStatus(ctx context.Context, in *pb.CheckUpgradeStatusRequest) (*pb.CheckUpgradeStatusReply, error) {
-	cmd := "ps auxx | grep pg_upgrade"
-
-	output, err := s.commandExecer("bash", "-c", cmd).Output()
+	output, err := s.executor.ExecuteLocalCommand("ps auxx | grep pg_upgrade")
 	if err != nil {
 		gplog.Error(err.Error())
 		return nil, err

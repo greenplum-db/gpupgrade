@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/greenplum-db/gpupgrade/agent/services"
-	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
@@ -17,26 +16,16 @@ import (
 
 var _ = Describe("CommandListener", func() {
 	var (
-		testLogFile   *gbytes.Buffer
-		agent         *services.AgentServer
-		commandExecer *testutils.FakeCommandExecer
-		errChan       chan error
-		outChan       chan []byte
+		testLogFile  *gbytes.Buffer
+		agent        *services.AgentServer
+		testExecutor *testhelper.TestExecutor
 	)
 
 	BeforeEach(func() {
 		_, _, testLogFile = testhelper.SetupTestLogger()
 
-		errChan = make(chan error, 2)
-		outChan = make(chan []byte, 2)
-
-		commandExecer = &testutils.FakeCommandExecer{}
-		commandExecer.SetOutput(&testutils.FakeCommand{
-			Err: errChan,
-			Out: outChan,
-		})
-
-		agent = services.NewAgentServer(commandExecer.Exec, services.AgentConfig{})
+		testExecutor = &testhelper.TestExecutor{}
+		agent = services.NewAgentServer(testExecutor, services.AgentConfig{})
 	})
 
 	AfterEach(func() {
@@ -45,7 +34,7 @@ var _ = Describe("CommandListener", func() {
 	})
 
 	It("returns the shell command output", func() {
-		outChan <- []byte("shell command output")
+		testExecutor.LocalOutput = "shell command output"
 
 		resp, err := agent.CheckUpgradeStatus(context.TODO(), nil)
 		Expect(err).ToNot(HaveOccurred())
@@ -54,7 +43,7 @@ var _ = Describe("CommandListener", func() {
 	})
 
 	It("returns only err if anything is reported as an error", func() {
-		errChan <- errors.New("couldn't find bash")
+		testExecutor.LocalError = errors.New("couldn't find bash")
 
 		resp, err := agent.CheckUpgradeStatus(context.TODO(), nil)
 		Expect(err).To(HaveOccurred())

@@ -1,7 +1,6 @@
 package upgradestatus
 
 import (
-	"github.com/greenplum-db/gpupgrade/helpers"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 
@@ -12,6 +11,7 @@ import (
 
 	"fmt"
 
+	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 )
 
@@ -27,15 +27,15 @@ type ConvertSegment struct {
 	segType       SegmentType
 	pgUpgradePath string
 	oldDataDir    string
-	commandExecer helpers.CommandExecer
+	executor      cluster.Executor
 }
 
-func NewPGUpgradeStatusChecker(segType SegmentType, pgUpgradePath, oldDataDir string, execer helpers.CommandExecer) ConvertSegment {
+func NewPGUpgradeStatusChecker(segType SegmentType, pgUpgradePath, oldDataDir string, executor cluster.Executor) ConvertSegment {
 	return ConvertSegment{
 		segType:       segType,
 		pgUpgradePath: pgUpgradePath,
 		oldDataDir:    oldDataDir,
-		commandExecer: execer,
+		executor:      executor,
 	}
 }
 
@@ -79,8 +79,7 @@ func (c *ConvertSegment) GetStatus() *pb.UpgradeStepStatus {
 
 func (c *ConvertSegment) pgUpgradeRunning() bool {
 	//if pgrep doesnt find target, ExecCmdOutput will return empty byte array and err.Error()="exit status 1"
-	command := fmt.Sprintf("pg_upgrade | grep --old-datadir=%s", c.oldDataDir)
-	pgUpgradePids, err := c.commandExecer("pgrep", command).Output()
+	pgUpgradePids, err := c.executor.ExecuteLocalCommand(fmt.Sprintf("pgrep pg_upgrade | grep --old-datadir=%s", c.oldDataDir))
 	if err == nil && len(pgUpgradePids) != 0 {
 		return true
 	}

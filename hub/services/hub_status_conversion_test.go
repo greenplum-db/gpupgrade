@@ -42,7 +42,7 @@ var _ = Describe("hub", func() {
 		}
 
 		cm = testutils.NewMockChecklistManager()
-		hub = services.NewHub(clusterPair, grpc.DialContext, nil, conf, cm)
+		hub = services.NewHub(clusterPair, grpc.DialContext, conf, cm)
 	})
 
 	AfterEach(func() {

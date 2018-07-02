@@ -37,19 +37,17 @@ func (s *AgentServer) UpgradeConvertPrimarySegments(ctx context.Context, in *pb.
 		}
 
 		for _, oidFile := range oidFiles {
-			out, err := s.commandExecer("cp", oidFile, pathToSegment).CombinedOutput()
+			out, err := s.executor.ExecuteLocalCommand(fmt.Sprintf("cp %s %s", oidFile, pathToSegment))
 			if err != nil {
 				gplog.Error("Failed to copy OID files for segment %d. Output: %s", segment.Content, string(out))
 				return &pb.UpgradeConvertPrimarySegmentsReply{}, err
 			}
 		}
 
-		convertPrimaryArgs := fmt.Sprintf("cd %s && nohup %s --old-bindir=%s --old-datadir=%s --new-bindir=%s --new-datadir=%s --old-port=%d --new-port=%d --progress",
+		convertPrimaryCmd := fmt.Sprintf("cd %s && nohup %s --old-bindir=%s --old-datadir=%s --new-bindir=%s --new-datadir=%s --old-port=%d --new-port=%d --progress",
 			pathToSegment, in.NewBinDir+"/pg_upgrade", in.OldBinDir, segment.OldDataDir, in.NewBinDir, segment.NewDataDir, segment.OldPort, segment.NewPort)
 
-		convertPrimaryCmd := s.commandExecer("bash", "-c", convertPrimaryArgs)
-
-		err = convertPrimaryCmd.Start()
+		err = utils.System.RunCommandAsync(convertPrimaryCmd, filepath.Join(pathToSegment, "pg_upgrade_segment.log"))
 		if err != nil {
 			gplog.Error("An error occurred: %v", err)
 			return &pb.UpgradeConvertPrimarySegmentsReply{}, err

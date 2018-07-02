@@ -19,22 +19,13 @@ import (
 
 var _ = Describe("pg_upgrade status checker", func() {
 	var (
-		commandExecer *testutils.FakeCommandExecer
-		errChan       chan error
-		outChan       chan []byte
+		testExecutor *testhelper.TestExecutor
 	)
 
 	BeforeEach(func() {
 		testhelper.SetupTestLogger() // extend to capture the values in a var if future tests need it
 
-		outChan = make(chan []byte, 1)
-		errChan = make(chan error, 1)
-
-		commandExecer = &testutils.FakeCommandExecer{}
-		commandExecer.SetOutput(&testutils.FakeCommand{
-			Err: errChan,
-			Out: outChan,
-		})
+		testExecutor = &testhelper.TestExecutor{}
 	})
 
 	AfterEach(func() {
@@ -48,7 +39,7 @@ var _ = Describe("pg_upgrade status checker", func() {
 		utils.System.IsNotExist = func(error) bool {
 			return true
 		}
-		subject := upgradestatus.NewPGUpgradeStatusChecker(upgradestatus.MASTER, "/tmp", "", commandExecer.Exec)
+		subject := upgradestatus.NewPGUpgradeStatusChecker(upgradestatus.MASTER, "/tmp", "", testExecutor)
 		status := subject.GetStatus()
 		Expect(status.Status).To(Equal(pb.StepStatus_PENDING))
 
@@ -62,9 +53,9 @@ var _ = Describe("pg_upgrade status checker", func() {
 			return false
 		}
 
-		outChan <- []byte("I'm running")
+		testExecutor.LocalOutput = "I'm running"
 
-		subject := upgradestatus.NewPGUpgradeStatusChecker(upgradestatus.MASTER, "/tmp", "", commandExecer.Exec)
+		subject := upgradestatus.NewPGUpgradeStatusChecker(upgradestatus.MASTER, "/tmp", "", testExecutor)
 		status := subject.GetStatus()
 		Expect(status.Status).To(Equal(pb.StepStatus_RUNNING))
 	})
@@ -78,7 +69,7 @@ var _ = Describe("pg_upgrade status checker", func() {
 			return false
 		}
 
-		errChan <- errors.New("exit status 1")
+		testExecutor.LocalError = errors.New("exit status 1")
 
 		utils.System.FilePathGlob = func(glob string) ([]string, error) {
 			if strings.Contains(glob, "inprogress") {
@@ -106,11 +97,11 @@ var _ = Describe("pg_upgrade status checker", func() {
 			return os.Open(filename)
 		}
 
-		subject := upgradestatus.NewPGUpgradeStatusChecker(upgradestatus.MASTER, "/tmp", "/data/dir", commandExecer.Exec)
+		subject := upgradestatus.NewPGUpgradeStatusChecker(upgradestatus.MASTER, "/tmp", "/data/dir", testExecutor)
 		status := subject.GetStatus()
 		Expect(status.Status).To(Equal(pb.StepStatus_COMPLETE))
 
-		Expect(commandExecer.Calls()).To(Equal([]string{"pgrep pg_upgrade | grep --old-datadir=/data/dir"}))
+		Expect(testExecutor.LocalCommands).To(Equal([]string{"pgrep pg_upgrade | grep --old-datadir=/data/dir"}))
 	})
 
 	// We are assuming that no inprogress actually exists in the path we're using,
@@ -124,9 +115,9 @@ var _ = Describe("pg_upgrade status checker", func() {
 			return false
 		}
 
-		errChan <- errors.New("pg_upgrade failed")
+		testExecutor.LocalError = errors.New("pg_upgrade failed")
 
-		subject := upgradestatus.NewPGUpgradeStatusChecker(upgradestatus.MASTER, "/tmp", "", commandExecer.Exec)
+		subject := upgradestatus.NewPGUpgradeStatusChecker(upgradestatus.MASTER, "/tmp", "", testExecutor)
 		status := subject.GetStatus()
 		Expect(status.Status).To(Equal(pb.StepStatus_FAILED))
 	})

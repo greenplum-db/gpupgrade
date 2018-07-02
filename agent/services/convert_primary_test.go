@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 
 	pb "github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gpupgrade/agent/services"
@@ -21,12 +20,10 @@ import (
 
 var _ = Describe("CommandListener", func() {
 	var (
-		agent         *services.AgentServer
-		dir           string
-		commandExecer *testutils.FakeCommandExecer
-		oidFile       string
-		errChan       chan error
-		outChan       chan []byte
+		agent        *services.AgentServer
+		dir          string
+		oidFile      string
+		testExecutor *testhelper.TestExecutor
 	)
 
 	BeforeEach(func() {
@@ -36,16 +33,9 @@ var _ = Describe("CommandListener", func() {
 		dir, err = ioutil.TempDir("", "")
 		Expect(err).ToNot(HaveOccurred())
 
-		errChan = make(chan error, 2)
-		outChan = make(chan []byte, 2)
-		commandExecer = &testutils.FakeCommandExecer{}
-		commandExecer.SetOutput(&testutils.FakeCommand{
-			Err: errChan,
-			Out: outChan,
-		})
-
+		testExecutor = &testhelper.TestExecutor{}
 		agentConfig := services.AgentConfig{StateDir: dir}
-		agent = services.NewAgentServer(commandExecer.Exec, agentConfig)
+		agent = services.NewAgentServer(testExecutor, agentConfig)
 
 		err = os.MkdirAll(filepath.Join(dir, "pg_upgrade"), 0700)
 		Expect(err).ToNot(HaveOccurred())
@@ -61,9 +51,11 @@ var _ = Describe("CommandListener", func() {
 	})
 
 	It("successfully runs pg_upgrade", func() {
-		cmd := &testutils.FakeCommand{}
-		commandExecer.SetOutput(cmd)
-
+		// We want to check what commands are passed to RunCommandAsync, so we have testExecutor record them for us
+		utils.System.RunCommandAsync = func(cmdStr, logFile string) error {
+			_, err := testExecutor.ExecuteLocalCommand(cmdStr)
+			return err
+		}
 		_, err := agent.UpgradeConvertPrimarySegments(nil, &pb.UpgradeConvertPrimarySegmentsRequest{
 			OldBinDir: "/old/bin",
 			NewBinDir: "/new/bin",
@@ -74,12 +66,12 @@ var _ = Describe("CommandListener", func() {
 		})
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(commandExecer.GetNumInvocations()).To(Equal(4))
+		Expect(testExecutor.NumExecutions).To(Equal(4))
 
-		Expect(commandExecer.Calls()).To(ContainElement(fmt.Sprintf("cp %s %s/pg_upgrade/seg-0", oidFile, dir)))
-		Expect(commandExecer.Calls()).To(ContainElement(fmt.Sprintf("bash -c cd %s/pg_upgrade/seg-0 && nohup /new/bin/pg_upgrade --old-bindir=/old/bin --old-datadir=old/datadir1 --new-bindir=/new/bin --new-datadir=new/datadir1 --old-port=1 --new-port=11 --progress", dir)))
-		Expect(commandExecer.Calls()).To(ContainElement(fmt.Sprintf("cp %s %s/pg_upgrade/seg-1", oidFile, dir)))
-		Expect(commandExecer.Calls()).To(ContainElement(fmt.Sprintf("bash -c cd %s/pg_upgrade/seg-1 && nohup /new/bin/pg_upgrade --old-bindir=/old/bin --old-datadir=old/datadir2 --new-bindir=/new/bin --new-datadir=new/datadir2 --old-port=2 --new-port=22 --progress", dir)))
+		Expect(testExecutor.LocalCommands).To(ContainElement(fmt.Sprintf("cp %s %s/pg_upgrade/seg-0", oidFile, dir)))
+		Expect(testExecutor.LocalCommands).To(ContainElement(fmt.Sprintf("cd %s/pg_upgrade/seg-0 && nohup /new/bin/pg_upgrade --old-bindir=/old/bin --old-datadir=old/datadir1 --new-bindir=/new/bin --new-datadir=new/datadir1 --old-port=1 --new-port=11 --progress", dir)))
+		Expect(testExecutor.LocalCommands).To(ContainElement(fmt.Sprintf("cp %s %s/pg_upgrade/seg-1", oidFile, dir)))
+		Expect(testExecutor.LocalCommands).To(ContainElement(fmt.Sprintf("cd %s/pg_upgrade/seg-1 && nohup /new/bin/pg_upgrade --old-bindir=/old/bin --old-datadir=old/datadir2 --new-bindir=/new/bin --new-datadir=new/datadir2 --old-port=2 --new-port=22 --progress", dir)))
 	})
 
 	It("returns an an error if the oid files glob fails", func() {
@@ -115,7 +107,7 @@ var _ = Describe("CommandListener", func() {
 	})
 
 	It("returns an error if the oid files fail to copy into the segment directory", func() {
-		errChan <- errors.New("Failed to copy oid file into segment directory")
+		testExecutor.LocalError = errors.New("Failed to copy oid file into segment directory")
 
 		_, err := agent.UpgradeConvertPrimarySegments(nil, &pb.UpgradeConvertPrimarySegmentsRequest{
 			OldBinDir: "/old/bin",
@@ -128,8 +120,7 @@ var _ = Describe("CommandListener", func() {
 	})
 
 	It("returns an error if starting pg_upgrade fails", func() {
-		errChan <- nil
-		errChan <- errors.New("convert primary on agent failed")
+		testExecutor.LocalError = errors.New("convert primary on agent failed")
 
 		_, err := agent.UpgradeConvertPrimarySegments(nil, &pb.UpgradeConvertPrimarySegmentsRequest{
 			OldBinDir: "/old/bin",

@@ -19,13 +19,11 @@ import (
 
 var _ = Describe("ConvertMasterHub", func() {
 	var (
-		dir           string
-		commandExecer *testutils.FakeCommandExecer
-		hub           *services.Hub
-		outChan       chan []byte
-		errChan       chan error
-		clusterPair   *utils.ClusterPair
-		cm            *testutils.MockChecklistManager
+		dir          string
+		hub          *services.Hub
+		clusterPair  *utils.ClusterPair
+		cm           *testutils.MockChecklistManager
+		actualCmdStr string
 	)
 
 	BeforeEach(func() {
@@ -36,16 +34,13 @@ var _ = Describe("ConvertMasterHub", func() {
 			StateDir: dir,
 		}
 
-		errChan = make(chan error, 2)
-		outChan = make(chan []byte, 2)
-		commandExecer = &testutils.FakeCommandExecer{}
-		commandExecer.SetOutput(&testutils.FakeCommand{
-			Err: errChan,
-			Out: outChan,
-		})
 		clusterPair = testutils.CreateSampleClusterPair()
 		cm = testutils.NewMockChecklistManager()
-		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, conf, cm)
+		hub = services.NewHub(clusterPair, grpc.DialContext, conf, cm)
+		utils.System.RunCommandAsync = func(cmdStr string, logFile string) error {
+			actualCmdStr = cmdStr
+			return nil
+		}
 	})
 
 	AfterEach(func() {
@@ -54,7 +49,7 @@ var _ = Describe("ConvertMasterHub", func() {
 	})
 
 	It("returns with no error when convert master runs successfully", func() {
-		_, err := hub.UpgradeConvertMaster(nil, &pb.UpgradeConvertMasterRequest{
+		err := hub.ConvertMaster(&pb.UpgradeConvertMasterRequest{
 			OldBinDir:  "/old/path/bin",
 			OldDataDir: "old/data/dir",
 			NewBinDir:  "/new/path/bin",
@@ -63,20 +58,18 @@ var _ = Describe("ConvertMasterHub", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		pgupgrade_dir := filepath.Join(dir, "pg_upgrade")
-		Expect(commandExecer.Command()).To(Equal("bash"))
-		Expect(commandExecer.Args()).To(Equal([]string{
-			"-c",
-			"unset PGHOST; unset PGPORT; cd " + pgupgrade_dir +
-				` && nohup /new/path/bin/pg_upgrade --old-bindir=/old/path/bin ` +
-				`--old-datadir=old/data/dir --new-bindir=/new/path/bin ` +
-				`--new-datadir=new/data/dir --old-port=25437 --new-port=35437 --dispatcher-mode --progress`,
-		}))
+		Expect(actualCmdStr).To(Equal("unset PGHOST; unset PGPORT; cd " + pgupgrade_dir +
+			` && nohup /new/path/bin/pg_upgrade --old-bindir=/old/path/bin ` +
+			`--old-datadir=old/data/dir --new-bindir=/new/path/bin ` +
+			`--new-datadir=new/data/dir --old-port=25437 --new-port=35437 --dispatcher-mode --progress`))
 	})
 
 	It("returns an error when convert master fails", func() {
-		errChan <- errors.New("upgrade failed")
+		utils.System.RunCommandAsync = func(cmdStr string, logFile string) error {
+			return errors.New("upgrade failed")
+		}
 
-		_, err := hub.UpgradeConvertMaster(nil, &pb.UpgradeConvertMasterRequest{
+		err := hub.ConvertMaster(&pb.UpgradeConvertMasterRequest{
 			OldBinDir:  "/old/path/bin",
 			OldDataDir: "old/data/dir",
 			NewBinDir:  "/new/path/bin",
@@ -90,21 +83,7 @@ var _ = Describe("ConvertMasterHub", func() {
 			return errors.New("failed to create directory")
 		}
 
-		_, err := hub.UpgradeConvertMaster(nil, &pb.UpgradeConvertMasterRequest{
-			OldBinDir:  "/old/path/bin",
-			OldDataDir: "old/data/dir",
-			NewBinDir:  "/new/path/bin",
-			NewDataDir: "new/data/dir",
-		})
-		Expect(err).To(HaveOccurred())
-	})
-
-	It("returns an error if the upgrade file cannot be created", func() {
-		utils.System.OpenFile = func(name string, flag int, perm os.FileMode) (*os.File, error) {
-			return nil, errors.New("failed to open file")
-		}
-
-		_, err := hub.UpgradeConvertMaster(nil, &pb.UpgradeConvertMasterRequest{
+		err := hub.ConvertMaster(&pb.UpgradeConvertMasterRequest{
 			OldBinDir:  "/old/path/bin",
 			OldDataDir: "old/data/dir",
 			NewBinDir:  "/new/path/bin",

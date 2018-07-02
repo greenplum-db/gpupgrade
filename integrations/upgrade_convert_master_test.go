@@ -12,9 +12,8 @@ import (
 
 var _ = Describe("upgrade convert master", func() {
 	var (
-		hub           *services.Hub
-		commandExecer *testutils.FakeCommandExecer
-		cm            *testutils.MockChecklistManager
+		hub *services.Hub
+		cm  *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -29,7 +28,7 @@ var _ = Describe("upgrade convert master", func() {
 
 		cm = testutils.NewMockChecklistManager()
 
-		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, commandExecer.Exec, conf, cm)
+		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, conf, cm)
 		go hub.Start()
 	})
 

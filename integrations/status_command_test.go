@@ -3,6 +3,7 @@ package integrations_test
 import (
 	"os"
 
+	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	agentServices "github.com/greenplum-db/gpupgrade/agent/services"
 	hubServices "github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -19,10 +20,9 @@ import (
 
 var _ = Describe("status", func() {
 	var (
-		hub           *hubServices.Hub
-		agent         *agentServices.AgentServer
-		commandExecer *testutils.FakeCommandExecer
-		cm            *testutils.MockChecklistManager
+		hub   *hubServices.Hub
+		agent *agentServices.AgentServer
+		cm    *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -34,10 +34,8 @@ var _ = Describe("status", func() {
 			StateDir: testStateDir,
 		}
 
-		agentExecer := &testutils.FakeCommandExecer{}
-		agentExecer.SetOutput(&testutils.FakeCommand{})
-
-		agent = agentServices.NewAgentServer(agentExecer.Exec, agentConf)
+		agentExecutor := &testhelper.TestExecutor{}
+		agent = agentServices.NewAgentServer(agentExecutor, agentConf)
 		go agent.Start()
 
 		port, err = testutils.GetOpenPort()
@@ -48,10 +46,8 @@ var _ = Describe("status", func() {
 			HubToAgentPort: agentPort,
 			StateDir:       testStateDir,
 		}
-		commandExecer = &testutils.FakeCommandExecer{}
-		commandExecer.SetOutput(&testutils.FakeCommand{})
 
-		hub = hubServices.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, commandExecer.Exec, conf, cm)
+		hub = hubServices.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, conf, cm)
 		go hub.Start()
 	})
 

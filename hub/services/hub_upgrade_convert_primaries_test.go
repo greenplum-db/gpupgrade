@@ -19,16 +19,15 @@ import (
 
 var _ = Describe("hub.UpgradeConvertPrimaries()", func() {
 	var (
-		dir           string
-		commandExecer *testutils.FakeCommandExecer
-		hub           *services.Hub
-		mockAgent     *testutils.MockAgentServer
-		port          int
-		request       *pb.UpgradeConvertPrimariesRequest
-		oldCluster    *cluster.Cluster
-		newCluster    *cluster.Cluster
-		clusterPair   *utils.ClusterPair
-		cm            *testutils.MockChecklistManager
+		dir         string
+		hub         *services.Hub
+		mockAgent   *testutils.MockAgentServer
+		port        int
+		request     *pb.UpgradeConvertPrimariesRequest
+		oldCluster  *cluster.Cluster
+		newCluster  *cluster.Cluster
+		clusterPair *utils.ClusterPair
+		cm          *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -69,11 +68,9 @@ var _ = Describe("hub.UpgradeConvertPrimaries()", func() {
 			OldBinDir: "/old/bin",
 			NewBinDir: "/new/bin",
 		}
-		commandExecer = &testutils.FakeCommandExecer{}
-		commandExecer.SetOutput(&testutils.FakeCommand{})
 
 		cm = testutils.NewMockChecklistManager()
-		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, conf, cm)
+		hub = services.NewHub(clusterPair, grpc.DialContext, conf, cm)
 	})
 	AfterEach(func() {
 		utils.System = utils.InitializeSystemFunctions()

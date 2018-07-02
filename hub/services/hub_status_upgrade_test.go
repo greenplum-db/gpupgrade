@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -24,11 +25,9 @@ var _ = Describe("status upgrade", func() {
 		hub                      *services.Hub
 		fakeStatusUpgradeRequest *pb.StatusUpgradeRequest
 		dir                      string
-		commandExecer            *testutils.FakeCommandExecer
-		errChan                  chan error
-		outChan                  chan []byte
 		mockAgent                *testutils.MockAgentServer
 		clusterPair              *utils.ClusterPair
+		testExecutor             *testhelper.TestExecutor
 	)
 
 	BeforeEach(func() {
@@ -44,21 +43,15 @@ var _ = Describe("status upgrade", func() {
 			StateDir:       dir,
 		}
 
-		errChan = make(chan error, 2)
-		outChan = make(chan []byte, 2)
-
-		commandExecer = &testutils.FakeCommandExecer{}
-		commandExecer.SetOutput(&testutils.FakeCommand{
-			Err: errChan,
-			Out: outChan,
-		})
 		clusterPair = testutils.CreateSampleClusterPair()
+		testExecutor = &testhelper.TestExecutor{}
+		clusterPair.OldCluster.Executor = testExecutor
+
 		// Mock so statusConversion doesn't need to wait 3 seconds before erroring out.
 		mockDialer := func(ctx context.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 			return nil, errors.New("grpc dial err")
 		}
-		hub = services.NewHub(clusterPair, mockDialer, commandExecer.Exec,
-			conf, nil)
+		hub = services.NewHub(clusterPair, mockDialer, conf, nil)
 	})
 
 	AfterEach(func() {
@@ -203,8 +196,7 @@ var _ = Describe("status upgrade", func() {
 			})
 
 			It("reports that master upgrade is running when pg_upgrade/*.inprogress files exists", func() {
-				outChan <- []byte("123")
-				outChan <- []byte("123")
+				testExecutor.LocalOutput = "stdout/stderr message"
 
 				utils.System.IsNotExist = func(error) bool {
 					return false
@@ -232,8 +224,8 @@ var _ = Describe("status upgrade", func() {
 			})
 
 			It("reports that master upgrade is done when no *.inprogress files exist in ~/.gpupgrade/pg_upgrade", func() {
-				outChan <- []byte("stdout/stderr message")
-				errChan <- errors.New("bogus error")
+				testExecutor.LocalOutput = "stdout/stderr message"
+				testExecutor.LocalError = errors.New("bogus error")
 
 				utils.System.IsNotExist = func(error) bool {
 					return false
@@ -280,8 +272,8 @@ var _ = Describe("status upgrade", func() {
 			})
 
 			It("reports pg_upgrade has failed", func() {
-				outChan <- []byte("stdout/stderr message")
-				errChan <- errors.New("bogus error")
+				testExecutor.LocalOutput = "stdout/stderr message"
+				testExecutor.LocalError = errors.New("bogus error")
 
 				utils.System.IsNotExist = func(error) bool {
 					return false

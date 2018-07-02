@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	agentServices "github.com/greenplum-db/gpupgrade/agent/services"
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -19,15 +20,13 @@ import (
 
 var _ = Describe("upgrade convert primaries", func() {
 	var (
-		hub                *services.Hub
-		agent              *agentServices.AgentServer
-		hubCommandExecer   *testutils.FakeCommandExecer
-		agentCommandExecer *testutils.FakeCommandExecer
-		oidFile            string
-		hubOutChan         chan []byte
-		agentCommandOutput chan []byte
-		clusterPair        *utils.ClusterPair
-		cm                 *testutils.MockChecklistManager
+		hub           *services.Hub
+		agent         *agentServices.AgentServer
+		agentExecutor *testhelper.TestExecutor
+		testExecutor  *testhelper.TestExecutor
+		oidFile       string
+		clusterPair   *utils.ClusterPair
+		cm            *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -51,24 +50,14 @@ var _ = Describe("upgrade convert primaries", func() {
 			HubToAgentPort: 6416,
 			StateDir:       testStateDir,
 		}
-		hubOutChan = make(chan []byte, 10)
-
-		hubCommandExecer = &testutils.FakeCommandExecer{}
-		hubCommandExecer.SetOutput(&testutils.FakeCommand{
-			Out: hubOutChan,
-		})
-
 		clusterPair = testutils.InitClusterPairFromDB()
-		hub = services.NewHub(clusterPair, grpc.DialContext, hubCommandExecer.Exec, conf, cm)
+		testExecutor = &testhelper.TestExecutor{}
+		clusterPair.OldCluster.Executor = testExecutor
+		hub = services.NewHub(clusterPair, grpc.DialContext, conf, cm)
 		go hub.Start()
 
-		agentCommandOutput = make(chan []byte, 12)
-
-		agentCommandExecer = &testutils.FakeCommandExecer{}
-		agentCommandExecer.SetOutput(&testutils.FakeCommand{
-			Out: agentCommandOutput,
-		})
-		agent = agentServices.NewAgentServer(agentCommandExecer.Exec, agentServices.AgentConfig{
+		agentExecutor = &testhelper.TestExecutor{}
+		agent = agentServices.NewAgentServer(agentExecutor, agentServices.AgentConfig{
 			Port:     6416,
 			StateDir: testStateDir,
 		})
@@ -79,17 +68,20 @@ var _ = Describe("upgrade convert primaries", func() {
 	AfterEach(func() {
 		hub.Stop()
 		agent.Stop()
+		utils.InitializeSystemFunctions()
 		Expect(checkPortIsAvailable(port)).To(BeTrue())
 	})
 
 	// TODO: update to use MockChecklistManager.
 	It("updates status PENDING to RUNNING then to COMPLETE if successful", func() {
+		utils.System.RunCommandAsync = func(cmdStr string, logFile string) error {
+			_, err := agentExecutor.ExecuteLocalCommand(cmdStr)
+			return err
+		}
 		Expect(runStatusUpgrade()).To(ContainSubstring("PENDING - Primary segment upgrade"))
-		hubOutChan <- []byte("TEST")
+		testExecutor.LocalOutput = "TEST"
 
-		agentCommandOutput <- []byte("run pg_upgrade for segment 0")
-		agentCommandOutput <- []byte("run pg_upgrade for segment 1")
-		agentCommandOutput <- []byte("run pg_upgrade for segment 2")
+		agentExecutor.LocalOutput = "run pg_upgrade for segment"
 
 		upgradeConvertPrimaries := runCommand(
 			"upgrade",
@@ -99,9 +91,7 @@ var _ = Describe("upgrade convert primaries", func() {
 		)
 		Expect(upgradeConvertPrimaries).To(Exit(0))
 
-		agentCommandOutput <- []byte("pgrep for running pg_upgrade for segment 0")
-		agentCommandOutput <- []byte("pgrep for running pg_upgrade for segment 1")
-		agentCommandOutput <- []byte("pgrep for running pg_upgrade for segment 2")
+		agentExecutor.LocalOutput = "pgrep for running pg_upgrade for segment"
 		Expect(runStatusUpgrade()).To(ContainSubstring("RUNNING - Primary segment upgrade"))
 
 		for i := range []int{0, 1, 2} {
@@ -111,20 +101,23 @@ var _ = Describe("upgrade convert primaries", func() {
 			f.Close()
 		}
 
-		allCalls := strings.Join(agentCommandExecer.Calls(), " ")
-		Expect(allCalls).To(ContainSubstring("/new/bindir/pg_upgrade"))
+		var pgUpgradeRan bool
+		for _, cmd := range agentExecutor.LocalCommands {
+			if strings.Contains(cmd, "/new/bindir/pg_upgrade") {
+				pgUpgradeRan = true
+				break
+			}
+		}
+		Expect(pgUpgradeRan).To(BeTrue())
 
 		// Return no PIDs when pgrep checks if pg_upgrade is running
-		agentCommandOutput <- []byte("")
-		agentCommandOutput <- []byte("")
-		agentCommandOutput <- []byte("")
+		agentExecutor.LocalOutput = ""
 		Expect(runStatusUpgrade()).To(ContainSubstring("COMPLETE - Primary segment upgrade"))
 	})
 
 	It("updates status to FAILED if it fails to run", func() {
 		Expect(runStatusUpgrade()).To(ContainSubstring("PENDING - Primary segment upgrade"))
 		setStateFile(testStateDir, "pg_upgrade/seg-0", "1.failed")
-		agentCommandOutput <- []byte("combined output")
 
 		upgradeConvertPrimaries := runCommand(
 			"upgrade",
