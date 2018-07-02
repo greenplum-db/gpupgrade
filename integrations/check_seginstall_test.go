@@ -37,7 +37,7 @@ var _ = Describe("check seginstall", func() {
 		cp = testutils.CreateSampleClusterPair()
 		cm = testutils.NewMockChecklistManager()
 
-		hub = services.NewHub(cp, grpc.DialContext, nil, conf, cm)
+		hub = services.NewHub(cp, grpc.DialContext, conf, cm)
 		go hub.Start()
 	})
 

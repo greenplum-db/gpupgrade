@@ -17,7 +17,6 @@ import (
 var _ = Describe("check config", func() {
 	var (
 		hub            *services.Hub
-		commandExecer  *testutils.FakeCommandExecer
 		hubToAgentPort int
 	)
 
@@ -34,11 +33,9 @@ var _ = Describe("check config", func() {
 			HubToAgentPort: hubToAgentPort,
 			StateDir:       testStateDir,
 		}
-		commandExecer = &testutils.FakeCommandExecer{}
-		commandExecer.SetOutput(&testutils.FakeCommand{})
 
 		cm := testutils.NewMockChecklistManager()
-		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, commandExecer.Exec, conf, cm)
+		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, conf, cm)
 		go hub.Start()
 	})
 

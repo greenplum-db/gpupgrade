@@ -17,9 +17,8 @@ import (
 
 var _ = Describe("version command", func() {
 	var (
-		hub           *services.Hub
-		commandExecer *testutils.FakeCommandExecer
-		cm            *testutils.MockChecklistManager
+		hub *services.Hub
+		cm  *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -33,10 +32,8 @@ var _ = Describe("version command", func() {
 			HubToAgentPort: 6416,
 			StateDir:       testStateDir,
 		}
-		commandExecer = &testutils.FakeCommandExecer{}
-		commandExecer.SetOutput(&testutils.FakeCommand{})
 
-		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, commandExecer.Exec, conf, cm)
+		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, conf, cm)
 		go hub.Start()
 	})
 

@@ -3,6 +3,7 @@ package integrations_test
 import (
 	"errors"
 
+	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -18,12 +19,10 @@ var _ = Describe("upgrade reconfigure ports", func() {
 
 	var (
 		hub       *services.Hub
-		hubExecer *testutils.FakeCommandExecer
 		agentPort int
 
-		outChan chan []byte
-		errChan chan error
-		cm      *testutils.MockChecklistManager
+		testExecutor *testhelper.TestExecutor
+		cm           *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -41,16 +40,11 @@ var _ = Describe("upgrade reconfigure ports", func() {
 			StateDir:       testStateDir,
 		}
 
-		outChan = make(chan []byte, 10)
-		errChan = make(chan error, 10)
-		hubExecer = &testutils.FakeCommandExecer{}
-		hubExecer.SetOutput(&testutils.FakeCommand{
-			Out: outChan,
-			Err: errChan,
-		})
-
+		cp := testutils.InitClusterPairFromDB()
+		testExecutor = &testhelper.TestExecutor{}
+		cp.OldCluster.Executor = testExecutor
 		cm = testutils.NewMockChecklistManager()
-		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, hubExecer.Exec, conf, cm)
+		hub = services.NewHub(cp, grpc.DialContext, conf, cm)
 		go hub.Start()
 	})
 
@@ -67,7 +61,7 @@ var _ = Describe("upgrade reconfigure ports", func() {
 		upgradeReconfigurePortsSession := runCommand("upgrade", "reconfigure-ports")
 		Eventually(upgradeReconfigurePortsSession).Should(Exit(0))
 
-		Expect(hubExecer.Calls()[0]).To(ContainSubstring("sed"))
+		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("sed"))
 
 		Expect(cm.IsComplete(upgradestatus.RECONFIGURE_PORTS)).To(BeTrue())
 
@@ -76,7 +70,7 @@ var _ = Describe("upgrade reconfigure ports", func() {
 	It("updates status to FAILED if it fails to run", func() {
 
 		Expect(cm.IsPending(upgradestatus.RECONFIGURE_PORTS)).To(BeTrue())
-		errChan <- errors.New("fake test error, reconfigure-ports failed")
+		testExecutor.LocalError = errors.New("fake test error, reconfigure-ports failed")
 
 		upgradeShareOidsSession := runCommand("upgrade", "reconfigure-ports")
 		Eventually(upgradeShareOidsSession).Should(Exit(1))

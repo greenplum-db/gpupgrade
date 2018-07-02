@@ -3,6 +3,7 @@ package integrations_test
 import (
 	"errors"
 
+	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	agentServices "github.com/greenplum-db/gpupgrade/agent/services"
 	hubServices "github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
@@ -19,12 +20,10 @@ var _ = Describe("upgrade share oids", func() {
 	var (
 		hub       *hubServices.Hub
 		agent     *agentServices.AgentServer
-		hubExecer *testutils.FakeCommandExecer
 		agentPort int
 
-		outChan chan []byte
-		errChan chan error
-		cm      *testutils.MockChecklistManager
+		testExecutor *testhelper.TestExecutor
+		cm           *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -38,10 +37,9 @@ var _ = Describe("upgrade share oids", func() {
 			StateDir: testStateDir,
 		}
 
-		agentExecer := &testutils.FakeCommandExecer{}
-		agentExecer.SetOutput(&testutils.FakeCommand{})
+		agentExecutor := &testhelper.TestExecutor{}
 
-		agent = agentServices.NewAgentServer(agentExecer.Exec, agentConfig)
+		agent = agentServices.NewAgentServer(agentExecutor, agentConfig)
 		go agent.Start()
 
 		port, err = testutils.GetOpenPort()
@@ -53,16 +51,11 @@ var _ = Describe("upgrade share oids", func() {
 			StateDir:       testStateDir,
 		}
 
-		outChan = make(chan []byte, 10)
-		errChan = make(chan error, 10)
-		hubExecer = &testutils.FakeCommandExecer{}
-		hubExecer.SetOutput(&testutils.FakeCommand{
-			Out: outChan,
-			Err: errChan,
-		})
-
+		cp := testutils.InitClusterPairFromDB()
+		testExecutor = &testhelper.TestExecutor{}
+		cp.OldCluster.Executor = testExecutor
 		cm = testutils.NewMockChecklistManager()
-		hub = hubServices.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, hubExecer.Exec, conf, cm)
+		hub = hubServices.NewHub(cp, grpc.DialContext, conf, cm)
 		go hub.Start()
 	})
 
@@ -81,7 +74,7 @@ var _ = Describe("upgrade share oids", func() {
 		upgradeShareOidsSession := runCommand("upgrade", "share-oids")
 		Eventually(upgradeShareOidsSession).Should(Exit(0))
 
-		Expect(hubExecer.Calls()[0]).To(ContainSubstring("rsync"))
+		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("rsync"))
 		Expect(cm.IsComplete(upgradestatus.SHARE_OIDS)).To(BeTrue())
 
 	})
@@ -89,7 +82,7 @@ var _ = Describe("upgrade share oids", func() {
 	It("updates status to FAILED if it fails to run", func() {
 
 		Expect(cm.IsPending(upgradestatus.SHARE_OIDS)).To(BeTrue())
-		errChan <- errors.New("fake test error, share oid failed to send files")
+		testExecutor.LocalError = errors.New("fake test error, share oid failed to send files")
 
 		upgradeShareOidsSession := runCommand("upgrade", "share-oids")
 		Eventually(upgradeShareOidsSession).Should(Exit(0))

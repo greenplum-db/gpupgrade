@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
+	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -21,12 +22,10 @@ import (
 
 var _ = Describe("UpgradeReconfigurePorts", func() {
 	var (
-		hub           *services.Hub
-		dir           string
-		commandExecer *testutils.FakeCommandExecer
-		errChan       chan error
-		outChan       chan []byte
-		cm            *testutils.MockChecklistManager
+		hub          *services.Hub
+		dir          string
+		testExecutor *testhelper.TestExecutor
+		cm           *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -44,20 +43,15 @@ var _ = Describe("UpgradeReconfigurePorts", func() {
 			}
 		}
 
-		errChan = make(chan error, 2)
-		outChan = make(chan []byte, 2)
-		commandExecer = &testutils.FakeCommandExecer{}
-		commandExecer.SetOutput(&testutils.FakeCommand{
-			Err: errChan,
-			Out: outChan,
-		})
 		clusterPair := testutils.CreateSampleClusterPair()
+		testExecutor = &testhelper.TestExecutor{}
 		clusterPair.OldCluster.Segments[1] = cluster.SegConfig{Hostname: "hosttwo"}
+		clusterPair.OldCluster.Executor = testExecutor
 		hubConfig := &services.HubConfig{
 			StateDir: dir,
 		}
 		cm = testutils.NewMockChecklistManager()
-		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, hubConfig, cm)
+		hub = services.NewHub(clusterPair, grpc.DialContext, hubConfig, cm)
 	})
 
 	AfterEach(func() {
@@ -69,15 +63,15 @@ var _ = Describe("UpgradeReconfigurePorts", func() {
 		reply, err := hub.UpgradeReconfigurePorts(nil, &pb.UpgradeReconfigurePortsRequest{})
 		Expect(reply).To(Equal(&pb.UpgradeReconfigurePortsReply{}))
 		Expect(err).To(BeNil())
-		Expect(commandExecer.Calls()[0]).To(ContainSubstring(fmt.Sprintf(services.SedAndMvString, 35437, 25437, "/new/datadir")))
+		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring(fmt.Sprintf(services.SedAndMvString, 35437, 25437, "/new/datadir")))
 	})
 
 	It("returns err if reconfigure cmd fails", func() {
-		errChan <- errors.New("boom")
+		testExecutor.LocalError = errors.New("boom")
 		reply, err := hub.UpgradeReconfigurePorts(nil, &pb.UpgradeReconfigurePortsRequest{})
 		Expect(reply).To(BeNil())
 		Expect(err).ToNot(BeNil())
-		Expect(commandExecer.Calls()[0]).To(ContainSubstring(fmt.Sprintf(services.SedAndMvString, 35437, 25437, "/new/datadir")))
+		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring(fmt.Sprintf(services.SedAndMvString, 35437, 25437, "/new/datadir")))
 	})
 
 })

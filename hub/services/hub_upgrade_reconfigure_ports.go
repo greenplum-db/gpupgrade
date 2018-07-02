@@ -29,16 +29,12 @@ func (h *Hub) UpgradeReconfigurePorts(ctx context.Context, in *pb.UpgradeReconfi
 	}
 
 	oldMasterPort, newMasterPort, newMasterDataDir := h.clusterPair.GetPortsAndDataDirForReconfiguration()
-	sedCommand := h.commandExecer("bash", "-c", fmt.Sprintf(SedAndMvString, newMasterPort, oldMasterPort, newMasterDataDir))
+	sedCommand := fmt.Sprintf(SedAndMvString, newMasterPort, oldMasterPort, newMasterDataDir)
 	gplog.Info("reconfigure-ports sed command: %+v", sedCommand)
 
-	output, err := sedCommand.CombinedOutput()
+	output, err := h.clusterPair.OldCluster.Executor.ExecuteLocalCommand(sedCommand)
 	if err != nil {
-		var out string
-		if len(output) != 0 {
-			out = string(output)
-		}
-		gplog.Error("reconfigure-ports failed %s: %s", out, err)
+		gplog.Error("reconfigure-ports failed %s: %s", output, err)
 
 		h.checklistWriter.MarkFailed(upgradestatus.RECONFIGURE_PORTS)
 		return nil, err

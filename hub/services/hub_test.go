@@ -39,7 +39,7 @@ var _ = Describe("Hub", func() {
 		hubConfig := &services.HubConfig{
 			HubToAgentPort: port,
 		}
-		hub := services.NewHub(clusterPair, grpc.DialContext, nil, hubConfig, nil)
+		hub := services.NewHub(clusterPair, grpc.DialContext, hubConfig, nil)
 		go hub.Start()
 
 		By("creating connections")
@@ -59,7 +59,7 @@ var _ = Describe("Hub", func() {
 		hubConfig := &services.HubConfig{
 			HubToAgentPort: port,
 		}
-		hub := services.NewHub(clusterPair, grpc.DialContext, nil, hubConfig, nil)
+		hub := services.NewHub(clusterPair, grpc.DialContext, hubConfig, nil)
 
 		conns, err := hub.AgentConns()
 		Expect(err).ToNot(HaveOccurred())
@@ -72,7 +72,7 @@ var _ = Describe("Hub", func() {
 		hubConfig := &services.HubConfig{
 			HubToAgentPort: port,
 		}
-		hub := services.NewHub(clusterPair, grpc.DialContext, nil, hubConfig, nil)
+		hub := services.NewHub(clusterPair, grpc.DialContext, hubConfig, nil)
 
 		newConns, err := hub.AgentConns()
 		Expect(err).ToNot(HaveOccurred())
@@ -90,7 +90,7 @@ var _ = Describe("Hub", func() {
 		hubConfig := &services.HubConfig{
 			HubToAgentPort: port,
 		}
-		hub := services.NewHub(clusterPair, grpc.DialContext, nil, hubConfig, nil)
+		hub := services.NewHub(clusterPair, grpc.DialContext, hubConfig, nil)
 
 		conns, err := hub.AgentConns()
 		Expect(err).ToNot(HaveOccurred())
@@ -113,7 +113,7 @@ var _ = Describe("Hub", func() {
 			HubToAgentPort: port,
 		}
 
-		hub := services.NewHub(clusterPair, mockDialer, nil, hubConfig, nil)
+		hub := services.NewHub(clusterPair, mockDialer, hubConfig, nil)
 
 		_, err := hub.AgentConns()
 		Expect(err).To(HaveOccurred())

@@ -3,7 +3,6 @@ package services_test
 import (
 	"github.com/greenplum-db/gpupgrade/agent/services"
 	pb "github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
@@ -22,10 +21,8 @@ var _ = Describe("CommandListener", func() {
 	})
 
 	It("returns an empty reply", func() {
-		commandExecer := &testutils.FakeCommandExecer{}
-		commandExecer.SetOutput(&testutils.FakeCommand{})
-
-		agent := services.NewAgentServer(commandExecer.Exec, services.AgentConfig{})
+		testExecutor := &testhelper.TestExecutor{}
+		agent := services.NewAgentServer(testExecutor, services.AgentConfig{})
 
 		_, err := agent.PingAgents(nil, &pb.PingAgentsRequest{})
 		Expect(err).To(BeNil())

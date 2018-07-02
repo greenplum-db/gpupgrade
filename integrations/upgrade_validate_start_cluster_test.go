@@ -16,13 +16,12 @@ import (
 
 var _ = Describe("upgrade validate-start-cluster", func() {
 	var (
-		hub           *services.Hub
-		commandExecer *testutils.FakeCommandExecer
-		outChan       chan []byte
-		errChan       chan error
-		clusterPair   *utils.ClusterPair
-		testExecutor  *testhelper.TestExecutor
-		cm            *testutils.MockChecklistManager
+		hub          *services.Hub
+		outChan      chan []byte
+		errChan      chan error
+		clusterPair  *utils.ClusterPair
+		testExecutor *testhelper.TestExecutor
+		cm           *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -39,17 +38,11 @@ var _ = Describe("upgrade validate-start-cluster", func() {
 		outChan = make(chan []byte, 2)
 		errChan = make(chan error, 2)
 
-		commandExecer = &testutils.FakeCommandExecer{}
-		commandExecer.SetOutput(&testutils.FakeCommand{
-			Out: outChan,
-			Err: errChan,
-		})
-
 		cm = testutils.NewMockChecklistManager()
 		clusterPair = testutils.InitClusterPairFromDB()
 		testExecutor = &testhelper.TestExecutor{}
 		clusterPair.NewCluster.Executor = testExecutor
-		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, conf, cm)
+		hub = services.NewHub(clusterPair, grpc.DialContext, conf, cm)
 		go hub.Start()
 	})
 

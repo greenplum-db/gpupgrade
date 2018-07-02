@@ -19,7 +19,6 @@ var _ = Describe("prepare shutdown-clusters", func() {
 	var (
 		hub             *services.Hub
 		mockAgent       *testutils.MockAgentServer
-		commandExecer   *testutils.FakeCommandExecer
 		outChan         chan []byte
 		errChan         chan error
 		clusterPair     *utils.ClusterPair
@@ -45,11 +44,6 @@ var _ = Describe("prepare shutdown-clusters", func() {
 		outChan = make(chan []byte, 5)
 		errChan = make(chan error, 5)
 
-		commandExecer = &testutils.FakeCommandExecer{}
-		commandExecer.SetOutput(&testutils.FakeCommand{
-			Out: outChan,
-			Err: errChan,
-		})
 		clusterPair = testutils.InitClusterPairFromDB()
 		testExecutorOld = &testhelper.TestExecutor{}
 		testExecutorNew = &testhelper.TestExecutor{}
@@ -58,7 +52,7 @@ var _ = Describe("prepare shutdown-clusters", func() {
 		clusterPair.OldBinDir = "/tmpOld"
 		clusterPair.NewBinDir = "/tmpNew"
 		cm = testutils.NewMockChecklistManager()
-		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, conf, cm)
+		hub = services.NewHub(clusterPair, grpc.DialContext, conf, cm)
 		go hub.Start()
 	})
 

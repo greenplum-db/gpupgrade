@@ -1,22 +1,22 @@
 package upgradestatus
 
 import (
-	"github.com/greenplum-db/gpupgrade/helpers"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 
+	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 )
 
 type ShutDownClusters struct {
 	gpstopStatePath string
-	commandExecer   helpers.CommandExecer
+	executor        cluster.Executor
 }
 
-func NewShutDownClusters(gpstopStatePath string, execer helpers.CommandExecer) ShutDownClusters {
+func NewShutDownClusters(gpstopStatePath string, executor cluster.Executor) ShutDownClusters {
 	return ShutDownClusters{
 		gpstopStatePath: gpstopStatePath,
-		commandExecer:   execer,
+		executor:        executor,
 	}
 }
 
@@ -68,7 +68,7 @@ func (s *ShutDownClusters) GetStatus() *pb.UpgradeStepStatus {
 
 func (s *ShutDownClusters) isGpstopRunning() bool {
 	//if pgrep doesnt find target, ExecCmdOutput will return empty byte array and err.Error()="exit status 1"
-	pgUpgradePids, err := s.commandExecer("pgrep", "-f", "gpstop").Output()
+	pgUpgradePids, err := s.executor.ExecuteLocalCommand("pgrep -f gpstop")
 	if err == nil && len(pgUpgradePids) != 0 {
 		return true
 	}

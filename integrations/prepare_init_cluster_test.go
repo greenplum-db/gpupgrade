@@ -16,9 +16,8 @@ import (
 // the `prepare start-hub` tests are currently in master_only_integration_test
 var _ = Describe("prepare", func() {
 	var (
-		hub           *services.Hub
-		commandExecer *testutils.FakeCommandExecer
-		cm            *testutils.MockChecklistManager
+		hub *services.Hub
+		cm  *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -31,10 +30,8 @@ var _ = Describe("prepare", func() {
 			HubToAgentPort: 6416,
 			StateDir:       testStateDir,
 		}
-		commandExecer = &testutils.FakeCommandExecer{}
-		commandExecer.SetOutput(&testutils.FakeCommand{})
 		cm = testutils.NewMockChecklistManager()
-		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, commandExecer.Exec, conf, cm)
+		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, conf, cm)
 		go hub.Start()
 	})
 

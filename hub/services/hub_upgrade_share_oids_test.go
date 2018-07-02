@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
+	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -20,13 +21,11 @@ import (
 
 var _ = Describe("UpgradeShareOids", func() {
 	var (
-		hub           *services.Hub
-		dir           string
-		commandExecer *testutils.FakeCommandExecer
-		errChan       chan error
-		outChan       chan []byte
-		clusterPair   *utils.ClusterPair
-		cm            *testutils.MockChecklistManager
+		hub          *services.Hub
+		dir          string
+		clusterPair  *utils.ClusterPair
+		testExecutor *testhelper.TestExecutor
+		cm           *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -37,18 +36,13 @@ var _ = Describe("UpgradeShareOids", func() {
 		dir, err = ioutil.TempDir("", "")
 		Expect(err).ToNot(HaveOccurred())
 
-		errChan = make(chan error, 2)
-		outChan = make(chan []byte, 2)
-		commandExecer = &testutils.FakeCommandExecer{}
-		commandExecer.SetOutput(&testutils.FakeCommand{
-			Err: errChan,
-			Out: outChan,
-		})
 		hubConfig := &services.HubConfig{
 			StateDir: dir,
 		}
+		testExecutor = &testhelper.TestExecutor{}
+		clusterPair.OldCluster.Executor = testExecutor
 		cm = testutils.NewMockChecklistManager()
-		hub = services.NewHub(clusterPair, grpc.DialContext, commandExecer.Exec, hubConfig, cm)
+		hub = services.NewHub(clusterPair, grpc.DialContext, hubConfig, cm)
 	})
 
 	AfterEach(func() {
@@ -63,16 +57,16 @@ var _ = Describe("UpgradeShareOids", func() {
 		hostnames := clusterPair.GetHostnames()
 		Expect(err).ToNot(HaveOccurred())
 
-		Eventually(commandExecer.GetNumInvocations).Should(Equal(len(hostnames)))
+		Eventually(func() int { return testExecutor.NumExecutions }).Should(Equal(len(hostnames)))
 
-		Expect(commandExecer.Calls()).To(ConsistOf([]string{
-			fmt.Sprintf("bash -c rsync -rzpogt %s/pg_upgrade/pg_upgrade_dump_*_oids.sql gpadmin@hostone:%s/pg_upgrade", dir, dir),
-			fmt.Sprintf("bash -c rsync -rzpogt %s/pg_upgrade/pg_upgrade_dump_*_oids.sql gpadmin@hosttwo:%s/pg_upgrade", dir, dir),
+		Expect(testExecutor.LocalCommands).To(ConsistOf([]string{
+			fmt.Sprintf("rsync -rzpogt %s/pg_upgrade/pg_upgrade_dump_*_oids.sql gpadmin@hostone:%s/pg_upgrade", dir, dir),
+			fmt.Sprintf("rsync -rzpogt %s/pg_upgrade/pg_upgrade_dump_*_oids.sql gpadmin@hosttwo:%s/pg_upgrade", dir, dir),
 		}))
 	})
 
 	It("copies all files even if rsync fails for a host", func() {
-		errChan <- errors.New("failure")
+		testExecutor.LocalError = errors.New("failure")
 
 		_, err := hub.UpgradeShareOids(nil, &pb.UpgradeShareOidsRequest{})
 		Expect(err).ToNot(HaveOccurred())
@@ -80,6 +74,6 @@ var _ = Describe("UpgradeShareOids", func() {
 		hostnames := clusterPair.GetHostnames()
 		Expect(err).ToNot(HaveOccurred())
 
-		Eventually(commandExecer.GetNumInvocations).Should(Equal(len(hostnames)))
+		Eventually(func() int { return testExecutor.NumExecutions }).Should(Equal(len(hostnames)))
 	})
 })

@@ -43,17 +43,12 @@ func (h *Hub) shareOidFiles() {
 	for _, host := range hostnames {
 		destinationDirectory := user + "@" + host + ":" + filepath.Join(h.conf.StateDir, "pg_upgrade")
 
-		rsyncArgs := strings.Join([]string{"rsync", rsyncFlags, filepath.Join(sourceDir, "pg_upgrade_dump_*_oids.sql"), destinationDirectory}, " ")
-		rsyncCommand := h.commandExecer("bash", "-c", rsyncArgs)
+		rsyncCommand := strings.Join([]string{"rsync", rsyncFlags, filepath.Join(sourceDir, "pg_upgrade_dump_*_oids.sql"), destinationDirectory}, " ")
 		gplog.Info("share oids command: %+v", rsyncCommand)
 
-		output, err := rsyncCommand.CombinedOutput()
+		output, err := h.clusterPair.OldCluster.Executor.ExecuteLocalCommand(rsyncCommand)
 		if err != nil {
-			var out string
-			if len(output) != 0 {
-				out = string(output)
-			}
-			gplog.Error("share oids failed %s: %s", out, err)
+			gplog.Error("share oids failed %s: %s", output, err)
 			anyFailed = true
 		}
 	}

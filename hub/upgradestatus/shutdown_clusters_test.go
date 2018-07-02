@@ -18,22 +18,12 @@ import (
 
 var _ = Describe("hub", func() {
 	var (
-		commandExecer *testutils.FakeCommandExecer
-		errChan       chan error
-		outChan       chan []byte
+		testExecutor *testhelper.TestExecutor
 	)
 
 	BeforeEach(func() {
 		testhelper.SetupTestLogger() // extend to capture the values in a var if future tests need it
-
-		errChan = make(chan error, 2)
-		outChan = make(chan []byte, 2)
-
-		commandExecer = &testutils.FakeCommandExecer{}
-		commandExecer.SetOutput(&testutils.FakeCommand{
-			Err: errChan,
-			Out: outChan,
-		})
+		testExecutor = &testhelper.TestExecutor{}
 	})
 
 	AfterEach(func() {
@@ -48,7 +38,7 @@ var _ = Describe("hub", func() {
 			utils.System.IsNotExist = func(error) bool {
 				return true
 			}
-			subject := upgradestatus.NewShutDownClusters("/tmp", commandExecer.Exec)
+			subject := upgradestatus.NewShutDownClusters("/tmp", testExecutor)
 			status := subject.GetStatus()
 			Expect(status.Status).To(Equal(pb.StepStatus_PENDING))
 
@@ -61,7 +51,7 @@ var _ = Describe("hub", func() {
 				return false
 			}
 
-			outChan <- []byte("I'm running")
+			testExecutor.LocalOutput = "I'm running"
 
 			utils.System.FilePathGlob = func(glob string) ([]string, error) {
 				if strings.Contains(glob, "in.progress") {
@@ -69,7 +59,7 @@ var _ = Describe("hub", func() {
 				}
 				return nil, errors.New("Test not configured for this glob.")
 			}
-			subject := upgradestatus.NewShutDownClusters("/tmp", commandExecer.Exec)
+			subject := upgradestatus.NewShutDownClusters("/tmp", testExecutor)
 			status := subject.GetStatus()
 			Expect(status.Status).To(Equal(pb.StepStatus_RUNNING))
 		})
@@ -82,7 +72,7 @@ var _ = Describe("hub", func() {
 				return false
 			}
 
-			errChan <- errors.New("exit status 1")
+			testExecutor.LocalError = errors.New("exit status 1")
 
 			utils.System.FilePathGlob = func(glob string) ([]string, error) {
 				if strings.Contains(glob, "in.progress") {
@@ -99,7 +89,7 @@ var _ = Describe("hub", func() {
 				}
 				return nil, nil
 			}
-			subject := upgradestatus.NewShutDownClusters("/tmp", commandExecer.Exec)
+			subject := upgradestatus.NewShutDownClusters("/tmp", testExecutor)
 			status := subject.GetStatus()
 			Expect(status.Status).To(Equal(pb.StepStatus_COMPLETE))
 		})
@@ -114,9 +104,9 @@ var _ = Describe("hub", func() {
 				return false
 			}
 
-			errChan <- errors.New("gpstop failed")
+			testExecutor.LocalError = errors.New("gpstop failed")
 
-			subject := upgradestatus.NewShutDownClusters("/tmp", commandExecer.Exec)
+			subject := upgradestatus.NewShutDownClusters("/tmp", testExecutor)
 			status := subject.GetStatus()
 			Expect(status.Status).To(Equal(pb.StepStatus_FAILED))
 		})
