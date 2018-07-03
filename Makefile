@@ -45,10 +45,10 @@ lint :
 		gometalinter --config=gometalinter.config -s vendor ./...
 
 unit :
-		ginkgo -r -randomizeSuites -randomizeAllSpecs --skipPackage=integrations
+		ginkgo -r -keepGoing -randomizeSuites -randomizeAllSpecs --skipPackage=integrations
 
 integration:
-		ginkgo -r -randomizeAllSpecs integrations
+		ginkgo -r -keepGoing -randomizeAllSpecs integrations
 
 test : lint unit integration
 
