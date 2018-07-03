@@ -50,6 +50,10 @@ unit :
 integration:
 		ginkgo -r -keepGoing -randomizeAllSpecs integrations
 
+.PHONY: check
+check:
+		ginkgo -r -keepGoing -randomizeSuites -randomizeAllSpecs
+
 test : lint unit integration
 
 coverage :
