@@ -85,7 +85,7 @@ var _ = Describe("status", func() {
 	Describe("upgrade", func() {
 		It("Reports status from the hub Checklist", func() {
 			cm.LoadSteps([]upgradestatus.Step{
-				{upgradestatus.CONFIG, pb.UpgradeSteps_CHECK_CONFIG, nil},
+				{upgradestatus.CONFIG, pb.UpgradeSteps_CONFIG, nil},
 				{upgradestatus.SEGINSTALL, pb.UpgradeSteps_SEGINSTALL, nil},
 			})
 

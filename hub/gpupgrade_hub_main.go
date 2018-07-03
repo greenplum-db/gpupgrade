@@ -73,15 +73,15 @@ func main() {
 			}
 
 			cm.LoadSteps([]upgradestatus.Step{
-				{upgradestatus.CONFIG, pb.UpgradeSteps_CHECK_CONFIG, stateCheck},
+				{upgradestatus.CONFIG, pb.UpgradeSteps_CONFIG, stateCheck},
 				{upgradestatus.SEGINSTALL, pb.UpgradeSteps_SEGINSTALL, stateCheck},
-				{upgradestatus.INIT_CLUSTER, pb.UpgradeSteps_PREPARE_INIT_CLUSTER, initStatus},
-				{upgradestatus.SHUTDOWN_CLUSTERS, pb.UpgradeSteps_STOPPED_CLUSTER, shutDownStatus},
-				{upgradestatus.CONVERT_MASTER, pb.UpgradeSteps_MASTERUPGRADE, convertMasterStatus},
-				{upgradestatus.START_AGENTS, pb.UpgradeSteps_PREPARE_START_AGENTS, stateCheck},
+				{upgradestatus.INIT_CLUSTER, pb.UpgradeSteps_INIT_CLUSTER, initStatus},
+				{upgradestatus.SHUTDOWN_CLUSTERS, pb.UpgradeSteps_SHUTDOWN_CLUSTERS, shutDownStatus},
+				{upgradestatus.CONVERT_MASTER, pb.UpgradeSteps_CONVERT_MASTER, convertMasterStatus},
+				{upgradestatus.START_AGENTS, pb.UpgradeSteps_START_AGENTS, stateCheck},
 				{upgradestatus.SHARE_OIDS, pb.UpgradeSteps_SHARE_OIDS, stateCheck},
+				{upgradestatus.CONVERT_PRIMARIES, pb.UpgradeSteps_CONVERT_PRIMARIES, convertPrimariesStatus},
 				{upgradestatus.VALIDATE_START_CLUSTER, pb.UpgradeSteps_VALIDATE_START_CLUSTER, stateCheck},
-				{upgradestatus.CONVERT_PRIMARY, pb.UpgradeSteps_CONVERT_PRIMARIES, convertPrimariesStatus},
 				{upgradestatus.RECONFIGURE_PORTS, pb.UpgradeSteps_RECONFIGURE_PORTS, stateCheck},
 			})
 

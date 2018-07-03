@@ -28,19 +28,13 @@ var DialTimeout = 3 * time.Second
 
 type Dialer func(ctx context.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error)
 
-type RemoteExecutor interface {
-	VerifySoftware(hosts []string)
-	Start(hosts []string)
-}
-
 type Hub struct {
 	conf *HubConfig
 
-	agentConns     []*Connection
-	clusterPair    *utils.ClusterPair
-	grpcDialer     Dialer
-	remoteExecutor RemoteExecutor
-	checklist      upgradestatus.Checklist
+	agentConns  []*Connection
+	clusterPair *utils.ClusterPair
+	grpcDialer  Dialer
+	checklist   upgradestatus.Checklist
 
 	mu      sync.Mutex
 	server  *grpc.Server

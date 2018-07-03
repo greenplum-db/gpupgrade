@@ -56,15 +56,15 @@ var _ = Describe("status upgrade", func() {
 		cm = testutils.NewMockChecklistManager()
 		// XXX this is wrong
 		cm.LoadSteps([]upgradestatus.Step{
-			{upgradestatus.CONFIG, pb.UpgradeSteps_CHECK_CONFIG, nil},
-			{upgradestatus.INIT_CLUSTER, pb.UpgradeSteps_PREPARE_INIT_CLUSTER, nil},
+			{upgradestatus.CONFIG, pb.UpgradeSteps_CONFIG, nil},
+			{upgradestatus.INIT_CLUSTER, pb.UpgradeSteps_INIT_CLUSTER, nil},
 			{upgradestatus.SEGINSTALL, pb.UpgradeSteps_SEGINSTALL, nil},
-			{upgradestatus.SHUTDOWN_CLUSTERS, pb.UpgradeSteps_STOPPED_CLUSTER, nil},
-			{upgradestatus.CONVERT_MASTER, pb.UpgradeSteps_MASTERUPGRADE, nil},
-			{upgradestatus.START_AGENTS, pb.UpgradeSteps_PREPARE_START_AGENTS, nil},
+			{upgradestatus.SHUTDOWN_CLUSTERS, pb.UpgradeSteps_SHUTDOWN_CLUSTERS, nil},
+			{upgradestatus.CONVERT_MASTER, pb.UpgradeSteps_CONVERT_MASTER, nil},
+			{upgradestatus.START_AGENTS, pb.UpgradeSteps_START_AGENTS, nil},
 			{upgradestatus.SHARE_OIDS, pb.UpgradeSteps_SHARE_OIDS, nil},
 			{upgradestatus.VALIDATE_START_CLUSTER, pb.UpgradeSteps_VALIDATE_START_CLUSTER, nil},
-			{upgradestatus.CONVERT_PRIMARY, pb.UpgradeSteps_CONVERT_PRIMARIES, nil},
+			{upgradestatus.CONVERT_PRIMARIES, pb.UpgradeSteps_CONVERT_PRIMARIES, nil},
 			{upgradestatus.RECONFIGURE_PORTS, pb.UpgradeSteps_RECONFIGURE_PORTS, nil},
 		})
 
@@ -93,22 +93,22 @@ var _ = Describe("status upgrade", func() {
 		Expect(resp.ListOfUpgradeStepStatuses).To(ConsistOf(
 			[]*pb.UpgradeStepStatus{
 				{
-					Step:   pb.UpgradeSteps_CHECK_CONFIG,
+					Step:   pb.UpgradeSteps_CONFIG,
 					Status: pb.StepStatus_COMPLETE,
 				}, {
-					Step:   pb.UpgradeSteps_PREPARE_INIT_CLUSTER,
+					Step:   pb.UpgradeSteps_INIT_CLUSTER,
 					Status: pb.StepStatus_PENDING,
 				}, {
 					Step:   pb.UpgradeSteps_SEGINSTALL,
 					Status: pb.StepStatus_COMPLETE,
 				}, {
-					Step:   pb.UpgradeSteps_STOPPED_CLUSTER,
+					Step:   pb.UpgradeSteps_SHUTDOWN_CLUSTERS,
 					Status: pb.StepStatus_PENDING,
 				}, {
-					Step:   pb.UpgradeSteps_MASTERUPGRADE,
+					Step:   pb.UpgradeSteps_CONVERT_MASTER,
 					Status: pb.StepStatus_PENDING,
 				}, {
-					Step:   pb.UpgradeSteps_PREPARE_START_AGENTS,
+					Step:   pb.UpgradeSteps_START_AGENTS,
 					Status: pb.StepStatus_COMPLETE,
 				}, {
 					Step:   pb.UpgradeSteps_SHARE_OIDS,
@@ -150,7 +150,7 @@ var _ = Describe("status upgrade", func() {
 			var stepStatusSaved *pb.UpgradeStepStatus
 			for _, stepStatus := range stepStatuses {
 
-				if stepStatus.GetStep() == pb.UpgradeSteps_PREPARE_START_AGENTS {
+				if stepStatus.GetStep() == pb.UpgradeSteps_START_AGENTS {
 					stepStatusSaved = stepStatus
 				}
 			}
@@ -168,14 +168,14 @@ var _ = Describe("status upgrade", func() {
 				var stepStatusSaved *pb.UpgradeStepStatus
 				for _, stepStatus := range stepStatuses {
 
-					if stepStatus.GetStep() == pb.UpgradeSteps_PREPARE_START_AGENTS {
+					if stepStatus.GetStep() == pb.UpgradeSteps_START_AGENTS {
 						stepStatusSaved = stepStatus
 					}
 				}
 				return stepStatusSaved
 			}
 
-			step := cm.GetStepWriter("start-agents")
+			step := cm.GetStepWriter(upgradestatus.START_AGENTS)
 			step.MarkInProgress()
 
 			status := pollStatusUpgrade()
@@ -217,7 +217,7 @@ var _ = Describe("status upgrade", func() {
 			Expect(countOfStatuses).ToNot(BeZero())
 			found := false
 			for _, v := range formulatedResponse.GetListOfUpgradeStepStatuses() {
-				if pb.UpgradeSteps_STOPPED_CLUSTER == v.Step {
+				if pb.UpgradeSteps_SHUTDOWN_CLUSTERS == v.Step {
 					found = true
 				}
 			}

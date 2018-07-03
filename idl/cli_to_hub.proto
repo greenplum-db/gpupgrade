@@ -58,14 +58,14 @@ message UpgradeStepStatus {
 
 enum UpgradeSteps {
     UNKNOWN_STEP = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
-    CHECK_CONFIG = 1;
+    CONFIG = 1;
     SEGINSTALL = 2;
-    PREPARE_INIT_CLUSTER = 3;
-    MASTERUPGRADE = 4;
-    STOPPED_CLUSTER = 5;
-    PREPARE_START_AGENTS = 6;
-    CONVERT_PRIMARIES = 7;
-    SHARE_OIDS = 8;
+    INIT_CLUSTER = 3;
+    SHUTDOWN_CLUSTERS = 4;
+    CONVERT_MASTER = 5;
+    START_AGENTS = 6;
+    SHARE_OIDS = 7;
+    CONVERT_PRIMARIES = 8;
     VALIDATE_START_CLUSTER = 9;
     RECONFIGURE_PORTS = 10;
 }

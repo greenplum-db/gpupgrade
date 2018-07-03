@@ -76,8 +76,8 @@ var _ = Describe("Reporter", func() {
 		It("sends all the right messages to the logger in the right order when reply contains multiple step-statuses", func() {
 			spyClient.statusUpgradeReply = &pb.StatusUpgradeReply{
 				ListOfUpgradeStepStatuses: []*pb.UpgradeStepStatus{
-					{Step: pb.UpgradeSteps_PREPARE_INIT_CLUSTER, Status: pb.StepStatus_RUNNING},
-					{Step: pb.UpgradeSteps_MASTERUPGRADE, Status: pb.StepStatus_PENDING},
+					{Step: pb.UpgradeSteps_INIT_CLUSTER, Status: pb.StepStatus_RUNNING},
+					{Step: pb.UpgradeSteps_CONVERT_MASTER, Status: pb.StepStatus_PENDING},
 				},
 			}
 			err := reporter.OverallUpgradeStatus()
@@ -107,12 +107,12 @@ var _ = Describe("Reporter", func() {
 				Expect(testLogFile.Contents()).To(ContainSubstring(expected))
 			},
 			Entry("unknown step", pb.UpgradeSteps_UNKNOWN_STEP, pb.StepStatus_PENDING, "PENDING - Unknown step"),
-			Entry("configuration check", pb.UpgradeSteps_CHECK_CONFIG, pb.StepStatus_RUNNING, "RUNNING - Configuration Check"),
+			Entry("configuration check", pb.UpgradeSteps_CONFIG, pb.StepStatus_RUNNING, "RUNNING - Configuration Check"),
 			Entry("install binaries on segments", pb.UpgradeSteps_SEGINSTALL, pb.StepStatus_COMPLETE, "COMPLETE - Install binaries on segments"),
-			Entry("prepare init cluster", pb.UpgradeSteps_PREPARE_INIT_CLUSTER, pb.StepStatus_FAILED, "FAILED - Initialize upgrade target cluster"),
-			Entry("upgrade on master", pb.UpgradeSteps_MASTERUPGRADE, pb.StepStatus_PENDING, "PENDING - Run pg_upgrade on master"),
-			Entry("shutdown cluster", pb.UpgradeSteps_STOPPED_CLUSTER, pb.StepStatus_PENDING, "PENDING - Shutdown clusters"),
-			Entry("reconfigure ports", pb.UpgradeSteps_RECONFIGURE_PORTS, pb.StepStatus_PENDING, "PENDING - Adjust upgrade cluster ports"),
+			Entry("prepare init cluster", pb.UpgradeSteps_INIT_CLUSTER, pb.StepStatus_FAILED, "FAILED - Initialize upgrade target cluster"),
+			Entry("upgrade on master", pb.UpgradeSteps_CONVERT_MASTER, pb.StepStatus_PENDING, "PENDING - Run pg_upgrade on master"),
+			Entry("shutdown cluster", pb.UpgradeSteps_SHUTDOWN_CLUSTERS, pb.StepStatus_PENDING, "PENDING - Shutdown clusters"),
+			Entry("reconfigure ports", pb.UpgradeSteps_RECONFIGURE_PORTS, pb.StepStatus_PENDING, "PENDING - Adjust upgraded cluster ports"),
 		)
 	})
 })

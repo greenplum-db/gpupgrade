@@ -24,16 +24,16 @@ type Reporter struct {
 //logger.Info("PENDING - Adjust upgrade cluster ports")
 var UpgradeStepsMessage = map[pb.UpgradeSteps]string{
 	pb.UpgradeSteps_UNKNOWN_STEP:           "- Unknown step",
-	pb.UpgradeSteps_CHECK_CONFIG:           "- Configuration Check",
+	pb.UpgradeSteps_CONFIG:                 "- Configuration Check",
 	pb.UpgradeSteps_SEGINSTALL:             "- Install binaries on segments",
-	pb.UpgradeSteps_PREPARE_INIT_CLUSTER:   "- Initialize upgrade target cluster",
-	pb.UpgradeSteps_PREPARE_START_AGENTS:   "- Agents Started on Cluster",
-	pb.UpgradeSteps_MASTERUPGRADE:          "- Run pg_upgrade on master",
-	pb.UpgradeSteps_STOPPED_CLUSTER:        "- Shutdown clusters",
-	pb.UpgradeSteps_CONVERT_PRIMARIES:      "- Primary segment upgrade",
+	pb.UpgradeSteps_INIT_CLUSTER:           "- Initialize upgrade target cluster",
+	pb.UpgradeSteps_START_AGENTS:           "- Agents Started on Cluster",
+	pb.UpgradeSteps_CONVERT_MASTER:         "- Run pg_upgrade on master",
+	pb.UpgradeSteps_SHUTDOWN_CLUSTERS:      "- Shutdown clusters",
 	pb.UpgradeSteps_SHARE_OIDS:             "- Copy OID files from master to segments",
+	pb.UpgradeSteps_CONVERT_PRIMARIES:      "- Run pg_upgrade on primaries",
 	pb.UpgradeSteps_VALIDATE_START_CLUSTER: "- Validate the upgraded cluster can start up",
-	pb.UpgradeSteps_RECONFIGURE_PORTS:      "- Adjust upgrade cluster ports",
+	pb.UpgradeSteps_RECONFIGURE_PORTS:      "- Adjust upgraded cluster ports",
 }
 
 func NewReporter(client pb.CliToHubClient) *Reporter {

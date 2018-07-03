@@ -11,14 +11,13 @@ import (
 
 const (
 	CONFIG                 = "check-config"
-	VERSION                = "check-version"
 	SEGINSTALL             = "check-seginstall"
 	START_AGENTS           = "start-agents"
 	INIT_CLUSTER           = "init-cluster"
 	SHUTDOWN_CLUSTERS      = "shutdown-clusters"
 	CONVERT_MASTER         = "convert-master"
 	SHARE_OIDS             = "share-oids"
-	CONVERT_PRIMARY        = "convert-primary"
+	CONVERT_PRIMARIES      = "convert-primaries"
 	VALIDATE_START_CLUSTER = "validate-start-cluster"
 	RECONFIGURE_PORTS      = "reconfigure-ports"
 )
