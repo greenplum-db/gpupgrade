@@ -1,4 +1,4 @@
-all: depend build test
+all: build
 
 SHELL := /bin/bash
 .DEFAULT_GOAL := all
