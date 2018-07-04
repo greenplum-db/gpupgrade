@@ -80,7 +80,7 @@ agent-package: EXE_NAME := $(AGENT)
 cli-package: EXE_NAME := $(CLI)
 hub-package: EXE_NAME := $(HUB)
 
-$(PACKAGES): %-package:
+$(PACKAGES): %-package: .Gopkg.updated
 	$(PREFIX) go build $(GOFLAGS) -o $(BIN_DIR)/$(EXE_NAME)$(POSTFIX) -ldflags $(UPGRADE_VERSION_STR) github.com/greenplum-db/gpupgrade/$*
 
 install_agent: agent-package
@@ -115,3 +115,11 @@ clean:
 		# Code coverage files
 		rm -rf /tmp/cover*
 		rm -rf /tmp/unit*
+
+# This is a manual marker file to track the last time we ran `dep ensure`
+# locally, compared to the timestamps of the Gopkg.* metafiles. Define a
+# dependency on this marker to run a `dep ensure` (if necessary) before your
+# recipe is run.
+.Gopkg.updated: Gopkg.lock Gopkg.toml
+	dep ensure
+	touch $@
