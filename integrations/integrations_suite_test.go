@@ -11,11 +11,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
+	agentServices "github.com/greenplum-db/gpupgrade/agent/services"
+	"github.com/greenplum-db/gpupgrade/hub/services"
+	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/utils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	. "github.com/onsi/gomega/gexec"
+	"google.golang.org/grpc"
 )
 
 func TestCommands(t *testing.T) {
@@ -23,17 +29,29 @@ func TestCommands(t *testing.T) {
 	RunSpecs(t, "Integration Tests Suite")
 }
 
+// BeforeSuite globals
 var (
 	cliBinaryPath            string
 	hubBinaryPath            string
 	agentBinaryPath          string
 	userPreviousPathVariable string
-	port                     int
 	testout                  *gbytes.Buffer
 	testerr                  *gbytes.Buffer
 	testlog                  *gbytes.Buffer
 	testWorkspaceDir         string
 	testStateDir             string //what would normally be ~/.gpupgrade
+)
+
+// BeforeEach globals
+var (
+	cliToHubPort   int = 7527
+	hubToAgentPort int = 6416
+	cm             *testutils.MockChecklistManager
+	cp             *utils.ClusterPair
+	hub            *services.Hub
+	agent          *agentServices.AgentServer
+	testExecutor   *testhelper.TestExecutor
+	agentExecutor  *testhelper.TestExecutor
 )
 
 var _ = BeforeSuite(func() {
@@ -76,13 +94,50 @@ var _ = BeforeEach(func() {
 	os.Setenv("GPUPGRADE_HOME", testStateDir)
 	session := runCommand("prepare", "init", "--old-bindir", "/tmp")
 	Expect(session).To(Exit(0))
-
-	port = 7527
 	killAll()
+
+	cliToHubPort, err = testutils.GetOpenPort()
+	Expect(err).ToNot(HaveOccurred())
+	hubToAgentPort, err = testutils.GetOpenPort()
+	Expect(err).ToNot(HaveOccurred())
+
+	conf := &services.HubConfig{
+		CliToHubPort:   cliToHubPort,
+		HubToAgentPort: hubToAgentPort,
+		StateDir:       testStateDir,
+	}
+
+	cm = testutils.NewMockChecklistManager()
+	cp = testutils.CreateMultinodeSampleClusterPair()
+	testExecutor = &testhelper.TestExecutor{}
+	testExecutor.ClusterOutput = &cluster.RemoteOutput{}
+	/*
+	 * Assigning testExecutor to both clusters assumes that most tests use
+	 * either the old or new cluster, not both.  If a test uses both and wants
+	 * to track executions separately, it will need to make more TestExecutors.
+	 */
+	cp.OldCluster.Executor = testExecutor
+	cp.NewCluster.Executor = testExecutor
+
+	hub = services.NewHub(cp, grpc.DialContext, conf, cm)
+	go hub.Start()
+
+	agentConfig := agentServices.AgentConfig{
+		Port:     hubToAgentPort,
+		StateDir: testStateDir,
+	}
+	agentExecutor = &testhelper.TestExecutor{}
+	agent = agentServices.NewAgentServer(agentExecutor, agentConfig)
+	// We initialize the agent here, but only start it in test files that require an agent
 })
 
 var _ = AfterEach(func() {
+	hub.Stop()
+	agent.Stop()
+	Expect(checkPortIsAvailable(cliToHubPort)).To(BeTrue())
+	Expect(checkPortIsAvailable(hubToAgentPort)).To(BeTrue())
 	os.RemoveAll(testWorkspaceDir)
+	utils.InitializeSystemFunctions()
 })
 
 var _ = AfterSuite(func() {
@@ -98,7 +153,7 @@ func runCommand(args ...string) *Session {
 	// which has its own Golang context; any mocks/fakes you set up in
 	// the test context will NOT be meaningful in the new exec.Command context.
 	cmd := exec.Command(cliBinaryPath, args...)
-	cmd.Env = append(os.Environ(), fmt.Sprintf("GPUPGRADE_HUB_PORT=%d", port))
+	cmd.Env = append(os.Environ(), fmt.Sprintf("GPUPGRADE_HUB_PORT=%d", cliToHubPort))
 	session, err := Start(cmd, GinkgoWriter, GinkgoWriter)
 	Expect(err).NotTo(HaveOccurred())
 	<-session.Exited
@@ -133,4 +188,14 @@ func checkPortIsAvailable(port int) bool {
 	}
 
 	return false
+}
+
+func killHub() {
+	killCommand := exec.Command("pkill", "-9", "gpupgrade_hub")
+	session, err := Start(killCommand, GinkgoWriter, GinkgoWriter)
+
+	Expect(err).ToNot(HaveOccurred())
+	session.Wait()
+
+	Expect(checkPortIsAvailable(cliToHubPort)).To(BeTrue())
 }

@@ -12,16 +12,6 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
-func killHub() {
-	killCommand := exec.Command("pkill", "-9", "gpupgrade_hub")
-	session, err := Start(killCommand, GinkgoWriter, GinkgoWriter)
-
-	Expect(err).ToNot(HaveOccurred())
-	session.Wait()
-
-	Expect(checkPortIsAvailable(port)).To(BeTrue())
-}
-
 var _ = Describe("gpupgrade_hub", func() {
 
 	// XXX We should be testing the locally built artifacts, and killing only

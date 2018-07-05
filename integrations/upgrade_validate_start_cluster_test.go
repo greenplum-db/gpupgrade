@@ -1,56 +1,15 @@
 package integrations_test
 
 import (
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-	"github.com/greenplum-db/gpupgrade/testutils"
-	"github.com/greenplum-db/gpupgrade/utils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
 	"github.com/pkg/errors"
-	"google.golang.org/grpc"
 )
 
 var _ = Describe("upgrade validate-start-cluster", func() {
-	var (
-		hub          *services.Hub
-		outChan      chan []byte
-		errChan      chan error
-		clusterPair  *utils.ClusterPair
-		testExecutor *testhelper.TestExecutor
-		cm           *testutils.MockChecklistManager
-	)
-
-	BeforeEach(func() {
-		var err error
-
-		port, err = testutils.GetOpenPort()
-		Expect(err).ToNot(HaveOccurred())
-
-		conf := &services.HubConfig{
-			CliToHubPort:   port,
-			HubToAgentPort: 6416,
-			StateDir:       testStateDir,
-		}
-		outChan = make(chan []byte, 2)
-		errChan = make(chan error, 2)
-
-		cm = testutils.NewMockChecklistManager()
-		clusterPair = testutils.InitClusterPairFromDB()
-		testExecutor = &testhelper.TestExecutor{}
-		clusterPair.NewCluster.Executor = testExecutor
-		hub = services.NewHub(clusterPair, grpc.DialContext, conf, cm)
-		go hub.Start()
-	})
-
-	AfterEach(func() {
-		hub.Stop()
-		Expect(checkPortIsAvailable(port)).To(BeTrue())
-	})
-
 	It("updates status PENDING to RUNNING then to COMPLETE if successful", func(done Done) {
 		defer close(done)
 		Expect(cm.IsPending(upgradestatus.VALIDATE_START_CLUSTER)).To(BeTrue())

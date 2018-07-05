@@ -6,30 +6,18 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-	agentServices "github.com/greenplum-db/gpupgrade/agent/services"
-	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-	"github.com/greenplum-db/gpupgrade/hub/upgradestatus/file"
 	pb "github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
-	"google.golang.org/grpc"
 )
 
 var _ = Describe("upgrade convert primaries", func() {
 	var (
-		hub           *services.Hub
-		agent         *agentServices.AgentServer
-		agentExecutor *testhelper.TestExecutor
-		testExecutor  *testhelper.TestExecutor
-		oidFile       string
-		clusterPair   *utils.ClusterPair
-		cm            *testutils.MockChecklistManager
+		oidFile string
 	)
 
 	BeforeEach(func() {
@@ -45,35 +33,7 @@ var _ = Describe("upgrade convert primaries", func() {
 		Expect(err).ToNot(HaveOccurred())
 		f.Close()
 
-		port, err = testutils.GetOpenPort()
-		Expect(err).ToNot(HaveOccurred())
-
-		conf := &services.HubConfig{
-			CliToHubPort:   port,
-			HubToAgentPort: 6416,
-			StateDir:       testStateDir,
-		}
-		clusterPair = testutils.InitClusterPairFromDB()
-		testExecutor = &testhelper.TestExecutor{}
-		clusterPair.OldCluster.Executor = testExecutor
-		cm = testutils.NewMockChecklistManager()
-		hub = services.NewHub(clusterPair, grpc.DialContext, conf, cm)
-		go hub.Start()
-
-		agentExecutor = &testhelper.TestExecutor{}
-		agent = agentServices.NewAgentServer(agentExecutor, agentServices.AgentConfig{
-			Port:     6416,
-			StateDir: testStateDir,
-		})
-		setStateFile(testStateDir, upgradestatus.START_AGENTS, file.Complete)
 		go agent.Start()
-	})
-
-	AfterEach(func() {
-		hub.Stop()
-		agent.Stop()
-		utils.InitializeSystemFunctions()
-		Expect(checkPortIsAvailable(port)).To(BeTrue())
 	})
 
 	// Move this elsewhere; it's not testing what's useful anymore.

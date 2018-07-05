@@ -56,9 +56,9 @@ func CreateMultinodeSampleCluster() *cluster.Cluster {
 	return &cluster.Cluster{
 		ContentIDs: []int{-1, 0, 1},
 		Segments: map[int]cluster.SegConfig{
-			-1: cluster.SegConfig{ContentID: -1, Port: 15432, Hostname: "hostone", DataDir: "/data/master"},
-			0:  cluster.SegConfig{ContentID: 0, Port: 25432, Hostname: "hosttwo", DataDir: "/data/seg1"},
-			1:  cluster.SegConfig{ContentID: 1, Port: 25433, Hostname: "hostthree", DataDir: "/data/seg2"},
+			-1: cluster.SegConfig{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/master"},
+			0:  cluster.SegConfig{ContentID: 0, DbID: 2, Port: 25432, Hostname: "localhost", DataDir: "/data/seg1"},
+			1:  cluster.SegConfig{ContentID: 1, DbID: 3, Port: 25433, Hostname: "localhost", DataDir: "/data/seg2"},
 		},
 	}
 }
@@ -70,6 +70,18 @@ func CreateSampleCluster(contentID int, port int, hostname string, datadir strin
 			contentID: cluster.SegConfig{ContentID: contentID, Port: port, Hostname: hostname, DataDir: datadir},
 		},
 	}
+}
+
+func CreateMultinodeSampleClusterPair() *utils.ClusterPair {
+	cp := &utils.ClusterPair{
+		OldCluster: CreateMultinodeSampleCluster(),
+		NewCluster: CreateMultinodeSampleCluster(),
+	}
+	cp.OldCluster.Executor = &testhelper.TestExecutor{}
+	cp.NewCluster.Executor = &testhelper.TestExecutor{}
+	cp.OldBinDir = "/old/bindir"
+	cp.NewBinDir = "/new/bindir"
+	return cp
 }
 
 func CreateSampleClusterPair() *utils.ClusterPair {

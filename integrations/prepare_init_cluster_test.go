@@ -3,43 +3,15 @@ package integrations_test
 import (
 	"os"
 
-	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
-	"google.golang.org/grpc"
 )
 
 // the `prepare start-hub` tests are currently in master_only_integration_test
 var _ = Describe("prepare", func() {
-	var (
-		hub *services.Hub
-		cm  *testutils.MockChecklistManager
-	)
-
-	BeforeEach(func() {
-		var err error
-		port, err = testutils.GetOpenPort()
-		Expect(err).ToNot(HaveOccurred())
-
-		conf := &services.HubConfig{
-			CliToHubPort:   port,
-			HubToAgentPort: 6416,
-			StateDir:       testStateDir,
-		}
-		cm = testutils.NewMockChecklistManager()
-		hub = services.NewHub(testutils.InitClusterPairFromDB(), grpc.DialContext, conf, cm)
-		go hub.Start()
-	})
-
-	AfterEach(func() {
-		hub.Stop()
-		Expect(checkPortIsAvailable(port)).To(BeTrue())
-	})
-
 	/* This is demonstrating the limited implementation of init-cluster.
 	    Assuming the user has already set up their new cluster, they should `init-cluster`
 		with the port at which they stood it up, so the upgrade tool can create new_cluster_config

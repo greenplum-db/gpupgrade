@@ -13,17 +13,11 @@ import (
 var _ = Describe("Start Hub", func() {
 
 	BeforeEach(func() {
-		killCommand := exec.Command("pkill", "-9", "gpupgrade_hub")
-		Start(killCommand, GinkgoWriter, GinkgoWriter)
-
-		Expect(checkPortIsAvailable(port)).To(BeTrue())
+		killHub()
 	})
 
 	AfterEach(func() {
-		killCommand := exec.Command("pkill", "-9", "gpupgrade_hub")
-		Start(killCommand, GinkgoWriter, GinkgoWriter)
-
-		Expect(checkPortIsAvailable(port)).To(BeTrue())
+		killHub()
 	})
 
 	It("finds the right hub binary and starts a daemonized process", func() {

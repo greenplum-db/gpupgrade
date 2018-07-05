@@ -4,53 +4,14 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/greenplum-db/gp-common-go-libs/cluster"
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-	"github.com/greenplum-db/gpupgrade/testutils"
-	"github.com/greenplum-db/gpupgrade/utils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
-	"google.golang.org/grpc"
 )
 
 var _ = Describe("prepare start-agents", func() {
-	var (
-		hub *services.Hub
-		cm  *testutils.MockChecklistManager
-		cp  *utils.ClusterPair
-		err error
-	)
-
-	BeforeEach(func() {
-		// The function runCommand depends on this port
-		port, err = testutils.GetOpenPort()
-		Expect(err).ToNot(HaveOccurred())
-
-		conf := &services.HubConfig{
-			CliToHubPort: port,
-			StateDir:     testStateDir,
-		}
-
-		cp = testutils.CreateSampleClusterPair()
-		cm = testutils.NewMockChecklistManager()
-
-		hub = services.NewHub(cp, grpc.DialContext, conf, cm)
-		go hub.Start()
-	})
-
-	AfterEach(func() {
-		hub.Stop()
-	})
-
 	It("updates status PENDING to RUNNING then to COMPLETE if successful", func() {
-		cp.OldCluster = testutils.CreateMultinodeSampleCluster()
-		testExecutor := &testhelper.TestExecutor{}
-		testExecutor.ClusterOutput = &cluster.RemoteOutput{}
-		cp.OldCluster.Executor = testExecutor
-
 		Expect(cm.IsPending(upgradestatus.START_AGENTS)).To(BeTrue())
 
 		prepareStartAgentsSession := runCommand("prepare", "start-agents")

@@ -4,47 +4,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/greenplum-db/gp-common-go-libs/cluster"
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-	"github.com/greenplum-db/gpupgrade/testutils"
-	"github.com/greenplum-db/gpupgrade/utils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
-	"google.golang.org/grpc"
 )
 
 var _ = Describe("check seginstall", func() {
-	var (
-		hub *services.Hub
-		cm  *testutils.MockChecklistManager
-		cp  *utils.ClusterPair
-		err error
-	)
-
-	BeforeEach(func() {
-		// The function runCommand depends on this port
-		port, err = testutils.GetOpenPort()
-		Expect(err).ToNot(HaveOccurred())
-
-		conf := &services.HubConfig{
-			CliToHubPort: port,
-			StateDir:     testStateDir,
-		}
-
-		cp = testutils.CreateSampleClusterPair()
-		cm = testutils.NewMockChecklistManager()
-
-		hub = services.NewHub(cp, grpc.DialContext, conf, cm)
-		go hub.Start()
-	})
-
-	AfterEach(func() {
-		hub.Stop()
-	})
-
 	// `gpupgrade check seginstall` verifies that the user has installed the software on all hosts
 	// As a single-node check, this test verifies the mechanics of the check, but would typically succeed.
 	// The implementation, however, uses the gpupgrade_agent binary to verify installation. In real life,
@@ -55,11 +21,6 @@ var _ = Describe("check seginstall", func() {
 	//
 	// TODO: This test might be interesting to run multi-node; for that, figure out how "installation" should be done
 	It("updates status PENDING to RUNNING then to COMPLETE if successful", func() {
-		cp.OldCluster = testutils.CreateMultinodeSampleCluster()
-		testExecutor := &testhelper.TestExecutor{}
-		testExecutor.ClusterOutput = &cluster.RemoteOutput{}
-		cp.OldCluster.Executor = testExecutor
-
 		Expect(cm.IsPending(upgradestatus.SEGINSTALL)).To(BeTrue())
 
 		checkSeginstallSession := runCommand("check", "seginstall", "--master-host", "localhost")
