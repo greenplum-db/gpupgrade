@@ -42,6 +42,7 @@
     "cluster",
     "dbconn",
     "gplog",
+    "iohelper",
     "operating",
     "testhelper"
   ]
@@ -254,6 +255,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "07ef036d5e006d6872fe589ad973df85a76ab9ea9226603df65c2d426aa78848"
+  inputs-digest = "c2079e6c526d16e29f7da67c37f325eb060ed4dde5ca95413dbffa7a3af8e029"
   solver-name = "gps-cdcl"
   solver-version = 1
