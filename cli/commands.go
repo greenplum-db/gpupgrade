@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	pb "github.com/greenplum-db/gpupgrade/idl"
@@ -17,6 +19,31 @@ var masterHost string
 var dbPort int
 var newClusterDbPort int
 var oldDataDir, oldBinDir, newDataDir, newBinDir string
+
+// connectToHub() performs a blocking connection to the hub, and returns a
+// CliToHubClient which wraps the resulting gRPC channel. Any errors result in
+// an os.Exit(1).
+func connectToHub() pb.CliToHubClient {
+	hubAddr := "localhost:" + hubPort
+
+	// Time out after a second.
+	// TODO: make this configurable.
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	conn, err := grpc.DialContext(ctx, hubAddr, grpc.WithInsecure(), grpc.WithBlock())
+	if err != nil {
+		// Print a nicer error message if we can't connect to the hub.
+		if ctx.Err() == context.DeadlineExceeded {
+			gplog.Error("couldn't connect to the upgrade hub (did you run 'gpupgrade prepare start-hub'?)")
+		} else {
+			gplog.Error(err.Error())
+		}
+		os.Exit(1)
+	}
+
+	return pb.NewCliToHubClient(conn)
+}
 
 var root = &cobra.Command{Use: "gpupgrade"}
 
@@ -106,12 +133,7 @@ var subStartAgents = &cobra.Command{
 	Short: "start agents on segment hosts",
 	Long:  "start agents on all segments",
 	Run: func(cmd *cobra.Command, args []string) {
-		conn, connConfigErr := grpc.Dial("localhost:"+hubPort, grpc.WithInsecure())
-		if connConfigErr != nil {
-			gplog.Error(connConfigErr.Error())
-			os.Exit(1)
-		}
-		client := pb.NewCliToHubClient(conn)
+		client := connectToHub()
 		preparer := commanders.NewPreparer(client)
 		err := preparer.StartAgents()
 		if err != nil {
