@@ -37,10 +37,4 @@ var _ = Describe("check seginstall", func() {
 
 		Expect(cm.IsComplete(upgradestatus.SEGINSTALL)).To(BeTrue())
 	})
-
-	It("fails if the --master-host flag is missing", func() {
-		checkSeginstallSession := runCommand("check", "seginstall")
-		Expect(checkSeginstallSession).Should(Exit(1))
-		Expect(string(checkSeginstallSession.Out.Contents())).To(Equal("Required flag(s) \"master-host\" have/has not been set\n"))
-	})
 })

@@ -26,10 +26,4 @@ var _ = Describe("check config", func() {
 
 		Expect(len(cp.OldCluster.Segments)).To(BeNumerically(">", 1))
 	})
-
-	It("fails if required flags are missing", func() {
-		checkConfigSession := runCommand("check", "config")
-		Expect(checkConfigSession).Should(Exit(1))
-		Expect(string(checkConfigSession.Out.Contents())).To(Equal("Required flag(s) \"master-host\", \"old-bindir\" have/has not been set\n"))
-	})
 })
