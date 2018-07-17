@@ -1,4 +1,11 @@
-# gpupgrade
+# gpupgrade ![Concourse Build Status](https://prod.ci.gpdb.pivotal.io/api/v1/teams/main/pipelines/gpupgrade/badge)
+
+`gpupgrade` is a Go utility for coordinating
+[pg_upgrade](https://www.postgresql.org/docs/current/static/pgupgrade.html)
+across all segments in a Greenplum cluster. It's in heavy development, and
+should not be used for production environments at this time -- but if you'd like
+to help us hack on and test gpupgrade in a development environment, we'd welcome
+any feedback you have!
 
 ## Developer Workflow
 
