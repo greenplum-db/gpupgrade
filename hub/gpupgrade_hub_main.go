@@ -53,10 +53,6 @@ func main() {
 				return checker.GetStatus()
 			}
 
-			initStatus := func(step upgradestatus.StateReader) pb.StepStatus {
-				return services.GetPrepareNewClusterConfigStatus(conf.StateDir)
-			}
-
 			shutDownStatus := func(step upgradestatus.StateReader) pb.StepStatus {
 				stepdir := filepath.Join(conf.StateDir, step.Name())
 				return upgradestatus.ClusterShutdownStatus(stepdir, cp.OldCluster.Executor)
@@ -75,7 +71,7 @@ func main() {
 			cm.LoadSteps([]upgradestatus.Step{
 				{upgradestatus.CONFIG, pb.UpgradeSteps_CONFIG, stateCheck},
 				{upgradestatus.SEGINSTALL, pb.UpgradeSteps_SEGINSTALL, stateCheck},
-				{upgradestatus.INIT_CLUSTER, pb.UpgradeSteps_INIT_CLUSTER, initStatus},
+				{upgradestatus.INIT_CLUSTER, pb.UpgradeSteps_INIT_CLUSTER, stateCheck},
 				{upgradestatus.SHUTDOWN_CLUSTERS, pb.UpgradeSteps_SHUTDOWN_CLUSTERS, shutDownStatus},
 				{upgradestatus.CONVERT_MASTER, pb.UpgradeSteps_CONVERT_MASTER, convertMasterStatus},
 				{upgradestatus.START_AGENTS, pb.UpgradeSteps_START_AGENTS, stateCheck},

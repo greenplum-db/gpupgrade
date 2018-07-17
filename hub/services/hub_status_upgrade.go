@@ -2,7 +2,6 @@ package services
 
 import (
 	pb "github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/net/context"
@@ -22,16 +21,4 @@ func (h *Hub) StatusUpgrade(ctx context.Context, in *pb.StatusUpgradeRequest) (*
 	return &pb.StatusUpgradeReply{
 		ListOfUpgradeStepStatuses: statuses,
 	}, nil
-}
-
-func GetPrepareNewClusterConfigStatus(statedir string) pb.StepStatus {
-	/* Treat all stat failures as cannot find file. Conceal worse failures atm.*/
-	_, err := utils.System.Stat(utils.GetNewConfigFilePath(statedir))
-
-	if err != nil {
-		gplog.Debug("%v", err)
-		return pb.StepStatus_PENDING
-	}
-
-	return pb.StepStatus_COMPLETE
 }

@@ -29,7 +29,7 @@ var _ = Describe("hub CheckSeginstall", func() {
 	})
 
 	It("shells out to cluster and verifies gpupgrade_agent is installed on master and hosts", func() {
-		cp.OldCluster = testutils.CreateMultinodeSampleCluster()
+		cp.OldCluster = testutils.CreateMultinodeSampleCluster("/tmp")
 		testExecutor := &testhelper.TestExecutor{}
 		testExecutor.ClusterOutput = &cluster.RemoteOutput{}
 		cp.OldCluster.Executor = testExecutor

@@ -190,25 +190,6 @@ var _ = Describe("status upgrade", func() {
 		})
 	})
 
-	Describe("Status of PrepareNewClusterConfig", func() {
-		It("marks this step pending if there's no new cluster config file", func() {
-			utils.System.Stat = func(filename string) (os.FileInfo, error) {
-				return nil, errors.New("cannot find file") /* This is normally a PathError */
-			}
-			status := services.GetPrepareNewClusterConfigStatus(dir)
-			Expect(status).To(Equal(pb.StepStatus_PENDING))
-		})
-
-		It("marks this step complete if there is a new cluster config file", func() {
-			utils.System.Stat = func(filename string) (os.FileInfo, error) {
-				return nil, nil
-			}
-
-			status := services.GetPrepareNewClusterConfigStatus(dir)
-			Expect(status).To(Equal(pb.StepStatus_COMPLETE))
-		})
-	})
-
 	Describe("Status of ShutdownClusters", func() {
 		It("We're sending the status of shutdown clusters", func() {
 			formulatedResponse, err := hub.StatusUpgrade(nil, fakeStatusUpgradeRequest)

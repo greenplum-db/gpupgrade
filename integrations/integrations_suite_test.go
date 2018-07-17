@@ -108,7 +108,7 @@ var _ = BeforeEach(func() {
 	}
 
 	cm = testutils.NewMockChecklistManager()
-	cp = testutils.CreateMultinodeSampleClusterPair()
+	cp = testutils.CreateMultinodeSampleClusterPair(testWorkspaceDir)
 	testExecutor = &testhelper.TestExecutor{}
 	testExecutor.ClusterOutput = &cluster.RemoteOutput{}
 	/*

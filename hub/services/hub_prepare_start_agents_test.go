@@ -29,7 +29,7 @@ var _ = Describe("hub PrepareStartAgents", func() {
 	})
 
 	It("shells out to cluster and runs gpupgrade_agent", func() {
-		cp.OldCluster = testutils.CreateMultinodeSampleCluster()
+		cp.OldCluster = testutils.CreateMultinodeSampleCluster("/tmp")
 		testExecutor := &testhelper.TestExecutor{}
 		testExecutor.ClusterOutput = &cluster.RemoteOutput{}
 		cp.OldCluster.Executor = testExecutor

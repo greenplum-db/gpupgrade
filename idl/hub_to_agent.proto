@@ -8,6 +8,7 @@ service Agent {
     rpc CheckDiskSpaceOnAgents (CheckDiskSpaceRequestToAgent) returns (CheckDiskSpaceReplyFromAgent) {}
     rpc PingAgents (PingAgentsRequest) returns (PingAgentsReply) {}
     rpc UpgradeConvertPrimarySegments (UpgradeConvertPrimarySegmentsRequest) returns (UpgradeConvertPrimarySegmentsReply) {}
+    rpc CreateSegmentDataDirectories (CreateSegmentDataDirRequest) returns (CreateSegmentDataDirReply) {}
 }
 
 message UpgradeConvertPrimarySegmentsRequest {
@@ -60,3 +61,9 @@ message CheckDiskSpaceRequestToAgent {}
 message CheckDiskSpaceReplyFromAgent {
     repeated FileSysUsage ListOfFileSysUsage = 1;
 }
+
+message CreateSegmentDataDirRequest {
+	repeated string datadirs = 1;
+}
+
+message CreateSegmentDataDirReply {}
