@@ -45,6 +45,7 @@ type Hub struct {
 
 type Connection struct {
 	Conn          *grpc.ClientConn
+	AgentClient   pb.AgentClient
 	Hostname      string
 	CancelContext func()
 }
@@ -136,6 +137,7 @@ func (h *Hub) AgentConns() ([]*Connection, error) {
 		}
 		h.agentConns = append(h.agentConns, &Connection{
 			Conn:          conn,
+			AgentClient:   pb.NewAgentClient(conn),
 			Hostname:      host,
 			CancelContext: cancelFunc,
 		})
