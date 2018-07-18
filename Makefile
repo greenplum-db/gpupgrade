@@ -131,7 +131,7 @@ clean:
 .PHONY: deploy-pipeline expose-pipeline
 
 # You can override these two from the command line.
-FLY_TARGET := gpdb-dev
+FLY_TARGET := gpdb-prod
 PIPELINE_NAME := gpupgrade
 
 deploy-pipeline:
