@@ -111,12 +111,6 @@ var _ = Describe("upgrade convert primaries", func() {
 
 		Expect(runStatusUpgrade()).To(ContainSubstring("FAILED - Primary segment upgrade"))
 	})
-
-	It("fails if the --old-bindir or --new-bindir flags are missing", func() {
-		upgradeConvertPrimaries := runCommand("upgrade", "convert-primaries")
-		Expect(upgradeConvertPrimaries).Should(Exit(1))
-		Expect(string(upgradeConvertPrimaries.Out.Contents())).To(Equal("Required flag(s) \"new-bindir\", \"old-bindir\" have/has not been set\n"))
-	})
 })
 
 func setStateFile(dir string, step string, state string) {

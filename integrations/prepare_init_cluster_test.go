@@ -11,7 +11,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gexec"
 	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
@@ -56,12 +55,6 @@ var _ = Describe("prepare", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(len(cp.NewCluster.Segments)).To(BeNumerically(">", 1))
-	})
-
-	It("fails if required flags are missing", func() {
-		prepareStartAgentsSession := runCommand("prepare", "init-cluster")
-		Expect(prepareStartAgentsSession).Should(Exit(1))
-		Expect(string(prepareStartAgentsSession.Out.Contents())).To(Equal("Required flag(s) \"new-bindir\", \"port\" have/has not been set\n"))
 	})
 })
 
