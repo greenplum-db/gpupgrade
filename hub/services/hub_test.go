@@ -34,6 +34,22 @@ var _ = Describe("Hub", func() {
 		agentA.Stop()
 	})
 
+	It("will return from Start() if Stop is called concurrently", func() {
+		hubConfig := &services.HubConfig{
+			HubToAgentPort: port,
+		}
+		hub := services.NewHub(clusterPair, grpc.DialContext, hubConfig, nil)
+		done := make(chan bool, 1)
+
+		go func() {
+			hub.Start()
+			done <- true
+		}()
+		hub.Stop()
+
+		Eventually(done).Should(Receive())
+	})
+
 	It("closes open connections when shutting down", func() {
 		hubConfig := &services.HubConfig{
 			HubToAgentPort: port,

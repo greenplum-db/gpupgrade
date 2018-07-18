@@ -83,6 +83,11 @@ func (h *Hub) Start() {
 
 	server := grpc.NewServer()
 	h.mu.Lock()
+	if h.stopped == nil {
+		// Stop() has already been called; return without serving.
+		h.mu.Unlock()
+		return
+	}
 	h.server = server
 	h.lis = lis
 	h.mu.Unlock()
@@ -113,6 +118,10 @@ func (h *Hub) Stop() {
 		h.server.Stop()
 		<-h.stopped
 	}
+
+	// Mark this server stopped so that a concurrent Start() doesn't try to
+	// start things up again.
+	h.stopped = nil
 }
 
 func (h *Hub) AgentConns() ([]*Connection, error) {
