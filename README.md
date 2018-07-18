@@ -18,9 +18,12 @@ On macos, one way to install this is via `brew install protobuf`
 ### Build and test the upgrade tool
 
 ```
+make depend  # run this before the first build; it installs required Go utilities
+
 make
+make install # requires a running GPDB instance, for now
+make check   # runs tests
 ```
-This command will install dependencies, build gpupgrade, and run tests.
 
 ### Dependency vendoring
 
@@ -46,7 +49,7 @@ For additional information please refer to the [dep documentation](https://golan
 ### Build details
 
 ```
-make build
+make
 ```
 builds the code without running the tests.
 
@@ -81,18 +84,18 @@ We use [ginkgo](https://github.com/onsi/ginkgo) and [gomega](https://github.com/
 
 #### Unit tests
 ```
-# To run all the unit tests
+# To run only the unit tests
 make unit
 ```
 #### Integration tests
 ```
-# To run all the integration tests
+# To run only the integration tests
 make integration
 ```
 #### All tests
 ```
 # To run all the tests
-make test
+make check
 ```
 
 ### Generate mocked gRPC client/server code
@@ -126,19 +129,6 @@ and drive towards clear interfaces across packages
 
 Some unit tests depend on the environment variable GPHOME, though not on its value. Having GPHOME set is a prerequisite for running a GPDB cluster.
 
-We keep our `_test.go` files in the same package as the implementations they test because
-occasionally, we find it easiest and most valuable to either:
-
-- unit test private methods
-- make assertions about the internal state of the struct
-
-We selected this unit testing approach rather than these alternatives:
-
-- putting unit tests in a different package and then needing to make many more functions
-  and struct attributes public than necessary
-- defining dependencies that aren't under test as `var`s and then redefining
-  them at test-time
-
 ### Integration testing
 
 ```
@@ -152,10 +142,6 @@ We typically integration test the "happy path" (expected behavior) of the code
 when writing new features and allow the unit tests to cover error messaging
 and other edge cases. We are not strict about outside-in (integration-first)
 or inside-out (unit-first) TDD.
-
-Integration tests here signify end-to-end testing from the outside, starting
-with a call to an actual gpupgrade binary. Therefore, the integration tests
-do their own `Build()` of the code, using the gomega `gexec` library.
 
 The default integration tests do not build with the special build flags that
 the Makefile uses because the capability of the code to react to those build
