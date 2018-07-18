@@ -107,14 +107,23 @@ func (h *Hub) Stop() {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
+	h.closeConns()
+
 	if h.server != nil {
-		h.closeConns()
 		h.server.Stop()
 		<-h.stopped
 	}
 }
 
 func (h *Hub) AgentConns() ([]*Connection, error) {
+	// Lock the mutex to protect against races with Hub.Stop().
+	// XXX This is a *ridiculously* broad lock. Have fun waiting for the dial
+	// timeout when calling Stop() and AgentConns() at the same time, for
+	// instance. We should not lock around a network operation, but it seems
+	// like the AgentConns concept is not long for this world anyway.
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
 	if h.agentConns != nil {
 		err := EnsureConnsAreReady(h.agentConns)
 		if err != nil {
@@ -166,6 +175,7 @@ func EnsureConnsAreReady(agentConns []*Connection) error {
 	return nil
 }
 
+// Closes all h.agentConns. Callers must hold the Hub's mutex.
 func (h *Hub) closeConns() {
 	for _, conn := range h.agentConns {
 		defer conn.CancelContext()
