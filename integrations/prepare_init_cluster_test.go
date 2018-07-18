@@ -57,12 +57,6 @@ var _ = Describe("prepare", func() {
 
 		Expect(len(cp.NewCluster.Segments)).To(BeNumerically(">", 1))
 	})
-
-	It("fails if required flags are missing", func() {
-		prepareStartAgentsSession := runCommand("prepare", "init-cluster")
-		Expect(prepareStartAgentsSession).Should(Exit(1))
-		Expect(string(prepareStartAgentsSession.Out.Contents())).To(Equal("Required flag(s) \"new-bindir\", \"port\" have/has not been set\n"))
-	})
 })
 
 // Construct sqlmock in-memory rows that are structured properly

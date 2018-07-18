@@ -50,9 +50,11 @@ unit :
 integration:
 		ginkgo -r -keepGoing -randomizeAllSpecs integrations
 
+# check runs all tests. Use -k to keep going after the first failure.
 .PHONY: check
 check:
 		ginkgo -r -keepGoing -randomizeSuites -randomizeAllSpecs
+		bats -r ./test
 
 test : lint unit integration
 

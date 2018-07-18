@@ -76,10 +76,4 @@ var _ = Describe("prepare shutdown-clusters", func() {
 		Expect(testExecutorNew.LocalCommands[1]).To(ContainSubstring(cp.NewBinDir + "/gpstop -a"))
 		Expect(cm.IsFailed(upgradestatus.SHUTDOWN_CLUSTERS)).To(BeTrue())
 	})
-
-	It("fails if the --old-bindir or --new-bindir flags are missing", func() {
-		prepareShutdownClustersSession := runCommand("prepare", "shutdown-clusters")
-		Expect(prepareShutdownClustersSession).Should(Exit(1))
-		Expect(string(prepareShutdownClustersSession.Out.Contents())).To(Equal("Required flag(s) \"new-bindir\", \"old-bindir\" have/has not been set\n"))
-	})
 })
