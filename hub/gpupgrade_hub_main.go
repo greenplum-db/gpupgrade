@@ -85,7 +85,10 @@ func main() {
 				hub.MakeDaemon()
 			}
 
-			hub.Start()
+			err := hub.Start()
+			if err != nil {
+				return err
+			}
 
 			hub.Stop()
 

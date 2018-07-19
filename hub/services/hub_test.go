@@ -2,6 +2,8 @@ package services_test
 
 import (
 	"errors"
+	"net"
+	"strconv"
 
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -17,13 +19,15 @@ import (
 
 var _ = Describe("Hub", func() {
 	var (
-		agentA      *testutils.MockAgentServer
-		port        int
-		clusterPair *utils.ClusterPair
+		agentA         *testutils.MockAgentServer
+		cliToHubPort   int
+		hubToAgentPort int
+		clusterPair    *utils.ClusterPair
+		err            error
 	)
 
 	BeforeEach(func() {
-		agentA, port = testutils.NewMockAgentServer()
+		agentA, hubToAgentPort = testutils.NewMockAgentServer()
 		clusterPair = &utils.ClusterPair{
 			OldCluster: testutils.CreateSampleCluster(-1, 25437, "localhost", "/old/datadir"),
 		}
@@ -34,9 +38,50 @@ var _ = Describe("Hub", func() {
 		agentA.Stop()
 	})
 
+	It("will return from Start() with an error if Stop() is called first", func() {
+		hubConfig := &services.HubConfig{
+			CliToHubPort: cliToHubPort,
+		}
+		hub := services.NewHub(clusterPair, grpc.DialContext, hubConfig, nil)
+
+		hub.Stop()
+		go func() {
+			err = hub.Start()
+		}()
+		//Using Eventually ensures the test will not stall forever if this test fails.
+		Eventually(func() error { return err }).Should(Equal(services.HubStopped))
+	})
+
+	It("will return an error from Start() if it cannot listen on a port", func() {
+		// Steal a port, and then try to start the hub on the same port.
+		listener, err := net.Listen("tcp", ":0")
+		Expect(err).NotTo(HaveOccurred())
+		defer listener.Close()
+
+		_, portString, err := net.SplitHostPort(listener.Addr().String())
+		Expect(err).NotTo(HaveOccurred())
+
+		cliToHubPort, err := strconv.Atoi(portString)
+		Expect(err).NotTo(HaveOccurred())
+
+		hubConfig := &services.HubConfig{
+			CliToHubPort: cliToHubPort,
+		}
+		hub := services.NewHub(clusterPair, grpc.DialContext, hubConfig, nil)
+
+		go func() {
+			err = hub.Start()
+		}()
+		//Using Eventually ensures the test will not stall forever if this test fails.
+		Eventually(func() error { return err }).Should(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("failed to listen"))
+	})
+
+	// This is inherently testing a race. It will give false successes instead
+	// of false failures, so DO NOT ignore transient failures in this test!
 	It("will return from Start() if Stop is called concurrently", func() {
 		hubConfig := &services.HubConfig{
-			HubToAgentPort: port,
+			CliToHubPort: cliToHubPort,
 		}
 		hub := services.NewHub(clusterPair, grpc.DialContext, hubConfig, nil)
 		done := make(chan bool, 1)
@@ -52,7 +97,7 @@ var _ = Describe("Hub", func() {
 
 	It("closes open connections when shutting down", func() {
 		hubConfig := &services.HubConfig{
-			HubToAgentPort: port,
+			HubToAgentPort: hubToAgentPort,
 		}
 		hub := services.NewHub(clusterPair, grpc.DialContext, hubConfig, nil)
 		go hub.Start()
@@ -72,7 +117,7 @@ var _ = Describe("Hub", func() {
 
 	It("retrieves the agent connections for the hosts in the cluster", func() {
 		hubConfig := &services.HubConfig{
-			HubToAgentPort: port,
+			HubToAgentPort: hubToAgentPort,
 		}
 		hub := services.NewHub(clusterPair, grpc.DialContext, hubConfig, nil)
 
@@ -85,7 +130,7 @@ var _ = Describe("Hub", func() {
 
 	It("saves grpc connections for future calls", func() {
 		hubConfig := &services.HubConfig{
-			HubToAgentPort: port,
+			HubToAgentPort: hubToAgentPort,
 		}
 		hub := services.NewHub(clusterPair, grpc.DialContext, hubConfig, nil)
 
@@ -103,7 +148,7 @@ var _ = Describe("Hub", func() {
 	// XXX This test takes 1.5 seconds because of EnsureConnsAreReady(...)
 	It("returns an error if any connections have non-ready states", func() {
 		hubConfig := &services.HubConfig{
-			HubToAgentPort: port,
+			HubToAgentPort: hubToAgentPort,
 		}
 		hub := services.NewHub(clusterPair, grpc.DialContext, hubConfig, nil)
 
@@ -125,7 +170,7 @@ var _ = Describe("Hub", func() {
 		}
 
 		hubConfig := &services.HubConfig{
-			HubToAgentPort: port,
+			HubToAgentPort: hubToAgentPort,
 		}
 
 		hub := services.NewHub(clusterPair, mockDialer, hubConfig, nil)

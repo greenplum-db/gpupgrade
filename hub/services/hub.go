@@ -26,6 +26,9 @@ import (
 
 var DialTimeout = 3 * time.Second
 
+// Returned from Hub.Start() if Hub.Stop() has already been called.
+var HubStopped = errors.New("hub is stopped")
+
 type Dialer func(ctx context.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error)
 
 type Hub struct {
@@ -36,9 +39,18 @@ type Hub struct {
 	grpcDialer  Dialer
 	checklist   upgradestatus.Checklist
 
-	mu      sync.Mutex
-	server  *grpc.Server
-	lis     net.Listener
+	mu     sync.Mutex
+	server *grpc.Server
+	lis    net.Listener
+
+	// This is used both as a channel to communicate from Start() to
+	// Stop() to indicate to Stop() that it can finally terminate
+	// and also as a flag to communicate from Stop() to Start() that
+	// Stop() had already beed called, so no need to do anything further
+	// in Start().
+	// Note that when used as a flag, nil value means that Stop() has
+	// been called.
+
 	stopped chan struct{}
 	daemon  bool
 }
@@ -75,18 +87,19 @@ func (h *Hub) MakeDaemon() {
 	h.daemon = true
 }
 
-func (h *Hub) Start() {
+func (h *Hub) Start() error {
 	lis, err := net.Listen("tcp", ":"+strconv.Itoa(h.conf.CliToHubPort))
 	if err != nil {
-		gplog.Fatal(err, "failed to listen")
+		return errors.Wrap(err, "failed to listen")
 	}
 
 	server := grpc.NewServer()
+
 	h.mu.Lock()
 	if h.stopped == nil {
 		// Stop() has already been called; return without serving.
 		h.mu.Unlock()
-		return
+		return HubStopped
 	}
 	h.server = server
 	h.lis = lis
@@ -102,10 +115,13 @@ func (h *Hub) Start() {
 
 	err = server.Serve(lis)
 	if err != nil {
-		gplog.Fatal(err, "failed to serve", err)
+		err = errors.Wrap(err, "failed to serve")
 	}
 
+	// inform Stop() that is it is OK to stop now
 	h.stopped <- struct{}{}
+
+	return err
 }
 
 func (h *Hub) Stop() {
@@ -116,7 +132,7 @@ func (h *Hub) Stop() {
 
 	if h.server != nil {
 		h.server.Stop()
-		<-h.stopped
+		<-h.stopped // block until it is OK to stop
 	}
 
 	// Mark this server stopped so that a concurrent Start() doesn't try to
@@ -146,7 +162,9 @@ func (h *Hub) AgentConns() ([]*Connection, error) {
 	hostnames := h.clusterPair.GetHostnames()
 	for _, host := range hostnames {
 		ctx, cancelFunc := context.WithTimeout(context.Background(), DialTimeout)
-		conn, err := h.grpcDialer(ctx, host+":"+strconv.Itoa(h.conf.HubToAgentPort), grpc.WithInsecure(), grpc.WithBlock())
+		conn, err := h.grpcDialer(ctx,
+			host+":"+strconv.Itoa(h.conf.HubToAgentPort),
+			grpc.WithInsecure(), grpc.WithBlock())
 		if err != nil {
 			err = errors.New(fmt.Sprintf("grpcDialer failed: %s", err.Error()))
 			gplog.Error(err.Error())
