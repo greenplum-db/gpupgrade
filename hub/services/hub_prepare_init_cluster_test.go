@@ -159,7 +159,7 @@ var _ = Describe("Hub prepare init-cluster", func() {
 				return nil
 			}
 			badConnection, _ := grpc.DialContext(context.Background(), "localhost:6416", grpc.WithInsecure())
-			fakeConns := []*services.Connection{{badConnection, "localhost", func() {}}}
+			fakeConns := []*services.Connection{{badConnection, nil, "localhost", func() {}}}
 			err := hub.CreateAllDataDirectories(gpinitsystemConfig, fakeConns, segDataDirMap)
 			Expect(err).To(HaveOccurred())
 		})
