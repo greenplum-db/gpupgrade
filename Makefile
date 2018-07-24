@@ -1,14 +1,10 @@
 all: build
 
-SHELL := /bin/bash
 .DEFAULT_GOAL := all
 MODULE_NAME=gpupgrade
 AGENT=gpupgrade_agent
 CLI=gpupgrade
 HUB=gpupgrade_hub
-AGENT_PACKAGE=github.com/greenplum-db/gpupgrade/agent
-CLI_PACKAGE=github.com/greenplum-db/gpupgrade/cli
-HUB_PACKAGE=github.com/greenplum-db/gpupgrade/hub
 
 GIT_VERSION := $(shell git describe --tags | perl -pe 's/(.*)-([0-9]*)-(g[0-9a-f]*)/\1+dev.\2.\3/')
 UPGRADE_VERSION_STR="-X $(MODULE_NAME)/cli/commanders.UpgradeVersion=$(GIT_VERSION)"
@@ -30,9 +26,6 @@ dependencies :
 		gometalinter --install
 		go get github.com/golang/dep/cmd/dep
 		dep ensure
-# Counterfeiter is not a proper dependency of the app. It is only used occasionally to generate a test class that
-# is then checked in.  At the time of that generation, it can be added back to run the dependency list, temporarily.
-#		go get github.com/maxbrunsfeld/counterfeiter
 
 depend : dependencies
 
