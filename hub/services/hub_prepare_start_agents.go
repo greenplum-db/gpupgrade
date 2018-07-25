@@ -32,25 +32,25 @@ func (h *Hub) PrepareStartAgents(ctx context.Context, in *idl.PrepareStartAgents
 		return &idl.PrepareStartAgentsReply{}, err
 	}
 
-	go StartAgents(h.clusterPair, step)
+	go StartAgents(h.source, step)
 
 	return &idl.PrepareStartAgentsReply{}, nil
 }
 
-func StartAgents(cp *utils.ClusterPair, step upgradestatus.StateWriter) {
+func StartAgents(source *utils.Cluster, step upgradestatus.StateWriter) {
 	var err error
 
 	// TODO: if this finds nothing, should we err out? do a fallback check based on $GPHOME?
 	logStr := "start agents on master and hosts"
 	agentPath := filepath.Join(os.Getenv("GPHOME"), "bin", "gpupgrade_agent")
 	runAgentCmd := func(contentID int) string { return agentPath + " --daemonize" }
-	remoteOutput := cp.OldCluster.GenerateAndExecuteCommand(logStr, runAgentCmd, cluster.ON_HOSTS_AND_MASTER)
+	remoteOutput := source.GenerateAndExecuteCommand(logStr, runAgentCmd, cluster.ON_HOSTS_AND_MASTER)
 
 	errStr := "Failed to start all gpupgrade_agents"
 	errMessage := func(contentID int) string {
 		return fmt.Sprintf("Could not start gpupgrade_agent on segment with contentID %d", contentID)
 	}
-	cp.OldCluster.CheckClusterError(remoteOutput, errStr, errMessage, true)
+	source.CheckClusterError(remoteOutput, errStr, errMessage, true)
 
 	if remoteOutput.NumErrors > 0 {
 		err = step.MarkFailed()

@@ -3,6 +3,7 @@ package testutils
 import (
 	"fmt"
 	"net"
+	"path/filepath"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
@@ -72,41 +73,42 @@ func CreateSampleCluster(contentID int, port int, hostname string, datadir strin
 	}
 }
 
-func CreateMultinodeSampleClusterPair(baseDir string) *utils.ClusterPair {
-	cp := &utils.ClusterPair{
-		OldCluster: CreateMultinodeSampleCluster(baseDir),
-		NewCluster: CreateMultinodeSampleCluster(baseDir),
-	}
-	cp.OldCluster.Executor = &testhelper.TestExecutor{}
-	cp.NewCluster.Executor = &testhelper.TestExecutor{}
-	cp.OldBinDir = "/old/bindir"
-	cp.NewBinDir = "/new/bindir"
-	return cp
+func CreateMultinodeSampleClusterPair(baseDir string) (*utils.Cluster, *utils.Cluster) {
+	sourceCluster := CreateMultinodeSampleCluster(baseDir)
+	targetCluster := CreateMultinodeSampleCluster(baseDir)
+	return assembleClusters(baseDir, sourceCluster, targetCluster)
 }
 
-func CreateSampleClusterPair() *utils.ClusterPair {
-	cp := &utils.ClusterPair{
-		OldCluster: CreateSampleCluster(-1, 25437, "hostone", "/old/datadir"),
-		NewCluster: CreateSampleCluster(-1, 35437, "", "/new/datadir"),
-	}
-	cp.OldCluster.Executor = &testhelper.TestExecutor{}
-	cp.NewCluster.Executor = &testhelper.TestExecutor{}
-	cp.OldBinDir = "/old/bindir"
-	cp.NewBinDir = "/new/bindir"
-	return cp
+func CreateSampleClusterPair() (*utils.Cluster, *utils.Cluster) {
+	sourceCluster := CreateSampleCluster(-1, 25437, "hostone", "/source/datadir")
+	targetCluster := CreateSampleCluster(-1, 35437, "", "/target/datadir")
+	return assembleClusters("/tmp", sourceCluster, targetCluster)
 }
 
-func InitClusterPairFromDB() *utils.ClusterPair {
+func InitClusterPairFromDB() (*utils.Cluster, *utils.Cluster) {
 	conn := dbconn.NewDBConnFromEnvironment("postgres")
 	conn.MustConnect(1)
 	conn.Version.Initialize(conn)
-	cp := &utils.ClusterPair{}
 	segConfig := cluster.MustGetSegmentConfiguration(conn)
-	cp.OldCluster = cluster.NewCluster(segConfig)
-	cp.OldBinDir = "/old/bindir"
-	cp.NewCluster = cluster.NewCluster(segConfig)
-	cp.NewBinDir = "/new/bindir"
-	return cp
+	sourceCluster := cluster.NewCluster(segConfig)
+	targetCluster := cluster.NewCluster(segConfig)
+	return assembleClusters("/tmp", sourceCluster, targetCluster)
+}
+
+func assembleClusters(baseDir string, sourceCluster *cluster.Cluster, targetCluster *cluster.Cluster) (source *utils.Cluster, target *utils.Cluster) {
+	sourceCluster.Executor = &testhelper.TestExecutor{}
+	source = &utils.Cluster{
+		Cluster:    sourceCluster,
+		BinDir:     "/source/bindir",
+		ConfigPath: filepath.Join(baseDir, utils.SOURCE_CONFIG_FILENAME),
+	}
+	targetCluster.Executor = &testhelper.TestExecutor{}
+	target = &utils.Cluster{
+		Cluster:    targetCluster,
+		BinDir:     "/target/bindir",
+		ConfigPath: filepath.Join(baseDir, utils.TARGET_CONFIG_FILENAME),
+	}
+	return
 }
 
 func GetOpenPort() (int, error) {

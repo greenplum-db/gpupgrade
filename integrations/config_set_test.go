@@ -1,6 +1,8 @@
 package integrations_test
 
 import (
+	"path/filepath"
+
 	"github.com/greenplum-db/gpupgrade/utils"
 
 	. "github.com/onsi/ginkgo"
@@ -22,25 +24,25 @@ var _ = Describe("config set", func() {
 		Expect(configSetSession).Should(Exit(1))
 	})
 
-	It("sets the old binary directory in the configuration file", func() {
-		expected := "/my/amazing/old/bin/dir"
+	It("sets the source binary directory in the configuration file", func() {
+		expected := "/source/bin/dir"
 		configSetSession := runCommand("config", "set", "--old-bindir", expected)
 		Expect(configSetSession).Should(Exit(0))
 
-		clusters := &utils.ClusterPair{}
-		clusters.Load(testStateDir)
-
-		Expect(clusters.OldBinDir).To(Equal(expected))
+		source := &utils.Cluster{ConfigPath: filepath.Join(testStateDir, utils.SOURCE_CONFIG_FILENAME)}
+		err := source.Load()
+		Expect(err).To(BeNil())
+		Expect(source.BinDir).To(Equal(expected))
 	})
 
-	It("sets the new binary directory in the configuration file", func() {
-		expected := "/my/amazing/new/bin/dir"
+	It("sets the target binary directory in the configuration file", func() {
+		expected := "/target/bin/dir"
 		configSetSession := runCommand("config", "set", "--new-bindir", expected)
 		Expect(configSetSession).Should(Exit(0))
 
-		clusters := &utils.ClusterPair{}
-		clusters.Load(testStateDir)
-
-		Expect(clusters.NewBinDir).To(Equal(expected))
+		target := &utils.Cluster{ConfigPath: filepath.Join(testStateDir, utils.TARGET_CONFIG_FILENAME)}
+		err := target.Load()
+		Expect(err).To(BeNil())
+		Expect(target.BinDir).To(Equal(expected))
 	})
 })

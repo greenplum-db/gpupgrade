@@ -35,9 +35,9 @@ func (h *Hub) startNewCluster() {
 		return
 	}
 
-	newBinDir := h.clusterPair.NewBinDir
-	newDataDir := h.clusterPair.NewCluster.GetDirForContent(-1)
-	_, err = h.clusterPair.NewCluster.ExecuteLocalCommand(fmt.Sprintf("source %s/../greenplum_path.sh; %s/gpstart -a -d %s", newBinDir, newBinDir, newDataDir))
+	targetBinDir := h.target.BinDir
+	targetDataDir := h.target.MasterDataDir()
+	_, err = h.target.ExecuteLocalCommand(fmt.Sprintf("source %s/../greenplum_path.sh; %s/gpstart -a -d %s", targetBinDir, targetBinDir, targetDataDir))
 	if err != nil {
 		gplog.Error(err.Error())
 		cmErr := step.MarkFailed()

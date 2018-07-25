@@ -32,8 +32,8 @@ func (h *Hub) UpgradeConvertPrimaries(ctx context.Context, in *pb.UpgradeConvert
 			defer wg.Done()
 
 			_, err := pb.NewAgentClient(c.Conn).UpgradeConvertPrimarySegments(context.Background(), &pb.UpgradeConvertPrimarySegmentsRequest{
-				OldBinDir:    h.clusterPair.OldBinDir,
-				NewBinDir:    h.clusterPair.NewBinDir,
+				OldBinDir:    h.source.BinDir,
+				NewBinDir:    h.target.BinDir,
 				DataDirPairs: dataDirPair[c.Hostname],
 			})
 
@@ -55,8 +55,8 @@ func (h *Hub) UpgradeConvertPrimaries(ctx context.Context, in *pb.UpgradeConvert
 
 func (h *Hub) getDataDirPairs() (map[string][]*pb.DataDirPair, error) {
 	dataDirPairMap := make(map[string][]*pb.DataDirPair)
-	oldContents := h.clusterPair.OldCluster.ContentIDs
-	newContents := h.clusterPair.NewCluster.ContentIDs
+	oldContents := h.source.ContentIDs
+	newContents := h.target.ContentIDs
 	if len(oldContents) != len(newContents) {
 		return nil, fmt.Errorf("Content IDs do not match between old and new clusters")
 	}
@@ -68,12 +68,12 @@ func (h *Hub) getDataDirPairs() (map[string][]*pb.DataDirPair, error) {
 		}
 	}
 
-	for _, contentID := range h.clusterPair.OldCluster.ContentIDs {
+	for _, contentID := range h.source.ContentIDs {
 		if contentID == -1 {
 			continue
 		}
-		oldSeg := h.clusterPair.OldCluster.Segments[contentID]
-		newSeg := h.clusterPair.NewCluster.Segments[contentID]
+		oldSeg := h.source.Segments[contentID]
+		newSeg := h.target.Segments[contentID]
 		if oldSeg.Hostname != newSeg.Hostname {
 			return nil, fmt.Errorf("old and new primary segments with content ID %d do not have matching hostnames", contentID)
 		}

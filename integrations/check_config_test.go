@@ -2,6 +2,7 @@ package integrations_test
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -20,10 +21,10 @@ var _ = Describe("check config", func() {
 		}
 		Expect(session).To(Exit(0))
 
-		cp := &utils.ClusterPair{}
-		err := cp.ReadOldConfig(testStateDir)
+		source := &utils.Cluster{ConfigPath: filepath.Join(testStateDir, utils.SOURCE_CONFIG_FILENAME)}
+		err := source.Load()
 		testutils.Check("cannot read config", err)
 
-		Expect(len(cp.OldCluster.Segments)).To(BeNumerically(">", 1))
+		Expect(len(source.Segments)).To(BeNumerically(">", 1))
 	})
 })

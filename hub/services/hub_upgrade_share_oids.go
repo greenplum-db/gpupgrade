@@ -34,7 +34,7 @@ func (h *Hub) shareOidFiles() {
 		return
 	}
 
-	hostnames := h.clusterPair.GetHostnames()
+	hostnames := h.source.GetHostnames()
 
 	user := "gpadmin"
 	rsyncFlags := "-rzpogt"
@@ -47,7 +47,7 @@ func (h *Hub) shareOidFiles() {
 		rsyncCommand := strings.Join([]string{"rsync", rsyncFlags, filepath.Join(sourceDir, "pg_upgrade_dump_*_oids.sql"), destinationDirectory}, " ")
 		gplog.Info("share oids command: %+v", rsyncCommand)
 
-		output, err := h.clusterPair.OldCluster.Executor.ExecuteLocalCommand(rsyncCommand)
+		output, err := h.source.Executor.ExecuteLocalCommand(rsyncCommand)
 		if err != nil {
 			gplog.Error("share oids failed %s: %s", output, err)
 			anyFailed = true

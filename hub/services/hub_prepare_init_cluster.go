@@ -23,7 +23,7 @@ import (
 
 // TODO: consolidate with RetrieveAndSaveOldConfig(); it's basically the same
 // code
-func SaveTargetClusterConfig(clusterPair *utils.ClusterPair, dbConnector *dbconn.DBConn, stateDir string, newBinDir string) error {
+func SaveTargetClusterConfig(target *utils.Cluster, dbConnector *dbconn.DBConn, stateDir string) error {
 	err := os.MkdirAll(stateDir, 0700)
 	if err != nil {
 		return err
@@ -34,16 +34,15 @@ func SaveTargetClusterConfig(clusterPair *utils.ClusterPair, dbConnector *dbconn
 		errMsg := fmt.Sprintf("Unable to get segment configuration for new cluster: %s", err.Error())
 		return errors.New(errMsg)
 	}
-	clusterPair.NewCluster = cluster.NewCluster(segConfigs)
-	clusterPair.NewBinDir = newBinDir
+	target.Cluster = cluster.NewCluster(segConfigs)
 
-	err = clusterPair.WriteNewConfig(stateDir)
+	err = target.Commit()
 	return err
 }
 
 func (h *Hub) PrepareInitCluster(ctx context.Context, in *pb.PrepareInitClusterRequest) (*pb.PrepareInitClusterReply, error) {
 	gplog.Info("Running PrepareInitCluster()")
-	dbConnector := db.NewDBConn("localhost", int(h.clusterPair.OldCluster.GetPortForContent(-1)),
+	dbConnector := db.NewDBConn("localhost", int(h.source.MasterPort()),
 		"template1")
 
 	go func() {
@@ -102,7 +101,7 @@ func (h *Hub) InitCluster(dbConnector *dbconn.DBConn) error {
 	if err != nil {
 		return err
 	}
-	err = SaveTargetClusterConfig(h.clusterPair, dbConnector, h.conf.StateDir, h.clusterPair.NewBinDir)
+	err = SaveTargetClusterConfig(h.target, dbConnector, h.conf.StateDir)
 	if err != nil {
 		return errors.Wrap(err, "Could not save new cluster configuration")
 	}
@@ -141,15 +140,14 @@ func (h *Hub) CreateInitialInitsystemConfig() ([]string, error) {
 	gpinitsystemConfig := []string{`ARRAY_NAME="gp_upgrade cluster"`}
 
 	//seg prefix
-	oldCluster := h.clusterPair.OldCluster
-	oldMasterDataDir := oldCluster.GetDirForContent(-1)
+	sourceDataDir := h.source.MasterDataDir()
 
-	segPrefix, err := GetMasterSegPrefix(oldMasterDataDir)
+	segPrefix, err := GetMasterSegPrefix(sourceDataDir)
 	if err != nil {
 		return gpinitsystemConfig, errors.Wrap(err, "Could not get master segment prefix")
 	}
 
-	gplog.Info("Data Dir: %s", oldMasterDataDir)
+	gplog.Info("Data Dir: %s", sourceDataDir)
 	gplog.Info("segPrefix: %v", segPrefix)
 	gpinitsystemConfig = append(gpinitsystemConfig, "SEG_PREFIX="+segPrefix, "TRUSTED_SHELL=ssh")
 
@@ -168,7 +166,7 @@ func WriteInitsystemFile(gpinitsystemConfig []string, gpinitsystemFilepath strin
 
 func (h *Hub) DeclareDataDirectories(gpinitsystemConfig []string) ([]string, map[string][]string) {
 	// declare master data directory
-	master := h.clusterPair.OldCluster.Segments[-1]
+	master := h.source.Segments[-1]
 	master.Port += 1
 	master.DataDir = fmt.Sprintf("%s_upgrade/%s", path.Dir(master.DataDir), path.Base(master.DataDir))
 	datadirDeclare := fmt.Sprintf("QD_PRIMARY_ARRAY=%s~%d~%s~%d~%d~0",
@@ -177,9 +175,9 @@ func (h *Hub) DeclareDataDirectories(gpinitsystemConfig []string) ([]string, map
 	// declare segment data directories
 	segmentDataDirMap := map[string][]string{}
 	segmentDeclarations := []string{}
-	for _, content := range h.clusterPair.OldCluster.ContentIDs {
+	for _, content := range h.source.ContentIDs {
 		if content != -1 {
-			segment := h.clusterPair.OldCluster.Segments[content]
+			segment := h.source.Segments[content]
 			// FIXME: Arbitrary assumption.	 Do something smarter later
 			segment.Port += 2000
 			datadir := fmt.Sprintf("%s_upgrade", path.Dir(segment.DataDir))
@@ -198,15 +196,15 @@ func (h *Hub) DeclareDataDirectories(gpinitsystemConfig []string) ([]string, map
 
 func (h *Hub) CreateAllDataDirectories(gpinitsystemConfig []string, agentConns []*Connection, segmentDataDirMap map[string][]string) error {
 	// create master data directory for gpinitsystem if it doesn't exist
-	newMasterDataDir := path.Dir(h.clusterPair.OldCluster.GetDirForContent(-1)) + "_upgrade"
-	_, err := utils.System.Stat(newMasterDataDir)
+	targetDataDir := path.Dir(h.source.MasterDataDir()) + "_upgrade"
+	_, err := utils.System.Stat(targetDataDir)
 	if os.IsNotExist(err) {
-		err = utils.System.MkdirAll(newMasterDataDir, 0755)
+		err = utils.System.MkdirAll(targetDataDir, 0755)
 		if err != nil {
 			return errors.Wrap(err, "Could not create new directory")
 		}
 	} else if err != nil {
-		return errors.Wrapf(err, "Error statting new directory %s", newMasterDataDir)
+		return errors.Wrapf(err, "Error statting new directory %s", targetDataDir)
 	}
 	// create segment data directories for gpinitsystem if they don't exist
 	err = CreateSegmentDataDirectories(agentConns, segmentDataDirMap)
@@ -219,7 +217,7 @@ func (h *Hub) CreateAllDataDirectories(gpinitsystemConfig []string, agentConns [
 func (h *Hub) RunInitsystemForNewCluster(gpinitsystemFilepath string) error {
 	// gpinitsystem the new cluster
 	cmdStr := fmt.Sprintf("gpinitsystem -a -I %s", gpinitsystemFilepath)
-	output, err := h.clusterPair.OldCluster.Executor.ExecuteLocalCommand(cmdStr)
+	output, err := h.source.Executor.ExecuteLocalCommand(cmdStr)
 	if err != nil {
 		// gpinitsystem has a return code of 1 for warnings, so we can ignore that return code
 		if err.Error() == "exit status 1" {

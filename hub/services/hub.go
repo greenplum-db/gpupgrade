@@ -34,10 +34,11 @@ type Dialer func(ctx context.Context, target string, opts ...grpc.DialOption) (*
 type Hub struct {
 	conf *HubConfig
 
-	agentConns  []*Connection
-	clusterPair *utils.ClusterPair
-	grpcDialer  Dialer
-	checklist   upgradestatus.Checklist
+	agentConns []*Connection
+	source     *utils.Cluster
+	target     *utils.Cluster
+	grpcDialer Dialer
+	checklist  upgradestatus.Checklist
 
 	mu     sync.Mutex
 	server *grpc.Server
@@ -69,13 +70,14 @@ type HubConfig struct {
 	LogDir         string
 }
 
-func NewHub(pair *utils.ClusterPair, grpcDialer Dialer, conf *HubConfig, checklist upgradestatus.Checklist) *Hub {
+func NewHub(sourceCluster *utils.Cluster, targetCluster *utils.Cluster, grpcDialer Dialer, conf *HubConfig, checklist upgradestatus.Checklist) *Hub {
 	h := &Hub{
-		stopped:     make(chan struct{}, 1),
-		conf:        conf,
-		clusterPair: pair,
-		grpcDialer:  grpcDialer,
-		checklist:   checklist,
+		stopped:    make(chan struct{}, 1),
+		conf:       conf,
+		source:     sourceCluster,
+		target:     targetCluster,
+		grpcDialer: grpcDialer,
+		checklist:  checklist,
 	}
 
 	return h
@@ -159,7 +161,7 @@ func (h *Hub) AgentConns() ([]*Connection, error) {
 		return h.agentConns, nil
 	}
 
-	hostnames := h.clusterPair.GetHostnames()
+	hostnames := h.source.GetHostnames()
 	for _, host := range hostnames {
 		ctx, cancelFunc := context.WithTimeout(context.Background(), DialTimeout)
 		conn, err := h.grpcDialer(ctx,
@@ -212,7 +214,7 @@ func (h *Hub) closeConns() {
 
 func (h *Hub) segmentsByHost() map[string][]cluster.SegConfig {
 	segmentsByHost := make(map[string][]cluster.SegConfig)
-	for _, segment := range h.clusterPair.OldCluster.Segments {
+	for _, segment := range h.source.Segments {
 		host := segment.Hostname
 		if len(segmentsByHost[host]) == 0 {
 			segmentsByHost[host] = []cluster.SegConfig{segment}

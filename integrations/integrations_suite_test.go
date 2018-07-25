@@ -47,7 +47,8 @@ var (
 	cliToHubPort   int = 7527
 	hubToAgentPort int = 6416
 	cm             *testutils.MockChecklistManager
-	cp             *utils.ClusterPair
+	source         *utils.Cluster
+	target         *utils.Cluster
 	hub            *services.Hub
 	agent          *agentServices.AgentServer
 	testExecutor   *testhelper.TestExecutor
@@ -109,7 +110,7 @@ var _ = BeforeEach(func() {
 	}
 
 	cm = testutils.NewMockChecklistManager()
-	cp = testutils.CreateMultinodeSampleClusterPair(testWorkspaceDir)
+	source, target = testutils.CreateMultinodeSampleClusterPair(testStateDir)
 	testExecutor = &testhelper.TestExecutor{}
 	testExecutor.ClusterOutput = &cluster.RemoteOutput{}
 	/*
@@ -117,10 +118,10 @@ var _ = BeforeEach(func() {
 	 * either the old or new cluster, not both.  If a test uses both and wants
 	 * to track executions separately, it will need to make more TestExecutors.
 	 */
-	cp.OldCluster.Executor = testExecutor
-	cp.NewCluster.Executor = testExecutor
+	source.Executor = testExecutor
+	target.Executor = testExecutor
 
-	hub = services.NewHub(cp, grpc.DialContext, conf, cm)
+	hub = services.NewHub(source, target, grpc.DialContext, conf, cm)
 	go hub.Start()
 
 	agentConfig := agentServices.AgentConfig{

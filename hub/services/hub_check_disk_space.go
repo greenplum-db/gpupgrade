@@ -21,7 +21,7 @@ func (h *Hub) CheckDiskSpace(ctx context.Context,
 
 	gplog.Info("starting CheckDiskSpace")
 	var replyMessages []string
-	hostnames := h.clusterPair.GetHostnames()
+	hostnames := h.source.GetHostnames()
 	var clients []ClientAndHostname
 	for i := 0; i < len(hostnames); i++ {
 		conn, err := grpc.Dial(hostnames[i]+":"+strconv.Itoa(h.conf.HubToAgentPort), grpc.WithInsecure())

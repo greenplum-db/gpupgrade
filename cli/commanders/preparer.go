@@ -2,13 +2,15 @@ package commanders
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -112,19 +114,23 @@ func HowManyHubsRunning() (int, error) {
 	return -1, err
 }
 
-func DoInit(stateDir, oldBinDir, newBinDir string) error {
+func DoInit(stateDir, sourceBinDir, targetBinDir string) error {
 	err := os.Mkdir(stateDir, 0700)
 	if os.IsExist(err) {
 		return fmt.Errorf("gpupgrade state dir (%s) already exists. Did you already run gpupgrade prepare init?", stateDir)
 	} else if err != nil {
 		return err
 	}
-
-	cp := &utils.ClusterPair{}
-	cp.OldCluster = &cluster.Cluster{}
-	cp.OldBinDir = oldBinDir
-	cp.NewCluster = &cluster.Cluster{}
-	cp.NewBinDir = newBinDir
-
-	return cp.Commit(stateDir)
+	emptyCluster := cluster.NewCluster([]cluster.SegConfig{})
+	source := &utils.Cluster{Cluster: emptyCluster, BinDir: sourceBinDir, ConfigPath: filepath.Join(stateDir, utils.SOURCE_CONFIG_FILENAME)}
+	err = source.Commit()
+	if err != nil {
+		return errors.Wrap(err, "Unable to save source cluster configuration")
+	}
+	target := &utils.Cluster{Cluster: emptyCluster, BinDir: targetBinDir, ConfigPath: filepath.Join(stateDir, utils.TARGET_CONFIG_FILENAME)}
+	err = target.Commit()
+	if err != nil {
+		return errors.Wrap(err, "Unable to save target cluster configuration")
+	}
+	return nil
 }

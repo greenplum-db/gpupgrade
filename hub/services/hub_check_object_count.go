@@ -16,7 +16,7 @@ func (h *Hub) CheckObjectCount(ctx context.Context,
 
 	gplog.Info("starting CheckObjectCount")
 
-	masterPort := h.clusterPair.OldCluster.GetPortForContent(-1)
+	masterPort := h.source.MasterPort()
 
 	dbConnector := db.NewDBConn("localhost", masterPort, "template1")
 	defer dbConnector.Close()

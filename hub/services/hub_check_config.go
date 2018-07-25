@@ -27,7 +27,7 @@ func (h *Hub) CheckConfig(ctx context.Context, _ *pb.CheckConfigRequest) (*pb.Ch
 		gplog.Error("error from MarkInProgress " + err.Error())
 	}
 
-	err = RetrieveAndSaveOldConfig(h.conf.StateDir, h.clusterPair)
+	err = RetrieveAndSaveSourceConfig(h.conf.StateDir, h.source)
 	if err != nil {
 		step.MarkFailed()
 		gplog.Error(err.Error())
@@ -40,11 +40,11 @@ func (h *Hub) CheckConfig(ctx context.Context, _ *pb.CheckConfigRequest) (*pb.Ch
 	return successReply, nil
 }
 
-// RetrieveAndSaveOldConfig() fills in the rest of the clusterPair.OldCluster by
+// RetrieveAndSaveSourceConfig() fills in the rest of the clusterPair.OldCluster by
 // querying the database located at its host and port. The results will
 // additionally be written to disk.
-func RetrieveAndSaveOldConfig(stateDir string, clusterPair *utils.ClusterPair) error {
-	dbConnector := db.NewDBConn("localhost", clusterPair.OldCluster.GetPortForContent(-1), "template1")
+func RetrieveAndSaveSourceConfig(stateDir string, source *utils.Cluster) error {
+	dbConnector := db.NewDBConn("localhost", 0, "template1")
 	err := dbConnector.Connect(1)
 	if err != nil {
 		return utils.DatabaseConnectionError{Parent: err}
@@ -58,6 +58,6 @@ func RetrieveAndSaveOldConfig(stateDir string, clusterPair *utils.ClusterPair) e
 		return errors.Wrap(err, "Unable to get segment configuration for old cluster")
 	}
 
-	clusterPair.OldCluster = cluster.NewCluster(segConfigs)
-	return clusterPair.WriteOldConfig(stateDir)
+	source.Cluster = cluster.NewCluster(segConfigs)
+	return source.Commit()
 }

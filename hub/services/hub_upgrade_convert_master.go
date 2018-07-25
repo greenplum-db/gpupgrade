@@ -35,16 +35,19 @@ func (h *Hub) ConvertMaster() error {
 		return errors.New(errMsg)
 	}
 
-	oldMasterPort, newMasterPort := h.clusterPair.GetMasterPorts()
-	oldDataDir, newDataDir := h.clusterPair.GetMasterDataDirs()
-	oldBinDir := h.clusterPair.OldBinDir
-	newBinDir := h.clusterPair.NewBinDir
-
 	pgUpgradeLog := filepath.Join(pathToUpgradeWD, "/pg_upgrade_master.log")
 	upgradeCmd := fmt.Sprintf("unset PGHOST; unset PGPORT; cd %s && nohup %s "+
-		"--old-bindir=%s --old-datadir=%s --new-bindir=%s --new-datadir=%s --old-port=%d --new-port=%d --dispatcher-mode --progress",
-		pathToUpgradeWD, filepath.Join(newBinDir, "pg_upgrade"),
-		oldBinDir, oldDataDir, newBinDir, newDataDir, oldMasterPort, newMasterPort)
+		"--old-bindir=%s --old-datadir=%s --old-port=%d "+
+		"--new-bindir=%s --new-datadir=%s --new-port=%d "+
+		"--dispatcher-mode --progress",
+		pathToUpgradeWD, filepath.Join(h.target.BinDir, "pg_upgrade"),
+		h.source.BinDir,
+		h.source.MasterDataDir(),
+		h.source.MasterPort(),
+		h.target.BinDir,
+		h.target.MasterDataDir(),
+		h.target.MasterPort())
+
 	gplog.Info("Convert Master upgrade command: %#v", upgradeCmd)
 
 	//export ENV VARS instead of passing on cmd line?

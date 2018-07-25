@@ -2,11 +2,11 @@ package utils_test
 
 import (
 	"io/ioutil"
-	"os"
 
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils"
 
+	"github.com/greenplum-db/gp-common-go-libs/structmatcher"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -15,7 +15,7 @@ import (
 var _ = Describe("ClusterPair", func() {
 	var (
 		filesLaidDown []string
-		clusterPair   *utils.ClusterPair
+		cluster       *utils.Cluster
 		testExecutor  *testhelper.TestExecutor
 		testStateDir  string
 		err           error
@@ -26,40 +26,23 @@ var _ = Describe("ClusterPair", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		testhelper.SetupTestLogger()
-		testExecutor = &testhelper.TestExecutor{}
-		clusterPair = testutils.CreateSampleClusterPair()
-		clusterPair.OldBinDir = "old/path"
-		clusterPair.NewBinDir = "new/path"
-		clusterPair.OldCluster.Executor = testExecutor
+		expectedCluster = &utils.Cluster{
+			Cluster:    testutils.CreateSampleCluster(),
+			BinDir:     "/fake/path",
+			ConfigPath: "cluster_config.json",
+		}
 	})
 
-	AfterEach(func() {
-		utils.System = utils.InitializeSystemFunctions()
-		filesLaidDown = []string{}
-	})
-
-	Describe("WriteClusterConfig", func() {
-		It("successfully write cluster config to disk if no file exists", func() {
-			sampleCluster := testutils.CreateSampleCluster(-1, 25437, "hostone", "/old/datadir")
-			configFilePath := utils.GetConfigFilePath(testStateDir)
-			err := utils.WriteClusterConfig(configFilePath, sampleCluster, "/old/bin/dir")
+	Describe("Commit and Load", func() {
+		It("can save a config and successfully load it back in", func() {
+			err := expectedCluster.Commit()
 			Expect(err).ToNot(HaveOccurred())
-
-			_, err = os.Open(configFilePath)
+			givenCluster := &utils.Cluster{
+				ConfigPath: "cluster_config.json",
+			}
+			err := givenCluster.Load()
 			Expect(err).ToNot(HaveOccurred())
+			structmatcher.ExpectStructsToMatch(expectedCluster, givenCluster)
 		})
-	})
-
-	It("can commit and load to/from disk", func() {
-		expected := testutils.CreateMultinodeSampleClusterPair("/tmp")
-		expected.Commit(testStateDir)
-
-		actual := &utils.ClusterPair{}
-		actual.Load(testStateDir)
-
-		// Executors aren't serialized, so copy them over for ease of testing
-		actual.OldCluster.Executor = expected.OldCluster.Executor
-		actual.NewCluster.Executor = expected.NewCluster.Executor
-		Expect(actual).To(Equal(expected))
 	})
 })

@@ -30,11 +30,13 @@ func (h *Hub) UpgradeReconfigurePorts(ctx context.Context, in *pb.UpgradeReconfi
 		gplog.Error("error from MarkInProgress " + err.Error())
 	}
 
-	oldMasterPort, newMasterPort, newMasterDataDir := h.clusterPair.GetPortsAndDataDirForReconfiguration()
-	sedCommand := fmt.Sprintf(SedAndMvString, newMasterPort, oldMasterPort, newMasterDataDir)
+	sourcePort := h.source.MasterPort()
+	targetPort := h.target.MasterPort()
+	targetDataDir := h.target.MasterDataDir()
+	sedCommand := fmt.Sprintf(SedAndMvString, targetPort, sourcePort, targetDataDir)
 	gplog.Info("reconfigure-ports sed command: %+v", sedCommand)
 
-	output, err := h.clusterPair.OldCluster.Executor.ExecuteLocalCommand(sedCommand)
+	output, err := h.source.Executor.ExecuteLocalCommand(sedCommand)
 	if err != nil {
 		gplog.Error("reconfigure-ports failed %s: %s", output, err)
 

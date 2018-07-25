@@ -32,25 +32,25 @@ func (h *Hub) CheckSeginstall(ctx context.Context, in *idl.CheckSeginstallReques
 		return &idl.CheckSeginstallReply{}, err
 	}
 
-	go VerifyAgentsInstalled(h.clusterPair, step)
+	go VerifyAgentsInstalled(h.source, step)
 
 	return &idl.CheckSeginstallReply{}, nil
 }
 
-func VerifyAgentsInstalled(cp *utils.ClusterPair, step upgradestatus.StateWriter) {
+func VerifyAgentsInstalled(source *utils.Cluster, step upgradestatus.StateWriter) {
 	var err error
 
 	// TODO: if this finds nothing, should we err out? do a fallback check based on $GPHOME?
 	logStr := "check gpupgrade_agent is installed in GPHOME on master and hosts"
 	agentPath := filepath.Join(os.Getenv("GPHOME"), "bin", "gpupgrade_agent")
 	returnLsCommand := func(contentID int) string { return "ls " + agentPath }
-	remoteOutput := cp.OldCluster.GenerateAndExecuteCommand(logStr, returnLsCommand, cluster.ON_HOSTS_AND_MASTER)
+	remoteOutput := source.GenerateAndExecuteCommand(logStr, returnLsCommand, cluster.ON_HOSTS_AND_MASTER)
 
 	errStr := "Failed to find all gpupgrade_agents"
 	errMessage := func(contentID int) string {
 		return fmt.Sprintf("Could not find gpupgrade_agent on segment with contentID %d", contentID)
 	}
-	cp.OldCluster.CheckClusterError(remoteOutput, errStr, errMessage, true)
+	source.CheckClusterError(remoteOutput, errStr, errMessage, true)
 
 	if remoteOutput.NumErrors > 0 {
 		err = step.MarkFailed()

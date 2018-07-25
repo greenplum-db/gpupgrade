@@ -123,8 +123,14 @@ var _ = Describe("preparer", func() {
 			Eventually(testStdout).Should(gbytes.Say("Started Agents in progress, check gpupgrade_agent logs for details"))
 		})
 	})
-	Describe("Prepare init", func() {
-		var dir string
+	Describe("DoInit", func() {
+		var (
+			sourceBinDir string = "/old/does/not/exist"
+			targetBinDir string = "/new/does/not/exist"
+			sourceFilename string = filepath.Join(stateDir, utils.SOURCE_CONFIG_FILENAME)
+			targetFilename string = filepath.Join(stateDir, utils.TARGET_CONFIG_FILENAME)
+			dir          string
+		)
 
 		BeforeEach(func() {
 			var err error
@@ -138,30 +144,25 @@ var _ = Describe("preparer", func() {
 
 		It("populates cluster configuration files with the parameters it is passed", func() {
 			stateDir := filepath.Join(dir, "foo")
-			err := commanders.DoInit(stateDir, "/old/does/not/exist", "/new/does/not/exist")
+			err := commanders.DoInit(stateDir, sourceBinDir, targetBinDir)
 			Expect(err).To(BeNil())
 
-			cp := &utils.ClusterPair{}
-			cp.Load(stateDir)
-			Expect(cp.OldBinDir).To(Equal("/old/does/not/exist"))
-			Expect(cp.NewBinDir).To(Equal("/new/does/not/exist"))
+			source := &utils.Cluster{ConfigPath: }
+			err = source.Load()
+			Expect(err).To(BeNil())
+			Expect(sourceFilename).To(BeAnExistingFile())
+			Expect(cp.OldBinDir).To(Equal(sourceBinDir))
+
+			target := &utils.Cluster{ConfigPath: filepath.Join(stateDir, utils.SOURCE_CONFIG_FILENAME)}
+			err = target.Load()
+			Expect(err).To(BeNil())
+			Expect(targetFilename).To(BeAnExistingFile())
+			Expect(cp.NewBinDir).To(Equal(targetBinDir))
 		})
 
 		It("errs out when the state dir already exists", func() {
 			err := commanders.DoInit(dir, "/old/does/not/exist", "/new/does/not/exist")
 			Expect(err).ToNot(BeNil())
-		})
-
-		It("creates both old and new cluster configs", func() {
-			stateDir := filepath.Join(dir, "foo")
-			err := commanders.DoInit(stateDir, "/old/does/not/exist", "/new/does/not/exist")
-			Expect(err).ToNot(HaveOccurred())
-
-			oldConfig := utils.GetConfigFilePath(stateDir)
-			Expect(oldConfig).To(BeAnExistingFile())
-
-			newConfig := utils.GetNewConfigFilePath(stateDir)
-			Expect(newConfig).To(BeAnExistingFile())
 		})
 	})
 })

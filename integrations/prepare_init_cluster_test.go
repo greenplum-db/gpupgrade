@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
@@ -50,11 +51,11 @@ var _ = Describe("prepare", func() {
 		Expect(cm.WasReset(upgradestatus.INIT_CLUSTER)).To(BeTrue())
 		Expect(cm.IsInProgress(upgradestatus.INIT_CLUSTER)).To(BeTrue())
 
-		clusterPair := &utils.ClusterPair{}
-		err = clusterPair.ReadNewConfig(testStateDir)
+		target := &utils.Cluster{ConfigPath: filepath.Join(testStateDir, utils.TARGET_CONFIG_FILENAME)}
+		err = target.Load()
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(len(cp.NewCluster.Segments)).To(BeNumerically(">", 1))
+		Expect(len(target.Segments)).To(BeNumerically(">", 1))
 	})
 })
 

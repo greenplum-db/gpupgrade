@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	pb "github.com/greenplum-db/gpupgrade/idl"
@@ -23,14 +22,14 @@ var _ = Describe("UpgradeShareOids", func() {
 	var (
 		hub          *services.Hub
 		dir          string
-		clusterPair  *utils.ClusterPair
+		source       *utils.Cluster
+		target       *utils.Cluster
 		testExecutor *testhelper.TestExecutor
 		cm           *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
-		clusterPair = testutils.CreateSampleClusterPair()
-		clusterPair.OldCluster.Segments[1] = cluster.SegConfig{Hostname: "hosttwo"}
+		source, target = testutils.CreateMultinodeSampleClusterPair()
 
 		var err error
 		dir, err = ioutil.TempDir("", "")
@@ -40,9 +39,9 @@ var _ = Describe("UpgradeShareOids", func() {
 			StateDir: dir,
 		}
 		testExecutor = &testhelper.TestExecutor{}
-		clusterPair.OldCluster.Executor = testExecutor
+		source.Executor = testExecutor
 		cm = testutils.NewMockChecklistManager()
-		hub = services.NewHub(clusterPair, grpc.DialContext, hubConfig, cm)
+		hub = services.NewHub(source, target, grpc.DialContext, hubConfig, cm)
 	})
 
 	AfterEach(func() {
@@ -54,7 +53,7 @@ var _ = Describe("UpgradeShareOids", func() {
 		_, err := hub.UpgradeShareOids(nil, &pb.UpgradeShareOidsRequest{})
 		Expect(err).ToNot(HaveOccurred())
 
-		hostnames := clusterPair.GetHostnames()
+		hostnames := source.GetHostnames()
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func() int { return testExecutor.NumExecutions }).Should(Equal(len(hostnames)))
@@ -71,7 +70,7 @@ var _ = Describe("UpgradeShareOids", func() {
 		_, err := hub.UpgradeShareOids(nil, &pb.UpgradeShareOidsRequest{})
 		Expect(err).ToNot(HaveOccurred())
 
-		hostnames := clusterPair.GetHostnames()
+		hostnames := source.GetHostnames()
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func() int { return testExecutor.NumExecutions }).Should(Equal(len(hostnames)))

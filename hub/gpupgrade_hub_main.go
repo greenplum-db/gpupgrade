@@ -11,6 +11,7 @@ import (
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/daemon"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 )
@@ -36,16 +37,21 @@ func main() {
 				StateDir:       utils.GetStateDir(),
 				LogDir:         logdir,
 			}
-			cp := &utils.ClusterPair{}
+			source := &utils.Cluster{ConfigPath: filepath.Join(conf.StateDir, utils.SOURCE_CONFIG_FILENAME)}
+			target := &utils.Cluster{ConfigPath: filepath.Join(conf.StateDir, utils.TARGET_CONFIG_FILENAME)}
 			cm := upgradestatus.NewChecklistManager(conf.StateDir)
 
 			// Load the cluster configuration.
-			err := cp.Load(conf.StateDir)
+			err := source.Load()
 			if err != nil {
-				return err
+				return errors.Wrap(err, "Unable to load source cluster configuration")
+			}
+			err = target.Load()
+			if err != nil {
+				return errors.Wrap(err, "Unable to load target cluster configuration")
 			}
 
-			hub := services.NewHub(cp, grpc.DialContext, conf, cm)
+			hub := services.NewHub(source, target, grpc.DialContext, conf, cm)
 
 			// TODO: make sure the implementations here, and the Checklist below, are
 			// fully exercised in end-to-end tests. It feels like we should be able to
@@ -61,13 +67,13 @@ func main() {
 
 			shutDownStatus := func(step upgradestatus.StateReader) pb.StepStatus {
 				stepdir := filepath.Join(conf.StateDir, step.Name())
-				return upgradestatus.ClusterShutdownStatus(stepdir, cp.OldCluster.Executor)
+				return upgradestatus.ClusterShutdownStatus(stepdir, source.Executor)
 			}
 
 			convertMasterStatus := func(step upgradestatus.StateReader) pb.StepStatus {
 				convertMasterPath := filepath.Join(conf.StateDir, step.Name())
-				oldDataDir := cp.OldCluster.GetDirForContent(-1)
-				return upgradestatus.SegmentConversionStatus(convertMasterPath, oldDataDir, cp.OldCluster.Executor)
+				sourceDataDir := source.MasterDataDir()
+				return upgradestatus.SegmentConversionStatus(convertMasterPath, sourceDataDir, source.Executor)
 			}
 
 			convertPrimariesStatus := func(step upgradestatus.StateReader) pb.StepStatus {

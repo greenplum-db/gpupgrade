@@ -19,14 +19,15 @@ import (
 
 var _ = Describe("hub.UpgradeConvertPrimaries()", func() {
 	var (
-		dir         string
-		hub         *services.Hub
-		mockAgent   *testutils.MockAgentServer
-		port        int
-		oldCluster  *cluster.Cluster
-		newCluster  *cluster.Cluster
-		clusterPair *utils.ClusterPair
-		cm          *testutils.MockChecklistManager
+		dir        string
+		hub        *services.Hub
+		mockAgent  *testutils.MockAgentServer
+		port       int
+		oldCluster *cluster.Cluster
+		newCluster *cluster.Cluster
+		source     *utils.Cluster
+		target     *utils.Cluster
+		cm         *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -42,31 +43,9 @@ var _ = Describe("hub.UpgradeConvertPrimaries()", func() {
 			HubToAgentPort: port,
 		}
 
-		oldCluster = &cluster.Cluster{
-			ContentIDs: []int{-1, 0, 1},
-			Segments: map[int]cluster.SegConfig{
-				0:  newSegment(0, "localhost", "old/datadir1", 1),
-				1:  newSegment(1, "localhost", "old/datadir2", 2),
-				-1: newSegment(-1, "localhost", "old/master", 4),
-			},
-		}
-		newCluster = &cluster.Cluster{
-			ContentIDs: []int{-1, 0, 1},
-			Segments: map[int]cluster.SegConfig{
-				0:  newSegment(0, "localhost", "new/datadir1", 11),
-				1:  newSegment(1, "localhost", "new/datadir2", 22),
-				-1: newSegment(-1, "localhost", "new/master", 44),
-			},
-		}
-		clusterPair = &utils.ClusterPair{
-			OldCluster: oldCluster,
-			NewCluster: newCluster,
-			OldBinDir:  "/old/bin",
-			NewBinDir:  "/new/bin",
-		}
-
+		source, target = testutils.CreateMultinodeSampleClusterPair("/tmp")
 		cm = testutils.NewMockChecklistManager()
-		hub = services.NewHub(clusterPair, grpc.DialContext, conf, cm)
+		hub = services.NewHub(source, target, grpc.DialContext, conf, cm)
 	})
 	AfterEach(func() {
 		utils.System = utils.InitializeSystemFunctions()

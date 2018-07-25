@@ -24,8 +24,8 @@ var _ = Describe("prepare shutdown-clusters", func() {
 
 		testExecutorOld = &testhelper.TestExecutor{}
 		testExecutorNew = &testhelper.TestExecutor{}
-		cp.OldCluster.Executor = testExecutorOld
-		cp.NewCluster.Executor = testExecutorNew
+		source.Executor = testExecutorOld
+		target.Executor = testExecutorNew
 	})
 
 	AfterEach(func() {
@@ -44,11 +44,11 @@ var _ = Describe("prepare shutdown-clusters", func() {
 
 		Expect(testExecutorOld.NumExecutions).To(Equal(2))
 		Expect(testExecutorOld.LocalCommands[0]).To(ContainSubstring("pgrep"))
-		Expect(testExecutorOld.LocalCommands[1]).To(ContainSubstring(cp.OldBinDir + "/gpstop -a"))
+		Expect(testExecutorOld.LocalCommands[1]).To(ContainSubstring(source.BinDir + "/gpstop -a"))
 
 		Expect(testExecutorNew.NumExecutions).To(Equal(2))
 		Expect(testExecutorNew.LocalCommands[0]).To(ContainSubstring("pgrep"))
-		Expect(testExecutorNew.LocalCommands[1]).To(ContainSubstring(cp.NewBinDir + "/gpstop -a"))
+		Expect(testExecutorNew.LocalCommands[1]).To(ContainSubstring(target.BinDir + "/gpstop -a"))
 
 		Expect(cm.IsComplete(upgradestatus.SHUTDOWN_CLUSTERS)).To(BeTrue())
 	})
@@ -70,10 +70,10 @@ var _ = Describe("prepare shutdown-clusters", func() {
 
 		Expect(testExecutorOld.NumExecutions).To(Equal(2))
 		Expect(testExecutorOld.LocalCommands[0]).To(ContainSubstring("pgrep"))
-		Expect(testExecutorOld.LocalCommands[1]).To(ContainSubstring(cp.OldBinDir + "/gpstop -a"))
+		Expect(testExecutorOld.LocalCommands[1]).To(ContainSubstring(source.BinDir + "/gpstop -a"))
 		Expect(testExecutorOld.NumExecutions).To(Equal(2))
 		Expect(testExecutorNew.LocalCommands[0]).To(ContainSubstring("pgrep"))
-		Expect(testExecutorNew.LocalCommands[1]).To(ContainSubstring(cp.NewBinDir + "/gpstop -a"))
+		Expect(testExecutorNew.LocalCommands[1]).To(ContainSubstring(target.BinDir + "/gpstop -a"))
 		Expect(cm.IsFailed(upgradestatus.SHUTDOWN_CLUSTERS)).To(BeTrue())
 	})
 })
