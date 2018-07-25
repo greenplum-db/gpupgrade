@@ -24,7 +24,8 @@ var _ = Describe("upgrade validate start cluster", func() {
 		dir          string
 		errChan      chan error
 		outChan      chan []byte
-		clusterPair  *utils.ClusterPair
+		source       *utils.Cluster
+		target       *utils.Cluster
 		testExecutor *testhelper.TestExecutor
 		cm           *testutils.MockChecklistManager
 	)
@@ -37,11 +38,11 @@ var _ = Describe("upgrade validate start cluster", func() {
 		errChan = make(chan error, 1)
 		outChan = make(chan []byte, 1)
 
-		clusterPair = testutils.CreateSampleClusterPair()
+		source, target = testutils.CreateSampleClusterPair()
 		testExecutor = &testhelper.TestExecutor{}
-		clusterPair.NewCluster.Executor = testExecutor
+		target.Executor = testExecutor
 		cm = testutils.NewMockChecklistManager()
-		hub = services.NewHub(clusterPair, grpc.DialContext, &services.HubConfig{
+		hub = services.NewHub(source, target, grpc.DialContext, &services.HubConfig{
 			StateDir: dir,
 		}, cm)
 	})
@@ -59,8 +60,8 @@ var _ = Describe("upgrade validate start cluster", func() {
 
 		Eventually(func() bool { return cm.IsComplete(upgradestatus.VALIDATE_START_CLUSTER) }).Should(BeTrue())
 		Expect(testExecutor.NumExecutions).To(Equal(1))
-		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("source /new/bindir/../greenplum_path.sh"))
-		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("/new/bindir/gpstart -a -d /new/datadir"))
+		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("source /target/bindir/../greenplum_path.sh"))
+		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("/target/bindir/gpstart -a -d /target/datadir"))
 	})
 
 	It("sets status to FAILED when the validate start cluster request returns an error", func() {

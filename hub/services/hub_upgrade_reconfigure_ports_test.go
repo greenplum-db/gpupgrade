@@ -43,15 +43,15 @@ var _ = Describe("UpgradeReconfigurePorts", func() {
 			}
 		}
 
-		clusterPair := testutils.CreateSampleClusterPair()
+		source, target := testutils.CreateSampleClusterPair()
 		testExecutor = &testhelper.TestExecutor{}
-		clusterPair.OldCluster.Segments[1] = cluster.SegConfig{Hostname: "hosttwo"}
-		clusterPair.OldCluster.Executor = testExecutor
+		source.Segments[1] = cluster.SegConfig{Hostname: "hosttwo"}
+		source.Executor = testExecutor
 		hubConfig := &services.HubConfig{
 			StateDir: dir,
 		}
 		cm = testutils.NewMockChecklistManager()
-		hub = services.NewHub(clusterPair, grpc.DialContext, hubConfig, cm)
+		hub = services.NewHub(source, target, grpc.DialContext, hubConfig, cm)
 	})
 
 	AfterEach(func() {
@@ -63,7 +63,7 @@ var _ = Describe("UpgradeReconfigurePorts", func() {
 		reply, err := hub.UpgradeReconfigurePorts(nil, &pb.UpgradeReconfigurePortsRequest{})
 		Expect(reply).To(Equal(&pb.UpgradeReconfigurePortsReply{}))
 		Expect(err).To(BeNil())
-		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring(fmt.Sprintf(services.SedAndMvString, 35437, 25437, "/new/datadir")))
+		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring(fmt.Sprintf(services.SedAndMvString, 35437, 25437, "/target/datadir")))
 	})
 
 	It("returns err if reconfigure cmd fails", func() {
@@ -71,7 +71,7 @@ var _ = Describe("UpgradeReconfigurePorts", func() {
 		reply, err := hub.UpgradeReconfigurePorts(nil, &pb.UpgradeReconfigurePortsRequest{})
 		Expect(reply).To(BeNil())
 		Expect(err).ToNot(BeNil())
-		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring(fmt.Sprintf(services.SedAndMvString, 35437, 25437, "/new/datadir")))
+		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring(fmt.Sprintf(services.SedAndMvString, 35437, 25437, "/target/datadir")))
 	})
 
 })

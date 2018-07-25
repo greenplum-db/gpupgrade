@@ -26,7 +26,8 @@ var _ = Describe("status upgrade", func() {
 		fakeStatusUpgradeRequest *pb.StatusUpgradeRequest
 		dir                      string
 		mockAgent                *testutils.MockAgentServer
-		clusterPair              *utils.ClusterPair
+		source                   *utils.Cluster
+		target                   *utils.Cluster
 		testExecutor             *testhelper.TestExecutor
 		cm                       *testutils.MockChecklistManager
 	)
@@ -44,9 +45,9 @@ var _ = Describe("status upgrade", func() {
 			StateDir:       dir,
 		}
 
-		clusterPair = testutils.CreateSampleClusterPair()
+		source, target = testutils.CreateSampleClusterPair()
 		testExecutor = &testhelper.TestExecutor{}
-		clusterPair.OldCluster.Executor = testExecutor
+		source.Executor = testExecutor
 
 		// Mock so statusConversion doesn't need to wait 3 seconds before erroring out.
 		mockDialer := func(ctx context.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
@@ -68,7 +69,7 @@ var _ = Describe("status upgrade", func() {
 			{upgradestatus.RECONFIGURE_PORTS, pb.UpgradeSteps_RECONFIGURE_PORTS, nil},
 		})
 
-		hub = services.NewHub(clusterPair, mockDialer, conf, cm)
+		hub = services.NewHub(source, target, mockDialer, conf, cm)
 	})
 
 	AfterEach(func() {

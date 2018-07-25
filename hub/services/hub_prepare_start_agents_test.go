@@ -9,7 +9,6 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gpupgrade/testutils"
 	. "github.com/onsi/ginkgo"
@@ -19,24 +18,22 @@ import (
 var _ = Describe("hub PrepareStartAgents", func() {
 
 	var (
-		cp *utils.ClusterPair
 		cm *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
-		cp = testutils.CreateSampleClusterPair()
 		cm = testutils.NewMockChecklistManager()
 	})
 
 	It("shells out to cluster and runs gpupgrade_agent", func() {
-		cp.OldCluster = testutils.CreateMultinodeSampleCluster("/tmp")
+		source, _ := testutils.CreateMultinodeSampleClusterPair("/tmp")
 		testExecutor := &testhelper.TestExecutor{}
 		testExecutor.ClusterOutput = &cluster.RemoteOutput{}
-		cp.OldCluster.Executor = testExecutor
+		source.Executor = testExecutor
 
 		step := cm.GetStepWriter(upgradestatus.START_AGENTS)
 		step.MarkInProgress()
-		services.StartAgents(cp, step)
+		services.StartAgents(source, step)
 
 		Expect(testExecutor.NumExecutions).To(Equal(1))
 		Expect(cm.IsComplete(upgradestatus.START_AGENTS)).To(BeTrue())

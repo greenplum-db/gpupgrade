@@ -20,7 +20,8 @@ var _ = Describe("ConvertMasterHub", func() {
 	var (
 		dir          string
 		hub          *services.Hub
-		clusterPair  *utils.ClusterPair
+		source       *utils.Cluster
+		target       *utils.Cluster
 		cm           *testutils.MockChecklistManager
 		actualCmdStr string
 	)
@@ -33,9 +34,9 @@ var _ = Describe("ConvertMasterHub", func() {
 			StateDir: dir,
 		}
 
-		clusterPair = testutils.CreateSampleClusterPair()
+		source, target = testutils.CreateSampleClusterPair()
 		cm = testutils.NewMockChecklistManager()
-		hub = services.NewHub(clusterPair, grpc.DialContext, conf, cm)
+		hub = services.NewHub(source, target, grpc.DialContext, conf, cm)
 		utils.System.RunCommandAsync = func(cmdStr string, logFile string) error {
 			actualCmdStr = cmdStr
 			return nil
@@ -52,10 +53,10 @@ var _ = Describe("ConvertMasterHub", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		pgupgrade_dir := filepath.Join(dir, "pg_upgrade")
-		Expect(actualCmdStr).To(Equal("unset PGHOST; unset PGPORT; cd " + pgupgrade_dir +
-			` && nohup /new/bindir/pg_upgrade --old-bindir=/old/bindir ` +
-			`--old-datadir=/old/datadir --new-bindir=/new/bindir ` +
-			`--new-datadir=/new/datadir --old-port=25437 --new-port=35437 --dispatcher-mode --progress`))
+		Expect(actualCmdStr).To(Equal("unset PGHOST; unset PGPORT; cd " + pgupgrade_dir + " && nohup /target/bindir/pg_upgrade " +
+			"--old-bindir=/source/bindir --old-datadir=/source/datadir --old-port=25437 " +
+			"--new-bindir=/target/bindir --new-datadir=/target/datadir --new-port=35437 " +
+			"--dispatcher-mode --progress"))
 	})
 
 	It("returns an error when convert master fails", func() {

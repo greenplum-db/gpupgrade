@@ -23,7 +23,8 @@ var _ = Describe("hub", func() {
 	var (
 		hub               *services.Hub
 		agentA            *testutils.MockAgentServer
-		clusterPair       *utils.ClusterPair
+		source            *utils.Cluster
+		target            *utils.Cluster
 		cm                *testutils.MockChecklistManager
 		ctrl              *gomock.Controller
 		mockAgent1        *mockpb.MockAgentClient
@@ -35,20 +36,13 @@ var _ = Describe("hub", func() {
 		var port int
 		agentA, port = testutils.NewMockAgentServer()
 
-		clusterPair = &utils.ClusterPair{
-			OldCluster: &cluster.Cluster{
-				Segments: map[int]cluster.SegConfig{
-					0: {DbID: 2, ContentID: 0, Hostname: "localhost", DataDir: "/first/data/dir"},
-					1: {DbID: 3, ContentID: 1, Hostname: "localhost", DataDir: "/second/data/dir"},
-				},
-			},
-		}
+		source, target = testutils.CreateMultinodeSampleClusterPair("/tmp")
 		conf := &services.HubConfig{
 			HubToAgentPort: port,
 		}
 
 		cm = testutils.NewMockChecklistManager()
-		hub = services.NewHub(clusterPair, grpc.DialContext, conf, cm)
+		hub = services.NewHub(source, target, grpc.DialContext, conf, cm)
 
 		ctrl = gomock.NewController(GinkgoT())
 		mockAgent1 = mockpb.NewMockAgentClient(ctrl)

@@ -81,7 +81,7 @@ func CreateMultinodeSampleClusterPair(baseDir string) (*utils.Cluster, *utils.Cl
 
 func CreateSampleClusterPair() (*utils.Cluster, *utils.Cluster) {
 	sourceCluster := CreateSampleCluster(-1, 25437, "hostone", "/source/datadir")
-	targetCluster := CreateSampleCluster(-1, 35437, "", "/target/datadir")
+	targetCluster := CreateSampleCluster(-1, 35437, "hosttwo", "/target/datadir")
 	return assembleClusters("/tmp", sourceCluster, targetCluster)
 }
 

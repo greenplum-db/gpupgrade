@@ -17,11 +17,6 @@ type Cluster struct {
 	ConfigPath string
 }
 
-type ClusterPair struct {
-	OldCluster Cluster
-	NewCluster Cluster
-}
-
 /*
  * We need to use an intermediary struct for reading and writing fields not
  * present in cluster.Cluster

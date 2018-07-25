@@ -14,11 +14,9 @@ import (
 
 var _ = Describe("ClusterPair", func() {
 	var (
-		filesLaidDown []string
-		cluster       *utils.Cluster
-		testExecutor  *testhelper.TestExecutor
-		testStateDir  string
-		err           error
+		expectedCluster *utils.Cluster
+		testStateDir    string
+		err             error
 	)
 
 	BeforeEach(func() {
@@ -27,7 +25,7 @@ var _ = Describe("ClusterPair", func() {
 
 		testhelper.SetupTestLogger()
 		expectedCluster = &utils.Cluster{
-			Cluster:    testutils.CreateSampleCluster(),
+			Cluster:    testutils.CreateMultinodeSampleCluster("/tmp"),
 			BinDir:     "/fake/path",
 			ConfigPath: "cluster_config.json",
 		}
@@ -40,9 +38,9 @@ var _ = Describe("ClusterPair", func() {
 			givenCluster := &utils.Cluster{
 				ConfigPath: "cluster_config.json",
 			}
-			err := givenCluster.Load()
+			err = givenCluster.Load()
 			Expect(err).ToNot(HaveOccurred())
-			structmatcher.ExpectStructsToMatch(expectedCluster, givenCluster)
+			structmatcher.ExpectStructsToMatchExcluding(expectedCluster.Cluster, givenCluster.Cluster, "Executor")
 		})
 	})
 })

@@ -2,10 +2,11 @@ package services_test
 
 import (
 	"database/sql/driver"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
+
+	"github.com/pkg/errors"
 
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -29,25 +30,24 @@ var _ = Describe("Hub prepare init-cluster", func() {
 		mock        sqlmock.Sqlmock
 		dir         string
 		err         error
-		newBinDir   string
 		queryResult = `{"SegConfigs":[{"DbID":1,"ContentID":-1,"Port":15432,"Hostname":"mdw","DataDir":"/data/master/gpseg-1"},` +
-			`{"DbID":2,"ContentID":0,"Port":25432,"Hostname":"sdw1","DataDir":"/data/primary/gpseg0"}],"BinDir":"/tmp"}`
-		clusterPair         *utils.ClusterPair
-		expectedClusterPair *utils.ClusterPair
-		hub                 *services.Hub
-		gpinitsystemConfig  []string
-		segDataDirMap       map[string][]string
+			`{"DbID":2,"ContentID":0,"Port":25432,"Hostname":"sdw1","DataDir":"/data/primary/gpseg0"}],"BinDir":"/target/bindir"}`
+		source             *utils.Cluster
+		target             *utils.Cluster
+		expectedCluster    *utils.Cluster
+		hub                *services.Hub
+		gpinitsystemConfig []string
+		segDataDirMap      map[string][]string
 	)
 
 	BeforeEach(func() {
-		newBinDir = "/tmp"
 		dbConnector, mock = testhelper.CreateAndConnectMockDB(1)
 		dir, err = ioutil.TempDir("", "")
 		Expect(err).ToNot(HaveOccurred())
 		utils.System = utils.InitializeSystemFunctions()
-		clusterPair = testutils.CreateMultinodeSampleClusterPair("/data")
-		expectedClusterPair = &utils.ClusterPair{
-			NewCluster: &cluster.Cluster{
+		source, target = testutils.CreateMultinodeSampleClusterPair(dir)
+		expectedCluster = &utils.Cluster{
+			Cluster: &cluster.Cluster{
 				ContentIDs: []int{-1, 0},
 				Segments: map[int]cluster.SegConfig{
 					-1: {DbID: 1, ContentID: -1, Port: 15432, Hostname: "mdw", DataDir: "/data/master/gpseg-1"},
@@ -55,22 +55,22 @@ var _ = Describe("Hub prepare init-cluster", func() {
 				},
 				Executor: &cluster.GPDBExecutor{},
 			},
-			NewBinDir: newBinDir,
+			BinDir: "/tmp",
 		}
 
 		segDataDirMap = map[string][]string{
-			"localhost":     {"/data_upgrade"},
-			"not_localhost": {"/data_upgrade"},
+			"localhost":     {fmt.Sprintf("%s_upgrade", dir)},
+			"not_localhost": {fmt.Sprintf("%s_upgrade", dir)},
 		}
-		seg0 := clusterPair.OldCluster.Segments[0]
+		seg0 := source.Segments[0]
 		seg0.Hostname = "not_localhost"
-		clusterPair.OldCluster.Segments[0] = seg0
+		source.Segments[0] = seg0
 		conf := &services.HubConfig{
 			HubToAgentPort: 6416,
 		}
 
 		cm := testutils.NewMockChecklistManager()
-		hub = services.NewHub(clusterPair, grpc.DialContext, conf, cm)
+		hub = services.NewHub(source, target, grpc.DialContext, conf, cm)
 		gpinitsystemConfig = []string{}
 	})
 
@@ -102,11 +102,11 @@ var _ = Describe("Hub prepare init-cluster", func() {
 
 	Describe("DeclareDataDirectories", func() {
 		It("successfully declares all directories", func() {
-			expectedConfig := []string{"QD_PRIMARY_ARRAY=localhost~15433~/data_upgrade/seg-1~1~-1~0",
-				`declare -a PRIMARY_ARRAY=(
-	not_localhost~27432~/data_upgrade/seg1~2~0~0
-	localhost~27433~/data_upgrade/seg2~3~1~0
-)`}
+			expectedConfig := []string{fmt.Sprintf("QD_PRIMARY_ARRAY=localhost~15433~%[1]s_upgrade/seg-1~1~-1~0", dir),
+				fmt.Sprintf(`declare -a PRIMARY_ARRAY=(
+	not_localhost~27432~%[1]s_upgrade/seg1~2~0~0
+	localhost~27433~%[1]s_upgrade/seg2~3~1~0
+)`, dir)}
 			resultConfig, resultMap := hub.DeclareDataDirectories([]string{})
 			Expect(resultMap).To(Equal(segDataDirMap))
 			Expect(resultConfig).To(Equal(expectedConfig))
@@ -127,15 +127,15 @@ var _ = Describe("Hub prepare init-cluster", func() {
 			fakeConns := []*services.Connection{}
 			err := hub.CreateAllDataDirectories(gpinitsystemConfig, fakeConns, segDataDirMap)
 			Expect(err).To(BeNil())
-			Expect(statCalls).To(Equal([]string{"/data_upgrade"}))
-			Expect(mkdirCalls).To(Equal([]string{"/data_upgrade"}))
+			Expect(statCalls).To(Equal([]string{fmt.Sprintf("%s_upgrade", dir)}))
+			Expect(mkdirCalls).To(Equal([]string{fmt.Sprintf("%s_upgrade", dir)}))
 		})
 		It("cannot stat the master data directory", func() {
 			utils.System.Stat = func(name string) (os.FileInfo, error) {
 				return nil, errors.New("permission denied")
 			}
 			fakeConns := []*services.Connection{}
-			expectedErr := errors.New("Error statting new directory /data_upgrade: permission denied")
+			expectedErr := errors.Errorf("Error statting new directory %s_upgrade: permission denied", dir)
 			err := hub.CreateAllDataDirectories(gpinitsystemConfig, fakeConns, segDataDirMap)
 			Expect(err.Error()).To(Equal(expectedErr.Error()))
 		})
@@ -174,7 +174,7 @@ var _ = Describe("Hub prepare init-cluster", func() {
 		BeforeEach(func() {
 			stdout, _, _ = testhelper.SetupTestLogger()
 			testExecutor = &testhelper.TestExecutor{}
-			clusterPair.OldCluster.Executor = testExecutor
+			source.Executor = testExecutor
 		})
 		It("successfully runs gpinitsystem", func() {
 			testExecutor.LocalError = errors.New("exit status 1")
@@ -209,10 +209,10 @@ var _ = Describe("Hub prepare init-cluster", func() {
 				return nil
 			}
 
-			err := services.SaveTargetClusterConfig(clusterPair, dbConnector, dir, newBinDir)
+			err := services.SaveTargetClusterConfig(target, dbConnector, dir)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(string(fakeConfigFile.Contents())).To(ContainSubstring(queryResult))
-			Expect(clusterPair.NewCluster).To(Equal(expectedClusterPair.NewCluster))
+			Expect(target.Cluster).To(Equal(expectedCluster.Cluster))
 		})
 
 		It("successfully stores target cluster config for GPDB 4 and 5", func() {
@@ -225,11 +225,11 @@ var _ = Describe("Hub prepare init-cluster", func() {
 				return nil
 			}
 
-			err := services.SaveTargetClusterConfig(clusterPair, dbConnector, dir, newBinDir)
+			err := services.SaveTargetClusterConfig(target, dbConnector, dir)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(string(fakeConfigFile.Contents())).To(ContainSubstring(queryResult))
-			Expect(clusterPair.NewCluster).To(Equal(expectedClusterPair.NewCluster))
+			Expect(target.Cluster).To(Equal(expectedCluster.Cluster))
 		})
 
 		It("fails to get config file handle", func() {
@@ -237,7 +237,7 @@ var _ = Describe("Hub prepare init-cluster", func() {
 				return errors.New("failed to write config file")
 			}
 
-			err := services.SaveTargetClusterConfig(clusterPair, dbConnector, dir, newBinDir)
+			err := services.SaveTargetClusterConfig(target, dbConnector, dir)
 			Expect(err).To(HaveOccurred())
 		})
 
@@ -248,7 +248,7 @@ var _ = Describe("Hub prepare init-cluster", func() {
 				return nil
 			}
 
-			err := services.SaveTargetClusterConfig(clusterPair, dbConnector, dir, newBinDir)
+			err := services.SaveTargetClusterConfig(target, dbConnector, dir)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError("Unable to get segment configuration for new cluster: fail config query"))
 		})

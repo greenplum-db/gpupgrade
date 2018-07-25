@@ -44,6 +44,7 @@
     "gplog",
     "iohelper",
     "operating",
+    "structmatcher",
     "testhelper"
   ]
   revision = "a51003cc3ea7222978cb52aaab8232f8fffb5c27"
@@ -255,6 +256,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c2079e6c526d16e29f7da67c37f325eb060ed4dde5ca95413dbffa7a3af8e029"
+  inputs-digest = "2bad3d8a6f6811d6ea230c92347766380bd49dd0a4149785e1213261b7860884"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -22,15 +22,14 @@ var _ = Describe("Hub", func() {
 		agentA         *testutils.MockAgentServer
 		cliToHubPort   int
 		hubToAgentPort int
-		clusterPair    *utils.ClusterPair
+		source         *utils.Cluster
+		target         *utils.Cluster
 		err            error
 	)
 
 	BeforeEach(func() {
 		agentA, hubToAgentPort = testutils.NewMockAgentServer()
-		clusterPair = &utils.ClusterPair{
-			OldCluster: testutils.CreateSampleCluster(-1, 25437, "localhost", "/old/datadir"),
-		}
+		source, target = testutils.CreateMultinodeSampleClusterPair("/tmp")
 	})
 
 	AfterEach(func() {
@@ -42,7 +41,7 @@ var _ = Describe("Hub", func() {
 		hubConfig := &services.HubConfig{
 			CliToHubPort: cliToHubPort,
 		}
-		hub := services.NewHub(clusterPair, grpc.DialContext, hubConfig, nil)
+		hub := services.NewHub(source, target, grpc.DialContext, hubConfig, nil)
 
 		hub.Stop()
 		go func() {
@@ -67,7 +66,7 @@ var _ = Describe("Hub", func() {
 		hubConfig := &services.HubConfig{
 			CliToHubPort: cliToHubPort,
 		}
-		hub := services.NewHub(clusterPair, grpc.DialContext, hubConfig, nil)
+		hub := services.NewHub(source, target, grpc.DialContext, hubConfig, nil)
 
 		go func() {
 			err = hub.Start()
@@ -83,7 +82,7 @@ var _ = Describe("Hub", func() {
 		hubConfig := &services.HubConfig{
 			CliToHubPort: cliToHubPort,
 		}
-		hub := services.NewHub(clusterPair, grpc.DialContext, hubConfig, nil)
+		hub := services.NewHub(source, target, grpc.DialContext, hubConfig, nil)
 		done := make(chan bool, 1)
 
 		go func() {
@@ -99,7 +98,7 @@ var _ = Describe("Hub", func() {
 		hubConfig := &services.HubConfig{
 			HubToAgentPort: hubToAgentPort,
 		}
-		hub := services.NewHub(clusterPair, grpc.DialContext, hubConfig, nil)
+		hub := services.NewHub(source, target, grpc.DialContext, hubConfig, nil)
 		go hub.Start()
 
 		By("creating connections")
@@ -119,7 +118,7 @@ var _ = Describe("Hub", func() {
 		hubConfig := &services.HubConfig{
 			HubToAgentPort: hubToAgentPort,
 		}
-		hub := services.NewHub(clusterPair, grpc.DialContext, hubConfig, nil)
+		hub := services.NewHub(source, target, grpc.DialContext, hubConfig, nil)
 
 		conns, err := hub.AgentConns()
 		Expect(err).ToNot(HaveOccurred())
@@ -132,7 +131,7 @@ var _ = Describe("Hub", func() {
 		hubConfig := &services.HubConfig{
 			HubToAgentPort: hubToAgentPort,
 		}
-		hub := services.NewHub(clusterPair, grpc.DialContext, hubConfig, nil)
+		hub := services.NewHub(source, target, grpc.DialContext, hubConfig, nil)
 
 		newConns, err := hub.AgentConns()
 		Expect(err).ToNot(HaveOccurred())
@@ -150,7 +149,7 @@ var _ = Describe("Hub", func() {
 		hubConfig := &services.HubConfig{
 			HubToAgentPort: hubToAgentPort,
 		}
-		hub := services.NewHub(clusterPair, grpc.DialContext, hubConfig, nil)
+		hub := services.NewHub(source, target, grpc.DialContext, hubConfig, nil)
 
 		conns, err := hub.AgentConns()
 		Expect(err).ToNot(HaveOccurred())
@@ -173,7 +172,7 @@ var _ = Describe("Hub", func() {
 			HubToAgentPort: hubToAgentPort,
 		}
 
-		hub := services.NewHub(clusterPair, mockDialer, hubConfig, nil)
+		hub := services.NewHub(source, target, mockDialer, hubConfig, nil)
 
 		_, err := hub.AgentConns()
 		Expect(err).To(HaveOccurred())

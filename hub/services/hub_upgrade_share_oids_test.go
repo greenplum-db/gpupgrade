@@ -29,11 +29,11 @@ var _ = Describe("UpgradeShareOids", func() {
 	)
 
 	BeforeEach(func() {
-		source, target = testutils.CreateMultinodeSampleClusterPair()
-
 		var err error
 		dir, err = ioutil.TempDir("", "")
 		Expect(err).ToNot(HaveOccurred())
+
+		source, target = testutils.CreateMultinodeSampleClusterPair(dir)
 
 		hubConfig := &services.HubConfig{
 			StateDir: dir,
@@ -50,6 +50,9 @@ var _ = Describe("UpgradeShareOids", func() {
 	})
 
 	It("copies files to each host", func() {
+		seg1 := source.Segments[1]
+		seg1.Hostname = "not_localhost"
+		source.Segments[1] = seg1
 		_, err := hub.UpgradeShareOids(nil, &pb.UpgradeShareOidsRequest{})
 		Expect(err).ToNot(HaveOccurred())
 
@@ -59,8 +62,8 @@ var _ = Describe("UpgradeShareOids", func() {
 		Eventually(func() int { return testExecutor.NumExecutions }).Should(Equal(len(hostnames)))
 
 		Expect(testExecutor.LocalCommands).To(ConsistOf([]string{
-			fmt.Sprintf("rsync -rzpogt %s/pg_upgrade/pg_upgrade_dump_*_oids.sql gpadmin@hostone:%s/pg_upgrade", dir, dir),
-			fmt.Sprintf("rsync -rzpogt %s/pg_upgrade/pg_upgrade_dump_*_oids.sql gpadmin@hosttwo:%s/pg_upgrade", dir, dir),
+			fmt.Sprintf("rsync -rzpogt %s/pg_upgrade/pg_upgrade_dump_*_oids.sql gpadmin@localhost:%s/pg_upgrade", dir, dir),
+			fmt.Sprintf("rsync -rzpogt %s/pg_upgrade/pg_upgrade_dump_*_oids.sql gpadmin@not_localhost:%s/pg_upgrade", dir, dir),
 		}))
 	})
 

@@ -19,15 +19,13 @@ import (
 
 var _ = Describe("hub.UpgradeConvertPrimaries()", func() {
 	var (
-		dir        string
-		hub        *services.Hub
-		mockAgent  *testutils.MockAgentServer
-		port       int
-		oldCluster *cluster.Cluster
-		newCluster *cluster.Cluster
-		source     *utils.Cluster
-		target     *utils.Cluster
-		cm         *testutils.MockChecklistManager
+		dir       string
+		hub       *services.Hub
+		mockAgent *testutils.MockAgentServer
+		port      int
+		source    *utils.Cluster
+		target    *utils.Cluster
+		cm        *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
@@ -44,6 +42,15 @@ var _ = Describe("hub.UpgradeConvertPrimaries()", func() {
 		}
 
 		source, target = testutils.CreateMultinodeSampleClusterPair("/tmp")
+		seg1 := target.Segments[0]
+		seg1.DataDir = "/tmp/seg1_upgrade"
+		seg1.Port = 27432
+		target.Segments[0] = seg1
+		seg2 := target.Segments[1]
+		seg2.DataDir = "/tmp/seg2_upgrade"
+		seg2.Port = 27433
+		target.Segments[1] = seg2
+
 		cm = testutils.NewMockChecklistManager()
 		hub = services.NewHub(source, target, grpc.DialContext, conf, cm)
 	})
@@ -53,20 +60,19 @@ var _ = Describe("hub.UpgradeConvertPrimaries()", func() {
 	})
 
 	It("returns nil error, and agent receives only expected segmentConfig values", func() {
-		_, err := hub.UpgradeConvertPrimaries(nil,
-			&pb.UpgradeConvertPrimariesRequest{})
+		_, err := hub.UpgradeConvertPrimaries(nil, &pb.UpgradeConvertPrimariesRequest{})
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(mockAgent.UpgradeConvertPrimarySegmentsRequest.OldBinDir).To(Equal("/old/bin"))
-		Expect(mockAgent.UpgradeConvertPrimarySegmentsRequest.NewBinDir).To(Equal("/new/bin"))
+		Expect(mockAgent.UpgradeConvertPrimarySegmentsRequest.OldBinDir).To(Equal("/source/bindir"))
+		Expect(mockAgent.UpgradeConvertPrimarySegmentsRequest.NewBinDir).To(Equal("/target/bindir"))
 		Expect(mockAgent.UpgradeConvertPrimarySegmentsRequest.DataDirPairs).To(ConsistOf([]*pb.DataDirPair{
-			{OldDataDir: "old/datadir1", NewDataDir: "new/datadir1", Content: 0, OldPort: 1, NewPort: 11},
-			{OldDataDir: "old/datadir2", NewDataDir: "new/datadir2", Content: 1, OldPort: 2, NewPort: 22},
+			{OldDataDir: "/tmp/seg1", NewDataDir: "/tmp/seg1_upgrade", Content: 0, OldPort: 25432, NewPort: 27432},
+			{OldDataDir: "/tmp/seg2", NewDataDir: "/tmp/seg2_upgrade", Content: 1, OldPort: 25433, NewPort: 27433},
 		}))
 	})
 
 	It("returns an error if new config does not contain all the same content as the old config", func() {
-		clusterPair.NewCluster = &cluster.Cluster{
+		target.Cluster = &cluster.Cluster{
 			ContentIDs: []int{0},
 			Segments: map[int]cluster.SegConfig{
 				0: newSegment(0, "localhost", "new/datadir1", 11),
@@ -80,9 +86,9 @@ var _ = Describe("hub.UpgradeConvertPrimaries()", func() {
 	})
 
 	It("returns an error if the content matches, but the hostname does not", func() {
-		differentSeg := clusterPair.NewCluster.Segments[0]
+		differentSeg := target.Segments[0]
 		differentSeg.Hostname = "localhost2"
-		clusterPair.NewCluster.Segments[0] = differentSeg
+		target.Segments[0] = differentSeg
 
 		_, err := hub.UpgradeConvertPrimaries(nil,
 			&pb.UpgradeConvertPrimariesRequest{})

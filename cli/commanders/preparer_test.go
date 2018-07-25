@@ -127,8 +127,6 @@ var _ = Describe("preparer", func() {
 		var (
 			sourceBinDir string = "/old/does/not/exist"
 			targetBinDir string = "/new/does/not/exist"
-			sourceFilename string = filepath.Join(stateDir, utils.SOURCE_CONFIG_FILENAME)
-			targetFilename string = filepath.Join(stateDir, utils.TARGET_CONFIG_FILENAME)
 			dir          string
 		)
 
@@ -144,20 +142,22 @@ var _ = Describe("preparer", func() {
 
 		It("populates cluster configuration files with the parameters it is passed", func() {
 			stateDir := filepath.Join(dir, "foo")
+			sourceFilename := filepath.Join(stateDir, utils.SOURCE_CONFIG_FILENAME)
+			targetFilename := filepath.Join(stateDir, utils.TARGET_CONFIG_FILENAME)
 			err := commanders.DoInit(stateDir, sourceBinDir, targetBinDir)
 			Expect(err).To(BeNil())
 
-			source := &utils.Cluster{ConfigPath: }
+			source := &utils.Cluster{ConfigPath: filepath.Join(stateDir, utils.SOURCE_CONFIG_FILENAME)}
 			err = source.Load()
 			Expect(err).To(BeNil())
 			Expect(sourceFilename).To(BeAnExistingFile())
-			Expect(cp.OldBinDir).To(Equal(sourceBinDir))
+			Expect(source.BinDir).To(Equal(sourceBinDir))
 
-			target := &utils.Cluster{ConfigPath: filepath.Join(stateDir, utils.SOURCE_CONFIG_FILENAME)}
+			target := &utils.Cluster{ConfigPath: filepath.Join(stateDir, utils.TARGET_CONFIG_FILENAME)}
 			err = target.Load()
 			Expect(err).To(BeNil())
 			Expect(targetFilename).To(BeAnExistingFile())
-			Expect(cp.NewBinDir).To(Equal(targetBinDir))
+			Expect(target.BinDir).To(Equal(targetBinDir))
 		})
 
 		It("errs out when the state dir already exists", func() {
