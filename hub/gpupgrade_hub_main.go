@@ -42,13 +42,15 @@ func main() {
 			cm := upgradestatus.NewChecklistManager(conf.StateDir)
 
 			// Load the cluster configuration.
-			err := source.Load()
-			if err != nil {
-				return errors.Wrap(err, "Unable to load source cluster configuration")
-			}
-			err = target.Load()
-			if err != nil {
-				return errors.Wrap(err, "Unable to load target cluster configuration")
+			errSource := source.Load()
+			errTarget := target.Load()
+			if errSource != nil && errTarget != nil {
+				errBoth := errors.Errorf("Source error: %s\nTarget error: %s", errSource.Error(), errTarget.Error())
+				return errors.Wrap(errBoth, "Unable to load source or target cluster configuration")
+			} else if errSource != nil {
+				return errors.Wrap(errSource, "Unable to load source cluster configuration")
+			} else if errTarget != nil {
+				return errors.Wrap(errTarget, "Unable to load target cluster configuration")
 			}
 
 			hub := services.NewHub(source, target, grpc.DialContext, conf, cm)
@@ -97,7 +99,7 @@ func main() {
 				hub.MakeDaemon()
 			}
 
-			err = hub.Start()
+			err := hub.Start()
 			if err != nil {
 				return err
 			}

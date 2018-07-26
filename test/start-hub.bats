@@ -14,13 +14,30 @@ teardown() {
     kill_hub
 }
 
-@test "start-hub fails if the configuration hasn't been initialized" {
-    export GPUPGRADE_HOME=/tmp/does/not/exist
+@test "start-hub fails if the source configuration hasn't been initialized" {
+	rm $GPUPGRADE_HOME/source_cluster_config.json
     run gpupgrade prepare start-hub
     [ "$status" -eq 1 ]
 
-    # TODO: improve this error message.
-    [[ "$output" = *"couldn't read old config file"* ]]
+    [[ "$output" = *"Unable to load source cluster configuration"* ]]
+}
+
+@test "start-hub fails if the target configuration hasn't been initialized" {
+	rm $GPUPGRADE_HOME/target_cluster_config.json
+    run gpupgrade prepare start-hub
+    [ "$status" -eq 1 ]
+
+    [[ "$output" = *"Unable to load target cluster configuration"* ]]
+}
+
+@test "start-hub fails if both configurations haven't been initialized" {
+	rm $GPUPGRADE_HOME/source_cluster_config.json
+	rm $GPUPGRADE_HOME/target_cluster_config.json
+    run gpupgrade prepare start-hub
+    [ "$status" -eq 1 ]
+
+	echo $output
+    [[ "$output" = *"Unable to load source or target cluster configuration"* ]]
 }
 
 @test "start-hub finds the right hub binary and starts a daemonized process" {
