@@ -51,6 +51,10 @@ check:
 
 test: lint unit integration
 
+.PHONY: coverage
+coverage:
+	@./scripts/show_coverage.sh
+
 sshd_build:
 		make -C integrations/sshd
 
