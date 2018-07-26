@@ -10,9 +10,7 @@ abort() {
 # that to kill the hub instead.
 kill_hub() {
     pkill -9 gpupgrade_hub || true
-    # XXX This matches anything with gpupgrade_hub in the name, not just the hub
-    # itself...
-    if ps -ef | grep -Gq "[g]pupgrade_hub"; then
+    if ps -ef | grep -Gqw "[g]pupgrade_hub"; then
         abort "didn't kill running hub"
     fi
 }
