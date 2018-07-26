@@ -12,7 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("ClusterPair", func() {
+var _ = Describe("Cluster", func() {
 	var (
 		expectedCluster *utils.Cluster
 		testStateDir    string
