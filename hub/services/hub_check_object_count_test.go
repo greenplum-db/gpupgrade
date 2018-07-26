@@ -5,9 +5,6 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/hub/services"
 
-	"github.com/greenplum-db/gp-common-go-libs/dbconn"
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-	"github.com/greenplum-db/gpupgrade/utils"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 
 	. "github.com/onsi/ginkgo"
@@ -15,20 +12,6 @@ import (
 )
 
 var _ = Describe("hub", func() {
-	var (
-		dbConnector *dbconn.DBConn
-		mock        sqlmock.Sqlmock
-	)
-
-	BeforeEach(func() {
-		dbConnector, mock = testhelper.CreateAndConnectMockDB(1)
-	})
-
-	AfterEach(func() {
-		utils.System = utils.InitializeSystemFunctions()
-		dbConnector.Close()
-	})
-
 	Describe("GetCountsForDb", func() {
 		It("returns count for AO and HEAP tables", func() {
 			fakeResults := sqlmock.NewRows([]string{"count"}).

@@ -15,15 +15,6 @@ import (
 )
 
 var _ = Describe("hub CheckSeginstall", func() {
-
-	var (
-		cm *testutils.MockChecklistManager
-	)
-
-	BeforeEach(func() {
-		cm = testutils.NewMockChecklistManager()
-	})
-
 	It("shells out to cluster and verifies gpupgrade_agent is installed on master and hosts", func() {
 		source, _ := testutils.CreateMultinodeSampleClusterPair("/tmp")
 		testExecutor := &testhelper.TestExecutor{}

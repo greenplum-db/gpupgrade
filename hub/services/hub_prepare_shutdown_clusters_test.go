@@ -8,24 +8,14 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-	"github.com/greenplum-db/gpupgrade/testutils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("PrepareShutdownClusters", func() {
-	var (
-		source *utils.Cluster
-	)
 	BeforeEach(func() {
 		utils.System.RemoveAll = func(s string) error { return nil }
 		utils.System.MkdirAll = func(s string, perm os.FileMode) error { return nil }
-
-		source, _ = testutils.CreateSampleClusterPair()
-	})
-
-	AfterEach(func() {
-		utils.InitializeSystemFunctions()
 	})
 
 	It("isPostmasterRunning() succeeds", func() {

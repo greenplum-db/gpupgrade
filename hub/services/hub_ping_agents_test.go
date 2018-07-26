@@ -5,37 +5,26 @@ import (
 	"time"
 
 	pb "github.com/greenplum-db/gpupgrade/idl"
-	mockpb "github.com/greenplum-db/gpupgrade/mock_idl"
 
 	"github.com/golang/mock/gomock"
 
 	"github.com/greenplum-db/gpupgrade/hub/services"
 
-	"github.com/greenplum-db/gpupgrade/utils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("hub pings agents test", func() {
 	var (
-		client        *mockpb.MockAgentClient
-		ctrl          *gomock.Controller
 		pingerManager *services.PingerManager
 	)
 
 	BeforeEach(func() {
-		ctrl = gomock.NewController(GinkgoT())
-		client = mockpb.NewMockAgentClient(ctrl)
 		pingerManager = &services.PingerManager{
 			RPCClients:       []services.ClientAndHostname{{Client: client, Hostname: "doesnotexist"}},
 			NumRetries:       10,
 			PauseBeforeRetry: 1 * time.Millisecond,
 		}
-	})
-
-	AfterEach(func() {
-		utils.System = utils.InitializeSystemFunctions()
-		ctrl.Finish()
 	})
 
 	Describe("PingAllAgents", func() {

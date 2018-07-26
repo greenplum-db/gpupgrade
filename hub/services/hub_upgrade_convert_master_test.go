@@ -2,15 +2,11 @@ package services_test
 
 import (
 	"errors"
-	"io/ioutil"
+	"fmt"
 	"os"
 	"path/filepath"
 
-	"github.com/greenplum-db/gpupgrade/hub/services"
-	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils"
-
-	"google.golang.org/grpc"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -18,34 +14,14 @@ import (
 
 var _ = Describe("ConvertMasterHub", func() {
 	var (
-		dir          string
-		hub          *services.Hub
-		source       *utils.Cluster
-		target       *utils.Cluster
-		cm           *testutils.MockChecklistManager
 		actualCmdStr string
 	)
 
 	BeforeEach(func() {
-		var err error
-		dir, err = ioutil.TempDir("", "")
-		Expect(err).ToNot(HaveOccurred())
-		conf := &services.HubConfig{
-			StateDir: dir,
-		}
-
-		source, target = testutils.CreateSampleClusterPair()
-		cm = testutils.NewMockChecklistManager()
-		hub = services.NewHub(source, target, grpc.DialContext, conf, cm)
 		utils.System.RunCommandAsync = func(cmdStr string, logFile string) error {
 			actualCmdStr = cmdStr
 			return nil
 		}
-	})
-
-	AfterEach(func() {
-		utils.System = utils.InitializeSystemFunctions()
-		os.RemoveAll(dir)
 	})
 
 	It("returns with no error when convert master runs successfully", func() {
@@ -53,9 +29,9 @@ var _ = Describe("ConvertMasterHub", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		pgupgrade_dir := filepath.Join(dir, "pg_upgrade")
-		Expect(actualCmdStr).To(Equal("unset PGHOST; unset PGPORT; cd " + pgupgrade_dir + " && nohup /target/bindir/pg_upgrade " +
-			"--old-bindir=/source/bindir --old-datadir=/source/datadir --old-port=25437 " +
-			"--new-bindir=/target/bindir --new-datadir=/target/datadir --new-port=35437 " +
+		Expect(actualCmdStr).To(Equal(fmt.Sprintf("unset PGHOST; unset PGPORT; cd %s && nohup /target/bindir/pg_upgrade ", pgupgrade_dir) +
+			fmt.Sprintf("--old-bindir=/source/bindir --old-datadir=%s/seg-1 --old-port=15432 ", dir) +
+			fmt.Sprintf("--new-bindir=/target/bindir --new-datadir=%s/seg-1 --new-port=15432 ", dir) +
 			"--dispatcher-mode --progress"))
 	})
 

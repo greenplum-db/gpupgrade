@@ -2,34 +2,17 @@ package services_test
 
 import (
 	pb "github.com/greenplum-db/gpupgrade/idl"
-	mockpb "github.com/greenplum-db/gpupgrade/mock_idl"
 
 	"github.com/greenplum-db/gpupgrade/hub/services"
 
 	"github.com/golang/mock/gomock"
 
-	"github.com/greenplum-db/gpupgrade/utils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 )
 
 var _ = Describe("object count tests", func() {
-	var (
-		client *mockpb.MockAgentClient
-		ctrl   *gomock.Controller
-	)
-
-	BeforeEach(func() {
-		ctrl = gomock.NewController(GinkgoT())
-		client = mockpb.NewMockAgentClient(ctrl)
-	})
-
-	AfterEach(func() {
-		utils.System = utils.InitializeSystemFunctions()
-		ctrl.Finish()
-	})
-
 	Describe("GetDiskUsageFromSegmentHosts", func() {
 		It("returns err msg when unable to call CheckDiskSpaceOnAgents on segment host", func() {
 			var clients []services.ClientAndHostname

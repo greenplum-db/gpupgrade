@@ -2,7 +2,6 @@ package services_test
 
 import (
 	"errors"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -22,30 +21,13 @@ import (
 
 var _ = Describe("status upgrade", func() {
 	var (
-		hub                      *services.Hub
 		fakeStatusUpgradeRequest *pb.StatusUpgradeRequest
-		dir                      string
-		mockAgent                *testutils.MockAgentServer
-		source                   *utils.Cluster
-		target                   *utils.Cluster
 		testExecutor             *testhelper.TestExecutor
-		cm                       *testutils.MockChecklistManager
 	)
 
 	BeforeEach(func() {
-		var port int
-		mockAgent, port = testutils.NewMockAgentServer()
 		mockAgent.StatusConversionResponse = &pb.CheckConversionStatusReply{}
 
-		var err error
-		dir, err = ioutil.TempDir("", "")
-		Expect(err).ToNot(HaveOccurred())
-		conf := &services.HubConfig{
-			HubToAgentPort: port,
-			StateDir:       dir,
-		}
-
-		source, target = testutils.CreateSampleClusterPair()
 		testExecutor = &testhelper.TestExecutor{}
 		source.Executor = testExecutor
 
@@ -66,12 +48,7 @@ var _ = Describe("status upgrade", func() {
 		cm.AddStep(upgradestatus.CONVERT_PRIMARIES, pb.UpgradeSteps_CONVERT_PRIMARIES)
 		cm.AddStep(upgradestatus.RECONFIGURE_PORTS, pb.UpgradeSteps_RECONFIGURE_PORTS)
 
-		hub = services.NewHub(source, target, mockDialer, conf, cm)
-	})
-
-	AfterEach(func() {
-		utils.System = utils.InitializeSystemFunctions()
-		os.RemoveAll(dir)
+		hub = services.NewHub(source, target, mockDialer, hubConf, cm)
 	})
 
 	It("responds with the statuses of the steps based on checklist state", func() {

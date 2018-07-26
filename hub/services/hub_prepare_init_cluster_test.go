@@ -15,7 +15,6 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
-	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -26,25 +25,13 @@ import (
 
 var _ = Describe("Hub prepare init-cluster", func() {
 	var (
-		dbConnector *dbconn.DBConn
-		mock        sqlmock.Sqlmock
-		dir         string
-		err         error
 		queryResult = `{"SegConfigs":[{"DbID":1,"ContentID":-1,"Port":15432,"Hostname":"mdw","DataDir":"/data/master/gpseg-1"},` +
 			`{"DbID":2,"ContentID":0,"Port":25432,"Hostname":"sdw1","DataDir":"/data/primary/gpseg0"}],"BinDir":"/target/bindir"}`
-		source          *utils.Cluster
-		target          *utils.Cluster
 		expectedCluster *utils.Cluster
-		hub             *services.Hub
 		segDataDirMap   map[string][]string
 	)
 
 	BeforeEach(func() {
-		dbConnector, mock = testhelper.CreateAndConnectMockDB(1)
-		dir, err = ioutil.TempDir("", "")
-		Expect(err).ToNot(HaveOccurred())
-		utils.System = utils.InitializeSystemFunctions()
-		source, target = testutils.CreateMultinodeSampleClusterPair(dir)
 		expectedCluster = &utils.Cluster{
 			Cluster: &cluster.Cluster{
 				ContentIDs: []int{-1, 0},
@@ -64,12 +51,9 @@ var _ = Describe("Hub prepare init-cluster", func() {
 		seg0 := source.Segments[0]
 		seg0.Hostname = "not_localhost"
 		source.Segments[0] = seg0
-		conf := &services.HubConfig{
-			HubToAgentPort: 6416,
-		}
 
 		cm := testutils.NewMockChecklistManager()
-		hub = services.NewHub(source, target, grpc.DialContext, conf, cm)
+		hub = services.NewHub(source, target, grpc.DialContext, hubConf, cm)
 	})
 
 	Describe("CreateInitialInitsystemConfig", func() {

@@ -15,15 +15,6 @@ import (
 )
 
 var _ = Describe("hub PrepareStartAgents", func() {
-
-	var (
-		cm *testutils.MockChecklistManager
-	)
-
-	BeforeEach(func() {
-		cm = testutils.NewMockChecklistManager()
-	})
-
 	It("shells out to cluster and runs gpupgrade_agent", func() {
 		source, _ := testutils.CreateMultinodeSampleClusterPair("/tmp")
 		testExecutor := &testhelper.TestExecutor{}
