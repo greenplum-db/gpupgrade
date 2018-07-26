@@ -50,9 +50,6 @@ check:
 
 test : lint unit integration
 
-coverage :
-		@./scripts/show_coverage.sh
-
 sshd_build :
 		make -C integrations/sshd
 
