@@ -9,7 +9,7 @@ HUB=gpupgrade_hub
 GIT_VERSION := $(shell git describe --tags | perl -pe 's/(.*)-([0-9]*)-(g[0-9a-f]*)/\1+dev.\2.\3/')
 UPGRADE_VERSION_STR="-X $(MODULE_NAME)/cli/commanders.UpgradeVersion=$(GIT_VERSION)"
 
-BRANCH := $(shell git for-each-ref --format='%(objectname) %(refname:short)' refs/heads | awk "/^$$(git rev-parse HEAD)/ {print \$$2}")
+BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 LINUX_PREFIX := env GOOS=linux GOARCH=amd64
 MAC_PREFIX := env GOOS=darwin GOARCH=amd64
 LINUX_POSTFIX := .linux.$(BRANCH)
@@ -121,14 +121,29 @@ clean:
 
 .PHONY: deploy-pipeline expose-pipeline
 
-# You can override these two from the command line.
-FLY_TARGET := gpdb-prod
-PIPELINE_NAME := gpupgrade
+# You can override these from the command line.
+GIT_URI := $(shell git ls-remote --get-url)
 
+ifeq ($(GIT_URI),https://github.com/greenplum-db/gpupgrade)
+ifeq ($(BRANCH),master)
+PIPELINE_NAME := gpupgrade
+SECRETS_FILE := gpupgrade.prod.yml
+FLY_TARGET := gpdb-prod
+endif
+endif
+
+# Concourse does not allow "/" in pipeline names
+PIPELINE_NAME ?= gpupgrade:$(shell git rev-parse --abbrev-ref HEAD | tr '/' ':')
+SECRETS_FILE ?= gpupgrade.dev.yml
+FLY_TARGET ?= gpdb-dev
+
+# TODO: Keep this in sync with the README at github.com/greenplum-db/continuous-integration
 deploy-pipeline:
 	fly -t $(FLY_TARGET) set-pipeline -p $(PIPELINE_NAME) \
 		-c ci/pipeline.yml \
-		-l ~/workspace/continuous-integration/secrets/gpupgrade.dev.yml
+		-l ~/workspace/continuous-integration/secrets/$(SECRETS_FILE) \
+		-v gpupgrade-git-remote=$(GIT_URI) \
+		-v gpupgrade-git-branch=$(BRANCH)
 
 expose-pipeline:
 	fly --target $(FLY_TARGET) expose-pipeline --pipeline $(PIPELINE_NAME)

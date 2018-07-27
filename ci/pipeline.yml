@@ -10,14 +10,13 @@ resources:
 - name: gpupgrade
   type: git
   source:
-    uri: https://github.com/greenplum-db/gpupgrade
-    branch: master
+    uri: {{gpupgrade-git-remote}}
+    branch: {{gpupgrade-git-branch}}
 
 - name: slack-alert
   type: slack-notification
   source:
     url: {{cm_webhook_url}}
-    
 
 jobs:
 - name: unit-tests
