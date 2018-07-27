@@ -7,7 +7,7 @@ resource_types:
     tag: latest
 
 resources:
-- name: gpupgrade
+- name: gpupgrade_src
   type: git
   source:
     uri: {{gpupgrade-git-remote}}
@@ -22,6 +22,7 @@ jobs:
 - name: unit-tests
   plan:
   - get: gpupgrade
+    resource: gpupgrade_src
     trigger: true
   - task: unit-tests
     file: gpupgrade/ci/tasks/unit-tests.yml
