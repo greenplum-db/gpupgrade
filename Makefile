@@ -34,7 +34,7 @@ format:
 		goimports -w .
 
 lint:
-		! gofmt -l agent/ cli/ db/ helpers/ hub/ install/ integrations/ shellparsers/ testutils/ utils/ | read
+		! gofmt -l agent/ cli/ db/ hub/ install/ integrations/ shellparsers/ testutils/ utils/ | read
 		gometalinter --config=gometalinter.config -s vendor ./...
 
 unit:
