@@ -44,7 +44,7 @@ var _ = Describe("upgrade convert primaries", func() {
 		}
 
 		cm.LoadSteps([]upgradestatus.Step{
-			{upgradestatus.CONVERT_PRIMARIES, pb.UpgradeSteps_CONVERT_PRIMARIES, nil},
+			{Name_: upgradestatus.CONVERT_PRIMARIES, Code_: pb.UpgradeSteps_CONVERT_PRIMARIES, Status_: nil},
 		})
 
 		Expect(runStatusUpgrade()).To(ContainSubstring("PENDING - Primary segment upgrade"))
@@ -91,7 +91,7 @@ var _ = Describe("upgrade convert primaries", func() {
 	// Move this elsewhere; it's not testing what's useful anymore.
 	XIt("updates status to FAILED if convert primaries fails on at least 1 agent", func() {
 		cm.LoadSteps([]upgradestatus.Step{
-			{upgradestatus.CONVERT_PRIMARIES, pb.UpgradeSteps_CONVERT_PRIMARIES, nil},
+			{Name_: upgradestatus.CONVERT_PRIMARIES, Code_: pb.UpgradeSteps_CONVERT_PRIMARIES, Status_: nil},
 		})
 
 		Expect(runStatusUpgrade()).To(ContainSubstring("PENDING - Primary segment upgrade"))

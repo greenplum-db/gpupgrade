@@ -31,7 +31,7 @@ var _ = Describe("Upgradestatus/Seginstall", func() {
 	})
 
 	It("Reports PENDING if no directory exists", func() {
-		stateChecker := upgradestatus.StateCheck{"/fake/path", pb.UpgradeSteps_SEGINSTALL}
+		stateChecker := upgradestatus.StateCheck{Path: "/fake/path", Step: pb.UpgradeSteps_SEGINSTALL}
 		upgradeStepStatus := stateChecker.GetStatus()
 		Expect(upgradeStepStatus).To(Equal(pb.StepStatus_PENDING))
 	})
@@ -49,7 +49,7 @@ var _ = Describe("Upgradestatus/Seginstall", func() {
 			}
 			return nil, errors.New("didn't match expected glob pattern")
 		}
-		stateChecker := upgradestatus.StateCheck{fakePath, pb.UpgradeSteps_SEGINSTALL}
+		stateChecker := upgradestatus.StateCheck{Path: fakePath, Step: pb.UpgradeSteps_SEGINSTALL}
 		upgradeStepStatus := stateChecker.GetStatus()
 		Expect(upgradeStepStatus).To(Equal(pb.StepStatus_RUNNING))
 	})
@@ -67,7 +67,7 @@ var _ = Describe("Upgradestatus/Seginstall", func() {
 			}
 			return nil, errors.New("didn't match expected glob pattern")
 		}
-		stateChecker := upgradestatus.StateCheck{fakePath, pb.UpgradeSteps_SEGINSTALL}
+		stateChecker := upgradestatus.StateCheck{Path: fakePath, Step: pb.UpgradeSteps_SEGINSTALL}
 		upgradeStepStatus := stateChecker.GetStatus()
 		Expect(upgradeStepStatus).To(Equal(pb.StepStatus_FAILED))
 	})
@@ -87,7 +87,7 @@ var _ = Describe("Upgradestatus/Seginstall", func() {
 			}
 			return nil, errors.New("didn't match expected glob pattern")
 		}
-		stateChecker := upgradestatus.StateCheck{overabundantDirectory, pb.UpgradeSteps_SEGINSTALL}
+		stateChecker := upgradestatus.StateCheck{Path: overabundantDirectory, Step: pb.UpgradeSteps_SEGINSTALL}
 		upgradeStepStatus := stateChecker.GetStatus()
 
 		// This is a little brittle, sorry...

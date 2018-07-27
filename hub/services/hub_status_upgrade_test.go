@@ -57,16 +57,16 @@ var _ = Describe("status upgrade", func() {
 		cm = testutils.NewMockChecklistManager()
 		// XXX this is wrong
 		cm.LoadSteps([]upgradestatus.Step{
-			{upgradestatus.CONFIG, pb.UpgradeSteps_CONFIG, nil},
-			{upgradestatus.INIT_CLUSTER, pb.UpgradeSteps_INIT_CLUSTER, nil},
-			{upgradestatus.SEGINSTALL, pb.UpgradeSteps_SEGINSTALL, nil},
-			{upgradestatus.SHUTDOWN_CLUSTERS, pb.UpgradeSteps_SHUTDOWN_CLUSTERS, nil},
-			{upgradestatus.CONVERT_MASTER, pb.UpgradeSteps_CONVERT_MASTER, nil},
-			{upgradestatus.START_AGENTS, pb.UpgradeSteps_START_AGENTS, nil},
-			{upgradestatus.SHARE_OIDS, pb.UpgradeSteps_SHARE_OIDS, nil},
-			{upgradestatus.VALIDATE_START_CLUSTER, pb.UpgradeSteps_VALIDATE_START_CLUSTER, nil},
-			{upgradestatus.CONVERT_PRIMARIES, pb.UpgradeSteps_CONVERT_PRIMARIES, nil},
-			{upgradestatus.RECONFIGURE_PORTS, pb.UpgradeSteps_RECONFIGURE_PORTS, nil},
+			{Name_: upgradestatus.CONFIG, Code_: pb.UpgradeSteps_CONFIG, Status_: nil},
+			{Name_: upgradestatus.INIT_CLUSTER, Code_: pb.UpgradeSteps_INIT_CLUSTER, Status_: nil},
+			{Name_: upgradestatus.SEGINSTALL, Code_: pb.UpgradeSteps_SEGINSTALL, Status_: nil},
+			{Name_: upgradestatus.SHUTDOWN_CLUSTERS, Code_: pb.UpgradeSteps_SHUTDOWN_CLUSTERS, Status_: nil},
+			{Name_: upgradestatus.CONVERT_MASTER, Code_: pb.UpgradeSteps_CONVERT_MASTER, Status_: nil},
+			{Name_: upgradestatus.START_AGENTS, Code_: pb.UpgradeSteps_START_AGENTS, Status_: nil},
+			{Name_: upgradestatus.SHARE_OIDS, Code_: pb.UpgradeSteps_SHARE_OIDS, Status_: nil},
+			{Name_: upgradestatus.VALIDATE_START_CLUSTER, Code_: pb.UpgradeSteps_VALIDATE_START_CLUSTER, Status_: nil},
+			{Name_: upgradestatus.CONVERT_PRIMARIES, Code_: pb.UpgradeSteps_CONVERT_PRIMARIES, Status_: nil},
+			{Name_: upgradestatus.RECONFIGURE_PORTS, Code_: pb.UpgradeSteps_RECONFIGURE_PORTS, Status_: nil},
 		})
 
 		hub = services.NewHub(source, target, mockDialer, conf, cm)

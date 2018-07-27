@@ -82,6 +82,7 @@ func main() {
 				return services.PrimaryConversionStatus(hub)
 			}
 
+			// {Name_: *, Code_: *, Status_:, *}
 			cm.LoadSteps([]upgradestatus.Step{
 				{upgradestatus.CONFIG, pb.UpgradeSteps_CONFIG, stateCheck},
 				{upgradestatus.SEGINSTALL, pb.UpgradeSteps_SEGINSTALL, stateCheck},
