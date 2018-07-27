@@ -8,7 +8,7 @@ image_resource:
 
 inputs:
 - name: gpupgrade
-  path: go/src/github.com/greenplum-db/gpupgrade
+  path: ../../../go/src/github.com/greenplum-db/gpupgrade
 
 run:
   path: bash
@@ -16,11 +16,6 @@ run:
   - -c
   - |
     set -ex
-
-    export GOPATH=$PWD/go
-    export PATH=$GOPATH/bin:$PATH
-
-    export GPHOME=/path/to/nowhere
 
     cd $GOPATH/src/github.com/greenplum-db/gpupgrade
     make ci-dependencies
