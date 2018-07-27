@@ -17,17 +17,19 @@ MAC_POSTFIX := .darwin.$(BRANCH)
 
 GOFLAGS := -gcflags="all=-N -l"
 
-dependencies :
-		go get -u github.com/golang/protobuf/protoc-gen-go
-		go get golang.org/x/tools/cmd/goimports
-		go get github.com/golang/lint/golint
+ci-dependencies :
 		go get github.com/onsi/ginkgo/ginkgo
-		go get github.com/alecthomas/gometalinter
-		gometalinter --install
 		go get github.com/golang/dep/cmd/dep
 		dep ensure
 
-depend : dependencies
+workstation-dependencies :
+		go get -u github.com/golang/protobuf/protoc-gen-go
+		go get golang.org/x/tools/cmd/goimports
+		go get github.com/golang/lint/golint
+		go get github.com/alecthomas/gometalinter
+		gometalinter --install
+
+depend : workstation-dependencies ci-dependencies
 
 format :
 		goimports -w .

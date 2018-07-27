@@ -23,5 +23,5 @@ run:
     export GPHOME=/path/to/nowhere
 
     cd $GOPATH/src/github.com/greenplum-db/gpupgrade
-    make depend
+    make ci-dependencies
     make unit
