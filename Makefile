@@ -138,7 +138,7 @@ SECRETS_FILE ?= gpupgrade.dev.yml
 FLY_TARGET ?= gpdb-dev
 
 # TODO: Keep this in sync with the README at github.com/greenplum-db/continuous-integration
-deploy-pipeline:
+set-pipeline:
 	fly -t $(FLY_TARGET) set-pipeline -p $(PIPELINE_NAME) \
 		-c ci/pipeline.yml \
 		-l ~/workspace/continuous-integration/secrets/$(SECRETS_FILE) \
