@@ -89,7 +89,7 @@ func (h *Hub) InitCluster(dbConnector *dbconn.DBConn) error {
 		return errors.Wrap(err, "Could not get/create agents")
 	}
 	gpinitsystemConfig, segmentDataDirMap = h.DeclareDataDirectories(gpinitsystemConfig)
-	err = h.CreateAllDataDirectories(gpinitsystemConfig, agentConns, segmentDataDirMap)
+	err = h.CreateAllDataDirectories(agentConns, segmentDataDirMap)
 	if err != nil {
 		return err
 	}
@@ -194,7 +194,7 @@ func (h *Hub) DeclareDataDirectories(gpinitsystemConfig []string) ([]string, map
 	return gpinitsystemConfig, segmentDataDirMap
 }
 
-func (h *Hub) CreateAllDataDirectories(gpinitsystemConfig []string, agentConns []*Connection, segmentDataDirMap map[string][]string) error {
+func (h *Hub) CreateAllDataDirectories(agentConns []*Connection, segmentDataDirMap map[string][]string) error {
 	// create master data directory for gpinitsystem if it doesn't exist
 	targetDataDir := path.Dir(h.source.MasterDataDir()) + "_upgrade"
 	_, err := utils.System.Stat(targetDataDir)

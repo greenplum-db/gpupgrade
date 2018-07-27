@@ -27,7 +27,7 @@ func (h *Hub) CheckConfig(ctx context.Context, _ *pb.CheckConfigRequest) (*pb.Ch
 		gplog.Error("error from MarkInProgress " + err.Error())
 	}
 
-	err = RetrieveAndSaveSourceConfig(h.conf.StateDir, h.source)
+	err = RetrieveAndSaveSourceConfig(h.source)
 	if err != nil {
 		step.MarkFailed()
 		gplog.Error(err.Error())
@@ -43,7 +43,7 @@ func (h *Hub) CheckConfig(ctx context.Context, _ *pb.CheckConfigRequest) (*pb.Ch
 // RetrieveAndSaveSourceConfig() fills in the rest of the clusterPair.OldCluster by
 // querying the database located at its host and port. The results will
 // additionally be written to disk.
-func RetrieveAndSaveSourceConfig(stateDir string, source *utils.Cluster) error {
+func RetrieveAndSaveSourceConfig(source *utils.Cluster) error {
 	dbConnector := db.NewDBConn("localhost", 0, "template1")
 	err := dbConnector.Connect(1)
 	if err != nil {

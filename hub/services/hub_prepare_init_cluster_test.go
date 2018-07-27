@@ -32,12 +32,11 @@ var _ = Describe("Hub prepare init-cluster", func() {
 		err         error
 		queryResult = `{"SegConfigs":[{"DbID":1,"ContentID":-1,"Port":15432,"Hostname":"mdw","DataDir":"/data/master/gpseg-1"},` +
 			`{"DbID":2,"ContentID":0,"Port":25432,"Hostname":"sdw1","DataDir":"/data/primary/gpseg0"}],"BinDir":"/target/bindir"}`
-		source             *utils.Cluster
-		target             *utils.Cluster
-		expectedCluster    *utils.Cluster
-		hub                *services.Hub
-		gpinitsystemConfig []string
-		segDataDirMap      map[string][]string
+		source          *utils.Cluster
+		target          *utils.Cluster
+		expectedCluster *utils.Cluster
+		hub             *services.Hub
+		segDataDirMap   map[string][]string
 	)
 
 	BeforeEach(func() {
@@ -71,7 +70,6 @@ var _ = Describe("Hub prepare init-cluster", func() {
 
 		cm := testutils.NewMockChecklistManager()
 		hub = services.NewHub(source, target, grpc.DialContext, conf, cm)
-		gpinitsystemConfig = []string{}
 	})
 
 	Describe("CreateInitialInitsystemConfig", func() {
@@ -125,7 +123,7 @@ var _ = Describe("Hub prepare init-cluster", func() {
 				return nil
 			}
 			fakeConns := []*services.Connection{}
-			err := hub.CreateAllDataDirectories(gpinitsystemConfig, fakeConns, segDataDirMap)
+			err := hub.CreateAllDataDirectories(fakeConns, segDataDirMap)
 			Expect(err).To(BeNil())
 			Expect(statCalls).To(Equal([]string{fmt.Sprintf("%s_upgrade", dir)}))
 			Expect(mkdirCalls).To(Equal([]string{fmt.Sprintf("%s_upgrade", dir)}))
@@ -136,7 +134,7 @@ var _ = Describe("Hub prepare init-cluster", func() {
 			}
 			fakeConns := []*services.Connection{}
 			expectedErr := errors.Errorf("Error statting new directory %s_upgrade: permission denied", dir)
-			err := hub.CreateAllDataDirectories(gpinitsystemConfig, fakeConns, segDataDirMap)
+			err := hub.CreateAllDataDirectories(fakeConns, segDataDirMap)
 			Expect(err.Error()).To(Equal(expectedErr.Error()))
 		})
 		It("cannot create the master data directory", func() {
@@ -148,7 +146,7 @@ var _ = Describe("Hub prepare init-cluster", func() {
 			}
 			fakeConns := []*services.Connection{}
 			expectedErr := errors.New("Could not create new directory: permission denied")
-			err := hub.CreateAllDataDirectories(gpinitsystemConfig, fakeConns, segDataDirMap)
+			err := hub.CreateAllDataDirectories(fakeConns, segDataDirMap)
 			Expect(err.Error()).To(Equal(expectedErr.Error()))
 		})
 		It("cannot create the segment data directories", func() {
@@ -160,7 +158,7 @@ var _ = Describe("Hub prepare init-cluster", func() {
 			}
 			badConnection, _ := grpc.DialContext(context.Background(), "localhost:6416", grpc.WithInsecure())
 			fakeConns := []*services.Connection{{badConnection, nil, "localhost", func() {}}}
-			err := hub.CreateAllDataDirectories(gpinitsystemConfig, fakeConns, segDataDirMap)
+			err := hub.CreateAllDataDirectories(fakeConns, segDataDirMap)
 			Expect(err).To(HaveOccurred())
 		})
 	})

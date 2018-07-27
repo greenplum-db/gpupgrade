@@ -22,8 +22,6 @@ var _ = Describe("upgrade validate start cluster", func() {
 	var (
 		hub          *services.Hub
 		dir          string
-		errChan      chan error
-		outChan      chan []byte
 		source       *utils.Cluster
 		target       *utils.Cluster
 		testExecutor *testhelper.TestExecutor
@@ -35,13 +33,13 @@ var _ = Describe("upgrade validate start cluster", func() {
 		dir, err = ioutil.TempDir("", "")
 		Expect(err).ToNot(HaveOccurred())
 
-		errChan = make(chan error, 1)
-		outChan = make(chan []byte, 1)
-
 		source, target = testutils.CreateSampleClusterPair()
+
 		testExecutor = &testhelper.TestExecutor{}
 		target.Executor = testExecutor
+
 		cm = testutils.NewMockChecklistManager()
+
 		hub = services.NewHub(source, target, grpc.DialContext, &services.HubConfig{
 			StateDir: dir,
 		}, cm)
