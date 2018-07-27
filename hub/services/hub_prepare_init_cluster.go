@@ -255,12 +255,12 @@ func CreateSegmentDataDirectories(agentConns []*Connection, dataDirMap map[strin
 			client := pb.NewAgentClient(c.Conn)
 			_, err := client.CreateSegmentDataDirectories(context.Background(),
 				&pb.CreateSegmentDataDirRequest{
-					Datadirs: dataDirMap[agentConn.Hostname],
+					Datadirs: dataDirMap[c.Hostname],
 				})
 
 			if err != nil {
 				gplog.Error("Error creating segment data directories on host %s: %s",
-					agentConn.Hostname, err.Error())
+					c.Hostname, err.Error())
 				errChan <- err
 			}
 		}(agentConn)
