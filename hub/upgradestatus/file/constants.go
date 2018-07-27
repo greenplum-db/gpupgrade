@@ -1,5 +1,5 @@
 /*
-The file package simply exposes our filename constants for upgrade status
+Package file simply exposes our filename constants for upgrade status
 monitoring.
 */
 package file

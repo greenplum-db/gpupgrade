@@ -167,7 +167,7 @@ func WriteInitsystemFile(gpinitsystemConfig []string, gpinitsystemFilepath strin
 func (h *Hub) DeclareDataDirectories(gpinitsystemConfig []string) ([]string, map[string][]string) {
 	// declare master data directory
 	master := h.source.Segments[-1]
-	master.Port += 1
+	master.Port++
 	master.DataDir = fmt.Sprintf("%s_upgrade/%s", path.Dir(master.DataDir), path.Base(master.DataDir))
 	datadirDeclare := fmt.Sprintf("QD_PRIMARY_ARRAY=%s~%d~%s~%d~%d~0",
 		master.Hostname, master.Port, master.DataDir, master.DbID, master.ContentID)

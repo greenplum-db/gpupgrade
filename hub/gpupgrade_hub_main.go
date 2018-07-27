@@ -116,7 +116,7 @@ func main() {
 	daemon.MakeDaemonizable(RootCmd, &shouldDaemonize)
 
 	err := RootCmd.Execute()
-	if err != nil && err != daemon.SuccessfullyDaemonized {
+	if err != nil && err != daemon.ErrSuccessfullyDaemonized {
 		if gplog.GetLogger() == nil {
 			// In case we didn't get through RootCmd.Execute(), set up logging
 			// here. Otherwise we crash.

@@ -21,7 +21,7 @@ set, call Daemonize() after the server has fully initialized and is ready to
 receive requests. This will disconnect the standard streams and signal the
 original process to exit.
 
-4. Handle the SuccessfullyDaemonized pseudo-error if it is returned from the
+4. Handle the ErrSuccessfullyDaemonized pseudo-error if it is returned from the
 command's Execute() method. This is an indication that the child has correctly
 started, and the parent should now exit with a zero exit code.
 
@@ -57,7 +57,7 @@ Here's an example:
 
 	err := cmd.Execute()
 	if err != nil {
-		if err == daemon.SuccessfullyDaemonized {
+		if err == daemon.ErrSuccessfullyDaemonized {
 			// not actually an "error", just exit cleanly
 		} else {
 			// handle actual error
@@ -79,7 +79,7 @@ We can also execute synchronously, just like before:
 
 MakeDaemonizable() preempts the PreRun/PreRunE functions of the cobra.Command it
 is passed. If --daemonize is set, the parent process will only execute the
-PersistentPreRun[E] steps; SuccessfullyDaemonized will be returned from the
+PersistentPreRun[E] steps; ErrSuccessfullyDaemonized will be returned from the
 PreRun step, which will stop further steps from executing. In the child process,
 and during execution without the --daemonize option, all steps run as usual.
 
@@ -180,7 +180,6 @@ The full system looks like this:
 package daemon
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -238,7 +237,7 @@ func waitForDaemon(command daemonizableCommand, output, errput io.Writer, timeou
 			*written = (num > 0)
 		}
 		if err != nil {
-			done <- errors.New(fmt.Sprintf("Could not copy from child pipe: %v", err))
+			done <- fmt.Errorf("Could not copy from child pipe: %v", err)
 		}
 	}
 
@@ -271,7 +270,7 @@ func waitForDaemon(command daemonizableCommand, output, errput io.Writer, timeou
 			// XXX We leave the Wait()ing goroutine to die. Is that okay? We
 			// don't want to kill the process; it might be functional, and
 			// that's for the user to decide...
-			return fmt.Errorf("The daemon process reported an error but did not immediately exit. Review the logs before continuing.")
+			return fmt.Errorf("the daemon process reported an error but did not immediately exit. Review the logs before continuing")
 		}
 	}
 
@@ -319,10 +318,10 @@ func createChildProcess() error {
 	return err
 }
 
-// SuccessfullyDaemonized is returned from a cobra.Command's Execute() method
+// ErrSuccessfullyDaemonized is returned from a cobra.Command's Execute() method
 // when the --daemonize option is passed to the executable and the child process
 // indicates that it has started successfully.
-var SuccessfullyDaemonized = fmt.Errorf("child process daemonized successfully")
+var ErrSuccessfullyDaemonized = fmt.Errorf("child process daemonized successfully")
 
 // MakeDaemonizable adds the --daemonize option to  the passed cobra.Command.
 // The boolean pointed to by shouldDaemonize will be set to true in the child
@@ -377,7 +376,7 @@ func MakeDaemonizable(cmd *cobra.Command, shouldDaemonize *bool) {
 				// We return a dummy error so that Cobra doesn't continue
 				// running command steps. Also silence Cobra's error reporting
 				// for this case.
-				err = SuccessfullyDaemonized
+				err = ErrSuccessfullyDaemonized
 				cmd.SilenceErrors = true
 				cmd.SilenceUsage = true
 			}

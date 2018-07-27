@@ -48,7 +48,7 @@ var _ = Describe("Hub", func() {
 			err = hub.Start()
 		}()
 		//Using Eventually ensures the test will not stall forever if this test fails.
-		Eventually(func() error { return err }).Should(Equal(services.HubStopped))
+		Eventually(func() error { return err }).Should(Equal(services.ErrHubStopped))
 	})
 
 	It("will return an error from Start() if it cannot listen on a port", func() {

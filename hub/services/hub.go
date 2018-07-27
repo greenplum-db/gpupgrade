@@ -27,7 +27,7 @@ import (
 var DialTimeout = 3 * time.Second
 
 // Returned from Hub.Start() if Hub.Stop() has already been called.
-var HubStopped = errors.New("hub is stopped")
+var ErrHubStopped = errors.New("hub is stopped")
 
 type Dialer func(ctx context.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error)
 
@@ -101,7 +101,7 @@ func (h *Hub) Start() error {
 	if h.stopped == nil {
 		// Stop() has already been called; return without serving.
 		h.mu.Unlock()
-		return HubStopped
+		return ErrHubStopped
 	}
 	h.server = server
 	h.lis = lis
@@ -168,7 +168,7 @@ func (h *Hub) AgentConns() ([]*Connection, error) {
 			host+":"+strconv.Itoa(h.conf.HubToAgentPort),
 			grpc.WithInsecure(), grpc.WithBlock())
 		if err != nil {
-			err = errors.New(fmt.Sprintf("grpcDialer failed: %s", err.Error()))
+			err = errors.Errorf("grpcDialer failed: %s", err.Error())
 			gplog.Error(err.Error())
 			cancelFunc()
 			return nil, err

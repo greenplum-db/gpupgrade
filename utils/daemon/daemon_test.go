@@ -16,9 +16,7 @@ type basicReadCloser struct {
 	io.Reader
 }
 
-func (_ basicReadCloser) Close() error {
-	return nil
-}
+func (basicReadCloser) Close() error { return nil }
 
 // NewReadCloser is a very simple wrapper around bytes.NewReader which returns
 // an io.ReadCloser instead of an io.Reader. The Close() method on this struct
@@ -34,9 +32,7 @@ type errorReadCloser struct {
 	ReadErr error
 }
 
-func (_ errorReadCloser) Close() error {
-	return nil
-}
+func (errorReadCloser) Close() error { return nil }
 
 func (e errorReadCloser) Read(p []byte) (int, error) {
 	for i := 0; i < len(p); i++ {
