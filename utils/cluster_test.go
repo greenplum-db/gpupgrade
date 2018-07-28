@@ -2,6 +2,8 @@ package utils_test
 
 import (
 	"io/ioutil"
+	"os"
+	"path"
 
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -27,8 +29,12 @@ var _ = Describe("Cluster", func() {
 		expectedCluster = &utils.Cluster{
 			Cluster:    testutils.CreateMultinodeSampleCluster("/tmp"),
 			BinDir:     "/fake/path",
-			ConfigPath: "cluster_config.json",
+			ConfigPath: path.Join(testStateDir, "cluster_config.json"),
 		}
+	})
+
+	AfterEach(func() {
+		os.RemoveAll(testStateDir)
 	})
 
 	Describe("Commit and Load", func() {
@@ -36,7 +42,7 @@ var _ = Describe("Cluster", func() {
 			err := expectedCluster.Commit()
 			Expect(err).ToNot(HaveOccurred())
 			givenCluster := &utils.Cluster{
-				ConfigPath: "cluster_config.json",
+				ConfigPath: path.Join(testStateDir, "cluster_config.json"),
 			}
 			err = givenCluster.Load()
 			Expect(err).ToNot(HaveOccurred())
