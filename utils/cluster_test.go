@@ -8,7 +8,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils"
 
-	"github.com/greenplum-db/gp-common-go-libs/structmatcher"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -46,7 +45,11 @@ var _ = Describe("Cluster", func() {
 			}
 			err = givenCluster.Load()
 			Expect(err).ToNot(HaveOccurred())
-			structmatcher.ExpectStructsToMatchExcluding(expectedCluster.Cluster, givenCluster.Cluster, "Executor")
+
+			// We don't serialize the Executor
+			givenCluster.Executor = expectedCluster.Executor
+
+			Expect(expectedCluster).To(Equal(givenCluster))
 		})
 	})
 })
