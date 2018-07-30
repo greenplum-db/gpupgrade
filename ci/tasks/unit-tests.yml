@@ -18,5 +18,5 @@ run:
     set -ex
 
     cd $GOPATH/src/github.com/greenplum-db/gpupgrade
-    make ci-dependencies
+    make depend
     make unit

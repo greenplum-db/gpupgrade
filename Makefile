@@ -17,28 +17,27 @@ MAC_POSTFIX := .darwin.$(BRANCH)
 
 GOFLAGS := -gcflags="all=-N -l"
 
-ci-dependencies :
+.PHONY: depend depend-dev
+depend:
 		go get github.com/onsi/ginkgo/ginkgo
 		go get github.com/golang/dep/cmd/dep
 		dep ensure
 
-workstation-dependencies :
+depend-dev: depend
 		go get -u github.com/golang/protobuf/protoc-gen-go
 		go get golang.org/x/tools/cmd/goimports
 		go get github.com/golang/lint/golint
 		go get github.com/alecthomas/gometalinter
 		gometalinter --install
 
-depend : workstation-dependencies ci-dependencies
-
-format :
+format:
 		goimports -w .
 
-lint :
+lint:
 		! gofmt -l agent/ cli/ db/ helpers/ hub/ install/ integrations/ shellparsers/ testutils/ utils/ | read
 		gometalinter --config=gometalinter.config -s vendor ./...
 
-unit :
+unit:
 		ginkgo -r -keepGoing -randomizeSuites -randomizeAllSpecs --skipPackage=integrations
 
 integration:
@@ -50,12 +49,12 @@ check:
 		ginkgo -r -keepGoing -randomizeSuites -randomizeAllSpecs
 		PATH=.:$$PATH bats -r ./test
 
-test : lint unit integration
+test: lint unit integration
 
-sshd_build :
+sshd_build:
 		make -C integrations/sshd
 
-protobuf :
+protobuf:
 		protoc -I idl/ idl/*.proto --go_out=plugins=grpc:idl
 		go get github.com/golang/mock/mockgen
 		mockgen -source idl/cli_to_hub.pb.go  > mock_idl/cli_to_hub_mock.pb.go
@@ -121,8 +120,6 @@ clean:
 	dep ensure
 	touch $@
 
-.PHONY: set-pipeline expose-pipeline
-
 # You can override these from the command line.
 GIT_URI := $(shell git ls-remote --get-url)
 
@@ -139,6 +136,7 @@ PIPELINE_NAME ?= gpupgrade:$(shell git rev-parse --abbrev-ref HEAD | tr '/' ':')
 SECRETS_FILE ?= gpupgrade.dev.yml
 FLY_TARGET ?= gpdb-dev
 
+.PHONY: set-pipeline expose-pipeline
 # TODO: Keep this in sync with the README at github.com/greenplum-db/continuous-integration
 set-pipeline:
 	fly -t $(FLY_TARGET) set-pipeline -p $(PIPELINE_NAME) \

@@ -13,7 +13,10 @@ any feedback you have!
 
 - Golang. We currently develop against latest stable Golang, which was v1.10 as of May 2018.
 - protoc. This is the compiler for the [gRPC protobuffer](https://grpc.io/) system.
-On macos, one way to install this is via `brew install protobuf`   
+On macOS, one way to install this is via `brew install protobuf`
+
+If you want to hack on the code, please run the `make depend-dev` target, as
+this will install test and developer dependencies.
 
 ### Build and test the upgrade tool
 
