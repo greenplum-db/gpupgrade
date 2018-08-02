@@ -1,4 +1,4 @@
-# gpupgrade ![Concourse Build Status](https://prod.ci.gpdb.pivotal.io/api/v1/teams/main/pipelines/gpupgrade/badge)
+# gpupgrade [![Concourse Build Status](https://prod.ci.gpdb.pivotal.io/api/v1/teams/main/pipelines/gpupgrade/badge)](https://prod.ci.gpdb.pivotal.io/teams/main/pipelines/gpupgrade)
 
 `gpupgrade` is a Go utility for coordinating
 [pg_upgrade](https://www.postgresql.org/docs/current/static/pgupgrade.html)
