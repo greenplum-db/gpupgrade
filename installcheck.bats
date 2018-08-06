@@ -12,7 +12,13 @@ setup() {
     kill_agents
 }
 
-@test "init-cluster can successfully create the target cluster and retrieve its configuration" {
+teardown() {
+    if ! psql -d postgres -c ''; then
+        gpstart -a
+    fi
+}
+
+@test "gpugrade can make it as far as we currently know..." {
     gpupgrade prepare init \
               --new-bindir "$GPHOME"/bin \
               --old-bindir "$GPHOME"/bin
@@ -26,18 +32,32 @@ setup() {
     gpupgrade prepare start-agents
     sleep 1
 
-    run gpupgrade prepare init-cluster
-    [ "$status" -eq 0 ]
+    gpupgrade prepare init-cluster
 
-    echo "# Waiting for init to complete" 1>&3
+    EventuallyStepCompletes "Initialize upgrade target cluster"
+
+    gpupgrade prepare shutdown-clusters
+
+    EventuallyStepCompletes "Shutdown clusters"
+
+    ! ps -ef | grep -Gqw "[p]ostgres"
+
+}
+
+EventuallyStepCompletes() {
+    cliStepMessage="$1"
+    echo "# Waiting for \"$cliStepMessage\" to transition to complete" 1>&3
     local observed_complete="false"
     for i in {1..60}; do
-        echo "## checking status ($i/60)" 1>&3
         run gpupgrade status upgrade
         [ "$status" -eq 0 ]
+
+        statusLine=$(echo "$output" | grep "$cliStepMessage")
+        echo "# $statusLine ($i/60)" 1>&3
+
         [[ "$output" != *"FAILED"* ]]
 
-        if [[ "$output" = *"COMPLETE - Initialize upgrade target cluster"* ]]; then
+        if [[ "$output" = *"COMPLETE - $cliStepMessage"* ]]; then
             observed_complete="true"
             break
         fi
@@ -46,8 +66,6 @@ setup() {
     done
 
     [ "$observed_complete" != "false" ]
-
-    #TODO: gpupgrade prepare shutdown-clusters
 }
 
 clean_target_cluster() {
