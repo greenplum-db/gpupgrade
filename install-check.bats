@@ -17,7 +17,7 @@ setup() {
 
 # XXX: For now, leave system alone the end and push all cleanup into the setup().
 
-@test "init-cluster can successfully create the target cluster and retrieve its configuration" {
+@test "gpugrade can make it as far as we currently know..." {
     gpupgrade prepare init \
               --new-bindir "$GPHOME"/bin \
               --old-bindir "$GPHOME"/bin
@@ -32,15 +32,26 @@ setup() {
     run gpupgrade prepare init-cluster
     [ "$status" -eq 0 ]
 
-    echo "# Waiting for init to complete" 1>&3
+
+    EventuallyStepCompletes "Initialize upgrade target cluster"
+
+    gpupgrade prepare shutdown-clusters
+    EventuallyStepCompletes "Shutdown clusters"
+
+}
+
+EventuallyStepCompletes() {
+    cliStepMessage="$1"
+    echo "# Waiting for \"$cliStepMessage\" to transition to complete" 1>&3
     local observed_complete="false"
     for i in {1..60}; do
-        echo "## checking status ($i/60)" 1>&3
         run gpupgrade status upgrade
+        statusLine=$(echo "$output" | grep "$cliStepMessage")
+        echo "# $statusLine ($i/60)" 1>&3
         [ "$status" -eq 0 ]
         [[ "$output" != *"FAILED"* ]]
 
-        if [[ "$output" = *"COMPLETE - Initialize upgrade target cluster"* ]]; then
+        if [[ "$output" = *"COMPLETE - $cliStepMessage"* ]]; then
             observed_complete="true"
             break
         fi
@@ -49,8 +60,6 @@ setup() {
     done
 
     [ "$observed_complete" != "false" ]
-
-    #TODO: gpupgrade prepare shutdown-clusters
 }
 
 clean_target_cluster() {
