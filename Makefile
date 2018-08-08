@@ -103,6 +103,13 @@ install: cli-package hub-package install_agent
 		cp -p $(CLI) $(GPHOME)/bin/$(CLI)
 		cp -p $(HUB) $(GPHOME)/bin/$(HUB)
 
+# We intentionally do not depend on install here -- the point of installcheck is
+# to test whatever has already been installed.
+installcheck:
+		@echo "--------------------------------------------------------------"
+		@echo "# FIXME: Make, if run in parallel, hangs after test completes."
+		./installcheck.bats -t
+
 clean:
 		# Build artifacts
 		rm -f $(AGENT)
