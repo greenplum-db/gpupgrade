@@ -23,7 +23,7 @@ setup() {
     gpupgrade check version
     gpupgrade check seginstall
 
-    gpupgrade prepare start-agents 3>&-
+    gpupgrade prepare start-agents
     sleep 1
 
     run gpupgrade prepare init-cluster
