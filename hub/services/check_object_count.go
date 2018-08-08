@@ -1,7 +1,6 @@
 package services
 
 import (
-	"github.com/greenplum-db/gpupgrade/db"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 
@@ -16,9 +15,7 @@ func (h *Hub) CheckObjectCount(ctx context.Context,
 
 	gplog.Info("starting CheckObjectCount")
 
-	masterPort := h.source.MasterPort()
-
-	dbConnector := db.NewDBConn("localhost", masterPort, "template1")
+	dbConnector := h.source.NewDBConn()
 	defer dbConnector.Close()
 	err := dbConnector.Connect(1)
 	if err != nil {
@@ -33,9 +30,10 @@ func (h *Hub) CheckObjectCount(ctx context.Context,
 	}
 
 	var results []*pb.CountPerDb
-	for i := 0; i < len(names); i++ {
+	for _, name := range names {
 
-		dbConnector = db.NewDBConn("localhost", masterPort, names[i])
+		dbConnector = h.source.NewDBConn()
+		dbConnector.DBName = name
 		defer dbConnector.Close()
 		err = dbConnector.Connect(1)
 		if err != nil {
@@ -49,7 +47,7 @@ func (h *Hub) CheckObjectCount(ctx context.Context,
 			gplog.Error(err.Error())
 			return &pb.CheckObjectCountReply{}, errors.New(errFromCounts.Error())
 		}
-		results = append(results, &pb.CountPerDb{DbName: names[i], AoCount: aocount, HeapCount: heapcount})
+		results = append(results, &pb.CountPerDb{DbName: name, AoCount: aocount, HeapCount: heapcount})
 	}
 
 	successReply := &pb.CheckObjectCountReply{ListOfCounts: results}

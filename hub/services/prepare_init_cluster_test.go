@@ -3,7 +3,6 @@ package services_test
 import (
 	"database/sql/driver"
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/pkg/errors"
@@ -14,7 +13,6 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
-	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -25,25 +23,10 @@ import (
 
 var _ = Describe("Hub prepare init-cluster", func() {
 	var (
-		queryResult = `{"SegConfigs":[{"DbID":1,"ContentID":-1,"Port":15432,"Hostname":"mdw","DataDir":"/data/master/gpseg-1"},` +
-			`{"DbID":2,"ContentID":0,"Port":25432,"Hostname":"sdw1","DataDir":"/data/primary/gpseg0"}],"BinDir":"/target/bindir"}`
-		expectedCluster *utils.Cluster
-		segDataDirMap   map[string][]string
+		segDataDirMap map[string][]string
 	)
 
 	BeforeEach(func() {
-		expectedCluster = &utils.Cluster{
-			Cluster: &cluster.Cluster{
-				ContentIDs: []int{-1, 0},
-				Segments: map[int]cluster.SegConfig{
-					-1: {DbID: 1, ContentID: -1, Port: 15432, Hostname: "mdw", DataDir: "/data/master/gpseg-1"},
-					0:  {DbID: 2, ContentID: 0, Port: 25432, Hostname: "sdw1", DataDir: "/data/primary/gpseg0"},
-				},
-				Executor: &cluster.GPDBExecutor{},
-			},
-			BinDir: "/tmp",
-		}
-
 		segDataDirMap = map[string][]string{
 			"host1": {fmt.Sprintf("%s_upgrade", dir)},
 			"host2": {fmt.Sprintf("%s_upgrade", dir)},
@@ -174,64 +157,7 @@ var _ = Describe("Hub prepare init-cluster", func() {
 			Expect(err.Error()).To(Equal("gpinitsystem failed: some output: exit status 127"))
 		})
 	})
-	Describe("SaveTargetClusterConfig", func() {
 
-		It("successfully stores target cluster config for GPDB 6", func() {
-			testhelper.SetDBVersion(dbConnector, "6.0.0")
-
-			mock.ExpectQuery("SELECT .*").WillReturnRows(getFakeConfigRows())
-
-			fakeConfigFile := gbytes.NewBuffer()
-			utils.System.WriteFile = func(filename string, data []byte, perm os.FileMode) error {
-				fmt.Fprint(fakeConfigFile, string(data))
-				ioutil.WriteFile(filename, data, perm)
-				return nil
-			}
-
-			err := services.SaveTargetClusterConfig(target, dbConnector, dir)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(string(fakeConfigFile.Contents())).To(ContainSubstring(queryResult))
-			Expect(target.Cluster).To(Equal(expectedCluster.Cluster))
-		})
-
-		It("successfully stores target cluster config for GPDB 4 and 5", func() {
-			mock.ExpectQuery("SELECT .*").WillReturnRows(getFakeConfigRows())
-
-			fakeConfigFile := gbytes.NewBuffer()
-			utils.System.WriteFile = func(filename string, data []byte, perm os.FileMode) error {
-				fmt.Fprint(fakeConfigFile, string(data))
-				ioutil.WriteFile(filename, data, perm)
-				return nil
-			}
-
-			err := services.SaveTargetClusterConfig(target, dbConnector, dir)
-			Expect(err).ToNot(HaveOccurred())
-
-			Expect(string(fakeConfigFile.Contents())).To(ContainSubstring(queryResult))
-			Expect(target.Cluster).To(Equal(expectedCluster.Cluster))
-		})
-
-		It("fails to get config file handle", func() {
-			utils.System.WriteFile = func(filename string, data []byte, perm os.FileMode) error {
-				return errors.New("failed to write config file")
-			}
-
-			err := services.SaveTargetClusterConfig(target, dbConnector, dir)
-			Expect(err).To(HaveOccurred())
-		})
-
-		It("db.Select query for cluster config fails", func() {
-			mock.ExpectQuery("SELECT .*").WillReturnError(errors.New("fail config query"))
-
-			utils.System.WriteFile = func(filename string, data []byte, perm os.FileMode) error {
-				return nil
-			}
-
-			err := services.SaveTargetClusterConfig(target, dbConnector, dir)
-			Expect(err).To(HaveOccurred())
-			Expect(err).To(MatchError("Unable to get segment configuration for new cluster: fail config query"))
-		})
-	})
 	Describe("GetMasterSegPrefix", func() {
 		DescribeTable("returns a valid seg prefix given",
 			func(datadir string) {
@@ -258,13 +184,3 @@ var _ = Describe("Hub prepare init-cluster", func() {
 	})
 
 })
-
-// Construct sqlmock in-memory rows that are structured properly
-func getFakeConfigRows() *sqlmock.Rows {
-	header := []string{"dbid", "contentid", "port", "hostname", "datadir"}
-	fakeConfigRow := []driver.Value{1, -1, 15432, "mdw", "/data/master/gpseg-1"}
-	fakeConfigRow2 := []driver.Value{2, 0, 25432, "sdw1", "/data/primary/gpseg0"}
-	rows := sqlmock.NewRows(header)
-	heapfakeResult := rows.AddRow(fakeConfigRow...).AddRow(fakeConfigRow2...)
-	return heapfakeResult
-}

@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/greenplum-db/gpupgrade/hub/upgradestatus/file"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 
@@ -25,16 +24,6 @@ import (
 */
 func SegmentConversionStatus(pgUpgradePath, oldDataDir string, executor cluster.Executor) pb.StepStatus {
 	return GetUtilityStatus("pg_upgrade", pgUpgradePath, oldDataDir, "*.inprogress", executor, isUpgradeComplete)
-}
-
-/*
- * There can be cases where gpstop is running but not as part of the pre-setup
- * in which case, we shouldn't be detecting that as a running state.
- * We only care if the inprogress file exists. We are relying on the hub to
- * never go down for this state processing to work.
- */
-func ClusterShutdownStatus(gpstopStatePath string, executor cluster.Executor) pb.StepStatus {
-	return GetUtilityStatus("gpstop", gpstopStatePath, "", "*/"+file.InProgress, executor, isStopComplete)
 }
 
 func GetUtilityStatus(binaryName, utilityStatePath, dataDir, progressFilePattern string, executor cluster.Executor, isCompleteFunc func(string) bool) pb.StepStatus {

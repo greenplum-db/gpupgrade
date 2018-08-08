@@ -17,13 +17,20 @@ import (
 
 // the `prepare start-hub` tests are currently in master_only_integration_test
 var _ = Describe("prepare", func() {
+	var (
+		targetPath string
+	)
 	BeforeEach(func() {
+		step := cm.GetStepWriter(upgradestatus.INIT_CLUSTER)
+		step.ResetStateDir()
+		step.MarkInProgress()
 		go agent.Start()
+		targetPath = filepath.Join(testStateDir, utils.TARGET_CONFIG_FILENAME)
 	})
 	AfterEach(func() {
 		os.Remove(fmt.Sprintf("%s_upgrade", testWorkspaceDir))
 	})
-	It("can save the database configuration json under the name 'new cluster'", func() {
+	It("can save the newly minted database configuration json to disk", func() {
 		mockdb, mock := testhelper.CreateMockDB()
 		testDriver := testhelper.TestDriver{DB: mockdb, DBName: "testdb", User: "testrole"}
 		db := dbconn.NewDBConn(testDriver.DBName, testDriver.User, "fakehost", -1 /* not used */)
@@ -36,16 +43,32 @@ var _ = Describe("prepare", func() {
 		mock.ExpectQuery("SELECT .*server.*").WillReturnRows(encodingRow)
 		mock.ExpectQuery("SELECT (.*)").WillReturnRows(getFakeConfigRows())
 
-		err := hub.InitCluster(db)
+		seedCluster, err := hub.InitCluster(db)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(cm.WasReset(upgradestatus.INIT_CLUSTER)).To(BeTrue())
 		Expect(cm.IsInProgress(upgradestatus.INIT_CLUSTER)).To(BeTrue())
+		seedCluster.ConfigPath = targetPath
 
-		target := &utils.Cluster{ConfigPath: filepath.Join(testStateDir, utils.TARGET_CONFIG_FILENAME)}
+		mockdb, mock = testhelper.CreateMockDB()
+		testDriver = testhelper.TestDriver{DB: mockdb, DBName: "testdb", User: "testrole"}
+		db = dbconn.NewDBConn(testDriver.DBName, testDriver.User, "fakehost", -1 /* not used */)
+		db.Driver = testDriver
+
+		mock.ExpectQuery("SELECT version()").WillReturnRows(getFakeVersionRow())
+		checkpointRow = sqlmock.NewRows([]string{"string"}).AddRow(driver.Value("8"))
+		encodingRow = sqlmock.NewRows([]string{"string"}).AddRow(driver.Value("UNICODE"))
+		mock.ExpectQuery("SELECT (.*)").WillReturnRows(getFakeConfigRows())
+
+		err = seedCluster.RefreshConfig(db)
+		Expect(err).ToNot(HaveOccurred())
+		err = seedCluster.Commit()
+		Expect(err).ToNot(HaveOccurred())
+
+		target := &utils.Cluster{ConfigPath: targetPath}
 		err = target.Load()
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(len(target.Segments)).To(BeNumerically(">", 1))
+		Expect(len(target.Segments)).To(BeNumerically(">", 1), "number of segements")
 	})
 })
 

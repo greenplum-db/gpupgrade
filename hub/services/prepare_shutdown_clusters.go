@@ -6,6 +6,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
+	"github.com/greenplum-db/gpupgrade/utils/log"
 
 	"golang.org/x/net/context"
 
@@ -21,6 +22,7 @@ func (h *Hub) PrepareShutdownClusters(ctx context.Context, in *pb.PrepareShutdow
 }
 
 func (h *Hub) ShutdownClusters() {
+	defer log.WritePanics()
 	step := h.checklist.GetStepWriter(upgradestatus.SHUTDOWN_CLUSTERS)
 
 	step.ResetStateDir()
@@ -55,8 +57,9 @@ func StopCluster(c *utils.Cluster) error {
 	gpstopShellArgs := fmt.Sprintf("source %[1]s/../greenplum_path.sh; %[1]s/gpstop -a -d %[2]s", c.BinDir, masterDataDir)
 
 	gplog.Info("gpstop args: %+v", gpstopShellArgs)
-	_, err := c.ExecuteLocalCommand(gpstopShellArgs)
+	output, err := c.ExecuteLocalCommand(gpstopShellArgs)
 	if err != nil {
+		gplog.Error("Error stopping cluster: %s", output)
 		return err
 	}
 

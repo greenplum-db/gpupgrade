@@ -1,15 +1,22 @@
 package utils_test
 
 import (
+	"database/sql/driver"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/user"
 	"path"
 
+	"github.com/greenplum-db/gp-common-go-libs/cluster"
+	"github.com/greenplum-db/gp-common-go-libs/dbconn"
+	"github.com/greenplum-db/gp-common-go-libs/operating"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils"
+	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
+	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
 
-	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -36,6 +43,7 @@ var _ = Describe("Cluster", func() {
 
 	AfterEach(func() {
 		os.RemoveAll(testStateDir)
+		utils.System = utils.InitializeSystemFunctions()
 	})
 
 	Describe("Commit and Load", func() {
@@ -128,6 +136,133 @@ var _ = Describe("Cluster", func() {
 			for _, id := range expectedCluster.ContentIDs {
 				Expect(executor.ClusterCommands[0][id]).To(ContainElement(fmt.Sprintf("command %d", id)))
 			}
+		})
+	})
+
+	Describe("NewDBConn", func() {
+		var (
+			originalEnv string
+			c           *utils.Cluster
+		)
+
+		BeforeEach(func() {
+			master := cluster.SegConfig{
+				DbID:      1,
+				ContentID: -1,
+				Port:      5432,
+				Hostname:  "mdw",
+			}
+
+			originalEnv = os.Getenv("PGUSER")
+
+			cc := cluster.Cluster{Segments: map[int]cluster.SegConfig{-1: master}}
+			c = &utils.Cluster{Cluster: &cc}
+
+		})
+
+		AfterEach(func() {
+			os.Setenv("PGUSER", originalEnv)
+			operating.System = operating.InitializeSystemFunctions()
+		})
+
+		It("can construct a dbconn from a cluster", func() {
+			expectedUser := "brother_maynard"
+			os.Setenv("PGUSER", expectedUser)
+
+			dbConnector := c.NewDBConn()
+
+			Expect(dbConnector.DBName).To(Equal("postgres"))
+			Expect(dbConnector.Host).To(Equal("mdw"))
+			Expect(dbConnector.Port).To(Equal(5432))
+			Expect(dbConnector.User).To(Equal(expectedUser))
+		})
+
+		It("sets the default user if neither PGUSER or current user are available", func() {
+			os.Unsetenv("PGUSER")
+
+			operating.System.CurrentUser = func() (*user.User, error) {
+				return nil, errors.New("Your systems is seriously borked if this fails")
+			}
+
+			dbConnector := c.NewDBConn()
+
+			Expect(dbConnector.User).To(Equal("gpadmin"))
+		})
+		// FIXME: protect against badly initialized clusters
+	})
+	Describe("RefreshConfig", func() {
+		var (
+			expectedCluster *utils.Cluster
+			resultCluster   *utils.Cluster
+			dbConnector     *dbconn.DBConn
+			mockdb          *sqlx.DB
+			mock            sqlmock.Sqlmock
+		)
+
+		BeforeEach(func() {
+			expectedCluster = &utils.Cluster{
+				Cluster: &cluster.Cluster{
+					ContentIDs: []int{-1, 0},
+					Segments: map[int]cluster.SegConfig{
+						-1: {DbID: 1, ContentID: -1, Port: 15432, Hostname: "mdw", DataDir: "/data/master/gpseg-1"},
+						0:  {DbID: 2, ContentID: 0, Port: 25432, Hostname: "sdw1", DataDir: "/data/primary/gpseg0"},
+					},
+					Executor: &cluster.GPDBExecutor{},
+				},
+			}
+			resultCluster = utils.NewMasterOnlyCluster(5432, "mdw", "", "")
+
+			mockdb, mock = testhelper.CreateMockDB()
+			testDriver := testhelper.TestDriver{DB: mockdb, DBName: "testdb", User: "testrole"}
+			dbConnector = dbconn.NewDBConn(testDriver.DBName, testDriver.User, "fakehost", -1 /* not used */)
+			dbConnector.Driver = testDriver
+		})
+
+		getFakeVersionRow := func(v string) *sqlmock.Rows {
+			return sqlmock.NewRows([]string{"versionstring"}).
+				AddRow([]driver.Value{"PostgreSQL 8.4 (Greenplum Database " + v + ")"}...)
+		}
+
+		// Construct sqlmock in-memory rows that are structured properly
+		getFakeConfigRows := func() *sqlmock.Rows {
+			header := []string{"dbid", "contentid", "port", "hostname", "datadir"}
+			fakeConfigRow := []driver.Value{1, -1, 15432, "mdw", "/data/master/gpseg-1"}
+			fakeConfigRow2 := []driver.Value{2, 0, 25432, "sdw1", "/data/primary/gpseg0"}
+			rows := sqlmock.NewRows(header)
+			heapfakeResult := rows.AddRow(fakeConfigRow...).AddRow(fakeConfigRow2...)
+			return heapfakeResult
+		}
+
+		It("successfully stores target cluster config for GPDB 6", func() {
+			mock.ExpectQuery("SELECT version()").WillReturnRows(getFakeVersionRow("6.0.0"))
+			mock.ExpectQuery("SELECT .*").WillReturnRows(getFakeConfigRows())
+
+			err := resultCluster.RefreshConfig(dbConnector)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resultCluster).To(Equal(expectedCluster))
+		})
+
+		It("successfully stores target cluster config for GPDB 4 and 5", func() {
+			mock.ExpectQuery("SELECT version()").WillReturnRows(getFakeVersionRow("5.10.1"))
+			mock.ExpectQuery("SELECT .*").WillReturnRows(getFakeConfigRows())
+
+			err := resultCluster.RefreshConfig(dbConnector)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(resultCluster).To(Equal(expectedCluster))
+		})
+
+		It("db.Select query for cluster config fails", func() {
+			mock.ExpectQuery("SELECT version()").WillReturnRows(getFakeVersionRow("5.10.1"))
+			mock.ExpectQuery("SELECT .*").WillReturnError(errors.New("fail config query"))
+
+			utils.System.WriteFile = func(filename string, data []byte, perm os.FileMode) error {
+				return nil
+			}
+
+			err := resultCluster.RefreshConfig(dbConnector)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError("Unable to get segment configuration for cluster: fail config query"))
 		})
 	})
 })

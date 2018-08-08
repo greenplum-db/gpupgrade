@@ -1,7 +1,7 @@
 # abort() is meant to be called from BATS tests. It will exit the process after
 # printing its arguments to the TAP stream.
 abort() {
-    echo "# fatal: $@" 1>&3
+    echo "# fatal: $*" 1>&3
     exit 1
 }
 
@@ -12,5 +12,12 @@ kill_hub() {
     pkill -9 gpupgrade_hub || true
     if ps -ef | grep -Gqw "[g]pupgrade_hub"; then
         abort "didn't kill running hub"
+    fi
+}
+
+kill_agents() {
+    pkill -9 gpupgrade_agent || true
+    if ps -ef | grep -Gqw "[g]pupgrade_agent"; then
+        echo "didn't kill running hub"
     fi
 }

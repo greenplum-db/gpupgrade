@@ -1,7 +1,6 @@
 package services
 
 import (
-	"github.com/greenplum-db/gpupgrade/db"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 
@@ -18,9 +17,7 @@ func (h *Hub) CheckVersion(ctx context.Context,
 
 	gplog.Info("starting CheckVersion")
 
-	masterPort := h.source.MasterPort()
-
-	dbConnector := db.NewDBConn("localhost", masterPort, "template1")
+	dbConnector := h.source.NewDBConn()
 	defer dbConnector.Close()
 	err := dbConnector.Connect(1)
 	if err != nil {

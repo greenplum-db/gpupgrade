@@ -67,11 +67,7 @@ func main() {
 			cm.AddWritableStep(upgradestatus.SEGINSTALL, pb.UpgradeSteps_SEGINSTALL)
 			cm.AddWritableStep(upgradestatus.INIT_CLUSTER, pb.UpgradeSteps_INIT_CLUSTER)
 
-			cm.AddReadOnlyStep(upgradestatus.SHUTDOWN_CLUSTERS, pb.UpgradeSteps_SHUTDOWN_CLUSTERS,
-				func(stepName string) pb.StepStatus {
-					stepdir := filepath.Join(conf.StateDir, stepName)
-					return upgradestatus.ClusterShutdownStatus(stepdir, source.Executor)
-				})
+			cm.AddWritableStep(upgradestatus.SHUTDOWN_CLUSTERS, pb.UpgradeSteps_SHUTDOWN_CLUSTERS)
 
 			cm.AddReadOnlyStep(upgradestatus.CONVERT_MASTER, pb.UpgradeSteps_CONVERT_MASTER,
 				func(stepName string) pb.StepStatus {

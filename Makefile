@@ -103,6 +103,11 @@ install: cli-package hub-package install_agent
 		cp -p $(CLI) $(GPHOME)/bin/$(CLI)
 		cp -p $(HUB) $(GPHOME)/bin/$(HUB)
 
+install-check: install
+		@echo "--------------------------------------------------------------"
+		@echo "# FIXME: Make, if run in parallel, hangs after test completes."
+		./install-check.bats -t
+
 clean:
 		# Build artifacts
 		rm -f $(AGENT)

@@ -98,7 +98,7 @@ func TryEnv(varname string, defval string) string {
 	return val
 }
 
-func GetUser() (string, string, error) {
+func GetUser() (username string, homedir string, err error) {
 	currentUser, err := System.CurrentUser()
 	if err != nil {
 		return "", "", err

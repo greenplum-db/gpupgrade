@@ -5,6 +5,9 @@ import (
 	"fmt"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
+	"github.com/greenplum-db/gp-common-go-libs/dbconn"
+	"github.com/greenplum-db/gp-common-go-libs/gplog"
+	"github.com/greenplum-db/gp-common-go-libs/operating"
 	"github.com/pkg/errors"
 )
 
@@ -17,6 +20,19 @@ type Cluster struct {
 	*cluster.Cluster
 	BinDir     string
 	ConfigPath string
+}
+
+func NewMasterOnlyCluster(port int, host string, binDir string, configPath string) *Cluster {
+	master := cluster.SegConfig{
+		DbID:      1,
+		ContentID: -1,
+		Port:      port,
+		Hostname:  host,
+	}
+
+	cc := cluster.Cluster{Segments: map[int]cluster.SegConfig{-1: master}}
+	c := &Cluster{Cluster: &cc, BinDir: binDir, ConfigPath: configPath}
+	return c
 }
 
 /*
@@ -58,6 +74,10 @@ func (c *Cluster) Commit() error {
 
 func (c *Cluster) MasterDataDir() string {
 	return c.GetDirForContent(-1)
+}
+
+func (c *Cluster) MasterHost() string {
+	return c.GetHostForContent(-1)
 }
 
 func (c *Cluster) MasterPort() int {
@@ -120,4 +140,48 @@ func (c *Cluster) ExecuteOnAllHosts(desc string, cmd func(contentID int) string)
 
 	remoteOutput := c.GenerateAndExecuteCommand(desc, cmd, cluster.ON_HOSTS_AND_MASTER)
 	return remoteOutput, nil
+}
+
+func (c *Cluster) NewDBConn() *dbconn.DBConn {
+	defaultUser := "gpadmin"
+
+	username := operating.System.Getenv("PGUSER")
+	if username == "" {
+		currentUser, err := operating.System.CurrentUser()
+		if err != nil {
+			gplog.Verbose("Error retrieving current os user, defaulting to %s", defaultUser)
+			username = defaultUser
+		} else {
+			username = currentUser.Username
+		}
+	}
+
+	return &dbconn.DBConn{
+		ConnPool: nil,
+		NumConns: 0,
+		Driver:   dbconn.GPDBDriver{},
+		User:     username,
+		DBName:   "postgres",
+		Host:     c.MasterHost(),
+		Port:     c.MasterPort(),
+		Tx:       nil,
+		Version:  dbconn.GPDBVersion{},
+	}
+}
+
+func (c *Cluster) RefreshConfig(dbConnector *dbconn.DBConn) error {
+	err := dbConnector.Connect(1)
+	if err != nil {
+		return DatabaseConnectionError{Parent: err}
+	}
+	defer dbConnector.Close()
+
+	dbConnector.Version.Initialize(dbConnector)
+	segConfigs, err := cluster.GetSegmentConfiguration(dbConnector)
+	if err != nil {
+		return errors.Wrap(err, "Unable to get segment configuration for cluster")
+	}
+
+	c.Cluster = cluster.NewCluster(segConfigs)
+	return nil
 }
