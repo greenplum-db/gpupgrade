@@ -13,6 +13,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
+	"github.com/greenplum-db/gpupgrade/utils/log"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
@@ -46,6 +47,8 @@ func (h *Hub) PrepareInitCluster(ctx context.Context, in *pb.PrepareInitClusterR
 		"template1")
 
 	go func() {
+		defer log.WritePanics()
+
 		step := h.checklist.GetStepWriter(upgradestatus.INIT_CLUSTER)
 		err := h.InitCluster(dbConnector)
 		if err != nil {

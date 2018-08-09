@@ -6,6 +6,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
+	"github.com/greenplum-db/gpupgrade/utils/log"
 
 	"golang.org/x/net/context"
 
@@ -21,6 +22,8 @@ func (h *Hub) PrepareShutdownClusters(ctx context.Context, in *pb.PrepareShutdow
 }
 
 func (h *Hub) ShutdownClusters() {
+	defer log.WritePanics()
+
 	step := h.checklist.GetStepWriter(upgradestatus.SHUTDOWN_CLUSTERS)
 
 	step.ResetStateDir()
