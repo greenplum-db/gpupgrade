@@ -22,25 +22,6 @@ import (
 	"golang.org/x/net/context"
 )
 
-// TODO: consolidate with RetrieveAndSaveOldConfig(); it's basically the same
-// code
-func SaveTargetClusterConfig(target *utils.Cluster, dbConnector *dbconn.DBConn, stateDir string) error {
-	err := os.MkdirAll(stateDir, 0700)
-	if err != nil {
-		return err
-	}
-
-	segConfigs, err := cluster.GetSegmentConfiguration(dbConnector)
-	if err != nil {
-		errMsg := fmt.Sprintf("Unable to get segment configuration for new cluster: %s", err.Error())
-		return errors.New(errMsg)
-	}
-	target.Cluster = cluster.NewCluster(segConfigs)
-
-	err = target.Commit()
-	return err
-}
-
 func (h *Hub) PrepareInitCluster(ctx context.Context, in *pb.PrepareInitClusterRequest) (*pb.PrepareInitClusterReply, error) {
 	gplog.Info("Running PrepareInitCluster()")
 	dbConnector := db.NewDBConn("localhost", int(h.source.MasterPort()),
@@ -109,6 +90,25 @@ func (h *Hub) InitCluster(dbConnector *dbconn.DBConn) error {
 		return errors.Wrap(err, "Could not save new cluster configuration")
 	}
 	return nil
+}
+
+// TODO: consolidate with RetrieveAndSaveOldConfig(); it's basically the same
+// code
+func SaveTargetClusterConfig(target *utils.Cluster, dbConnector *dbconn.DBConn, stateDir string) error {
+	err := os.MkdirAll(stateDir, 0700)
+	if err != nil {
+		return err
+	}
+
+	segConfigs, err := cluster.GetSegmentConfiguration(dbConnector)
+	if err != nil {
+		errMsg := fmt.Sprintf("Unable to get segment configuration for new cluster: %s", err.Error())
+		return errors.New(errMsg)
+	}
+	target.Cluster = cluster.NewCluster(segConfigs)
+
+	err = target.Commit()
+	return err
 }
 
 func initializeState(step upgradestatus.StateWriter) error {
