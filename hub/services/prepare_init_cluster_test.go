@@ -86,9 +86,10 @@ var _ = Describe("Hub prepare init-cluster", func() {
 	host1~27432~%[1]s_upgrade/seg1~2~0~0
 	host2~27433~%[1]s_upgrade/seg2~3~1~0
 )`, dir)}
-			resultConfig, resultMap := hub.DeclareDataDirectories([]string{})
+			resultConfig, resultMap, port := hub.DeclareDataDirectories([]string{})
 			Expect(resultMap).To(Equal(segDataDirMap))
 			Expect(resultConfig).To(Equal(expectedConfig))
+			Expect(port).To(Equal(15433))
 		})
 	})
 	Describe("CreateAllDataDirectories", func() {
