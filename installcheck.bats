@@ -42,6 +42,9 @@ teardown() {
 
     ! ps -ef | grep -Gqw "[p]ostgres"
 
+    gpupgrade upgrade convert-master
+
+    EventuallyStepCompletes "Run pg_upgrade on master"
 }
 
 EventuallyStepCompletes() {
@@ -55,7 +58,10 @@ EventuallyStepCompletes() {
         statusLine=$(echo "$output" | grep "$cliStepMessage")
         echo "# $statusLine ($i/60)" 1>&3
 
-        [[ "$output" != *"FAILED"* ]]
+        if [[ "$statusLine" = *"FAILED"* ]]; then
+            break
+        fi
+
 
         if [[ "$output" = *"COMPLETE - $cliStepMessage"* ]]; then
             observed_complete="true"
