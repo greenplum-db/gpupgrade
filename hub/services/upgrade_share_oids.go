@@ -36,13 +36,12 @@ func (h *Hub) shareOidFiles() {
 
 	hostnames := h.source.PrimaryHostnames()
 
-	user := "gpadmin"
 	rsyncFlags := "-rzpogt"
 	sourceDir := filepath.Join(h.conf.StateDir, upgradestatus.CONVERT_MASTER)
 
 	anyFailed := false
 	for _, host := range hostnames {
-		destinationDirectory := user + "@" + host + ":" + filepath.Join(h.conf.StateDir, upgradestatus.CONVERT_PRIMARIES)
+		destinationDirectory := host + ":" + filepath.Join(h.conf.StateDir, upgradestatus.CONVERT_PRIMARIES)
 
 		rsyncCommand := strings.Join([]string{"rsync", rsyncFlags, filepath.Join(sourceDir, "pg_upgrade_dump_*_oids.sql"), destinationDirectory}, " ")
 		gplog.Info("share oids command: %+v", rsyncCommand)
