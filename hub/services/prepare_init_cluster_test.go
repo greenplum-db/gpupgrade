@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 
@@ -29,9 +30,12 @@ var _ = Describe("Hub prepare init-cluster", func() {
 			`{"DbID":2,"ContentID":0,"Port":25432,"Hostname":"sdw1","DataDir":"/data/primary/gpseg0"}],"BinDir":"/target/bindir"}`
 		expectedCluster *utils.Cluster
 		segDataDirMap   map[string][]string
+		testExecutor    *testhelper.TestExecutor
 	)
 
 	BeforeEach(func() {
+		testExecutor = &testhelper.TestExecutor{}
+
 		expectedCluster = &utils.Cluster{
 			Cluster: &cluster.Cluster{
 				ContentIDs: []int{-1, 0},
@@ -49,6 +53,7 @@ var _ = Describe("Hub prepare init-cluster", func() {
 			"host2": {fmt.Sprintf("%s_upgrade", dir)},
 		}
 
+		source.Executor = testExecutor
 		cm := testutils.NewMockChecklistManager()
 		hub = services.NewHub(source, target, grpc.DialContext, hubConf, cm)
 	})
@@ -147,30 +152,42 @@ var _ = Describe("Hub prepare init-cluster", func() {
 
 	Describe("RunInitsystemForNewCluster", func() {
 		var (
-			testExecutor *testhelper.TestExecutor
-			stdout       *gbytes.Buffer
+			stdout *gbytes.Buffer
 		)
 
 		BeforeEach(func() {
 			stdout, _, _ = testhelper.SetupTestLogger()
-			testExecutor = &testhelper.TestExecutor{}
-			source.Executor = testExecutor
 		})
+
 		It("successfully runs gpinitsystem", func() {
 			testExecutor.LocalError = errors.New("exit status 1")
 			err := hub.RunInitsystemForNewCluster("filepath")
+
 			Expect(err).To(BeNil())
 			testhelper.ExpectRegexp(stdout, "[WARNING]:-gpinitsystem completed with warnings")
 		})
+
+		It("should use executables in the source's bindir", func() {
+			err := hub.RunInitsystemForNewCluster("filepath")
+			Expect(err).To(BeNil())
+
+			gphome := filepath.Dir(target.BinDir)
+			expectedCommandString := fmt.Sprintf("source %s/greenplum_path.sh; %s/gpinitsystem -a -I", gphome, target.BinDir)
+			Expect(testExecutor.LocalCommands[0]).Should(ContainSubstring(expectedCommandString))
+		})
+
 		It("runs gpinitsystem and fails", func() {
 			testExecutor.LocalError = errors.New("exit status 2")
 			testExecutor.LocalOutput = "some output"
+
 			err := hub.RunInitsystemForNewCluster("filepath")
 			Expect(err.Error()).To(Equal("gpinitsystem failed: some output: exit status 2"))
 		})
+
 		It("runs gpinitsystem and receives an interrupt", func() {
 			testExecutor.LocalError = errors.New("exit status 127")
 			testExecutor.LocalOutput = "some output"
+
 			err := hub.RunInitsystemForNewCluster("filepath")
 			Expect(err.Error()).To(Equal("gpinitsystem failed: some output: exit status 127"))
 		})

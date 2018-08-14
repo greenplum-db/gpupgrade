@@ -234,7 +234,12 @@ func (h *Hub) CreateAllDataDirectories(agentConns []*Connection, segmentDataDirM
 
 func (h *Hub) RunInitsystemForNewCluster(gpinitsystemFilepath string) error {
 	// gpinitsystem the new cluster
-	cmdStr := fmt.Sprintf("gpinitsystem -a -I %s", gpinitsystemFilepath)
+	gphome := filepath.Dir(h.target.BinDir)
+	cmdStr := fmt.Sprintf("source %s/greenplum_path.sh; %s/gpinitsystem -a -I %s",
+		gphome,
+		h.target.BinDir,
+		gpinitsystemFilepath)
+
 	output, err := h.source.Executor.ExecuteLocalCommand(cmdStr)
 	if err != nil {
 		// gpinitsystem has a return code of 1 for warnings, so we can ignore that return code
