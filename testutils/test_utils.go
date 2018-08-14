@@ -5,6 +5,7 @@ import (
 	"net"
 	"path/filepath"
 
+	"github.com/blang/semver"
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
@@ -96,18 +97,32 @@ func InitClusterPairFromDB() (*utils.Cluster, *utils.Cluster) {
 }
 
 func assembleClusters(baseDir string, sourceCluster *cluster.Cluster, targetCluster *cluster.Cluster) (source *utils.Cluster, target *utils.Cluster) {
+	version, err := semver.Make("6.0.0")
+	if err != nil {
+		panic(err)
+	}
+
+	gpdbVersion := dbconn.GPDBVersion{
+		VersionString: version.String(),
+		SemVer:        version,
+	}
+
 	sourceCluster.Executor = &testhelper.TestExecutor{}
 	source = &utils.Cluster{
 		Cluster:    sourceCluster,
 		BinDir:     "/source/bindir",
 		ConfigPath: filepath.Join(baseDir, utils.SOURCE_CONFIG_FILENAME),
+		Version:    gpdbVersion,
 	}
+
 	targetCluster.Executor = &testhelper.TestExecutor{}
 	target = &utils.Cluster{
 		Cluster:    targetCluster,
 		BinDir:     "/target/bindir",
 		ConfigPath: filepath.Join(baseDir, utils.TARGET_CONFIG_FILENAME),
+		Version:    gpdbVersion,
 	}
+
 	return
 }
 

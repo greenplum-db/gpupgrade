@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/blang/semver"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/pkg/errors"
@@ -28,11 +29,18 @@ var _ = Describe("Cluster", func() {
 		testStateDir, err = ioutil.TempDir("", "")
 		Expect(err).ToNot(HaveOccurred())
 
+		version, err := semver.Make("6.0.0")
+		Expect(err).ToNot(HaveOccurred())
+
 		testhelper.SetupTestLogger()
 		expectedCluster = &utils.Cluster{
 			Cluster:    testutils.CreateMultinodeSampleCluster("/tmp"),
 			BinDir:     "/fake/path",
 			ConfigPath: path.Join(testStateDir, "cluster_config.json"),
+			Version: dbconn.GPDBVersion{
+				VersionString: version.String(),
+				SemVer:        version,
+			},
 		}
 	})
 
@@ -166,6 +174,7 @@ var _ = Describe("Cluster", func() {
 			Expect(cluster.Cluster).To(Equal(testutils.MockCluster()))
 			Expect(cluster.BinDir).To(Equal(binDir))
 			Expect(cluster.ConfigPath).To(Equal(configPath))
+			Expect(cluster.Version.Is("5.3.4")).To(BeTrue())
 		})
 	})
 })

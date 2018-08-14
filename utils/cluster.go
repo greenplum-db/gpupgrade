@@ -18,6 +18,7 @@ type Cluster struct {
 	*cluster.Cluster
 	BinDir     string
 	ConfigPath string
+	Version    dbconn.GPDBVersion
 }
 
 /*
@@ -27,6 +28,7 @@ type Cluster struct {
 type ClusterConfig struct {
 	SegConfigs []cluster.SegConfig
 	BinDir     string
+	Version    dbconn.GPDBVersion
 }
 
 // ClusterFromDB will create a Cluster by querying the passed DBConn for
@@ -42,6 +44,7 @@ func ClusterFromDB(conn *dbconn.DBConn, binDir, configPath string) (*Cluster, er
 	conn.Version.Initialize(conn)
 
 	c := new(Cluster)
+	c.Version = conn.Version
 
 	segments, err := cluster.GetSegmentConfiguration(conn)
 	if err != nil {
@@ -67,6 +70,7 @@ func (c *Cluster) Load() error {
 	}
 	c.Cluster = cluster.NewCluster(clusterConfig.SegConfigs)
 	c.BinDir = clusterConfig.BinDir
+	c.Version = clusterConfig.Version
 	return nil
 }
 
@@ -79,6 +83,7 @@ func (c *Cluster) Commit() error {
 	}
 
 	clusterConfig.SegConfigs = segConfigs
+	clusterConfig.Version = c.Version
 
 	return WriteJSONFile(c.ConfigPath, clusterConfig)
 }
