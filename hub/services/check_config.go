@@ -1,7 +1,7 @@
 package services
 
 import (
-	"github.com/greenplum-db/gp-common-go-libs/cluster"
+	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/greenplum-db/gpupgrade/db"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
@@ -27,7 +27,8 @@ func (h *Hub) CheckConfig(ctx context.Context, _ *pb.CheckConfigRequest) (*pb.Ch
 		gplog.Error("error from MarkInProgress " + err.Error())
 	}
 
-	err = RetrieveAndSaveSourceConfig(h.source)
+	conn := db.NewDBConn("localhost", 0, "template1")
+	err = ReloadAndCommitCluster(h.source, conn)
 	if err != nil {
 		step.MarkFailed()
 		gplog.Error(err.Error())
@@ -40,24 +41,19 @@ func (h *Hub) CheckConfig(ctx context.Context, _ *pb.CheckConfigRequest) (*pb.Ch
 	return successReply, nil
 }
 
-// RetrieveAndSaveSourceConfig() fills in the rest of the clusterPair.OldCluster by
-// querying the database located at its host and port. The results will
-// additionally be written to disk.
-func RetrieveAndSaveSourceConfig(source *utils.Cluster) error {
-	dbConnector := db.NewDBConn("localhost", 0, "template1")
-	err := dbConnector.Connect(1)
+// ReloadAndCommitCluster() will fill in a utils.Cluster using a database
+// connection and additionally write the results to disk.
+func ReloadAndCommitCluster(cluster *utils.Cluster, conn *dbconn.DBConn) error {
+	newCluster, err := utils.ClusterFromDB(conn, cluster.BinDir, cluster.ConfigPath)
 	if err != nil {
-		return utils.DatabaseConnectionError{Parent: err}
-	}
-	defer dbConnector.Close()
-
-	dbConnector.Version.Initialize(dbConnector)
-
-	segConfigs, err := cluster.GetSegmentConfiguration(dbConnector)
-	if err != nil {
-		return errors.Wrap(err, "Unable to get segment configuration for old cluster")
+		return errors.Wrap(err, "could not retrieve cluster configuration")
 	}
 
-	source.Cluster = cluster.NewCluster(segConfigs)
-	return source.Commit()
+	*cluster = *newCluster
+	err = cluster.Commit()
+	if err != nil {
+		return errors.Wrap(err, "could not save cluster configuration")
+	}
+
+	return nil
 }

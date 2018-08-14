@@ -15,7 +15,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/log"
 
-	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/pkg/errors"
@@ -59,20 +58,7 @@ func (h *Hub) CreateTargetCluster() error {
 		return errors.Wrap(err, "could not initialize the new cluster")
 	}
 
-	err = targetDBConn.Connect(1)
-	if err != nil {
-		return errors.Wrap(err, "could not connect to the new cluster")
-	}
-	defer targetDBConn.Close()
-
-	targetDBConn.Version.Initialize(targetDBConn)
-
-	err = SaveTargetClusterConfig(h.target, targetDBConn, h.conf.StateDir)
-	if err != nil {
-		return errors.Wrap(err, "could not save new cluster configuration to disk")
-	}
-
-	return nil
+	return ReloadAndCommitCluster(h.target, targetDBConn)
 }
 
 func (h *Hub) InitCluster(sourceDBConn *dbconn.DBConn) (*dbconn.DBConn, error) {
@@ -118,25 +104,6 @@ func (h *Hub) InitCluster(sourceDBConn *dbconn.DBConn) (*dbconn.DBConn, error) {
 
 	targetDBConn := db.NewDBConn("localhost", targetPort, "template1")
 	return targetDBConn, nil
-}
-
-// TODO: consolidate with RetrieveAndSaveOldConfig(); it's basically the same
-// code
-func SaveTargetClusterConfig(target *utils.Cluster, dbConnector *dbconn.DBConn, stateDir string) error {
-	err := os.MkdirAll(stateDir, 0700)
-	if err != nil {
-		return err
-	}
-
-	segConfigs, err := cluster.GetSegmentConfiguration(dbConnector)
-	if err != nil {
-		errMsg := fmt.Sprintf("Unable to get segment configuration for new cluster: %s", err.Error())
-		return errors.New(errMsg)
-	}
-	target.Cluster = cluster.NewCluster(segConfigs)
-
-	err = target.Commit()
-	return err
 }
 
 func GetCheckpointSegmentsAndEncoding(gpinitsystemConfig []string, dbConnector *dbconn.DBConn) ([]string, error) {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
+	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/pkg/errors"
 )
 
@@ -26,6 +27,32 @@ type Cluster struct {
 type ClusterConfig struct {
 	SegConfigs []cluster.SegConfig
 	BinDir     string
+}
+
+// ClusterFromDB will create a Cluster by querying the passed DBConn for
+// information. You must pass the cluster's binary directory and configuration
+// path, since these cannot be divined from the database.
+func ClusterFromDB(conn *dbconn.DBConn, binDir, configPath string) (*Cluster, error) {
+	err := conn.Connect(1)
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't connect to cluster")
+	}
+	defer conn.Close()
+
+	conn.Version.Initialize(conn)
+
+	c := new(Cluster)
+
+	segments, err := cluster.GetSegmentConfiguration(conn)
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't retrieve segment configuration")
+	}
+
+	c.Cluster = cluster.NewCluster(segments)
+	c.BinDir = binDir
+	c.ConfigPath = configPath
+
+	return c, nil
 }
 
 func (c *Cluster) Load() error {

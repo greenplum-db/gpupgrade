@@ -8,8 +8,10 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils"
+	"github.com/pkg/errors"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
+	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -119,6 +121,51 @@ var _ = Describe("Cluster", func() {
 			for _, id := range expectedCluster.ContentIDs {
 				Expect(executor.ClusterCommands[0][id]).To(ContainElement(fmt.Sprintf("command %d", id)))
 			}
+		})
+	})
+
+	Describe("ClusterFromDB", func() {
+		It("returns an error if connection fails", func() {
+			connErr := errors.New("connection failed")
+			conn := dbconn.NewDBConnFromEnvironment("testdb")
+			conn.Driver = testhelper.TestDriver{ErrToReturn: connErr}
+
+			cluster, err := utils.ClusterFromDB(conn, "", "")
+
+			Expect(err).To(HaveOccurred())
+			Expect(cluster).To(BeNil())
+			Expect(err.Error()).To(ContainSubstring(connErr.Error()))
+		})
+
+		It("returns an error if the segment configuration query fails", func() {
+			conn, mock := testutils.CreateMockDBConn()
+			testutils.SetMockGPDBVersion(mock, "5.3.4")
+
+			queryErr := errors.New("failed to get segment configuration")
+			mock.ExpectQuery("SELECT .* FROM gp_segment_configuration").WillReturnError(queryErr)
+
+			cluster, err := utils.ClusterFromDB(conn, "", "")
+
+			Expect(err).To(HaveOccurred())
+			Expect(cluster).To(BeNil())
+			Expect(err.Error()).To(ContainSubstring(queryErr.Error()))
+		})
+
+		It("populates a cluster using DB information", func() {
+			conn, mock := testutils.CreateMockDBConn()
+
+			testutils.SetMockGPDBVersion(mock, "5.3.4")
+			mock.ExpectQuery("SELECT .* FROM gp_segment_configuration").WillReturnRows(testutils.MockSegmentConfiguration())
+
+			binDir := "/usr/local/gpdb/bin"
+			configPath := "/tmp/config.json"
+
+			cluster, err := utils.ClusterFromDB(conn, binDir, configPath)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(cluster.Cluster).To(Equal(testutils.MockCluster()))
+			Expect(cluster.BinDir).To(Equal(binDir))
+			Expect(cluster.ConfigPath).To(Equal(configPath))
 		})
 	})
 })
