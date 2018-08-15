@@ -50,17 +50,25 @@ func (h *Hub) ConvertMaster() error {
 		return errors.Wrapf(err, "mkdir %s failed", pathToUpgradeWD)
 	}
 
+	// pg_upgrade changed its API in GPDB 6.0.
+	var modeStr string
+	if h.target.Version.Before("6.0.0") {
+		modeStr = "--dispatcher-mode"
+	} else {
+		modeStr = "--mode=dispatcher"
+	}
+
 	pgUpgradeCmd := fmt.Sprintf("unset PGHOST; unset PGPORT; %s "+
 		"--old-bindir=%s --old-datadir=%s --old-port=%d "+
-		"--new-bindir=%s --new-datadir=%s --new-port=%d "+
-		"--mode=dispatcher",
+		"--new-bindir=%s --new-datadir=%s --new-port=%d %s",
 		filepath.Join(h.target.BinDir, "pg_upgrade"),
 		h.source.BinDir,
 		h.source.MasterDataDir(),
 		h.source.MasterPort(),
 		h.target.BinDir,
 		h.target.MasterDataDir(),
-		h.target.MasterPort())
+		h.target.MasterPort(),
+		modeStr)
 
 	gplog.Info("Convert Master upgrade command: %#v", pgUpgradeCmd)
 

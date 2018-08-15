@@ -34,6 +34,7 @@ func (h *Hub) UpgradeConvertPrimaries(ctx context.Context, in *pb.UpgradeConvert
 			_, err := pb.NewAgentClient(c.Conn).UpgradeConvertPrimarySegments(context.Background(), &pb.UpgradeConvertPrimarySegmentsRequest{
 				OldBinDir:    h.source.BinDir,
 				NewBinDir:    h.target.BinDir,
+				NewVersion:   h.target.Version.SemVer.String(),
 				DataDirPairs: dataDirPair[c.Hostname],
 			})
 

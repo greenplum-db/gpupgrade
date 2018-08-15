@@ -14,7 +14,8 @@ service Agent {
 message UpgradeConvertPrimarySegmentsRequest {
     string OldBinDir = 1;
     string NewBinDir = 2;
-    repeated DataDirPair DataDirPairs = 3;
+    string NewVersion = 3;
+    repeated DataDirPair DataDirPairs = 4;
 }
 
 message DataDirPair {
