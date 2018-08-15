@@ -5,6 +5,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/onsi/gomega/gbytes"
 
@@ -21,7 +22,7 @@ var _ = Describe("status", func() {
 	})
 	Describe("conversion", func() {
 		It("Displays status information for all segments", func() {
-			pathToSegUpgrade := filepath.Join(testStateDir, upgradestatus.CONVERT_PRIMARIES, "seg0")
+			pathToSegUpgrade := utils.SegmentPGUpgradeDirectory(testStateDir, 0)
 			err := os.MkdirAll(pathToSegUpgrade, 0700)
 			Expect(err).ToNot(HaveOccurred())
 

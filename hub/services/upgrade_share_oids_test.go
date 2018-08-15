@@ -31,8 +31,8 @@ var _ = Describe("UpgradeShareOids", func() {
 		Eventually(func() int { return testExecutor.NumExecutions }).Should(Equal(len(hostnames)))
 
 		Expect(testExecutor.LocalCommands).To(ConsistOf(
-			fmt.Sprintf("rsync -rzpogt %s/convert-master/pg_upgrade_dump_*_oids.sql host1:%s/convert-primaries", dir, dir),
-			fmt.Sprintf("rsync -rzpogt %s/convert-master/pg_upgrade_dump_*_oids.sql host2:%s/convert-primaries", dir, dir),
+			fmt.Sprintf("rsync -rzpogt %s/pg_upgrade/seg-1/pg_upgrade_dump_*_oids.sql host1:%s/pg_upgrade", dir, dir),
+			fmt.Sprintf("rsync -rzpogt %s/pg_upgrade/seg-1/pg_upgrade_dump_*_oids.sql host2:%s/pg_upgrade", dir, dir),
 		))
 	})
 

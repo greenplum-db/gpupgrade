@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 
@@ -38,10 +37,12 @@ var _ = Describe("CommandListener", func() {
 		agentConfig := services.AgentConfig{StateDir: dir}
 		agent = services.NewAgentServer(testExecutor, agentConfig)
 
-		err = os.MkdirAll(filepath.Join(dir, upgradestatus.CONVERT_MASTER), 0700)
+		upgradeDir := utils.PGUpgradeDirectory(dir)
+
+		err = os.MkdirAll(upgradeDir, 0700)
 		Expect(err).ToNot(HaveOccurred())
 
-		oidFile = filepath.Join(dir, upgradestatus.CONVERT_MASTER, "pg_upgrade_dump_seg1_oids.sql")
+		oidFile = filepath.Join(upgradeDir, "pg_upgrade_dump_seg1_oids.sql")
 		f, err := os.Create(oidFile)
 		Expect(err).ToNot(HaveOccurred())
 		f.Close()
@@ -69,10 +70,13 @@ var _ = Describe("CommandListener", func() {
 
 		Expect(testExecutor.NumExecutions).To(Equal(4))
 
-		Expect(testExecutor.LocalCommands).To(ContainElement(fmt.Sprintf("cp %s %s/convert-primaries/seg0", oidFile, dir)))
-		Expect(testExecutor.LocalCommands).To(ContainElement(fmt.Sprintf("cd %s/convert-primaries/seg0 && nohup /new/bin/pg_upgrade --old-bindir=/old/bin --old-datadir=old/datadir1 --new-bindir=/new/bin --new-datadir=new/datadir1 --old-port=1 --new-port=11 --progress", dir)))
-		Expect(testExecutor.LocalCommands).To(ContainElement(fmt.Sprintf("cp %s %s/convert-primaries/seg1", oidFile, dir)))
-		Expect(testExecutor.LocalCommands).To(ContainElement(fmt.Sprintf("cd %s/convert-primaries/seg1 && nohup /new/bin/pg_upgrade --old-bindir=/old/bin --old-datadir=old/datadir2 --new-bindir=/new/bin --new-datadir=new/datadir2 --old-port=2 --new-port=22 --progress", dir)))
+		upgradeDir0 := utils.SegmentPGUpgradeDirectory(dir, 0)
+		upgradeDir1 := utils.SegmentPGUpgradeDirectory(dir, 1)
+
+		Expect(testExecutor.LocalCommands).To(ContainElement(fmt.Sprintf("cp %s %s", oidFile, upgradeDir0)))
+		Expect(testExecutor.LocalCommands).To(ContainElement(fmt.Sprintf("cd %s && nohup /new/bin/pg_upgrade --old-bindir=/old/bin --old-datadir=old/datadir1 --new-bindir=/new/bin --new-datadir=new/datadir1 --old-port=1 --new-port=11 --progress", upgradeDir0)))
+		Expect(testExecutor.LocalCommands).To(ContainElement(fmt.Sprintf("cp %s %s", oidFile, upgradeDir1)))
+		Expect(testExecutor.LocalCommands).To(ContainElement(fmt.Sprintf("cd %s && nohup /new/bin/pg_upgrade --old-bindir=/old/bin --old-datadir=old/datadir2 --new-bindir=/new/bin --new-datadir=new/datadir2 --old-port=2 --new-port=22 --progress", upgradeDir1)))
 	})
 
 	It("returns an an error if the oid files glob fails", func() {

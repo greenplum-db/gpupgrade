@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 
@@ -37,11 +38,11 @@ func (h *Hub) shareOidFiles() {
 	hostnames := h.source.PrimaryHostnames()
 
 	rsyncFlags := "-rzpogt"
-	sourceDir := filepath.Join(h.conf.StateDir, upgradestatus.CONVERT_MASTER)
+	sourceDir := utils.MasterPGUpgradeDirectory(h.conf.StateDir)
 
 	anyFailed := false
 	for _, host := range hostnames {
-		destinationDirectory := host + ":" + filepath.Join(h.conf.StateDir, upgradestatus.CONVERT_PRIMARIES)
+		destinationDirectory := host + ":" + utils.PGUpgradeDirectory(h.conf.StateDir)
 
 		rsyncCommand := strings.Join([]string{"rsync", rsyncFlags, filepath.Join(sourceDir, "pg_upgrade_dump_*_oids.sql"), destinationDirectory}, " ")
 		gplog.Info("share oids command: %+v", rsyncCommand)

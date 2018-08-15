@@ -44,7 +44,7 @@ func (h *Hub) UpgradeConvertMaster(ctx context.Context, in *pb.UpgradeConvertMas
 func (h *Hub) ConvertMaster() error {
 	gplog.Info("Starting master upgrade")
 
-	pathToUpgradeWD := filepath.Join(h.conf.StateDir, upgradestatus.CONVERT_MASTER)
+	pathToUpgradeWD := utils.MasterPGUpgradeDirectory(h.conf.StateDir)
 	err := utils.System.MkdirAll(pathToUpgradeWD, 0700)
 	if err != nil {
 		return errors.Wrapf(err, "mkdir %s failed", pathToUpgradeWD)

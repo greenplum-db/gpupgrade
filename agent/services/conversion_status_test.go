@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 
@@ -64,9 +63,10 @@ var _ = Describe("CommandListener", func() {
 	})
 
 	It("returns running for segments that have the upgrade in progress", func() {
-		err := os.MkdirAll(filepath.Join(dir, upgradestatus.CONVERT_PRIMARIES, "seg1"), 0700)
+		upgradeDir := utils.SegmentPGUpgradeDirectory(dir, 1)
+		err := os.MkdirAll(upgradeDir, 0700)
 		Expect(err).ToNot(HaveOccurred())
-		fd, err := os.Create(filepath.Join(dir, upgradestatus.CONVERT_PRIMARIES, "seg1", ".inprogress"))
+		fd, err := os.Create(filepath.Join(upgradeDir, ".inprogress"))
 		Expect(err).ToNot(HaveOccurred())
 		fd.Close()
 
@@ -93,9 +93,10 @@ var _ = Describe("CommandListener", func() {
 	})
 
 	It("returns COMPLETE for segments that have completed the upgrade", func() {
-		err := os.MkdirAll(filepath.Join(dir, upgradestatus.CONVERT_PRIMARIES, "seg2"), 0700)
+		upgradeDir := utils.SegmentPGUpgradeDirectory(dir, 2)
+		err := os.MkdirAll(upgradeDir, 0700)
 		Expect(err).ToNot(HaveOccurred())
-		fd, err := os.Create(filepath.Join(dir, upgradestatus.CONVERT_PRIMARIES, "seg2", ".done"))
+		fd, err := os.Create(filepath.Join(upgradeDir, ".done"))
 		Expect(err).ToNot(HaveOccurred())
 		fd.WriteString("Upgrade complete\n")
 		fd.Close()
