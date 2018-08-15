@@ -152,10 +152,15 @@ var _ = Describe("Hub prepare init-cluster", func() {
 			utils.System.MkdirAll = func(path string, perm os.FileMode) error {
 				return nil
 			}
-			badConnection, _ := grpc.DialContext(context.Background(), "localhost:6416", grpc.WithInsecure())
+
+			createErr := errors.New("could not create directories")
+			mockAgent.Err <- createErr
+			badConnection, _ := dialer(context.Background(), "dummy", grpc.WithInsecure())
 			fakeConns := []*services.Connection{{badConnection, nil, "localhost", func() {}}}
+
 			err := hub.CreateAllDataDirectories(fakeConns, segDataDirMap)
 			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring(createErr.Error()))
 		})
 	})
 
