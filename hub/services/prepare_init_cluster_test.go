@@ -68,6 +68,17 @@ var _ = Describe("Hub prepare init-cluster", func() {
 			Expect(err).To(BeNil())
 			Expect(gpinitsystemConfig).To(Equal(expectedConfig))
 		})
+
+		It("turns checksums off when upgrading from 4.x", func() {
+			source.Version = dbconn.GPDBVersion{
+				VersionString: "4.3.3",
+				SemVer:        semver.MustParse("4.3.3"),
+			}
+
+			gpinitsystemConfig, err := hub.CreateInitialInitsystemConfig()
+			Expect(err).To(BeNil())
+			Expect(gpinitsystemConfig).To(ContainElement("HEAP_CHECKSUM=off"))
+		})
 	})
 	Describe("GetCheckpointSegmentsAndEncoding", func() {
 		It("successfully get the GUC values", func() {

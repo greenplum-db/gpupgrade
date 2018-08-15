@@ -136,6 +136,13 @@ func (h *Hub) CreateInitialInitsystemConfig() ([]string, error) {
 	gplog.Info("segPrefix: %v", segPrefix)
 	gpinitsystemConfig = append(gpinitsystemConfig, "SEG_PREFIX="+segPrefix, "TRUSTED_SHELL=ssh")
 
+	if h.source.Version.Before("5.0.0") {
+		// FIXME: we need to decide how to deal with HEAP_CHECKSUM. At the
+		// moment, we assume that 4.x has checksums disabled, and 5.x and later
+		// have checksums enabled.
+		gpinitsystemConfig = append(gpinitsystemConfig, "HEAP_CHECKSUM=off")
+	}
+
 	return gpinitsystemConfig, nil
 }
 
