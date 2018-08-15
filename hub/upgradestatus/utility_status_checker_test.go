@@ -94,7 +94,7 @@ var _ = Describe("utility status checker", func() {
 		testhelper.MockFileContents("Upgrade complete")
 		defer operating.InitializeSystemFunctions()
 		status := upgradestatus.SegmentConversionStatus("/tmp", "/data/dir", testExecutor)
-		Expect(testExecutor.LocalCommands).To(Equal([]string{"pgrep -f pg_upgrade | grep /data/dir"}))
+		Expect(testExecutor.LocalCommands).To(Equal([]string{"ps -ef | grep [p]g_upgrade | grep /data/dir"}))
 		Expect(status).To(Equal(pb.StepStatus_COMPLETE))
 	})
 

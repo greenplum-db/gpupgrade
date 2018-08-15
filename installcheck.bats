@@ -46,6 +46,12 @@ teardown() {
 
     gpupgrade upgrade share-oids
     EventuallyStepCompletes "Copy OID files from master to segments"
+
+    gpupgrade upgrade convert-primaries
+    EventuallyStepCompletes "Run pg_upgrade on primaries"
+
+    gpupgrade upgrade validate-start-cluster
+    EventuallyStepCompletes "Validate the upgraded cluster can start up"
 }
 
 EventuallyStepCompletes() {

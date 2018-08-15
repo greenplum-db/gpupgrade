@@ -31,7 +31,7 @@ func GetUtilityStatus(binaryName, utilityStatePath, dataDir, progressFilePattern
 	switch {
 	case utils.System.IsNotExist(err):
 		return pb.StepStatus_PENDING
-	case isBinaryRunning(binaryName, dataDir, executor):
+	case isBinaryRunning(dataDir, executor):
 		return pb.StepStatus_RUNNING
 	case !inProgressFilesExist(utilityStatePath, progressFilePattern) && isCompleteFunc(utilityStatePath):
 		return pb.StepStatus_COMPLETE
@@ -45,8 +45,8 @@ func GetUtilityStatus(binaryName, utilityStatePath, dataDir, progressFilePattern
  * data directory allows finding that particular invocation if other processes
  * using the same binary are running concurrently.
  */
-func isBinaryRunning(binaryName, dataDir string, executor cluster.Executor) bool {
-	command := fmt.Sprintf("pgrep -f %s", binaryName)
+func isBinaryRunning(dataDir string, executor cluster.Executor) bool {
+	command := "ps -ef | grep [p]g_upgrade"
 	if dataDir != "" {
 		command = fmt.Sprintf("%s | grep %s", command, dataDir)
 	}
