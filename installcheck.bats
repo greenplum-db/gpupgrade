@@ -16,10 +16,6 @@ teardown() {
     if ! psql -d postgres -c ''; then
         gpstart -a
     fi
-
-    rm ./analyze_new_cluster.sh
-    rm ./delete_old_cluster.sh
-
 }
 
 @test "gpugrade can make it as far as we currently know..." {
@@ -48,8 +44,6 @@ teardown() {
     gpupgrade upgrade convert-master
     EventuallyStepCompletes "Run pg_upgrade on master"
 
-    # FIXME: temp to test username change
-    touch ~/.gpupgrade/convert-master/pg_upgrade_dump_{1,2}_oids.sql
     gpupgrade upgrade share-oids
     EventuallyStepCompletes "Copy OID files from master to segments"
 }

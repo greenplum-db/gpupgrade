@@ -58,9 +58,10 @@ func (h *Hub) ConvertMaster() error {
 		modeStr = "--mode=dispatcher"
 	}
 
-	pgUpgradeCmd := fmt.Sprintf("unset PGHOST; unset PGPORT; %s "+
+	pgUpgradeCmd := fmt.Sprintf("cd %s; unset PGHOST; unset PGPORT; %s "+
 		"--old-bindir=%s --old-datadir=%s --old-port=%d "+
 		"--new-bindir=%s --new-datadir=%s --new-port=%d %s",
+		pathToUpgradeWD,
 		filepath.Join(h.target.BinDir, "pg_upgrade"),
 		h.source.BinDir,
 		h.source.MasterDataDir(),

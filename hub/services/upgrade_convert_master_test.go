@@ -7,6 +7,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
+	"github.com/greenplum-db/gpupgrade/utils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -15,18 +16,21 @@ import (
 var _ = Describe("ConvertMasterHub", func() {
 	var (
 		testExecutor *testhelper.TestExecutor
+		upgradeDir   string
 	)
 
 	BeforeEach(func() {
 		testExecutor = &testhelper.TestExecutor{}
 		source.Executor = testExecutor
+
+		upgradeDir = utils.MasterPGUpgradeDirectory(dir)
 	})
 
 	It("returns with no error when convert master runs successfully", func() {
 		err := hub.ConvertMaster()
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(testExecutor.LocalCommands[0]).To(Equal(fmt.Sprintf("unset PGHOST; unset PGPORT; /target/bindir/pg_upgrade ") +
+		Expect(testExecutor.LocalCommands[0]).To(Equal(fmt.Sprintf("cd %s; unset PGHOST; unset PGPORT; /target/bindir/pg_upgrade ", upgradeDir) +
 			fmt.Sprintf("--old-bindir=/source/bindir --old-datadir=%s/seg-1 --old-port=15432 ", dir) +
 			fmt.Sprintf("--new-bindir=/target/bindir --new-datadir=%s/seg-1 --new-port=15432 ", dir) +
 			"--mode=dispatcher"))
@@ -41,7 +45,7 @@ var _ = Describe("ConvertMasterHub", func() {
 		err := hub.ConvertMaster()
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(testExecutor.LocalCommands[0]).To(Equal(fmt.Sprintf("unset PGHOST; unset PGPORT; /target/bindir/pg_upgrade ") +
+		Expect(testExecutor.LocalCommands[0]).To(Equal(fmt.Sprintf("cd %s; unset PGHOST; unset PGPORT; /target/bindir/pg_upgrade ", upgradeDir) +
 			fmt.Sprintf("--old-bindir=/source/bindir --old-datadir=%s/seg-1 --old-port=15432 ", dir) +
 			fmt.Sprintf("--new-bindir=/target/bindir --new-datadir=%s/seg-1 --new-port=15432 ", dir) +
 			"--dispatcher-mode"))

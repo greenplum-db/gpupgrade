@@ -71,10 +71,21 @@ func (s *AgentServer) UpgradeSegments(in *pb.UpgradeConvertPrimarySegmentsReques
 			}
 		}
 
-		convertPrimaryCmd := fmt.Sprintf("cd %s && nohup %s --old-bindir=%s --old-datadir=%s --new-bindir=%s --new-datadir=%s --old-port=%d --new-port=%d %s",
-			pathToSegment, in.NewBinDir+"/pg_upgrade", in.OldBinDir, segment.OldDataDir, in.NewBinDir, segment.NewDataDir, segment.OldPort, segment.NewPort, modeStr)
+		cmd := fmt.Sprintf("cd %s; unset PGHOST; unset PGPORT; %s "+
+			"--old-bindir=%s --old-datadir=%s --old-port=%d "+
+			"--new-bindir=%s --new-datadir=%s --new-port=%d %s",
+			pathToSegment,
+			filepath.Join(in.NewBinDir, "pg_upgrade"),
+			in.OldBinDir,
+			segment.OldDataDir,
+			segment.OldPort,
+			in.NewBinDir,
+			segment.NewDataDir,
+			segment.NewPort,
+			modeStr)
 
-		err = utils.System.RunCommandAsync(convertPrimaryCmd, filepath.Join(pathToSegment, "pg_upgrade_segment.log"))
+		// TODO: do this synchronously.
+		err = utils.System.RunCommandAsync(cmd, filepath.Join(pathToSegment, "pg_upgrade_segment.log"))
 		if err != nil {
 			gplog.Error("An error occurred: %v", err)
 			return err
