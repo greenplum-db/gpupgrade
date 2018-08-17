@@ -6,7 +6,6 @@ import (
 	"os"
 	"path"
 
-	"github.com/blang/semver"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/pkg/errors"
@@ -29,18 +28,12 @@ var _ = Describe("Cluster", func() {
 		testStateDir, err = ioutil.TempDir("", "")
 		Expect(err).ToNot(HaveOccurred())
 
-		version, err := semver.Make("6.0.0")
-		Expect(err).ToNot(HaveOccurred())
-
 		testhelper.SetupTestLogger()
 		expectedCluster = &utils.Cluster{
 			Cluster:    testutils.CreateMultinodeSampleCluster("/tmp"),
 			BinDir:     "/fake/path",
 			ConfigPath: path.Join(testStateDir, "cluster_config.json"),
-			Version: dbconn.GPDBVersion{
-				VersionString: version.String(),
-				SemVer:        version,
-			},
+			Version:    dbconn.NewVersion("6.0.0"),
 		}
 	})
 
@@ -147,7 +140,7 @@ var _ = Describe("Cluster", func() {
 
 		It("returns an error if the segment configuration query fails", func() {
 			conn, mock := testutils.CreateMockDBConn()
-			testutils.SetMockGPDBVersion(mock, "5.3.4")
+			testhelper.ExpectVersionQuery(mock, "5.3.4")
 
 			queryErr := errors.New("failed to get segment configuration")
 			mock.ExpectQuery("SELECT .* FROM gp_segment_configuration").WillReturnError(queryErr)
@@ -162,7 +155,7 @@ var _ = Describe("Cluster", func() {
 		It("populates a cluster using DB information", func() {
 			conn, mock := testutils.CreateMockDBConn()
 
-			testutils.SetMockGPDBVersion(mock, "5.3.4")
+			testhelper.ExpectVersionQuery(mock, "5.3.4")
 			mock.ExpectQuery("SELECT .* FROM gp_segment_configuration").WillReturnRows(testutils.MockSegmentConfiguration())
 
 			binDir := "/usr/local/gpdb/bin"

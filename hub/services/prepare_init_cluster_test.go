@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/blang/semver"
 	"github.com/pkg/errors"
 
 	"github.com/greenplum-db/gpupgrade/hub/services"
@@ -34,16 +33,10 @@ var _ = Describe("Hub prepare init-cluster", func() {
 	BeforeEach(func() {
 		testExecutor = &testhelper.TestExecutor{}
 
-		version, err := semver.Make("6.0.0")
-		Expect(err).ToNot(HaveOccurred())
-
 		expectedCluster = &utils.Cluster{
 			Cluster: testutils.MockCluster(),
 			BinDir:  "/tmp",
-			Version: dbconn.GPDBVersion{
-				VersionString: version.String(),
-				SemVer:        version,
-			},
+			Version: dbconn.NewVersion("6.0.0"),
 		}
 
 		segDataDirMap = map[string][]string{
@@ -70,10 +63,7 @@ var _ = Describe("Hub prepare init-cluster", func() {
 		})
 
 		It("turns checksums off when upgrading from 4.x", func() {
-			source.Version = dbconn.GPDBVersion{
-				VersionString: "4.3.3",
-				SemVer:        semver.MustParse("4.3.3"),
-			}
+			source.Version = dbconn.NewVersion("4.3.3")
 
 			gpinitsystemConfig, err := hub.CreateInitialInitsystemConfig()
 			Expect(err).To(BeNil())

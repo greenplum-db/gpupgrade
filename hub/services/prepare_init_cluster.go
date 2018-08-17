@@ -66,7 +66,6 @@ func (h *Hub) InitCluster(sourceDBConn *dbconn.DBConn) (*dbconn.DBConn, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "could not connect to database")
 	}
-	sourceDBConn.Version.Initialize(sourceDBConn)
 	defer sourceDBConn.Close()
 
 	gpinitsystemConfig, err := h.CreateInitialInitsystemConfig()

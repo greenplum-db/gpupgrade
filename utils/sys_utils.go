@@ -1,7 +1,6 @@
 package utils
 
 import (
-	//"github.com/jmoiron/sqlx"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"

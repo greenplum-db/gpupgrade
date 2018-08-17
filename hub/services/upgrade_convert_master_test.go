@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/blang/semver"
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -37,10 +36,7 @@ var _ = Describe("ConvertMasterHub", func() {
 	})
 
 	It("uses the correct pg_upgrade options for older DBs", func() {
-		target.Version = dbconn.GPDBVersion{
-			VersionString: "5.0.0",
-			SemVer:        semver.MustParse("5.0.0"),
-		}
+		target.Version = dbconn.NewVersion("5.0.0")
 
 		err := hub.ConvertMaster()
 		Expect(err).ToNot(HaveOccurred())

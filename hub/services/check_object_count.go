@@ -25,7 +25,6 @@ func (h *Hub) CheckObjectCount(ctx context.Context,
 		gplog.Error(err.Error())
 		return &pb.CheckObjectCountReply{}, utils.DatabaseConnectionError{Parent: err}
 	}
-	dbConnector.Version.Initialize(dbConnector)
 	names, err := dbconn.SelectStringSlice(dbConnector, GET_DATABASE_NAMES)
 	if err != nil {
 		gplog.Error(err.Error())
@@ -42,7 +41,6 @@ func (h *Hub) CheckObjectCount(ctx context.Context,
 			gplog.Error(err.Error())
 			return &pb.CheckObjectCountReply{}, errors.New(err.Error())
 		}
-		dbConnector.Version.Initialize(dbConnector)
 
 		aocount, heapcount, errFromCounts := GetCountsForDb(dbConnector)
 		if errFromCounts != nil {
