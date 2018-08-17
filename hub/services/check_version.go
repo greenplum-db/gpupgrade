@@ -27,7 +27,6 @@ func (h *Hub) CheckVersion(ctx context.Context,
 		gplog.Error(err.Error())
 		return &pb.CheckVersionReply{}, utils.DatabaseConnectionError{Parent: err}
 	}
-	dbConnector.Version.Initialize(dbConnector)
 
 	isVersionCompatible := dbConnector.Version.AtLeast(MINIMUM_VERSION)
 	return &pb.CheckVersionReply{IsVersionCompatible: isVersionCompatible}, nil

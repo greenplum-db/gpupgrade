@@ -46,22 +46,13 @@
     "operating",
     "testhelper"
   ]
-  revision = "a51003cc3ea7222978cb52aaab8232f8fffb5c27"
+  revision = "d77bf5c27646a07c35b4e7b9774297fe8702afbc"
 
 [[projects]]
   name = "github.com/inconshreveable/mousetrap"
   packages = ["."]
   revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
   version = "v1.0"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/jmoiron/sqlx"
-  packages = [
-    ".",
-    "reflectx"
-  ]
-  revision = "cf35089a197953c69420c8d0cecda90809764b1d"
 
 [[projects]]
   branch = "master"

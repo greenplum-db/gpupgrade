@@ -41,8 +41,6 @@ func ClusterFromDB(conn *dbconn.DBConn, binDir, configPath string) (*Cluster, er
 	}
 	defer conn.Close()
 
-	conn.Version.Initialize(conn)
-
 	c := new(Cluster)
 	c.Version = conn.Version
 

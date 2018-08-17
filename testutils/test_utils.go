@@ -89,7 +89,6 @@ func CreateSampleClusterPair() (*utils.Cluster, *utils.Cluster) {
 func InitClusterPairFromDB() (*utils.Cluster, *utils.Cluster) {
 	conn := dbconn.NewDBConnFromEnvironment("postgres")
 	conn.MustConnect(1)
-	conn.Version.Initialize(conn)
 	segConfig := cluster.MustGetSegmentConfiguration(conn)
 	sourceCluster := cluster.NewCluster(segConfig)
 	targetCluster := cluster.NewCluster(segConfig)

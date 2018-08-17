@@ -1,8 +1,6 @@
 package testutils
 
 import (
-	"fmt"
-
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
@@ -35,16 +33,6 @@ func MockCluster() *cluster.Cluster {
 		},
 		Executor: &cluster.GPDBExecutor{},
 	}
-}
-
-func SetMockGPDBVersion(mock sqlmock.Sqlmock, version string) {
-	rows := sqlmock.NewRows([]string{"versionstring"})
-
-	versionStr := fmt.Sprintf(`PostgreSQL 9.2beta2 (Greenplum Database %s-alpha.0+dev.9374.gfb2a077e20 build dev-oss)`,
-		version)
-	rows.AddRow(versionStr)
-
-	mock.ExpectQuery(`SELECT version\(\) AS versionstring`).WillReturnRows(rows)
 }
 
 // CreateMockDBConn is just like testhelper.CreateAndConnectMockDB(), but it

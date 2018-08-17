@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	. "github.com/onsi/ginkgo"
@@ -22,19 +21,16 @@ var _ = Describe("InitCluster", func() {
 		os.Remove(fmt.Sprintf("%s_upgrade", testWorkspaceDir))
 	})
 	It("executes gpinitsystem and returns a target cluster connector", func() {
-		mockdb, mock := testhelper.CreateMockDB()
-		testDriver := testhelper.TestDriver{DB: mockdb, DBName: "testdb", User: "testrole"}
-		db := dbconn.NewDBConn(testDriver.DBName, testDriver.User, "fakehost", -1 /* not used */)
-		db.Driver = testDriver
+		mockdb, mock := testhelper.CreateMockDBConn()
+		testhelper.ExpectVersionQuery(mock, "6.0.0")
 
-		testutils.SetMockGPDBVersion(mock, "6.0.0")
 		checkpointRow := sqlmock.NewRows([]string{"string"}).AddRow(driver.Value("8"))
 		encodingRow := sqlmock.NewRows([]string{"string"}).AddRow(driver.Value("UNICODE"))
 		mock.ExpectQuery("SELECT .*checkpoint.*").WillReturnRows(checkpointRow)
 		mock.ExpectQuery("SELECT .*server.*").WillReturnRows(encodingRow)
 		mock.ExpectQuery("SELECT (.*)").WillReturnRows(testutils.MockSegmentConfiguration())
 
-		targetConn, err := hub.InitCluster(db)
+		targetConn, err := hub.InitCluster(mockdb)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(targetConn.Host).To(Equal("localhost"))
