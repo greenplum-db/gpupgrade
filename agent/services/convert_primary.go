@@ -16,7 +16,7 @@ import (
 func (s *AgentServer) UpgradeConvertPrimarySegments(ctx context.Context, in *pb.UpgradeConvertPrimarySegmentsRequest) (*pb.UpgradeConvertPrimarySegmentsReply, error) {
 	gplog.Info("got a request to convert primary from the hub")
 
-	err := s.UpgradeSegments(in)
+	err := s.UpgradeSegments(in.OldBinDir, in.NewBinDir, in.NewVersion, in.DataDirPairs)
 
 	if err != nil {
 		return &pb.UpgradeConvertPrimarySegmentsReply{}, err
@@ -25,7 +25,7 @@ func (s *AgentServer) UpgradeConvertPrimarySegments(ctx context.Context, in *pb.
 	return &pb.UpgradeConvertPrimarySegmentsReply{}, nil
 }
 
-func (s *AgentServer) UpgradeSegments(in *pb.UpgradeConvertPrimarySegmentsRequest) error {
+func (s *AgentServer) UpgradeSegments(oldBinDir, newBinDir, newVersion string, dataDirPairs []*pb.DataDirPair) error {
 	filename := "pg_upgrade_dump_*_oids.sql"
 	shareOIDfilePath := filepath.Join(utils.PGUpgradeDirectory(s.conf.StateDir), filename)
 	oidFiles, err := utils.System.FilePathGlob(shareOIDfilePath)
@@ -39,7 +39,7 @@ func (s *AgentServer) UpgradeSegments(in *pb.UpgradeConvertPrimarySegmentsReques
 		return errors.New("No OID files found")
 	}
 
-	targetVersion, err := semver.Parse(in.NewVersion)
+	targetVersion, err := semver.Parse(newVersion)
 	if err != nil {
 		gplog.Error("failed to parse new cluster version: %s", err)
 		return errors.Wrap(err, "failed to parse new cluster version")
@@ -55,7 +55,7 @@ func (s *AgentServer) UpgradeSegments(in *pb.UpgradeConvertPrimarySegmentsReques
 		modeStr = "--mode=segment"
 	}
 
-	for _, segment := range in.DataDirPairs {
+	for _, segment := range dataDirPairs {
 		pathToSegment := utils.SegmentPGUpgradeDirectory(s.conf.StateDir, int(segment.Content))
 		err := utils.System.MkdirAll(pathToSegment, 0700)
 		if err != nil {
@@ -75,11 +75,11 @@ func (s *AgentServer) UpgradeSegments(in *pb.UpgradeConvertPrimarySegmentsReques
 			"--old-bindir=%s --old-datadir=%s --old-port=%d "+
 			"--new-bindir=%s --new-datadir=%s --new-port=%d %s",
 			pathToSegment,
-			filepath.Join(in.NewBinDir, "pg_upgrade"),
-			in.OldBinDir,
+			filepath.Join(newBinDir, "pg_upgrade"),
+			oldBinDir,
 			segment.OldDataDir,
 			segment.OldPort,
-			in.NewBinDir,
+			newBinDir,
 			segment.NewDataDir,
 			segment.NewPort,
 			modeStr)

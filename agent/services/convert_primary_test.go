@@ -24,7 +24,7 @@ var _ = Describe("UpgradeSegments", func() {
 		dir          string
 		oidFile      string
 		testExecutor *testhelper.TestExecutor
-		request      *pb.UpgradeConvertPrimarySegmentsRequest
+		dataDirPairs []*pb.DataDirPair
 	)
 
 	BeforeEach(func() {
@@ -48,14 +48,9 @@ var _ = Describe("UpgradeSegments", func() {
 		Expect(err).ToNot(HaveOccurred())
 		f.Close()
 
-		request = &pb.UpgradeConvertPrimarySegmentsRequest{
-			OldBinDir:  "/old/bin",
-			NewBinDir:  "/new/bin",
-			NewVersion: "6.0.0",
-			DataDirPairs: []*pb.DataDirPair{
-				{OldDataDir: "old/datadir1", NewDataDir: "new/datadir1", Content: 0, OldPort: 1, NewPort: 11},
-				{OldDataDir: "old/datadir2", NewDataDir: "new/datadir2", Content: 1, OldPort: 2, NewPort: 22},
-			},
+		dataDirPairs = []*pb.DataDirPair{
+			{OldDataDir: "old/datadir1", NewDataDir: "new/datadir1", Content: 0, OldPort: 1, NewPort: 11},
+			{OldDataDir: "old/datadir2", NewDataDir: "new/datadir2", Content: 1, OldPort: 2, NewPort: 22},
 		}
 	})
 
@@ -70,7 +65,7 @@ var _ = Describe("UpgradeSegments", func() {
 			return err
 		}
 
-		err := agent.UpgradeSegments(request)
+		err := agent.UpgradeSegments("/old/bin", "/new/bin", "6.0.0", dataDirPairs)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(testExecutor.NumExecutions).To(Equal(4))
@@ -91,8 +86,7 @@ var _ = Describe("UpgradeSegments", func() {
 			return err
 		}
 
-		request.NewVersion = "5.3.0"
-		err := agent.UpgradeSegments(request)
+		err := agent.UpgradeSegments("/old/bin", "/new/bin", "5.3.0", dataDirPairs)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(testExecutor.NumExecutions).To(Equal(4))
@@ -107,8 +101,7 @@ var _ = Describe("UpgradeSegments", func() {
 	})
 
 	It("returns an error if the target version is incomprehensible", func() {
-		request.NewVersion = "klf;adsfds"
-		err := agent.UpgradeSegments(request)
+		err := agent.UpgradeSegments("/old/bin", "/new/bin", "klf;adsfds", dataDirPairs)
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("failed to parse new cluster version"))
 	})
@@ -118,7 +111,7 @@ var _ = Describe("UpgradeSegments", func() {
 			return []string{}, errors.New("failed to find files")
 		}
 
-		err := agent.UpgradeSegments(request)
+		err := agent.UpgradeSegments("/old/bin", "/new/bin", "6.0.0", dataDirPairs)
 		Expect(err).To(HaveOccurred())
 	})
 
@@ -126,7 +119,7 @@ var _ = Describe("UpgradeSegments", func() {
 		err := os.Remove(oidFile)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = agent.UpgradeSegments(request)
+		err = agent.UpgradeSegments("/old/bin", "/new/bin", "6.0.0", dataDirPairs)
 		Expect(err).To(HaveOccurred())
 	})
 
@@ -135,14 +128,14 @@ var _ = Describe("UpgradeSegments", func() {
 			return errors.New("failed to create segment directory")
 		}
 
-		err := agent.UpgradeSegments(request)
+		err := agent.UpgradeSegments("/old/bin", "/new/bin", "6.0.0", dataDirPairs)
 		Expect(err).To(HaveOccurred())
 	})
 
 	It("returns an error if the oid files fail to copy into the segment directory", func() {
 		testExecutor.LocalError = errors.New("Failed to copy oid file into segment directory")
 
-		err := agent.UpgradeSegments(request)
+		err := agent.UpgradeSegments("/old/bin", "/new/bin", "6.0.0", dataDirPairs)
 		Expect(err).To(HaveOccurred())
 	})
 
@@ -152,7 +145,7 @@ var _ = Describe("UpgradeSegments", func() {
 			return cmdErr
 		}
 
-		err := agent.UpgradeSegments(request)
+		err := agent.UpgradeSegments("/old/bin", "/new/bin", "6.0.0", dataDirPairs)
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring(cmdErr.Error()))
 	})
