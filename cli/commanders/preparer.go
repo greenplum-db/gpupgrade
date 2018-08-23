@@ -71,7 +71,7 @@ func (p Preparer) InitCluster() error {
 		return err
 	}
 
-	gplog.Info("Gleaning the new cluster config")
+	gplog.Info("Starting new cluster initialization")
 	return nil
 }
 

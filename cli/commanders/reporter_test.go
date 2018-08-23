@@ -82,7 +82,7 @@ var _ = Describe("Reporter", func() {
 			}
 			err := reporter.OverallUpgradeStatus()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(testLogFile.Contents()).To(ContainSubstring("RUNNING - Initialize upgrade target cluster"))
+			Expect(testLogFile.Contents()).To(ContainSubstring("RUNNING - Initialize new cluster"))
 			Expect(testLogFile.Contents()).To(ContainSubstring("PENDING - Run pg_upgrade on master"))
 		})
 
@@ -109,7 +109,7 @@ var _ = Describe("Reporter", func() {
 			Entry("unknown step", pb.UpgradeSteps_UNKNOWN_STEP, pb.StepStatus_PENDING, "PENDING - Unknown step"),
 			Entry("configuration check", pb.UpgradeSteps_CONFIG, pb.StepStatus_RUNNING, "RUNNING - Configuration Check"),
 			Entry("install binaries on segments", pb.UpgradeSteps_SEGINSTALL, pb.StepStatus_COMPLETE, "COMPLETE - Install binaries on segments"),
-			Entry("prepare init cluster", pb.UpgradeSteps_INIT_CLUSTER, pb.StepStatus_FAILED, "FAILED - Initialize upgrade target cluster"),
+			Entry("prepare init cluster", pb.UpgradeSteps_INIT_CLUSTER, pb.StepStatus_FAILED, "FAILED - Initialize new cluster"),
 			Entry("upgrade on master", pb.UpgradeSteps_CONVERT_MASTER, pb.StepStatus_PENDING, "PENDING - Run pg_upgrade on master"),
 			Entry("shutdown cluster", pb.UpgradeSteps_SHUTDOWN_CLUSTERS, pb.StepStatus_PENDING, "PENDING - Shutdown clusters"),
 			Entry("reconfigure ports", pb.UpgradeSteps_RECONFIGURE_PORTS, pb.StepStatus_PENDING, "PENDING - Adjust upgraded cluster ports"),

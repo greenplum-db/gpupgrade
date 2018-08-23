@@ -26,7 +26,7 @@ var UpgradeStepsMessage = map[pb.UpgradeSteps]string{
 	pb.UpgradeSteps_UNKNOWN_STEP:           "- Unknown step",
 	pb.UpgradeSteps_CONFIG:                 "- Configuration Check",
 	pb.UpgradeSteps_SEGINSTALL:             "- Install binaries on segments",
-	pb.UpgradeSteps_INIT_CLUSTER:           "- Initialize upgrade target cluster",
+	pb.UpgradeSteps_INIT_CLUSTER:           "- Initialize new cluster",
 	pb.UpgradeSteps_START_AGENTS:           "- Agents Started on Cluster",
 	pb.UpgradeSteps_CONVERT_MASTER:         "- Run pg_upgrade on master",
 	pb.UpgradeSteps_SHUTDOWN_CLUSTERS:      "- Shutdown clusters",

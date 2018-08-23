@@ -34,7 +34,7 @@ teardown() {
     sleep 1
 
     gpupgrade prepare init-cluster
-    EventuallyStepCompletes "Initialize upgrade target cluster"
+    EventuallyStepCompletes "Initialize new cluster"
 
     gpupgrade prepare shutdown-clusters
     EventuallyStepCompletes "Shutdown clusters"

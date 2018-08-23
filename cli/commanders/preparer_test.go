@@ -92,7 +92,7 @@ var _ = Describe("preparer", func() {
 			preparer := commanders.NewPreparer(client)
 			err := preparer.InitCluster()
 			Expect(err).To(BeNil())
-			Eventually(testStdout).Should(gbytes.Say("Gleaning the new cluster config"))
+			Eventually(testStdout).Should(gbytes.Say("Starting new cluster initialization"))
 		})
 	})
 	Describe("PrepareShutdownCluster", func() {
