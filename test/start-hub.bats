@@ -58,19 +58,23 @@ teardown() {
 
 @test "start-hub does not return an error if an unrelated process has gpupgrade_hub in its name" {
     # Create a long-running process with gpupgrade_hub in the name.
-    tmpdir=`mktemp -d`
-    tmpfile="${tmpdir}/gpupgrade_hub_test_log"
-    touch $tmpfile
-    tail -f $tmpfile 3>&- & # we'll `kill %1` this process later
-    ps -ef | grep -Gq "[g]pupgrade_hub" # double-check that it's actually there
+    exec -a gpupgrade_hub_test_log sleep 5 3>&- &
+    bgproc=$! # save the PID to kill later
+
+    # Wait a little bit for the background process to get its new name.
+    while ! ps -ef | grep -Gq "[g]pupgrade_hub"; do
+        sleep .001
+
+        # To avoid hanging forever if something goes terribly wrong, make sure
+        # the background process still exists during every iteration.
+        kill -0 $bgproc
+    done
 
     # Start the hub; there should be no errors.
     gpupgrade prepare start-hub 3>&-
 
-    # Clean up.
-    kill %1
-    rm $tmpfile
-    rm -r $tmpdir
+    # Clean up. Use SIGINT rather than SIGTERM to avoid a nasty-gram from BATS.
+    kill -INT $bgproc
 }
 
 @test "start-hub returns an error if gpupgrade_hub isn't on the PATH" {
