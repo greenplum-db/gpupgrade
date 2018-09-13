@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/pkg/errors"
@@ -163,6 +164,16 @@ var _ = Describe("Hub prepare init-cluster", func() {
 			stdout, _, _ = testhelper.SetupTestLogger()
 		})
 
+		It("should use executables in the source's bindir even if bindir has a trailing slash", func() {
+			target.BinDir = target.BinDir + string(os.PathSeparator)
+			err := hub.RunInitsystemForNewCluster("filepath")
+			Expect(err).To(BeNil())
+
+			gphome := filepath.Dir(path.Clean(target.BinDir))  //works around https://github.com/golang/go/issues/4837(in go10.4)
+			expectedCommandString := fmt.Sprintf("source %s/greenplum_path.sh; %s/gpinitsystem -a -I", gphome, target.BinDir)
+			Expect(testExecutor.LocalCommands[0]).Should(ContainSubstring(expectedCommandString))
+		})
+
 		It("successfully runs gpinitsystem", func() {
 			testExecutor.LocalError = errors.New("exit status 1")
 			err := hub.RunInitsystemForNewCluster("filepath")
@@ -175,7 +186,7 @@ var _ = Describe("Hub prepare init-cluster", func() {
 			err := hub.RunInitsystemForNewCluster("filepath")
 			Expect(err).To(BeNil())
 
-			gphome := filepath.Dir(target.BinDir)
+			gphome := filepath.Dir(path.Clean(target.BinDir))  //works around https://github.com/golang/go/issues/4837(in go10.4)
 			expectedCommandString := fmt.Sprintf("source %s/greenplum_path.sh; %s/gpinitsystem -a -I", gphome, target.BinDir)
 			Expect(testExecutor.LocalCommands[0]).Should(ContainSubstring(expectedCommandString))
 		})

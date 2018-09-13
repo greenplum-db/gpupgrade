@@ -207,7 +207,7 @@ func (h *Hub) CreateAllDataDirectories(agentConns []*Connection, segmentDataDirM
 
 func (h *Hub) RunInitsystemForNewCluster(gpinitsystemFilepath string) error {
 	// gpinitsystem the new cluster
-	gphome := filepath.Dir(h.target.BinDir)
+	gphome := filepath.Dir(path.Clean(h.target.BinDir))   //works around https://github.com/golang/go/issues/4837 in go10.4
 	cmdStr := fmt.Sprintf("source %s/greenplum_path.sh; %s/gpinitsystem -a -I %s",
 		gphome,
 		h.target.BinDir,

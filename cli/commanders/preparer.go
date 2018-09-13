@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -122,12 +123,12 @@ func DoInit(stateDir, sourceBinDir, targetBinDir string) error {
 		return err
 	}
 	emptyCluster := cluster.NewCluster([]cluster.SegConfig{})
-	source := &utils.Cluster{Cluster: emptyCluster, BinDir: sourceBinDir, ConfigPath: filepath.Join(stateDir, utils.SOURCE_CONFIG_FILENAME)}
+	source := &utils.Cluster{Cluster: emptyCluster, BinDir: path.Clean(sourceBinDir), ConfigPath: filepath.Join(stateDir, utils.SOURCE_CONFIG_FILENAME)}
 	err = source.Commit()
 	if err != nil {
 		return errors.Wrap(err, "Unable to save source cluster configuration")
 	}
-	target := &utils.Cluster{Cluster: emptyCluster, BinDir: targetBinDir, ConfigPath: filepath.Join(stateDir, utils.TARGET_CONFIG_FILENAME)}
+	target := &utils.Cluster{Cluster: emptyCluster, BinDir: path.Clean(targetBinDir), ConfigPath: filepath.Join(stateDir, utils.TARGET_CONFIG_FILENAME)}
 	err = target.Commit()
 	if err != nil {
 		return errors.Wrap(err, "Unable to save target cluster configuration")
