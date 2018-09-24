@@ -6,7 +6,6 @@ import (
 
 	pb "github.com/greenplum-db/gpupgrade/idl"
 
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/pkg/errors"
 )
 
@@ -56,7 +55,7 @@ func (r *Reporter) OverallUpgradeStatus() error {
 	for _, step := range status.GetListOfUpgradeStepStatuses() {
 		reportString := fmt.Sprintf("%v %s", step.GetStatus(),
 			UpgradeStepsMessage[step.GetStep()])
-		gplog.Info(reportString)
+		fmt.Println(reportString)
 	}
 
 	return nil
@@ -73,7 +72,7 @@ func (r *Reporter) OverallConversionStatus() error {
 	}
 
 	for _, status := range conversionStatus.GetConversionStatuses() {
-		gplog.Info(status)
+		fmt.Println(status)
 	}
 
 	return nil

@@ -2,6 +2,8 @@ package commanders_test
 
 import (
 	"errors"
+	"io/ioutil"
+	"os"
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	pb "github.com/greenplum-db/gpupgrade/idl"
@@ -16,6 +18,18 @@ import (
 	"github.com/onsi/gomega/gbytes"
 )
 
+var (
+	stdoutRead  *os.File
+	stdoutWrite *os.File
+	stdoutSaved *os.File
+)
+
+func getStdoutContents() string {
+	stdoutWrite.Close()
+	contents, _ := ioutil.ReadAll(stdoutRead)
+	return string(contents)
+}
+
 var _ = Describe("Reporter", func() {
 	var (
 		spyClient   *spyCliToHubClient
@@ -29,11 +43,16 @@ var _ = Describe("Reporter", func() {
 		_, _, testLogFile = testhelper.SetupTestLogger()
 		reporter = commanders.NewReporter(spyClient)
 		ctrl = gomock.NewController(GinkgoT())
+
+		stdoutRead, stdoutWrite, _ = os.Pipe()
+		stdoutSaved = os.Stdout
+		os.Stdout = stdoutWrite
 	})
 
 	AfterEach(func() {
 		utils.System = utils.InitializeSystemFunctions()
-		defer ctrl.Finish()
+		ctrl.Finish()
+		os.Stdout = stdoutSaved
 	})
 
 	Describe("StatusConversion", func() {
@@ -47,7 +66,7 @@ var _ = Describe("Reporter", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(spyClient.statusConversionCount).To(Equal(1))
-			Expect(testLogFile.Contents()).To(ContainSubstring("cluster status"))
+			Expect(getStdoutContents()).To(ContainSubstring("cluster status"))
 		})
 
 		It("returns an error upon a failure", func() {
@@ -82,8 +101,9 @@ var _ = Describe("Reporter", func() {
 			}
 			err := reporter.OverallUpgradeStatus()
 			Expect(err).ToNot(HaveOccurred())
-			Expect(testLogFile.Contents()).To(ContainSubstring("RUNNING - Initialize new cluster"))
-			Expect(testLogFile.Contents()).To(ContainSubstring("PENDING - Run pg_upgrade on master"))
+			contents := getStdoutContents()
+			Expect(contents).To(ContainSubstring("RUNNING - Initialize new cluster"))
+			Expect(contents).To(ContainSubstring("PENDING - Run pg_upgrade on master"))
 		})
 
 		It("returns an error when the hub returns no error, but the reply has an empty list", func() {
@@ -104,7 +124,7 @@ var _ = Describe("Reporter", func() {
 				}
 				err := reporter.OverallUpgradeStatus()
 				Expect(err).ToNot(HaveOccurred())
-				Expect(testLogFile.Contents()).To(ContainSubstring(expected))
+				Expect(getStdoutContents()).To(ContainSubstring(expected))
 			},
 			Entry("unknown step", pb.UpgradeSteps_UNKNOWN_STEP, pb.StepStatus_PENDING, "PENDING - Unknown step"),
 			Entry("configuration check", pb.UpgradeSteps_CONFIG, pb.StepStatus_RUNNING, "RUNNING - Configuration Check"),

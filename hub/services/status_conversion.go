@@ -20,7 +20,7 @@ func (h *Hub) StatusConversion(ctx context.Context, in *pb.StatusConversionReque
 		return &pb.StatusConversionReply{}, err
 	}
 
-	primaryStatuses, err := GetConversionStatusFromPrimaries(agentConnections, h.target)
+	primaryStatuses, err := GetConversionStatusFromPrimaries(agentConnections, h.source)
 	if err != nil {
 		err := fmt.Errorf("Could not get conversion status from primaries. Err: \"%v\"", err)
 		gplog.Error(err.Error())
@@ -36,13 +36,13 @@ func (h *Hub) StatusConversion(ctx context.Context, in *pb.StatusConversionReque
 
 // Helper function to make grpc calls to all agents on primaries for their status
 // TODO: Check conversion statuses in parallel
-func GetConversionStatusFromPrimaries(conns []*Connection, target *utils.Cluster) ([]string, error) {
+func GetConversionStatusFromPrimaries(conns []*Connection, source *utils.Cluster) ([]string, error) {
 	var statuses []string
 	for _, conn := range conns {
 		// Build a list of segments on the host in which the agent resides on.
 		var agentSegments []*pb.SegmentInfo
 
-		segments, err := target.SegmentsOn(conn.Hostname)
+		segments, err := source.SegmentsOn(conn.Hostname)
 		if err != nil {
 			return nil, errors.Wrap(err, "couldn't retrieve target cluster segments")
 		}
