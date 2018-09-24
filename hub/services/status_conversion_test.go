@@ -10,6 +10,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/hub/services"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 )
 
@@ -70,47 +71,40 @@ var _ = Describe("hub", func() {
 	})
 
 	Describe("PrimaryConversionStatus", func() {
-		It("returns FAILED if any agents report failure", func() {
+
+		DescribeTable("PrimaryConversionStatus", func(statuses []*pb.PrimaryStatus, expected pb.StepStatus) {
 			mockAgent.StatusConversionResponse = &pb.CheckConversionStatusReply{
-				Statuses: []*pb.PrimaryStatus{{Status: pb.StepStatus_FAILED}, {Status: pb.StepStatus_RUNNING}},
+				Statuses: statuses,
 			}
-
 			status := services.PrimaryConversionStatus(hub)
-			Expect(status).To(Equal(pb.StepStatus_FAILED))
-		})
-
-		It("returns RUNNING if any agents report progress", func() {
-			mockAgent.StatusConversionResponse = &pb.CheckConversionStatusReply{
-				Statuses: []*pb.PrimaryStatus{{Status: pb.StepStatus_COMPLETE}, {Status: pb.StepStatus_RUNNING}},
-			}
-
-			status := services.PrimaryConversionStatus(hub)
-			Expect(status).To(Equal(pb.StepStatus_RUNNING))
-		})
-
-		It("returns COMPLETE if all agents report completion", func() {
-			mockAgent.StatusConversionResponse = &pb.CheckConversionStatusReply{
-				Statuses: []*pb.PrimaryStatus{{Status: pb.StepStatus_COMPLETE}, {Status: pb.StepStatus_COMPLETE}},
-			}
-
-			status := services.PrimaryConversionStatus(hub)
-			Expect(status).To(Equal(pb.StepStatus_COMPLETE))
-		})
-
-		It("returns PENDING if no agents report any other state", func() {
-			mockAgent.StatusConversionResponse = &pb.CheckConversionStatusReply{
-				Statuses: []*pb.PrimaryStatus{{Status: pb.StepStatus_PENDING}, {Status: pb.StepStatus_PENDING}},
-			}
-
-			status := services.PrimaryConversionStatus(hub)
-			Expect(status).To(Equal(pb.StepStatus_PENDING))
-		})
+			Expect(status).To(Equal(expected))
+		},
+		Entry("returns FAILED if any agents report failure",
+			[]*pb.PrimaryStatus{{Status: pb.StepStatus_FAILED}, {Status: pb.StepStatus_RUNNING}},
+			pb.StepStatus_FAILED),
+		Entry("returns RUNNING if any agents report progress",
+			[]*pb.PrimaryStatus{{Status: pb.StepStatus_COMPLETE}, {Status: pb.StepStatus_RUNNING}, {Status: pb.StepStatus_RUNNING}},
+			pb.StepStatus_RUNNING),
+		Entry("returns COMPLETE if all agents report completion",
+			[]*pb.PrimaryStatus{{Status: pb.StepStatus_COMPLETE}, {Status: pb.StepStatus_COMPLETE}},
+			pb.StepStatus_COMPLETE),
+		Entry("returns PENDING if no agents report any other state",
+			[]*pb.PrimaryStatus{{Status: pb.StepStatus_PENDING}, {Status: pb.StepStatus_PENDING}},
+			pb.StepStatus_PENDING),
+		Entry("returns PENDING if PENDING,PENDING,COMPLETE",
+			[]*pb.PrimaryStatus{{Status: pb.StepStatus_PENDING}, {Status: pb.StepStatus_PENDING},{Status: pb.StepStatus_COMPLETE}},
+			pb.StepStatus_PENDING),
+		Entry("returns RUNNING if PENDING,RUNNING,COMPLETE",
+			[]*pb.PrimaryStatus{{Status: pb.StepStatus_PENDING}, {Status: pb.StepStatus_RUNNING},{Status: pb.StepStatus_COMPLETE}},
+			pb.StepStatus_RUNNING),
+		)
 
 		It("returns PENDING if the status is not retrievable", func() {
 			mockAgent.Err <- errors.New("any error")
-
 			status := services.PrimaryConversionStatus(hub)
 			Expect(status).To(Equal(pb.StepStatus_PENDING))
 		})
+
 	})
+
 })

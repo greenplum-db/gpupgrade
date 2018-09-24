@@ -74,15 +74,35 @@ func PrimaryConversionStatus(hub *Hub) pb.StepStatus {
 		return pb.StepStatus_PENDING
 	}
 
-	finalStatus := pb.StepStatus_PENDING
-	for _, status := range conversionStatus.GetConversionStatuses() {
-		if status.Status == pb.StepStatus_FAILED {
-			return pb.StepStatus_FAILED
-		} else if status.Status == pb.StepStatus_RUNNING {
-			finalStatus = pb.StepStatus_RUNNING
-		} else if status.Status == pb.StepStatus_COMPLETE && finalStatus != pb.StepStatus_RUNNING {
-			finalStatus = pb.StepStatus_COMPLETE
+	statuses := conversionStatus.GetConversionStatuses()
+	switch {
+	case hasAny(statuses, pb.StepStatus_FAILED):
+		return pb.StepStatus_FAILED
+	case hasAny(statuses, pb.StepStatus_RUNNING):
+		return pb.StepStatus_RUNNING
+	case hasAll(statuses, pb.StepStatus_COMPLETE):
+		return pb.StepStatus_COMPLETE
+	default:
+		return pb.StepStatus_PENDING
+	}
+}
+
+func hasAll(statuses []*pb.PrimaryStatus, status pb.StepStatus) bool {
+	for _, elem := range statuses {
+		if elem.Status != status {
+			return false
 		}
 	}
-	return finalStatus
+
+	return true
+}
+
+func hasAny(statuses []*pb.PrimaryStatus, status pb.StepStatus) bool {
+	for _, elem := range statuses {
+		if elem.Status == status {
+			return true
+		}
+	}
+
+	return false
 }
