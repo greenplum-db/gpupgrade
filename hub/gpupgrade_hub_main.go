@@ -65,10 +65,10 @@ func main() {
 			// interfaces aren't well componentized.
 			cm.AddWritableStep(upgradestatus.CONFIG, pb.UpgradeSteps_CONFIG)
 			cm.AddWritableStep(upgradestatus.SEGINSTALL, pb.UpgradeSteps_SEGINSTALL)
+			cm.AddWritableStep(upgradestatus.START_AGENTS, pb.UpgradeSteps_START_AGENTS)
 			cm.AddWritableStep(upgradestatus.INIT_CLUSTER, pb.UpgradeSteps_INIT_CLUSTER)
 			cm.AddWritableStep(upgradestatus.SHUTDOWN_CLUSTERS, pb.UpgradeSteps_SHUTDOWN_CLUSTERS)
 			cm.AddWritableStep(upgradestatus.CONVERT_MASTER, pb.UpgradeSteps_CONVERT_MASTER)
-			cm.AddWritableStep(upgradestatus.START_AGENTS, pb.UpgradeSteps_START_AGENTS)
 			cm.AddWritableStep(upgradestatus.SHARE_OIDS, pb.UpgradeSteps_SHARE_OIDS)
 
 			cm.AddReadOnlyStep(upgradestatus.CONVERT_PRIMARIES, pb.UpgradeSteps_CONVERT_PRIMARIES,

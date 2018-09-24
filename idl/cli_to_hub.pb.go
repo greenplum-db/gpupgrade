@@ -29,10 +29,10 @@ const (
 	UpgradeSteps_UNKNOWN_STEP           UpgradeSteps = 0
 	UpgradeSteps_CONFIG                 UpgradeSteps = 1
 	UpgradeSteps_SEGINSTALL             UpgradeSteps = 2
-	UpgradeSteps_INIT_CLUSTER           UpgradeSteps = 3
-	UpgradeSteps_SHUTDOWN_CLUSTERS      UpgradeSteps = 4
-	UpgradeSteps_CONVERT_MASTER         UpgradeSteps = 5
-	UpgradeSteps_START_AGENTS           UpgradeSteps = 6
+	UpgradeSteps_START_AGENTS           UpgradeSteps = 3
+	UpgradeSteps_INIT_CLUSTER           UpgradeSteps = 4
+	UpgradeSteps_SHUTDOWN_CLUSTERS      UpgradeSteps = 5
+	UpgradeSteps_CONVERT_MASTER         UpgradeSteps = 6
 	UpgradeSteps_SHARE_OIDS             UpgradeSteps = 7
 	UpgradeSteps_CONVERT_PRIMARIES      UpgradeSteps = 8
 	UpgradeSteps_VALIDATE_START_CLUSTER UpgradeSteps = 9
@@ -43,10 +43,10 @@ var UpgradeSteps_name = map[int32]string{
 	0:  "UNKNOWN_STEP",
 	1:  "CONFIG",
 	2:  "SEGINSTALL",
-	3:  "INIT_CLUSTER",
-	4:  "SHUTDOWN_CLUSTERS",
-	5:  "CONVERT_MASTER",
-	6:  "START_AGENTS",
+	3:  "START_AGENTS",
+	4:  "INIT_CLUSTER",
+	5:  "SHUTDOWN_CLUSTERS",
+	6:  "CONVERT_MASTER",
 	7:  "SHARE_OIDS",
 	8:  "CONVERT_PRIMARIES",
 	9:  "VALIDATE_START_CLUSTER",
@@ -56,10 +56,10 @@ var UpgradeSteps_value = map[string]int32{
 	"UNKNOWN_STEP":           0,
 	"CONFIG":                 1,
 	"SEGINSTALL":             2,
-	"INIT_CLUSTER":           3,
-	"SHUTDOWN_CLUSTERS":      4,
-	"CONVERT_MASTER":         5,
-	"START_AGENTS":           6,
+	"START_AGENTS":           3,
+	"INIT_CLUSTER":           4,
+	"SHUTDOWN_CLUSTERS":      5,
+	"CONVERT_MASTER":         6,
 	"SHARE_OIDS":             7,
 	"CONVERT_PRIMARIES":      8,
 	"VALIDATE_START_CLUSTER": 9,
@@ -70,7 +70,7 @@ func (x UpgradeSteps) String() string {
 	return proto.EnumName(UpgradeSteps_name, int32(x))
 }
 func (UpgradeSteps) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{0}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{0}
 }
 
 type StepStatus int32
@@ -102,7 +102,7 @@ func (x StepStatus) String() string {
 	return proto.EnumName(StepStatus_name, int32(x))
 }
 func (StepStatus) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{1}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{1}
 }
 
 type UpgradeReconfigurePortsRequest struct {
@@ -115,7 +115,7 @@ func (m *UpgradeReconfigurePortsRequest) Reset()         { *m = UpgradeReconfigu
 func (m *UpgradeReconfigurePortsRequest) String() string { return proto.CompactTextString(m) }
 func (*UpgradeReconfigurePortsRequest) ProtoMessage()    {}
 func (*UpgradeReconfigurePortsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{0}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{0}
 }
 func (m *UpgradeReconfigurePortsRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpgradeReconfigurePortsRequest.Unmarshal(m, b)
@@ -145,7 +145,7 @@ func (m *UpgradeReconfigurePortsReply) Reset()         { *m = UpgradeReconfigure
 func (m *UpgradeReconfigurePortsReply) String() string { return proto.CompactTextString(m) }
 func (*UpgradeReconfigurePortsReply) ProtoMessage()    {}
 func (*UpgradeReconfigurePortsReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{1}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{1}
 }
 func (m *UpgradeReconfigurePortsReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpgradeReconfigurePortsReply.Unmarshal(m, b)
@@ -175,7 +175,7 @@ func (m *UpgradeConvertPrimariesRequest) Reset()         { *m = UpgradeConvertPr
 func (m *UpgradeConvertPrimariesRequest) String() string { return proto.CompactTextString(m) }
 func (*UpgradeConvertPrimariesRequest) ProtoMessage()    {}
 func (*UpgradeConvertPrimariesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{2}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{2}
 }
 func (m *UpgradeConvertPrimariesRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpgradeConvertPrimariesRequest.Unmarshal(m, b)
@@ -205,7 +205,7 @@ func (m *UpgradeConvertPrimariesReply) Reset()         { *m = UpgradeConvertPrim
 func (m *UpgradeConvertPrimariesReply) String() string { return proto.CompactTextString(m) }
 func (*UpgradeConvertPrimariesReply) ProtoMessage()    {}
 func (*UpgradeConvertPrimariesReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{3}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{3}
 }
 func (m *UpgradeConvertPrimariesReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpgradeConvertPrimariesReply.Unmarshal(m, b)
@@ -235,7 +235,7 @@ func (m *UpgradeShareOidsRequest) Reset()         { *m = UpgradeShareOidsRequest
 func (m *UpgradeShareOidsRequest) String() string { return proto.CompactTextString(m) }
 func (*UpgradeShareOidsRequest) ProtoMessage()    {}
 func (*UpgradeShareOidsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{4}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{4}
 }
 func (m *UpgradeShareOidsRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpgradeShareOidsRequest.Unmarshal(m, b)
@@ -265,7 +265,7 @@ func (m *UpgradeShareOidsReply) Reset()         { *m = UpgradeShareOidsReply{} }
 func (m *UpgradeShareOidsReply) String() string { return proto.CompactTextString(m) }
 func (*UpgradeShareOidsReply) ProtoMessage()    {}
 func (*UpgradeShareOidsReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{5}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{5}
 }
 func (m *UpgradeShareOidsReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpgradeShareOidsReply.Unmarshal(m, b)
@@ -295,7 +295,7 @@ func (m *UpgradeValidateStartClusterRequest) Reset()         { *m = UpgradeValid
 func (m *UpgradeValidateStartClusterRequest) String() string { return proto.CompactTextString(m) }
 func (*UpgradeValidateStartClusterRequest) ProtoMessage()    {}
 func (*UpgradeValidateStartClusterRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{6}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{6}
 }
 func (m *UpgradeValidateStartClusterRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpgradeValidateStartClusterRequest.Unmarshal(m, b)
@@ -325,7 +325,7 @@ func (m *UpgradeValidateStartClusterReply) Reset()         { *m = UpgradeValidat
 func (m *UpgradeValidateStartClusterReply) String() string { return proto.CompactTextString(m) }
 func (*UpgradeValidateStartClusterReply) ProtoMessage()    {}
 func (*UpgradeValidateStartClusterReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{7}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{7}
 }
 func (m *UpgradeValidateStartClusterReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpgradeValidateStartClusterReply.Unmarshal(m, b)
@@ -355,7 +355,7 @@ func (m *PingRequest) Reset()         { *m = PingRequest{} }
 func (m *PingRequest) String() string { return proto.CompactTextString(m) }
 func (*PingRequest) ProtoMessage()    {}
 func (*PingRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{8}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{8}
 }
 func (m *PingRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PingRequest.Unmarshal(m, b)
@@ -385,7 +385,7 @@ func (m *PingReply) Reset()         { *m = PingReply{} }
 func (m *PingReply) String() string { return proto.CompactTextString(m) }
 func (*PingReply) ProtoMessage()    {}
 func (*PingReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{9}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{9}
 }
 func (m *PingReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PingReply.Unmarshal(m, b)
@@ -415,7 +415,7 @@ func (m *StatusConversionRequest) Reset()         { *m = StatusConversionRequest
 func (m *StatusConversionRequest) String() string { return proto.CompactTextString(m) }
 func (*StatusConversionRequest) ProtoMessage()    {}
 func (*StatusConversionRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{10}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{10}
 }
 func (m *StatusConversionRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StatusConversionRequest.Unmarshal(m, b)
@@ -449,7 +449,7 @@ func (m *PrimaryStatus) Reset()         { *m = PrimaryStatus{} }
 func (m *PrimaryStatus) String() string { return proto.CompactTextString(m) }
 func (*PrimaryStatus) ProtoMessage()    {}
 func (*PrimaryStatus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{11}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{11}
 }
 func (m *PrimaryStatus) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PrimaryStatus.Unmarshal(m, b)
@@ -508,7 +508,7 @@ func (m *StatusConversionReply) Reset()         { *m = StatusConversionReply{} }
 func (m *StatusConversionReply) String() string { return proto.CompactTextString(m) }
 func (*StatusConversionReply) ProtoMessage()    {}
 func (*StatusConversionReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{12}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{12}
 }
 func (m *StatusConversionReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StatusConversionReply.Unmarshal(m, b)
@@ -545,7 +545,7 @@ func (m *StatusUpgradeRequest) Reset()         { *m = StatusUpgradeRequest{} }
 func (m *StatusUpgradeRequest) String() string { return proto.CompactTextString(m) }
 func (*StatusUpgradeRequest) ProtoMessage()    {}
 func (*StatusUpgradeRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{13}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{13}
 }
 func (m *StatusUpgradeRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StatusUpgradeRequest.Unmarshal(m, b)
@@ -576,7 +576,7 @@ func (m *StatusUpgradeReply) Reset()         { *m = StatusUpgradeReply{} }
 func (m *StatusUpgradeReply) String() string { return proto.CompactTextString(m) }
 func (*StatusUpgradeReply) ProtoMessage()    {}
 func (*StatusUpgradeReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{14}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{14}
 }
 func (m *StatusUpgradeReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StatusUpgradeReply.Unmarshal(m, b)
@@ -615,7 +615,7 @@ func (m *UpgradeStepStatus) Reset()         { *m = UpgradeStepStatus{} }
 func (m *UpgradeStepStatus) String() string { return proto.CompactTextString(m) }
 func (*UpgradeStepStatus) ProtoMessage()    {}
 func (*UpgradeStepStatus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{15}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{15}
 }
 func (m *UpgradeStepStatus) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpgradeStepStatus.Unmarshal(m, b)
@@ -659,7 +659,7 @@ func (m *CheckConfigRequest) Reset()         { *m = CheckConfigRequest{} }
 func (m *CheckConfigRequest) String() string { return proto.CompactTextString(m) }
 func (*CheckConfigRequest) ProtoMessage()    {}
 func (*CheckConfigRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{16}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{16}
 }
 func (m *CheckConfigRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CheckConfigRequest.Unmarshal(m, b)
@@ -691,7 +691,7 @@ func (m *CheckConfigReply) Reset()         { *m = CheckConfigReply{} }
 func (m *CheckConfigReply) String() string { return proto.CompactTextString(m) }
 func (*CheckConfigReply) ProtoMessage()    {}
 func (*CheckConfigReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{17}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{17}
 }
 func (m *CheckConfigReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CheckConfigReply.Unmarshal(m, b)
@@ -728,7 +728,7 @@ func (m *CheckSeginstallRequest) Reset()         { *m = CheckSeginstallRequest{}
 func (m *CheckSeginstallRequest) String() string { return proto.CompactTextString(m) }
 func (*CheckSeginstallRequest) ProtoMessage()    {}
 func (*CheckSeginstallRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{18}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{18}
 }
 func (m *CheckSeginstallRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CheckSeginstallRequest.Unmarshal(m, b)
@@ -758,7 +758,7 @@ func (m *CheckSeginstallReply) Reset()         { *m = CheckSeginstallReply{} }
 func (m *CheckSeginstallReply) String() string { return proto.CompactTextString(m) }
 func (*CheckSeginstallReply) ProtoMessage()    {}
 func (*CheckSeginstallReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{19}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{19}
 }
 func (m *CheckSeginstallReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CheckSeginstallReply.Unmarshal(m, b)
@@ -788,7 +788,7 @@ func (m *PrepareStartAgentsRequest) Reset()         { *m = PrepareStartAgentsReq
 func (m *PrepareStartAgentsRequest) String() string { return proto.CompactTextString(m) }
 func (*PrepareStartAgentsRequest) ProtoMessage()    {}
 func (*PrepareStartAgentsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{20}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{20}
 }
 func (m *PrepareStartAgentsRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PrepareStartAgentsRequest.Unmarshal(m, b)
@@ -818,7 +818,7 @@ func (m *PrepareStartAgentsReply) Reset()         { *m = PrepareStartAgentsReply
 func (m *PrepareStartAgentsReply) String() string { return proto.CompactTextString(m) }
 func (*PrepareStartAgentsReply) ProtoMessage()    {}
 func (*PrepareStartAgentsReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{21}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{21}
 }
 func (m *PrepareStartAgentsReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PrepareStartAgentsReply.Unmarshal(m, b)
@@ -851,7 +851,7 @@ func (m *CountPerDb) Reset()         { *m = CountPerDb{} }
 func (m *CountPerDb) String() string { return proto.CompactTextString(m) }
 func (*CountPerDb) ProtoMessage()    {}
 func (*CountPerDb) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{22}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{22}
 }
 func (m *CountPerDb) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CountPerDb.Unmarshal(m, b)
@@ -902,7 +902,7 @@ func (m *CheckObjectCountRequest) Reset()         { *m = CheckObjectCountRequest
 func (m *CheckObjectCountRequest) String() string { return proto.CompactTextString(m) }
 func (*CheckObjectCountRequest) ProtoMessage()    {}
 func (*CheckObjectCountRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{23}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{23}
 }
 func (m *CheckObjectCountRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CheckObjectCountRequest.Unmarshal(m, b)
@@ -933,7 +933,7 @@ func (m *CheckObjectCountReply) Reset()         { *m = CheckObjectCountReply{} }
 func (m *CheckObjectCountReply) String() string { return proto.CompactTextString(m) }
 func (*CheckObjectCountReply) ProtoMessage()    {}
 func (*CheckObjectCountReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{24}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{24}
 }
 func (m *CheckObjectCountReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CheckObjectCountReply.Unmarshal(m, b)
@@ -970,7 +970,7 @@ func (m *CheckVersionRequest) Reset()         { *m = CheckVersionRequest{} }
 func (m *CheckVersionRequest) String() string { return proto.CompactTextString(m) }
 func (*CheckVersionRequest) ProtoMessage()    {}
 func (*CheckVersionRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{25}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{25}
 }
 func (m *CheckVersionRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CheckVersionRequest.Unmarshal(m, b)
@@ -1001,7 +1001,7 @@ func (m *CheckVersionReply) Reset()         { *m = CheckVersionReply{} }
 func (m *CheckVersionReply) String() string { return proto.CompactTextString(m) }
 func (*CheckVersionReply) ProtoMessage()    {}
 func (*CheckVersionReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{26}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{26}
 }
 func (m *CheckVersionReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CheckVersionReply.Unmarshal(m, b)
@@ -1038,7 +1038,7 @@ func (m *CheckDiskSpaceRequest) Reset()         { *m = CheckDiskSpaceRequest{} }
 func (m *CheckDiskSpaceRequest) String() string { return proto.CompactTextString(m) }
 func (*CheckDiskSpaceRequest) ProtoMessage()    {}
 func (*CheckDiskSpaceRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{27}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{27}
 }
 func (m *CheckDiskSpaceRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CheckDiskSpaceRequest.Unmarshal(m, b)
@@ -1069,7 +1069,7 @@ func (m *CheckDiskSpaceReply) Reset()         { *m = CheckDiskSpaceReply{} }
 func (m *CheckDiskSpaceReply) String() string { return proto.CompactTextString(m) }
 func (*CheckDiskSpaceReply) ProtoMessage()    {}
 func (*CheckDiskSpaceReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{28}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{28}
 }
 func (m *CheckDiskSpaceReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CheckDiskSpaceReply.Unmarshal(m, b)
@@ -1106,7 +1106,7 @@ func (m *PrepareShutdownClustersRequest) Reset()         { *m = PrepareShutdownC
 func (m *PrepareShutdownClustersRequest) String() string { return proto.CompactTextString(m) }
 func (*PrepareShutdownClustersRequest) ProtoMessage()    {}
 func (*PrepareShutdownClustersRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{29}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{29}
 }
 func (m *PrepareShutdownClustersRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PrepareShutdownClustersRequest.Unmarshal(m, b)
@@ -1136,7 +1136,7 @@ func (m *PrepareShutdownClustersReply) Reset()         { *m = PrepareShutdownClu
 func (m *PrepareShutdownClustersReply) String() string { return proto.CompactTextString(m) }
 func (*PrepareShutdownClustersReply) ProtoMessage()    {}
 func (*PrepareShutdownClustersReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{30}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{30}
 }
 func (m *PrepareShutdownClustersReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PrepareShutdownClustersReply.Unmarshal(m, b)
@@ -1166,7 +1166,7 @@ func (m *PrepareInitClusterRequest) Reset()         { *m = PrepareInitClusterReq
 func (m *PrepareInitClusterRequest) String() string { return proto.CompactTextString(m) }
 func (*PrepareInitClusterRequest) ProtoMessage()    {}
 func (*PrepareInitClusterRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{31}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{31}
 }
 func (m *PrepareInitClusterRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PrepareInitClusterRequest.Unmarshal(m, b)
@@ -1196,7 +1196,7 @@ func (m *PrepareInitClusterReply) Reset()         { *m = PrepareInitClusterReply
 func (m *PrepareInitClusterReply) String() string { return proto.CompactTextString(m) }
 func (*PrepareInitClusterReply) ProtoMessage()    {}
 func (*PrepareInitClusterReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{32}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{32}
 }
 func (m *PrepareInitClusterReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PrepareInitClusterReply.Unmarshal(m, b)
@@ -1226,7 +1226,7 @@ func (m *UpgradeConvertMasterRequest) Reset()         { *m = UpgradeConvertMaste
 func (m *UpgradeConvertMasterRequest) String() string { return proto.CompactTextString(m) }
 func (*UpgradeConvertMasterRequest) ProtoMessage()    {}
 func (*UpgradeConvertMasterRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{33}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{33}
 }
 func (m *UpgradeConvertMasterRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpgradeConvertMasterRequest.Unmarshal(m, b)
@@ -1256,7 +1256,7 @@ func (m *UpgradeConvertMasterReply) Reset()         { *m = UpgradeConvertMasterR
 func (m *UpgradeConvertMasterReply) String() string { return proto.CompactTextString(m) }
 func (*UpgradeConvertMasterReply) ProtoMessage()    {}
 func (*UpgradeConvertMasterReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{34}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{34}
 }
 func (m *UpgradeConvertMasterReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpgradeConvertMasterReply.Unmarshal(m, b)
@@ -1288,7 +1288,7 @@ func (m *SetConfigRequest) Reset()         { *m = SetConfigRequest{} }
 func (m *SetConfigRequest) String() string { return proto.CompactTextString(m) }
 func (*SetConfigRequest) ProtoMessage()    {}
 func (*SetConfigRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{35}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{35}
 }
 func (m *SetConfigRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SetConfigRequest.Unmarshal(m, b)
@@ -1332,7 +1332,7 @@ func (m *SetConfigReply) Reset()         { *m = SetConfigReply{} }
 func (m *SetConfigReply) String() string { return proto.CompactTextString(m) }
 func (*SetConfigReply) ProtoMessage()    {}
 func (*SetConfigReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{36}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{36}
 }
 func (m *SetConfigReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SetConfigReply.Unmarshal(m, b)
@@ -1363,7 +1363,7 @@ func (m *GetConfigRequest) Reset()         { *m = GetConfigRequest{} }
 func (m *GetConfigRequest) String() string { return proto.CompactTextString(m) }
 func (*GetConfigRequest) ProtoMessage()    {}
 func (*GetConfigRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{37}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{37}
 }
 func (m *GetConfigRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetConfigRequest.Unmarshal(m, b)
@@ -1401,7 +1401,7 @@ func (m *GetConfigReply) Reset()         { *m = GetConfigReply{} }
 func (m *GetConfigReply) String() string { return proto.CompactTextString(m) }
 func (*GetConfigReply) ProtoMessage()    {}
 func (*GetConfigReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cli_to_hub_494f6a104b4d6c54, []int{38}
+	return fileDescriptor_cli_to_hub_3cd499275230c599, []int{38}
 }
 func (m *GetConfigReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetConfigReply.Unmarshal(m, b)
@@ -2105,9 +2105,9 @@ var _CliToHub_serviceDesc = grpc.ServiceDesc{
 	Metadata: "cli_to_hub.proto",
 }
 
-func init() { proto.RegisterFile("cli_to_hub.proto", fileDescriptor_cli_to_hub_494f6a104b4d6c54) }
+func init() { proto.RegisterFile("cli_to_hub.proto", fileDescriptor_cli_to_hub_3cd499275230c599) }
 
-var fileDescriptor_cli_to_hub_494f6a104b4d6c54 = []byte{
+var fileDescriptor_cli_to_hub_3cd499275230c599 = []byte{
 	// 1216 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x57, 0x6d, 0x6f, 0xe2, 0xc6,
 	0x13, 0x87, 0x84, 0x4b, 0xc2, 0xc0, 0x71, 0xce, 0x5e, 0x20, 0xe0, 0xe4, 0x1f, 0xf1, 0x77, 0x7b,
@@ -2156,33 +2156,33 @@ var fileDescriptor_cli_to_hub_494f6a104b4d6c54 = []byte{
 	0x84, 0x6a, 0x22, 0xc2, 0xdb, 0xbf, 0xab, 0xd0, 0x4c, 0xfe, 0xd4, 0x88, 0x83, 0xe6, 0x4c, 0xfd,
 	0xa8, 0x4e, 0x7e, 0x56, 0xe7, 0xba, 0x21, 0x4f, 0xb9, 0x0a, 0x02, 0x38, 0x92, 0x26, 0xea, 0xad,
 	0x32, 0xe4, 0xaa, 0xa8, 0x05, 0xa0, 0xcb, 0x43, 0x45, 0xd5, 0x0d, 0x71, 0x3c, 0xe6, 0x0e, 0xa8,
-	0xb6, 0xa2, 0x2a, 0xc6, 0x5c, 0x1a, 0xcf, 0x74, 0x43, 0xd6, 0xb8, 0x43, 0xd4, 0x86, 0x53, 0x7d,
-	0x34, 0x33, 0x06, 0xd4, 0x41, 0x28, 0xd5, 0xb9, 0x1a, 0x42, 0xd0, 0x92, 0x26, 0xea, 0xbd, 0xac,
-	0x19, 0xf3, 0x3b, 0x31, 0x50, 0x7d, 0x46, 0x8d, 0x75, 0x43, 0xd4, 0x8c, 0xb9, 0x38, 0x94, 0x55,
-	0x43, 0xe7, 0x8e, 0x02, 0xf7, 0x23, 0x51, 0x93, 0xe7, 0x13, 0x65, 0xa0, 0x73, 0xc7, 0xd4, 0x59,
-	0x64, 0x35, 0xd5, 0x94, 0x3b, 0x51, 0x53, 0x64, 0x9d, 0x3b, 0x41, 0x3c, 0x74, 0xee, 0xc5, 0xb1,
-	0x32, 0x10, 0x0d, 0x79, 0xce, 0x3c, 0x44, 0xf1, 0xeb, 0xd4, 0x44, 0x93, 0xd9, 0x7e, 0x67, 0x9a,
-	0x3c, 0x9f, 0x4e, 0x34, 0x43, 0xe7, 0xe0, 0xad, 0x01, 0x90, 0xa0, 0x36, 0x04, 0xad, 0x5d, 0x92,
-	0xa2, 0x31, 0xd3, 0xb9, 0x0a, 0x6a, 0xc0, 0xf1, 0x54, 0x56, 0x07, 0x8a, 0x4a, 0xf3, 0x6c, 0xc0,
-	0xb1, 0x36, 0x53, 0x55, 0xba, 0x38, 0x40, 0x4d, 0x38, 0x91, 0x26, 0x77, 0xd3, 0xb1, 0x6c, 0xc8,
-	0xdc, 0x21, 0x3d, 0x8e, 0x5b, 0x51, 0x19, 0xcb, 0x03, 0xae, 0x76, 0xf3, 0x57, 0x03, 0x4e, 0x24,
-	0xdb, 0x32, 0xdc, 0xd1, 0x76, 0x81, 0xde, 0x42, 0x8d, 0x8e, 0x34, 0xc4, 0x31, 0xe2, 0xdf, 0x0d,
-	0x3b, 0xbe, 0x95, 0x90, 0xd0, 0x22, 0x56, 0x90, 0x0c, 0xcf, 0x53, 0xe4, 0x8e, 0x7a, 0x21, 0x6b,
-	0xe6, 0x07, 0x01, 0x7f, 0x5e, 0x04, 0x31, 0x37, 0x2a, 0x70, 0xd9, 0xc1, 0x84, 0x2e, 0x13, 0xea,
-	0xb9, 0x79, 0xca, 0xf3, 0x25, 0x28, 0xf3, 0xf7, 0x13, 0x34, 0x12, 0x64, 0x8c, 0x58, 0xe4, 0x3c,
-	0x69, 0xf3, 0xed, 0x3c, 0xc0, 0x1c, 0x7c, 0x84, 0x17, 0x19, 0xee, 0x45, 0x17, 0x3b, 0xdd, 0x1c,
-	0x57, 0xf3, 0xbd, 0x62, 0x30, 0xce, 0x2e, 0xcb, 0x7f, 0x61, 0x76, 0x25, 0x8c, 0x19, 0x66, 0x57,
-	0x48, 0x9a, 0x42, 0x05, 0x7d, 0x80, 0x66, 0x92, 0xea, 0x50, 0x77, 0xa7, 0x9d, 0x26, 0x45, 0xbe,
-	0x53, 0x80, 0x30, 0x1f, 0x23, 0x68, 0xa5, 0xe9, 0x0c, 0x25, 0x62, 0x66, 0xc9, 0x8f, 0xef, 0x16,
-	0x62, 0xcc, 0x93, 0x01, 0x28, 0x4f, 0x38, 0xe8, 0x2a, 0xbc, 0x35, 0x94, 0xd0, 0x14, 0x7f, 0x59,
-	0x8a, 0x33, 0xaf, 0xcb, 0xdd, 0x1c, 0xcb, 0x70, 0x20, 0xfa, 0x26, 0x69, 0x5a, 0xc2, 0xa1, 0xfc,
-	0xff, 0xf7, 0x2b, 0xb1, 0x20, 0xbf, 0xc0, 0x59, 0x11, 0xe3, 0xa1, 0x7e, 0xf2, 0x8e, 0x50, 0xc4,
-	0x95, 0xfc, 0xd5, 0x1e, 0x8d, 0xec, 0xb1, 0x24, 0x06, 0x71, 0xfa, 0x58, 0xf2, 0xe3, 0x3b, 0x7d,
-	0x2c, 0xb9, 0x09, 0x1e, 0xb4, 0x52, 0xf6, 0x82, 0x1b, 0xb6, 0x52, 0xc9, 0x95, 0x38, 0x6c, 0xa5,
-	0xe2, 0x5b, 0x71, 0x05, 0xb9, 0xf1, 0x48, 0x28, 0xba, 0xf1, 0xa2, 0x37, 0x49, 0xe3, 0x3d, 0x37,
-	0x67, 0xfe, 0xd5, 0xbf, 0x2b, 0xc6, 0x75, 0x2d, 0xb9, 0xdc, 0x87, 0x75, 0xdd, 0xff, 0x38, 0x08,
-	0xeb, 0xba, 0xf7, 0x7d, 0x90, 0x0c, 0x92, 0x7d, 0x83, 0xa4, 0x83, 0x94, 0xbc, 0x61, 0xd2, 0x41,
-	0x8a, 0x9f, 0x31, 0x15, 0xf4, 0x03, 0xd4, 0xe3, 0x99, 0x86, 0x18, 0x91, 0x64, 0x27, 0x24, 0xff,
-	0x32, 0x2b, 0x8e, 0x4d, 0x87, 0x19, 0xd3, 0x61, 0xb1, 0xe9, 0x30, 0x63, 0xba, 0x38, 0x0a, 0x1e,
-	0x63, 0xef, 0xff, 0x09, 0x00, 0x00, 0xff, 0xff, 0x26, 0x2e, 0x32, 0xa5, 0xa0, 0x0d, 0x00, 0x00,
+	0xb6, 0x6e, 0x88, 0x9a, 0x31, 0x17, 0x87, 0xb2, 0x6a, 0xe8, 0xdc, 0x21, 0x95, 0x28, 0xaa, 0x62,
+	0xcc, 0xa5, 0xf1, 0x4c, 0x37, 0x64, 0x8d, 0xab, 0xa1, 0x36, 0x9c, 0xea, 0xa3, 0x99, 0x31, 0xa0,
+	0x2e, 0x43, 0xa9, 0xce, 0x3d, 0x43, 0x08, 0x5a, 0xd2, 0x44, 0xbd, 0x97, 0x35, 0x63, 0x7e, 0x27,
+	0x06, 0xaa, 0x47, 0x81, 0xfb, 0x91, 0xa8, 0xc9, 0xf3, 0x89, 0x32, 0xd0, 0xb9, 0x63, 0x6a, 0x1a,
+	0xe9, 0x4c, 0x35, 0xe5, 0x4e, 0xd4, 0x14, 0x59, 0xe7, 0x4e, 0x10, 0x0f, 0x9d, 0x7b, 0x71, 0xac,
+	0x0c, 0x44, 0x43, 0x9e, 0xb3, 0xf0, 0x51, 0xb4, 0x3a, 0x35, 0xd1, 0x64, 0xb6, 0xdf, 0x99, 0x26,
+	0xcf, 0xa7, 0x13, 0xcd, 0xd0, 0x39, 0x78, 0x6b, 0x00, 0x24, 0xa8, 0x0d, 0x41, 0x6b, 0x97, 0xa4,
+	0x68, 0xcc, 0x74, 0xae, 0x82, 0x1a, 0x70, 0x3c, 0x95, 0xd5, 0x81, 0xa2, 0xd2, 0x3c, 0x1b, 0x70,
+	0xac, 0xcd, 0x54, 0x95, 0x2e, 0x0e, 0x50, 0x13, 0x4e, 0xa4, 0xc9, 0xdd, 0x74, 0x2c, 0x1b, 0x32,
+	0x77, 0x48, 0x8f, 0xe3, 0x56, 0x54, 0xc6, 0xf2, 0x80, 0xab, 0xdd, 0xfc, 0xd5, 0x80, 0x13, 0xc9,
+	0xb6, 0x0c, 0x77, 0xb4, 0x5d, 0xa0, 0xb7, 0x50, 0xa3, 0x23, 0x0d, 0x71, 0x8c, 0xf8, 0x77, 0xc3,
+	0x8e, 0x6f, 0x25, 0x24, 0xb4, 0x88, 0x15, 0x24, 0xc3, 0xf3, 0x14, 0xb9, 0xa3, 0x5e, 0xc8, 0x9a,
+	0xf9, 0x41, 0xc0, 0x9f, 0x17, 0x41, 0xcc, 0x8d, 0x0a, 0x5c, 0x76, 0x30, 0xa1, 0xcb, 0x84, 0x7a,
+	0x6e, 0x9e, 0xf2, 0x7c, 0x09, 0xca, 0xfc, 0xfd, 0x04, 0x8d, 0x04, 0x19, 0x23, 0x16, 0x39, 0x4f,
+	0xda, 0x7c, 0x3b, 0x0f, 0x30, 0x07, 0x1f, 0xe1, 0x45, 0x86, 0x7b, 0xd1, 0xc5, 0x4e, 0x37, 0xc7,
+	0xd5, 0x7c, 0xaf, 0x18, 0x8c, 0xb3, 0xcb, 0xf2, 0x5f, 0x98, 0x5d, 0x09, 0x63, 0x86, 0xd9, 0x15,
+	0x92, 0xa6, 0x50, 0x41, 0x1f, 0xa0, 0x99, 0xa4, 0x3a, 0xd4, 0xdd, 0x69, 0xa7, 0x49, 0x91, 0xef,
+	0x14, 0x20, 0xcc, 0xc7, 0x08, 0x5a, 0x69, 0x3a, 0x43, 0x89, 0x98, 0x59, 0xf2, 0xe3, 0xbb, 0x85,
+	0x18, 0xf3, 0x64, 0x00, 0xca, 0x13, 0x0e, 0xba, 0x0a, 0x6f, 0x0d, 0x25, 0x34, 0xc5, 0x5f, 0x96,
+	0xe2, 0xcc, 0xeb, 0x72, 0x37, 0xc7, 0x32, 0x1c, 0x88, 0xbe, 0x49, 0x9a, 0x96, 0x70, 0x28, 0xff,
+	0xff, 0xfd, 0x4a, 0x2c, 0xc8, 0x2f, 0x70, 0x56, 0xc4, 0x78, 0xa8, 0x9f, 0xbc, 0x23, 0x14, 0x71,
+	0x25, 0x7f, 0xb5, 0x47, 0x23, 0x7b, 0x2c, 0x89, 0x41, 0x9c, 0x3e, 0x96, 0xfc, 0xf8, 0x4e, 0x1f,
+	0x4b, 0x6e, 0x82, 0x07, 0xad, 0x94, 0xbd, 0xe0, 0x86, 0xad, 0x54, 0x72, 0x25, 0x0e, 0x5b, 0xa9,
+	0xf8, 0x56, 0x5c, 0x41, 0x6e, 0x3c, 0x12, 0x8a, 0x6e, 0xbc, 0xe8, 0x4d, 0xd2, 0x78, 0xcf, 0xcd,
+	0x99, 0x7f, 0xf5, 0xef, 0x8a, 0x71, 0x5d, 0x4b, 0x2e, 0xf7, 0x61, 0x5d, 0xf7, 0x3f, 0x0e, 0xc2,
+	0xba, 0xee, 0x7d, 0x1f, 0x24, 0x83, 0x64, 0xdf, 0x20, 0xe9, 0x20, 0x25, 0x6f, 0x98, 0x74, 0x90,
+	0xe2, 0x67, 0x4c, 0x05, 0xfd, 0x00, 0xf5, 0x78, 0xa6, 0x21, 0x46, 0x24, 0xd9, 0x09, 0xc9, 0xbf,
+	0xcc, 0x8a, 0x63, 0xd3, 0x61, 0xc6, 0x74, 0x58, 0x6c, 0x3a, 0xcc, 0x98, 0x2e, 0x8e, 0x82, 0xc7,
+	0xd8, 0xfb, 0x7f, 0x02, 0x00, 0x00, 0xff, 0xff, 0x6d, 0xe4, 0xa8, 0xcf, 0xa0, 0x0d, 0x00, 0x00,
 }
