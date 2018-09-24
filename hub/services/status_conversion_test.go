@@ -44,18 +44,18 @@ var _ = Describe("hub", func() {
 						Hostname: segment.Hostname,
 					},
 				).Return(
-					&pb.CheckConversionStatusReply{Statuses: []string{"status"}},
+					&pb.CheckConversionStatusReply{Statuses: []*pb.PrimaryStatus{{Status: pb.StepStatus_COMPLETE}}},
 					nil,
 				).Times(1)
 			}
 
 			statuses, err := services.GetConversionStatusFromPrimaries(agentConnections, target)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(statuses).To(Equal([]string{"status", "status"}))
+			Expect(statuses).To(Equal([]*pb.PrimaryStatus{{Status: pb.StepStatus_COMPLETE}, {Status: pb.StepStatus_COMPLETE}}))
 		})
 
 		It("returns an error when Agent server returns an error", func() {
-			statusMessages := []string{"status", "status"}
+			statusMessages := []*pb.PrimaryStatus{{Status: pb.StepStatus_COMPLETE}, {Status: pb.StepStatus_COMPLETE}}
 			client.EXPECT().CheckConversionStatus(
 				gomock.Any(), // Context
 				gomock.Any(), // &pb.CheckConversionStatusRequest
@@ -72,7 +72,7 @@ var _ = Describe("hub", func() {
 	Describe("PrimaryConversionStatus", func() {
 		It("returns FAILED if any agents report failure", func() {
 			mockAgent.StatusConversionResponse = &pb.CheckConversionStatusReply{
-				Statuses: []string{"FAILED", "RUNNING"},
+				Statuses: []*pb.PrimaryStatus{{Status: pb.StepStatus_FAILED}, {Status: pb.StepStatus_RUNNING}},
 			}
 
 			status := services.PrimaryConversionStatus(hub)
@@ -81,7 +81,7 @@ var _ = Describe("hub", func() {
 
 		It("returns RUNNING if any agents report progress", func() {
 			mockAgent.StatusConversionResponse = &pb.CheckConversionStatusReply{
-				Statuses: []string{"COMPLETE", "RUNNING"},
+				Statuses: []*pb.PrimaryStatus{{Status: pb.StepStatus_COMPLETE}, {Status: pb.StepStatus_RUNNING}},
 			}
 
 			status := services.PrimaryConversionStatus(hub)
@@ -90,7 +90,7 @@ var _ = Describe("hub", func() {
 
 		It("returns COMPLETE if all agents report completion", func() {
 			mockAgent.StatusConversionResponse = &pb.CheckConversionStatusReply{
-				Statuses: []string{"COMPLETE", "COMPLETE"},
+				Statuses: []*pb.PrimaryStatus{{Status: pb.StepStatus_COMPLETE}, {Status: pb.StepStatus_COMPLETE}},
 			}
 
 			status := services.PrimaryConversionStatus(hub)
@@ -99,7 +99,7 @@ var _ = Describe("hub", func() {
 
 		It("returns PENDING if no agents report any other state", func() {
 			mockAgent.StatusConversionResponse = &pb.CheckConversionStatusReply{
-				Statuses: []string{"PENDING", "PENDING"},
+				Statuses: []*pb.PrimaryStatus{{Status: pb.StepStatus_PENDING}, {Status: pb.StepStatus_PENDING}},
 			}
 
 			status := services.PrimaryConversionStatus(hub)

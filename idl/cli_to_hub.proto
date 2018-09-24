@@ -40,8 +40,15 @@ message PingReply {}
 
 message StatusConversionRequest {}
 
+message PrimaryStatus {
+    StepStatus Status = 1;
+    int32 Dbid = 2;
+    int32 Content = 3;
+    string Hostname = 4;
+}
+
 message StatusConversionReply {
-    repeated string conversionStatuses = 1;
+    repeated PrimaryStatus conversionStatuses = 1;
 }
 
 message StatusUpgradeRequest {}

@@ -57,7 +57,7 @@ var _ = Describe("Reporter", func() {
 
 	Describe("StatusConversion", func() {
 		It("prints cluster status returned from hub", func() {
-			status := []string{"cluster status"}
+			status := []*pb.PrimaryStatus{{Status: pb.StepStatus_PENDING}}
 			spyClient.statusConversionReply = &pb.StatusConversionReply{
 				ConversionStatuses: status,
 			}
@@ -66,7 +66,7 @@ var _ = Describe("Reporter", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(spyClient.statusConversionCount).To(Equal(1))
-			Expect(getStdoutContents()).To(ContainSubstring("cluster status"))
+			Expect(getStdoutContents()).To(ContainSubstring("PENDING"))
 		})
 
 		It("returns an error upon a failure", func() {

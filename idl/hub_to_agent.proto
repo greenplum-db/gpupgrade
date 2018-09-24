@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package idl;
+import "cli_to_hub.proto";
 
 service Agent {
     rpc CheckUpgradeStatus (CheckUpgradeStatusRequest) returns (CheckUpgradeStatusReply) {}
@@ -50,7 +51,7 @@ message SegmentInfo {
 }
 
 message CheckConversionStatusReply {
-    repeated string Statuses = 1;
+    repeated PrimaryStatus Statuses = 1;
 }
 
 message FileSysUsage {

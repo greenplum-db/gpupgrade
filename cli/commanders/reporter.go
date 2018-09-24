@@ -3,6 +3,7 @@ package commanders
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	pb "github.com/greenplum-db/gpupgrade/idl"
 
@@ -41,6 +42,20 @@ func NewReporter(client pb.CliToHubClient) *Reporter {
 	}
 }
 
+type Statuses []*pb.PrimaryStatus
+
+func (s Statuses) Len() int {
+	return len(s)
+}
+
+func (s Statuses) Less(i, j int) bool {
+	return s[i].Dbid < s[j].Dbid
+}
+
+func (s Statuses) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
 func (r *Reporter) OverallUpgradeStatus() error {
 	status, err := r.client.StatusUpgrade(context.Background(), &pb.StatusUpgradeRequest{})
 	if err != nil {
@@ -71,8 +86,13 @@ func (r *Reporter) OverallConversionStatus() error {
 		return errors.New("Received no list of conversion statuses from hub")
 	}
 
-	for _, status := range conversionStatus.GetConversionStatuses() {
-		fmt.Println(status)
+	statuses := conversionStatus.GetConversionStatuses()
+	sort.Sort(Statuses(statuses))
+	formatStr := "%s - DBID %d - CONTENT ID %d - PRIMARY - %s"
+
+	for _, status := range statuses {
+		reportString := fmt.Sprintf(formatStr, status.Status, status.Dbid, status.Content, status.Hostname)
+		fmt.Println(reportString)
 	}
 
 	return nil

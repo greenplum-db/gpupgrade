@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	pb "github.com/greenplum-db/gpupgrade/idl"
@@ -14,9 +13,8 @@ func (s *AgentServer) CheckConversionStatus(ctx context.Context, in *pb.CheckCon
 	if len(in.GetSegments()) == 0 {
 		return nil, errors.New("no segment information was passed to the agent")
 	}
-	format := "%s - DBID %d - CONTENT ID %d - PRIMARY - %s"
 
-	var replies []string
+	var statuses []*pb.PrimaryStatus
 	for _, segment := range in.GetSegments() {
 		status := upgradestatus.SegmentConversionStatus(
 			utils.SegmentPGUpgradeDirectory(s.conf.StateDir, int(segment.GetContent())),
@@ -24,11 +22,15 @@ func (s *AgentServer) CheckConversionStatus(ctx context.Context, in *pb.CheckCon
 			s.executor,
 		)
 
-		// FIXME: we have status codes; why convert to strings?
-		replies = append(replies, fmt.Sprintf(format, status.String(), segment.GetDbid(), segment.GetContent(), in.GetHostname()))
+		statuses = append(statuses, &pb.PrimaryStatus{
+			Status:   status,
+			Dbid:     segment.GetDbid(),
+			Content:  segment.GetContent(),
+			Hostname: in.GetHostname(),
+		})
 	}
 
 	return &pb.CheckConversionStatusReply{
-		Statuses: replies,
+		Statuses: statuses,
 	}, nil
 }

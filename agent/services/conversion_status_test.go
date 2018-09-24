@@ -56,9 +56,9 @@ var _ = Describe("CommandListener", func() {
 		})
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(status.GetStatuses()).To(Equal([]string{
-			"PENDING - DBID 3 - CONTENT ID 1 - PRIMARY - localhost",
-			"PENDING - DBID 1 - CONTENT ID -1 - PRIMARY - localhost",
+		Expect(status.GetStatuses()).To(Equal([]*pb.PrimaryStatus{
+			{Status: pb.StepStatus_PENDING, Dbid: 3, Content: 1, Hostname: "localhost"},
+			{Status: pb.StepStatus_PENDING, Dbid: 1, Content: -1, Hostname: "localhost"},
 		}))
 	})
 
@@ -86,9 +86,9 @@ var _ = Describe("CommandListener", func() {
 		})
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(status.GetStatuses()).To(Equal([]string{
-			"RUNNING - DBID 3 - CONTENT ID 1 - PRIMARY - localhost",
-			"PENDING - DBID 4 - CONTENT ID 2 - PRIMARY - localhost",
+		Expect(status.GetStatuses()).To(Equal([]*pb.PrimaryStatus{
+			{Status: pb.StepStatus_RUNNING, Dbid: 3, Content: 1, Hostname: "localhost"},
+			{Status: pb.StepStatus_PENDING, Dbid: 4, Content: 2, Hostname: "localhost"},
 		}))
 	})
 
@@ -115,9 +115,9 @@ var _ = Describe("CommandListener", func() {
 		})
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(status.GetStatuses()).To(Equal([]string{
-			"PENDING - DBID 3 - CONTENT ID 1 - PRIMARY - localhost",
-			"COMPLETE - DBID 4 - CONTENT ID 2 - PRIMARY - localhost",
+		Expect(status.GetStatuses()).To(Equal([]*pb.PrimaryStatus{
+			{Status: pb.StepStatus_PENDING, Dbid: 3, Content: 1, Hostname: "localhost"},
+			{Status: pb.StepStatus_COMPLETE, Dbid: 4, Content: 2, Hostname: "localhost"},
 		}))
 	})
 

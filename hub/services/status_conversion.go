@@ -2,7 +2,6 @@ package services
 
 import (
 	"fmt"
-	"strings"
 
 	pb "github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -13,8 +12,6 @@ import (
 )
 
 func (h *Hub) StatusConversion(ctx context.Context, in *pb.StatusConversionRequest) (*pb.StatusConversionReply, error) {
-	var statuses []string
-
 	agentConnections, err := h.AgentConns()
 	if err != nil {
 		return &pb.StatusConversionReply{}, err
@@ -27,17 +24,15 @@ func (h *Hub) StatusConversion(ctx context.Context, in *pb.StatusConversionReque
 		return &pb.StatusConversionReply{}, err
 	}
 
-	statuses = append(statuses, primaryStatuses...)
-
 	return &pb.StatusConversionReply{
-		ConversionStatuses: statuses,
+		ConversionStatuses: primaryStatuses,
 	}, nil
 }
 
 // Helper function to make grpc calls to all agents on primaries for their status
 // TODO: Check conversion statuses in parallel
-func GetConversionStatusFromPrimaries(conns []*Connection, source *utils.Cluster) ([]string, error) {
-	var statuses []string
+func GetConversionStatusFromPrimaries(conns []*Connection, source *utils.Cluster) ([]*pb.PrimaryStatus, error) {
+	var statuses []*pb.PrimaryStatus
 	for _, conn := range conns {
 		// Build a list of segments on the host in which the agent resides on.
 		var agentSegments []*pb.SegmentInfo
@@ -79,15 +74,15 @@ func PrimaryConversionStatus(hub *Hub) pb.StepStatus {
 		return pb.StepStatus_PENDING
 	}
 
-	statuses := strings.Join(conversionStatus.GetConversionStatuses(), "\n")
-	switch {
-	case strings.Contains(statuses, "FAILED"):
-		return pb.StepStatus_FAILED
-	case strings.Contains(statuses, "RUNNING"):
-		return pb.StepStatus_RUNNING
-	case strings.Contains(statuses, "COMPLETE"):
-		return pb.StepStatus_COMPLETE
-	default:
-		return pb.StepStatus_PENDING
+	finalStatus := pb.StepStatus_PENDING
+	for _, status := range conversionStatus.GetConversionStatuses() {
+		if status.Status == pb.StepStatus_FAILED {
+			return pb.StepStatus_FAILED
+		} else if status.Status == pb.StepStatus_RUNNING {
+			finalStatus = pb.StepStatus_RUNNING
+		} else if status.Status == pb.StepStatus_COMPLETE && finalStatus != pb.StepStatus_RUNNING {
+			finalStatus = pb.StepStatus_COMPLETE
+		}
 	}
+	return finalStatus
 }
