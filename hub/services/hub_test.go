@@ -78,7 +78,7 @@ var _ = Describe("Hub", func() {
 	})
 
 	// This is inherently testing a race. It will give false successes instead
-	// of false failures, so DO NOT ignore transient failures in this test!
+	// of false failures, so DO NOT ignore transient failures in this test! (trivial change)
 	It("will return from Start() if Stop is called concurrently", func() {
 		hubConfig := &services.HubConfig{
 			CliToHubPort: cliToHubPort,
