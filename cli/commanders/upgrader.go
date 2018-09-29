@@ -2,7 +2,6 @@ package commanders
 
 import (
 	"context"
-
 	pb "github.com/greenplum-db/gpupgrade/idl"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -16,6 +15,26 @@ func NewUpgrader(client pb.CliToHubClient) *Upgrader {
 	return &Upgrader{client: client}
 }
 
+func ConvertMasterCmd() error {
+	client := connectToHub()
+	return NewUpgrader(client).ConvertMaster()
+}
+func ConvertPrimariesCmd() error {
+	client := connectToHub()
+	return NewUpgrader(client).ConvertPrimaries()
+}
+func ReconfigurePortsCmd() error {
+	client := connectToHub()
+	return NewUpgrader(client).ReconfigurePorts()
+}
+func ShareOidsCmd() error {
+	client := connectToHub()
+	return NewUpgrader(client).ShareOids()
+}
+func ValidateStartClusterCmd() error {
+	client := connectToHub()
+	return NewUpgrader(client).ValidateStartCluster()
+}
 func (u *Upgrader) ConvertMaster() error {
 	_, err := u.client.UpgradeConvertMaster(context.Background(), &pb.UpgradeConvertMasterRequest{})
 	if err != nil {

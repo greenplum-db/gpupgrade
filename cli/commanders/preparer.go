@@ -30,6 +30,12 @@ func NewPreparer(client pb.CliToHubClient) Preparer {
 
 var NumberOfConnectionAttempt = 100
 
+func NewPreparerShutdownCmd() error {
+	client := connectToHub()
+	preparer := NewPreparer(client)
+	return preparer.ShutdownClusters()
+}
+
 func (p Preparer) ShutdownClusters() error {
 	_, err := p.client.PrepareShutdownClusters(context.Background(),
 		&pb.PrepareShutdownClustersRequest{})
@@ -40,6 +46,10 @@ func (p Preparer) ShutdownClusters() error {
 	return nil
 }
 
+func StartHubCmd() error {
+	preparer := Preparer{}
+	return preparer.StartHub()
+}
 func (p Preparer) StartHub() error {
 	countHubs, err := HowManyHubsRunning()
 	if err != nil {
@@ -66,6 +76,12 @@ func (p Preparer) StartHub() error {
 	return nil
 }
 
+func NewPreparerInitCmd() error {
+	client := connectToHub()
+	preparer := NewPreparer(client)
+	return preparer.InitCluster()
+}
+
 func (p Preparer) InitCluster() error {
 	_, err := p.client.PrepareInitCluster(context.Background(), &pb.PrepareInitClusterRequest{})
 	if err != nil {
@@ -76,6 +92,11 @@ func (p Preparer) InitCluster() error {
 	return nil
 }
 
+func VerifyConnectivityCmd() error {
+	client := connectToHub()
+	preparer := NewPreparer(client)
+	return preparer.VerifyConnectivity(client)
+}
 func (p Preparer) VerifyConnectivity(client pb.CliToHubClient) error {
 	_, err := client.Ping(context.Background(), &pb.PingRequest{})
 	for i := 0; i < NumberOfConnectionAttempt && err != nil; i++ {
@@ -83,6 +104,12 @@ func (p Preparer) VerifyConnectivity(client pb.CliToHubClient) error {
 		time.Sleep(100 * time.Millisecond)
 	}
 	return err
+}
+
+func StartAgentsCmd() error {
+	client := connectToHub()
+	preparer := NewPreparer(client)
+	return preparer.StartAgents()
 }
 
 func (p Preparer) StartAgents() error {
@@ -115,7 +142,11 @@ func HowManyHubsRunning() (int, error) {
 	return -1, err
 }
 
-func DoInit(stateDir, sourceBinDir, targetBinDir string) error {
+func DoInitCmd(sourceBinDir string, targetBinDir string) error {
+	stateDir := utils.GetStateDir()
+	return DoInit(stateDir, sourceBinDir, targetBinDir)
+}
+func DoInit(stateDir string, sourceBinDir string, targetBinDir string) error {
 	err := os.Mkdir(stateDir, 0700)
 	if os.IsExist(err) {
 		return fmt.Errorf("gpupgrade state dir (%s) already exists. Did you already run gpupgrade prepare init?", stateDir)

@@ -10,6 +10,11 @@ type SeginstallChecker struct {
 	client pb.CliToHubClient
 }
 
+func NewSeginstallCheckerCmd() error {
+	client := connectToHub()
+	return NewSeginstallChecker(client).Execute()
+}
+
 func NewSeginstallChecker(client pb.CliToHubClient) SeginstallChecker {
 	return SeginstallChecker{
 		client: client,

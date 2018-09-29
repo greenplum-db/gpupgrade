@@ -169,7 +169,7 @@ var _ = Describe("Hub prepare init-cluster", func() {
 			err := hub.RunInitsystemForNewCluster("filepath")
 			Expect(err).To(BeNil())
 
-			gphome := filepath.Dir(path.Clean(target.BinDir))  //works around https://github.com/golang/go/issues/4837(in go10.4)
+			gphome := filepath.Dir(path.Clean(target.BinDir)) //works around https://github.com/golang/go/issues/4837(in go10.4)
 			expectedCommandString := fmt.Sprintf("source %s/greenplum_path.sh; %s/gpinitsystem -a -I", gphome, target.BinDir)
 			Expect(testExecutor.LocalCommands[0]).Should(ContainSubstring(expectedCommandString))
 		})
@@ -186,7 +186,7 @@ var _ = Describe("Hub prepare init-cluster", func() {
 			err := hub.RunInitsystemForNewCluster("filepath")
 			Expect(err).To(BeNil())
 
-			gphome := filepath.Dir(path.Clean(target.BinDir))  //works around https://github.com/golang/go/issues/4837(in go10.4)
+			gphome := filepath.Dir(path.Clean(target.BinDir)) //works around https://github.com/golang/go/issues/4837(in go10.4)
 			expectedCommandString := fmt.Sprintf("source %s/greenplum_path.sh; %s/gpinitsystem -a -I", gphome, target.BinDir)
 			Expect(testExecutor.LocalCommands[0]).Should(ContainSubstring(expectedCommandString))
 		})

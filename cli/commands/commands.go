@@ -26,24 +26,18 @@ package commands
  * 			-h, --help   help for check
  *
  * 		Use "gpupgrade check [command] --help" for more information about a command.
-*/
+ */
 
 import (
-	"context"
 	"fmt"
 	"os"
-	"strconv"
-	"time"
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
-	pb "github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"google.golang.org/grpc"
 )
 
 func BuildRootCommand() *cobra.Command {
@@ -55,7 +49,7 @@ func BuildRootCommand() *cobra.Command {
 
 	subPrepareInit := createPrepareInitSubcommand()
 	prepare.AddCommand(subPrepareStartHub, subPrepareInitCluster, subPrepareShutdownClusters, subPrepareStartAgents,
-			subPrepareInit)
+		subPrepareInit)
 
 	subConfigSet := createConfigSetSubcommand()
 	subConfigShow := createConfigShowSubcommand()
@@ -66,63 +60,9 @@ func BuildRootCommand() *cobra.Command {
 	check.AddCommand(subCheckVersion, subCheckObjectCount, subCheckDiskSpace, subCheckConfig, subCheckSeginstall)
 
 	upgrade.AddCommand(subUpgradeConvertMaster, subUpgradeConvertPrimaries, subUpgradeShareOids,
-			subUpgradeValidateStartCluster, subUpgradeReconfigurePorts)
+		subUpgradeValidateStartCluster, subUpgradeReconfigurePorts)
 
 	return root
-}
-
-// connTimeout retrieves the GPUPGRADE_CONNECTION_TIMEOUT environment variable,
-// interprets it as a (possibly fractional) number of seconds, and converts it
-// into a Duration. The default is one second if the envvar is unset or
-// unreadable.
-//
-// TODO: should we make this a global --option instead?
-func connTimeout() time.Duration {
-	const defaultDuration = time.Second
-
-	seconds, ok := os.LookupEnv("GPUPGRADE_CONNECTION_TIMEOUT")
-	if !ok {
-		return defaultDuration
-	}
-
-	duration, err := strconv.ParseFloat(seconds, 64)
-	if err != nil {
-		gplog.Warn(`GPUPGRADE_CONNECTION_TIMEOUT of "%s" is invalid (%s); using default of one second`,
-			seconds, err)
-		return defaultDuration
-	}
-
-	return time.Duration(duration * float64(time.Second))
-}
-
-// connectToHub() performs a blocking connection to the hub, and returns a
-// CliToHubClient which wraps the resulting gRPC channel. Any errors result in
-// an os.Exit(1).
-func connectToHub() pb.CliToHubClient {
-	upgradePort := os.Getenv("GPUPGRADE_HUB_PORT")
-	if upgradePort == "" {
-		upgradePort = "7527"
-	}
-
-	hubAddr := "localhost:" + upgradePort
-
-	// Set up our timeout.
-	ctx, cancel := context.WithTimeout(context.Background(), connTimeout())
-	defer cancel()
-
-	// Attempt a connection.
-	conn, err := grpc.DialContext(ctx, hubAddr, grpc.WithInsecure(), grpc.WithBlock())
-	if err != nil {
-		// Print a nicer error message if we can't connect to the hub.
-		if ctx.Err() == context.DeadlineExceeded {
-			gplog.Error("couldn't connect to the upgrade hub (did you run 'gpupgrade prepare start-hub'?)")
-		} else {
-			gplog.Error(err.Error())
-		}
-		os.Exit(1)
-	}
-
-	return pb.NewCliToHubClient(conn)
 }
 
 //////////////////////////////////////// CHECK and its subcommands
@@ -137,8 +77,7 @@ var subCheckConfig = &cobra.Command{
 	Short: "gather cluster configuration",
 	Long:  "gather cluster configuration",
 	Run: func(cmd *cobra.Command, args []string) {
-		client := connectToHub()
-		err := commanders.NewConfigChecker(client).Execute()
+		err := commanders.NewConfigCheckerCmd()
 		if err != nil {
 			gplog.Error(err.Error())
 			os.Exit(1)
@@ -151,8 +90,7 @@ var subCheckDiskSpace = &cobra.Command{
 	Long:    "check that disk space usage is less than 80% on all segments",
 	Aliases: []string{"du"},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client := connectToHub()
-		return commanders.NewDiskSpaceChecker(client).Execute()
+		return commanders.NewDiskSpaceCheckerCmd()
 	},
 }
 var subCheckObjectCount = &cobra.Command{
@@ -161,8 +99,7 @@ var subCheckObjectCount = &cobra.Command{
 	Long:    "count database objects and numeric objects",
 	Aliases: []string{"oc"},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client := connectToHub()
-		return commanders.NewObjectCountChecker(client).Execute()
+		return commanders.NewObjectCountCheckerCmd()
 	},
 }
 var subCheckSeginstall = &cobra.Command{
@@ -171,8 +108,7 @@ var subCheckSeginstall = &cobra.Command{
 	Long: "Running this command will validate that the new software is installed on all segments, " +
 		"and register successful or failed validation (available in `gpupgrade status upgrade`)",
 	Run: func(cmd *cobra.Command, args []string) {
-		client := connectToHub()
-		err := commanders.NewSeginstallChecker(client).Execute()
+		err := commanders.NewSeginstallCheckerCmd()
 		if err != nil {
 			gplog.Error(err.Error())
 			os.Exit(1)
@@ -188,8 +124,7 @@ var subCheckVersion = &cobra.Command{
 	Long:    `validate current version is upgradable`,
 	Aliases: []string{"ver"},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		client := connectToHub()
-		return commanders.NewVersionChecker(client).Execute()
+		return commanders.NewVersionCheckerCmd()
 	},
 }
 
@@ -200,6 +135,8 @@ var config = &cobra.Command{
 	Long:  "subcommands to set parameters for subsequent gpupgrade commands",
 }
 
+/* NOTE: since we pass a map to the actual implementation, the order of setting
+   multiple keys is random */
 func createConfigSetSubcommand() *cobra.Command {
 	subSet := &cobra.Command{
 		Use:   "set",
@@ -209,26 +146,11 @@ func createConfigSetSubcommand() *cobra.Command {
 			if cmd.Flags().NFlag() == 0 {
 				return errors.New("the set command requires at least one flag to be specified")
 			}
+			flagMap := make(map[string]string)
+			cmd.Flags().Visit(func(flag *pflag.Flag) { flagMap[flag.Name] = flag.Value.String() })
 
-			client := connectToHub()
+			return commanders.NewConfigSetterCmd(flagMap) //REVISIT: how to specify a "const flagMap" in golang?
 
-			var requests []*pb.SetConfigRequest
-			cmd.Flags().Visit(func(flag *pflag.Flag) {
-				requests = append(requests, &pb.SetConfigRequest{
-					Name:  flag.Name,
-					Value: flag.Value.String(),
-				})
-			})
-
-			for _, request := range requests {
-				_, err := client.SetConfig(context.Background(), request)
-				if err != nil {
-					return err
-				}
-				gplog.Info("Successfully set %s to %s", request.Name, request.Value)
-			}
-
-			return nil
 		},
 	}
 
@@ -238,47 +160,48 @@ func createConfigSetSubcommand() *cobra.Command {
 	return subSet
 }
 
+/* NOTE: for simplicity in testing, we show the values in the order they are passed in by the caller */
 func createConfigShowSubcommand() *cobra.Command {
 	subShow := &cobra.Command{
 		Use:   "show",
 		Short: "show configuration settings",
 		Long:  "show configuration settings",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client := connectToHub()
 
-			// Build a list of GetConfigRequests, one for each flag. If no flags
-			// are passed, assume we want to retrieve all of them.
-			var requests []*pb.GetConfigRequest
+			/* place all show flag values in a slice; use a slice to preserve the order of calling */
+			var flagList []string
+
 			getRequest := func(flag *pflag.Flag) {
 				if flag.Name != "help" {
-					requests = append(requests, &pb.GetConfigRequest{
-						Name: flag.Name,
-					})
+					flagList = append(flagList, flag.Name)
 				}
 			}
 
 			if cmd.Flags().NFlag() > 0 {
 				cmd.Flags().Visit(getRequest)
 			} else {
-				cmd.Flags().VisitAll(getRequest)
+				cmd.Flags().VisitAll(getRequest) //none specified means show all config values
 			}
 
-			// Make the requests and print every response.
-			for _, request := range requests {
-				resp, err := client.GetConfig(context.Background(), request)
-				if err != nil {
-					return err
+			configMap, err := commanders.NewConfigShowerCmd(flagList)
+			if err != nil {
+				return err
+			}
+			for _, k := range flagList {
+				if _, ok := configMap[k]; !ok {
+					return errors.New("(internal error): value " + k + " not found")
 				}
-
-				if cmd.Flags().NFlag() == 1 {
-					// Don't prefix with the setting name if the user only asked for one.
-					fmt.Println(resp.Value)
-				} else {
-					fmt.Printf("%s - %s\n", request.Name, resp.Value)
+			}
+			if len(flagList) == 1 {
+				// Don't prefix with the setting name if the user only asked for one.
+				fmt.Println(configMap[flagList[0]])
+			} else {
+				for _, k := range flagList {
+					fmt.Printf("%s - %s\n", k, configMap[k])
 				}
 			}
 
-			return nil
+			return err
 		},
 	}
 
@@ -306,9 +229,7 @@ func createPrepareInitSubcommand() *cobra.Command {
 			// If we got here, the args are okay and the user doesn't need a usage
 			// dump on failure.
 			cmd.SilenceUsage = true
-
-			stateDir := utils.GetStateDir()
-			return commanders.DoInit(stateDir, oldBinDir, newBinDir)
+			return commanders.DoInitCmd(oldBinDir, newBinDir)
 		},
 	}
 
@@ -319,14 +240,14 @@ func createPrepareInitSubcommand() *cobra.Command {
 
 	return subInit
 }
+
 var subPrepareInitCluster = &cobra.Command{
 	Use:   "init-cluster",
 	Short: "inits the cluster",
 	Long:  "Current assumptions is that the cluster already exists. And will only generate json config file for now.",
 	Run: func(cmd *cobra.Command, args []string) {
-		client := connectToHub()
-		preparer := commanders.NewPreparer(client)
-		err := preparer.InitCluster()
+
+		err := commanders.NewPreparerInitCmd()
 		if err != nil {
 			gplog.Error(err.Error())
 			os.Exit(1)
@@ -338,9 +259,7 @@ var subPrepareShutdownClusters = &cobra.Command{
 	Short: "shuts down both old and new cluster",
 	Long:  "Current assumptions is both clusters exist.",
 	Run: func(cmd *cobra.Command, args []string) {
-		client := connectToHub()
-		preparer := commanders.NewPreparer(client)
-		err := preparer.ShutdownClusters()
+		err := commanders.NewPreparerShutdownCmd()
 		if err != nil {
 			gplog.Error(err.Error())
 			os.Exit(1)
@@ -352,9 +271,7 @@ var subPrepareStartAgents = &cobra.Command{
 	Short: "start agents on segment hosts",
 	Long:  "start agents on all segments",
 	Run: func(cmd *cobra.Command, args []string) {
-		client := connectToHub()
-		preparer := commanders.NewPreparer(client)
-		err := preparer.StartAgents()
+		err := commanders.StartAgentsCmd()
 		if err != nil {
 			gplog.Error(err.Error())
 			os.Exit(1)
@@ -366,16 +283,14 @@ var subPrepareStartHub = &cobra.Command{
 	Short: "starts the hub",
 	Long:  "starts the hub",
 	Run: func(cmd *cobra.Command, args []string) {
-		preparer := commanders.Preparer{}
-		err := preparer.StartHub()
+
+		err := commanders.StartHubCmd()
 		if err != nil {
 			gplog.Error(err.Error())
 			os.Exit(1)
 		}
 
-		client := connectToHub()
-		err = preparer.VerifyConnectivity(client)
-
+		err = commanders.VerifyConnectivityCmd()
 		if err != nil {
 			gplog.Error("gpupgrade is unable to connect via gRPC to the hub")
 			gplog.Error("%v", err)
@@ -396,13 +311,12 @@ var subStatusConversion = &cobra.Command{
 	Short: "the status of the conversion",
 	Long:  "the status of the conversion",
 	Run: func(cmd *cobra.Command, args []string) {
-		client := connectToHub()
-		reporter := commanders.NewReporter(client)
-		err := reporter.OverallConversionStatus()
+		strOutput, err := commanders.OverallConversionStatusCmd()
 		if err != nil {
 			gplog.Error(err.Error())
 			os.Exit(1)
 		}
+		fmt.Print(strOutput)
 	},
 }
 var subStatusUpgrade = &cobra.Command{
@@ -410,13 +324,12 @@ var subStatusUpgrade = &cobra.Command{
 	Short: "the status of the upgrade",
 	Long:  "the status of the upgrade",
 	Run: func(cmd *cobra.Command, args []string) {
-		client := connectToHub()
-		reporter := commanders.NewReporter(client)
-		err := reporter.OverallUpgradeStatus()
+		strOutput, err := commanders.OverallUpgradeStatusCmd()
 		if err != nil {
 			gplog.Error(err.Error())
 			os.Exit(1)
 		}
+		fmt.Print(strOutput)
 	},
 }
 
@@ -432,8 +345,7 @@ var subUpgradeConvertMaster = &cobra.Command{
 	Short: "start upgrade process on master",
 	Long:  `start upgrade process on master`,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := connectToHub()
-		err := commanders.NewUpgrader(client).ConvertMaster()
+		err := commanders.ConvertMasterCmd()
 		if err != nil {
 			gplog.Error(err.Error())
 			os.Exit(1)
@@ -445,8 +357,7 @@ var subUpgradeConvertPrimaries = &cobra.Command{
 	Short: "start upgrade process on primary segments",
 	Long:  `start upgrade process on primary segments`,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := connectToHub()
-		err := commanders.NewUpgrader(client).ConvertPrimaries()
+		err := commanders.ConvertPrimariesCmd()
 		if err != nil {
 			gplog.Error(err.Error())
 			os.Exit(1)
@@ -458,8 +369,7 @@ var subUpgradeReconfigurePorts = &cobra.Command{
 	Short: "Set master port on upgraded cluster to the value from the older cluster",
 	Long:  `Set master port on upgraded cluster to the value from the older cluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := connectToHub()
-		err := commanders.NewUpgrader(client).ReconfigurePorts()
+		err := commanders.ReconfigurePortsCmd()
 		if err != nil {
 			gplog.Error(err.Error())
 			os.Exit(1)
@@ -471,8 +381,7 @@ var subUpgradeShareOids = &cobra.Command{
 	Short: "share oid files across cluster",
 	Long:  `share oid files generated by pg_upgrade on master, across cluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := connectToHub()
-		err := commanders.NewUpgrader(client).ShareOids()
+		err := commanders.ShareOidsCmd()
 		if err != nil {
 			gplog.Error(err.Error())
 			os.Exit(1)
@@ -484,8 +393,7 @@ var subUpgradeValidateStartCluster = &cobra.Command{
 	Short: "Attempt to start upgraded cluster",
 	Long:  `Use gpstart in order to validate that the new cluster can successfully transition from a stopped to running state`,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := connectToHub()
-		err := commanders.NewUpgrader(client).ValidateStartCluster()
+		err := commanders.ValidateStartClusterCmd()
 		if err != nil {
 			gplog.Error(err.Error())
 			os.Exit(1)

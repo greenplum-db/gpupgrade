@@ -12,6 +12,11 @@ type ObjectCountChecker struct {
 	client pb.CliToHubClient
 }
 
+func NewObjectCountCheckerCmd() error {
+	client := connectToHub()
+	return NewObjectCountChecker(client).Execute()
+}
+
 func NewObjectCountChecker(client pb.CliToHubClient) ObjectCountChecker {
 	return ObjectCountChecker{client: client}
 }

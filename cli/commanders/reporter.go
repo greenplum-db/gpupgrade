@@ -1,9 +1,16 @@
 package commanders
 
+/*
+ * TODO: this should return an ordered list of statuses not explicit strings
+ *    Callers should not do string matching but rather logical testing against values
+ *    exported from this interface
+ */
+
 import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 
 	pb "github.com/greenplum-db/gpupgrade/idl"
 
@@ -91,46 +98,58 @@ func (s StepStatuses) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-func (r *Reporter) OverallUpgradeStatus() error {
+func OverallUpgradeStatusCmd() (string, error) {
+	client := connectToHub()
+	reporter := NewReporter(client)
+	return reporter.OverallUpgradeStatus()
+}
+
+func (r *Reporter) OverallUpgradeStatus() (string, error) {
 	status, err := r.client.StatusUpgrade(context.Background(), &pb.StatusUpgradeRequest{})
 	if err != nil {
 		// find some way to expound on the error message? Integration test failing because we no longer log here
-		return errors.New("Failed to retrieve status from hub: " + err.Error())
+		return "", errors.New("Failed to retrieve status from hub: " + err.Error())
 	}
 
 	if len(status.GetListOfUpgradeStepStatuses()) == 0 {
-		return errors.New("Received no list of upgrade statuses from hub")
+		return "", errors.New("Received no list of upgrade statuses from hub")
 	}
 
 	statuses := status.GetListOfUpgradeStepStatuses()
 	sort.Sort(StepStatuses(statuses))
+	stringBuf := strings.Builder{}
 	for _, step := range statuses {
-		reportString := fmt.Sprintf("%v %s", step.GetStatus(),
+		reportString := fmt.Sprintf("%v %s\n", step.GetStatus(),
 			UpgradeStepsMessage[step.GetStep()])
-		fmt.Println(reportString)
+		stringBuf.WriteString(reportString)
 	}
 
-	return nil
+	return stringBuf.String(), nil
 }
 
-func (r *Reporter) OverallConversionStatus() error {
+func OverallConversionStatusCmd() (string, error) {
+	client := connectToHub()
+	reporter := NewReporter(client)
+	return reporter.OverallConversionStatus()
+}
+func (r *Reporter) OverallConversionStatus() (string, error) {
 	conversionStatus, err := r.client.StatusConversion(context.Background(), &pb.StatusConversionRequest{})
 	if err != nil {
-		return errors.New("hub returned an error when checking overall conversion status: " + err.Error())
+		return "", errors.New("hub returned an error when checking overall conversion status: " + err.Error())
 	}
 
 	if len(conversionStatus.GetConversionStatuses()) == 0 {
-		return errors.New("Received no list of conversion statuses from hub")
+		return "", errors.New("Received no list of conversion statuses from hub")
 	}
 
 	statuses := conversionStatus.GetConversionStatuses()
 	sort.Sort(PrimaryStatuses(statuses))
-	formatStr := "%s - DBID %d - CONTENT ID %d - PRIMARY - %s"
-
+	formatStr := "%s - DBID %d - CONTENT ID %d - PRIMARY - %s\n"
+	stringBuf := strings.Builder{}
 	for _, status := range statuses {
 		reportString := fmt.Sprintf(formatStr, status.Status, status.Dbid, status.Content, status.Hostname)
-		fmt.Println(reportString)
+		stringBuf.WriteString(reportString)
 	}
 
-	return nil
+	return stringBuf.String(), nil
 }

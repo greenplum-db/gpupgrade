@@ -12,6 +12,11 @@ type VersionChecker struct {
 	client pb.CliToHubClient
 }
 
+func NewVersionCheckerCmd() error {
+	client := connectToHub()
+	return NewVersionChecker(client).Execute()
+}
+
 func NewVersionChecker(client pb.CliToHubClient) VersionChecker {
 	return VersionChecker{
 		client: client,

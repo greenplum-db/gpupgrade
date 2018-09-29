@@ -12,6 +12,11 @@ type DiskSpaceChecker struct {
 	client pb.CliToHubClient
 }
 
+func NewDiskSpaceCheckerCmd() error {
+	client := connectToHub()
+	return NewDiskSpaceChecker(client).Execute()
+}
+
 func NewDiskSpaceChecker(client pb.CliToHubClient) DiskSpaceChecker {
 	return DiskSpaceChecker{client: client}
 }

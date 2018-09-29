@@ -62,23 +62,22 @@ var _ = Describe("Reporter", func() {
 				ConversionStatuses: status,
 			}
 
-			err := reporter.OverallConversionStatus()
+			strOutput, err := reporter.OverallConversionStatus()
 			Expect(err).ToNot(HaveOccurred())
-
 			Expect(spyClient.statusConversionCount).To(Equal(1))
-			Expect(getStdoutContents()).To(ContainSubstring("PENDING"))
+			Expect(strOutput).To(ContainSubstring("PENDING"))
 		})
 
 		It("returns an error upon a failure", func() {
 			spyClient.err = errors.New("error error")
-			err := reporter.OverallConversionStatus()
+			_, err := reporter.OverallConversionStatus()
 			Expect(err).To(HaveOccurred())
 		})
 
 		It("returns an error when the hub returns no error, but the reply is empty", func() {
 			By("having an empty conversion status")
 			spyClient.statusConversionReply = &pb.StatusConversionReply{}
-			err := reporter.OverallConversionStatus()
+			_, err := reporter.OverallConversionStatus()
 			Expect(err).To(HaveOccurred())
 
 			Expect(spyClient.statusConversionCount).To(Equal(1))
@@ -88,7 +87,7 @@ var _ = Describe("Reporter", func() {
 	Describe("StatusUpgrade", func() {
 		It("returns an error upon a failure", func() {
 			spyClient.err = errors.New("some error")
-			err := reporter.OverallUpgradeStatus()
+			_, err := reporter.OverallUpgradeStatus()
 			Expect(err).To(HaveOccurred())
 		})
 
@@ -99,17 +98,16 @@ var _ = Describe("Reporter", func() {
 					{Step: pb.UpgradeSteps_CONVERT_MASTER, Status: pb.StepStatus_PENDING},
 				},
 			}
-			err := reporter.OverallUpgradeStatus()
+			strOutput, err := reporter.OverallUpgradeStatus()
 			Expect(err).ToNot(HaveOccurred())
-			contents := getStdoutContents()
-			Expect(contents).To(ContainSubstring("RUNNING - Initialize new cluster"))
-			Expect(contents).To(ContainSubstring("PENDING - Run pg_upgrade on master"))
+			Expect(strOutput).To(ContainSubstring("RUNNING - Initialize new cluster"))
+			Expect(strOutput).To(ContainSubstring("PENDING - Run pg_upgrade on master"))
 		})
 
 		It("returns an error when the hub returns no error, but the reply has an empty list", func() {
 			By("having an empty status list")
 			spyClient.statusUpgradeReply = &pb.StatusUpgradeReply{}
-			err := reporter.OverallUpgradeStatus()
+			_, err := reporter.OverallUpgradeStatus()
 			Expect(err).To(HaveOccurred())
 
 			Expect(spyClient.statusUpgradeCount).To(Equal(1))
@@ -122,9 +120,9 @@ var _ = Describe("Reporter", func() {
 						{Step: step, Status: status},
 					},
 				}
-				err := reporter.OverallUpgradeStatus()
+				strOutput, err := reporter.OverallUpgradeStatus()
 				Expect(err).ToNot(HaveOccurred())
-				Expect(getStdoutContents()).To(ContainSubstring(expected))
+				Expect(strOutput).To(ContainSubstring(expected))
 			},
 			Entry("unknown step", pb.UpgradeSteps_UNKNOWN_STEP, pb.StepStatus_PENDING, "PENDING - Unknown step"),
 			Entry("configuration check", pb.UpgradeSteps_CONFIG, pb.StepStatus_RUNNING, "RUNNING - Configuration Check"),
