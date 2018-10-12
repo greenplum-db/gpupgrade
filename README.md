@@ -161,6 +161,13 @@ flags is specifically tested where needed, for example in
 The integration tests may require other binaries to be built. We aim to have
 any such requirements automated.
 
+### Usage of the Command Line Interface(CLI)
+
+While not "testing" per se, we also describe the gpupgrade process from a database 
+maintainer's standpoint.  Since this is the cli, we describe this in a separate
+document, ```README_cli.md```  Note that, once officially released, this user
+documentation will probably be incorporated into a more user-friendly format.
+
 ### Directly using pg_upgrade
 
 Under the covers, gpupgrade is calling pg_upgrade, first on the master, and
