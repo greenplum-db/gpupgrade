@@ -6,8 +6,14 @@ AGENT=gpupgrade_agent
 CLI=gpupgrade
 HUB=gpupgrade_hub
 
-GIT_VERSION := $(shell git describe --tags | perl -pe 's/(.*)-([0-9]*)-(g[0-9a-f]*)/\1+dev.\2.\3/')
-UPGRADE_VERSION_STR="-X $(MODULE_NAME)/cli/commanders.UpgradeVersion=$(GIT_VERSION)"
+# TAGGING
+#   YOUR_BRANCH> make all of the changes you want for your tag
+#   follow standard procedures for your PR; commit them(PR is completed)
+#   note git hash for that version(might have been rebased, etc); call it GIT_HASH
+#   YOUR_BRANCH> git tag -a TAGNAME -m "version 0.1.1: add version" GIT_HASH
+#   YOUR_BRANCH> git push origin TAGNAME
+GIT_VERSION := $(shell git describe --tags --long| perl -pe 's/(.*)-([0-9]*)-(g[0-9a-f]*)/\1+dev.\2.\3/')
+VERSION_LD_STR="-X github.com/greenplum-db/$(MODULE_NAME)/cli/commanders.UpgradeVersion=$(GIT_VERSION)"
 
 BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 LINUX_PREFIX := env GOOS=linux GOARCH=amd64
@@ -82,7 +88,7 @@ cli-package: EXE_NAME := $(CLI)
 hub-package: EXE_NAME := $(HUB)
 
 $(PACKAGES): %-package: .Gopkg.updated
-	$(PREFIX) go build $(GOFLAGS) -o $(EXE_NAME)$(POSTFIX) -ldflags $(UPGRADE_VERSION_STR) github.com/greenplum-db/gpupgrade/$*
+	$(PREFIX) go build $(GOFLAGS) -o $(EXE_NAME)$(POSTFIX) -ldflags $(VERSION_LD_STR) github.com/greenplum-db/gpupgrade/$*
 
 install_agent: agent-package
 		@psql -t -d template1 -c 'SELECT DISTINCT hostname FROM gp_segment_configuration WHERE content != -1' > /tmp/seg_hosts 2>/dev/null; \
