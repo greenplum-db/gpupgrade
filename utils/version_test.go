@@ -1,7 +1,7 @@
-package commanders_test
+package utils_test
 
 import (
-	"github.com/greenplum-db/gpupgrade/cli/commanders"
+	"github.com/greenplum-db/gpupgrade/utils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -10,15 +10,15 @@ var _ = Describe("Version", func() {
 	Describe("VersionString", func() {
 		Context("when global var UpgradeVersion is the empty string", func() {
 			It("returns the default version", func() {
-				commanders.UpgradeVersion = ""
-				Expect(commanders.VersionString()).To(Equal("gpupgrade unknown version"))
+				utils.UpgradeVersion = ""
+				Expect(utils.VersionString("myname")).To(Equal("myname unknown version"))
 			})
 		})
 
 		Context("when global var UpgradeVersion is set to something", func() {
 			It("returns what it's set to", func() {
-				commanders.UpgradeVersion = "Something"
-				Expect(commanders.VersionString()).To(Equal("gpupgrade version Something"))
+				utils.UpgradeVersion = "Something"
+				Expect(utils.VersionString("gpupgrade")).To(Equal("gpupgrade version Something"))
 			})
 		})
 	})

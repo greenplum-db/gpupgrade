@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime/debug"
@@ -23,15 +24,23 @@ import (
 func main() {
 	var logdir string
 	var shouldDaemonize bool
+	var doLogVersionAndExit bool
 
 	var RootCmd = &cobra.Command{
 		Use:   os.Args[0],
 		Short: "Start the gpupgrade_hub (blocks)",
 		Long:  `Start the gpupgrade_hub (blocks)`,
+		Args:  cobra.MaximumNArgs(0), //no positional args allowed
 		RunE: func(cmd *cobra.Command, args []string) error {
 			gplog.InitializeLogging("gpupgrade_hub", logdir)
 			debug.SetTraceback("all")
 			defer log.WritePanics()
+
+			if doLogVersionAndExit {
+				fmt.Println(utils.VersionString("gpupgrade_hub"))
+				gplog.Info(utils.VersionString("gpupgrade_hub"))
+				os.Exit(0)
+			}
 
 			conf := &services.HubConfig{
 				CliToHubPort:   7527,
@@ -97,6 +106,7 @@ func main() {
 	RootCmd.PersistentFlags().StringVar(&logdir, "log-directory", "", "gpupgrade_hub log directory")
 
 	daemon.MakeDaemonizable(RootCmd, &shouldDaemonize)
+	utils.VersionAddCmdlineOption(RootCmd, &doLogVersionAndExit)
 
 	err := RootCmd.Execute()
 	if err != nil && err != daemon.ErrSuccessfullyDaemonized {

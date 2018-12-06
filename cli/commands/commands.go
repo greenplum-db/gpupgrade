@@ -26,7 +26,7 @@ package commands
  * 			-h, --help   help for check
  *
  * 		Use "gpupgrade check [command] --help" for more information about a command.
-*/
+ */
 
 import (
 	"context"
@@ -55,7 +55,7 @@ func BuildRootCommand() *cobra.Command {
 
 	subPrepareInit := createPrepareInitSubcommand()
 	prepare.AddCommand(subPrepareStartHub, subPrepareInitCluster, subPrepareShutdownClusters, subPrepareStartAgents,
-			subPrepareInit)
+		subPrepareInit)
 
 	subConfigSet := createConfigSetSubcommand()
 	subConfigShow := createConfigShowSubcommand()
@@ -66,7 +66,7 @@ func BuildRootCommand() *cobra.Command {
 	check.AddCommand(subCheckVersion, subCheckObjectCount, subCheckDiskSpace, subCheckConfig, subCheckSeginstall)
 
 	upgrade.AddCommand(subUpgradeConvertMaster, subUpgradeConvertPrimaries, subUpgradeShareOids,
-			subUpgradeValidateStartCluster, subUpgradeReconfigurePorts)
+		subUpgradeValidateStartCluster, subUpgradeReconfigurePorts)
 
 	return root
 }
@@ -319,6 +319,7 @@ func createPrepareInitSubcommand() *cobra.Command {
 
 	return subInit
 }
+
 var subPrepareInitCluster = &cobra.Command{
 	Use:   "init-cluster",
 	Short: "inits the cluster",
@@ -499,6 +500,6 @@ var version = &cobra.Command{
 	Short: "Version of gpupgrade",
 	Long:  `Version of gpupgrade`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println(commanders.VersionString())
+		fmt.Println(utils.VersionString("gpupgrade"))
 	},
 }

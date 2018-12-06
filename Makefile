@@ -13,7 +13,7 @@ HUB=gpupgrade_hub
 #   YOUR_BRANCH> git tag -a TAGNAME -m "version 0.1.1: add version" GIT_HASH
 #   YOUR_BRANCH> git push origin TAGNAME
 GIT_VERSION := $(shell git describe --tags --long| perl -pe 's/(.*)-([0-9]*)-(g[0-9a-f]*)/\1+dev.\2.\3/')
-VERSION_LD_STR="-X github.com/greenplum-db/$(MODULE_NAME)/cli/commanders.UpgradeVersion=$(GIT_VERSION)"
+VERSION_LD_STR="-X github.com/greenplum-db/$(MODULE_NAME)/utils.UpgradeVersion=$(GIT_VERSION)"
 
 BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 LINUX_PREFIX := env GOOS=linux GOARCH=amd64
@@ -157,12 +157,14 @@ FLY_TARGET ?= gpdb-dev
 .PHONY: set-pipeline expose-pipeline
 # TODO: Keep this in sync with the README at github.com/greenplum-db/continuous-integration
 set-pipeline:
+	#NOTE-- make sure your gpupgrade-git-remote uses an https style git"
+	#NOTE-- such as https://github.com/greenplum-db/gpupgrade.git"
 	fly -t $(FLY_TARGET) set-pipeline -p $(PIPELINE_NAME) \
 		-c ci/pipeline.yml \
-		-l ~/workspace/continuous-integration/secrets/gpupgrade.$(DEPLOY_TYPE).yml \
-		-l ~/workspace/continuous-integration/secrets/gpdb_common-ci-secrets.yml \
-		-l ~/workspace/continuous-integration/secrets/gpdb_master-ci-secrets.yml \
-		-l ~/workspace/continuous-integration/secrets/ccp_ci_secrets_gpdb-$(DEPLOY_TYPE).yml \
+		-l ~/workspace/gp-continuous-integration/secrets/gpupgrade.$(DEPLOY_TYPE).yml \
+		-l ~/workspace/gp-continuous-integration/secrets/gpdb_common-ci-secrets.yml \
+		-l ~/workspace/gp-continuous-integration/secrets/gpdb_master-ci-secrets.yml \
+		-l ~/workspace/gp-continuous-integration/secrets/ccp_ci_secrets_gpdb-$(DEPLOY_TYPE).yml \
 		-v gpupgrade-git-remote=$(GIT_URI) \
 		-v gpupgrade-git-branch=$(BRANCH)
 

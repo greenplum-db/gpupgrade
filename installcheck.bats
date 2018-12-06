@@ -59,12 +59,12 @@ EventuallyStepCompletes() {
     cliStepMessage="$1"
     echo "# Waiting for \"$cliStepMessage\" to transition to complete"
     local observed_complete="false"
-    for i in {1..60}; do
+    for i in {1..300}; do
         run gpupgrade status upgrade
         [ "$status" -eq 0 ] || (echo "$output" && false)
 
         statusLine=$(echo "$output" | grep "$cliStepMessage")
-        echo "# $statusLine ($i/60)"
+        echo "# $statusLine ($i/300)"
 
         if [[ "$statusLine" = *"FAILED"* ]]; then
             break

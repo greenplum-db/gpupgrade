@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
@@ -22,14 +23,22 @@ func main() {
 	//}
 	var logdir, statedir string
 	var shouldDaemonize bool
+	var doLogVersionAndExit bool
 
 	var RootCmd = &cobra.Command{
 		Use:   "gpupgrade_agent ",
 		Short: "Start the Command Listener (blocks)",
 		Long:  `Start the Command Listener (blocks)`,
+		Args:  cobra.MaximumNArgs(0), //no positional args allowed
 		RunE: func(cmd *cobra.Command, args []string) error {
 			gplog.InitializeLogging("gpupgrade_agent", logdir)
 			defer log.WritePanics()
+
+			if doLogVersionAndExit {
+				fmt.Println(utils.VersionString("gpupgrade_agent"))
+				gplog.Info(utils.VersionString("gpupgrade_agent"))
+				os.Exit(0)
+			}
 
 			conf := services.AgentConfig{
 				Port:     6416,
@@ -53,6 +62,7 @@ func main() {
 	RootCmd.Flags().StringVar(&statedir, "state-directory", utils.GetStateDir(), "Agent state directory")
 
 	daemon.MakeDaemonizable(RootCmd, &shouldDaemonize)
+	utils.VersionAddCmdlineOption(RootCmd, &doLogVersionAndExit)
 
 	err := RootCmd.Execute()
 	if err != nil && err != daemon.ErrSuccessfullyDaemonized {
