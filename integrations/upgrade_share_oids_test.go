@@ -61,7 +61,7 @@ var _ = Describe("upgrade share oids", func() {
 		}
 
 		upgradeShareOidsSession := runCommand("upgrade", "share-oids")
-		Eventually(upgradeShareOidsSession).Should(Exit(0))
+		Eventually(upgradeShareOidsSession).Should(Exit(1))
 
 		Eventually(func() bool { return cm.IsFailed(upgradestatus.SHARE_OIDS) }).Should(BeTrue())
 		Expect(testExecutor.ClusterCommands[0][0]).To(ContainElement("rsync"))

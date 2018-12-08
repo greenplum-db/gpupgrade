@@ -4,49 +4,56 @@ import (
 	"fmt"
 
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/log"
 
 	"golang.org/x/net/context"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
+	"github.com/pkg/errors"
+	"github.com/hashicorp/go-multierror"
 )
 
-func (h *Hub) PrepareShutdownClusters(ctx context.Context, in *pb.PrepareShutdownClustersRequest) (*pb.PrepareShutdownClustersReply, error) {
-	gplog.Info("starting PrepareShutdownClusters()")
-
-	go h.ShutdownClusters()
-
-	return &pb.PrepareShutdownClustersReply{}, nil
-}
-
-func (h *Hub) ShutdownClusters() {
+func (h *Hub) PrepareShutdownClusters(ctx context.Context, in *idl.PrepareShutdownClustersRequest) (*idl.PrepareShutdownClustersReply, error) {
+	gplog.Info("starting %s", upgradestatus.SHUTDOWN_CLUSTERS)
 	defer log.WritePanics()
 
-	step := h.checklist.GetStepWriter(upgradestatus.SHUTDOWN_CLUSTERS)
-
-	step.ResetStateDir()
-	step.MarkInProgress()
-
-	var errSource error
-	errSource = StopCluster(h.source)
-	if errSource != nil {
-		gplog.Error(errSource.Error())
+	stepWriter, err := h.WriteStep(upgradestatus.SHUTDOWN_CLUSTERS)
+	if err != nil {
+		gplog.Error(err.Error())
+		return &idl.PrepareShutdownClustersReply{}, err
 	}
 
-	var errTarget error
-	errTarget = StopCluster(h.target)
-	if errTarget != nil {
-		gplog.Error(errTarget.Error())
+	err = h.ShutdownClusters()
+	if err != nil {
+		gplog.Error(err.Error())
+		stepWriter.MarkFailed()
+		return &idl.PrepareShutdownClustersReply{}, err
 	}
 
-	if errSource != nil || errTarget != nil {
-		step.MarkFailed()
-		return
+	stepWriter.MarkComplete()
+	return &idl.PrepareShutdownClustersReply{}, nil
+}
+
+func (h *Hub) ShutdownClusters() error {
+	var shutdownErr error
+
+	err := StopCluster(h.source)
+	if err != nil {
+		shutdownErr = multierror.Append(shutdownErr, errors.Wrap(err, "failed to stop source cluster"))
 	}
 
-	step.MarkComplete()
+	err = StopCluster(h.target)
+	if err != nil {
+		shutdownErr = multierror.Append(shutdownErr, errors.Wrap(err, "failed to stop target cluster"))
+	}
+
+	if shutdownErr != nil {
+		return shutdownErr
+	}
+
+	return nil
 }
 
 func StopCluster(c *utils.Cluster) error {

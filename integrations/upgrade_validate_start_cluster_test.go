@@ -29,7 +29,7 @@ var _ = Describe("upgrade validate-start-cluster", func() {
 		testExecutor.LocalError = errors.New("start failed")
 
 		session := runCommand("upgrade", "validate-start-cluster")
-		Eventually(session).Should(Exit(0))
+		Eventually(session).Should(Exit(1))
 
 		Expect(testExecutor.NumExecutions).To(Equal(1))
 		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("gpstart"))

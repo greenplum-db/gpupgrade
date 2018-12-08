@@ -11,37 +11,27 @@ import (
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
+	"github.com/greenplum-db/gpupgrade/utils/log"
 )
 
-// grpc generated function signature requires ctx and in params.
-// nolint: unparam
 func (h *Hub) CheckSeginstall(ctx context.Context, in *idl.CheckSeginstallRequest) (*idl.CheckSeginstallReply, error) {
-	gplog.Info("Running CheckSeginstall()")
+	gplog.Info("starting %s", upgradestatus.SEGINSTALL)
+	defer log.WritePanics()
 
-	step := h.checklist.GetStepWriter(upgradestatus.SEGINSTALL)
-
-	err := step.ResetStateDir()
+	stepWriter, err := h.WriteStep(upgradestatus.SEGINSTALL)
 	if err != nil {
 		gplog.Error(err.Error())
 		return &idl.CheckSeginstallReply{}, err
 	}
 
-	err = step.MarkInProgress()
+	err = VerifyAgentsInstalled(h.source)
 	if err != nil {
 		gplog.Error(err.Error())
+		stepWriter.MarkFailed()
 		return &idl.CheckSeginstallReply{}, err
 	}
 
-	go func() {
-		err := VerifyAgentsInstalled(h.source)
-		if err != nil {
-			gplog.Error(err.Error())
-			step.MarkFailed()
-		} else {
-			step.MarkComplete()
-		}
-	}()
-
+	stepWriter.MarkComplete()
 	return &idl.CheckSeginstallReply{}, nil
 }
 

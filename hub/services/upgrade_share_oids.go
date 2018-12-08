@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/pkg/errors"
 
@@ -14,32 +14,35 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/net/context"
+	"github.com/greenplum-db/gpupgrade/utils/log"
+	"github.com/hashicorp/go-multierror"
 )
 
-func (h *Hub) UpgradeShareOids(ctx context.Context, in *pb.UpgradeShareOidsRequest) (*pb.UpgradeShareOidsReply, error) {
-	gplog.Info("Started processing share-oids request")
+func (h *Hub) UpgradeShareOids(ctx context.Context, in *idl.UpgradeShareOidsRequest) (*idl.UpgradeShareOidsReply, error) {
+	gplog.Info("starting %s", upgradestatus.SHARE_OIDS)
+	defer log.WritePanics()
 
-	go h.shareOidFiles()
+	stepWriter, err := h.WriteStep(upgradestatus.SHARE_OIDS)
+	if err != nil {
+		gplog.Error(err.Error())
+		return &idl.UpgradeShareOidsReply{}, err
+	}
 
-	return &pb.UpgradeShareOidsReply{}, nil
+	err = h.shareOidFiles()
+	if err != nil {
+		gplog.Error(err.Error())
+		stepWriter.MarkFailed()
+		return &idl.UpgradeShareOidsReply{}, err
+	}
+
+	stepWriter.MarkComplete()
+	return &idl.UpgradeShareOidsReply{}, nil
 }
 
-func (h *Hub) shareOidFiles() {
-	step := h.checklist.GetStepWriter(upgradestatus.SHARE_OIDS)
-
-	err := step.ResetStateDir()
-	if err != nil {
-		gplog.Error("error from ResetStateDir " + err.Error())
-		return
-	}
-	err = step.MarkInProgress()
-	if err != nil {
-		gplog.Error("error from MarkInProgress " + err.Error())
-		return
-	}
-
-	anyFailed := false
+func (h *Hub) shareOidFiles() error {
+	var shareOidErrors error
 	rsyncFlags := "-rzpogt"
+
 	if h.source.Version.Before("6.0.0") {
 		sourceDir := utils.MasterPGUpgradeDirectory(h.conf.StateDir)
 		contents := contentsByHost(h.source, false)
@@ -51,12 +54,10 @@ func (h *Hub) shareOidFiles() {
 		}
 
 		remoteOutput := h.source.ExecuteClusterCommand(cluster.ON_HOSTS, commandMap)
-		if remoteOutput.NumErrors > 0 {
-			gplog.Error("Copying OID files failed with %d errors:", remoteOutput.NumErrors)
-			for content, segmentErr := range remoteOutput.Errors {
-				gplog.Error("Segment %d failed with error %s", content, segmentErr.Error())
+		for segmentId, segmentErr := range remoteOutput.Errors {
+			if segmentErr != nil { // XXX: Refactor remoteOutput to return maps with keys and valid values, and not values that can be nil. If there is no value, then do not have a key.
+				shareOidErrors = multierror.Append(shareOidErrors, errors.Wrapf(segmentErr, "failed to copy OID files for segment %d due to: %s", segmentId, segmentErr.Error()))
 			}
-			anyFailed = true
 		}
 	} else {
 		// Make sure sourceDir ends with a trailing slash so that rsync will
@@ -79,34 +80,24 @@ func (h *Hub) shareOidFiles() {
 		}
 
 		remoteOutput := h.source.ExecuteClusterCommand(cluster.ON_HOSTS, commandMap)
-		if remoteOutput.NumErrors > 0 {
-			gplog.Error("Copying master directory failed with %d errors:", remoteOutput.NumErrors)
-			for content, segmentErr := range remoteOutput.Errors {
-				gplog.Error("Segment %d failed with error %s", content, segmentErr.Error())
+		for segmentId, segmentErr := range remoteOutput.Errors {
+			if segmentErr != nil { // XXX: Refactor remoteOutput to return maps with keys and valid values, and not values that can be nil. If there is no value, then do not have a key.
+				shareOidErrors = multierror.Append(shareOidErrors, errors.Wrapf(segmentErr, "failed to copy master data directory to segment %d due to: %s", segmentId, segmentErr.Error()))
 			}
-			anyFailed = true
 		}
 
 		agentConns, err := h.AgentConns()
 		err = CopyMasterDirectoryToSegmentDirectories(agentConns, h.target, destinationDirName)
 		if err != nil {
-			gplog.Error(err.Error())
-			anyFailed = true
+			shareOidErrors = multierror.Append(shareOidErrors, err)
 		}
 	}
 
-	if anyFailed {
-		step.MarkFailed()
-		if err != nil {
-			gplog.Error("error from MarkFailed " + err.Error())
-		}
-	} else {
-		step.MarkComplete()
-		if err != nil {
-			gplog.Error("error from MarkComplete " + err.Error())
-		}
+	if shareOidErrors != nil {
+		return shareOidErrors
 	}
 
+	return nil
 }
 
 func CopyMasterDirectoryToSegmentDirectories(agentConns []*Connection, target *utils.Cluster, destinationDirName string) error {
@@ -126,9 +117,9 @@ func CopyMasterDirectoryToSegmentDirectories(agentConns []*Connection, target *u
 		go func(c *Connection) {
 			defer wg.Done()
 
-			client := pb.NewAgentClient(c.Conn)
+			client := idl.NewAgentClient(c.Conn)
 			_, err := client.CopyMasterDirectoryToSegmentDirectories(context.Background(),
-				&pb.CopyMasterDirRequest{
+				&idl.CopyMasterDirRequest{
 					MasterDir: destinationDirName,
 					Datadirs:  segmentDataDirMap[c.Hostname],
 				})

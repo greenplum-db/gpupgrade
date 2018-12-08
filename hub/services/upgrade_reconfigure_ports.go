@@ -5,9 +5,11 @@ import (
 	"fmt"
 
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
+	"github.com/pkg/errors"
+	"github.com/greenplum-db/gpupgrade/utils/log"
 )
 
 const (
@@ -16,36 +18,35 @@ const (
 		"mv %[3]s/postgresql.conf.updated %[3]s/postgresql.conf"
 )
 
-func (h *Hub) UpgradeReconfigurePorts(ctx context.Context, in *pb.UpgradeReconfigurePortsRequest) (*pb.UpgradeReconfigurePortsReply, error) {
-	gplog.Info("Started processing reconfigure-ports request")
+func (h *Hub) UpgradeReconfigurePorts(ctx context.Context, in *idl.UpgradeReconfigurePortsRequest) (*idl.UpgradeReconfigurePortsReply, error) {
+	gplog.Info("starting %s", upgradestatus.RECONFIGURE_PORTS)
+	defer log.WritePanics()
 
-	step := h.checklist.GetStepWriter(upgradestatus.RECONFIGURE_PORTS)
-
-	err := step.ResetStateDir()
+	stepWriter, err := h.WriteStep(upgradestatus.RECONFIGURE_PORTS)
 	if err != nil {
-		gplog.Error("error from ResetStateDir " + err.Error())
-	}
-	err = step.MarkInProgress()
-	if err != nil {
-		gplog.Error("error from MarkInProgress " + err.Error())
+		gplog.Error(err.Error())
+		return &idl.UpgradeReconfigurePortsReply{}, err
 	}
 
-	sourcePort := h.source.MasterPort()
-	targetPort := h.target.MasterPort()
-	targetDataDir := h.target.MasterDataDir()
-	sedCommand := fmt.Sprintf(SedAndMvString, targetPort, sourcePort, targetDataDir)
-	gplog.Info("reconfigure-ports sed command: %+v", sedCommand)
+	err = h.reconfigurePorts()
+	if err != nil {
+		gplog.Error(err.Error())
+		stepWriter.MarkFailed()
+		return &idl.UpgradeReconfigurePortsReply{}, err
+	}
+
+	stepWriter.MarkComplete()
+	return &idl.UpgradeReconfigurePortsReply{}, nil
+}
+
+func (h *Hub) reconfigurePorts() error {
+	sedCommand := fmt.Sprintf(SedAndMvString, h.target.MasterPort(), h.source.MasterPort(), h.target.MasterDataDir())
+	gplog.Debug("executing reconfigure-ports sed command: %s", sedCommand)
 
 	output, err := h.source.Executor.ExecuteLocalCommand(sedCommand)
 	if err != nil {
-		gplog.Error("reconfigure-ports failed %s: %s", output, err)
-
-		step.MarkFailed()
-		return nil, err
+		return errors.Wrapf(err, "reconfigure-ports sed command failed with: %s", output)
 	}
 
-	gplog.Info("reconfigure-ports succeeded")
-	step.MarkComplete()
-
-	return &pb.UpgradeReconfigurePortsReply{}, nil
+	return nil
 }

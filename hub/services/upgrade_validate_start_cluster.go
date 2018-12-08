@@ -4,55 +4,41 @@ import (
 	"fmt"
 
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/net/context"
+	"github.com/greenplum-db/gpupgrade/utils/log"
+	"github.com/pkg/errors"
 )
 
-func (h *Hub) UpgradeValidateStartCluster(ctx context.Context, in *pb.UpgradeValidateStartClusterRequest) (*pb.UpgradeValidateStartClusterReply, error) {
-	gplog.Info("Started processing validate-start-cluster request")
+func (h *Hub) UpgradeValidateStartCluster(ctx context.Context, in *idl.UpgradeValidateStartClusterRequest) (*idl.UpgradeValidateStartClusterReply, error) {
+	gplog.Info("starting %s", upgradestatus.VALIDATE_START_CLUSTER)
+	defer log.WritePanics()
 
-	go h.startNewCluster()
-
-	return &pb.UpgradeValidateStartClusterReply{}, nil
-}
-
-func (h *Hub) startNewCluster() {
-	gplog.Debug(h.conf.StateDir)
-	step := h.checklist.GetStepWriter(upgradestatus.VALIDATE_START_CLUSTER)
-	err := step.ResetStateDir()
-	if err != nil {
-		gplog.Error("failed to reset the state dir for validate-start-cluster")
-
-		return
-	}
-
-	err = step.MarkInProgress()
-	if err != nil {
-		gplog.Error("failed to record in-progress for validate-start-cluster")
-
-		return
-	}
-
-	targetBinDir := h.target.BinDir
-	targetDataDir := h.target.MasterDataDir()
-	_, err = h.target.ExecuteLocalCommand(fmt.Sprintf("source %s/../greenplum_path.sh; %s/gpstart -a -d %s", targetBinDir, targetBinDir, targetDataDir))
+	stepWriter, err := h.WriteStep(upgradestatus.VALIDATE_START_CLUSTER)
 	if err != nil {
 		gplog.Error(err.Error())
-		cmErr := step.MarkFailed()
-		if cmErr != nil {
-			gplog.Error("failed to record failed for validate-start-cluster")
-		}
-
-		return
+		return &idl.UpgradeValidateStartClusterReply{}, err
 	}
 
-	err = step.MarkComplete()
+	err = h.startNewCluster()
 	if err != nil {
-		gplog.Error("failed to record completed for validate-start-cluster")
-		return
+		gplog.Error(err.Error())
+		stepWriter.MarkFailed()
+		return &idl.UpgradeValidateStartClusterReply{}, err
 	}
 
-	return
+	stepWriter.MarkComplete()
+	return &idl.UpgradeValidateStartClusterReply{}, nil
+}
+
+func (h *Hub) startNewCluster() error {
+	startCmd := fmt.Sprintf("source %s/../greenplum_path.sh; %s/gpstart -a -d %s", h.target.BinDir, h.target.BinDir, h.target.MasterDataDir())
+	_, err := h.target.ExecuteLocalCommand(startCmd)
+	if err != nil {
+		return errors.Wrap(err, "failed to start new cluster")
+	}
+
+	return nil
 }

@@ -5,40 +5,34 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/greenplum-db/gpupgrade/db"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
+	"github.com/greenplum-db/gpupgrade/utils/log"
 )
 
-func (h *Hub) CheckConfig(ctx context.Context, _ *pb.CheckConfigRequest) (*pb.CheckConfigReply, error) {
-	gplog.Info("starting CheckConfig()")
+func (h *Hub) CheckConfig(ctx context.Context, _ *idl.CheckConfigRequest) (*idl.CheckConfigReply, error) {
+	gplog.Info("starting %s", upgradestatus.CONFIG)
+	defer log.WritePanics()
 
-	c := upgradestatus.NewChecklistManager(h.conf.StateDir)
-	step := c.GetStepWriter(upgradestatus.CONFIG)
-
-	// TODO: bubble these errors up.
-	err := step.ResetStateDir()
+	stepWriter, err := h.WriteStep(upgradestatus.CONFIG)
 	if err != nil {
-		gplog.Error("error from ResetStateDir " + err.Error())
-	}
-	err = step.MarkInProgress()
-	if err != nil {
-		gplog.Error("error from MarkInProgress " + err.Error())
-	}
-
-	conn := db.NewDBConn("localhost", 0, "template1")
-	err = ReloadAndCommitCluster(h.source, conn)
-	if err != nil {
-		step.MarkFailed()
 		gplog.Error(err.Error())
-		return &pb.CheckConfigReply{}, err
+		return &idl.CheckConfigReply{}, err
 	}
 
-	successReply := &pb.CheckConfigReply{ConfigStatus: "All good"}
-	step.MarkComplete()
+	dbConn := db.NewDBConn("localhost", 0, "template1")
+	defer dbConn.Close()
+	err = ReloadAndCommitCluster(h.source, dbConn)
+	if err != nil {
+		gplog.Error(err.Error())
+		stepWriter.MarkFailed()
+		return &idl.CheckConfigReply{}, err
+	}
 
-	return successReply, nil
+	stepWriter.MarkComplete()
+	return &idl.CheckConfigReply{ConfigStatus: "success"}, nil
 }
 
 // ReloadAndCommitCluster() will fill in a utils.Cluster using a database
@@ -46,13 +40,13 @@ func (h *Hub) CheckConfig(ctx context.Context, _ *pb.CheckConfigRequest) (*pb.Ch
 func ReloadAndCommitCluster(cluster *utils.Cluster, conn *dbconn.DBConn) error {
 	newCluster, err := utils.ClusterFromDB(conn, cluster.BinDir, cluster.ConfigPath)
 	if err != nil {
-		return errors.Wrap(err, "could not retrieve cluster configuration")
+		return errors.Wrap(err, "failed to retrieve cluster configuration")
 	}
 
 	*cluster = *newCluster
 	err = cluster.Commit()
 	if err != nil {
-		return errors.Wrap(err, "could not save cluster configuration")
+		return errors.Wrap(err, "failed to save cluster configuration")
 	}
 
 	return nil

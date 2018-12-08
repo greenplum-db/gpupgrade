@@ -22,6 +22,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/reflection"
+	"github.com/greenplum-db/gpupgrade/hub/upgradestatus/file"
 )
 
 var DialTimeout = 3 * time.Second
@@ -130,6 +131,22 @@ func (h *Hub) Start() error {
 	h.stopped <- struct{}{}
 
 	return err
+}
+
+func (h *Hub) WriteStep(step string) (upgradestatus.StateWriter, error) {
+	stepWriter := h.checklist.GetStepWriter(step)
+
+	err := stepWriter.ResetStateDir()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to reset state directory")
+	}
+
+	err = stepWriter.MarkInProgress()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to set '%s' to %s", step, file.InProgress)
+	}
+
+	return stepWriter, nil
 }
 
 func (h *Hub) Stop() {

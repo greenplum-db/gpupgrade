@@ -11,7 +11,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/db"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/log"
 
@@ -21,35 +21,29 @@ import (
 	"golang.org/x/net/context"
 )
 
-func (h *Hub) PrepareInitCluster(ctx context.Context, in *pb.PrepareInitClusterRequest) (*pb.PrepareInitClusterReply, error) {
-	step := h.checklist.GetStepWriter(upgradestatus.INIT_CLUSTER)
-	err := step.ResetStateDir()
+func (h *Hub) PrepareInitCluster(ctx context.Context, in *idl.PrepareInitClusterRequest) (*idl.PrepareInitClusterReply, error) {
+	gplog.Info("starting %s", upgradestatus.INIT_CLUSTER)
+	defer log.WritePanics()
+
+	stepWriter, err := h.WriteStep(upgradestatus.INIT_CLUSTER)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not reset state dir")
+		gplog.Error(err.Error())
+		return &idl.PrepareInitClusterReply{}, err
 	}
 
-	err = step.MarkInProgress()
+	err = h.CreateTargetCluster()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not mark in progress")
+		gplog.Error(err.Error())
+		stepWriter.MarkFailed()
+		return &idl.PrepareInitClusterReply{}, err
 	}
 
-	go func() {
-		defer log.WritePanics()
-
-		err := h.CreateTargetCluster()
-		if err != nil {
-			gplog.Error(err.Error())
-			step.MarkFailed()
-		} else {
-			step.MarkComplete()
-		}
-	}()
-
-	return &pb.PrepareInitClusterReply{}, nil
+	stepWriter.MarkComplete()
+	return &idl.PrepareInitClusterReply{}, nil
 }
 
 func (h *Hub) CreateTargetCluster() error {
-	gplog.Info("Running PrepareInitCluster()")
+
 	sourceDBConn := db.NewDBConn("localhost", int(h.source.MasterPort()),
 		"template1")
 
@@ -248,9 +242,9 @@ func CreateSegmentDataDirectories(agentConns []*Connection, dataDirMap map[strin
 		go func(c *Connection) {
 			defer wg.Done()
 
-			client := pb.NewAgentClient(c.Conn)
+			client := idl.NewAgentClient(c.Conn)
 			_, err := client.CreateSegmentDataDirectories(context.Background(),
-				&pb.CreateSegmentDataDirRequest{
+				&idl.CreateSegmentDataDirRequest{
 					Datadirs: dataDirMap[c.Hostname],
 				})
 

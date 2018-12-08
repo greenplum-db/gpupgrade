@@ -5,40 +5,33 @@ import (
 	"path/filepath"
 
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
-	"github.com/greenplum-db/gpupgrade/utils/log"
-
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
+	"github.com/greenplum-db/gpupgrade/utils/log"
 )
 
-func (h *Hub) UpgradeConvertMaster(ctx context.Context, in *pb.UpgradeConvertMasterRequest) (*pb.UpgradeConvertMasterReply, error) {
-	step := h.checklist.GetStepWriter(upgradestatus.CONVERT_MASTER)
-	err := step.ResetStateDir()
+func (h *Hub) UpgradeConvertMaster(ctx context.Context, in *idl.UpgradeConvertMasterRequest) (*idl.UpgradeConvertMasterReply, error) {
+	gplog.Info("starting %s", upgradestatus.CONVERT_MASTER)
+	defer log.WritePanics()
+
+	stepWriter, err := h.WriteStep(upgradestatus.CONVERT_MASTER)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not reset state dir")
+		gplog.Error(err.Error())
+		return &idl.UpgradeConvertMasterReply{}, err
 	}
 
-	err = step.MarkInProgress()
+	err = h.ConvertMaster()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not mark in progress")
+		gplog.Error(err.Error())
+		stepWriter.MarkFailed()
+		return &idl.UpgradeConvertMasterReply{}, err
 	}
 
-	go func() {
-		defer log.WritePanics()
-
-		err := h.ConvertMaster()
-		if err != nil {
-			gplog.Error(err.Error())
-			step.MarkFailed()
-		} else {
-			step.MarkComplete()
-		}
-	}()
-
-	return &pb.UpgradeConvertMasterReply{}, nil
+	stepWriter.MarkComplete()
+	return &idl.UpgradeConvertMasterReply{}, nil
 }
 
 func (h *Hub) ConvertMaster() error {
