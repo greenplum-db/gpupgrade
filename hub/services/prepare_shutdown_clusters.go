@@ -11,42 +11,48 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
+	"github.com/pkg/errors"
+	"github.com/hashicorp/go-multierror"
 )
 
 func (h *Hub) PrepareShutdownClusters(ctx context.Context, in *idl.PrepareShutdownClustersRequest) (*idl.PrepareShutdownClustersReply, error) {
 	gplog.Info("starting PrepareShutdownClusters()")
 
-	go h.ShutdownClusters()
+	go func() {
+		if err := h.ShutdownClusters(); err != nil {
+			gplog.Error(err.Error())
+		}
+	}()
 
 	return &idl.PrepareShutdownClustersReply{}, nil
 }
 
-func (h *Hub) ShutdownClusters() {
+func (h *Hub) ShutdownClusters() error {
 	defer log.WritePanics()
+	var shutdownErr error
 
 	step := h.checklist.GetStepWriter(upgradestatus.SHUTDOWN_CLUSTERS)
 
 	step.ResetStateDir()
 	step.MarkInProgress()
 
-	var errSource error
-	errSource = StopCluster(h.source)
-	if errSource != nil {
-		gplog.Error(errSource.Error())
+	err := StopCluster(h.source)
+	if err != nil {
+		shutdownErr = multierror.Append(shutdownErr, errors.Wrap(err, "failed to stop source cluster"))
 	}
 
-	var errTarget error
-	errTarget = StopCluster(h.target)
-	if errTarget != nil {
-		gplog.Error(errTarget.Error())
+	err = StopCluster(h.target)
+	if err != nil {
+		shutdownErr = multierror.Append(shutdownErr, errors.Wrap(err, "failed to stop target cluster"))
 	}
 
-	if errSource != nil || errTarget != nil {
+	if shutdownErr != nil {
 		step.MarkFailed()
-		return
+		return shutdownErr
 	}
 
 	step.MarkComplete()
+	return shutdownErr
 }
 
 func StopCluster(c *utils.Cluster) error {
