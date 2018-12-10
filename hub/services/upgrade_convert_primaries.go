@@ -9,63 +9,77 @@ import (
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/net/context"
+	"github.com/pkg/errors"
+	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
+	"github.com/hashicorp/go-multierror"
 )
 
 func (h *Hub) UpgradeConvertPrimaries(ctx context.Context, in *idl.UpgradeConvertPrimariesRequest) (*idl.UpgradeConvertPrimariesReply, error) {
-	conns, err := h.AgentConns()
-	if err != nil {
-		gplog.Error("Error connecting to the agents. Err: %v", err)
+	gplog.Info("starting %s", upgradestatus.CONVERT_PRIMARIES)
+
+	if err := h.convertPrimaries(); err != nil {
+		gplog.Error("failed to %s due to %v",  upgradestatus.CONVERT_PRIMARIES, err)
 		return &idl.UpgradeConvertPrimariesReply{}, err
 	}
-	agentErrs := make(chan error, len(conns))
+
+	return &idl.UpgradeConvertPrimariesReply{}, nil
+}
+
+func (h *Hub) convertPrimaries() error {
+	agentConns, err := h.AgentConns()
+	if err != nil {
+		return errors.Wrap(err, "failed to connect to gpupgrade_agent")
+	}
 
 	dataDirPair, err := h.getDataDirPairs()
 	if err != nil {
-		gplog.Error("Error getting old and new primary Datadirs. Err: %v", err)
-		return &idl.UpgradeConvertPrimariesReply{}, err
+		return errors.Wrap(err, "failed to get old and new primary data directories")
 	}
 
 	wg := sync.WaitGroup{}
-	for _, conn := range conns {
+	agentErrs := make(chan error, len(agentConns))
+	for _, agentConn := range agentConns {
 		wg.Add(1)
-		go func(c *Connection) {
+
+		go func(conn *Connection) {
 			defer wg.Done()
 
-			_, err := idl.NewAgentClient(c.Conn).UpgradeConvertPrimarySegments(context.Background(), &idl.UpgradeConvertPrimarySegmentsRequest{
+			_, err := idl.NewAgentClient(conn.Conn).UpgradeConvertPrimarySegments(context.Background(), &idl.UpgradeConvertPrimarySegmentsRequest{
 				OldBinDir:    h.source.BinDir,
 				NewBinDir:    h.target.BinDir,
 				NewVersion:   h.target.Version.SemVer.String(),
-				DataDirPairs: dataDirPair[c.Hostname],
+				DataDirPairs: dataDirPair[conn.Hostname],
 			})
 
 			if err != nil {
-				gplog.Error("Hub Upgrade Convert Primaries failed to call agent %s with error: %v", c.Hostname, err)
-				agentErrs <- err
+				agentErrs <- errors.Wrapf(err, "gpupgrade_agent failed to convert primary segment on host %s", conn.Hostname)
 			}
-		}(conn)
+		}(agentConn)
 	}
 
 	wg.Wait()
+	close(agentErrs)
 
-	if len(agentErrs) != 0 {
-		err = fmt.Errorf("%d agents failed to start pg_upgrade on the primaries. See logs for additional details", len(agentErrs))
+	for agentErr := range agentErrs {
+		err = multierror.Append(err, agentErr)
 	}
 
-	return &idl.UpgradeConvertPrimariesReply{}, err
+	return err
 }
 
 func (h *Hub) getDataDirPairs() (map[string][]*idl.DataDirPair, error) {
 	dataDirPairMap := make(map[string][]*idl.DataDirPair)
+
 	oldContents := h.source.ContentIDs
 	newContents := h.target.ContentIDs
 	if len(oldContents) != len(newContents) {
-		return nil, fmt.Errorf("Content IDs do not match between old and new clusters")
+		return nil, fmt.Errorf("old and new cluster content identifiers do not match")
 	}
 	sort.Ints(oldContents)
 	sort.Ints(newContents)
 	for i := range oldContents {
 		if oldContents[i] != newContents[i] {
-			return nil, fmt.Errorf("Content IDs do not match between old and new clusters")
+			return nil, fmt.Errorf("old and new cluster content identifiers do not match")
 		}
 	}
 
@@ -76,8 +90,9 @@ func (h *Hub) getDataDirPairs() (map[string][]*idl.DataDirPair, error) {
 		oldSeg := h.source.Segments[contentID]
 		newSeg := h.target.Segments[contentID]
 		if oldSeg.Hostname != newSeg.Hostname {
-			return nil, fmt.Errorf("old and new primary segments with content ID %d do not have matching hostnames", contentID)
+			return nil, fmt.Errorf("Hostnames do not match between old and new cluster with content ID %d. Found old cluster hostname: '%s', and new cluster hostname: '%s'.", contentID, oldSeg.Hostname, newSeg.Hostname)
 		}
+
 		dataPair := &idl.DataDirPair{
 			OldDataDir: oldSeg.DataDir,
 			NewDataDir: newSeg.DataDir,
