@@ -2,8 +2,8 @@ package commanders_test
 
 import (
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
-	pb "github.com/greenplum-db/gpupgrade/idl"
-	mockpb "github.com/greenplum-db/gpupgrade/mock_idl"
+	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/mock_idl"
 
 	"github.com/golang/mock/gomock"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
@@ -17,13 +17,13 @@ import (
 var _ = Describe("object count tests", func() {
 
 	var (
-		client *mockpb.MockCliToHubClient
+		client *mock_idl.MockCliToHubClient
 		ctrl   *gomock.Controller
 	)
 
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
-		client = mockpb.NewMockCliToHubClient(ctrl)
+		client = mock_idl.NewMockCliToHubClient(ctrl)
 	})
 
 	AfterEach(func() {
@@ -36,8 +36,8 @@ var _ = Describe("object count tests", func() {
 
 			client.EXPECT().CheckDiskSpace(
 				gomock.Any(),
-				&pb.CheckDiskSpaceRequest{},
-			).Return(&pb.CheckDiskSpaceReply{}, errors.New("couldn't connect to hub"))
+				&idl.CheckDiskSpaceRequest{},
+			).Return(&idl.CheckDiskSpaceReply{}, errors.New("couldn't connect to hub"))
 
 			request := commanders.NewDiskSpaceChecker(client)
 			err := request.Execute()
@@ -56,8 +56,8 @@ var _ = Describe("object count tests", func() {
 
 			client.EXPECT().CheckDiskSpace(
 				gomock.Any(),
-				&pb.CheckDiskSpaceRequest{},
-			).Return(&pb.CheckDiskSpaceReply{SegmentFileSysUsage: expectedFilesystemsUsage}, nil)
+				&idl.CheckDiskSpaceRequest{},
+			).Return(&idl.CheckDiskSpaceReply{SegmentFileSysUsage: expectedFilesystemsUsage}, nil)
 
 			request := commanders.NewDiskSpaceChecker(client)
 			err := request.Execute()

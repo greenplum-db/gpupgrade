@@ -1,47 +1,47 @@
 package commanders_test
 
 import (
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
 type spyCliToHubClient struct {
-	pb.CliToHubClient
+	idl.CliToHubClient
 
 	checkSeginstallCount int
 
 	statusUpgradeCount int
-	statusUpgradeReply *pb.StatusUpgradeReply
+	statusUpgradeReply *idl.StatusUpgradeReply
 
 	statusConversionCount int
-	statusConversionReply *pb.StatusConversionReply
+	statusConversionReply *idl.StatusConversionReply
 
 	err error
 }
 
 func newSpyCliToHubClient() *spyCliToHubClient {
 	return &spyCliToHubClient{
-		statusUpgradeReply: &pb.StatusUpgradeReply{},
+		statusUpgradeReply: &idl.StatusUpgradeReply{},
 	}
 }
 
 func (s *spyCliToHubClient) CheckSeginstall(
 	ctx context.Context,
-	request *pb.CheckSeginstallRequest,
+	request *idl.CheckSeginstallRequest,
 	opts ...grpc.CallOption,
-) (*pb.CheckSeginstallReply, error) {
+) (*idl.CheckSeginstallReply, error) {
 
 	s.checkSeginstallCount++
-	return &pb.CheckSeginstallReply{}, s.err
+	return &idl.CheckSeginstallReply{}, s.err
 }
 
 func (s *spyCliToHubClient) StatusUpgrade(
 	ctx context.Context,
-	request *pb.StatusUpgradeRequest,
+	request *idl.StatusUpgradeRequest,
 	opts ...grpc.CallOption,
-) (*pb.StatusUpgradeReply, error) {
+) (*idl.StatusUpgradeReply, error) {
 
 	s.statusUpgradeCount++
 	return s.statusUpgradeReply, s.err
@@ -49,9 +49,9 @@ func (s *spyCliToHubClient) StatusUpgrade(
 
 func (s *spyCliToHubClient) StatusConversion(
 	ctx context.Context,
-	request *pb.StatusConversionRequest,
+	request *idl.StatusConversionRequest,
 	opts ...grpc.CallOption,
-) (*pb.StatusConversionReply, error) {
+) (*idl.StatusConversionReply, error) {
 
 	s.statusConversionCount++
 	return s.statusConversionReply, s.err

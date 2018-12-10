@@ -3,14 +3,14 @@ package commanders
 import (
 	"context"
 
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 )
 
 type SeginstallChecker struct {
-	client pb.CliToHubClient
+	client idl.CliToHubClient
 }
 
-func NewSeginstallChecker(client pb.CliToHubClient) SeginstallChecker {
+func NewSeginstallChecker(client idl.CliToHubClient) SeginstallChecker {
 	return SeginstallChecker{
 		client: client,
 	}
@@ -19,7 +19,7 @@ func NewSeginstallChecker(client pb.CliToHubClient) SeginstallChecker {
 func (req SeginstallChecker) Execute() error {
 	_, err := req.client.CheckSeginstall(
 		context.Background(),
-		&pb.CheckSeginstallRequest{},
+		&idl.CheckSeginstallRequest{},
 	)
 	return err
 }

@@ -7,7 +7,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/greenplum-db/gpupgrade/hub/services"
-	mockpb "github.com/greenplum-db/gpupgrade/mock_idl"
+	"github.com/greenplum-db/gpupgrade/mock_idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils"
 	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
@@ -25,7 +25,7 @@ var (
 	mock        sqlmock.Sqlmock
 	mockAgent   *testutils.MockAgentServer
 	dialer      services.Dialer
-	client      *mockpb.MockAgentClient
+	client      *mock_idl.MockAgentClient
 	cm          *testutils.MockChecklistManager
 	port        int
 	dir         string
@@ -56,7 +56,7 @@ var _ = BeforeEach(func() {
 
 	source, target = testutils.CreateMultinodeSampleClusterPair(dir)
 	mockAgent, dialer, port = testutils.NewMockAgentServer()
-	client = mockpb.NewMockAgentClient(ctrl)
+	client = mock_idl.NewMockAgentClient(ctrl)
 	hubConf = &services.HubConfig{
 		HubToAgentPort: port,
 		StateDir:       dir,

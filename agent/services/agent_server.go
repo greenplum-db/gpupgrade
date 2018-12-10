@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"sync"
 
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils/daemon"
 	"github.com/greenplum-db/gpupgrade/utils/log"
 
@@ -70,7 +70,7 @@ func (a *AgentServer) Start() {
 	a.lis = lis
 	a.mu.Unlock()
 
-	pb.RegisterAgentServer(server, a)
+	idl.RegisterAgentServer(server, a)
 	reflection.Register(server)
 
 	if a.daemon {

@@ -4,18 +4,18 @@ import (
 	"fmt"
 
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/net/context"
 )
 
-func (h *Hub) UpgradeValidateStartCluster(ctx context.Context, in *pb.UpgradeValidateStartClusterRequest) (*pb.UpgradeValidateStartClusterReply, error) {
+func (h *Hub) UpgradeValidateStartCluster(ctx context.Context, in *idl.UpgradeValidateStartClusterRequest) (*idl.UpgradeValidateStartClusterReply, error) {
 	gplog.Info("Started processing validate-start-cluster request")
 
 	go h.startNewCluster()
 
-	return &pb.UpgradeValidateStartClusterReply{}, nil
+	return &idl.UpgradeValidateStartClusterReply{}, nil
 }
 
 func (h *Hub) startNewCluster() {

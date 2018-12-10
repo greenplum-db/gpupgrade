@@ -4,7 +4,7 @@ import (
 	"errors"
 	"path/filepath"
 
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
 
@@ -33,12 +33,12 @@ var _ = Describe("hub.UpgradeConvertPrimaries()", func() {
 		sourceSeg2.Hostname = seg2.Hostname
 		source.Segments[1] = sourceSeg2
 
-		_, err := hub.UpgradeConvertPrimaries(nil, &pb.UpgradeConvertPrimariesRequest{})
+		_, err := hub.UpgradeConvertPrimaries(nil, &idl.UpgradeConvertPrimariesRequest{})
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(mockAgent.UpgradeConvertPrimarySegmentsRequest.OldBinDir).To(Equal("/source/bindir"))
 		Expect(mockAgent.UpgradeConvertPrimarySegmentsRequest.NewBinDir).To(Equal("/target/bindir"))
-		Expect(mockAgent.UpgradeConvertPrimarySegmentsRequest.DataDirPairs).To(ConsistOf([]*pb.DataDirPair{
+		Expect(mockAgent.UpgradeConvertPrimarySegmentsRequest.DataDirPairs).To(ConsistOf([]*idl.DataDirPair{
 			{OldDataDir: filepath.Join(dir, "seg1"), NewDataDir: filepath.Join(dir, "seg1_upgrade"), Content: 0, OldPort: 25432, NewPort: 27432},
 			{OldDataDir: filepath.Join(dir, "seg2"), NewDataDir: filepath.Join(dir, "seg2_upgrade"), Content: 1, OldPort: 25433, NewPort: 27433},
 		}))
@@ -53,7 +53,7 @@ var _ = Describe("hub.UpgradeConvertPrimaries()", func() {
 		}
 
 		_, err := hub.UpgradeConvertPrimaries(nil,
-			&pb.UpgradeConvertPrimariesRequest{})
+			&idl.UpgradeConvertPrimariesRequest{})
 		Expect(err).To(HaveOccurred())
 		Expect(mockAgent.NumberOfCalls()).To(Equal(0))
 	})
@@ -64,7 +64,7 @@ var _ = Describe("hub.UpgradeConvertPrimaries()", func() {
 		target.Segments[0] = differentSeg
 
 		_, err := hub.UpgradeConvertPrimaries(nil,
-			&pb.UpgradeConvertPrimariesRequest{})
+			&idl.UpgradeConvertPrimariesRequest{})
 		Expect(err).To(HaveOccurred())
 
 		Expect(mockAgent.NumberOfCalls()).To(Equal(0))
@@ -74,7 +74,7 @@ var _ = Describe("hub.UpgradeConvertPrimaries()", func() {
 		mockAgent.Err <- errors.New("fail upgrade primary call")
 
 		_, err := hub.UpgradeConvertPrimaries(nil,
-			&pb.UpgradeConvertPrimariesRequest{})
+			&idl.UpgradeConvertPrimariesRequest{})
 		Expect(err).To(HaveOccurred())
 
 		Expect(mockAgent.NumberOfCalls()).To(Equal(2))

@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gpupgrade/agent/services"
@@ -24,7 +24,7 @@ var _ = Describe("UpgradeSegments", func() {
 		dir          string
 		oidFile      string
 		testExecutor *testhelper.TestExecutor
-		dataDirPairs []*pb.DataDirPair
+		dataDirPairs []*idl.DataDirPair
 	)
 
 	BeforeEach(func() {
@@ -48,7 +48,7 @@ var _ = Describe("UpgradeSegments", func() {
 		Expect(err).ToNot(HaveOccurred())
 		f.Close()
 
-		dataDirPairs = []*pb.DataDirPair{
+		dataDirPairs = []*idl.DataDirPair{
 			{OldDataDir: "old/datadir1", NewDataDir: "new/datadir1", Content: 0, OldPort: 1, NewPort: 11},
 			{OldDataDir: "old/datadir2", NewDataDir: "new/datadir2", Content: 1, OldPort: 2, NewPort: 22},
 		}

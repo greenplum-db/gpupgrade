@@ -4,8 +4,8 @@ import (
 	"errors"
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
-	pb "github.com/greenplum-db/gpupgrade/idl"
-	mockpb "github.com/greenplum-db/gpupgrade/mock_idl"
+	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/mock_idl"
 
 	"github.com/golang/mock/gomock"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
@@ -19,13 +19,13 @@ import (
 var _ = Describe("object count tests", func() {
 
 	var (
-		client *mockpb.MockCliToHubClient
+		client *mock_idl.MockCliToHubClient
 		ctrl   *gomock.Controller
 	)
 
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
-		client = mockpb.NewMockCliToHubClient(ctrl)
+		client = mock_idl.NewMockCliToHubClient(ctrl)
 	})
 
 	AfterEach(func() {
@@ -37,16 +37,16 @@ var _ = Describe("object count tests", func() {
 			//testLogger, testStdout, testStderr, testLogfile := testutils.SetupTestLogger()
 			testStdout, _, _ := testhelper.SetupTestLogger()
 
-			fakeCountArray := []*pb.CountPerDb{}
-			fakeCountTemplate1 := &pb.CountPerDb{DbName: "template1", AoCount: 1, HeapCount: 2}
+			fakeCountArray := []*idl.CountPerDb{}
+			fakeCountTemplate1 := &idl.CountPerDb{DbName: "template1", AoCount: 1, HeapCount: 2}
 			fakeCountArray = append(fakeCountArray, fakeCountTemplate1)
-			fakeCountPostgres := &pb.CountPerDb{DbName: "postgres", AoCount: 2, HeapCount: 3}
+			fakeCountPostgres := &idl.CountPerDb{DbName: "postgres", AoCount: 2, HeapCount: 3}
 			fakeCountArray = append(fakeCountArray, fakeCountPostgres)
-			fakeCheckObjectCountReply := &pb.CheckObjectCountReply{ListOfCounts: fakeCountArray}
+			fakeCheckObjectCountReply := &idl.CheckObjectCountReply{ListOfCounts: fakeCountArray}
 
 			client.EXPECT().CheckObjectCount(
 				gomock.Any(),
-				&pb.CheckObjectCountRequest{},
+				&idl.CheckObjectCountRequest{},
 			).Return(fakeCheckObjectCountReply, nil)
 
 			request := commanders.NewObjectCountChecker(client)
@@ -65,7 +65,7 @@ var _ = Describe("object count tests", func() {
 			_, testStderr, _ := testhelper.SetupTestLogger()
 			client.EXPECT().CheckObjectCount(
 				gomock.Any(),
-				&pb.CheckObjectCountRequest{},
+				&idl.CheckObjectCountRequest{},
 			).Return(nil, errors.New("Force failure connection"))
 
 			request := commanders.NewObjectCountChecker(client)

@@ -3,22 +3,22 @@ package commanders
 import (
 	"context"
 
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 )
 
 type ObjectCountChecker struct {
-	client pb.CliToHubClient
+	client idl.CliToHubClient
 }
 
-func NewObjectCountChecker(client pb.CliToHubClient) ObjectCountChecker {
+func NewObjectCountChecker(client idl.CliToHubClient) ObjectCountChecker {
 	return ObjectCountChecker{client: client}
 }
 
 func (req ObjectCountChecker) Execute() error {
 	reply, err := req.client.CheckObjectCount(context.Background(),
-		&pb.CheckObjectCountRequest{})
+		&idl.CheckObjectCountRequest{})
 	if err != nil {
 		gplog.Error("ERROR - gRPC call to hub failed")
 		return err

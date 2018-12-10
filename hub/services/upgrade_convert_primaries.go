@@ -5,24 +5,24 @@ import (
 	"sort"
 	"sync"
 
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/net/context"
 )
 
-func (h *Hub) UpgradeConvertPrimaries(ctx context.Context, in *pb.UpgradeConvertPrimariesRequest) (*pb.UpgradeConvertPrimariesReply, error) {
+func (h *Hub) UpgradeConvertPrimaries(ctx context.Context, in *idl.UpgradeConvertPrimariesRequest) (*idl.UpgradeConvertPrimariesReply, error) {
 	conns, err := h.AgentConns()
 	if err != nil {
 		gplog.Error("Error connecting to the agents. Err: %v", err)
-		return &pb.UpgradeConvertPrimariesReply{}, err
+		return &idl.UpgradeConvertPrimariesReply{}, err
 	}
 	agentErrs := make(chan error, len(conns))
 
 	dataDirPair, err := h.getDataDirPairs()
 	if err != nil {
 		gplog.Error("Error getting old and new primary Datadirs. Err: %v", err)
-		return &pb.UpgradeConvertPrimariesReply{}, err
+		return &idl.UpgradeConvertPrimariesReply{}, err
 	}
 
 	wg := sync.WaitGroup{}
@@ -31,7 +31,7 @@ func (h *Hub) UpgradeConvertPrimaries(ctx context.Context, in *pb.UpgradeConvert
 		go func(c *Connection) {
 			defer wg.Done()
 
-			_, err := pb.NewAgentClient(c.Conn).UpgradeConvertPrimarySegments(context.Background(), &pb.UpgradeConvertPrimarySegmentsRequest{
+			_, err := idl.NewAgentClient(c.Conn).UpgradeConvertPrimarySegments(context.Background(), &idl.UpgradeConvertPrimarySegmentsRequest{
 				OldBinDir:    h.source.BinDir,
 				NewBinDir:    h.target.BinDir,
 				NewVersion:   h.target.Version.SemVer.String(),
@@ -51,11 +51,11 @@ func (h *Hub) UpgradeConvertPrimaries(ctx context.Context, in *pb.UpgradeConvert
 		err = fmt.Errorf("%d agents failed to start pg_upgrade on the primaries. See logs for additional details", len(agentErrs))
 	}
 
-	return &pb.UpgradeConvertPrimariesReply{}, err
+	return &idl.UpgradeConvertPrimariesReply{}, err
 }
 
-func (h *Hub) getDataDirPairs() (map[string][]*pb.DataDirPair, error) {
-	dataDirPairMap := make(map[string][]*pb.DataDirPair)
+func (h *Hub) getDataDirPairs() (map[string][]*idl.DataDirPair, error) {
+	dataDirPairMap := make(map[string][]*idl.DataDirPair)
 	oldContents := h.source.ContentIDs
 	newContents := h.target.ContentIDs
 	if len(oldContents) != len(newContents) {
@@ -78,7 +78,7 @@ func (h *Hub) getDataDirPairs() (map[string][]*pb.DataDirPair, error) {
 		if oldSeg.Hostname != newSeg.Hostname {
 			return nil, fmt.Errorf("old and new primary segments with content ID %d do not have matching hostnames", contentID)
 		}
-		dataPair := &pb.DataDirPair{
+		dataPair := &idl.DataDirPair{
 			OldDataDir: oldSeg.DataDir,
 			NewDataDir: newSeg.DataDir,
 			OldPort:    int32(oldSeg.Port),

@@ -9,7 +9,7 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/daemon"
 	"github.com/greenplum-db/gpupgrade/utils/log"
@@ -72,21 +72,21 @@ func main() {
 			// fully exercised in end-to-end tests. It feels like we should be able to
 			// pull these into a Hub method or helper function, but currently the
 			// interfaces aren't well componentized.
-			cm.AddWritableStep(upgradestatus.CONFIG, pb.UpgradeSteps_CONFIG)
-			cm.AddWritableStep(upgradestatus.SEGINSTALL, pb.UpgradeSteps_SEGINSTALL)
-			cm.AddWritableStep(upgradestatus.START_AGENTS, pb.UpgradeSteps_START_AGENTS)
-			cm.AddWritableStep(upgradestatus.INIT_CLUSTER, pb.UpgradeSteps_INIT_CLUSTER)
-			cm.AddWritableStep(upgradestatus.SHUTDOWN_CLUSTERS, pb.UpgradeSteps_SHUTDOWN_CLUSTERS)
-			cm.AddWritableStep(upgradestatus.CONVERT_MASTER, pb.UpgradeSteps_CONVERT_MASTER)
-			cm.AddWritableStep(upgradestatus.SHARE_OIDS, pb.UpgradeSteps_SHARE_OIDS)
+			cm.AddWritableStep(upgradestatus.CONFIG, idl.UpgradeSteps_CONFIG)
+			cm.AddWritableStep(upgradestatus.SEGINSTALL, idl.UpgradeSteps_SEGINSTALL)
+			cm.AddWritableStep(upgradestatus.START_AGENTS, idl.UpgradeSteps_START_AGENTS)
+			cm.AddWritableStep(upgradestatus.INIT_CLUSTER, idl.UpgradeSteps_INIT_CLUSTER)
+			cm.AddWritableStep(upgradestatus.SHUTDOWN_CLUSTERS, idl.UpgradeSteps_SHUTDOWN_CLUSTERS)
+			cm.AddWritableStep(upgradestatus.CONVERT_MASTER, idl.UpgradeSteps_CONVERT_MASTER)
+			cm.AddWritableStep(upgradestatus.SHARE_OIDS, idl.UpgradeSteps_SHARE_OIDS)
 
-			cm.AddReadOnlyStep(upgradestatus.CONVERT_PRIMARIES, pb.UpgradeSteps_CONVERT_PRIMARIES,
-				func(stepName string) pb.StepStatus {
+			cm.AddReadOnlyStep(upgradestatus.CONVERT_PRIMARIES, idl.UpgradeSteps_CONVERT_PRIMARIES,
+				func(stepName string) idl.StepStatus {
 					return services.PrimaryConversionStatus(hub)
 				})
 
-			cm.AddWritableStep(upgradestatus.VALIDATE_START_CLUSTER, pb.UpgradeSteps_VALIDATE_START_CLUSTER)
-			cm.AddWritableStep(upgradestatus.RECONFIGURE_PORTS, pb.UpgradeSteps_RECONFIGURE_PORTS)
+			cm.AddWritableStep(upgradestatus.VALIDATE_START_CLUSTER, idl.UpgradeSteps_VALIDATE_START_CLUSTER)
+			cm.AddWritableStep(upgradestatus.RECONFIGURE_PORTS, idl.UpgradeSteps_RECONFIGURE_PORTS)
 
 			if shouldDaemonize {
 				hub.MakeDaemon()

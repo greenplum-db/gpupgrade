@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/log"
 
@@ -14,7 +14,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-func (h *Hub) UpgradeConvertMaster(ctx context.Context, in *pb.UpgradeConvertMasterRequest) (*pb.UpgradeConvertMasterReply, error) {
+func (h *Hub) UpgradeConvertMaster(ctx context.Context, in *idl.UpgradeConvertMasterRequest) (*idl.UpgradeConvertMasterReply, error) {
 	step := h.checklist.GetStepWriter(upgradestatus.CONVERT_MASTER)
 	err := step.ResetStateDir()
 	if err != nil {
@@ -38,7 +38,7 @@ func (h *Hub) UpgradeConvertMaster(ctx context.Context, in *pb.UpgradeConvertMas
 		}
 	}()
 
-	return &pb.UpgradeConvertMasterReply{}, nil
+	return &idl.UpgradeConvertMasterReply{}, nil
 }
 
 func (h *Hub) ConvertMaster() error {

@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
@@ -42,8 +42,8 @@ var _ = Describe("CommandListener", func() {
 	})
 
 	It("returns a status string for each DBID passed from the hub", func() {
-		status, err := agent.CheckConversionStatus(nil, &pb.CheckConversionStatusRequest{
-			Segments: []*pb.SegmentInfo{{
+		status, err := agent.CheckConversionStatus(nil, &idl.CheckConversionStatusRequest{
+			Segments: []*idl.SegmentInfo{{
 				Content: 1,
 				Dbid:    3,
 				DataDir: "/old/data/dir",
@@ -56,9 +56,9 @@ var _ = Describe("CommandListener", func() {
 		})
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(status.GetStatuses()).To(Equal([]*pb.PrimaryStatus{
-			{Status: pb.StepStatus_PENDING, Dbid: 3, Content: 1, Hostname: "localhost"},
-			{Status: pb.StepStatus_PENDING, Dbid: 1, Content: -1, Hostname: "localhost"},
+		Expect(status.GetStatuses()).To(Equal([]*idl.PrimaryStatus{
+			{Status: idl.StepStatus_PENDING, Dbid: 3, Content: 1, Hostname: "localhost"},
+			{Status: idl.StepStatus_PENDING, Dbid: 1, Content: -1, Hostname: "localhost"},
 		}))
 	})
 
@@ -72,8 +72,8 @@ var _ = Describe("CommandListener", func() {
 
 		testExecutor.LocalOutput = "pid1"
 
-		status, err := agent.CheckConversionStatus(nil, &pb.CheckConversionStatusRequest{
-			Segments: []*pb.SegmentInfo{{
+		status, err := agent.CheckConversionStatus(nil, &idl.CheckConversionStatusRequest{
+			Segments: []*idl.SegmentInfo{{
 				Content: 1,
 				Dbid:    3,
 				DataDir: "/old/data/dir",
@@ -86,9 +86,9 @@ var _ = Describe("CommandListener", func() {
 		})
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(status.GetStatuses()).To(Equal([]*pb.PrimaryStatus{
-			{Status: pb.StepStatus_RUNNING, Dbid: 3, Content: 1, Hostname: "localhost"},
-			{Status: pb.StepStatus_PENDING, Dbid: 4, Content: 2, Hostname: "localhost"},
+		Expect(status.GetStatuses()).To(Equal([]*idl.PrimaryStatus{
+			{Status: idl.StepStatus_RUNNING, Dbid: 3, Content: 1, Hostname: "localhost"},
+			{Status: idl.StepStatus_PENDING, Dbid: 4, Content: 2, Hostname: "localhost"},
 		}))
 	})
 
@@ -101,8 +101,8 @@ var _ = Describe("CommandListener", func() {
 		fd.WriteString("Upgrade complete\n")
 		fd.Close()
 
-		status, err := agent.CheckConversionStatus(nil, &pb.CheckConversionStatusRequest{
-			Segments: []*pb.SegmentInfo{{
+		status, err := agent.CheckConversionStatus(nil, &idl.CheckConversionStatusRequest{
+			Segments: []*idl.SegmentInfo{{
 				Content: 1,
 				Dbid:    3,
 				DataDir: "/old/data/dir",
@@ -115,15 +115,15 @@ var _ = Describe("CommandListener", func() {
 		})
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(status.GetStatuses()).To(Equal([]*pb.PrimaryStatus{
-			{Status: pb.StepStatus_PENDING, Dbid: 3, Content: 1, Hostname: "localhost"},
-			{Status: pb.StepStatus_COMPLETE, Dbid: 4, Content: 2, Hostname: "localhost"},
+		Expect(status.GetStatuses()).To(Equal([]*idl.PrimaryStatus{
+			{Status: idl.StepStatus_PENDING, Dbid: 3, Content: 1, Hostname: "localhost"},
+			{Status: idl.StepStatus_COMPLETE, Dbid: 4, Content: 2, Hostname: "localhost"},
 		}))
 	})
 
 	It("returns an error if no segments are passed", func() {
-		request := &pb.CheckConversionStatusRequest{
-			Segments: []*pb.SegmentInfo{},
+		request := &idl.CheckConversionStatusRequest{
+			Segments: []*idl.SegmentInfo{},
 			Hostname: "localhost",
 		}
 

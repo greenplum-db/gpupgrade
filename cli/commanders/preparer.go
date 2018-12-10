@@ -13,7 +13,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
@@ -21,10 +21,10 @@ import (
 )
 
 type Preparer struct {
-	client pb.CliToHubClient
+	client idl.CliToHubClient
 }
 
-func NewPreparer(client pb.CliToHubClient) Preparer {
+func NewPreparer(client idl.CliToHubClient) Preparer {
 	return Preparer{client: client}
 }
 
@@ -32,7 +32,7 @@ var NumberOfConnectionAttempt = 100
 
 func (p Preparer) ShutdownClusters() error {
 	_, err := p.client.PrepareShutdownClusters(context.Background(),
-		&pb.PrepareShutdownClustersRequest{})
+		&idl.PrepareShutdownClustersRequest{})
 	if err != nil {
 		gplog.Error(err.Error())
 	}
@@ -67,7 +67,7 @@ func (p Preparer) StartHub() error {
 }
 
 func (p Preparer) InitCluster() error {
-	_, err := p.client.PrepareInitCluster(context.Background(), &pb.PrepareInitClusterRequest{})
+	_, err := p.client.PrepareInitCluster(context.Background(), &idl.PrepareInitClusterRequest{})
 	if err != nil {
 		return err
 	}
@@ -76,17 +76,17 @@ func (p Preparer) InitCluster() error {
 	return nil
 }
 
-func (p Preparer) VerifyConnectivity(client pb.CliToHubClient) error {
-	_, err := client.Ping(context.Background(), &pb.PingRequest{})
+func (p Preparer) VerifyConnectivity(client idl.CliToHubClient) error {
+	_, err := client.Ping(context.Background(), &idl.PingRequest{})
 	for i := 0; i < NumberOfConnectionAttempt && err != nil; i++ {
-		_, err = client.Ping(context.Background(), &pb.PingRequest{})
+		_, err = client.Ping(context.Background(), &idl.PingRequest{})
 		time.Sleep(100 * time.Millisecond)
 	}
 	return err
 }
 
 func (p Preparer) StartAgents() error {
-	_, err := p.client.PrepareStartAgents(context.Background(), &pb.PrepareStartAgentsRequest{})
+	_, err := p.client.PrepareStartAgents(context.Background(), &idl.PrepareStartAgentsRequest{})
 	if err != nil {
 		return err
 	}

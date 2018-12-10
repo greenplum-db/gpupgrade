@@ -1,7 +1,7 @@
 package services
 
 import (
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -10,7 +10,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-func (h *Hub) SetConfig(ctx context.Context, in *pb.SetConfigRequest) (*pb.SetConfigReply, error) {
+func (h *Hub) SetConfig(ctx context.Context, in *idl.SetConfigRequest) (*idl.SetConfigReply, error) {
 	switch in.Name {
 	case "old-bindir":
 		h.source.BinDir = in.Value
@@ -23,19 +23,19 @@ func (h *Hub) SetConfig(ctx context.Context, in *pb.SetConfigRequest) (*pb.SetCo
 	// Persist.
 	err := h.source.Commit()
 	if err != nil {
-		return &pb.SetConfigReply{}, err
+		return &idl.SetConfigReply{}, err
 	}
 	err = h.target.Commit()
 	if err != nil {
-		return &pb.SetConfigReply{}, err
+		return &idl.SetConfigReply{}, err
 	}
 
 	gplog.Info("Successfully set %s to %s", in.Name, in.Value)
-	return &pb.SetConfigReply{}, nil
+	return &idl.SetConfigReply{}, nil
 }
 
-func (h *Hub) GetConfig(ctx context.Context, in *pb.GetConfigRequest) (*pb.GetConfigReply, error) {
-	resp := &pb.GetConfigReply{}
+func (h *Hub) GetConfig(ctx context.Context, in *idl.GetConfigRequest) (*idl.GetConfigReply, error) {
+	resp := &idl.GetConfigReply{}
 
 	switch in.Name {
 	case "old-bindir":

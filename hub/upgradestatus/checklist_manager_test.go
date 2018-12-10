@@ -8,7 +8,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus/file"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 
 	. "github.com/onsi/ginkgo"
@@ -195,7 +195,7 @@ var _ = Describe("upgradestatus/ChecklistManager", func() {
 			writer.MarkComplete()
 
 			reader := cm.GetStepReader("my-step")
-			Expect(reader.Status()).To(Equal(pb.StepStatus_COMPLETE))
+			Expect(reader.Status()).To(Equal(idl.StepStatus_COMPLETE))
 		})
 
 		It("adds a step that is retrievable via AllSteps", func() {
@@ -221,19 +221,19 @@ var _ = Describe("upgradestatus/ChecklistManager", func() {
 	Describe("AddReadOnlyStep", func() {
 		It("adds a step that can be read using the given status func", func() {
 			cm := upgradestatus.NewChecklistManager("some/random/dir")
-			cm.AddReadOnlyStep("my-step", 0, func(name string) pb.StepStatus {
+			cm.AddReadOnlyStep("my-step", 0, func(name string) idl.StepStatus {
 				Expect(name).To(Equal("my-step"))
-				return pb.StepStatus_FAILED
+				return idl.StepStatus_FAILED
 			})
 
 			reader := cm.GetStepReader("my-step")
-			Expect(reader.Status()).To(Equal(pb.StepStatus_FAILED))
+			Expect(reader.Status()).To(Equal(idl.StepStatus_FAILED))
 		})
 
 		It("adds a step that cannot be written", func() {
 			cm := upgradestatus.NewChecklistManager("some/random/dir")
-			cm.AddReadOnlyStep("my-step", 0, func(string) pb.StepStatus {
-				return pb.StepStatus_COMPLETE
+			cm.AddReadOnlyStep("my-step", 0, func(string) idl.StepStatus {
+				return idl.StepStatus_COMPLETE
 			})
 
 			Expect(func() { cm.GetStepWriter("my-step") }).To(Panic())
@@ -241,8 +241,8 @@ var _ = Describe("upgradestatus/ChecklistManager", func() {
 
 		It("adds a step that is retrievable via AllSteps", func() {
 			cm := upgradestatus.NewChecklistManager("some/random/dir")
-			cm.AddReadOnlyStep("my-step", 0, func(string) pb.StepStatus {
-				return pb.StepStatus_COMPLETE
+			cm.AddReadOnlyStep("my-step", 0, func(string) idl.StepStatus {
+				return idl.StepStatus_COMPLETE
 			})
 
 			allSteps := cm.AllSteps()
@@ -252,8 +252,8 @@ var _ = Describe("upgradestatus/ChecklistManager", func() {
 
 		It("panics if a step with the same name has already been added", func() {
 			cm := upgradestatus.NewChecklistManager("some/random/dir")
-			statusFunc := func(string) pb.StepStatus {
-				return pb.StepStatus_COMPLETE
+			statusFunc := func(string) idl.StepStatus {
+				return idl.StepStatus_COMPLETE
 			}
 
 			cm.AddReadOnlyStep("my-step", 0, statusFunc)

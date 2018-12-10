@@ -3,21 +3,21 @@ package commanders
 import (
 	"context"
 
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 )
 
 type Upgrader struct {
-	client pb.CliToHubClient
+	client idl.CliToHubClient
 }
 
-func NewUpgrader(client pb.CliToHubClient) *Upgrader {
+func NewUpgrader(client idl.CliToHubClient) *Upgrader {
 	return &Upgrader{client: client}
 }
 
 func (u *Upgrader) ConvertMaster() error {
-	_, err := u.client.UpgradeConvertMaster(context.Background(), &pb.UpgradeConvertMasterRequest{})
+	_, err := u.client.UpgradeConvertMaster(context.Background(), &idl.UpgradeConvertMasterRequest{})
 	if err != nil {
 		// TODO: Change the logging message?
 		gplog.Error("ERROR - Unable to connect to hub")
@@ -29,7 +29,7 @@ func (u *Upgrader) ConvertMaster() error {
 }
 
 func (u *Upgrader) ConvertPrimaries() error {
-	_, err := u.client.UpgradeConvertPrimaries(context.Background(), &pb.UpgradeConvertPrimariesRequest{})
+	_, err := u.client.UpgradeConvertPrimaries(context.Background(), &idl.UpgradeConvertPrimariesRequest{})
 	if err != nil {
 		// TODO: Change the logging message?
 		gplog.Error("Error when calling hub upgrade convert primaries: %v", err.Error())
@@ -41,7 +41,7 @@ func (u *Upgrader) ConvertPrimaries() error {
 }
 
 func (u *Upgrader) ShareOids() error {
-	_, err := u.client.UpgradeShareOids(context.Background(), &pb.UpgradeShareOidsRequest{})
+	_, err := u.client.UpgradeShareOids(context.Background(), &idl.UpgradeShareOidsRequest{})
 	if err != nil {
 		gplog.Error(err.Error())
 		return err
@@ -52,7 +52,7 @@ func (u *Upgrader) ShareOids() error {
 }
 
 func (u *Upgrader) ValidateStartCluster() error {
-	_, err := u.client.UpgradeValidateStartCluster(context.Background(), &pb.UpgradeValidateStartClusterRequest{})
+	_, err := u.client.UpgradeValidateStartCluster(context.Background(), &idl.UpgradeValidateStartClusterRequest{})
 	if err != nil {
 		gplog.Error(err.Error())
 		return err
@@ -63,7 +63,7 @@ func (u *Upgrader) ValidateStartCluster() error {
 }
 
 func (u *Upgrader) ReconfigurePorts() error {
-	_, err := u.client.UpgradeReconfigurePorts(context.Background(), &pb.UpgradeReconfigurePortsRequest{})
+	_, err := u.client.UpgradeReconfigurePorts(context.Background(), &idl.UpgradeReconfigurePortsRequest{})
 	if err != nil {
 		gplog.Error(err.Error())
 		return err

@@ -8,7 +8,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/hub/services"
 
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 
 	"google.golang.org/grpc"
 )
@@ -19,11 +19,11 @@ type MockAgentServer struct {
 	numCalls   int
 	mu         sync.Mutex
 
-	StatusConversionRequest              *pb.CheckConversionStatusRequest
-	StatusConversionResponse             *pb.CheckConversionStatusReply
-	UpgradeConvertPrimarySegmentsRequest *pb.UpgradeConvertPrimarySegmentsRequest
-	CreateSegmentDataDirRequest          *pb.CreateSegmentDataDirRequest
-	CopyMasterDirRequest                 *pb.CopyMasterDirRequest
+	StatusConversionRequest              *idl.CheckConversionStatusRequest
+	StatusConversionResponse             *idl.CheckConversionStatusReply
+	UpgradeConvertPrimarySegmentsRequest *idl.UpgradeConvertPrimarySegmentsRequest
+	CreateSegmentDataDirRequest          *idl.CreateSegmentDataDirRequest
+	CopyMasterDirRequest                 *idl.CopyMasterDirRequest
 
 	Err chan error
 }
@@ -44,7 +44,7 @@ func NewMockAgentServer() (*MockAgentServer, services.Dialer, int) {
 		Err:        make(chan error, 10000),
 	}
 
-	pb.RegisterAgentServer(mockServer.grpcServer, mockServer)
+	idl.RegisterAgentServer(mockServer.grpcServer, mockServer)
 
 	go func() {
 		mockServer.grpcServer.Serve(lis)
@@ -60,13 +60,13 @@ func NewMockAgentServer() (*MockAgentServer, services.Dialer, int) {
 	return mockServer, dialer, port
 }
 
-func (m *MockAgentServer) CheckUpgradeStatus(context.Context, *pb.CheckUpgradeStatusRequest) (*pb.CheckUpgradeStatusReply, error) {
+func (m *MockAgentServer) CheckUpgradeStatus(context.Context, *idl.CheckUpgradeStatusRequest) (*idl.CheckUpgradeStatusReply, error) {
 	m.increaseCalls()
 
-	return &pb.CheckUpgradeStatusReply{}, nil
+	return &idl.CheckUpgradeStatusReply{}, nil
 }
 
-func (m *MockAgentServer) CheckConversionStatus(ctx context.Context, in *pb.CheckConversionStatusRequest) (*pb.CheckConversionStatusReply, error) {
+func (m *MockAgentServer) CheckConversionStatus(ctx context.Context, in *idl.CheckConversionStatusRequest) (*idl.CheckConversionStatusReply, error) {
 	m.increaseCalls()
 
 	m.StatusConversionRequest = in
@@ -79,19 +79,19 @@ func (m *MockAgentServer) CheckConversionStatus(ctx context.Context, in *pb.Chec
 	return m.StatusConversionResponse, err
 }
 
-func (m *MockAgentServer) CheckDiskSpaceOnAgents(context.Context, *pb.CheckDiskSpaceRequestToAgent) (*pb.CheckDiskSpaceReplyFromAgent, error) {
+func (m *MockAgentServer) CheckDiskSpaceOnAgents(context.Context, *idl.CheckDiskSpaceRequestToAgent) (*idl.CheckDiskSpaceReplyFromAgent, error) {
 	m.increaseCalls()
 
-	return &pb.CheckDiskSpaceReplyFromAgent{}, nil
+	return &idl.CheckDiskSpaceReplyFromAgent{}, nil
 }
 
-func (m *MockAgentServer) PingAgents(context.Context, *pb.PingAgentsRequest) (*pb.PingAgentsReply, error) {
+func (m *MockAgentServer) PingAgents(context.Context, *idl.PingAgentsRequest) (*idl.PingAgentsReply, error) {
 	m.increaseCalls()
 
-	return &pb.PingAgentsReply{}, nil
+	return &idl.PingAgentsReply{}, nil
 }
 
-func (m *MockAgentServer) UpgradeConvertPrimarySegments(ctx context.Context, in *pb.UpgradeConvertPrimarySegmentsRequest) (*pb.UpgradeConvertPrimarySegmentsReply, error) {
+func (m *MockAgentServer) UpgradeConvertPrimarySegments(ctx context.Context, in *idl.UpgradeConvertPrimarySegmentsRequest) (*idl.UpgradeConvertPrimarySegmentsReply, error) {
 	m.increaseCalls()
 
 	m.mu.Lock()
@@ -103,10 +103,10 @@ func (m *MockAgentServer) UpgradeConvertPrimarySegments(ctx context.Context, in 
 		err = <-m.Err
 	}
 
-	return &pb.UpgradeConvertPrimarySegmentsReply{}, err
+	return &idl.UpgradeConvertPrimarySegmentsReply{}, err
 }
 
-func (m *MockAgentServer) CreateSegmentDataDirectories(ctx context.Context, in *pb.CreateSegmentDataDirRequest) (*pb.CreateSegmentDataDirReply, error) {
+func (m *MockAgentServer) CreateSegmentDataDirectories(ctx context.Context, in *idl.CreateSegmentDataDirRequest) (*idl.CreateSegmentDataDirReply, error) {
 	m.increaseCalls()
 
 	m.mu.Lock()
@@ -118,10 +118,10 @@ func (m *MockAgentServer) CreateSegmentDataDirectories(ctx context.Context, in *
 		err = <-m.Err
 	}
 
-	return &pb.CreateSegmentDataDirReply{}, err
+	return &idl.CreateSegmentDataDirReply{}, err
 }
 
-func (m *MockAgentServer) CopyMasterDirectoryToSegmentDirectories(ctx context.Context, in *pb.CopyMasterDirRequest) (*pb.CopyMasterDirReply, error) {
+func (m *MockAgentServer) CopyMasterDirectoryToSegmentDirectories(ctx context.Context, in *idl.CopyMasterDirRequest) (*idl.CopyMasterDirReply, error) {
 	m.increaseCalls()
 
 	m.mu.Lock()
@@ -133,7 +133,7 @@ func (m *MockAgentServer) CopyMasterDirectoryToSegmentDirectories(ctx context.Co
 		err = <-m.Err
 	}
 
-	return &pb.CopyMasterDirReply{}, err
+	return &idl.CopyMasterDirReply{}, err
 }
 
 func (m *MockAgentServer) Stop() {

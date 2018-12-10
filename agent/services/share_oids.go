@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/pkg/errors"
 
@@ -15,7 +15,7 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 )
 
-func (s *AgentServer) CopyMasterDirectoryToSegmentDirectories(ctx context.Context, in *pb.CopyMasterDirRequest) (*pb.CopyMasterDirReply, error) {
+func (s *AgentServer) CopyMasterDirectoryToSegmentDirectories(ctx context.Context, in *idl.CopyMasterDirRequest) (*idl.CopyMasterDirReply, error) {
 	gplog.Info("got a request to copy the master data directory to the segment hosts from the hub")
 
 	masterDir := in.MasterDir
@@ -45,16 +45,16 @@ func (s *AgentServer) CopyMasterDirectoryToSegmentDirectories(ctx context.Contex
 	}
 	if err != nil {
 		gplog.Error(err.Error())
-		return &pb.CopyMasterDirReply{}, err
+		return &idl.CopyMasterDirReply{}, err
 	}
 
 	err = removeMasterDir(masterDir)
 	if err != nil {
 		gplog.Error(err.Error())
-		return &pb.CopyMasterDirReply{}, err
+		return &idl.CopyMasterDirReply{}, err
 	}
 
-	return &pb.CopyMasterDirReply{}, err
+	return &idl.CopyMasterDirReply{}, err
 }
 
 func checkSegDirExists(segDataDir string) error {

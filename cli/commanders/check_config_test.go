@@ -4,8 +4,8 @@ import (
 	"errors"
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
-	pb "github.com/greenplum-db/gpupgrade/idl"
-	mockpb "github.com/greenplum-db/gpupgrade/mock_idl"
+	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/mock_idl"
 
 	"github.com/golang/mock/gomock"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
@@ -18,13 +18,13 @@ import (
 var _ = Describe("check config", func() {
 
 	var (
-		client *mockpb.MockCliToHubClient
+		client *mock_idl.MockCliToHubClient
 		ctrl   *gomock.Controller
 	)
 
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
-		client = mockpb.NewMockCliToHubClient(ctrl)
+		client = mock_idl.NewMockCliToHubClient(ctrl)
 	})
 
 	AfterEach(func() {
@@ -38,10 +38,10 @@ var _ = Describe("check config", func() {
 			//testLogger, testStdout, testStderr, testLogfile := testutils.SetupTestLogger()
 			testStdout, _, _ := testhelper.SetupTestLogger()
 
-			fakeCheckConfigReply := &pb.CheckConfigReply{}
+			fakeCheckConfigReply := &idl.CheckConfigReply{}
 			client.EXPECT().CheckConfig(
 				gomock.Any(),
-				&pb.CheckConfigRequest{},
+				&idl.CheckConfigRequest{},
 			).Return(fakeCheckConfigReply, nil)
 
 			request := commanders.NewConfigChecker(client)
@@ -54,7 +54,7 @@ var _ = Describe("check config", func() {
 			_, testStderr, _ := testhelper.SetupTestLogger()
 			client.EXPECT().CheckConfig(
 				gomock.Any(),
-				&pb.CheckConfigRequest{},
+				&idl.CheckConfigRequest{},
 			).Return(nil, errors.New("Force failure connection"))
 
 			request := commanders.NewConfigChecker(client)

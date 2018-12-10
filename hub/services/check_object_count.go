@@ -2,7 +2,7 @@ package services
 
 import (
 	"github.com/greenplum-db/gpupgrade/db"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
@@ -12,7 +12,7 @@ import (
 )
 
 func (h *Hub) CheckObjectCount(ctx context.Context,
-	in *pb.CheckObjectCountRequest) (*pb.CheckObjectCountReply, error) {
+	in *idl.CheckObjectCountRequest) (*idl.CheckObjectCountReply, error) {
 
 	gplog.Info("starting CheckObjectCount")
 
@@ -23,15 +23,15 @@ func (h *Hub) CheckObjectCount(ctx context.Context,
 	err := dbConnector.Connect(1)
 	if err != nil {
 		gplog.Error(err.Error())
-		return &pb.CheckObjectCountReply{}, utils.DatabaseConnectionError{Parent: err}
+		return &idl.CheckObjectCountReply{}, utils.DatabaseConnectionError{Parent: err}
 	}
 	names, err := dbconn.SelectStringSlice(dbConnector, GET_DATABASE_NAMES)
 	if err != nil {
 		gplog.Error(err.Error())
-		return &pb.CheckObjectCountReply{}, errors.New(err.Error())
+		return &idl.CheckObjectCountReply{}, errors.New(err.Error())
 	}
 
-	var results []*pb.CountPerDb
+	var results []*idl.CountPerDb
 	for i := 0; i < len(names); i++ {
 
 		dbConnector = db.NewDBConn("localhost", masterPort, names[i])
@@ -39,18 +39,18 @@ func (h *Hub) CheckObjectCount(ctx context.Context,
 		err = dbConnector.Connect(1)
 		if err != nil {
 			gplog.Error(err.Error())
-			return &pb.CheckObjectCountReply{}, errors.New(err.Error())
+			return &idl.CheckObjectCountReply{}, errors.New(err.Error())
 		}
 
 		aocount, heapcount, errFromCounts := GetCountsForDb(dbConnector)
 		if errFromCounts != nil {
 			gplog.Error(err.Error())
-			return &pb.CheckObjectCountReply{}, errors.New(errFromCounts.Error())
+			return &idl.CheckObjectCountReply{}, errors.New(errFromCounts.Error())
 		}
-		results = append(results, &pb.CountPerDb{DbName: names[i], AoCount: aocount, HeapCount: heapcount})
+		results = append(results, &idl.CountPerDb{DbName: names[i], AoCount: aocount, HeapCount: heapcount})
 	}
 
-	successReply := &pb.CheckObjectCountReply{ListOfCounts: results}
+	successReply := &idl.CheckObjectCountReply{ListOfCounts: results}
 	return successReply, nil
 }
 

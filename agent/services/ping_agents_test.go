@@ -2,7 +2,7 @@ package services_test
 
 import (
 	"github.com/greenplum-db/gpupgrade/agent/services"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
@@ -24,7 +24,7 @@ var _ = Describe("CommandListener", func() {
 		testExecutor := &testhelper.TestExecutor{}
 		agent := services.NewAgentServer(testExecutor, services.AgentConfig{})
 
-		_, err := agent.PingAgents(nil, &pb.PingAgentsRequest{})
+		_, err := agent.PingAgents(nil, &idl.PingAgentsRequest{})
 		Expect(err).To(BeNil())
 	})
 })

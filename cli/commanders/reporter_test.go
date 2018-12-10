@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 
 	"github.com/golang/mock/gomock"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
@@ -57,8 +57,8 @@ var _ = Describe("Reporter", func() {
 
 	Describe("StatusConversion", func() {
 		It("prints cluster status returned from hub", func() {
-			status := []*pb.PrimaryStatus{{Status: pb.StepStatus_PENDING}}
-			spyClient.statusConversionReply = &pb.StatusConversionReply{
+			status := []*idl.PrimaryStatus{{Status: idl.StepStatus_PENDING}}
+			spyClient.statusConversionReply = &idl.StatusConversionReply{
 				ConversionStatuses: status,
 			}
 
@@ -77,7 +77,7 @@ var _ = Describe("Reporter", func() {
 
 		It("returns an error when the hub returns no error, but the reply is empty", func() {
 			By("having an empty conversion status")
-			spyClient.statusConversionReply = &pb.StatusConversionReply{}
+			spyClient.statusConversionReply = &idl.StatusConversionReply{}
 			err := reporter.OverallConversionStatus()
 			Expect(err).To(HaveOccurred())
 
@@ -93,10 +93,10 @@ var _ = Describe("Reporter", func() {
 		})
 
 		It("sends all the right messages to the logger in the right order when reply contains multiple step-statuses", func() {
-			spyClient.statusUpgradeReply = &pb.StatusUpgradeReply{
-				ListOfUpgradeStepStatuses: []*pb.UpgradeStepStatus{
-					{Step: pb.UpgradeSteps_INIT_CLUSTER, Status: pb.StepStatus_RUNNING},
-					{Step: pb.UpgradeSteps_CONVERT_MASTER, Status: pb.StepStatus_PENDING},
+			spyClient.statusUpgradeReply = &idl.StatusUpgradeReply{
+				ListOfUpgradeStepStatuses: []*idl.UpgradeStepStatus{
+					{Step: idl.UpgradeSteps_INIT_CLUSTER, Status: idl.StepStatus_RUNNING},
+					{Step: idl.UpgradeSteps_CONVERT_MASTER, Status: idl.StepStatus_PENDING},
 				},
 			}
 			err := reporter.OverallUpgradeStatus()
@@ -108,7 +108,7 @@ var _ = Describe("Reporter", func() {
 
 		It("returns an error when the hub returns no error, but the reply has an empty list", func() {
 			By("having an empty status list")
-			spyClient.statusUpgradeReply = &pb.StatusUpgradeReply{}
+			spyClient.statusUpgradeReply = &idl.StatusUpgradeReply{}
 			err := reporter.OverallUpgradeStatus()
 			Expect(err).To(HaveOccurred())
 
@@ -116,9 +116,9 @@ var _ = Describe("Reporter", func() {
 		})
 
 		DescribeTable("UpgradeStep Messages, basic cases where hub might return only one status",
-			func(step pb.UpgradeSteps, status pb.StepStatus, expected string) {
-				spyClient.statusUpgradeReply = &pb.StatusUpgradeReply{
-					ListOfUpgradeStepStatuses: []*pb.UpgradeStepStatus{
+			func(step idl.UpgradeSteps, status idl.StepStatus, expected string) {
+				spyClient.statusUpgradeReply = &idl.StatusUpgradeReply{
+					ListOfUpgradeStepStatuses: []*idl.UpgradeStepStatus{
 						{Step: step, Status: status},
 					},
 				}
@@ -126,13 +126,13 @@ var _ = Describe("Reporter", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(getStdoutContents()).To(ContainSubstring(expected))
 			},
-			Entry("unknown step", pb.UpgradeSteps_UNKNOWN_STEP, pb.StepStatus_PENDING, "PENDING - Unknown step"),
-			Entry("configuration check", pb.UpgradeSteps_CONFIG, pb.StepStatus_RUNNING, "RUNNING - Configuration Check"),
-			Entry("install binaries on segments", pb.UpgradeSteps_SEGINSTALL, pb.StepStatus_COMPLETE, "COMPLETE - Install binaries on segments"),
-			Entry("prepare init cluster", pb.UpgradeSteps_INIT_CLUSTER, pb.StepStatus_FAILED, "FAILED - Initialize new cluster"),
-			Entry("upgrade on master", pb.UpgradeSteps_CONVERT_MASTER, pb.StepStatus_PENDING, "PENDING - Run pg_upgrade on master"),
-			Entry("shutdown cluster", pb.UpgradeSteps_SHUTDOWN_CLUSTERS, pb.StepStatus_PENDING, "PENDING - Shutdown clusters"),
-			Entry("reconfigure ports", pb.UpgradeSteps_RECONFIGURE_PORTS, pb.StepStatus_PENDING, "PENDING - Adjust upgraded cluster ports"),
+			Entry("unknown step", idl.UpgradeSteps_UNKNOWN_STEP, idl.StepStatus_PENDING, "PENDING - Unknown step"),
+			Entry("configuration check", idl.UpgradeSteps_CONFIG, idl.StepStatus_RUNNING, "RUNNING - Configuration Check"),
+			Entry("install binaries on segments", idl.UpgradeSteps_SEGINSTALL, idl.StepStatus_COMPLETE, "COMPLETE - Install binaries on segments"),
+			Entry("prepare init cluster", idl.UpgradeSteps_INIT_CLUSTER, idl.StepStatus_FAILED, "FAILED - Initialize new cluster"),
+			Entry("upgrade on master", idl.UpgradeSteps_CONVERT_MASTER, idl.StepStatus_PENDING, "PENDING - Run pg_upgrade on master"),
+			Entry("shutdown cluster", idl.UpgradeSteps_SHUTDOWN_CLUSTERS, idl.StepStatus_PENDING, "PENDING - Shutdown clusters"),
+			Entry("reconfigure ports", idl.UpgradeSteps_RECONFIGURE_PORTS, idl.StepStatus_PENDING, "PENDING - Adjust upgraded cluster ports"),
 		)
 	})
 })

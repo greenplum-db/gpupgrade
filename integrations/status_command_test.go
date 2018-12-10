@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/onsi/gomega/gbytes"
@@ -40,8 +40,8 @@ var _ = Describe("status", func() {
 
 	Describe("upgrade", func() {
 		It("Reports status from the hub Checklist", func() {
-			cm.AddStep(upgradestatus.CONFIG, pb.UpgradeSteps_CONFIG)
-			cm.AddStep(upgradestatus.SEGINSTALL, pb.UpgradeSteps_SEGINSTALL)
+			cm.AddStep(upgradestatus.CONFIG, idl.UpgradeSteps_CONFIG)
+			cm.AddStep(upgradestatus.SEGINSTALL, idl.UpgradeSteps_SEGINSTALL)
 
 			statusSession := runCommand("status", "upgrade")
 			Eventually(statusSession).Should(Exit(0))

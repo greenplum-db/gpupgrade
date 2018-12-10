@@ -11,7 +11,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/db"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/log"
 
@@ -21,7 +21,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-func (h *Hub) PrepareInitCluster(ctx context.Context, in *pb.PrepareInitClusterRequest) (*pb.PrepareInitClusterReply, error) {
+func (h *Hub) PrepareInitCluster(ctx context.Context, in *idl.PrepareInitClusterRequest) (*idl.PrepareInitClusterReply, error) {
 	step := h.checklist.GetStepWriter(upgradestatus.INIT_CLUSTER)
 	err := step.ResetStateDir()
 	if err != nil {
@@ -45,7 +45,7 @@ func (h *Hub) PrepareInitCluster(ctx context.Context, in *pb.PrepareInitClusterR
 		}
 	}()
 
-	return &pb.PrepareInitClusterReply{}, nil
+	return &idl.PrepareInitClusterReply{}, nil
 }
 
 func (h *Hub) CreateTargetCluster() error {
@@ -248,9 +248,9 @@ func CreateSegmentDataDirectories(agentConns []*Connection, dataDirMap map[strin
 		go func(c *Connection) {
 			defer wg.Done()
 
-			client := pb.NewAgentClient(c.Conn)
+			client := idl.NewAgentClient(c.Conn)
 			_, err := client.CreateSegmentDataDirectories(context.Background(),
-				&pb.CreateSegmentDataDirRequest{
+				&idl.CreateSegmentDataDirRequest{
 					Datadirs: dataDirMap[c.Hostname],
 				})
 

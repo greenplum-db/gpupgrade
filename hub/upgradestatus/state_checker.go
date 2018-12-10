@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus/file"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -12,7 +12,7 @@ import (
 
 type StateCheck struct {
 	Path string
-	Step pb.UpgradeSteps
+	Step idl.UpgradeSteps
 }
 
 // GetStatus returns the UpgradeStepStatus corresponding to the StateCheck's
@@ -22,12 +22,12 @@ type StateCheck struct {
 // affected step should clear the issue).
 //
 // XXX That last assumption is unlikely to hold for the more complicated steps.
-func (c StateCheck) GetStatus() pb.StepStatus {
+func (c StateCheck) GetStatus() idl.StepStatus {
 	_, err := utils.System.Stat(c.Path)
 	if err != nil {
 		// It's okay if the state directory doesn't exist; that just means we
 		// haven't run the step yet.
-		return pb.StepStatus_PENDING
+		return idl.StepStatus_PENDING
 	}
 
 	files, err := utils.System.FilePathGlob(filepath.Join(c.Path, "*"))
@@ -41,16 +41,16 @@ func (c StateCheck) GetStatus() pb.StepStatus {
 	// to COMPLETE/FAILED.
 	if len(files) > 1 {
 		gplog.Error("Status directory %s has more than one file", c.Path)
-		return pb.StepStatus_PENDING
+		return idl.StepStatus_PENDING
 	} else if len(files) == 1 {
 		switch files[0] {
 		case filepath.Join(c.Path, file.Failed):
-			return pb.StepStatus_FAILED
+			return idl.StepStatus_FAILED
 		case filepath.Join(c.Path, file.Complete):
-			return pb.StepStatus_COMPLETE
+			return idl.StepStatus_COMPLETE
 		case filepath.Join(c.Path, file.InProgress):
-			return pb.StepStatus_RUNNING
+			return idl.StepStatus_RUNNING
 		}
 	}
-	return pb.StepStatus_PENDING
+	return idl.StepStatus_PENDING
 }

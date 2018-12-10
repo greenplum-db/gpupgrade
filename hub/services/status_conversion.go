@@ -3,7 +3,7 @@ package services
 import (
 	"fmt"
 
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -11,31 +11,31 @@ import (
 	"golang.org/x/net/context"
 )
 
-func (h *Hub) StatusConversion(ctx context.Context, in *pb.StatusConversionRequest) (*pb.StatusConversionReply, error) {
+func (h *Hub) StatusConversion(ctx context.Context, in *idl.StatusConversionRequest) (*idl.StatusConversionReply, error) {
 	agentConnections, err := h.AgentConns()
 	if err != nil {
-		return &pb.StatusConversionReply{}, err
+		return &idl.StatusConversionReply{}, err
 	}
 
 	primaryStatuses, err := GetConversionStatusFromPrimaries(agentConnections, h.source)
 	if err != nil {
 		err := fmt.Errorf("Could not get conversion status from primaries. Err: \"%v\"", err)
 		gplog.Error(err.Error())
-		return &pb.StatusConversionReply{}, err
+		return &idl.StatusConversionReply{}, err
 	}
 
-	return &pb.StatusConversionReply{
+	return &idl.StatusConversionReply{
 		ConversionStatuses: primaryStatuses,
 	}, nil
 }
 
 // Helper function to make grpc calls to all agents on primaries for their status
 // TODO: Check conversion statuses in parallel
-func GetConversionStatusFromPrimaries(conns []*Connection, source *utils.Cluster) ([]*pb.PrimaryStatus, error) {
-	var statuses []*pb.PrimaryStatus
+func GetConversionStatusFromPrimaries(conns []*Connection, source *utils.Cluster) ([]*idl.PrimaryStatus, error) {
+	var statuses []*idl.PrimaryStatus
 	for _, conn := range conns {
 		// Build a list of segments on the host in which the agent resides on.
-		var agentSegments []*pb.SegmentInfo
+		var agentSegments []*idl.SegmentInfo
 
 		segments, err := source.SegmentsOn(conn.Hostname)
 		if err != nil {
@@ -43,14 +43,14 @@ func GetConversionStatusFromPrimaries(conns []*Connection, source *utils.Cluster
 		}
 
 		for _, segment := range segments {
-			agentSegments = append(agentSegments, &pb.SegmentInfo{
+			agentSegments = append(agentSegments, &idl.SegmentInfo{
 				Content: int32(segment.ContentID),
 				Dbid:    int32(segment.DbID),
 				DataDir: segment.DataDir,
 			})
 		}
 
-		status, err := conn.AgentClient.CheckConversionStatus(context.Background(), &pb.CheckConversionStatusRequest{
+		status, err := conn.AgentClient.CheckConversionStatus(context.Background(), &idl.CheckConversionStatusRequest{
 			Segments: agentSegments,
 			Hostname: conn.Hostname,
 		})
@@ -66,28 +66,28 @@ func GetConversionStatusFromPrimaries(conns []*Connection, source *utils.Cluster
 
 // PrimaryConversionStatus a function that matches the interface of Step.Status_
 // It is used by the state manager to get status for the CONVERT_PRIMARY step.
-func PrimaryConversionStatus(hub *Hub) pb.StepStatus {
+func PrimaryConversionStatus(hub *Hub) idl.StepStatus {
 	// We can't determine the actual status if there's an error, so we log it and return PENDING
-	conversionStatus, err := hub.StatusConversion(nil, &pb.StatusConversionRequest{})
+	conversionStatus, err := hub.StatusConversion(nil, &idl.StatusConversionRequest{})
 	if err != nil {
 		gplog.Error("Could not get primary conversion status: %s", err)
-		return pb.StepStatus_PENDING
+		return idl.StepStatus_PENDING
 	}
 
 	statuses := conversionStatus.GetConversionStatuses()
 	switch {
-	case hasAny(statuses, pb.StepStatus_FAILED):
-		return pb.StepStatus_FAILED
-	case hasAny(statuses, pb.StepStatus_RUNNING):
-		return pb.StepStatus_RUNNING
-	case hasAll(statuses, pb.StepStatus_COMPLETE):
-		return pb.StepStatus_COMPLETE
+	case hasAny(statuses, idl.StepStatus_FAILED):
+		return idl.StepStatus_FAILED
+	case hasAny(statuses, idl.StepStatus_RUNNING):
+		return idl.StepStatus_RUNNING
+	case hasAll(statuses, idl.StepStatus_COMPLETE):
+		return idl.StepStatus_COMPLETE
 	default:
-		return pb.StepStatus_PENDING
+		return idl.StepStatus_PENDING
 	}
 }
 
-func hasAll(statuses []*pb.PrimaryStatus, status pb.StepStatus) bool {
+func hasAll(statuses []*idl.PrimaryStatus, status idl.StepStatus) bool {
 	for _, elem := range statuses {
 		if elem.Status != status {
 			return false
@@ -97,7 +97,7 @@ func hasAll(statuses []*pb.PrimaryStatus, status pb.StepStatus) bool {
 	return true
 }
 
-func hasAny(statuses []*pb.PrimaryStatus, status pb.StepStatus) bool {
+func hasAny(statuses []*idl.PrimaryStatus, status idl.StepStatus) bool {
 	for _, elem := range statuses {
 		if elem.Status == status {
 			return true

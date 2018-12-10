@@ -3,16 +3,16 @@ package commanders
 import (
 	"context"
 
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 )
 
 type ConfigChecker struct {
-	client pb.CliToHubClient
+	client idl.CliToHubClient
 }
 
-func NewConfigChecker(client pb.CliToHubClient) ConfigChecker {
+func NewConfigChecker(client idl.CliToHubClient) ConfigChecker {
 	return ConfigChecker{
 		client: client,
 	}
@@ -20,7 +20,7 @@ func NewConfigChecker(client pb.CliToHubClient) ConfigChecker {
 
 func (req ConfigChecker) Execute() error {
 	_, err := req.client.CheckConfig(context.Background(),
-		&pb.CheckConfigRequest{})
+		&idl.CheckConfigRequest{})
 	if err != nil {
 		gplog.Error("ERROR - gRPC call to hub failed")
 		return err

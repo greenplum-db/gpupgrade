@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 
 	"os"
@@ -22,21 +22,21 @@ import (
 	- pg_upgrade will not fail without error before writing an inprogress file
 	- when a new pg_upgrade is started it deletes all *.done and *.inprogress files
 */
-func SegmentConversionStatus(pgUpgradePath, oldDataDir string, executor cluster.Executor) pb.StepStatus {
+func SegmentConversionStatus(pgUpgradePath, oldDataDir string, executor cluster.Executor) idl.StepStatus {
 	return GetUtilityStatus("pg_upgrade", pgUpgradePath, oldDataDir, "*.inprogress", executor, isUpgradeComplete)
 }
 
-func GetUtilityStatus(binaryName, utilityStatePath, dataDir, progressFilePattern string, executor cluster.Executor, isCompleteFunc func(string) bool) pb.StepStatus {
+func GetUtilityStatus(binaryName, utilityStatePath, dataDir, progressFilePattern string, executor cluster.Executor, isCompleteFunc func(string) bool) idl.StepStatus {
 	_, err := utils.System.Stat(utilityStatePath)
 	switch {
 	case utils.System.IsNotExist(err):
-		return pb.StepStatus_PENDING
+		return idl.StepStatus_PENDING
 	case isBinaryRunning(dataDir, executor):
-		return pb.StepStatus_RUNNING
+		return idl.StepStatus_RUNNING
 	case !inProgressFilesExist(utilityStatePath, progressFilePattern) && isCompleteFunc(utilityStatePath):
-		return pb.StepStatus_COMPLETE
+		return idl.StepStatus_COMPLETE
 	default:
-		return pb.StepStatus_FAILED
+		return idl.StepStatus_FAILED
 	}
 }
 

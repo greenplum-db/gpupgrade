@@ -2,7 +2,7 @@ package testutils
 
 import (
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 )
 
 type MockChecklistManager struct {
@@ -11,7 +11,7 @@ type MockChecklistManager struct {
 	mapInProgress map[string]bool
 	mapReset      map[string]bool
 	loadedNames   []string
-	loadedCodes   map[string]pb.UpgradeSteps
+	loadedCodes   map[string]idl.UpgradeSteps
 }
 
 func NewMockChecklistManager() *MockChecklistManager {
@@ -21,7 +21,7 @@ func NewMockChecklistManager() *MockChecklistManager {
 		mapInProgress: make(map[string]bool, 0),
 		mapReset:      make(map[string]bool, 0),
 		loadedNames:   make([]string, 0),
-		loadedCodes:   make(map[string]pb.UpgradeSteps, 0),
+		loadedCodes:   make(map[string]idl.UpgradeSteps, 0),
 	}
 }
 
@@ -29,7 +29,7 @@ func (cm *MockChecklistManager) GetStepReader(step string) upgradestatus.StateRe
 	return MockStepReader{step: step, code: cm.loadedCodes[step], manager: cm}
 }
 
-func (cm *MockChecklistManager) AddStep(name string, code pb.UpgradeSteps) {
+func (cm *MockChecklistManager) AddStep(name string, code idl.UpgradeSteps) {
 	cm.loadedNames = append(cm.loadedNames, name)
 	cm.loadedCodes[name] = code
 }
@@ -50,20 +50,20 @@ func (cm *MockChecklistManager) GetStepWriter(step string) upgradestatus.StateWr
 
 type MockStepReader struct {
 	step    string
-	code    pb.UpgradeSteps
+	code    idl.UpgradeSteps
 	manager *MockChecklistManager
 }
 
-func (r MockStepReader) Status() pb.StepStatus {
+func (r MockStepReader) Status() idl.StepStatus {
 	switch {
 	case r.manager.IsPending(r.step):
-		return pb.StepStatus_PENDING
+		return idl.StepStatus_PENDING
 	case r.manager.IsInProgress(r.step):
-		return pb.StepStatus_RUNNING
+		return idl.StepStatus_RUNNING
 	case r.manager.IsComplete(r.step):
-		return pb.StepStatus_COMPLETE
+		return idl.StepStatus_COMPLETE
 	case r.manager.IsFailed(r.step):
-		return pb.StepStatus_FAILED
+		return idl.StepStatus_FAILED
 	default:
 		panic("unexpected step state in MockChecklistManager")
 	}
@@ -73,7 +73,7 @@ func (r MockStepReader) Name() string {
 	return r.step
 }
 
-func (r MockStepReader) Code() pb.UpgradeSteps {
+func (r MockStepReader) Code() idl.UpgradeSteps {
 	return r.code
 }
 

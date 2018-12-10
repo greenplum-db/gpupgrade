@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus/file"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
@@ -32,8 +32,8 @@ type Checklist interface {
 
 type StateReader interface {
 	Name() string
-	Code() pb.UpgradeSteps
-	Status() pb.StepStatus
+	Code() idl.UpgradeSteps
+	Status() idl.StepStatus
 }
 
 type StateWriter interface {
@@ -52,11 +52,11 @@ type ChecklistManager struct {
 
 // A StatusFunc returns a StepStatus for a read-only step. It is passed the name
 // of the step to facilitate sharing of step implementations.
-type StatusFunc func(name string) pb.StepStatus
+type StatusFunc func(name string) idl.StepStatus
 
 type step struct {
 	name   string
-	code   pb.UpgradeSteps
+	code   idl.UpgradeSteps
 	status StatusFunc
 }
 
@@ -64,11 +64,11 @@ func (s step) Name() string {
 	return s.name
 }
 
-func (s step) Code() pb.UpgradeSteps {
+func (s step) Code() idl.UpgradeSteps {
 	return s.code
 }
 
-func (s step) Status() pb.StepStatus {
+func (s step) Status() idl.StepStatus {
 	return s.status(s.name)
 }
 
@@ -83,8 +83,8 @@ func NewChecklistManager(stateDirPath string) *ChecklistManager {
 // AddWritableStep creates a step with a writable status that is backed by the
 // filesystem. The given name must be filesystem-friendly, since it will be used
 // in the backing path.
-func (c *ChecklistManager) AddWritableStep(name string, code pb.UpgradeSteps) {
-	statusFunc := func(name string) pb.StepStatus {
+func (c *ChecklistManager) AddWritableStep(name string, code idl.UpgradeSteps) {
+	statusFunc := func(name string) idl.StepStatus {
 		checker := StateCheck{
 			Path: filepath.Join(c.stateDir, name),
 			Step: code,
@@ -97,12 +97,12 @@ func (c *ChecklistManager) AddWritableStep(name string, code pb.UpgradeSteps) {
 
 // AddReadOnlyStep creates a step with a custom status retrieval mechanism, as
 // determined by the given StatusFunc.
-func (c *ChecklistManager) AddReadOnlyStep(name string, code pb.UpgradeSteps, status StatusFunc) {
+func (c *ChecklistManager) AddReadOnlyStep(name string, code idl.UpgradeSteps, status StatusFunc) {
 	c.addStep(name, code, status)
 	c.readOnly[name] = true
 }
 
-func (c *ChecklistManager) addStep(name string, code pb.UpgradeSteps, status StatusFunc) {
+func (c *ChecklistManager) addStep(name string, code idl.UpgradeSteps, status StatusFunc) {
 	s := step{name, code, status}
 
 	// Since checklist setup isn't influenced by the user, it's always a

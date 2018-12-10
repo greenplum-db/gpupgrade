@@ -4,8 +4,8 @@ import (
 	"errors"
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
-	pb "github.com/greenplum-db/gpupgrade/idl"
-	mockpb "github.com/greenplum-db/gpupgrade/mock_idl"
+	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/mock_idl"
 
 	"github.com/golang/mock/gomock"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
@@ -18,13 +18,13 @@ import (
 var _ bool = Describe("object count tests", func() {
 
 	var (
-		client *mockpb.MockCliToHubClient
+		client *mock_idl.MockCliToHubClient
 		ctrl   *gomock.Controller
 	)
 
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
-		client = mockpb.NewMockCliToHubClient(ctrl)
+		client = mock_idl.NewMockCliToHubClient(ctrl)
 	})
 
 	AfterEach(func() {
@@ -36,8 +36,8 @@ var _ bool = Describe("object count tests", func() {
 			testStdout, _, _ := testhelper.SetupTestLogger()
 			client.EXPECT().CheckVersion(
 				gomock.Any(),
-				&pb.CheckVersionRequest{},
-			).Return(&pb.CheckVersionReply{IsVersionCompatible: true}, nil)
+				&idl.CheckVersionRequest{},
+			).Return(&idl.CheckVersionReply{IsVersionCompatible: true}, nil)
 			request := commanders.NewVersionChecker(client)
 			err := request.Execute()
 			Expect(err).To(BeNil())
@@ -49,8 +49,8 @@ var _ bool = Describe("object count tests", func() {
 			testStdout, _, _ := testhelper.SetupTestLogger()
 			client.EXPECT().CheckVersion(
 				gomock.Any(),
-				&pb.CheckVersionRequest{},
-			).Return(&pb.CheckVersionReply{IsVersionCompatible: false}, nil)
+				&idl.CheckVersionRequest{},
+			).Return(&idl.CheckVersionReply{IsVersionCompatible: false}, nil)
 			request := commanders.NewVersionChecker(client)
 			err := request.Execute()
 			Expect(err).To(BeNil())
@@ -62,8 +62,8 @@ var _ bool = Describe("object count tests", func() {
 			_, testStderr, _ := testhelper.SetupTestLogger()
 			client.EXPECT().CheckVersion(
 				gomock.Any(),
-				&pb.CheckVersionRequest{},
-			).Return(&pb.CheckVersionReply{IsVersionCompatible: false}, errors.New("something went wrong"))
+				&idl.CheckVersionRequest{},
+			).Return(&idl.CheckVersionReply{IsVersionCompatible: false}, errors.New("something went wrong"))
 			request := commanders.NewVersionChecker(client)
 			err := request.Execute()
 			Expect(err).ToNot(BeNil())

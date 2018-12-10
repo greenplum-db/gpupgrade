@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/pkg/errors"
 
@@ -16,12 +16,12 @@ import (
 	"golang.org/x/net/context"
 )
 
-func (h *Hub) UpgradeShareOids(ctx context.Context, in *pb.UpgradeShareOidsRequest) (*pb.UpgradeShareOidsReply, error) {
+func (h *Hub) UpgradeShareOids(ctx context.Context, in *idl.UpgradeShareOidsRequest) (*idl.UpgradeShareOidsReply, error) {
 	gplog.Info("Started processing share-oids request")
 
 	go h.shareOidFiles()
 
-	return &pb.UpgradeShareOidsReply{}, nil
+	return &idl.UpgradeShareOidsReply{}, nil
 }
 
 func (h *Hub) shareOidFiles() {
@@ -126,9 +126,9 @@ func CopyMasterDirectoryToSegmentDirectories(agentConns []*Connection, target *u
 		go func(c *Connection) {
 			defer wg.Done()
 
-			client := pb.NewAgentClient(c.Conn)
+			client := idl.NewAgentClient(c.Conn)
 			_, err := client.CopyMasterDirectoryToSegmentDirectories(context.Background(),
-				&pb.CopyMasterDirRequest{
+				&idl.CopyMasterDirRequest{
 					MasterDir: destinationDirName,
 					Datadirs:  segmentDataDirMap[c.Hostname],
 				})

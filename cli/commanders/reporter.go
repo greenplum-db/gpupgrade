@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"sort"
 
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 
 	"github.com/pkg/errors"
 )
 
 type Reporter struct {
-	client pb.CliToHubClient
+	client idl.CliToHubClient
 }
 
 // UpgradeStepsMessage encode the proper checklist item string to go with a step
@@ -22,27 +22,27 @@ type Reporter struct {
 //logger.Info("PENDING - Primary segment upgrade")
 //logger.Info("PENDING - Validate cluster start")
 //logger.Info("PENDING - Adjust upgrade cluster ports")
-var UpgradeStepsMessage = map[pb.UpgradeSteps]string{
-	pb.UpgradeSteps_UNKNOWN_STEP:           "- Unknown step",
-	pb.UpgradeSteps_CONFIG:                 "- Configuration Check",
-	pb.UpgradeSteps_SEGINSTALL:             "- Install binaries on segments",
-	pb.UpgradeSteps_START_AGENTS:           "- Agents Started on Cluster",
-	pb.UpgradeSteps_INIT_CLUSTER:           "- Initialize new cluster",
-	pb.UpgradeSteps_CONVERT_MASTER:         "- Run pg_upgrade on master",
-	pb.UpgradeSteps_SHUTDOWN_CLUSTERS:      "- Shutdown clusters",
-	pb.UpgradeSteps_SHARE_OIDS:             "- Copy OID files from master to segments",
-	pb.UpgradeSteps_CONVERT_PRIMARIES:      "- Run pg_upgrade on primaries",
-	pb.UpgradeSteps_VALIDATE_START_CLUSTER: "- Validate the upgraded cluster can start up",
-	pb.UpgradeSteps_RECONFIGURE_PORTS:      "- Adjust upgraded cluster ports",
+var UpgradeStepsMessage = map[idl.UpgradeSteps]string{
+	idl.UpgradeSteps_UNKNOWN_STEP:           "- Unknown step",
+	idl.UpgradeSteps_CONFIG:                 "- Configuration Check",
+	idl.UpgradeSteps_SEGINSTALL:             "- Install binaries on segments",
+	idl.UpgradeSteps_START_AGENTS:           "- Agents Started on Cluster",
+	idl.UpgradeSteps_INIT_CLUSTER:           "- Initialize new cluster",
+	idl.UpgradeSteps_CONVERT_MASTER:         "- Run pg_upgrade on master",
+	idl.UpgradeSteps_SHUTDOWN_CLUSTERS:      "- Shutdown clusters",
+	idl.UpgradeSteps_SHARE_OIDS:             "- Copy OID files from master to segments",
+	idl.UpgradeSteps_CONVERT_PRIMARIES:      "- Run pg_upgrade on primaries",
+	idl.UpgradeSteps_VALIDATE_START_CLUSTER: "- Validate the upgraded cluster can start up",
+	idl.UpgradeSteps_RECONFIGURE_PORTS:      "- Adjust upgraded cluster ports",
 }
 
-func NewReporter(client pb.CliToHubClient) *Reporter {
+func NewReporter(client idl.CliToHubClient) *Reporter {
 	return &Reporter{
 		client: client,
 	}
 }
 
-type PrimaryStatuses []*pb.PrimaryStatus
+type PrimaryStatuses []*idl.PrimaryStatus
 
 func (s PrimaryStatuses) Len() int {
 	return len(s)
@@ -61,21 +61,21 @@ func (s PrimaryStatuses) Swap(i, j int) {
  * enable sorting gpupgrade status at the CLI so that the hub and agents do not
  * need to be recompiled and restarted to change the display order.
  */
-var UpgradeStepsOrder = map[pb.UpgradeSteps]int{
-	pb.UpgradeSteps_UNKNOWN_STEP:           0,
-	pb.UpgradeSteps_CONFIG:                 1,
-	pb.UpgradeSteps_SEGINSTALL:             2,
-	pb.UpgradeSteps_START_AGENTS:           3,
-	pb.UpgradeSteps_INIT_CLUSTER:           4,
-	pb.UpgradeSteps_SHUTDOWN_CLUSTERS:      5,
-	pb.UpgradeSteps_CONVERT_MASTER:         6,
-	pb.UpgradeSteps_SHARE_OIDS:             7,
-	pb.UpgradeSteps_CONVERT_PRIMARIES:      8,
-	pb.UpgradeSteps_VALIDATE_START_CLUSTER: 9,
-	pb.UpgradeSteps_RECONFIGURE_PORTS:      10,
+var UpgradeStepsOrder = map[idl.UpgradeSteps]int{
+	idl.UpgradeSteps_UNKNOWN_STEP:           0,
+	idl.UpgradeSteps_CONFIG:                 1,
+	idl.UpgradeSteps_SEGINSTALL:             2,
+	idl.UpgradeSteps_START_AGENTS:           3,
+	idl.UpgradeSteps_INIT_CLUSTER:           4,
+	idl.UpgradeSteps_SHUTDOWN_CLUSTERS:      5,
+	idl.UpgradeSteps_CONVERT_MASTER:         6,
+	idl.UpgradeSteps_SHARE_OIDS:             7,
+	idl.UpgradeSteps_CONVERT_PRIMARIES:      8,
+	idl.UpgradeSteps_VALIDATE_START_CLUSTER: 9,
+	idl.UpgradeSteps_RECONFIGURE_PORTS:      10,
 }
 
-type StepStatuses []*pb.UpgradeStepStatus
+type StepStatuses []*idl.UpgradeStepStatus
 
 func (s StepStatuses) Len() int {
 	return len(s)
@@ -92,7 +92,7 @@ func (s StepStatuses) Swap(i, j int) {
 }
 
 func (r *Reporter) OverallUpgradeStatus() error {
-	status, err := r.client.StatusUpgrade(context.Background(), &pb.StatusUpgradeRequest{})
+	status, err := r.client.StatusUpgrade(context.Background(), &idl.StatusUpgradeRequest{})
 	if err != nil {
 		// find some way to expound on the error message? Integration test failing because we no longer log here
 		return errors.New("Failed to retrieve status from hub: " + err.Error())
@@ -114,7 +114,7 @@ func (r *Reporter) OverallUpgradeStatus() error {
 }
 
 func (r *Reporter) OverallConversionStatus() error {
-	conversionStatus, err := r.client.StatusConversion(context.Background(), &pb.StatusConversionRequest{})
+	conversionStatus, err := r.client.StatusConversion(context.Background(), &idl.StatusConversionRequest{})
 	if err != nil {
 		return errors.New("hub returned an error when checking overall conversion status: " + err.Error())
 	}

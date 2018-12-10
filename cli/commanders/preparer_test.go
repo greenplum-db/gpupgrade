@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
-	pb "github.com/greenplum-db/gpupgrade/idl"
-	mockpb "github.com/greenplum-db/gpupgrade/mock_idl"
+	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/mock_idl"
 
 	"github.com/golang/mock/gomock"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
@@ -22,13 +22,13 @@ import (
 var _ = Describe("preparer", func() {
 
 	var (
-		client *mockpb.MockCliToHubClient
+		client *mock_idl.MockCliToHubClient
 		ctrl   *gomock.Controller
 	)
 
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
-		client = mockpb.NewMockCliToHubClient(ctrl)
+		client = mock_idl.NewMockCliToHubClient(ctrl)
 	})
 
 	AfterEach(func() {
@@ -42,8 +42,8 @@ var _ = Describe("preparer", func() {
 
 			client.EXPECT().Ping(
 				gomock.Any(),
-				&pb.PingRequest{},
-			).Return(&pb.PingReply{}, nil)
+				&idl.PingRequest{},
+			).Return(&idl.PingReply{}, nil)
 
 			preparer := commanders.Preparer{}
 			err := preparer.VerifyConnectivity(client)
@@ -56,8 +56,8 @@ var _ = Describe("preparer", func() {
 
 			client.EXPECT().Ping(
 				gomock.Any(),
-				&pb.PingRequest{},
-			).Return(&pb.PingReply{}, errors.New("not answering ping")).Times(commanders.NumberOfConnectionAttempt + 1)
+				&idl.PingRequest{},
+			).Return(&idl.PingReply{}, errors.New("not answering ping")).Times(commanders.NumberOfConnectionAttempt + 1)
 
 			preparer := commanders.Preparer{}
 			err := preparer.VerifyConnectivity(client)
@@ -68,13 +68,13 @@ var _ = Describe("preparer", func() {
 
 			client.EXPECT().Ping(
 				gomock.Any(),
-				&pb.PingRequest{},
-			).Return(&pb.PingReply{}, errors.New("not answering ping"))
+				&idl.PingRequest{},
+			).Return(&idl.PingReply{}, errors.New("not answering ping"))
 
 			client.EXPECT().Ping(
 				gomock.Any(),
-				&pb.PingRequest{},
-			).Return(&pb.PingReply{}, nil)
+				&idl.PingRequest{},
+			).Return(&idl.PingReply{}, nil)
 
 			preparer := commanders.Preparer{}
 			err := preparer.VerifyConnectivity(client)
@@ -87,8 +87,8 @@ var _ = Describe("preparer", func() {
 			testStdout, _, _ := testhelper.SetupTestLogger()
 			client.EXPECT().PrepareInitCluster(
 				gomock.Any(),
-				&pb.PrepareInitClusterRequest{},
-			).Return(&pb.PrepareInitClusterReply{}, nil)
+				&idl.PrepareInitClusterRequest{},
+			).Return(&idl.PrepareInitClusterReply{}, nil)
 			preparer := commanders.NewPreparer(client)
 			err := preparer.InitCluster()
 			Expect(err).To(BeNil())
@@ -101,8 +101,8 @@ var _ = Describe("preparer", func() {
 
 			client.EXPECT().PrepareShutdownClusters(
 				gomock.Any(),
-				&pb.PrepareShutdownClustersRequest{},
-			).Return(&pb.PrepareShutdownClustersReply{}, nil)
+				&idl.PrepareShutdownClustersRequest{},
+			).Return(&idl.PrepareShutdownClustersReply{}, nil)
 			preparer := commanders.NewPreparer(client)
 			err := preparer.ShutdownClusters()
 			Expect(err).To(BeNil())
@@ -115,8 +115,8 @@ var _ = Describe("preparer", func() {
 
 			client.EXPECT().PrepareStartAgents(
 				gomock.Any(),
-				&pb.PrepareStartAgentsRequest{},
-			).Return(&pb.PrepareStartAgentsReply{}, nil)
+				&idl.PrepareStartAgentsRequest{},
+			).Return(&idl.PrepareStartAgentsReply{}, nil)
 			preparer := commanders.NewPreparer(client)
 			err := preparer.StartAgents()
 			Expect(err).To(BeNil())

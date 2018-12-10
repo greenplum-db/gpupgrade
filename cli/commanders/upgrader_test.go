@@ -4,8 +4,8 @@ import (
 	"errors"
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
-	pb "github.com/greenplum-db/gpupgrade/idl"
-	mockpb "github.com/greenplum-db/gpupgrade/mock_idl"
+	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/mock_idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 
 	"github.com/golang/mock/gomock"
@@ -19,7 +19,7 @@ import (
 
 var _ = Describe("reporter", func() {
 	var (
-		client *mockpb.MockCliToHubClient
+		client *mock_idl.MockCliToHubClient
 		ctrl   *gomock.Controller
 
 		hubClient  *testutils.MockHubClient
@@ -32,7 +32,7 @@ var _ = Describe("reporter", func() {
 		testStdout, testStderr, _ = testhelper.SetupTestLogger()
 
 		ctrl = gomock.NewController(GinkgoT())
-		client = mockpb.NewMockCliToHubClient(ctrl)
+		client = mock_idl.NewMockCliToHubClient(ctrl)
 
 		hubClient = testutils.NewMockHubClient()
 		upgrader = commanders.NewUpgrader(hubClient)
@@ -47,8 +47,8 @@ var _ = Describe("reporter", func() {
 		It("Reports success when pg_upgrade started", func() {
 			client.EXPECT().UpgradeConvertMaster(
 				gomock.Any(),
-				&pb.UpgradeConvertMasterRequest{},
-			).Return(&pb.UpgradeConvertMasterReply{}, nil)
+				&idl.UpgradeConvertMasterRequest{},
+			).Return(&idl.UpgradeConvertMasterReply{}, nil)
 			err := commanders.NewUpgrader(client).ConvertMaster()
 			Expect(err).To(BeNil())
 			Eventually(testStdout).Should(gbytes.Say("Kicked off pg_upgrade request"))
@@ -57,8 +57,8 @@ var _ = Describe("reporter", func() {
 		It("reports failure when command fails to connect to the hub", func() {
 			client.EXPECT().UpgradeConvertMaster(
 				gomock.Any(),
-				&pb.UpgradeConvertMasterRequest{},
-			).Return(&pb.UpgradeConvertMasterReply{}, errors.New("something bad happened"))
+				&idl.UpgradeConvertMasterRequest{},
+			).Return(&idl.UpgradeConvertMasterReply{}, errors.New("something bad happened"))
 			err := commanders.NewUpgrader(client).ConvertMaster()
 			Expect(err).ToNot(BeNil())
 			Eventually(testStderr).Should(gbytes.Say("ERROR - Unable to connect to hub"))
@@ -85,7 +85,7 @@ var _ = Describe("reporter", func() {
 			err := upgrader.ShareOids()
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(hubClient.UpgradeShareOidsRequest).To(Equal(&pb.UpgradeShareOidsRequest{}))
+			Expect(hubClient.UpgradeShareOidsRequest).To(Equal(&idl.UpgradeShareOidsRequest{}))
 		})
 
 		It("returns an error when oids cannot be shared", func() {
@@ -101,7 +101,7 @@ var _ = Describe("reporter", func() {
 			err := upgrader.ReconfigurePorts()
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(hubClient.UpgradeReconfigurePortsRequest).To(Equal(&pb.UpgradeReconfigurePortsRequest{}))
+			Expect(hubClient.UpgradeReconfigurePortsRequest).To(Equal(&idl.UpgradeReconfigurePortsRequest{}))
 		})
 
 		It("returns error when ports cannot be reconfigured", func() {

@@ -3,24 +3,24 @@ package services
 import (
 	"context"
 
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 
 	"github.com/cloudfoundry/gosigar"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 )
 
-func (s *AgentServer) CheckDiskSpaceOnAgents(ctx context.Context, in *pb.CheckDiskSpaceRequestToAgent) (*pb.CheckDiskSpaceReplyFromAgent, error) {
+func (s *AgentServer) CheckDiskSpaceOnAgents(ctx context.Context, in *idl.CheckDiskSpaceRequestToAgent) (*idl.CheckDiskSpaceReplyFromAgent, error) {
 	gplog.Info("got a check disk command from the hub")
 	diskUsage, err := s.GetDiskUsage()
 	if err != nil {
 		gplog.Error(err.Error())
 		return nil, err
 	}
-	var listDiskUsages []*pb.FileSysUsage
+	var listDiskUsages []*idl.FileSysUsage
 	for k, v := range diskUsage {
-		listDiskUsages = append(listDiskUsages, &pb.FileSysUsage{Filesystem: k, Usage: v})
+		listDiskUsages = append(listDiskUsages, &idl.FileSysUsage{Filesystem: k, Usage: v})
 	}
-	return &pb.CheckDiskSpaceReplyFromAgent{ListOfFileSysUsage: listDiskUsages}, nil
+	return &idl.CheckDiskSpaceReplyFromAgent{ListOfFileSysUsage: listDiskUsages}, nil
 }
 
 // diskUsage() wraps a pair of calls to the gosigar library.

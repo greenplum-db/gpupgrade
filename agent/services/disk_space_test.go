@@ -2,7 +2,7 @@ package services_test
 
 import (
 	"github.com/greenplum-db/gpupgrade/agent/services"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
@@ -35,7 +35,7 @@ var _ = Describe("CommandListener", func() {
 		}
 		listener := &services.AgentServer{GetDiskUsage: getDiskUsage}
 
-		resp, err := listener.CheckDiskSpaceOnAgents(nil, &pb.CheckDiskSpaceRequestToAgent{})
+		resp, err := listener.CheckDiskSpaceOnAgents(nil, &idl.CheckDiskSpaceRequestToAgent{})
 		Expect(err).To(BeNil())
 		for _, val := range resp.ListOfFileSysUsage {
 			if val.Filesystem == "/data" {
@@ -51,7 +51,7 @@ var _ = Describe("CommandListener", func() {
 			return nil, errors.New("fake error")
 		}
 		listener := &services.AgentServer{GetDiskUsage: getDiskUsage}
-		_, err := listener.CheckDiskSpaceOnAgents(nil, &pb.CheckDiskSpaceRequestToAgent{})
+		_, err := listener.CheckDiskSpaceOnAgents(nil, &idl.CheckDiskSpaceRequestToAgent{})
 		Expect(err).To(HaveOccurred())
 		Expect(string(testLogFile.Contents())).To(ContainSubstring("fake error"))
 	})

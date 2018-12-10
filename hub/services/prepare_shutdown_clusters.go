@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/log"
 
@@ -13,12 +13,12 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 )
 
-func (h *Hub) PrepareShutdownClusters(ctx context.Context, in *pb.PrepareShutdownClustersRequest) (*pb.PrepareShutdownClustersReply, error) {
+func (h *Hub) PrepareShutdownClusters(ctx context.Context, in *idl.PrepareShutdownClustersRequest) (*idl.PrepareShutdownClustersReply, error) {
 	gplog.Info("starting PrepareShutdownClusters()")
 
 	go h.ShutdownClusters()
 
-	return &pb.PrepareShutdownClustersReply{}, nil
+	return &idl.PrepareShutdownClustersReply{}, nil
 }
 
 func (h *Hub) ShutdownClusters() {

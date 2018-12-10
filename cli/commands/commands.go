@@ -36,7 +36,7 @@ import (
 	"time"
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -98,7 +98,7 @@ func connTimeout() time.Duration {
 // connectToHub() performs a blocking connection to the hub, and returns a
 // CliToHubClient which wraps the resulting gRPC channel. Any errors result in
 // an os.Exit(1).
-func connectToHub() pb.CliToHubClient {
+func connectToHub() idl.CliToHubClient {
 	upgradePort := os.Getenv("GPUPGRADE_HUB_PORT")
 	if upgradePort == "" {
 		upgradePort = "7527"
@@ -122,7 +122,7 @@ func connectToHub() pb.CliToHubClient {
 		os.Exit(1)
 	}
 
-	return pb.NewCliToHubClient(conn)
+	return idl.NewCliToHubClient(conn)
 }
 
 //////////////////////////////////////// CHECK and its subcommands
@@ -212,9 +212,9 @@ func createConfigSetSubcommand() *cobra.Command {
 
 			client := connectToHub()
 
-			var requests []*pb.SetConfigRequest
+			var requests []*idl.SetConfigRequest
 			cmd.Flags().Visit(func(flag *pflag.Flag) {
-				requests = append(requests, &pb.SetConfigRequest{
+				requests = append(requests, &idl.SetConfigRequest{
 					Name:  flag.Name,
 					Value: flag.Value.String(),
 				})
@@ -248,10 +248,10 @@ func createConfigShowSubcommand() *cobra.Command {
 
 			// Build a list of GetConfigRequests, one for each flag. If no flags
 			// are passed, assume we want to retrieve all of them.
-			var requests []*pb.GetConfigRequest
+			var requests []*idl.GetConfigRequest
 			getRequest := func(flag *pflag.Flag) {
 				if flag.Name != "help" {
-					requests = append(requests, &pb.GetConfigRequest{
+					requests = append(requests, &idl.GetConfigRequest{
 						Name: flag.Name,
 					})
 				}

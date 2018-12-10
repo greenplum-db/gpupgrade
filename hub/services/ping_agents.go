@@ -1,7 +1,7 @@
 package services
 
 import (
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"google.golang.org/grpc"
 
 	"time"
@@ -16,7 +16,7 @@ const (
 )
 
 type ClientAndHostname struct {
-	Client   pb.AgentClient
+	Client   idl.AgentClient
 	Hostname string
 }
 
@@ -44,7 +44,7 @@ func GetClients(hostnames []string) []ClientAndHostname {
 			gplog.Error(err.Error())
 		}
 		clientAndHost := ClientAndHostname{
-			Client:   pb.NewAgentClient(conn),
+			Client:   idl.NewAgentClient(conn),
 			Hostname: hostnames[i],
 		}
 		clients = append(clients, clientAndHost)
@@ -73,7 +73,7 @@ func (agent *PingerManager) PingPollAgents() error {
 func (agent *PingerManager) PingAllAgents() error {
 	//TODO: ping all the agents in parallel?
 	for i := 0; i < len(agent.RPCClients); i++ {
-		_, err := agent.RPCClients[i].Client.PingAgents(context.Background(), &pb.PingAgentsRequest{})
+		_, err := agent.RPCClients[i].Client.PingAgents(context.Background(), &idl.PingAgentsRequest{})
 		if err != nil {
 			gplog.Error("Not all agents on the segment hosts are running.")
 			return err

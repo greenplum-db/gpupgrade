@@ -2,7 +2,7 @@ package services
 
 import (
 	"github.com/greenplum-db/gpupgrade/db"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -14,7 +14,7 @@ const (
 )
 
 func (h *Hub) CheckVersion(ctx context.Context,
-	in *pb.CheckVersionRequest) (*pb.CheckVersionReply, error) {
+	in *idl.CheckVersionRequest) (*idl.CheckVersionReply, error) {
 
 	gplog.Info("starting CheckVersion")
 
@@ -25,9 +25,9 @@ func (h *Hub) CheckVersion(ctx context.Context,
 	err := dbConnector.Connect(1)
 	if err != nil {
 		gplog.Error(err.Error())
-		return &pb.CheckVersionReply{}, utils.DatabaseConnectionError{Parent: err}
+		return &idl.CheckVersionReply{}, utils.DatabaseConnectionError{Parent: err}
 	}
 
 	isVersionCompatible := dbConnector.Version.AtLeast(MINIMUM_VERSION)
-	return &pb.CheckVersionReply{IsVersionCompatible: isVersionCompatible}, nil
+	return &idl.CheckVersionReply{IsVersionCompatible: isVersionCompatible}, nil
 }

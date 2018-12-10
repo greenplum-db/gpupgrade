@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 
 	. "github.com/onsi/ginkgo"
@@ -54,7 +54,7 @@ var _ = Describe("upgrade convert primaries", func() {
 			return err
 		}
 
-		cm.AddStep(upgradestatus.CONVERT_PRIMARIES, pb.UpgradeSteps_CONVERT_PRIMARIES)
+		cm.AddStep(upgradestatus.CONVERT_PRIMARIES, idl.UpgradeSteps_CONVERT_PRIMARIES)
 
 		Expect(runStatusUpgrade()).To(ContainSubstring("PENDING - Run pg_upgrade on primaries"))
 		testExecutor.LocalOutput = "TEST"
@@ -99,7 +99,7 @@ var _ = Describe("upgrade convert primaries", func() {
 	})
 
 	XIt("updates status to FAILED if convert primaries fails on at least 1 agent", func() {
-		cm.AddStep(upgradestatus.CONVERT_PRIMARIES, pb.UpgradeSteps_CONVERT_PRIMARIES)
+		cm.AddStep(upgradestatus.CONVERT_PRIMARIES, idl.UpgradeSteps_CONVERT_PRIMARIES)
 
 		Expect(runStatusUpgrade()).To(ContainSubstring("PENDING - Run pg_upgrade on primaries"))
 		setStateFile(testStateDir, "convert-primaries/seg0", "1.failed")

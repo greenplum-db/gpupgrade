@@ -5,7 +5,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/onsi/gomega/gbytes"
 
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 
 	"os"
 	"strings"
@@ -21,7 +21,7 @@ var _ = Describe("CopyMasterDirectoryToSegmentDirectories", func() {
 		testStdOut   *gbytes.Buffer
 		testStdErr   *gbytes.Buffer
 		testLogFile  *gbytes.Buffer
-		agentRequest *pb.CopyMasterDirRequest
+		agentRequest *idl.CopyMasterDirRequest
 		testExecutor *testhelper.TestExecutor
 		stattedFiles []string
 		renamedFiles []string
@@ -31,7 +31,7 @@ var _ = Describe("CopyMasterDirectoryToSegmentDirectories", func() {
 	BeforeEach(func() {
 		testStdOut, testStdErr, testLogFile = testhelper.SetupTestLogger()
 
-		agentRequest = &pb.CopyMasterDirRequest{
+		agentRequest = &idl.CopyMasterDirRequest{
 			MasterDir: "/tmp/masterDataDir",
 			Datadirs:  []string{"/tmp/dataDir0", "/tmp/dataDir1"},
 		}

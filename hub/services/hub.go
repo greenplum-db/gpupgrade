@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/daemon"
 	"github.com/greenplum-db/gpupgrade/utils/log"
@@ -58,7 +58,7 @@ type Hub struct {
 
 type Connection struct {
 	Conn          *grpc.ClientConn
-	AgentClient   pb.AgentClient
+	AgentClient   idl.AgentClient
 	Hostname      string
 	CancelContext func()
 }
@@ -113,7 +113,7 @@ func (h *Hub) Start() error {
 	h.lis = lis
 	h.mu.Unlock()
 
-	pb.RegisterCliToHubServer(server, h)
+	idl.RegisterCliToHubServer(server, h)
 	reflection.Register(server)
 
 	if h.daemon {
@@ -181,7 +181,7 @@ func (h *Hub) AgentConns() ([]*Connection, error) {
 		}
 		h.agentConns = append(h.agentConns, &Connection{
 			Conn:          conn,
-			AgentClient:   pb.NewAgentClient(conn),
+			AgentClient:   idl.NewAgentClient(conn),
 			Hostname:      host,
 			CancelContext: cancelFunc,
 		})

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 )
@@ -16,7 +16,7 @@ const (
 		"mv %[3]s/postgresql.conf.updated %[3]s/postgresql.conf"
 )
 
-func (h *Hub) UpgradeReconfigurePorts(ctx context.Context, in *pb.UpgradeReconfigurePortsRequest) (*pb.UpgradeReconfigurePortsReply, error) {
+func (h *Hub) UpgradeReconfigurePorts(ctx context.Context, in *idl.UpgradeReconfigurePortsRequest) (*idl.UpgradeReconfigurePortsReply, error) {
 	gplog.Info("Started processing reconfigure-ports request")
 
 	step := h.checklist.GetStepWriter(upgradestatus.RECONFIGURE_PORTS)
@@ -47,5 +47,5 @@ func (h *Hub) UpgradeReconfigurePorts(ctx context.Context, in *pb.UpgradeReconfi
 	gplog.Info("reconfigure-ports succeeded")
 	step.MarkComplete()
 
-	return &pb.UpgradeReconfigurePortsReply{}, nil
+	return &idl.UpgradeReconfigurePortsReply{}, nil
 }

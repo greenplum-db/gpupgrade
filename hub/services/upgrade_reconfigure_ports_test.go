@@ -7,7 +7,7 @@ import (
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/greenplum-db/gpupgrade/hub/services"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -40,15 +40,15 @@ var _ = Describe("UpgradeReconfigurePorts", func() {
 	})
 
 	It("reconfigures port in postgresql.conf on master", func() {
-		reply, err := hub.UpgradeReconfigurePorts(nil, &pb.UpgradeReconfigurePortsRequest{})
-		Expect(reply).To(Equal(&pb.UpgradeReconfigurePortsReply{}))
+		reply, err := hub.UpgradeReconfigurePorts(nil, &idl.UpgradeReconfigurePortsRequest{})
+		Expect(reply).To(Equal(&idl.UpgradeReconfigurePortsReply{}))
 		Expect(err).To(BeNil())
 		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring(fmt.Sprintf(services.SedAndMvString, 17432, 15432, filepath.Join(dir, "seg-1"))))
 	})
 
 	It("returns err if reconfigure cmd fails", func() {
 		testExecutor.LocalError = errors.New("boom")
-		reply, err := hub.UpgradeReconfigurePorts(nil, &pb.UpgradeReconfigurePortsRequest{})
+		reply, err := hub.UpgradeReconfigurePorts(nil, &idl.UpgradeReconfigurePortsRequest{})
 		Expect(reply).To(BeNil())
 		Expect(err).ToNot(BeNil())
 		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring(fmt.Sprintf(services.SedAndMvString, 17432, 15432, filepath.Join(dir, "seg-1"))))

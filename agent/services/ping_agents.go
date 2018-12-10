@@ -3,12 +3,12 @@ package services
 import (
 	"context"
 
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 )
 
-func (s *AgentServer) PingAgents(ctx context.Context, in *pb.PingAgentsRequest) (*pb.PingAgentsReply, error) {
+func (s *AgentServer) PingAgents(ctx context.Context, in *idl.PingAgentsRequest) (*idl.PingAgentsReply, error) {
 	gplog.Info("Successfully pinged agent")
-	return &pb.PingAgentsReply{}, nil
+	return &idl.PingAgentsReply{}, nil
 }

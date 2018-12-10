@@ -6,26 +6,26 @@ import (
 	"path/filepath"
 
 	"github.com/blang/semver"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/pkg/errors"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 )
 
-func (s *AgentServer) UpgradeConvertPrimarySegments(ctx context.Context, in *pb.UpgradeConvertPrimarySegmentsRequest) (*pb.UpgradeConvertPrimarySegmentsReply, error) {
+func (s *AgentServer) UpgradeConvertPrimarySegments(ctx context.Context, in *idl.UpgradeConvertPrimarySegmentsRequest) (*idl.UpgradeConvertPrimarySegmentsReply, error) {
 	gplog.Info("got a request to convert primary from the hub")
 
 	err := s.UpgradeSegments(in.OldBinDir, in.NewBinDir, in.NewVersion, in.DataDirPairs)
 
 	if err != nil {
-		return &pb.UpgradeConvertPrimarySegmentsReply{}, err
+		return &idl.UpgradeConvertPrimarySegmentsReply{}, err
 	}
 
-	return &pb.UpgradeConvertPrimarySegmentsReply{}, nil
+	return &idl.UpgradeConvertPrimarySegmentsReply{}, nil
 }
 
-func (s *AgentServer) UpgradeSegments(oldBinDir, newBinDir, newVersion string, dataDirPairs []*pb.DataDirPair) error {
+func (s *AgentServer) UpgradeSegments(oldBinDir, newBinDir, newVersion string, dataDirPairs []*idl.DataDirPair) error {
 	// OID files to copy from the master. Empty/unused in GPDB 6 and higher.
 	var oidFiles []string
 

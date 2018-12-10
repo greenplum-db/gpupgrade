@@ -7,7 +7,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus/file"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
@@ -31,9 +31,9 @@ var _ = Describe("Upgradestatus/Seginstall", func() {
 	})
 
 	It("Reports PENDING if no directory exists", func() {
-		stateChecker := upgradestatus.StateCheck{Path: "/fake/path", Step: pb.UpgradeSteps_SEGINSTALL}
+		stateChecker := upgradestatus.StateCheck{Path: "/fake/path", Step: idl.UpgradeSteps_SEGINSTALL}
 		upgradeStepStatus := stateChecker.GetStatus()
-		Expect(upgradeStepStatus).To(Equal(pb.StepStatus_PENDING))
+		Expect(upgradeStepStatus).To(Equal(idl.StepStatus_PENDING))
 	})
 	It("Reports RUNNING if statedir exists and contains inprogress file", func() {
 		fakePath := "/fake/path"
@@ -49,9 +49,9 @@ var _ = Describe("Upgradestatus/Seginstall", func() {
 			}
 			return nil, errors.New("didn't match expected glob pattern")
 		}
-		stateChecker := upgradestatus.StateCheck{Path: fakePath, Step: pb.UpgradeSteps_SEGINSTALL}
+		stateChecker := upgradestatus.StateCheck{Path: fakePath, Step: idl.UpgradeSteps_SEGINSTALL}
 		upgradeStepStatus := stateChecker.GetStatus()
-		Expect(upgradeStepStatus).To(Equal(pb.StepStatus_RUNNING))
+		Expect(upgradeStepStatus).To(Equal(idl.StepStatus_RUNNING))
 	})
 	It("Reports FAILED if statedir exists and contains failed file", func() {
 		fakePath := "/fake/path"
@@ -67,9 +67,9 @@ var _ = Describe("Upgradestatus/Seginstall", func() {
 			}
 			return nil, errors.New("didn't match expected glob pattern")
 		}
-		stateChecker := upgradestatus.StateCheck{Path: fakePath, Step: pb.UpgradeSteps_SEGINSTALL}
+		stateChecker := upgradestatus.StateCheck{Path: fakePath, Step: idl.UpgradeSteps_SEGINSTALL}
 		upgradeStepStatus := stateChecker.GetStatus()
-		Expect(upgradeStepStatus).To(Equal(pb.StepStatus_FAILED))
+		Expect(upgradeStepStatus).To(Equal(idl.StepStatus_FAILED))
 	})
 
 	It("logs an error if there is more than one file at the specified path", func() {
@@ -87,7 +87,7 @@ var _ = Describe("Upgradestatus/Seginstall", func() {
 			}
 			return nil, errors.New("didn't match expected glob pattern")
 		}
-		stateChecker := upgradestatus.StateCheck{Path: overabundantDirectory, Step: pb.UpgradeSteps_SEGINSTALL}
+		stateChecker := upgradestatus.StateCheck{Path: overabundantDirectory, Step: idl.UpgradeSteps_SEGINSTALL}
 		upgradeStepStatus := stateChecker.GetStatus()
 
 		// This is a little brittle, sorry...
@@ -95,6 +95,6 @@ var _ = Describe("Upgradestatus/Seginstall", func() {
 		Expect(testLog).To(gbytes.Say(expectederr))
 
 		// The installation should still be marked pending.
-		Expect(upgradeStepStatus).To(Equal(pb.StepStatus_PENDING))
+		Expect(upgradeStepStatus).To(Equal(idl.StepStatus_PENDING))
 	})
 })

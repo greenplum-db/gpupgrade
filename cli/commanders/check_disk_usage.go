@@ -3,22 +3,22 @@ package commanders
 import (
 	"context"
 
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 )
 
 type DiskSpaceChecker struct {
-	client pb.CliToHubClient
+	client idl.CliToHubClient
 }
 
-func NewDiskSpaceChecker(client pb.CliToHubClient) DiskSpaceChecker {
+func NewDiskSpaceChecker(client idl.CliToHubClient) DiskSpaceChecker {
 	return DiskSpaceChecker{client: client}
 }
 
 func (req DiskSpaceChecker) Execute() error {
 	reply, err := req.client.CheckDiskSpace(context.Background(),
-		&pb.CheckDiskSpaceRequest{})
+		&idl.CheckDiskSpaceRequest{})
 	if err != nil {
 		gplog.Error("ERROR - gRPC call to hub failed")
 		return err

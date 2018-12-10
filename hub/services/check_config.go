@@ -5,13 +5,13 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/greenplum-db/gpupgrade/db"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-	pb "github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 )
 
-func (h *Hub) CheckConfig(ctx context.Context, _ *pb.CheckConfigRequest) (*pb.CheckConfigReply, error) {
+func (h *Hub) CheckConfig(ctx context.Context, _ *idl.CheckConfigRequest) (*idl.CheckConfigReply, error) {
 	gplog.Info("starting CheckConfig()")
 
 	c := upgradestatus.NewChecklistManager(h.conf.StateDir)
@@ -32,10 +32,10 @@ func (h *Hub) CheckConfig(ctx context.Context, _ *pb.CheckConfigRequest) (*pb.Ch
 	if err != nil {
 		step.MarkFailed()
 		gplog.Error(err.Error())
-		return &pb.CheckConfigReply{}, err
+		return &idl.CheckConfigReply{}, err
 	}
 
-	successReply := &pb.CheckConfigReply{ConfigStatus: "All good"}
+	successReply := &idl.CheckConfigReply{ConfigStatus: "All good"}
 	step.MarkComplete()
 
 	return successReply, nil
