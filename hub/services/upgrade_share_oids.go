@@ -14,32 +14,43 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/net/context"
+	"github.com/hashicorp/go-multierror"
+	"github.com/greenplum-db/gpupgrade/utils/log"
 )
 
 func (h *Hub) UpgradeShareOids(ctx context.Context, in *idl.UpgradeShareOidsRequest) (*idl.UpgradeShareOidsReply, error) {
 	gplog.Info("Started processing share-oids request")
 
-	go h.shareOidFiles()
+	step := h.checklist.GetStepWriter(upgradestatus.SHARE_OIDS)
+	err := step.ResetStateDir()
+	if err != nil {
+		return nil, errors.Wrap(err, "could not reset state dir")
+	}
+
+	err = step.MarkInProgress()
+	if err != nil {
+		return nil, errors.Wrap(err, "could not mark in progress")
+	}
+
+	go func() {
+		defer log.WritePanics()
+
+		if err := h.shareOidFiles(); err != nil {
+			gplog.Error(err.Error())
+			step.MarkFailed()
+			return
+		}
+
+		step.MarkComplete()
+	}()
 
 	return &idl.UpgradeShareOidsReply{}, nil
 }
 
-func (h *Hub) shareOidFiles() {
-	step := h.checklist.GetStepWriter(upgradestatus.SHARE_OIDS)
-
-	err := step.ResetStateDir()
-	if err != nil {
-		gplog.Error("error from ResetStateDir " + err.Error())
-		return
-	}
-	err = step.MarkInProgress()
-	if err != nil {
-		gplog.Error("error from MarkInProgress " + err.Error())
-		return
-	}
-
-	anyFailed := false
+func (h *Hub) shareOidFiles() error {
+	var err error
 	rsyncFlags := "-rzpogt"
+
 	if h.source.Version.Before("6.0.0") {
 		sourceDir := utils.MasterPGUpgradeDirectory(h.conf.StateDir)
 		contents := contentsByHost(h.source, false)
@@ -51,12 +62,10 @@ func (h *Hub) shareOidFiles() {
 		}
 
 		remoteOutput := h.source.ExecuteClusterCommand(cluster.ON_HOSTS, commandMap)
-		if remoteOutput.NumErrors > 0 {
-			gplog.Error("Copying OID files failed with %d errors:", remoteOutput.NumErrors)
-			for content, segmentErr := range remoteOutput.Errors {
-				gplog.Error("Segment %d failed with error %s", content, segmentErr.Error())
+		for segmentId, segmentErr := range remoteOutput.Errors {
+			if segmentErr != nil { // TODO: Refactor remoteOutput to return maps with keys and valid values, and not values that can be nil. If there is no value, then do not have a key.
+				return multierror.Append(err, errors.Wrapf(segmentErr, "failed to copy OID files for segment %d", segmentId))
 			}
-			anyFailed = true
 		}
 	} else {
 		// Make sure sourceDir ends with a trailing slash so that rsync will
@@ -79,34 +88,24 @@ func (h *Hub) shareOidFiles() {
 		}
 
 		remoteOutput := h.source.ExecuteClusterCommand(cluster.ON_HOSTS, commandMap)
-		if remoteOutput.NumErrors > 0 {
-			gplog.Error("Copying master directory failed with %d errors:", remoteOutput.NumErrors)
-			for content, segmentErr := range remoteOutput.Errors {
-				gplog.Error("Segment %d failed with error %s", content, segmentErr.Error())
+		for segmentId, segmentErr := range remoteOutput.Errors {
+			if segmentErr != nil { // TODO: Refactor remoteOutput to return maps with keys and valid values, and not values that can be nil. If there is no value, then do not have a key.
+				return multierror.Append(err, errors.Wrapf(segmentErr, "failed to copy master data directory to segment %d", segmentId))
 			}
-			anyFailed = true
 		}
 
-		agentConns, err := h.AgentConns()
-		err = CopyMasterDirectoryToSegmentDirectories(agentConns, h.target, destinationDirName)
-		if err != nil {
-			gplog.Error(err.Error())
-			anyFailed = true
+		agentConns, connErr := h.AgentConns()
+		if connErr != nil {
+			return multierror.Append(err, connErr)
+		}
+
+		copyErr := CopyMasterDirectoryToSegmentDirectories(agentConns, h.target, destinationDirName)
+		if copyErr != nil {
+			return multierror.Append(err, copyErr)
 		}
 	}
 
-	if anyFailed {
-		step.MarkFailed()
-		if err != nil {
-			gplog.Error("error from MarkFailed " + err.Error())
-		}
-	} else {
-		step.MarkComplete()
-		if err != nil {
-			gplog.Error("error from MarkComplete " + err.Error())
-		}
-	}
-
+	return err
 }
 
 func CopyMasterDirectoryToSegmentDirectories(agentConns []*Connection, target *utils.Cluster, destinationDirName string) error {
