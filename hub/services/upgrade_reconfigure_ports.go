@@ -8,6 +8,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -17,10 +18,9 @@ const (
 )
 
 func (h *Hub) UpgradeReconfigurePorts(ctx context.Context, in *idl.UpgradeReconfigurePortsRequest) (*idl.UpgradeReconfigurePortsReply, error) {
-	gplog.Info("Started processing reconfigure-ports request")
+	gplog.Info("starting %s", upgradestatus.RECONFIGURE_PORTS)
 
 	step := h.checklist.GetStepWriter(upgradestatus.RECONFIGURE_PORTS)
-
 	err := step.ResetStateDir()
 	if err != nil {
 		gplog.Error("error from ResetStateDir " + err.Error())
@@ -30,22 +30,25 @@ func (h *Hub) UpgradeReconfigurePorts(ctx context.Context, in *idl.UpgradeReconf
 		gplog.Error("error from MarkInProgress " + err.Error())
 	}
 
-	sourcePort := h.source.MasterPort()
-	targetPort := h.target.MasterPort()
-	targetDataDir := h.target.MasterDataDir()
-	sedCommand := fmt.Sprintf(SedAndMvString, targetPort, sourcePort, targetDataDir)
-	gplog.Info("reconfigure-ports sed command: %+v", sedCommand)
+	if err := h.reconfigurePorts(); err != nil {
+		gplog.Error("%s failed with: %s", upgradestatus.RECONFIGURE_PORTS, err.Error())
+		step.MarkFailed()
+		return &idl.UpgradeReconfigurePortsReply{}, err
+	}
+
+	gplog.Info("%s succeeded", upgradestatus.RECONFIGURE_PORTS)
+	step.MarkComplete()
+	return &idl.UpgradeReconfigurePortsReply{}, nil
+}
+
+func (h *Hub) reconfigurePorts() error {
+	sedCommand := fmt.Sprintf(SedAndMvString, h.target.MasterPort(), h.source.MasterPort(), h.target.MasterDataDir())
+	gplog.Debug("executing command: %+v", sedCommand) // TODO: Move this debug log into ExecuteLocalCommand()
 
 	output, err := h.source.Executor.ExecuteLocalCommand(sedCommand)
 	if err != nil {
-		gplog.Error("reconfigure-ports failed %s: %s", output, err)
-
-		step.MarkFailed()
-		return nil, err
+		return errors.Wrapf(err, "%s failed with output: %s", upgradestatus.RECONFIGURE_PORTS, output)
 	}
 
-	gplog.Info("reconfigure-ports succeeded")
-	step.MarkComplete()
-
-	return &idl.UpgradeReconfigurePortsReply{}, nil
+	return nil
 }

@@ -49,7 +49,7 @@ var _ = Describe("UpgradeReconfigurePorts", func() {
 	It("returns err if reconfigure cmd fails", func() {
 		testExecutor.LocalError = errors.New("boom")
 		reply, err := hub.UpgradeReconfigurePorts(nil, &idl.UpgradeReconfigurePortsRequest{})
-		Expect(reply).To(BeNil())
+		Expect(reply).To(Equal(&idl.UpgradeReconfigurePortsReply{}))
 		Expect(err).ToNot(BeNil())
 		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring(fmt.Sprintf(services.SedAndMvString, 17432, 15432, filepath.Join(dir, "seg-1"))))
 	})
