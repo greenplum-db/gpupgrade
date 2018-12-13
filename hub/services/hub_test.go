@@ -1,7 +1,6 @@
 package services_test
 
 import (
-	"errors"
 	"net"
 	"strconv"
 
@@ -15,6 +14,8 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
+	"github.com/greenplum-db/gpupgrade/idl"
 )
 
 var _ = Describe("Hub", func() {
@@ -189,4 +190,42 @@ var _ = Describe("Hub", func() {
 		Expect(err).To(HaveOccurred())
 	})
 
+	It("successfully initializes step by marking it as in-progress with status running", func() {
+		hubConfig := &services.HubConfig{
+			CliToHubPort: cliToHubPort,
+		}
+		mockChecklistManager := testutils.NewMockChecklistManager()
+		hub := services.NewHub(source, target, mockDialer, hubConfig, mockChecklistManager)
+		hub.InitializeStep("dub-step")
+
+		Expect(mockChecklistManager.GetStepReader("dub-step").Status()).To(Equal(idl.StepStatus_RUNNING))
+	})
+
+	It("returns an error when InitializeStep fails to reset state directory", func() {
+		hubConfig := &services.HubConfig{
+			CliToHubPort: cliToHubPort,
+		}
+		mockChecklistManager := testutils.NewMockChecklistManager()
+		mockChecklistManager.StepWriter.ResetStateDirErr = errors.New("permission denied")
+
+		hub := services.NewHub(source, target, mockDialer, hubConfig, mockChecklistManager)
+		_, err := hub.InitializeStep("dub-step")
+
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("failed to reset state directory: permission denied"))
+	})
+
+	It("returns an error when InitializeStep fails to mark step as in-progress", func() {
+		hubConfig := &services.HubConfig{
+			CliToHubPort: cliToHubPort,
+		}
+		mockChecklistManager := testutils.NewMockChecklistManager()
+		mockChecklistManager.StepWriter.MarkInProgressErr = errors.New("EAGAIN")
+
+		hub := services.NewHub(source, target, mockDialer, hubConfig, mockChecklistManager)
+		_, err := hub.InitializeStep("dub-step")
+
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("failed to set dub-step to in.progress: EAGAIN"))
+	})
 })

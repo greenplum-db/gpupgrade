@@ -13,31 +13,26 @@ import (
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
-	"github.com/greenplum-db/gpupgrade/utils/log"
-
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
+	"github.com/greenplum-db/gpupgrade/utils/log"
 )
 
 func (h *Hub) PrepareInitCluster(ctx context.Context, in *idl.PrepareInitClusterRequest) (*idl.PrepareInitClusterReply, error) {
-	step := h.checklist.GetStepWriter(upgradestatus.INIT_CLUSTER)
-	err := step.ResetStateDir()
-	if err != nil {
-		return nil, errors.Wrap(err, "could not reset state dir")
-	}
+	gplog.Info("starting %s", upgradestatus.INIT_CLUSTER)
 
-	err = step.MarkInProgress()
+	step, err := h.InitializeStep(upgradestatus.INIT_CLUSTER)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not mark in progress")
+		gplog.Error(err.Error())
+		return &idl.PrepareInitClusterReply{}, err
 	}
 
 	go func() {
 		defer log.WritePanics()
 
-		err := h.CreateTargetCluster()
-		if err != nil {
+		if err := h.CreateTargetCluster(); err != nil {
 			gplog.Error(err.Error())
 			step.MarkFailed()
 		} else {
@@ -49,9 +44,7 @@ func (h *Hub) PrepareInitCluster(ctx context.Context, in *idl.PrepareInitCluster
 }
 
 func (h *Hub) CreateTargetCluster() error {
-	gplog.Info("Running PrepareInitCluster()")
-	sourceDBConn := db.NewDBConn("localhost", int(h.source.MasterPort()),
-		"template1")
+	sourceDBConn := db.NewDBConn("localhost", int(h.source.MasterPort()),"template1")
 
 	targetDBConn, err := h.InitCluster(sourceDBConn)
 	if err != nil {

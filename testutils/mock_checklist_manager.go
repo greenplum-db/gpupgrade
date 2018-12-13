@@ -12,6 +12,7 @@ type MockChecklistManager struct {
 	mapReset      map[string]bool
 	loadedNames   []string
 	loadedCodes   map[string]idl.UpgradeSteps
+	StepWriter    MockStepWriter
 }
 
 func NewMockChecklistManager() *MockChecklistManager {
@@ -22,6 +23,7 @@ func NewMockChecklistManager() *MockChecklistManager {
 		mapReset:      make(map[string]bool, 0),
 		loadedNames:   make([]string, 0),
 		loadedCodes:   make(map[string]idl.UpgradeSteps, 0),
+		StepWriter:    MockStepWriter{},
 	}
 }
 
@@ -45,7 +47,9 @@ func (cm *MockChecklistManager) AllSteps() []upgradestatus.StateReader {
 }
 
 func (cm *MockChecklistManager) GetStepWriter(step string) upgradestatus.StateWriter {
-	return MockStepWriter{step: step, manager: cm}
+	cm.StepWriter.manager = cm
+	cm.StepWriter.step = step
+	return cm.StepWriter
 }
 
 type MockStepReader struct {
@@ -78,8 +82,10 @@ func (r MockStepReader) Code() idl.UpgradeSteps {
 }
 
 type MockStepWriter struct {
-	step    string
-	manager *MockChecklistManager
+	step              string
+	manager           *MockChecklistManager
+	ResetStateDirErr  error
+	MarkInProgressErr error
 }
 
 func (w MockStepWriter) MarkComplete() error {
@@ -89,7 +95,7 @@ func (w MockStepWriter) MarkComplete() error {
 
 func (w MockStepWriter) MarkInProgress() error {
 	w.manager.mapInProgress[w.step] = true
-	return nil
+	return w.MarkInProgressErr
 }
 
 func (w MockStepWriter) MarkFailed() error {
@@ -102,7 +108,7 @@ func (w MockStepWriter) ResetStateDir() error {
 	w.manager.mapComplete[w.step] = false
 	w.manager.mapFailed[w.step] = false
 	w.manager.mapInProgress[w.step] = false
-	return nil
+	return w.ResetStateDirErr
 }
 
 // Check that nothing has happened yet

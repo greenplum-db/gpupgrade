@@ -7,30 +7,25 @@ import (
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
-	"github.com/greenplum-db/gpupgrade/utils/log"
-
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
+	"github.com/greenplum-db/gpupgrade/utils/log"
 )
 
 func (h *Hub) UpgradeConvertMaster(ctx context.Context, in *idl.UpgradeConvertMasterRequest) (*idl.UpgradeConvertMasterReply, error) {
-	step := h.checklist.GetStepWriter(upgradestatus.CONVERT_MASTER)
-	err := step.ResetStateDir()
-	if err != nil {
-		return nil, errors.Wrap(err, "could not reset state dir")
-	}
+	gplog.Info("starting %s", upgradestatus.CONVERT_MASTER)
 
-	err = step.MarkInProgress()
+	step, err := h.InitializeStep(upgradestatus.CONVERT_MASTER)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not mark in progress")
+		gplog.Error(err.Error())
+		return &idl.UpgradeConvertMasterReply{}, err
 	}
 
 	go func() {
 		defer log.WritePanics()
 
-		err := h.ConvertMaster()
-		if err != nil {
+		if err := h.ConvertMaster(); err != nil {
 			gplog.Error(err.Error())
 			step.MarkFailed()
 		} else {
@@ -42,8 +37,6 @@ func (h *Hub) UpgradeConvertMaster(ctx context.Context, in *idl.UpgradeConvertMa
 }
 
 func (h *Hub) ConvertMaster() error {
-	gplog.Info("Starting master upgrade")
-
 	pathToUpgradeWD := utils.MasterPGUpgradeDirectory(h.conf.StateDir)
 	err := utils.System.MkdirAll(pathToUpgradeWD, 0700)
 	if err != nil {

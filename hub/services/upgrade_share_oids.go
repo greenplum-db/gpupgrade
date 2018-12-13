@@ -19,17 +19,12 @@ import (
 )
 
 func (h *Hub) UpgradeShareOids(ctx context.Context, in *idl.UpgradeShareOidsRequest) (*idl.UpgradeShareOidsReply, error) {
-	gplog.Info("Started processing share-oids request")
+	gplog.Info("starting %s", upgradestatus.SHARE_OIDS)
 
-	step := h.checklist.GetStepWriter(upgradestatus.SHARE_OIDS)
-	err := step.ResetStateDir()
+	step, err := h.InitializeStep(upgradestatus.SHARE_OIDS)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not reset state dir")
-	}
-
-	err = step.MarkInProgress()
-	if err != nil {
-		return nil, errors.Wrap(err, "could not mark in progress")
+		gplog.Error(err.Error())
+		return &idl.UpgradeShareOidsReply{}, err
 	}
 
 	go func() {
@@ -38,10 +33,9 @@ func (h *Hub) UpgradeShareOids(ctx context.Context, in *idl.UpgradeShareOidsRequ
 		if err := h.shareOidFiles(); err != nil {
 			gplog.Error(err.Error())
 			step.MarkFailed()
-			return
+		} else {
+			step.MarkComplete()
 		}
-
-		step.MarkComplete()
 	}()
 
 	return &idl.UpgradeShareOidsReply{}, nil

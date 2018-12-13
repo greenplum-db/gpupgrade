@@ -6,21 +6,31 @@ import (
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
-	"github.com/greenplum-db/gpupgrade/utils/log"
-
 	"golang.org/x/net/context"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/pkg/errors"
 	"github.com/hashicorp/go-multierror"
+	"github.com/greenplum-db/gpupgrade/utils/log"
 )
 
 func (h *Hub) PrepareShutdownClusters(ctx context.Context, in *idl.PrepareShutdownClustersRequest) (*idl.PrepareShutdownClustersReply, error) {
-	gplog.Info("starting PrepareShutdownClusters()")
+	gplog.Info("starting %s", upgradestatus.SHUTDOWN_CLUSTERS)
+
+	step, err := h.InitializeStep(upgradestatus.SHUTDOWN_CLUSTERS)
+	if err != nil {
+		gplog.Error(err.Error())
+		return &idl.PrepareShutdownClustersReply{}, err
+	}
 
 	go func() {
+		defer log.WritePanics()
+
 		if err := h.ShutdownClusters(); err != nil {
 			gplog.Error(err.Error())
+			step.MarkFailed()
+		} else {
+			step.MarkComplete()
 		}
 	}()
 
@@ -28,13 +38,7 @@ func (h *Hub) PrepareShutdownClusters(ctx context.Context, in *idl.PrepareShutdo
 }
 
 func (h *Hub) ShutdownClusters() error {
-	defer log.WritePanics()
 	var shutdownErr error
-
-	step := h.checklist.GetStepWriter(upgradestatus.SHUTDOWN_CLUSTERS)
-
-	step.ResetStateDir()
-	step.MarkInProgress()
 
 	err := StopCluster(h.source)
 	if err != nil {
@@ -46,12 +50,6 @@ func (h *Hub) ShutdownClusters() error {
 		shutdownErr = multierror.Append(shutdownErr, errors.Wrap(err, "failed to stop target cluster"))
 	}
 
-	if shutdownErr != nil {
-		step.MarkFailed()
-		return shutdownErr
-	}
-
-	step.MarkComplete()
 	return shutdownErr
 }
 

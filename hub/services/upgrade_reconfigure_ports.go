@@ -20,23 +20,18 @@ const (
 func (h *Hub) UpgradeReconfigurePorts(ctx context.Context, in *idl.UpgradeReconfigurePortsRequest) (*idl.UpgradeReconfigurePortsReply, error) {
 	gplog.Info("starting %s", upgradestatus.RECONFIGURE_PORTS)
 
-	step := h.checklist.GetStepWriter(upgradestatus.RECONFIGURE_PORTS)
-	err := step.ResetStateDir()
+	step, err := h.InitializeStep(upgradestatus.RECONFIGURE_PORTS)
 	if err != nil {
-		gplog.Error("error from ResetStateDir " + err.Error())
-	}
-	err = step.MarkInProgress()
-	if err != nil {
-		gplog.Error("error from MarkInProgress " + err.Error())
+		gplog.Error(err.Error())
+		return &idl.UpgradeReconfigurePortsReply{}, err
 	}
 
 	if err := h.reconfigurePorts(); err != nil {
-		gplog.Error("%s failed with: %s", upgradestatus.RECONFIGURE_PORTS, err.Error())
+		gplog.Error(err.Error())
 		step.MarkFailed()
 		return &idl.UpgradeReconfigurePortsReply{}, err
 	}
 
-	gplog.Info("%s succeeded", upgradestatus.RECONFIGURE_PORTS)
 	step.MarkComplete()
 	return &idl.UpgradeReconfigurePortsReply{}, nil
 }

@@ -12,33 +12,25 @@ import (
 )
 
 func (h *Hub) CheckConfig(ctx context.Context, _ *idl.CheckConfigRequest) (*idl.CheckConfigReply, error) {
-	gplog.Info("starting CheckConfig()")
+	gplog.Info("starting %s", upgradestatus.CONFIG)
 
-	c := upgradestatus.NewChecklistManager(h.conf.StateDir)
-	step := c.GetStepWriter(upgradestatus.CONFIG)
-
-	// TODO: bubble these errors up.
-	err := step.ResetStateDir()
+	step, err := h.InitializeStep(upgradestatus.CONFIG)
 	if err != nil {
-		gplog.Error("error from ResetStateDir " + err.Error())
-	}
-	err = step.MarkInProgress()
-	if err != nil {
-		gplog.Error("error from MarkInProgress " + err.Error())
-	}
-
-	conn := db.NewDBConn("localhost", 0, "template1")
-	err = ReloadAndCommitCluster(h.source, conn)
-	if err != nil {
-		step.MarkFailed()
 		gplog.Error(err.Error())
 		return &idl.CheckConfigReply{}, err
 	}
 
-	successReply := &idl.CheckConfigReply{ConfigStatus: "All good"}
-	step.MarkComplete()
+	dbConn := db.NewDBConn("localhost", 0, "template1")
+	defer dbConn.Close()
+	err = ReloadAndCommitCluster(h.source, dbConn)
+	if err != nil {
+		gplog.Error(err.Error())
+		step.MarkFailed()
+		return &idl.CheckConfigReply{}, err
+	}
 
-	return successReply, nil
+	step.MarkComplete()
+	return &idl.CheckConfigReply{}, err
 }
 
 // ReloadAndCommitCluster() will fill in a utils.Cluster using a database

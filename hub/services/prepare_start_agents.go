@@ -11,30 +11,22 @@ import (
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
+	"github.com/greenplum-db/gpupgrade/utils/log"
 )
 
-// grpc generated function signature requires ctx and in params.
-// nolint: unparam
 func (h *Hub) PrepareStartAgents(ctx context.Context, in *idl.PrepareStartAgentsRequest) (*idl.PrepareStartAgentsReply, error) {
-	gplog.Info("Running PrepareStartAgents()")
+	gplog.Info("starting %s", upgradestatus.START_AGENTS)
 
-	step := h.checklist.GetStepWriter(upgradestatus.START_AGENTS)
-
-	err := step.ResetStateDir()
-	if err != nil {
-		gplog.Error(err.Error())
-		return &idl.PrepareStartAgentsReply{}, err
-	}
-
-	err = step.MarkInProgress()
+	step, err := h.InitializeStep(upgradestatus.START_AGENTS)
 	if err != nil {
 		gplog.Error(err.Error())
 		return &idl.PrepareStartAgentsReply{}, err
 	}
 
 	go func() {
-		err := StartAgents(h.source)
-		if err != nil {
+		defer log.WritePanics()
+
+		if err := StartAgents(h.source); err != nil {
 			gplog.Error(err.Error())
 			step.MarkFailed()
 		} else {
