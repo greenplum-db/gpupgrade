@@ -8,51 +8,41 @@ import (
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/net/context"
+	"github.com/pkg/errors"
+	"github.com/greenplum-db/gpupgrade/utils/log"
 )
 
 func (h *Hub) UpgradeValidateStartCluster(ctx context.Context, in *idl.UpgradeValidateStartClusterRequest) (*idl.UpgradeValidateStartClusterReply, error) {
-	gplog.Info("Started processing validate-start-cluster request")
+	gplog.Info("starting %s", upgradestatus.VALIDATE_START_CLUSTER)
 
-	go h.startNewCluster()
+	go func() {
+		defer log.WritePanics()
+
+		if err := h.startNewCluster(); err != nil {
+			gplog.Error(err.Error())
+		}
+	}()
 
 	return &idl.UpgradeValidateStartClusterReply{}, nil
 }
 
-func (h *Hub) startNewCluster() {
-	gplog.Debug(h.conf.StateDir)
+func (h *Hub) startNewCluster() error {
 	step := h.checklist.GetStepWriter(upgradestatus.VALIDATE_START_CLUSTER)
 	err := step.ResetStateDir()
 	if err != nil {
-		gplog.Error("failed to reset the state dir for validate-start-cluster")
-
-		return
+		return errors.Wrap(err, "failed to reset the state dir for validate-start-cluster")
 	}
 
 	err = step.MarkInProgress()
 	if err != nil {
-		gplog.Error("failed to record in-progress for validate-start-cluster")
-
-		return
+		return errors.Wrap(err, "failed to record in-progress for validate-start-cluster")
 	}
 
-	targetBinDir := h.target.BinDir
-	targetDataDir := h.target.MasterDataDir()
-	_, err = h.target.ExecuteLocalCommand(fmt.Sprintf("source %s/../greenplum_path.sh; %s/gpstart -a -d %s", targetBinDir, targetBinDir, targetDataDir))
+	startCmd := fmt.Sprintf("source %s/../greenplum_path.sh; %s/gpstart -a -d %s", h.target.BinDir, h.target.BinDir, h.target.MasterDataDir())
+	_, err = h.target.ExecuteLocalCommand(startCmd)
 	if err != nil {
-		gplog.Error(err.Error())
-		cmErr := step.MarkFailed()
-		if cmErr != nil {
-			gplog.Error("failed to record failed for validate-start-cluster")
-		}
-
-		return
+		return errors.Wrap(err, "failed to start new cluster")
 	}
 
-	err = step.MarkComplete()
-	if err != nil {
-		gplog.Error("failed to record completed for validate-start-cluster")
-		return
-	}
-
-	return
+	return nil
 }
