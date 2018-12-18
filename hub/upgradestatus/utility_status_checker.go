@@ -23,10 +23,10 @@ import (
 	- when a new pg_upgrade is started it deletes all *.done and *.inprogress files
 */
 func SegmentConversionStatus(pgUpgradePath, oldDataDir string, executor cluster.Executor) idl.StepStatus {
-	return GetUtilityStatus("pg_upgrade", pgUpgradePath, oldDataDir, "*.inprogress", executor, isUpgradeComplete)
+	return GetUtilityStatus(pgUpgradePath, oldDataDir, "*.inprogress", executor, isUpgradeComplete)
 }
 
-func GetUtilityStatus(binaryName, utilityStatePath, dataDir, progressFilePattern string, executor cluster.Executor, isCompleteFunc func(string) bool) idl.StepStatus {
+func GetUtilityStatus(utilityStatePath, dataDir, progressFilePattern string, executor cluster.Executor, isCompleteFunc func(string) bool) idl.StepStatus {
 	_, err := utils.System.Stat(utilityStatePath)
 	switch {
 	case utils.System.IsNotExist(err):

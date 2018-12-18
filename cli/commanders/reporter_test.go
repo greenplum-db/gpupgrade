@@ -15,7 +15,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gbytes"
 )
 
 var (
@@ -32,15 +31,14 @@ func getStdoutContents() string {
 
 var _ = Describe("Reporter", func() {
 	var (
-		spyClient   *spyCliToHubClient
-		testLogFile *gbytes.Buffer
-		reporter    *commanders.Reporter
-		ctrl        *gomock.Controller
+		spyClient *spyCliToHubClient
+		reporter  *commanders.Reporter
+		ctrl      *gomock.Controller
 	)
 
 	BeforeEach(func() {
 		spyClient = newSpyCliToHubClient()
-		_, _, testLogFile = testhelper.SetupTestLogger()
+		testhelper.SetupTestLogger()
 		reporter = commanders.NewReporter(spyClient)
 		ctrl = gomock.NewController(GinkgoT())
 

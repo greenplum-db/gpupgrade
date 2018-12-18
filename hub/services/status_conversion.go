@@ -87,7 +87,7 @@ func PrimaryConversionStatus(hub *Hub) idl.StepStatus {
 	}
 }
 
-func hasAll(statuses []*idl.PrimaryStatus, status idl.StepStatus) bool {
+func hasAll(statuses []*idl.PrimaryStatus, status idl.StepStatus) bool { // nolint: unparam
 	for _, elem := range statuses {
 		if elem.Status != status {
 			return false

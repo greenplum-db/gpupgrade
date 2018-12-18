@@ -26,19 +26,12 @@ import (
 
 var _ = Describe("Hub prepare init-cluster", func() {
 	var (
-		expectedCluster *utils.Cluster
-		segDataDirMap   map[string][]string
-		testExecutor    *testhelper.TestExecutor
+		segDataDirMap map[string][]string
+		testExecutor  *testhelper.TestExecutor
 	)
 
 	BeforeEach(func() {
 		testExecutor = &testhelper.TestExecutor{}
-
-		expectedCluster = &utils.Cluster{
-			Cluster: testutils.MockCluster(),
-			BinDir:  "/tmp",
-			Version: dbconn.NewVersion("6.0.0"),
-		}
 
 		segDataDirMap = map[string][]string{
 			"host1": {fmt.Sprintf("%s_upgrade", dir)},

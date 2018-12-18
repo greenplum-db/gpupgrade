@@ -56,9 +56,9 @@ func (h *Hub) shareOidFiles() error {
 		}
 
 		remoteOutput := h.source.ExecuteClusterCommand(cluster.ON_HOSTS, commandMap)
-		for segmentId, segmentErr := range remoteOutput.Errors {
+		for segmentID, segmentErr := range remoteOutput.Errors {
 			if segmentErr != nil { // TODO: Refactor remoteOutput to return maps with keys and valid values, and not values that can be nil. If there is no value, then do not have a key.
-				return multierror.Append(err, errors.Wrapf(segmentErr, "failed to copy OID files for segment %d", segmentId))
+				return multierror.Append(err, errors.Wrapf(segmentErr, "failed to copy OID files for segment %d", segmentID))
 			}
 		}
 	} else {
@@ -82,9 +82,9 @@ func (h *Hub) shareOidFiles() error {
 		}
 
 		remoteOutput := h.source.ExecuteClusterCommand(cluster.ON_HOSTS, commandMap)
-		for segmentId, segmentErr := range remoteOutput.Errors {
+		for segmentID, segmentErr := range remoteOutput.Errors {
 			if segmentErr != nil { // TODO: Refactor remoteOutput to return maps with keys and valid values, and not values that can be nil. If there is no value, then do not have a key.
-				return multierror.Append(err, errors.Wrapf(segmentErr, "failed to copy master data directory to segment %d", segmentId))
+				return multierror.Append(err, errors.Wrapf(segmentErr, "failed to copy master data directory to segment %d", segmentID))
 			}
 		}
 
@@ -148,7 +148,7 @@ func CopyMasterDirectoryToSegmentDirectories(agentConns []*Connection, target *u
  * Generate a list of content IDs such that running ExecuteClusterCommand
  * against them will execute once per host.
  */
-func contentsByHost(c *utils.Cluster, includeMaster bool) []int {
+func contentsByHost(c *utils.Cluster, includeMaster bool) []int { // nolint: unparam
 	hostSegMap := make(map[string]int, 0)
 	for content, seg := range c.Segments {
 		if content == -1 && !includeMaster {

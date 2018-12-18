@@ -90,7 +90,7 @@ func (h *Hub) getDataDirPairs() (map[string][]*idl.DataDirPair, error) {
 		oldSeg := h.source.Segments[contentID]
 		newSeg := h.target.Segments[contentID]
 		if oldSeg.Hostname != newSeg.Hostname {
-			return nil, fmt.Errorf("Hostnames do not match between old and new cluster with content ID %d. Found old cluster hostname: '%s', and new cluster hostname: '%s'.", contentID, oldSeg.Hostname, newSeg.Hostname)
+			return nil, fmt.Errorf("hostnames do not match between old and new cluster with content ID %d. Found old cluster hostname: '%s', and new cluster hostname: '%s'", contentID, oldSeg.Hostname, newSeg.Hostname)
 		}
 
 		dataPair := &idl.DataDirPair{
