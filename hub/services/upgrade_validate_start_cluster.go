@@ -7,9 +7,9 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
-	"golang.org/x/net/context"
-	"github.com/pkg/errors"
 	"github.com/greenplum-db/gpupgrade/utils/log"
+	"github.com/pkg/errors"
+	"golang.org/x/net/context"
 )
 
 func (h *Hub) UpgradeValidateStartCluster(ctx context.Context, in *idl.UpgradeValidateStartClusterRequest) (*idl.UpgradeValidateStartClusterReply, error) {

@@ -13,9 +13,9 @@ import (
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
-	"golang.org/x/net/context"
-	"github.com/hashicorp/go-multierror"
 	"github.com/greenplum-db/gpupgrade/utils/log"
+	"github.com/hashicorp/go-multierror"
+	"golang.org/x/net/context"
 )
 
 func (h *Hub) UpgradeShareOids(ctx context.Context, in *idl.UpgradeShareOidsRequest) (*idl.UpgradeShareOidsReply, error) {

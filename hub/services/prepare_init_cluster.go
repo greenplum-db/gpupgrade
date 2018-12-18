@@ -9,15 +9,15 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/greenplum-db/gp-common-go-libs/dbconn"
+	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/greenplum-db/gpupgrade/db"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
-	"github.com/greenplum-db/gp-common-go-libs/dbconn"
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
+	"github.com/greenplum-db/gpupgrade/utils/log"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
-	"github.com/greenplum-db/gpupgrade/utils/log"
 )
 
 func (h *Hub) PrepareInitCluster(ctx context.Context, in *idl.PrepareInitClusterRequest) (*idl.PrepareInitClusterReply, error) {
@@ -44,7 +44,7 @@ func (h *Hub) PrepareInitCluster(ctx context.Context, in *idl.PrepareInitCluster
 }
 
 func (h *Hub) CreateTargetCluster() error {
-	sourceDBConn := db.NewDBConn("localhost", int(h.source.MasterPort()),"template1")
+	sourceDBConn := db.NewDBConn("localhost", int(h.source.MasterPort()), "template1")
 
 	targetDBConn, err := h.InitCluster(sourceDBConn)
 	if err != nil {
@@ -200,7 +200,7 @@ func (h *Hub) CreateAllDataDirectories(agentConns []*Connection, segmentDataDirM
 
 func (h *Hub) RunInitsystemForNewCluster(gpinitsystemFilepath string) error {
 	// gpinitsystem the new cluster
-	gphome := filepath.Dir(path.Clean(h.target.BinDir))   //works around https://github.com/golang/go/issues/4837 in go10.4
+	gphome := filepath.Dir(path.Clean(h.target.BinDir)) //works around https://github.com/golang/go/issues/4837 in go10.4
 	cmdStr := fmt.Sprintf("source %s/greenplum_path.sh; %s/gpinitsystem -a -I %s",
 		gphome,
 		h.target.BinDir,

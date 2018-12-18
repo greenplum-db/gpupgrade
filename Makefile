@@ -36,11 +36,14 @@ depend-dev: depend
 		go get github.com/alecthomas/gometalinter
 		gometalinter --install
 
+# NOTE: goimports subsumes the standard formatting rules of gofmt, but gofmt is
+#       more flexible(custom rules) so we leave it in for this reason.
 format:
-		goimports -w .
+		goimports -l -w agent/ cli/ db/ hub/ integrations/ testutils/ utils/
+		gofmt -l -w agent/ cli/ db/ hub/ integrations/ testutils/ utils/
+
 
 lint:
-		! gofmt -l agent/ cli/ db/ hub/ install/ integrations/ shellparsers/ testutils/ utils/ | read
 		gometalinter --config=gometalinter.config -s vendor ./...
 
 unit:

@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
+	"github.com/greenplum-db/gpupgrade/utils/log"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
-	"github.com/greenplum-db/gpupgrade/utils/log"
 )
 
 func (h *Hub) UpgradeConvertMaster(ctx context.Context, in *idl.UpgradeConvertMasterRequest) (*idl.UpgradeConvertMasterReply, error) {

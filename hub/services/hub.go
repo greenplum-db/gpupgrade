@@ -19,10 +19,10 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
+	"github.com/greenplum-db/gpupgrade/hub/upgradestatus/file"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/reflection"
-	"github.com/greenplum-db/gpupgrade/hub/upgradestatus/file"
 )
 
 var DialTimeout = 3 * time.Second

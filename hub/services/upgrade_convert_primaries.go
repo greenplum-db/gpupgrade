@@ -8,17 +8,17 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
-	"golang.org/x/net/context"
-	"github.com/pkg/errors"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/hashicorp/go-multierror"
+	"github.com/pkg/errors"
+	"golang.org/x/net/context"
 )
 
 func (h *Hub) UpgradeConvertPrimaries(ctx context.Context, in *idl.UpgradeConvertPrimariesRequest) (*idl.UpgradeConvertPrimariesReply, error) {
 	gplog.Info("starting %s", upgradestatus.CONVERT_PRIMARIES)
 
 	if err := h.convertPrimaries(); err != nil {
-		gplog.Error("failed to %s due to %v",  upgradestatus.CONVERT_PRIMARIES, err)
+		gplog.Error("failed to %s due to %v", upgradestatus.CONVERT_PRIMARIES, err)
 		return &idl.UpgradeConvertPrimariesReply{}, err
 	}
 

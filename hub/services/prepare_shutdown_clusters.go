@@ -9,9 +9,9 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
-	"github.com/pkg/errors"
-	"github.com/hashicorp/go-multierror"
 	"github.com/greenplum-db/gpupgrade/utils/log"
+	"github.com/hashicorp/go-multierror"
+	"github.com/pkg/errors"
 )
 
 func (h *Hub) PrepareShutdownClusters(ctx context.Context, in *idl.PrepareShutdownClustersRequest) (*idl.PrepareShutdownClustersReply, error) {
