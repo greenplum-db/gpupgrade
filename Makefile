@@ -166,7 +166,7 @@ set-pipeline:
 		-c ci/pipeline.yml \
 		-l ~/workspace/gp-continuous-integration/secrets/gpupgrade.$(DEPLOY_TYPE).yml \
 		-l ~/workspace/gp-continuous-integration/secrets/gpdb_common-ci-secrets.yml \
-		-l ~/workspace/gp-continuous-integration/secrets/gpdb_master-ci-secrets.yml \
+		-l ~/workspace/gp-continuous-integration/secrets/gpdb_master-ci-secrets.prod.yml \
 		-l ~/workspace/gp-continuous-integration/secrets/ccp_ci_secrets_gpdb-$(DEPLOY_TYPE).yml \
 		-v gpupgrade-git-remote=$(GIT_URI) \
 		-v gpupgrade-git-branch=$(BRANCH)
