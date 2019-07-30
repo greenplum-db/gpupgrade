@@ -1,5 +1,10 @@
 ---
 resource_types:
+- name: gcs
+  type: docker-image
+  source:
+    repository: frodenas/gcs-resource
+
 - name: slack-notification
   type: docker-image
   source:
@@ -38,13 +43,11 @@ resources:
     url: {{cm_webhook_url}}
 
 - name: bin_gpdb_centos6
-  type: s3
+  type: gcs
   source:
-    access_key_id: {{bucket-access-key-id}}
-    bucket: {{bucket-name}}
-    region_name: {{aws-region}}
-    secret_access_key: {{bucket-secret-access-key}}
-    versioned_file: {{bin_gpdb_centos_versioned_file}}
+    bucket: {{gcs-bucket}}
+    json_key: {{concourse-gcs-resources-service-account-key}}
+    regexp: server/published/gpdb6/server-rc-(.*)-rhel6_x86_64.debug.tar.gz
 
 - name: ccp_src
   type: git

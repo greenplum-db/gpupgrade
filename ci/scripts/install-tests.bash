@@ -9,7 +9,9 @@ set -ex
 GOPATH="$PWD/go" PATH="$PWD/go/bin:$PATH" make -C go/src/github.com/greenplum-db/gpupgrade depend
 
 source gpdb_src/concourse/scripts/common.bash
-time install_gpdb
+mkdir -p /usr/local/greenplum-db-devel
+tar -xzf bin_gpdb/*.tar.gz -C /usr/local/greenplum-db-devel
+
 time ./gpdb_src/concourse/scripts/setup_gpadmin_user.bash "centos"
 time make_cluster
 
