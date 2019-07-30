@@ -80,7 +80,7 @@ func (a *AgentServer) Start() {
 
 	err = server.Serve(lis)
 	if err != nil {
-		gplog.Fatal(err, "failed to serve", err)
+		gplog.Fatal(err, "failed to serve: %s", err)
 	}
 
 	a.stopped <- struct{}{}

@@ -161,7 +161,7 @@ func (h *Hub) AgentConns() ([]*Connection, error) {
 	if h.agentConns != nil {
 		err := EnsureConnsAreReady(h.agentConns)
 		if err != nil {
-			gplog.Error("ensureConnsAreReady failed: ", err)
+			gplog.Error("ensureConnsAreReady failed: %s", err)
 			return nil, err
 		}
 

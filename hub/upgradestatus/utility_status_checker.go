@@ -65,7 +65,7 @@ func inProgressFilesExist(utilityStatePath, progressFilePattern string) bool {
 	}
 
 	if err != nil {
-		gplog.Error("Error determining step status: ", err)
+		gplog.Error("Error determining step status: %s", err)
 		return false
 	}
 
