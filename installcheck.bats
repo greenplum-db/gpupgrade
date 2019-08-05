@@ -2,8 +2,12 @@
 
 load test/helpers
 
+# If GPHOME_NEW is not set, then it defaults to GPHOME, doing a upgrade to the
+#  samve version
+
 setup() {
     [ ! -z $GPHOME ]
+    GPHOME_NEW=${GPHOME_NEW:-$GPHOME}
     [ ! -z $MASTER_DATA_DIRECTORY ]
     echo "# SETUP"
     clean_target_cluster
@@ -21,8 +25,8 @@ teardown() {
 
 @test "gpugrade can make it as far as we currently know..." {
     gpupgrade prepare init \
-              --new-bindir "$GPHOME"/bin \
-              --old-bindir "$GPHOME"/bin
+              --old-bindir "$GPHOME"/bin \
+              --new-bindir "$GPHOME_NEW"/bin
 
     gpupgrade prepare start-hub 3>&-
 
