@@ -82,19 +82,6 @@ var _ = Describe("preparer", func() {
 		})
 	})
 
-	Describe("PrepareInitCluster", func() {
-		It("returns successfully if hub gets the request", func() {
-			testStdout, _, _ := testhelper.SetupTestLogger()
-			client.EXPECT().PrepareInitCluster(
-				gomock.Any(),
-				&idl.PrepareInitClusterRequest{},
-			).Return(&idl.PrepareInitClusterReply{}, nil)
-			preparer := commanders.NewPreparer(client)
-			err := preparer.InitCluster()
-			Expect(err).To(BeNil())
-			Eventually(testStdout).Should(gbytes.Say("Starting new cluster initialization"))
-		})
-	})
 	Describe("PrepareShutdownCluster", func() {
 		It("returns successfully", func() {
 			testStdout, _, _ := testhelper.SetupTestLogger()

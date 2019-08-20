@@ -72,7 +72,7 @@ func (p Preparer) InitCluster() error {
 		return err
 	}
 
-	gplog.Info("Starting new cluster initialization")
+	fmt.Println("cluster successfully initialized")
 	return nil
 }
 

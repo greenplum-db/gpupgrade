@@ -15,7 +15,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
-	"github.com/greenplum-db/gpupgrade/utils/log"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 )
@@ -29,18 +28,15 @@ func (h *Hub) PrepareInitCluster(ctx context.Context, in *idl.PrepareInitCluster
 		return &idl.PrepareInitClusterReply{}, err
 	}
 
-	go func() {
-		defer log.WritePanics()
+	err = h.CreateTargetCluster()
+	if err != nil {
+		gplog.Error(err.Error())
+		step.MarkFailed()
+	} else {
+		step.MarkComplete()
+	}
 
-		if err := h.CreateTargetCluster(); err != nil {
-			gplog.Error(err.Error())
-			step.MarkFailed()
-		} else {
-			step.MarkComplete()
-		}
-	}()
-
-	return &idl.PrepareInitClusterReply{}, nil
+	return &idl.PrepareInitClusterReply{}, err
 }
 
 func (h *Hub) CreateTargetCluster() error {
