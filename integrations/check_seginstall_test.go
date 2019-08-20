@@ -28,7 +28,7 @@ var _ = Describe("check seginstall", func() {
 		// These assertions are identical to the ones in the hub_check_seginstall unit tests but just to be safe we are leaving it in.
 		Expect(testExecutor.NumExecutions).To(Equal(1))
 
-		lsCmd := fmt.Sprintf("ls %s/gpupgrade_agent", source.BinDir)
+		lsCmd := fmt.Sprintf("ls %s/gpupgrade_agent", target.BinDir)
 		clusterCommands := testExecutor.ClusterCommands[0]
 		for _, command := range clusterCommands {
 			Expect(command).To(ContainElement(lsCmd))

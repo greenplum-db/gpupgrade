@@ -26,7 +26,7 @@ func (h *Hub) CheckSeginstall(ctx context.Context, in *idl.CheckSeginstallReques
 	go func() {
 		defer log.WritePanics()
 
-		if err := VerifyAgentsInstalled(h.source); err != nil {
+		if err := VerifyAgentsInstalled(h.source, h.target); err != nil {
 			gplog.Error(err.Error())
 			step.MarkFailed()
 		} else {
@@ -37,9 +37,9 @@ func (h *Hub) CheckSeginstall(ctx context.Context, in *idl.CheckSeginstallReques
 	return &idl.CheckSeginstallReply{}, nil
 }
 
-func VerifyAgentsInstalled(source *utils.Cluster) error {
+func VerifyAgentsInstalled(source *utils.Cluster, target *utils.Cluster) error {
 	logStr := "check gpupgrade_agent is installed in cluster's binary directory on master and hosts"
-	agentPath := filepath.Join(source.BinDir, "gpupgrade_agent")
+	agentPath := filepath.Join(target.BinDir, "gpupgrade_agent")
 	returnLsCommand := func(contentID int) string { return "ls " + agentPath }
 
 	remoteOutput, err := source.ExecuteOnAllHosts(logStr, returnLsCommand)

@@ -16,17 +16,17 @@ import (
 
 var _ = Describe("VerifyAgentsInstalled", func() {
 	It("shells out to cluster and verifies gpupgrade_agent is installed on master and hosts", func() {
-		source, _ := testutils.CreateMultinodeSampleClusterPair("/tmp")
+		source, target := testutils.CreateMultinodeSampleClusterPair("/tmp")
 		testExecutor := &testhelper.TestExecutor{}
 		testExecutor.ClusterOutput = &cluster.RemoteOutput{}
 		source.Cluster.Executor = testExecutor
 
-		err := services.VerifyAgentsInstalled(source)
+		err := services.VerifyAgentsInstalled(source, target)
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(testExecutor.NumExecutions).To(Equal(1))
 
-		lsCmd := fmt.Sprintf("ls %s/gpupgrade_agent", source.BinDir)
+		lsCmd := fmt.Sprintf("ls %s/gpupgrade_agent", target.BinDir)
 		clusterCommands := testExecutor.ClusterCommands[0]
 		for _, command := range clusterCommands {
 			Expect(command).To(ContainElement(lsCmd))
@@ -35,12 +35,13 @@ var _ = Describe("VerifyAgentsInstalled", func() {
 
 	It("returns an error if the source cluster is not initialized", func() {
 		source := &utils.Cluster{Cluster: &cluster.Cluster{}}
-		err := services.VerifyAgentsInstalled(source)
+		target := &utils.Cluster{Cluster: &cluster.Cluster{}}
+		err := services.VerifyAgentsInstalled(source, target)
 		Expect(err).To(HaveOccurred())
 	})
 
 	It("returns an error if any agents report an error", func() {
-		source, _ := testutils.CreateMultinodeSampleClusterPair("/tmp")
+		source, target := testutils.CreateMultinodeSampleClusterPair("/tmp")
 		testExecutor := &testhelper.TestExecutor{}
 		testExecutor.ClusterOutput = &cluster.RemoteOutput{
 			NumErrors: 1,
@@ -51,7 +52,7 @@ var _ = Describe("VerifyAgentsInstalled", func() {
 		}
 		source.Cluster.Executor = testExecutor
 
-		err := services.VerifyAgentsInstalled(source)
+		err := services.VerifyAgentsInstalled(source, target)
 		Expect(err).To(HaveOccurred())
 	})
 })

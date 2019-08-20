@@ -26,7 +26,7 @@ func (h *Hub) PrepareStartAgents(ctx context.Context, in *idl.PrepareStartAgents
 	go func() {
 		defer log.WritePanics()
 
-		if err := StartAgents(h.source); err != nil {
+		if err := StartAgents(h.source, h.target); err != nil {
 			gplog.Error(err.Error())
 			step.MarkFailed()
 		} else {
@@ -37,9 +37,9 @@ func (h *Hub) PrepareStartAgents(ctx context.Context, in *idl.PrepareStartAgents
 	return &idl.PrepareStartAgentsReply{}, nil
 }
 
-func StartAgents(source *utils.Cluster) error {
+func StartAgents(source *utils.Cluster, target *utils.Cluster) error {
 	logStr := "start agents on master and hosts"
-	agentPath := filepath.Join(source.BinDir, "gpupgrade_agent")
+	agentPath := filepath.Join(target.BinDir, "gpupgrade_agent")
 	runAgentCmd := func(contentID int) string { return agentPath + " --daemonize" }
 
 	errStr := "Failed to start all gpupgrade_agents"
