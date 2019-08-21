@@ -65,7 +65,7 @@ var _ = Describe("UpgradeSegments", func() {
 			return err
 		}
 
-		err := agent.UpgradeSegments("/old/bin", "/new/bin", "6.0.0", dataDirPairs)
+		err := agent.UpgradeSegments("/old/bin", "/new/bin", dataDirPairs)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(testExecutor.NumExecutions).To(Equal(2))
@@ -77,65 +77,12 @@ var _ = Describe("UpgradeSegments", func() {
 		Expect(testExecutor.LocalCommands).To(ContainElement(fmt.Sprintf("source /new/greenplum_path.sh; cd %s; unset PGHOST; unset PGPORT; /new/bin/pg_upgrade --old-bindir=/old/bin --old-datadir=old/datadir2 --old-port=2 --new-bindir=/new/bin --new-datadir=new/datadir2 --new-port=22 --mode=segment --progress", upgradeDir1)))
 	})
 
-	Context("for older Greenplum versions", func() {
-		It("successfully runs pg_upgrade", func() {
-			// We want to check what commands are passed to RunCommandAsync, so we have testExecutor record them for us
-			utils.System.RunCommandAsync = func(cmdStr, logFile string) error {
-				_, err := testExecutor.ExecuteLocalCommand(cmdStr)
-				return err
-			}
-
-			err := agent.UpgradeSegments("/old/bin", "/new/bin", "5.3.0", dataDirPairs)
-			Expect(err).ToNot(HaveOccurred())
-
-			Expect(testExecutor.NumExecutions).To(Equal(4))
-
-			upgradeDir0 := utils.SegmentPGUpgradeDirectory(dir, 0)
-			upgradeDir1 := utils.SegmentPGUpgradeDirectory(dir, 1)
-
-			Expect(testExecutor.LocalCommands).To(ContainElement(fmt.Sprintf("cp %s %s", oidFile, upgradeDir0)))
-			Expect(testExecutor.LocalCommands).To(ContainElement(fmt.Sprintf("source /new/greenplum_path.sh; cd %s; unset PGHOST; unset PGPORT; /new/bin/pg_upgrade --old-bindir=/old/bin --old-datadir=old/datadir1 --old-port=1 --new-bindir=/new/bin --new-datadir=new/datadir1 --new-port=11 --progress", upgradeDir0)))
-			Expect(testExecutor.LocalCommands).To(ContainElement(fmt.Sprintf("cp %s %s", oidFile, upgradeDir1)))
-			Expect(testExecutor.LocalCommands).To(ContainElement(fmt.Sprintf("source /new/greenplum_path.sh; cd %s; unset PGHOST; unset PGPORT; /new/bin/pg_upgrade --old-bindir=/old/bin --old-datadir=old/datadir2 --old-port=2 --new-bindir=/new/bin --new-datadir=new/datadir2 --new-port=22 --progress", upgradeDir1)))
-		})
-
-		It("returns an an error if the oid files glob fails", func() {
-			utils.System.FilePathGlob = func(pattern string) ([]string, error) {
-				return []string{}, errors.New("failed to find files")
-			}
-
-			err := agent.UpgradeSegments("/old/bin", "/new/bin", "5.3.0", dataDirPairs)
-			Expect(err).To(HaveOccurred())
-		})
-
-		It("returns an an error if no oid files are found", func() {
-			err := os.Remove(oidFile)
-			Expect(err).ToNot(HaveOccurred())
-
-			err = agent.UpgradeSegments("/old/bin", "/new/bin", "5.3.0", dataDirPairs)
-			Expect(err).To(HaveOccurred())
-		})
-
-		It("returns an error if the oid files fail to copy into the segment directory", func() {
-			testExecutor.LocalError = errors.New("Failed to copy oid file into segment directory")
-
-			err := agent.UpgradeSegments("/old/bin", "/new/bin", "5.3.0", dataDirPairs)
-			Expect(err).To(HaveOccurred())
-		})
-	})
-
-	It("returns an error if the target version is incomprehensible", func() {
-		err := agent.UpgradeSegments("/old/bin", "/new/bin", "klf;adsfds", dataDirPairs)
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("failed to parse new cluster version"))
-	})
-
 	It("returns an error if the pg_upgrade/segmentDir cannot be made", func() {
 		utils.System.MkdirAll = func(path string, perm os.FileMode) error {
 			return errors.New("failed to create segment directory")
 		}
 
-		err := agent.UpgradeSegments("/old/bin", "/new/bin", "6.0.0", dataDirPairs)
+		err := agent.UpgradeSegments("/old/bin", "/new/bin", dataDirPairs)
 		Expect(err).To(HaveOccurred())
 	})
 
@@ -145,7 +92,7 @@ var _ = Describe("UpgradeSegments", func() {
 			return cmdErr
 		}
 
-		err := agent.UpgradeSegments("/old/bin", "/new/bin", "6.0.0", dataDirPairs)
+		err := agent.UpgradeSegments("/old/bin", "/new/bin", dataDirPairs)
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring(cmdErr.Error()))
 	})
