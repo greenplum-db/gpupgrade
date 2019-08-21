@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	MINIMUM_VERSION = "4.3.9"
+	MINIMUM_VERSION = "5.0.0" // FIXME: set to minimum 5.X version we support
 )
 
 func (h *Hub) CheckVersion(ctx context.Context,
