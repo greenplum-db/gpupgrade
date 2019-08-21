@@ -200,7 +200,7 @@ files in gpupgrade/ci/tasks, and some secrets in a private repository. To set a
 pipeline, run:
 
 ```
-fly -t [target-name] set-pipeline -p [pipeline-name] -c gpupgrade/ci/pipeline.yml -l path/to/secrets.yml
+make set-pipeline FLY_TARGET=<CONCOURSE_INSTANCE> GIT_URI=https://github.com/<GITHUB_USERNAME>/gpupgrade.git
 ```
 
 If you want to use the defaults and have access to the continuous-integration
