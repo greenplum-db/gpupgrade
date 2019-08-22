@@ -1,7 +1,6 @@
 package services_test
 
 import (
-	"fmt"
 	"path/filepath"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
@@ -57,18 +56,5 @@ var _ = Describe("UpgradeShareOids", func() {
 		resultMap := testExecutor.ClusterCommands[0]
 		Expect(resultMap).To(HaveLen(1))
 		Expect(resultMap).To(ContainElement([]string{"rsync", "-rzpogt", masterDataDir, "localhost:/tmp/masterDirCopy"}))
-	})
-
-	It("copies files to each primary host in 5.X or earlier", func() {
-		source.Version = dbconn.NewVersion("5.3.0")
-		_, err := hub.UpgradeShareOids(nil, &idl.UpgradeShareOidsRequest{})
-		Expect(err).ToNot(HaveOccurred())
-
-		Eventually(func() int { return testExecutor.NumExecutions }).Should(Equal(1))
-
-		baseDir := fmt.Sprintf("%s/pg_upgrade", dir)
-		resultMap := testExecutor.ClusterCommands[0]
-		Expect(resultMap[0]).To(Equal([]string{"rsync", "-rzpogt", fmt.Sprintf("%s/seg-1/pg_upgrade_dump_*_oids.sql", baseDir), fmt.Sprintf("host1:%s", baseDir)}))
-		Expect(resultMap[1]).To(Equal([]string{"rsync", "-rzpogt", fmt.Sprintf("%s/seg-1/pg_upgrade_dump_*_oids.sql", baseDir), fmt.Sprintf("host2:%s", baseDir)}))
 	})
 })

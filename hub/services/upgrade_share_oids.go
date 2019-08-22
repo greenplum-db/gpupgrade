@@ -45,58 +45,40 @@ func (h *Hub) shareOidFiles() error {
 	var err error
 	rsyncFlags := "-rzpogt"
 
-	if h.source.Version.Before("6.0.0") {
-		sourceDir := utils.MasterPGUpgradeDirectory(h.conf.StateDir)
-		contents := contentsByHost(h.source, false)
-		commandMap := make(map[int][]string, len(contents))
+	// Make sure sourceDir ends with a trailing slash so that rsync will
+	// transfer the directory contents and not the directory itself.
+	sourceDir := filepath.Clean(h.target.MasterDataDir()) + string(filepath.Separator)
+	commandMap := make(map[int][]string, len(h.target.ContentIDs)-1)
 
-		for _, content := range contents {
-			destinationDirectory := h.source.GetHostForContent(content) + ":" + utils.PGUpgradeDirectory(h.conf.StateDir)
-			commandMap[content] = []string{"rsync", rsyncFlags, filepath.Join(sourceDir, "pg_upgrade_dump_*_oids.sql"), destinationDirectory}
+	destinationDirName := "/tmp/masterDirCopy"
+
+	/*
+	 * Copy the directory once per host.
+	 *
+	 * We don't need to copy the master directory on the master host
+	 * If there are primaries on the same host, the hostname will be
+	 * added for the corresponding primaries.
+	 */
+	for _, content := range contentsByHost(h.target, false) {
+		destinationDirectory := fmt.Sprintf("%s:%s", h.target.GetHostForContent(content), destinationDirName)
+		commandMap[content] = []string{"rsync", rsyncFlags, sourceDir, destinationDirectory}
+	}
+
+	remoteOutput := h.source.ExecuteClusterCommand(cluster.ON_HOSTS, commandMap)
+	for segmentID, segmentErr := range remoteOutput.Errors {
+		if segmentErr != nil { // TODO: Refactor remoteOutput to return maps with keys and valid values, and not values that can be nil. If there is no value, then do not have a key.
+			return multierror.Append(err, errors.Wrapf(segmentErr, "failed to copy master data directory to segment %d", segmentID))
 		}
+	}
 
-		remoteOutput := h.source.ExecuteClusterCommand(cluster.ON_HOSTS, commandMap)
-		for segmentID, segmentErr := range remoteOutput.Errors {
-			if segmentErr != nil { // TODO: Refactor remoteOutput to return maps with keys and valid values, and not values that can be nil. If there is no value, then do not have a key.
-				return multierror.Append(err, errors.Wrapf(segmentErr, "failed to copy OID files for segment %d", segmentID))
-			}
-		}
-	} else {
-		// Make sure sourceDir ends with a trailing slash so that rsync will
-		// transfer the directory contents and not the directory itself.
-		sourceDir := filepath.Clean(h.target.MasterDataDir()) + string(filepath.Separator)
-		commandMap := make(map[int][]string, len(h.target.ContentIDs)-1)
+	agentConns, connErr := h.AgentConns()
+	if connErr != nil {
+		return multierror.Append(err, connErr)
+	}
 
-		destinationDirName := "/tmp/masterDirCopy"
-
-		/*
-		 * Copy the directory once per host.
-		 *
-		 * We don't need to copy the master directory on the master host
-		 * If there are primaries on the same host, the hostname will be
-		 * added for the corresponding primaries.
-		 */
-		for _, content := range contentsByHost(h.target, false) {
-			destinationDirectory := fmt.Sprintf("%s:%s", h.target.GetHostForContent(content), destinationDirName)
-			commandMap[content] = []string{"rsync", rsyncFlags, sourceDir, destinationDirectory}
-		}
-
-		remoteOutput := h.source.ExecuteClusterCommand(cluster.ON_HOSTS, commandMap)
-		for segmentID, segmentErr := range remoteOutput.Errors {
-			if segmentErr != nil { // TODO: Refactor remoteOutput to return maps with keys and valid values, and not values that can be nil. If there is no value, then do not have a key.
-				return multierror.Append(err, errors.Wrapf(segmentErr, "failed to copy master data directory to segment %d", segmentID))
-			}
-		}
-
-		agentConns, connErr := h.AgentConns()
-		if connErr != nil {
-			return multierror.Append(err, connErr)
-		}
-
-		copyErr := CopyMasterDirectoryToSegmentDirectories(agentConns, h.target, destinationDirName)
-		if copyErr != nil {
-			return multierror.Append(err, copyErr)
-		}
+	copyErr := CopyMasterDirectoryToSegmentDirectories(agentConns, h.target, destinationDirName)
+	if copyErr != nil {
+		return multierror.Append(err, copyErr)
 	}
 
 	return err

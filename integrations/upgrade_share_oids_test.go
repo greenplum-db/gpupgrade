@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
-	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/utils"
 
@@ -28,8 +27,7 @@ var _ = Describe("upgrade share oids", func() {
 		}
 	})
 
-	It("updates status PENDING to RUNNING then to COMPLETE if successful for 5.X and earlier", func() {
-		source.Version = dbconn.NewVersion("5.0.0")
+	It("updates status PENDING to RUNNING then to COMPLETE if successful", func() {
 		Expect(cm.IsPending(upgradestatus.SHARE_OIDS)).To(BeTrue())
 
 		upgradeShareOidsSession := runCommand("upgrade", "share-oids")
@@ -37,18 +35,7 @@ var _ = Describe("upgrade share oids", func() {
 
 		Eventually(func() bool { return cm.IsComplete(upgradestatus.SHARE_OIDS) }).Should(BeTrue())
 		Expect(testExecutor.ClusterCommands[0][0]).To(ContainElement("rsync"))
-		Expect(len(agentExecutor.LocalCommands)).To(Equal(0)) // 5.X does not use the agent
-	})
-
-	It("updates status PENDING to RUNNING then to COMPLETE if successful for 6.0 and later", func() {
-		Expect(cm.IsPending(upgradestatus.SHARE_OIDS)).To(BeTrue())
-
-		upgradeShareOidsSession := runCommand("upgrade", "share-oids")
-		Eventually(upgradeShareOidsSession).Should(Exit(0))
-
-		Eventually(func() bool { return cm.IsComplete(upgradestatus.SHARE_OIDS) }).Should(BeTrue())
-		Expect(testExecutor.ClusterCommands[0][0]).To(ContainElement("rsync"))
-		Expect(len(agentExecutor.LocalCommands)).ToNot(Equal(0)) // 6.0 does use the agent
+		Expect(len(agentExecutor.LocalCommands)).ToNot(Equal(0))
 	})
 
 	It("updates status to FAILED if it fails to run", func() {
