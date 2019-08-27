@@ -80,18 +80,18 @@ var _ = Describe("reporter", func() {
 		})
 	})
 
-	Describe("ShareOids", func() {
-		It("returns no error when oids are shared successfully", func() {
-			err := upgrader.ShareOids()
+	Describe("CopyMasterDataDir", func() {
+		It("returns no error when copying master data directory successfully", func() {
+			err := upgrader.CopyMasterDataDir()
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(hubClient.UpgradeShareOidsRequest).To(Equal(&idl.UpgradeShareOidsRequest{}))
+			Expect(hubClient.UpgradeCopyMasterDataDirRequest).To(Equal(&idl.UpgradeCopyMasterDataDirRequest{}))
 		})
 
-		It("returns an error when oids cannot be shared", func() {
+		It("returns an error when copying master data directory cannot be shared", func() {
 			hubClient.Err = errors.New("test share oids failed")
 
-			err := upgrader.ShareOids()
+			err := upgrader.CopyMasterDataDir()
 			Expect(err).To(HaveOccurred())
 		})
 	})

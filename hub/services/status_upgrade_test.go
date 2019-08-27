@@ -34,7 +34,7 @@ var _ = Describe("status upgrade", func() {
 		cm.AddStep(upgradestatus.SHUTDOWN_CLUSTERS, idl.UpgradeSteps_SHUTDOWN_CLUSTERS)
 		cm.AddStep(upgradestatus.CONVERT_MASTER, idl.UpgradeSteps_CONVERT_MASTER)
 		cm.AddStep(upgradestatus.START_AGENTS, idl.UpgradeSteps_START_AGENTS)
-		cm.AddStep(upgradestatus.SHARE_OIDS, idl.UpgradeSteps_SHARE_OIDS)
+		cm.AddStep(upgradestatus.COPY_MASTER, idl.UpgradeSteps_COPY_MASTER)
 		cm.AddStep(upgradestatus.VALIDATE_START_CLUSTER, idl.UpgradeSteps_VALIDATE_START_CLUSTER)
 		cm.AddStep(upgradestatus.CONVERT_PRIMARIES, idl.UpgradeSteps_CONVERT_PRIMARIES)
 		cm.AddStep(upgradestatus.RECONFIGURE_PORTS, idl.UpgradeSteps_RECONFIGURE_PORTS)
@@ -49,7 +49,7 @@ var _ = Describe("status upgrade", func() {
 			step.MarkComplete()
 		}
 
-		step := cm.GetStepWriter(upgradestatus.SHARE_OIDS)
+		step := cm.GetStepWriter(upgradestatus.COPY_MASTER)
 		step.MarkInProgress()
 		step.MarkFailed()
 
@@ -77,7 +77,7 @@ var _ = Describe("status upgrade", func() {
 					Step:   idl.UpgradeSteps_START_AGENTS,
 					Status: idl.StepStatus_COMPLETE,
 				}, {
-					Step:   idl.UpgradeSteps_SHARE_OIDS,
+					Step:   idl.UpgradeSteps_COPY_MASTER,
 					Status: idl.StepStatus_FAILED,
 				}, {
 					Step:   idl.UpgradeSteps_VALIDATE_START_CLUSTER,

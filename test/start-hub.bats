@@ -105,7 +105,7 @@ outputContains() {
         'status conversion'
         'upgrade convert-master'
         'upgrade convert-primaries'
-        'upgrade share-oids'
+        'upgrade copy-master'
         'upgrade validate-start-cluster'
         'upgrade reconfigure-ports'
     )

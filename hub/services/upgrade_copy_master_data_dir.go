@@ -18,19 +18,19 @@ import (
 	"golang.org/x/net/context"
 )
 
-func (h *Hub) UpgradeShareOids(ctx context.Context, in *idl.UpgradeShareOidsRequest) (*idl.UpgradeShareOidsReply, error) {
-	gplog.Info("starting %s", upgradestatus.SHARE_OIDS)
+func (h *Hub) UpgradeCopyMasterDataDir(ctx context.Context, in *idl.UpgradeCopyMasterDataDirRequest) (*idl.UpgradeCopyMasterDataDirReply, error) {
+	gplog.Info("starting %s", upgradestatus.COPY_MASTER)
 
-	step, err := h.InitializeStep(upgradestatus.SHARE_OIDS)
+	step, err := h.InitializeStep(upgradestatus.COPY_MASTER)
 	if err != nil {
 		gplog.Error(err.Error())
-		return &idl.UpgradeShareOidsReply{}, err
+		return &idl.UpgradeCopyMasterDataDirReply{}, err
 	}
 
 	go func() {
 		defer log.WritePanics()
 
-		if err := h.shareOidFiles(); err != nil {
+		if err := h.copyMasterDataDir(); err != nil {
 			gplog.Error(err.Error())
 			step.MarkFailed()
 		} else {
@@ -38,10 +38,10 @@ func (h *Hub) UpgradeShareOids(ctx context.Context, in *idl.UpgradeShareOidsRequ
 		}
 	}()
 
-	return &idl.UpgradeShareOidsReply{}, nil
+	return &idl.UpgradeCopyMasterDataDirReply{}, nil
 }
 
-func (h *Hub) shareOidFiles() error {
+func (h *Hub) copyMasterDataDir() error {
 	var err error
 	rsyncFlags := "-rzpogt"
 

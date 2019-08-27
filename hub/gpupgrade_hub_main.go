@@ -78,7 +78,7 @@ func main() {
 			cm.AddWritableStep(upgradestatus.INIT_CLUSTER, idl.UpgradeSteps_INIT_CLUSTER)
 			cm.AddWritableStep(upgradestatus.SHUTDOWN_CLUSTERS, idl.UpgradeSteps_SHUTDOWN_CLUSTERS)
 			cm.AddWritableStep(upgradestatus.CONVERT_MASTER, idl.UpgradeSteps_CONVERT_MASTER)
-			cm.AddWritableStep(upgradestatus.SHARE_OIDS, idl.UpgradeSteps_SHARE_OIDS)
+			cm.AddWritableStep(upgradestatus.COPY_MASTER, idl.UpgradeSteps_COPY_MASTER)
 
 			cm.AddReadOnlyStep(upgradestatus.CONVERT_PRIMARIES, idl.UpgradeSteps_CONVERT_PRIMARIES,
 				func(stepName string) idl.StepStatus {

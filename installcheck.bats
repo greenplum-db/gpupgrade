@@ -45,8 +45,8 @@ teardown() {
     gpupgrade upgrade convert-master
     EventuallyStepCompletes "Run pg_upgrade on master"
 
-    gpupgrade upgrade share-oids
-    EventuallyStepCompletes "Copy OID files from master to segments"
+    gpupgrade upgrade copy-master
+    EventuallyStepCompletes "Copy master data directory to segments"
 
     gpupgrade upgrade convert-primaries
     EventuallyStepCompletes "Run pg_upgrade on primaries"

@@ -592,9 +592,9 @@ _gpupgrade_upgrade_convert-primaries()
     noun_aliases=()
 }
 
-_gpupgrade_upgrade_reconfigure-ports()
+_gpupgrade_upgrade_copy-master()
 {
-    last_command="gpupgrade_upgrade_reconfigure-ports"
+    last_command="gpupgrade_upgrade_copy-master"
     commands=()
 
     flags=()
@@ -609,9 +609,9 @@ _gpupgrade_upgrade_reconfigure-ports()
     noun_aliases=()
 }
 
-_gpupgrade_upgrade_share-oids()
+_gpupgrade_upgrade_reconfigure-ports()
 {
-    last_command="gpupgrade_upgrade_share-oids"
+    last_command="gpupgrade_upgrade_reconfigure-ports"
     commands=()
 
     flags=()
@@ -649,8 +649,8 @@ _gpupgrade_upgrade()
     commands=()
     commands+=("convert-master")
     commands+=("convert-primaries")
+    commands+=("copy-master")
     commands+=("reconfigure-ports")
-    commands+=("share-oids")
     commands+=("validate-start-cluster")
 
     flags=()

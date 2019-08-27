@@ -12,7 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("UpgradeShareOids", func() {
+var _ = Describe("UpgradeCopyMasterDataDir", func() {
 	var (
 		mockOutput   *cluster.RemoteOutput
 		testExecutor *testhelper.TestExecutor
@@ -27,7 +27,7 @@ var _ = Describe("UpgradeShareOids", func() {
 
 	It("copies the master data directory to each primary host in 6.0 or later", func() {
 		source.Version = dbconn.NewVersion("6.0.0")
-		_, err := hub.UpgradeShareOids(nil, &idl.UpgradeShareOidsRequest{})
+		_, err := hub.UpgradeCopyMasterDataDir(nil, &idl.UpgradeCopyMasterDataDirRequest{})
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func() int { return testExecutor.NumExecutions }).Should(Equal(1))
@@ -47,7 +47,7 @@ var _ = Describe("UpgradeShareOids", func() {
 			target.Segments[content] = segment
 		}
 
-		_, err := hub.UpgradeShareOids(nil, &idl.UpgradeShareOidsRequest{})
+		_, err := hub.UpgradeCopyMasterDataDir(nil, &idl.UpgradeCopyMasterDataDirRequest{})
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func() int { return testExecutor.NumExecutions }).Should(Equal(1))

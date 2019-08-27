@@ -23,7 +23,7 @@ of the conversion by running ```gpupgrade status upgrade```.
 
 1. ```gpupgrade upgrade convert-master```
 
-1. ```gpupgrade upgrade share-oids```
+1. ```gpupgrade upgrade copy-master```
 
 1. ```gpupgrade upgrade convert-primaries```
 
@@ -74,7 +74,7 @@ PENDING - Agents Started on Cluster
 PENDING - Initialize new cluster
 PENDING - Shutdown clusters
 PENDING - Run pg_upgrade on master
-PENDING - Copy OID files from master to segments 
+PENDING - Copy master data directory to segments 
 COMPLETE - Run pg_upgrade on primaries                        <----should be PENDING
 PENDING - Validate the upgraded cluster can start up
 PENDING - Adjust upgraded cluster ports
@@ -93,7 +93,7 @@ PENDING - Agents Started on Cluster
 PENDING - Initialize new cluster
 PENDING - Shutdown clusters
 PENDING - Run pg_upgrade on master
-PENDING - Copy OID files from master to segments
+PENDING - Copy master data directory to segments
 PENDING - Run pg_upgrade on primaries
 PENDING - Validate the upgraded cluster can start up
 PENDING - Adjust upgraded cluster ports
@@ -112,7 +112,7 @@ COMPLETE - Agents Started on Cluster
 PENDING - Initialize new cluster
 PENDING - Shutdown clusters
 PENDING - Run pg_upgrade on master
-PENDING - Copy OID files from master to segments
+PENDING - Copy master data directory to segments
 PENDING - Run pg_upgrade on primaries
 PENDING - Validate the upgraded cluster can start up
 PENDING - Adjust upgraded cluster ports
@@ -132,7 +132,7 @@ COMPLETE - Agents Started on Cluster
 COMLETE - Initialize new cluster
 PENDING - Shutdown clusters
 PENDING - Run pg_upgrade on master
-PENDING - Copy OID files from master to segments
+PENDING - Copy master data directory to segments
 PENDING - Run pg_upgrade on primaries
 PENDING - Validate the upgraded cluster can start up
 PENDING - Adjust upgraded cluster ports
@@ -151,7 +151,7 @@ COMPLETE - Agents Started on Cluster
 COMPLETE - Initialize new cluster
 COMPLETE - Shutdown clusters
 PENDING - Run pg_upgrade on master
-PENDING - Copy OID files from master to segments
+PENDING - Copy master data directory to segments
 PENDING - Run pg_upgrade on primaries
 PENDING - Validate the upgraded cluster can start up
 PENDING - Adjust upgraded cluster ports
@@ -170,17 +170,17 @@ COMPLETE - Agents Started on Cluster
 COMPLETE - Initialize new cluster
 COMPLETE - Shutdown clusters
 COMPLETE - Run pg_upgrade on master
-PENDING - Copy OID files from master to segments
+PENDING - Copy master data directory to segments
 PENDING - Run pg_upgrade on primaries
 PENDING - Validate the upgraded cluster can start up
 PENDING - Adjust upgraded cluster ports
 ```
 
-8 ```gpupgrade upgrade share-oids```
+8 ```gpupgrade upgrade copy-master```
 
 ```
- → gpupgrade upgrade share-oids
-[INFO]:-Kicked off request to share oids
+ → gpupgrade upgrade copy-master
+[INFO]:-Kicked off request to copy master
 
  → gpupgrade status upgrade
 COMPLETE - Configuration Check
@@ -189,7 +189,7 @@ COMPLETE - Agents Started on Cluster
 COMPLETE - Initialize new cluster
 COMPLETE - Shutdown clusters
 COMPLETE - Run pg_upgrade on master
-COMPLETE - Copy OID files from master to segments
+COMPLETE - Copy master data directory to segments
 PENDING - Run pg_upgrade on primaries
 PENDING - Validate the upgraded cluster can start up
 PENDING - Adjust upgraded cluster ports
@@ -208,7 +208,7 @@ COMPLETE - Agents Started on Cluster
 COMPLETE - Initialize new cluster
 COMPLETE - Shutdown clusters
 COMPLETE - Run pg_upgrade on master
-COMPLETE - Copy OID files from master to segments
+COMPLETE - Copy master data directory to segments
 COMLETE - Run pg_upgrade on primaries
 PENDING - Validate the upgraded cluster can start up
 PENDING - Adjust upgraded cluster ports
@@ -227,7 +227,7 @@ COMPLETE - Agents Started on Cluster
 COMPLETE - Initialize new cluster
 COMPLETE - Shutdown clusters
 COMPLETE - Run pg_upgrade on master
-COMPLETE - Copy OID files from master to segments
+COMPLETE - Copy master data directory to segments
 COMPLETE - Run pg_upgrade on primaries
 COMPLETE - Validate the upgraded cluster can start up
 PENDING - Adjust upgraded cluster ports
@@ -246,7 +246,7 @@ COMPLETE - Agents Started on Cluster
 COMPLETE - Initialize new cluster
 COMPLETE - Shutdown clusters
 COMPLETE - Run pg_upgrade on master
-COMPLETE - Copy OID files from master to segments
+COMPLETE - Copy master data directory to segments
 COMPLETE - Run pg_upgrade on primaries
 COMPLETE - Validate the upgraded cluster can start up
 COMPLETE - Adjust upgraded cluster ports

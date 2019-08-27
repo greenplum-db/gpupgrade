@@ -9,8 +9,8 @@ import (
 )
 
 type MockHubClient struct {
-	UpgradeShareOidsRequest        *idl.UpgradeShareOidsRequest
-	UpgradeReconfigurePortsRequest *idl.UpgradeReconfigurePortsRequest
+	UpgradeCopyMasterDataDirRequest *idl.UpgradeCopyMasterDataDirRequest
+	UpgradeReconfigurePortsRequest  *idl.UpgradeReconfigurePortsRequest
 
 	UpgradeConvertPrimariesRequest  *idl.UpgradeConvertPrimariesRequest
 	UpgradeConvertPrimariesResponse *idl.UpgradeConvertPrimariesReply
@@ -69,10 +69,10 @@ func (m *MockHubClient) PrepareStartAgents(ctx context.Context, in *idl.PrepareS
 	return nil, nil
 }
 
-func (m *MockHubClient) UpgradeShareOids(ctx context.Context, in *idl.UpgradeShareOidsRequest, opts ...grpc.CallOption) (*idl.UpgradeShareOidsReply, error) {
-	m.UpgradeShareOidsRequest = in
+func (m *MockHubClient) UpgradeCopyMasterDataDir(ctx context.Context, in *idl.UpgradeCopyMasterDataDirRequest, opts ...grpc.CallOption) (*idl.UpgradeCopyMasterDataDirReply, error) {
+	m.UpgradeCopyMasterDataDirRequest = in
 
-	return &idl.UpgradeShareOidsReply{}, m.Err
+	return &idl.UpgradeCopyMasterDataDirReply{}, m.Err
 }
 
 func (m *MockHubClient) UpgradeValidateStartCluster(ctx context.Context, in *idl.UpgradeValidateStartClusterRequest, opts ...grpc.CallOption) (*idl.UpgradeValidateStartClusterReply, error) {

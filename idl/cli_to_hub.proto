@@ -9,18 +9,18 @@ service CliToHub {
     rpc CheckConfig(CheckConfigRequest) returns (CheckConfigReply) {}
     rpc CheckSeginstall(CheckSeginstallRequest) returns (CheckSeginstallReply) {}
     rpc CheckObjectCount(CheckObjectCountRequest) returns (CheckObjectCountReply) {}
-    rpc CheckVersion(CheckVersionRequest) returns (CheckVersionReply) {}
-    rpc CheckDiskSpace(CheckDiskSpaceRequest) returns (CheckDiskSpaceReply) {}
-    rpc PrepareInitCluster(PrepareInitClusterRequest) returns (PrepareInitClusterReply) {}
-    rpc PrepareShutdownClusters(PrepareShutdownClustersRequest) returns (PrepareShutdownClustersReply) {}
-    rpc UpgradeConvertMaster(UpgradeConvertMasterRequest) returns (UpgradeConvertMasterReply) {}
-    rpc PrepareStartAgents(PrepareStartAgentsRequest) returns (PrepareStartAgentsReply) {}
-    rpc UpgradeShareOids(UpgradeShareOidsRequest) returns (UpgradeShareOidsReply) {}
-    rpc UpgradeValidateStartCluster(UpgradeValidateStartClusterRequest) returns (UpgradeValidateStartClusterReply) {}
-    rpc UpgradeConvertPrimaries(UpgradeConvertPrimariesRequest) returns (UpgradeConvertPrimariesReply) {}
-    rpc UpgradeReconfigurePorts(UpgradeReconfigurePortsRequest) returns (UpgradeReconfigurePortsReply) {}
-    rpc SetConfig(SetConfigRequest) returns (SetConfigReply) {}
-    rpc GetConfig(GetConfigRequest) returns (GetConfigReply) {}
+    rpc CheckVersion (CheckVersionRequest) returns (CheckVersionReply) {}
+    rpc CheckDiskSpace (CheckDiskSpaceRequest) returns (CheckDiskSpaceReply) {}
+    rpc PrepareInitCluster (PrepareInitClusterRequest) returns (PrepareInitClusterReply) {}
+    rpc PrepareShutdownClusters (PrepareShutdownClustersRequest) returns (PrepareShutdownClustersReply) {}
+    rpc UpgradeConvertMaster (UpgradeConvertMasterRequest) returns (UpgradeConvertMasterReply) {}
+    rpc PrepareStartAgents (PrepareStartAgentsRequest) returns (PrepareStartAgentsReply) {}
+    rpc UpgradeCopyMasterDataDir (UpgradeCopyMasterDataDirRequest) returns (UpgradeCopyMasterDataDirReply) {}
+    rpc UpgradeValidateStartCluster (UpgradeValidateStartClusterRequest) returns (UpgradeValidateStartClusterReply) {}
+    rpc UpgradeConvertPrimaries (UpgradeConvertPrimariesRequest) returns (UpgradeConvertPrimariesReply) {}
+    rpc UpgradeReconfigurePorts (UpgradeReconfigurePortsRequest) returns (UpgradeReconfigurePortsReply) {}
+    rpc SetConfig (SetConfigRequest) returns (SetConfigReply) {}
+    rpc GetConfig (GetConfigRequest) returns (GetConfigReply) {}
 }
 
 message UpgradeReconfigurePortsRequest {}
@@ -29,8 +29,8 @@ message UpgradeReconfigurePortsReply {}
 message UpgradeConvertPrimariesRequest {}
 message UpgradeConvertPrimariesReply {}
 
-message UpgradeShareOidsRequest {}
-message UpgradeShareOidsReply {}
+message UpgradeCopyMasterDataDirRequest {}
+message UpgradeCopyMasterDataDirReply {}
 
 message UpgradeValidateStartClusterRequest {}
 message UpgradeValidateStartClusterReply {}
@@ -70,7 +70,7 @@ enum UpgradeSteps {
     INIT_CLUSTER = 4;
     SHUTDOWN_CLUSTERS = 5;
     CONVERT_MASTER = 6;
-    SHARE_OIDS = 7;
+    COPY_MASTER = 7;
     CONVERT_PRIMARIES = 8;
     VALIDATE_START_CLUSTER = 9;
     RECONFIGURE_PORTS = 10;

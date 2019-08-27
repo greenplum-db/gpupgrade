@@ -40,14 +40,14 @@ func (u *Upgrader) ConvertPrimaries() error {
 	return nil
 }
 
-func (u *Upgrader) ShareOids() error {
-	_, err := u.client.UpgradeShareOids(context.Background(), &idl.UpgradeShareOidsRequest{})
+func (u *Upgrader) CopyMasterDataDir() error {
+	_, err := u.client.UpgradeCopyMasterDataDir(context.Background(), &idl.UpgradeCopyMasterDataDirRequest{})
 	if err != nil {
 		gplog.Error(err.Error())
 		return err
 	}
 
-	gplog.Info("Kicked off request to share oids")
+	gplog.Info("Kicked off request to copy master data directory ")
 	return nil
 }
 

@@ -251,22 +251,22 @@ func (mr *MockCliToHubClientMockRecorder) PrepareStartAgents(ctx, in interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrepareStartAgents", reflect.TypeOf((*MockCliToHubClient)(nil).PrepareStartAgents), varargs...)
 }
 
-// UpgradeShareOids mocks base method
-func (m *MockCliToHubClient) UpgradeShareOids(ctx context.Context, in *idl.UpgradeShareOidsRequest, opts ...grpc.CallOption) (*idl.UpgradeShareOidsReply, error) {
+// UpgradeCopyMasterDataDir mocks base method
+func (m *MockCliToHubClient) UpgradeCopyMasterDataDir(ctx context.Context, in *idl.UpgradeCopyMasterDataDirRequest, opts ...grpc.CallOption) (*idl.UpgradeCopyMasterDataDirReply, error) {
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "UpgradeShareOids", varargs...)
-	ret0, _ := ret[0].(*idl.UpgradeShareOidsReply)
+	ret := m.ctrl.Call(m, "UpgradeCopyMasterDataDir", varargs...)
+	ret0, _ := ret[0].(*idl.UpgradeCopyMasterDataDirReply)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// UpgradeShareOids indicates an expected call of UpgradeShareOids
-func (mr *MockCliToHubClientMockRecorder) UpgradeShareOids(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+// UpgradeCopyMasterDataDir indicates an expected call of UpgradeCopyMasterDataDir
+func (mr *MockCliToHubClientMockRecorder) UpgradeCopyMasterDataDir(ctx, in interface{}, opts ...interface{}) *gomock.Call {
 	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpgradeShareOids", reflect.TypeOf((*MockCliToHubClient)(nil).UpgradeShareOids), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpgradeCopyMasterDataDir", reflect.TypeOf((*MockCliToHubClient)(nil).UpgradeCopyMasterDataDir), varargs...)
 }
 
 // UpgradeValidateStartCluster mocks base method
@@ -538,17 +538,17 @@ func (mr *MockCliToHubServerMockRecorder) PrepareStartAgents(arg0, arg1 interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrepareStartAgents", reflect.TypeOf((*MockCliToHubServer)(nil).PrepareStartAgents), arg0, arg1)
 }
 
-// UpgradeShareOids mocks base method
-func (m *MockCliToHubServer) UpgradeShareOids(arg0 context.Context, arg1 *idl.UpgradeShareOidsRequest) (*idl.UpgradeShareOidsReply, error) {
-	ret := m.ctrl.Call(m, "UpgradeShareOids", arg0, arg1)
-	ret0, _ := ret[0].(*idl.UpgradeShareOidsReply)
+// UpgradeCopyMasterDataDir mocks base method
+func (m *MockCliToHubServer) UpgradeCopyMasterDataDir(arg0 context.Context, arg1 *idl.UpgradeCopyMasterDataDirRequest) (*idl.UpgradeCopyMasterDataDirReply, error) {
+	ret := m.ctrl.Call(m, "UpgradeCopyMasterDataDir", arg0, arg1)
+	ret0, _ := ret[0].(*idl.UpgradeCopyMasterDataDirReply)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// UpgradeShareOids indicates an expected call of UpgradeShareOids
-func (mr *MockCliToHubServerMockRecorder) UpgradeShareOids(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpgradeShareOids", reflect.TypeOf((*MockCliToHubServer)(nil).UpgradeShareOids), arg0, arg1)
+// UpgradeCopyMasterDataDir indicates an expected call of UpgradeCopyMasterDataDir
+func (mr *MockCliToHubServerMockRecorder) UpgradeCopyMasterDataDir(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpgradeCopyMasterDataDir", reflect.TypeOf((*MockCliToHubServer)(nil).UpgradeCopyMasterDataDir), arg0, arg1)
 }
 
 // UpgradeValidateStartCluster mocks base method
