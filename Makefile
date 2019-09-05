@@ -33,7 +33,7 @@ depend-dev: depend
 		go install ./vendor/github.com/golang/protobuf/protoc-gen-go
 		go install ./vendor/github.com/golang/mock/mockgen
 		go get golang.org/x/tools/cmd/goimports
-		go get github.com/golang/lint/golint
+		go get golang.org/x/lint/golint
 		go get github.com/alecthomas/gometalinter
 		gometalinter --install
 
