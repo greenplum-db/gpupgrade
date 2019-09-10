@@ -12,8 +12,6 @@ inputs:
 - name: cluster_env_files
 - name: gpupgrade_src
   path: go/src/github.com/greenplum-db/gpupgrade
-- name: gpdb_src
-- name: bin_gpdb
 - name: sqldump
 
 run:

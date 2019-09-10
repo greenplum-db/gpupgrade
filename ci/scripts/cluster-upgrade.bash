@@ -2,6 +2,84 @@
 
 set -eux -o pipefail
 
+# Due to buggy RPATH settings and dependencies on LD_LIBRARY_PATH during our
+# build process, it's very difficult to use the old and new binaries at the same
+# time. (They end up cross-linked against each others' dependencies.)
+# make_trampoline_directories() is a temporary workaround for this problem.
+#
+# It sets up a fake binary directory, for both the old and new clusters, that
+# contains a set of symbolic links to the necessary executables. The trampoline
+# binary will set PATH and LD_LIBRARY_PATH as if we had sourced greenplum_path,
+# then call the actual executable with the provided arguments. This way we can
+# avoid polluting the environment with either the old or new link paths; they're
+# set just-in-time.
+make_trampoline_directories() {
+    cat - > /tmp/trampoline <<"EOF"
+#! /bin/bash
+set -eu -o pipefail
+
+executable=$(basename ${BASH_SOURCE[0]})
+gphome=$(readlink -e "$(dirname ${BASH_SOURCE[0]})/..")
+
+if [ -z ${LD_LIBRARY_PATH+x} ]; then
+    export LD_LIBRARY_PATH="${gphome}/lib:${gphome}/ext/python/lib"
+else
+    # Keep any existing paths around too.
+    export LD_LIBRARY_PATH="${gphome}/lib:${gphome}/ext/python/lib:$LD_LIBRARY_PATH"
+fi
+export PATH="${gphome}/bin:$PATH"
+
+"${gphome}/bin/${executable}" "$@"
+EOF
+
+    for host in "$@"; do
+        scp /tmp/trampoline "$host":/tmp/trampoline
+
+        time ssh centos@"$host" bash <<EOF
+set -eux -o pipefail
+
+sudo mkdir "${GPHOME_OLD}/fake-bin"
+cd "${GPHOME_OLD}/fake-bin"
+sudo cp /tmp/trampoline .
+sudo chmod +x ./trampoline
+
+sudo ln -s trampoline pg_controldata
+sudo ln -s trampoline pg_ctl
+sudo ln -s trampoline pg_resetxlog
+sudo ln -s trampoline postgres
+
+sudo ln -s trampoline gpstop
+
+# GPHOME_NEW might be the same as GPHOME_OLD for same-version upgrades.
+if [ "$GPHOME_NEW" != "$GPHOME_OLD" ]; then
+    sudo mkdir "${GPHOME_NEW}/fake-bin"
+    cd "${GPHOME_NEW}/fake-bin"
+    sudo cp /tmp/trampoline .
+    sudo chmod +x ./trampoline
+
+    sudo ln -s trampoline pg_controldata
+    sudo ln -s trampoline pg_ctl
+    sudo ln -s trampoline pg_resetxlog
+    sudo ln -s trampoline postgres
+
+    sudo ln -s trampoline gpstop
+fi
+
+sudo ln -s trampoline initdb
+sudo ln -s trampoline pg_dump
+sudo ln -s trampoline pg_dumpall
+sudo ln -s trampoline pg_restore
+sudo ln -s trampoline pg_upgrade
+sudo ln -s trampoline psql
+sudo ln -s trampoline vacuumdb
+
+sudo ln -s trampoline gpupgrade_agent # XXX this is silly
+sudo ln -s trampoline gpinitsystem
+sudo ln -s trampoline gpstart
+EOF
+    done
+}
+
 # We'll need this to transfer our built binaries over to the cluster hosts.
 ./ccp_src/scripts/setup_ssh_to_cluster.sh
 
@@ -22,25 +100,24 @@ make
 # Install the artifacts onto the cluster machines.
 artifacts='gpupgrade gpupgrade_hub gpupgrade_agent'
 for host in "${hosts[@]}"; do
-    scp $artifacts "gpadmin@$host:/usr/local/greenplum-db-devel/bin/"
+    scp $artifacts "gpadmin@$host:${GPHOME_NEW}/bin/"
 done
 
-# Load the SQL dump into the cluster.
-echo 'Loading SQL dump...'
-time ssh mdw bash <<"EOF"
+echo 'Loading SQL dump into old cluster...'
+time ssh mdw bash <<EOF
     set -eux -o pipefail
 
-    source /usr/local/greenplum-db-devel/greenplum_path.sh
+    source ${GPHOME_OLD}/greenplum_path.sh
     export PGOPTIONS='--client-min-messages=warning'
     unxz < /tmp/dump.sql.xz | psql -f - postgres
 EOF
 
-# Now do the upgrade.
-time ssh mdw bash <<"EOF"
-    set -eu -o pipefail
+echo 'Creating fake binary directories for the environment...'
+make_trampoline_directories "${hosts[@]}"
 
-    source /usr/local/greenplum-db-devel/greenplum_path.sh
-    export PGPORT=5432 # TODO remove the need for this
+# Now do the upgrade.
+time ssh mdw GPHOME_OLD="${GPHOME_OLD}" GPHOME_NEW="${GPHOME_NEW}" bash <<"EOF"
+    set -eux -o pipefail
 
     wait_for_step() {
         local step="$1"
@@ -83,7 +160,7 @@ time ssh mdw bash <<"EOF"
         echo "Dumping cluster contents from port ${port} to ${dumpfile}..."
 
         ssh -n mdw "
-            source /usr/local/greenplum-db-devel/greenplum_path.sh
+            source ${GPHOME_NEW}/greenplum_path.sh
             pg_dumpall -p ${port} -f '$dumpfile'
         "
     }
@@ -101,11 +178,13 @@ time ssh mdw bash <<"EOF"
 
     dump_sql 5432 /tmp/old.sql
 
+    # XXX gpupgrade needs to know where the hub is installed; see #117
+    export PATH=${GPHOME_NEW}/bin:$PATH
     gpupgrade prepare init \
-              --new-bindir /usr/local/greenplum-db-devel/bin \
-              --old-bindir /usr/local/greenplum-db-devel/bin
+              --new-bindir ${GPHOME_NEW}/fake-bin \
+              --old-bindir ${GPHOME_OLD}/fake-bin
 
-    gpupgrade prepare start-hub
+    PGPORT=5432 gpupgrade prepare start-hub
 
     gpupgrade check config
     gpupgrade check version
