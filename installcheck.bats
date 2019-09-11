@@ -24,17 +24,10 @@ teardown() {
 }
 
 @test "gpugrade can make it as far as we currently know..." {
-    gpupgrade prepare init \
+    gpupgrade initialize \
               --old-bindir "$GPHOME"/bin \
-              --new-bindir "$GPHOME_NEW"/bin
-
-    gpupgrade prepare start-hub 3>&-
-
-    gpupgrade check config
-    gpupgrade check version
-    gpupgrade check seginstall
-
-    gpupgrade prepare start-agents
+              --new-bindir "$GPHOME_NEW"/bin \
+              --old-port 15432 3>&-
 
     gpupgrade prepare init-cluster
 

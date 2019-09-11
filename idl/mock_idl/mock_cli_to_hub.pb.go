@@ -36,26 +36,6 @@ func (m *MockCliToHubClient) EXPECT() *MockCliToHubClientMockRecorder {
 	return m.recorder
 }
 
-// CheckConfig mocks base method
-func (m *MockCliToHubClient) CheckConfig(arg0 context.Context, arg1 *idl.CheckConfigRequest, arg2 ...grpc.CallOption) (*idl.CheckConfigReply, error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{arg0, arg1}
-	for _, a := range arg2 {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "CheckConfig", varargs...)
-	ret0, _ := ret[0].(*idl.CheckConfigReply)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CheckConfig indicates an expected call of CheckConfig
-func (mr *MockCliToHubClientMockRecorder) CheckConfig(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckConfig", reflect.TypeOf((*MockCliToHubClient)(nil).CheckConfig), varargs...)
-}
-
 // CheckDiskSpace mocks base method
 func (m *MockCliToHubClient) CheckDiskSpace(arg0 context.Context, arg1 *idl.CheckDiskSpaceRequest, arg2 ...grpc.CallOption) (*idl.CheckDiskSpaceReply, error) {
 	m.ctrl.T.Helper()
@@ -94,26 +74,6 @@ func (mr *MockCliToHubClientMockRecorder) CheckObjectCount(arg0, arg1 interface{
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckObjectCount", reflect.TypeOf((*MockCliToHubClient)(nil).CheckObjectCount), varargs...)
-}
-
-// CheckSeginstall mocks base method
-func (m *MockCliToHubClient) CheckSeginstall(arg0 context.Context, arg1 *idl.CheckSeginstallRequest, arg2 ...grpc.CallOption) (*idl.CheckSeginstallReply, error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{arg0, arg1}
-	for _, a := range arg2 {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "CheckSeginstall", varargs...)
-	ret0, _ := ret[0].(*idl.CheckSeginstallReply)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CheckSeginstall indicates an expected call of CheckSeginstall
-func (mr *MockCliToHubClientMockRecorder) CheckSeginstall(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckSeginstall", reflect.TypeOf((*MockCliToHubClient)(nil).CheckSeginstall), varargs...)
 }
 
 // CheckVersion mocks base method
@@ -156,24 +116,24 @@ func (mr *MockCliToHubClientMockRecorder) GetConfig(arg0, arg1 interface{}, arg2
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfig", reflect.TypeOf((*MockCliToHubClient)(nil).GetConfig), varargs...)
 }
 
-// Ping mocks base method
-func (m *MockCliToHubClient) Ping(arg0 context.Context, arg1 *idl.PingRequest, arg2 ...grpc.CallOption) (*idl.PingReply, error) {
+// Initialize mocks base method
+func (m *MockCliToHubClient) Initialize(arg0 context.Context, arg1 *idl.InitializeRequest, arg2 ...grpc.CallOption) (*idl.InitializeReply, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "Ping", varargs...)
-	ret0, _ := ret[0].(*idl.PingReply)
+	ret := m.ctrl.Call(m, "Initialize", varargs...)
+	ret0, _ := ret[0].(*idl.InitializeReply)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Ping indicates an expected call of Ping
-func (mr *MockCliToHubClientMockRecorder) Ping(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+// Initialize indicates an expected call of Initialize
+func (mr *MockCliToHubClientMockRecorder) Initialize(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockCliToHubClient)(nil).Ping), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Initialize", reflect.TypeOf((*MockCliToHubClient)(nil).Initialize), varargs...)
 }
 
 // PrepareInitCluster mocks base method
@@ -214,26 +174,6 @@ func (mr *MockCliToHubClientMockRecorder) PrepareShutdownClusters(arg0, arg1 int
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrepareShutdownClusters", reflect.TypeOf((*MockCliToHubClient)(nil).PrepareShutdownClusters), varargs...)
-}
-
-// PrepareStartAgents mocks base method
-func (m *MockCliToHubClient) PrepareStartAgents(arg0 context.Context, arg1 *idl.PrepareStartAgentsRequest, arg2 ...grpc.CallOption) (*idl.PrepareStartAgentsReply, error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{arg0, arg1}
-	for _, a := range arg2 {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "PrepareStartAgents", varargs...)
-	ret0, _ := ret[0].(*idl.PrepareStartAgentsReply)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// PrepareStartAgents indicates an expected call of PrepareStartAgents
-func (mr *MockCliToHubClientMockRecorder) PrepareStartAgents(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrepareStartAgents", reflect.TypeOf((*MockCliToHubClient)(nil).PrepareStartAgents), varargs...)
 }
 
 // SetConfig mocks base method
@@ -419,21 +359,6 @@ func (m *MockCliToHubServer) EXPECT() *MockCliToHubServerMockRecorder {
 	return m.recorder
 }
 
-// CheckConfig mocks base method
-func (m *MockCliToHubServer) CheckConfig(arg0 context.Context, arg1 *idl.CheckConfigRequest) (*idl.CheckConfigReply, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckConfig", arg0, arg1)
-	ret0, _ := ret[0].(*idl.CheckConfigReply)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CheckConfig indicates an expected call of CheckConfig
-func (mr *MockCliToHubServerMockRecorder) CheckConfig(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckConfig", reflect.TypeOf((*MockCliToHubServer)(nil).CheckConfig), arg0, arg1)
-}
-
 // CheckDiskSpace mocks base method
 func (m *MockCliToHubServer) CheckDiskSpace(arg0 context.Context, arg1 *idl.CheckDiskSpaceRequest) (*idl.CheckDiskSpaceReply, error) {
 	m.ctrl.T.Helper()
@@ -462,21 +387,6 @@ func (m *MockCliToHubServer) CheckObjectCount(arg0 context.Context, arg1 *idl.Ch
 func (mr *MockCliToHubServerMockRecorder) CheckObjectCount(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckObjectCount", reflect.TypeOf((*MockCliToHubServer)(nil).CheckObjectCount), arg0, arg1)
-}
-
-// CheckSeginstall mocks base method
-func (m *MockCliToHubServer) CheckSeginstall(arg0 context.Context, arg1 *idl.CheckSeginstallRequest) (*idl.CheckSeginstallReply, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckSeginstall", arg0, arg1)
-	ret0, _ := ret[0].(*idl.CheckSeginstallReply)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CheckSeginstall indicates an expected call of CheckSeginstall
-func (mr *MockCliToHubServerMockRecorder) CheckSeginstall(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckSeginstall", reflect.TypeOf((*MockCliToHubServer)(nil).CheckSeginstall), arg0, arg1)
 }
 
 // CheckVersion mocks base method
@@ -509,19 +419,19 @@ func (mr *MockCliToHubServerMockRecorder) GetConfig(arg0, arg1 interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfig", reflect.TypeOf((*MockCliToHubServer)(nil).GetConfig), arg0, arg1)
 }
 
-// Ping mocks base method
-func (m *MockCliToHubServer) Ping(arg0 context.Context, arg1 *idl.PingRequest) (*idl.PingReply, error) {
+// Initialize mocks base method
+func (m *MockCliToHubServer) Initialize(arg0 context.Context, arg1 *idl.InitializeRequest) (*idl.InitializeReply, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Ping", arg0, arg1)
-	ret0, _ := ret[0].(*idl.PingReply)
+	ret := m.ctrl.Call(m, "Initialize", arg0, arg1)
+	ret0, _ := ret[0].(*idl.InitializeReply)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Ping indicates an expected call of Ping
-func (mr *MockCliToHubServerMockRecorder) Ping(arg0, arg1 interface{}) *gomock.Call {
+// Initialize indicates an expected call of Initialize
+func (mr *MockCliToHubServerMockRecorder) Initialize(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockCliToHubServer)(nil).Ping), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Initialize", reflect.TypeOf((*MockCliToHubServer)(nil).Initialize), arg0, arg1)
 }
 
 // PrepareInitCluster mocks base method
@@ -552,21 +462,6 @@ func (m *MockCliToHubServer) PrepareShutdownClusters(arg0 context.Context, arg1 
 func (mr *MockCliToHubServerMockRecorder) PrepareShutdownClusters(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrepareShutdownClusters", reflect.TypeOf((*MockCliToHubServer)(nil).PrepareShutdownClusters), arg0, arg1)
-}
-
-// PrepareStartAgents mocks base method
-func (m *MockCliToHubServer) PrepareStartAgents(arg0 context.Context, arg1 *idl.PrepareStartAgentsRequest) (*idl.PrepareStartAgentsReply, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PrepareStartAgents", arg0, arg1)
-	ret0, _ := ret[0].(*idl.PrepareStartAgentsReply)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// PrepareStartAgents indicates an expected call of PrepareStartAgents
-func (mr *MockCliToHubServerMockRecorder) PrepareStartAgents(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrepareStartAgents", reflect.TypeOf((*MockCliToHubServer)(nil).PrepareStartAgents), arg0, arg1)
 }
 
 // SetConfig mocks base method

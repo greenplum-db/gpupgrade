@@ -19,7 +19,6 @@ package commands
  * 			config       gather cluster configuration
  * 			disk-space   check that disk space usage is less than 80% on all segments
  * 			object-count count database objects and numeric objects
- * 			seginstall   confirms that the new software is installed on all segments
  * 			version      validate current version is upgradable
  *
  * 		Flags:
@@ -52,10 +51,9 @@ func BuildRootCommand() *cobra.Command {
 	root := &cobra.Command{Use: "gpupgrade"}
 
 	root.AddCommand(prepare, config, status, check, version, upgrade)
+	root.AddCommand(initialize())
 
-	subPrepareInit := createPrepareInitSubcommand()
-	prepare.AddCommand(subPrepareStartHub, subPrepareInitCluster, subPrepareShutdownClusters, subPrepareStartAgents,
-		subPrepareInit)
+	prepare.AddCommand(subPrepareInitCluster, subPrepareShutdownClusters)
 
 	subConfigSet := createConfigSetSubcommand()
 	subConfigShow := createConfigShowSubcommand()
@@ -63,7 +61,7 @@ func BuildRootCommand() *cobra.Command {
 
 	status.AddCommand(subStatusUpgrade, subStatusConversion)
 
-	check.AddCommand(subCheckVersion, subCheckObjectCount, subCheckDiskSpace, subCheckConfig, subCheckSeginstall)
+	check.AddCommand(subCheckObjectCount, subCheckDiskSpace)
 
 	upgrade.AddCommand(subUpgradeConvertMaster, subUpgradeConvertPrimaries, subUpgradeCopyMasterDataDir,
 		subUpgradeValidateStartCluster, subUpgradeReconfigurePorts)
@@ -115,7 +113,7 @@ func connectToHub() idl.CliToHubClient {
 	if err != nil {
 		// Print a nicer error message if we can't connect to the hub.
 		if ctx.Err() == context.DeadlineExceeded {
-			gplog.Error("couldn't connect to the upgrade hub (did you run 'gpupgrade prepare start-hub'?)")
+			gplog.Error("could not connect to the upgrade hub (did you run 'gpupgrade initialize'?)")
 		} else {
 			gplog.Error(err.Error())
 		}
@@ -132,19 +130,6 @@ var check = &cobra.Command{
 	Long:  `collects information and validates the target Greenplum installation can be upgraded`,
 }
 
-var subCheckConfig = &cobra.Command{
-	Use:   "config",
-	Short: "gather cluster configuration",
-	Long:  "gather cluster configuration",
-	Run: func(cmd *cobra.Command, args []string) {
-		client := connectToHub()
-		err := commanders.NewConfigChecker(client).Execute()
-		if err != nil {
-			gplog.Error(err.Error())
-			os.Exit(1)
-		}
-	},
-}
 var subCheckDiskSpace = &cobra.Command{
 	Use:     "disk-space",
 	Short:   "check that disk space usage is less than 80% on all segments",
@@ -163,33 +148,6 @@ var subCheckObjectCount = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client := connectToHub()
 		return commanders.NewObjectCountChecker(client).Execute()
-	},
-}
-var subCheckSeginstall = &cobra.Command{
-	Use:   "seginstall",
-	Short: "confirms that the new software is installed on all segments",
-	Long: "Running this command will validate that the new software is installed on all segments, " +
-		"and register successful or failed validation (available in `gpupgrade status upgrade`)",
-	Run: func(cmd *cobra.Command, args []string) {
-		client := connectToHub()
-		err := commanders.NewSeginstallChecker(client).Execute()
-		if err != nil {
-			gplog.Error(err.Error())
-			os.Exit(1)
-		}
-
-		fmt.Println("Seginstall is underway. Use command \"gpupgrade status upgrade\" " +
-			"to check its current status, and/or hub logs for possible errors.")
-	},
-}
-var subCheckVersion = &cobra.Command{
-	Use:     "version",
-	Short:   "validate current version is upgradable",
-	Long:    `validate current version is upgradable`,
-	Aliases: []string{"ver"},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		client := connectToHub()
-		return commanders.NewVersionChecker(client).Execute()
 	},
 }
 
@@ -295,31 +253,6 @@ var prepare = &cobra.Command{
 	Long:  "subcommands to help you get ready for a gpupgrade",
 }
 
-func createPrepareInitSubcommand() *cobra.Command {
-	var oldBinDir, newBinDir string
-
-	subInit := &cobra.Command{
-		Use:   "init",
-		Short: "Setup state dir and config file",
-		Long:  `Setup state dir and config file`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// If we got here, the args are okay and the user doesn't need a usage
-			// dump on failure.
-			cmd.SilenceUsage = true
-
-			stateDir := utils.GetStateDir()
-			return commanders.DoInit(stateDir, oldBinDir, newBinDir)
-		},
-	}
-
-	subInit.PersistentFlags().StringVar(&oldBinDir, "old-bindir", "", "install directory for old gpdb version")
-	subInit.MarkPersistentFlagRequired("old-bindir")
-	subInit.PersistentFlags().StringVar(&newBinDir, "new-bindir", "", "install directory for new gpdb version")
-	subInit.MarkPersistentFlagRequired("new-bindir")
-
-	return subInit
-}
-
 var subPrepareInitCluster = &cobra.Command{
 	Use:   "init-cluster",
 	Short: "inits the cluster",
@@ -344,42 +277,6 @@ var subPrepareShutdownClusters = &cobra.Command{
 		err := preparer.ShutdownClusters()
 		if err != nil {
 			gplog.Error(err.Error())
-			os.Exit(1)
-		}
-	},
-}
-var subPrepareStartAgents = &cobra.Command{
-	Use:   "start-agents",
-	Short: "start agents on segment hosts",
-	Long:  "start agents on all segments",
-	Run: func(cmd *cobra.Command, args []string) {
-		client := connectToHub()
-		preparer := commanders.NewPreparer(client)
-		err := preparer.StartAgents()
-		if err != nil {
-			gplog.Error(err.Error())
-			os.Exit(1)
-		}
-	},
-}
-var subPrepareStartHub = &cobra.Command{
-	Use:   "start-hub",
-	Short: "starts the hub",
-	Long:  "starts the hub",
-	Run: func(cmd *cobra.Command, args []string) {
-		preparer := commanders.Preparer{}
-		err := preparer.StartHub()
-		if err != nil {
-			gplog.Error(err.Error())
-			os.Exit(1)
-		}
-
-		client := connectToHub()
-		err = preparer.VerifyConnectivity(client)
-
-		if err != nil {
-			gplog.Error("gpupgrade is unable to connect via gRPC to the hub")
-			gplog.Error("%v", err)
 			os.Exit(1)
 		}
 	},
@@ -502,4 +399,50 @@ var version = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println(utils.VersionString("gpupgrade"))
 	},
+}
+
+//////////////////////////////////////// Initialize
+func initialize() *cobra.Command {
+	var oldBinDir, newBinDir string
+	var oldPort int
+
+	subInit := &cobra.Command{
+		Use:   "initialize",
+		Short: "prepare the system for upgrade",
+		Long:  `prepare the system for upgrade`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// If we got here, the args are okay and the user doesn't need a usage
+			// dump on failure.
+			cmd.SilenceUsage = true
+
+			err := commanders.CreateStateDirAndClusterConfigs(oldBinDir, newBinDir)
+			if err != nil {
+				return errors.Wrap(err, "tried to create state directory")
+			}
+
+			err = commanders.StartHub()
+			if err != nil {
+				return errors.Wrap(err, "starting hub")
+			}
+
+			client := connectToHub()
+			err = commanders.Initialize(client, oldBinDir, newBinDir, oldPort)
+			if err != nil {
+				return errors.Wrap(err, "initializing hub")
+			}
+
+			// TODO: how do we rollback here?
+			return commanders.NewVersionChecker(client).Execute()
+
+		},
+	}
+
+	subInit.PersistentFlags().StringVar(&oldBinDir, "old-bindir", "", "install directory for old gpdb version")
+	subInit.MarkPersistentFlagRequired("old-bindir")
+	subInit.PersistentFlags().StringVar(&newBinDir, "new-bindir", "", "install directory for new gpdb version")
+	subInit.MarkPersistentFlagRequired("new-bindir")
+	subInit.PersistentFlags().IntVar(&oldPort, "old-port", 0, "master port for old gpdb cluster")
+	subInit.MarkPersistentFlagRequired("old-port")
+
+	return subInit
 }

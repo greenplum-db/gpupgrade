@@ -46,7 +46,7 @@ var _ = Describe("status", func() {
 			statusSession := runCommand("status", "upgrade")
 			Eventually(statusSession).Should(Exit(0))
 
-			Eventually(statusSession).Should(gbytes.Say("PENDING - Configuration Check"))
+			Eventually(statusSession).Should(gbytes.Say("PENDING - Configuration "))
 			Eventually(statusSession).Should(gbytes.Say("PENDING - Install binaries on segments"))
 		})
 	})

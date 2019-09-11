@@ -1,8 +1,6 @@
 package db
 
 import (
-	"strconv"
-
 	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
@@ -19,9 +17,6 @@ func NewDBConn(masterHost string, masterPort int, dbname string) *dbconn.DBConn 
 	hostname, _ := utils.GetHost()
 	if masterHost == "" {
 		masterHost = utils.TryEnv("PGHOST", hostname)
-	}
-	if masterPort == 0 {
-		masterPort, _ = strconv.Atoi(utils.TryEnv("PGPORT", "15432"))
 	}
 
 	return &dbconn.DBConn{

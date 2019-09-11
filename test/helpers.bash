@@ -5,6 +5,12 @@ abort() {
     exit 1
 }
 
+# require_gpdb() will skip a test if a cluster's environment is not set up.
+require_gpdb() {
+    [ -n "${GPHOME}" ] || skip "this test requires an active GPDB cluster (set GPHOME)"
+    [ -n "${PGPORT}" ] || skip "this test requires an active GPDB cluster (set PGPORT)"
+}
+
 # kill_hub() simply kills any gpupgrade_hub process.
 # TODO: Killing every running hub is a bad idea, and we don't have any guarantee
 # that the signal will have been received by the time we search the ps output.

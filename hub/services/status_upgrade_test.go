@@ -30,7 +30,6 @@ var _ = Describe("status upgrade", func() {
 		cm = testutils.NewMockChecklistManager()
 		cm.AddStep(upgradestatus.CONFIG, idl.UpgradeSteps_CONFIG)
 		cm.AddStep(upgradestatus.INIT_CLUSTER, idl.UpgradeSteps_INIT_CLUSTER)
-		cm.AddStep(upgradestatus.SEGINSTALL, idl.UpgradeSteps_SEGINSTALL)
 		cm.AddStep(upgradestatus.SHUTDOWN_CLUSTERS, idl.UpgradeSteps_SHUTDOWN_CLUSTERS)
 		cm.AddStep(upgradestatus.CONVERT_MASTER, idl.UpgradeSteps_CONVERT_MASTER)
 		cm.AddStep(upgradestatus.START_AGENTS, idl.UpgradeSteps_START_AGENTS)
@@ -43,7 +42,7 @@ var _ = Describe("status upgrade", func() {
 	})
 
 	It("responds with the statuses of the steps based on checklist state", func() {
-		for _, name := range []string{upgradestatus.CONFIG, upgradestatus.SEGINSTALL, upgradestatus.START_AGENTS} {
+		for _, name := range []string{upgradestatus.CONFIG, upgradestatus.START_AGENTS} {
 			step := cm.GetStepWriter(name)
 			step.MarkInProgress()
 			step.MarkComplete()
@@ -64,9 +63,6 @@ var _ = Describe("status upgrade", func() {
 				}, {
 					Step:   idl.UpgradeSteps_INIT_CLUSTER,
 					Status: idl.StepStatus_PENDING,
-				}, {
-					Step:   idl.UpgradeSteps_SEGINSTALL,
-					Status: idl.StepStatus_COMPLETE,
 				}, {
 					Step:   idl.UpgradeSteps_SHUTDOWN_CLUSTERS,
 					Status: idl.StepStatus_PENDING,

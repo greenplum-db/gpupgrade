@@ -27,16 +27,6 @@ func newSpyCliToHubClient() *spyCliToHubClient {
 	}
 }
 
-func (s *spyCliToHubClient) CheckSeginstall(
-	ctx context.Context,
-	request *idl.CheckSeginstallRequest,
-	opts ...grpc.CallOption,
-) (*idl.CheckSeginstallReply, error) {
-
-	s.checkSeginstallCount++
-	return &idl.CheckSeginstallReply{}, s.err
-}
-
 func (s *spyCliToHubClient) StatusUpgrade(
 	ctx context.Context,
 	request *idl.StatusUpgradeRequest,

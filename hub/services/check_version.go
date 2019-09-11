@@ -9,6 +9,11 @@ import (
 	"golang.org/x/net/context"
 )
 
+// FIXME: we need to rework this as a check for:
+//           minimum source gpdb version (e.g. at least 5.15)
+//           minimum/maximum target gpdb version (e.g. at least 6.2 but less than 7.0)
+//        also, return the actual source/target gpdb versions here
+
 const (
 	MINIMUM_VERSION = "5.0.0" // FIXME: set to minimum 5.X version we support
 )

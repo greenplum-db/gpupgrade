@@ -180,17 +180,11 @@ time ssh mdw GPHOME_OLD="${GPHOME_OLD}" GPHOME_NEW="${GPHOME_NEW}" bash <<"EOF"
 
     # XXX gpupgrade needs to know where the hub is installed; see #117
     export PATH=${GPHOME_NEW}/bin:$PATH
-    gpupgrade prepare init \
+
+    gpupgrade initialize \
               --new-bindir ${GPHOME_NEW}/fake-bin \
-              --old-bindir ${GPHOME_OLD}/fake-bin
-
-    PGPORT=5432 gpupgrade prepare start-hub
-
-    gpupgrade check config
-    gpupgrade check version
-    gpupgrade check seginstall
-
-    gpupgrade prepare start-agents
+              --old-bindir ${GPHOME_OLD}/fake-bin \
+              --old-port 5432
 
     gpupgrade prepare init-cluster
     wait_for_step "Initialize new cluster"

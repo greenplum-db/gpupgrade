@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"runtime/debug"
 
+	"github.com/pkg/errors"
+
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
@@ -13,7 +15,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/daemon"
 	"github.com/greenplum-db/gpupgrade/utils/log"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 )
@@ -48,11 +49,26 @@ func main() {
 				StateDir:       utils.GetStateDir(),
 				LogDir:         logdir,
 			}
-			source := &utils.Cluster{ConfigPath: filepath.Join(conf.StateDir, utils.SOURCE_CONFIG_FILENAME)}
-			target := &utils.Cluster{ConfigPath: filepath.Join(conf.StateDir, utils.TARGET_CONFIG_FILENAME)}
-			cm := upgradestatus.NewChecklistManager(conf.StateDir)
 
-			// Load the cluster configuration.
+			finfo, err := os.Stat(conf.StateDir)
+			if os.IsNotExist(err) {
+				return fmt.Errorf("gpupgrade state dir (%s) does not exist. Did you run gpupgrade initialize?", conf.StateDir)
+			} else if err != nil {
+				return err
+			} else if !finfo.IsDir() {
+				return fmt.Errorf("gpupgrade state dir (%s) does not exist as a directory.", conf.StateDir)
+			}
+
+			// the hub needs to be able to be restarted at any time, including
+			//  the first time.  So we populate the cluster here.
+			// TODO: design a better scheme for this.
+			source := &utils.Cluster{
+				ConfigPath: filepath.Join(conf.StateDir, utils.SOURCE_CONFIG_FILENAME),
+			}
+			target := &utils.Cluster{
+				ConfigPath: filepath.Join(conf.StateDir, utils.TARGET_CONFIG_FILENAME),
+			}
+
 			errSource := source.Load()
 			errTarget := target.Load()
 			if errSource != nil && errTarget != nil {
@@ -64,6 +80,8 @@ func main() {
 				return errors.Wrap(errTarget, "Unable to load target cluster configuration")
 			}
 
+			cm := upgradestatus.NewChecklistManager(conf.StateDir)
+
 			hub := services.NewHub(source, target, grpc.DialContext, conf, cm)
 
 			// Set up the checklist steps in order.
@@ -73,7 +91,6 @@ func main() {
 			// pull these into a Hub method or helper function, but currently the
 			// interfaces aren't well componentized.
 			cm.AddWritableStep(upgradestatus.CONFIG, idl.UpgradeSteps_CONFIG)
-			cm.AddWritableStep(upgradestatus.SEGINSTALL, idl.UpgradeSteps_SEGINSTALL)
 			cm.AddWritableStep(upgradestatus.START_AGENTS, idl.UpgradeSteps_START_AGENTS)
 			cm.AddWritableStep(upgradestatus.INIT_CLUSTER, idl.UpgradeSteps_INIT_CLUSTER)
 			cm.AddWritableStep(upgradestatus.SHUTDOWN_CLUSTERS, idl.UpgradeSteps_SHUTDOWN_CLUSTERS)
@@ -92,12 +109,10 @@ func main() {
 				hub.MakeDaemon()
 			}
 
-			err := hub.Start()
+			err = hub.Start()
 			if err != nil {
 				return err
 			}
-
-			hub.Stop()
 
 			return nil
 		},

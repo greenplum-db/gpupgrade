@@ -60,25 +60,5 @@ var _ = Describe("db connector", func() {
 				Expect(dbConnector.Host).To(Equal(currentHost))
 			})
 		})
-		Context("when Port parameter is 0 and PGPORT is set", func() {
-			It("uses PGPORT", func() {
-				old := os.Getenv("PGPORT")
-				os.Setenv("PGPORT", "777")
-				defer os.Setenv("PGPORT", old)
-
-				dbConnector := NewDBConn("", 0, "")
-				Expect(dbConnector.Port).To(Equal(777))
-			})
-		})
-		Context("when Port parameter is 0 and PGPORT is not set", func() {
-			It("uses 15432", func() {
-				old := os.Getenv("PGPORT")
-				os.Setenv("PGPORT", "")
-				defer os.Setenv("PGPORT", old)
-
-				dbConnector := NewDBConn("", 0, "")
-				Expect(dbConnector.Port).To(Equal(15432))
-			})
-		})
 	})
 })

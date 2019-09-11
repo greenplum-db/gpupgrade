@@ -3,18 +3,15 @@ syntax = "proto3";
 package idl;
 
 service CliToHub {
-    rpc Ping(PingRequest) returns (PingReply) {}
     rpc StatusUpgrade(StatusUpgradeRequest) returns (StatusUpgradeReply) {}
     rpc StatusConversion(StatusConversionRequest) returns (StatusConversionReply) {}
-    rpc CheckConfig(CheckConfigRequest) returns (CheckConfigReply) {}
-    rpc CheckSeginstall(CheckSeginstallRequest) returns (CheckSeginstallReply) {}
     rpc CheckObjectCount(CheckObjectCountRequest) returns (CheckObjectCountReply) {}
     rpc CheckVersion (CheckVersionRequest) returns (CheckVersionReply) {}
     rpc CheckDiskSpace (CheckDiskSpaceRequest) returns (CheckDiskSpaceReply) {}
     rpc PrepareInitCluster (PrepareInitClusterRequest) returns (PrepareInitClusterReply) {}
+    rpc Initialize(InitializeRequest) returns (InitializeReply) {}
     rpc PrepareShutdownClusters (PrepareShutdownClustersRequest) returns (PrepareShutdownClustersReply) {}
     rpc UpgradeConvertMaster (UpgradeConvertMasterRequest) returns (stream Chunk) {}
-    rpc PrepareStartAgents (PrepareStartAgentsRequest) returns (PrepareStartAgentsReply) {}
     rpc UpgradeCopyMasterDataDir (UpgradeCopyMasterDataDirRequest) returns (UpgradeCopyMasterDataDirReply) {}
     rpc UpgradeValidateStartCluster (UpgradeValidateStartClusterRequest) returns (UpgradeValidateStartClusterReply) {}
     rpc UpgradeConvertPrimaries (UpgradeConvertPrimariesRequest) returns (UpgradeConvertPrimariesReply) {}
@@ -35,8 +32,12 @@ message UpgradeCopyMasterDataDirReply {}
 message UpgradeValidateStartClusterRequest {}
 message UpgradeValidateStartClusterReply {}
 
-message PingRequest {}
-message PingReply {}
+message InitializeRequest {
+    string oldBinDir = 1;
+    string newBinDir = 2;
+    int32 oldPort = 3;
+}
+message InitializeReply {}
 
 message StatusConversionRequest {}
 
@@ -65,15 +66,14 @@ message UpgradeStepStatus {
 enum UpgradeSteps {
     UNKNOWN_STEP = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
     CONFIG = 1;
-    SEGINSTALL = 2;
-    START_AGENTS = 3;
-    INIT_CLUSTER = 4;
-    SHUTDOWN_CLUSTERS = 5;
-    CONVERT_MASTER = 6;
-    COPY_MASTER = 7;
-    CONVERT_PRIMARIES = 8;
-    VALIDATE_START_CLUSTER = 9;
-    RECONFIGURE_PORTS = 10;
+    START_AGENTS = 2;
+    INIT_CLUSTER = 3;
+    SHUTDOWN_CLUSTERS = 4;
+    CONVERT_MASTER = 5;
+    COPY_MASTER = 6;
+    CONVERT_PRIMARIES = 7;
+    VALIDATE_START_CLUSTER = 8;
+    RECONFIGURE_PORTS = 9;
 }
 
 enum StepStatus {
@@ -83,19 +83,6 @@ enum StepStatus {
     COMPLETE = 3;
     FAILED = 4;
 }
-
-message CheckConfigRequest {}
-
-// Consider removing the status as errors are/should be put on the error field.
-message CheckConfigReply {
-    string ConfigStatus  = 1;
-}
-
-message CheckSeginstallRequest {}
-message CheckSeginstallReply {}
-
-message PrepareStartAgentsRequest {}
-message PrepareStartAgentsReply {}
 
 message CountPerDb {
     string DbName = 1;

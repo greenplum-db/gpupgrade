@@ -74,5 +74,6 @@ var _ = AfterEach(func() {
 
 // Enable exectest.NewCommand mocking.
 func TestMain(m *testing.M) {
+
 	os.Exit(exectest.Run(m))
 }

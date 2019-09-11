@@ -126,7 +126,6 @@ var _ = Describe("Reporter", func() {
 			},
 			Entry("unknown step", idl.UpgradeSteps_UNKNOWN_STEP, idl.StepStatus_PENDING, "PENDING - Unknown step"),
 			Entry("configuration check", idl.UpgradeSteps_CONFIG, idl.StepStatus_RUNNING, "RUNNING - Configuration Check"),
-			Entry("install binaries on segments", idl.UpgradeSteps_SEGINSTALL, idl.StepStatus_COMPLETE, "COMPLETE - Install binaries on segments"),
 			Entry("prepare init cluster", idl.UpgradeSteps_INIT_CLUSTER, idl.StepStatus_FAILED, "FAILED - Initialize new cluster"),
 			Entry("upgrade on master", idl.UpgradeSteps_CONVERT_MASTER, idl.StepStatus_PENDING, "PENDING - Run pg_upgrade on master"),
 			Entry("shutdown cluster", idl.UpgradeSteps_SHUTDOWN_CLUSTERS, idl.StepStatus_PENDING, "PENDING - Shutdown clusters"),

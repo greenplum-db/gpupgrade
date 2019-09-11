@@ -13,7 +13,6 @@ import (
 
 const (
 	CONFIG                 = "check-config"
-	SEGINSTALL             = "check-seginstall"
 	START_AGENTS           = "start-agents"
 	INIT_CLUSTER           = "init-cluster"
 	SHUTDOWN_CLUSTERS      = "shutdown-clusters"

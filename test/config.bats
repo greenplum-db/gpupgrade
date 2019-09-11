@@ -5,13 +5,14 @@ load helpers
 setup() {
     STATE_DIR=`mktemp -d`
     export GPUPGRADE_HOME="${STATE_DIR}/gpupgrade"
-    gpupgrade prepare init --old-bindir /dummy --new-bindir /dummy
 
+    kill_agents
     kill_hub
-    gpupgrade prepare start-hub
+    gpupgrade initialize --old-bindir "${GPHOME}/bin" --new-bindir "${GPHOME}/bin" --old-port ${PGPORT}
 }
 
 teardown() {
+    kill_agents
     kill_hub
     rm -r "${STATE_DIR}"
 }
@@ -30,15 +31,18 @@ teardown() {
     [ "$output" = "/my/old/bin/dir" ]
 }
 
+# TODO: we need to rewrite this test after we work through the design
+#   of how `gpupgrade recover` will work
+#
 @test "configuration persists after hub is killed and restarted" {
-    gpupgrade config set --new-bindir /my/bin/dir
+   gpupgrade config set --new-bindir /my/bin/dir
+   kill_hub
 
-    kill_hub
-    gpupgrade prepare start-hub
+   gpupgrade_hub --daemonize
 
-    run gpupgrade config show --new-bindir
-    [ "$status" -eq 0 ]
-    [ "$output" = "/my/bin/dir" ]
+   run gpupgrade config show --new-bindir
+   [ "$status" -eq 0 ]
+   [ "$output" = "/my/bin/dir" ]
 }
 
 @test "configuration can be dumped as a whole" {
