@@ -81,8 +81,8 @@ var _ = Describe("Hub prepare init-cluster", func() {
 		It("successfully declares all directories", func() {
 			expectedConfig := []string{fmt.Sprintf("QD_PRIMARY_ARRAY=localhost~15433~%[1]s_upgrade/seg-1~1~-1~0", dir),
 				fmt.Sprintf(`declare -a PRIMARY_ARRAY=(
-	host1~27432~%[1]s_upgrade/seg1~2~0~0
-	host2~27433~%[1]s_upgrade/seg2~3~1~0
+	host1~29432~%[1]s_upgrade/seg1~2~0~0
+	host2~29433~%[1]s_upgrade/seg2~3~1~0
 )`, dir)}
 			resultConfig, resultMap, port := hub.DeclareDataDirectories([]string{})
 			Expect(resultMap).To(Equal(segDataDirMap))

@@ -159,7 +159,7 @@ func (h *Hub) DeclareDataDirectories(gpinitsystemConfig []string) ([]string, map
 		if content != -1 {
 			segment := h.source.Segments[content]
 			// FIXME: Arbitrary assumption.	 Do something smarter later
-			segment.Port += 2000
+			segment.Port += 4000
 			datadir := fmt.Sprintf("%s_upgrade", path.Dir(segment.DataDir))
 			segment.DataDir = fmt.Sprintf("%s/%s", datadir, path.Base(segment.DataDir))
 			segmentDataDirMap[segment.Hostname] = append(segmentDataDirMap[segment.Hostname],
