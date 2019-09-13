@@ -106,9 +106,8 @@ jobs:
     trigger: true
   - task: build
     file: gpupgrade_src/ci/tasks/build.yml
-    on_failure:
-      do:
-      - *slack_alert
+  on_failure:
+    <<: *slack_alert
 
 - name: noinstall-tests
   plan:
@@ -118,9 +117,8 @@ jobs:
     - get: bats
   - task: noinstall-tests
     file: gpupgrade_src/ci/tasks/noinstall-tests.yml
-    on_failure:
-      do:
-      - *slack_alert
+  on_failure:
+    <<: *slack_alert
 
 - name: install-tests
   plan:
@@ -134,9 +132,8 @@ jobs:
       trigger: true
   - task: install-tests
     file: gpupgrade_src/ci/tasks/install-tests.yml
-    on_failure:
-      do:
-      - *slack_alert
+  on_failure:
+    <<: *slack_alert
 
 - name: 6-to-6
   plan:
@@ -172,13 +169,12 @@ jobs:
     params:
       GPHOME_OLD: /usr/local/greenplum-db-devel
       GPHOME_NEW: /usr/local/greenplum-db-devel
-    on_failure:
-      do:
-      - *slack_alert
   ensure:
     <<: *set_failed
   on_success:
     <<: *ccp_destroy
+  on_failure:
+    <<: *slack_alert
 
 - name: 5-to-6
   plan:
@@ -273,13 +269,12 @@ jobs:
       params:
         GPHOME_OLD: /usr/local/greenplum-db-old
         GPHOME_NEW: /usr/local/greenplum-db-new
-      on_failure:
-        do:
-          - *slack_alert
   ensure:
     <<: *set_failed
   on_success:
     <<: *ccp_destroy
+  on_failure:
+    <<: *slack_alert
 
 anchors:
 - &ccp_default_params
@@ -335,7 +330,8 @@ anchors:
         BUCKET_NAME: {{tf-bucket-name}}
 
 - &slack_alert
-  put: slack-alert
-  params:
-    text: |
-      Hey team, <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|gpupgrade/$BUILD_JOB_NAME> failed.
+  do:
+  - put: slack-alert
+    params:
+      text: |
+        Hey team, <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|gpupgrade/$BUILD_JOB_NAME> failed.
