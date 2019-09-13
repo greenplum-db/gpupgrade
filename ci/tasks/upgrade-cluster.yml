@@ -15,4 +15,4 @@ inputs:
 - name: sqldump
 
 run:
-  path: go/src/github.com/greenplum-db/gpupgrade/ci/scripts/cluster-upgrade.bash
+  path: go/src/github.com/greenplum-db/gpupgrade/ci/scripts/upgrade-cluster.bash
