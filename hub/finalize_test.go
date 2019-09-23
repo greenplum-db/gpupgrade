@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
+	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	multierror "github.com/hashicorp/go-multierror"
 	"golang.org/x/xerrors"
-	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
 

@@ -2,6 +2,14 @@
 
 
 [[projects]]
+  digest = "1:5e525de85b5793f1eea106a0ea829690f2675e251e5694ed6d759c63c7631c3e"
+  name = "github.com/DATA-DOG/go-sqlmock"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "012d92843b006e16d4c4d699b94b5148e76020e7"
+  version = "v1.4.0"
+
+[[projects]]
   digest = "1:705c40022f5c03bf96ffeb6477858d88565064485a513abcd0f11a0911546cb6"
   name = "github.com/blang/semver"
   packages = ["."]
@@ -62,7 +70,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:8c2e9bb4264b0993ec59e55b2cd79c05545572d684586d3e9b227a83f1756dff"
+  digest = "1:dfbad1d5926f6bc1661596f0b53394ba16c560bd939b7024dcfce78aa2d85220"
   name = "github.com/greenplum-db/gp-common-go-libs"
   packages = [
     "cluster",
@@ -72,7 +80,7 @@
     "testhelper",
   ]
   pruneopts = "UT"
-  revision = "d77bf5c27646a07c35b4e7b9774297fe8702afbc"
+  revision = "5a59b262039fc09f51c69afef5aed475bd0f35a9"
 
 [[projects]]
   digest = "1:0ade334594e69404d80d9d323445d2297ff8161637f9b2d347cc6973d2d6f05b"
@@ -366,14 +374,6 @@
   version = "v1.24.0"
 
 [[projects]]
-  digest = "1:04aea75705cb453e24bf8c1506a24a5a9036537dbc61ddf71d20900d6c7c3ab9"
-  name = "gopkg.in/DATA-DOG/go-sqlmock.v1"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "d76b18b42f285b792bf985118980ce9eacea9d10"
-  version = "v1.3.0"
-
-[[projects]]
   digest = "1:2a81c6e126d36ad027328cffaa4888fc3be40f09dc48028d1f93705b718130b9"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
@@ -385,6 +385,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/DATA-DOG/go-sqlmock",
     "github.com/cloudfoundry/gosigar",
     "github.com/golang/mock/gomock",
     "github.com/golang/mock/mockgen",
@@ -414,7 +415,6 @@
     "google.golang.org/grpc/reflection",
     "google.golang.org/grpc/status",
     "google.golang.org/grpc/test/bufconn",
-    "gopkg.in/DATA-DOG/go-sqlmock.v1",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

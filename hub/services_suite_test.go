@@ -6,9 +6,11 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+
+	sqlmock "github.com/DATA-DOG/go-sqlmock"
+
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
 
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
