@@ -9,7 +9,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/testutils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
+	sqlmock "github.com/DATA-DOG/go-sqlmock"
 )
 
 // the `prepare start-hub` tests are currently in master_only_integration_test

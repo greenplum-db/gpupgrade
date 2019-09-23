@@ -2,6 +2,14 @@
 
 
 [[projects]]
+  digest = "1:c84a587136cb69cecc11f3dbe9f9001444044c0dba74997b07f7e4c150b07cda"
+  name = "github.com/DATA-DOG/go-sqlmock"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "3f9954f6f6697845b082ca57995849ddf614f450"
+  version = "v1.3.3"
+
+[[projects]]
   digest = "1:705c40022f5c03bf96ffeb6477858d88565064485a513abcd0f11a0911546cb6"
   name = "github.com/blang/semver"
   packages = ["."]
@@ -54,7 +62,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:b7388e8388cea56e5fd6b604eecfe56f5d02c0f41c49ad5a853da39b6dc197a0"
+  digest = "1:663280305d61c327ac64a254b180eb3373625ea7a657fbc4b446ffde4a0bcd9d"
   name = "github.com/greenplum-db/gp-common-go-libs"
   packages = [
     "cluster",
@@ -65,7 +73,7 @@
     "testhelper",
   ]
   pruneopts = "UT"
-  revision = "d77bf5c27646a07c35b4e7b9774297fe8702afbc"
+  revision = "c535ba3a6e07217feb463f1c6152c934f65f1f36"
 
 [[projects]]
   digest = "1:0ade334594e69404d80d9d323445d2297ff8161637f9b2d347cc6973d2d6f05b"
@@ -338,12 +346,12 @@
   version = "v1.10.0"
 
 [[projects]]
-  digest = "1:04aea75705cb453e24bf8c1506a24a5a9036537dbc61ddf71d20900d6c7c3ab9"
+  digest = "1:c84a587136cb69cecc11f3dbe9f9001444044c0dba74997b07f7e4c150b07cda"
   name = "gopkg.in/DATA-DOG/go-sqlmock.v1"
   packages = ["."]
   pruneopts = "UT"
-  revision = "d76b18b42f285b792bf985118980ce9eacea9d10"
-  version = "v1.3.0"
+  revision = "3f9954f6f6697845b082ca57995849ddf614f450"
+  version = "v1.3.3"
 
 [[projects]]
   digest = "1:2a81c6e126d36ad027328cffaa4888fc3be40f09dc48028d1f93705b718130b9"
@@ -357,6 +365,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/DATA-DOG/go-sqlmock",
     "github.com/cloudfoundry/gosigar",
     "github.com/golang/mock/gomock",
     "github.com/golang/mock/mockgen",
@@ -386,7 +395,6 @@
     "google.golang.org/grpc/metadata",
     "google.golang.org/grpc/reflection",
     "google.golang.org/grpc/status",
-    "gopkg.in/DATA-DOG/go-sqlmock.v1",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
