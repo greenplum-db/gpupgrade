@@ -4,9 +4,9 @@ import (
 	"errors"
 	"path/filepath"
 
-	"github.com/greenplum-db/gpupgrade/idl"
-
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
+
+	"github.com/greenplum-db/gpupgrade/idl"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

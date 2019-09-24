@@ -1,46 +1,26 @@
-package services_test
+package services
 
 import (
-	"database/sql/driver"
-	"fmt"
 	"os"
-	"path"
-	"path/filepath"
 
+	"database/sql/driver"
+	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
+	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 
-	"github.com/greenplum-db/gpupgrade/hub/services"
-	"github.com/greenplum-db/gpupgrade/testutils"
-	"github.com/greenplum-db/gpupgrade/utils"
-	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-
+	"github.com/greenplum-db/gp-common-go-libs/cluster"
+	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
+	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
+	"github.com/greenplum-db/gpupgrade/testutils/exectest"
+	"github.com/greenplum-db/gpupgrade/utils"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gbytes"
-	"gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
 var _ = Describe("Hub prepare init-cluster", func() {
-	var (
-		segDataDirMap map[string][]string
-		testExecutor  *testhelper.TestExecutor
-	)
-
-	BeforeEach(func() {
-		testExecutor = &testhelper.TestExecutor{}
-
-		segDataDirMap = map[string][]string{
-			"host1": {fmt.Sprintf("%s_upgrade", dir)},
-			"host2": {fmt.Sprintf("%s_upgrade", dir)},
-		}
-
-		source.Executor = testExecutor
-		cm := testutils.NewMockChecklistManager()
-		hub = services.NewHub(source, target, grpc.DialContext, hubConf, cm)
-	})
 
 	Describe("CreateInitialInitsystemConfig", func() {
 		It("successfully get initial gpinitsystem config array", func() {
@@ -50,19 +30,24 @@ var _ = Describe("Hub prepare init-cluster", func() {
 			expectedConfig := []string{
 				`ARRAY_NAME="gp_upgrade cluster"`, "SEG_PREFIX=seg",
 				"TRUSTED_SHELL=ssh"}
-			gpinitsystemConfig, err := hub.CreateInitialInitsystemConfig()
+			gpinitsystemConfig, err := CreateInitialInitsystemConfig("/data/seg-1")
 			Expect(err).To(BeNil())
 			Expect(gpinitsystemConfig).To(Equal(expectedConfig))
 		})
 	})
+
 	Describe("GetCheckpointSegmentsAndEncoding", func() {
 		It("successfully get the GUC values", func() {
+
+			dbConnector, sqlMock := testhelper.CreateAndConnectMockDB(1)
+
+
 			checkpointRow := sqlmock.NewRows([]string{"string"}).AddRow(driver.Value("8"))
 			encodingRow := sqlmock.NewRows([]string{"string"}).AddRow(driver.Value("UNICODE"))
-			mock.ExpectQuery("SELECT .*checkpoint.*").WillReturnRows(checkpointRow)
-			mock.ExpectQuery("SELECT .*server.*").WillReturnRows(encodingRow)
+			sqlMock.ExpectQuery("SELECT .*checkpoint.*").WillReturnRows(checkpointRow)
+			sqlMock.ExpectQuery("SELECT .*server.*").WillReturnRows(encodingRow)
 			expectedConfig := []string{"CHECK_POINT_SEGMENTS=8", "ENCODING=UNICODE"}
-			gpinitsystemConfig, err := services.GetCheckpointSegmentsAndEncoding([]string{}, dbConnector)
+			gpinitsystemConfig, err := GetCheckpointSegmentsAndEncoding([]string{}, dbConnector)
 			Expect(err).To(BeNil())
 			Expect(gpinitsystemConfig).To(Equal(expectedConfig))
 		})
@@ -70,17 +55,35 @@ var _ = Describe("Hub prepare init-cluster", func() {
 
 	Describe("DeclareDataDirectories", func() {
 		It("successfully declares all directories", func() {
-			expectedConfig := []string{fmt.Sprintf("QD_PRIMARY_ARRAY=localhost~15433~%[1]s_upgrade/seg-1~1~-1~0", dir),
-				fmt.Sprintf(`declare -a PRIMARY_ARRAY=(
-	host1~29432~%[1]s_upgrade/seg1~2~0~0
-	host2~29433~%[1]s_upgrade/seg2~3~1~0
-)`, dir)}
-			resultConfig, resultMap, port := hub.DeclareDataDirectories([]string{})
-			Expect(resultMap).To(Equal(segDataDirMap))
+			cluster := cluster.NewCluster([]cluster.SegConfig{
+				cluster.SegConfig{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "basedir/seg-1"},
+				cluster.SegConfig{ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: "basedir/seg1"},
+				cluster.SegConfig{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "basedir/seg2"},
+			})
+			source := &utils.Cluster{
+				Cluster:    cluster,
+				BinDir:     "/source/bindir",
+				ConfigPath: "my/config/path",
+				Version:    dbconn.GPDBVersion{},
+			}
+
+			resultConfig, resultMap, port := DeclareDataDirectories(source, []string{})
+
+			expectedConfig := []string{"QD_PRIMARY_ARRAY=localhost~15433~basedir_upgrade/seg-1~1~-1~0",
+				`declare -a PRIMARY_ARRAY=(
+	host1~29432~basedir_upgrade/seg1~2~0~0
+	host2~29433~basedir_upgrade/seg2~3~1~0
+)`}
+
 			Expect(resultConfig).To(Equal(expectedConfig))
+			Expect(resultMap).To(Equal(map[string][]string{
+				"host1": {"basedir_upgrade"},
+				"host2": {"basedir_upgrade"},
+			}))
 			Expect(port).To(Equal(15433))
 		})
 	})
+
 	Describe("CreateAllDataDirectories", func() {
 		It("successfully creates all directories", func() {
 			statCalls := []string{}
@@ -93,21 +96,31 @@ var _ = Describe("Hub prepare init-cluster", func() {
 				mkdirCalls = append(mkdirCalls, path)
 				return nil
 			}
-			fakeConns := []*services.Connection{}
-			err := hub.CreateAllDataDirectories(fakeConns, segDataDirMap)
+			fakeConns := []*Connection{}
+			segDataDirMap := map[string][]string{
+				"host1": {"basedir_upgrade"},
+				"host2": {"basedir_upgrade"},
+			}
+			err := CreateAllDataDirectories("/data/seg-1", fakeConns, segDataDirMap)
 			Expect(err).To(BeNil())
-			Expect(statCalls).To(Equal([]string{fmt.Sprintf("%s_upgrade", dir)}))
-			Expect(mkdirCalls).To(Equal([]string{fmt.Sprintf("%s_upgrade", dir)}))
+			Expect(statCalls).To(Equal([]string{"/data_upgrade"}))
+			Expect(mkdirCalls).To(Equal([]string{"/data_upgrade"}))
 		})
+
 		It("cannot stat the master data directory", func() {
 			utils.System.Stat = func(name string) (os.FileInfo, error) {
 				return nil, errors.New("permission denied")
 			}
-			fakeConns := []*services.Connection{}
-			expectedErr := errors.Errorf("Error statting new directory %s_upgrade: permission denied", dir)
-			err := hub.CreateAllDataDirectories(fakeConns, segDataDirMap)
+			fakeConns := []*Connection{}
+			segDataDirMap := map[string][]string{
+				"host1": {"basedir_upgrade"},
+				"host2": {"basedir_upgrade"},
+			}
+			expectedErr := errors.Errorf("Error statting new directory /data_upgrade: permission denied")
+			err := CreateAllDataDirectories("/data/seg-1", fakeConns, segDataDirMap)
 			Expect(err.Error()).To(Equal(expectedErr.Error()))
 		})
+
 		It("cannot create the master data directory", func() {
 			utils.System.Stat = func(name string) (os.FileInfo, error) {
 				return nil, os.ErrNotExist
@@ -115,87 +128,68 @@ var _ = Describe("Hub prepare init-cluster", func() {
 			utils.System.MkdirAll = func(path string, perm os.FileMode) error {
 				return errors.New("permission denied")
 			}
-			fakeConns := []*services.Connection{}
+			fakeConns := []*Connection{}
+			segDataDirMap := map[string][]string{
+				"host1": {"basedir_upgrade"},
+				"host2": {"basedir_upgrade"},
+			}
 			expectedErr := errors.New("Could not create new directory: permission denied")
-			err := hub.CreateAllDataDirectories(fakeConns, segDataDirMap)
+			err := CreateAllDataDirectories("/data/seg-1", fakeConns, segDataDirMap)
 			Expect(err.Error()).To(Equal(expectedErr.Error()))
-		})
-		It("cannot create the segment data directories", func() {
-			utils.System.Stat = func(name string) (os.FileInfo, error) {
-				return nil, os.ErrNotExist
-			}
-			utils.System.MkdirAll = func(path string, perm os.FileMode) error {
-				return nil
-			}
-
-			createErr := errors.New("could not create directories")
-			mockAgent.Err <- createErr
-			badConnection, _ := dialer(context.Background(), "dummy", grpc.WithInsecure())
-			fakeConns := []*services.Connection{{badConnection, nil, "localhost", func() {}}}
-
-			err := hub.CreateAllDataDirectories(fakeConns, segDataDirMap)
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring(createErr.Error()))
 		})
 	})
 
 	Describe("RunInitsystemForTargetCluster", func() {
-		var (
-			stdout *gbytes.Buffer
-		)
+		var ctrl       *gomock.Controller
+		var mockStream *mock_idl.MockCliToHub_ExecuteServer
 
 		BeforeEach(func() {
-			stdout, _, _ = testhelper.SetupTestLogger()
+			ctrl = gomock.NewController(GinkgoT())
+			mockStream = mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
+		})
+
+		It("uses the correct arguments", func() {
+			execCommand = exectest.NewCommandWithVerifier(EmptyMain,
+				func(path string, args ...string) {
+					Expect(path).To(Equal("bash"))
+					Expect(args).To(Equal([]string{"-c", "source /target/greenplum_path.sh && /target/bin/gpinitsystem -a -I /home/gpadmin/.gpupgrade/gpinitsystem_config"}))
+				})
+
+			err := RunInitsystemForTargetCluster(mockStream, "/home/gpadmin/.gpupgrade/gpinitsystem_config", "/target/bindir/")
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should use executables in the source's bindir even if bindir has a trailing slash", func() {
-			target.BinDir = target.BinDir + string(os.PathSeparator)
-			err := hub.RunInitsystemForTargetCluster("filepath")
-			Expect(err).To(BeNil())
+			execCommand = exectest.NewCommandWithVerifier(EmptyMain,
+				func(path string, args ...string) {
+					Expect(path).To(Equal("bash"))
+					Expect(args).To(Equal([]string{"-c", "source /target/greenplum_path.sh && /target/bin/gpinitsystem -a -I /home/gpadmin/.gpupgrade/gpinitsystem_config"}))
+				})
 
-			gphome := filepath.Dir(path.Clean(target.BinDir)) //works around https://github.com/golang/go/issues/4837(in go10.4)
-			expectedCommandString := fmt.Sprintf("source %s/greenplum_path.sh; %s/gpinitsystem -a -I", gphome, target.BinDir)
-			Expect(testExecutor.LocalCommands[0]).Should(ContainSubstring(expectedCommandString))
+			err := RunInitsystemForTargetCluster(mockStream, "/home/gpadmin/.gpupgrade/gpinitsystem_config", "/target/bindir/")
+			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("successfully runs gpinitsystem", func() {
-			testExecutor.LocalError = errors.New("exit status 1")
-			err := hub.RunInitsystemForTargetCluster("filepath")
+		//It("successfully runs gpinitsystem", func() {
+		//	testExecutor.LocalError = errors.New("exit status 1")
+		//	err := hub.RunInitsystemForTargetCluster(mockStream, "filepath")
+		//
+		//	Expect(err).To(BeNil())
+		//	testhelper.ExpectRegexp(stdout, "[WARNING]:-gpinitsystem completed with warnings")
+		//})
 
-			Expect(err).To(BeNil())
-			testhelper.ExpectRegexp(stdout, "[WARNING]:-gpinitsystem completed with warnings")
-		})
+		It("gpinitsystem fails", func() {
+			execCommand = exectest.NewCommand(FailedMain)
 
-		It("should use executables in the source's bindir", func() {
-			err := hub.RunInitsystemForTargetCluster("filepath")
-			Expect(err).To(BeNil())
-
-			gphome := filepath.Dir(path.Clean(target.BinDir)) //works around https://github.com/golang/go/issues/4837(in go10.4)
-			expectedCommandString := fmt.Sprintf("source %s/greenplum_path.sh; %s/gpinitsystem -a -I", gphome, target.BinDir)
-			Expect(testExecutor.LocalCommands[0]).Should(ContainSubstring(expectedCommandString))
-		})
-
-		It("runs gpinitsystem and fails", func() {
-			testExecutor.LocalError = errors.New("exit status 2")
-			testExecutor.LocalOutput = "some output"
-
-			err := hub.RunInitsystemForTargetCluster("filepath")
-			Expect(err.Error()).To(Equal("gpinitsystem failed: some output: exit status 2"))
-		})
-
-		It("runs gpinitsystem and receives an interrupt", func() {
-			testExecutor.LocalError = errors.New("exit status 127")
-			testExecutor.LocalOutput = "some output"
-
-			err := hub.RunInitsystemForTargetCluster("filepath")
-			Expect(err.Error()).To(Equal("gpinitsystem failed: some output: exit status 127"))
+			err := RunInitsystemForTargetCluster(mockStream, "/home/gpadmin/.gpupgrade/gpinitsystem_config", "/target/bindir/")
+			Expect(err.Error()).To(Equal("exit status 1"))
 		})
 	})
 
 	Describe("GetMasterSegPrefix", func() {
 		DescribeTable("returns a valid seg prefix given",
 			func(datadir string) {
-				segPrefix, err := services.GetMasterSegPrefix(datadir)
+				segPrefix, err := GetMasterSegPrefix(datadir)
 				Expect(segPrefix).To(Equal("gpseg"))
 				Expect(err).ShouldNot(HaveOccurred())
 			},
@@ -206,7 +200,7 @@ var _ = Describe("Hub prepare init-cluster", func() {
 
 		DescribeTable("returns errors when given",
 			func(datadir string) {
-				_, err := services.GetMasterSegPrefix(datadir)
+				_, err := GetMasterSegPrefix(datadir)
 				Expect(err).To(HaveOccurred())
 			},
 			Entry("the empty string", ""),

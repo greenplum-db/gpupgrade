@@ -24,6 +24,7 @@ var (
 	ctrl        *gomock.Controller
 	dbConnector *dbconn.DBConn
 	mock        sqlmock.Sqlmock
+	mockStream  *mock_idl.MockCliToHub_ExecuteServer
 	mockAgent   *testutils.MockAgentServer
 	dialer      services.Dialer
 	client      *mock_idl.MockAgentClient
@@ -56,6 +57,7 @@ var _ = BeforeEach(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	source, target = testutils.CreateMultinodeSampleClusterPair(dir)
+	mockStream = mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 	mockAgent, dialer, port = testutils.NewMockAgentServer()
 	client = mock_idl.NewMockAgentClient(ctrl)
 	hubConf = &services.HubConfig{

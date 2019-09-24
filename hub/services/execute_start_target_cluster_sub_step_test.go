@@ -1,43 +1,69 @@
-package services_test
+package services
 
 import (
-	"errors"
-	"fmt"
+	"os"
 
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
+	"github.com/golang/mock/gomock"
+	"github.com/greenplum-db/gp-common-go-libs/cluster"
+	"github.com/greenplum-db/gp-common-go-libs/dbconn"
+
+	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
+	"github.com/greenplum-db/gpupgrade/testutils/exectest"
+	"github.com/greenplum-db/gpupgrade/utils"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
 )
 
 var _ = Describe("upgrade validate start cluster", func() {
-	var (
-		testExecutor *testhelper.TestExecutor
-	)
+	var ctrl       *gomock.Controller
+	var mockStream *mock_idl.MockCliToHub_ExecuteServer
+	var target     *utils.Cluster
 
 	BeforeEach(func() {
-		testExecutor = &testhelper.TestExecutor{}
-		target.Executor = testExecutor
+		ctrl = gomock.NewController(GinkgoT())
+		mockStream = mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
+		cluster := cluster.NewCluster([]cluster.SegConfig{cluster.SegConfig{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "basedir/seg-1"}})
+		target = &utils.Cluster{
+			Cluster:    cluster,
+			BinDir:     "/target/bindir",
+			ConfigPath: "my/config/path",
+			Version:    dbconn.GPDBVersion{},
+		}
+		utils.System.RemoveAll = func(s string) error { return nil }
+		utils.System.MkdirAll = func(s string, perm os.FileMode) error { return nil }
+
+		mockStream := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
+
+		mockStream.EXPECT().
+			Send(gomock.Any()).
+			AnyTimes()
+
+		execCommandIsPostmasterRunning = nil
+		execCommandStopCluster = nil
 	})
 
-	It("sets status to COMPLETE when validate start cluster request has been made and returns no error", func() {
-		Expect(cm.IsPending(upgradestatus.VALIDATE_START_CLUSTER)).To(BeTrue())
+	AfterEach(func() {
+		ctrl.Finish()
+	})
 
-		err := hub.ExecuteStartTargetClusterSubStep()
+	It("successfully starts the target cluster", func() {
+		execCommand = exectest.NewCommandWithVerifier(EmptyMain,
+			func(path string, args ...string) {
+				Expect(path).To(Equal("bash"))
+				Expect(args).To(Equal([]string{"-c", "source /target/bindir/../greenplum_path.sh && /target/bindir/gpstart -a -d basedir/seg-1"}))
+			})
+
+		err := startNewCluster(mockStream, target)
 		Expect(err).ToNot(HaveOccurred())
-
-		Eventually(func() bool { return cm.IsComplete(upgradestatus.VALIDATE_START_CLUSTER) }).Should(BeTrue())
-		Expect(testExecutor.NumExecutions).To(Equal(1))
-		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("source /target/bindir/../greenplum_path.sh"))
-		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring(fmt.Sprintf("/target/bindir/gpstart -a -d %s/seg-1", dir)))
 	})
 
-	It("sets status to FAILED when the validate start cluster request returns an error", func() {
-		testExecutor.LocalError = errors.New("some error")
+	It("returns an error when it fails to start the target cluster", func() {
+		execCommand = exectest.NewCommand(FailedMain)
 
-		err := hub.ExecuteStartTargetClusterSubStep()
-		Expect(err).ToNot(HaveOccurred())
-
-		Eventually(func() bool { return cm.IsFailed(upgradestatus.VALIDATE_START_CLUSTER) }).Should(BeTrue())
+		err := startNewCluster(mockStream, target)
+		Expect(err.Error()).To(Equal("exit status 1"))
 	})
+
 })
