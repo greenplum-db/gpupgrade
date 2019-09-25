@@ -273,8 +273,9 @@ jobs:
     <<: *set_failed
   on_success:
     <<: *ccp_destroy
-  on_failure:
-    <<: *slack_alert
+# todo: uncomment this once compare_dumps() is fixed
+#  on_failure:
+#    <<: *slack_alert
 
 anchors:
 - &ccp_default_params
