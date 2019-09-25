@@ -84,20 +84,18 @@ resources:
       bucket_path: clusters-google/
 
 - name: dump_gpdb6_icw_gporca_centos6
-  type: s3
+  type: gcs
   source:
-    access_key_id: {{bucket-access-key-id}}
-    bucket: {{test-data-bucket-name}}
-    secret_access_key: {{bucket-secret-access-key}}
-    region_name: {{aws-region}}
-    versioned_file: gpdb6/icw_gporca_centos6/dump.sql.xz
+    bucket: {{gcs-bucket-intermediates}}
+    json_key: {{concourse-gcs-resources-service-account-key}}
+    versioned_file: 6X_STABLE/icw_gporca_centos6_dump/dump.sql.xz
 
 - name: dump_gpdb5_simple
   type: gcs
   source:
-    bucket: cm-dev-ci-testing
-    json_key: {{google-service-account-key}}
-    versioned_file: gpdb5_simple/dump.sql.xz
+    bucket: {{gcs-bucket-intermediates}}
+    json_key: {{concourse-gcs-resources-service-account-key}}
+    versioned_file: 5X_STABLE/simple_dump/dump.sql.xz
 
 jobs:
 - name: build
