@@ -300,7 +300,15 @@ func initialize() *cobra.Command {
 	subInit := &cobra.Command{
 		Use:   "initialize",
 		Short: "prepare the system for upgrade",
-		Long:  `prepare the system for upgrade`,
+		Long: `
+Runs through pre-upgrade checks and prepares old and new clusters for upgrade.
+This step can be reverted.
+
+The following checks will be performed:
+ - Available disk space
+ - Installed extensions
+ - Catalog corruption
+`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// If we got here, the args are okay and the user doesn't need a usage
 			// dump on failure.
