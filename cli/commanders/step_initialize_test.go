@@ -143,6 +143,11 @@ func TestInitialize(t *testing.T) {
 		&idl.InitializeRequest{OldBinDir: "olddir", NewBinDir: "newdir", OldPort: 22},
 	).Return(&idl.InitializeReply{}, nil)
 
+	client.EXPECT().StatusUpgrade(
+		gomock.Any(),
+		&idl.StatusUpgradeRequest{},
+	).Return(&idl.StatusUpgradeReply{}, nil).AnyTimes()
+
 	err := Initialize(client, "olddir", "newdir", 22)
 	g.Expect(err).To(BeNil())
 }
@@ -156,6 +161,11 @@ func TestCannotInitialize(t *testing.T) {
 		gomock.Any(),
 		&idl.InitializeRequest{OldBinDir: "olddir", NewBinDir: "newdir", OldPort: 22},
 	).Return(&idl.InitializeReply{}, errors.New("something failed with gRPC"))
+
+	client.EXPECT().StatusUpgrade(
+		gomock.Any(),
+		&idl.StatusUpgradeRequest{},
+	).Return(&idl.StatusUpgradeReply{}, nil).AnyTimes()
 
 	err := Initialize(client, "olddir", "newdir", 22)
 	g.Expect(err).ToNot(BeNil())

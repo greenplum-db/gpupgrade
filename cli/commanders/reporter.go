@@ -6,7 +6,7 @@ import (
 	"sort"
 
 	"github.com/greenplum-db/gpupgrade/idl"
-
+	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/pkg/errors"
 )
 
@@ -41,55 +41,6 @@ func NewReporter(client idl.CliToHubClient) *Reporter {
 	}
 }
 
-type PrimaryStatuses []*idl.PrimaryStatus
-
-func (s PrimaryStatuses) Len() int {
-	return len(s)
-}
-
-func (s PrimaryStatuses) Less(i, j int) bool {
-	return s[i].Dbid < s[j].Dbid
-}
-
-func (s PrimaryStatuses) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
-/*
- * This map, and the associated UpgradeStepStatus sorting functions below,
- * enable sorting gpupgrade status at the CLI so that the hub and agents do not
- * need to be recompiled and restarted to change the display order.
- * TODO: design better scheme for this listing
- */
-var UpgradeStepsOrder = map[idl.UpgradeSteps]int{
-	idl.UpgradeSteps_UNKNOWN_STEP:           0,
-	idl.UpgradeSteps_CONFIG:                 1,
-	idl.UpgradeSteps_START_AGENTS:           2,
-	idl.UpgradeSteps_INIT_CLUSTER:           3,
-	idl.UpgradeSteps_SHUTDOWN_CLUSTERS:      4,
-	idl.UpgradeSteps_CONVERT_MASTER:         5,
-	idl.UpgradeSteps_COPY_MASTER:            6,
-	idl.UpgradeSteps_CONVERT_PRIMARIES:      7,
-	idl.UpgradeSteps_VALIDATE_START_CLUSTER: 8,
-	idl.UpgradeSteps_RECONFIGURE_PORTS:      9,
-}
-
-type StepStatuses []*idl.UpgradeStepStatus
-
-func (s StepStatuses) Len() int {
-	return len(s)
-}
-
-func (s StepStatuses) Less(i, j int) bool {
-	iStep := s[i].GetStep()
-	jStep := s[j].GetStep()
-	return UpgradeStepsOrder[iStep] < UpgradeStepsOrder[jStep]
-}
-
-func (s StepStatuses) Swap(i, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
 func (r *Reporter) OverallUpgradeStatus() error {
 	status, err := r.client.StatusUpgrade(context.Background(), &idl.StatusUpgradeRequest{})
 	if err != nil {
@@ -102,7 +53,7 @@ func (r *Reporter) OverallUpgradeStatus() error {
 	}
 
 	statuses := status.GetListOfUpgradeStepStatuses()
-	sort.Sort(StepStatuses(statuses))
+	sort.Sort(utils.StepStatuses(statuses))
 	for _, step := range statuses {
 		reportString := fmt.Sprintf("%v %s", step.GetStatus(),
 			UpgradeStepsMessage[step.GetStep()])
@@ -123,7 +74,7 @@ func (r *Reporter) OverallConversionStatus() error {
 	}
 
 	statuses := conversionStatus.GetConversionStatuses()
-	sort.Sort(PrimaryStatuses(statuses))
+	sort.Sort(utils.PrimaryStatuses(statuses))
 	formatStr := "%s - DBID %d - CONTENT ID %d - PRIMARY - %s"
 
 	for _, status := range statuses {

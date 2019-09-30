@@ -9,8 +9,10 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
+	"github.com/greenplum-db/gpupgrade/cli/tui"
 
 	"github.com/greenplum-db/gpupgrade/utils"
 
@@ -90,12 +92,48 @@ func StartHub() error {
 }
 
 func Initialize(client idl.CliToHubClient, oldBinDir, newBinDir string, oldPort int) (err error) {
+
+	// TODO: separate out the function performed from status printing
+	// print the results of the status to stdout, making sure to obtain the
+	// status after the command itself has completed.
+	stop := make(chan int)
+
+	go func() {
+		stopRequested := false
+
+		for {
+			select {
+			case <-stop:
+				stopRequested = true
+			default:
+			}
+			statusList, err := client.StatusUpgrade(context.Background(), &idl.StatusUpgradeRequest{})
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "could not get status: %s", err.Error())
+			} else {
+				curStatus := tui.OutputStatus(statusList.GetListOfUpgradeStepStatuses(),
+					map[idl.UpgradeSteps]bool{
+						idl.UpgradeSteps_CONFIG:       true,
+						idl.UpgradeSteps_START_AGENTS: true,
+					})
+				fmt.Fprintf(os.Stdout, "%s", curStatus)
+			}
+
+			if stopRequested {
+				return
+			}
+			time.Sleep(500 * time.Millisecond)
+		}
+	}()
+
 	request := &idl.InitializeRequest{
 		OldBinDir: oldBinDir,
 		NewBinDir: newBinDir,
 		OldPort:   int32(oldPort),
 	}
 	_, err = client.Initialize(context.Background(), request)
+
+	stop <- 1
 	if err != nil {
 		return errors.Wrap(err, "initializing hub")
 	}
