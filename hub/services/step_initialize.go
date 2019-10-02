@@ -9,19 +9,21 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/greenplum-db/gpupgrade/db"
+	"github.com/greenplum-db/gpupgrade/hub/stream_step_status"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/pkg/errors"
 )
 
+// TODO: write unit tests...
 func (h *Hub) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_InitializeServer) error {
-	err := h.fillClusterConfigsSubStep(in.OldBinDir, in.NewBinDir, int(in.OldPort))
+	err := h.fillClusterConfigsSubStep(stream, in.OldBinDir, in.NewBinDir, int(in.OldPort))
 	if err != nil {
 		return err
 	}
 
-	err = h.startAgentsSubStep()
+	err = h.startAgentsSubStep(stream)
 	if err != nil {
 		return err
 	}
@@ -30,7 +32,7 @@ func (h *Hub) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initiali
 }
 
 // create old/new clusters, write to disk and re-read from disk to make sure it is "durable"
-func (h *Hub) fillClusterConfigsSubStep(oldBinDir, newBinDir string, oldPort int) error {
+func (h *Hub) fillClusterConfigsSubStep(stream idl.CliToHub_InitializeServer, oldBinDir, newBinDir string, oldPort int) error {
 	gplog.Info("starting %s", upgradestatus.CONFIG)
 
 	step, err := h.InitializeStep(upgradestatus.CONFIG)
@@ -40,32 +42,39 @@ func (h *Hub) fillClusterConfigsSubStep(oldBinDir, newBinDir string, oldPort int
 		return err
 	}
 
-	//err = stream_step_status.StreamStepStatus(stream, idl.UpgradeSteps_CONFIG, idl.StepStatus_RUNNING)
+	err = stream_step_status.StreamStepStatus(stream, idl.UpgradeSteps_CONFIG, idl.StepStatus_RUNNING)
 
-	//if err != nil {
-	//	gplog.Error(err.Error())
-	//	return err
-	//}
+	if err != nil {
+		gplog.Error(err.Error())
+		return err
+	}
 
 	err = h.fillClusterConfigs(oldBinDir, newBinDir, oldPort)
 
 	if err != nil {
 		gplog.Error(err.Error())
 		step.MarkFailed()
-		//stream_step_status.StreamStepStatus(stream, idl.UpgradeSteps_CONFIG, idl.StepStatus_FAILED)
+		stream_step_status.StreamStepStatus(stream, idl.UpgradeSteps_CONFIG, idl.StepStatus_FAILED)
 		return err
 	}
 
 	step.MarkComplete()
-	//stream_step_status.StreamStepStatus(stream, idl.UpgradeSteps_CONFIG, idl.StepStatus_COMPLETE)
+	stream_step_status.StreamStepStatus(stream, idl.UpgradeSteps_CONFIG, idl.StepStatus_COMPLETE)
 
 	return nil
 }
 
-func (h *Hub) startAgentsSubStep() error {
+func (h *Hub) startAgentsSubStep(stream idl.CliToHub_InitializeServer) error {
 	gplog.Info("starting %s", upgradestatus.START_AGENTS)
 
 	step, err := h.InitializeStep(upgradestatus.START_AGENTS)
+	if err != nil {
+		gplog.Error(err.Error())
+		return err
+	}
+
+	err = stream_step_status.StreamStepStatus(stream, idl.UpgradeSteps_START_AGENTS, idl.StepStatus_RUNNING)
+
 	if err != nil {
 		gplog.Error(err.Error())
 		return err
@@ -75,10 +84,12 @@ func (h *Hub) startAgentsSubStep() error {
 	if err != nil {
 		gplog.Error(err.Error())
 		step.MarkFailed()
+		stream_step_status.StreamStepStatus(stream, idl.UpgradeSteps_START_AGENTS, idl.StepStatus_FAILED)
 		return err
 	}
 
 	step.MarkComplete()
+	stream_step_status.StreamStepStatus(stream, idl.UpgradeSteps_START_AGENTS, idl.StepStatus_COMPLETE)
 	return nil
 }
 
