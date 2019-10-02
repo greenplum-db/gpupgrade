@@ -52,7 +52,7 @@ func BuildRootCommand() *cobra.Command {
 
 	root.AddCommand(config, status, check, version)
 	root.AddCommand(initialize())
-	root.AddCommand(execute)
+	root.AddCommand(execute())
 	root.AddCommand(subUpgradeReconfigurePorts)
 
 	subConfigSet := createConfigSetSubcommand()
@@ -351,16 +351,25 @@ func initialize() *cobra.Command {
 }
 
 //////////////////////////////////////// Execute
-var execute = &cobra.Command{
-	Use:   "execute",
-	Short: "executes the upgrade",
-	Long:  "Executes the upgrade",
-	Run: func(cmd *cobra.Command, args []string) {
-		client := connectToHub()
-		err := commanders.Execute(client)
-		if err != nil {
-			gplog.Error(err.Error())
-			os.Exit(1)
-		}
-	},
+func execute() *cobra.Command {
+	var verbose bool
+
+
+	var subExecute = &cobra.Command{
+		Use:   "execute",
+		Short: "executes the upgrade",
+		Long:  "Executes the upgrade",
+		Run: func(cmd *cobra.Command, args []string) {
+			client := connectToHub()
+			err := commanders.Execute(client, verbose)
+			if err != nil {
+				gplog.Error(err.Error())
+				os.Exit(1)
+			}
+		},
+	}
+
+	subExecute.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
+
+	return subExecute
 }

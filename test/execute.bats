@@ -85,7 +85,7 @@ delete_cluster() {
         --new-bindir "$GPHOME/bin" \
         --old-port "$PGPORT" 3>&-
 
-    gpupgrade execute
+    gpupgrade execute --verbose
 
     # Make sure we clean up during teardown().
     NEW_CLUSTER="$newport $newmasterdir"

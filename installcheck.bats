@@ -29,7 +29,7 @@ teardown() {
               --new-bindir "$GPHOME_NEW"/bin \
               --old-port 15432 3>&-
 
-    gpupgrade execute
+    gpupgrade execute --verbose
 
     gpupgrade reconfigure-ports
 }

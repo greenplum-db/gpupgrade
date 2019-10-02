@@ -152,7 +152,7 @@ time ssh mdw GPHOME_OLD="${GPHOME_OLD}" GPHOME_NEW="${GPHOME_NEW}" bash <<"EOF"
               --old-bindir ${GPHOME_OLD}/fake-bin \
               --old-port 5432
 
-    gpupgrade execute
+    gpupgrade execute --verbose
 
     gpupgrade reconfigure-ports
 

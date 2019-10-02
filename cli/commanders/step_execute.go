@@ -9,7 +9,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 )
 
-func Execute(client idl.CliToHubClient) error {
+func Execute(client idl.CliToHubClient, verbose bool) error {
 	stream, err := client.Execute(context.Background(), &idl.ExecuteRequest{})
 	if err != nil {
 		// TODO: Change the logging message?
@@ -17,16 +17,21 @@ func Execute(client idl.CliToHubClient) error {
 		return err
 	}
 
+	os.Stdout.WriteString("Execute in progress")
+
 	for {
 		var chunk *idl.Chunk
 		chunk, err = stream.Recv()
 		if err != nil {
 			break
 		}
-		if chunk.Type == idl.Chunk_STDOUT {
-			os.Stdout.Write(chunk.Buffer)
-		} else if chunk.Type == idl.Chunk_STDERR {
-			os.Stderr.Write(chunk.Buffer)
+
+		if verbose {
+			if chunk.Type == idl.Chunk_STDOUT {
+				os.Stdout.Write(chunk.Buffer)
+			} else if chunk.Type == idl.Chunk_STDERR {
+				os.Stderr.Write(chunk.Buffer)
+			}
 		}
 	}
 
