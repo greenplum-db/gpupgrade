@@ -169,12 +169,12 @@ var _ = Describe("ConvertMaster", func() {
 		mockStream.EXPECT().
 			Send(gomock.Any()).
 			AnyTimes(). // Send will be called an indeterminate number of times
-			DoAndReturn(func(c *idl.Chunk) error {
+			DoAndReturn(func(c *idl.UpgradeStream) error {
 				defer GinkgoRecover()
 
 				var buf *bytes.Buffer
 
-				switch c.Type {
+				switch c.Chunk.Type {
 				case idl.Chunk_STDOUT:
 					buf = &stdout
 				case idl.Chunk_STDERR:
@@ -183,7 +183,7 @@ var _ = Describe("ConvertMaster", func() {
 					Fail("unexpected chunk type")
 				}
 
-				buf.Write(c.Buffer)
+				buf.Write(c.Chunk.Buffer)
 				return nil
 			})
 

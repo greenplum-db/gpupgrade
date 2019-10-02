@@ -9,7 +9,7 @@ service CliToHub {
     rpc CheckVersion (CheckVersionRequest) returns (CheckVersionReply) {}
     rpc CheckDiskSpace (CheckDiskSpaceRequest) returns (CheckDiskSpaceReply) {}
     rpc Initialize(InitializeRequest) returns (InitializeReply) {}
-    rpc Execute(ExecuteRequest) returns (stream Chunk) {}
+    rpc Execute(ExecuteRequest) returns (stream UpgradeStream) {}
     rpc Finalize (FinalizeRequest) returns (FinalizeReply) {}
     rpc SetConfig (SetConfigRequest) returns (SetConfigReply) {}
     rpc GetConfig (GetConfigRequest) returns (GetConfigReply) {}
@@ -97,6 +97,17 @@ message CheckDiskSpaceReply {
 
 message PrepareInitClusterRequest {}
 message PrepareInitClusterReply {}
+
+message UpgradeStream {
+  UpgradeStepStatus status = 1;
+  Chunk chunk = 2;
+  enum Type {
+    UNKNOWN = 0;
+    STEP_STATUS = 1;
+    CHUNK = 2;
+  }
+  Type type = 3;
+}
 
 message Chunk {
   bytes buffer = 1;

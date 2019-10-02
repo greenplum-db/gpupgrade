@@ -34,17 +34,26 @@ func TestExecute(t *testing.T) {
 			&idl.ExecuteRequest{},
 		).Return(clientStream, nil)
 		gomock.InOrder(
-			clientStream.EXPECT().Recv().Return(&idl.Chunk{
-				Buffer: []byte("my string1"),
-				Type:   idl.Chunk_STDOUT,
+			clientStream.EXPECT().Recv().Return(&idl.UpgradeStream{
+				Type: idl.UpgradeStream_CHUNK,
+				Chunk: &idl.Chunk{
+					Buffer: []byte("my string1"),
+					Type:   idl.Chunk_STDOUT,
+				},
 			}, nil),
-			clientStream.EXPECT().Recv().Return(&idl.Chunk{
-				Buffer: []byte("my error"),
-				Type:   idl.Chunk_STDERR,
+			clientStream.EXPECT().Recv().Return(&idl.UpgradeStream{
+				Type: idl.UpgradeStream_CHUNK,
+				Chunk: &idl.Chunk{
+					Buffer: []byte("my error"),
+					Type:   idl.Chunk_STDERR,
+				},
 			}, nil),
-			clientStream.EXPECT().Recv().Return(&idl.Chunk{
-				Buffer: []byte("my string2"),
-				Type:   idl.Chunk_STDOUT,
+			clientStream.EXPECT().Recv().Return(&idl.UpgradeStream{
+				Type: idl.UpgradeStream_CHUNK,
+				Chunk: &idl.Chunk{
+					Buffer: []byte("my string2"),
+					Type:   idl.Chunk_STDOUT,
+				},
 			}, nil),
 			clientStream.EXPECT().Recv().Return(nil, io.EOF),
 		)

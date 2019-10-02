@@ -18,15 +18,19 @@ func Execute(client idl.CliToHubClient) error {
 	}
 
 	for {
-		var chunk *idl.Chunk
-		chunk, err = stream.Recv()
-		if err != nil {
+		var streamType *idl.UpgradeStream
+		streamType, err = stream.Recv()
+		if err == nil {
+			if streamType.GetType() == idl.UpgradeStream_CHUNK {
+				chunk := streamType.GetChunk()
+				if chunk.Type == idl.Chunk_STDOUT {
+					os.Stdout.Write(chunk.Buffer)
+				} else if chunk.Type == idl.Chunk_STDERR {
+					os.Stderr.Write(chunk.Buffer)
+				}
+			}
+		} else {
 			break
-		}
-		if chunk.Type == idl.Chunk_STDOUT {
-			os.Stdout.Write(chunk.Buffer)
-		} else if chunk.Type == idl.Chunk_STDERR {
-			os.Stderr.Write(chunk.Buffer)
 		}
 	}
 
