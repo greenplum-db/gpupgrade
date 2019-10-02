@@ -13,21 +13,20 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/pkg/errors"
-	"golang.org/x/net/context"
 )
 
-func (h *Hub) Initialize(ctx context.Context, in *idl.InitializeRequest) (*idl.InitializeReply, error) {
+func (h *Hub) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_InitializeServer) error {
 	err := h.fillClusterConfigsSubStep(in.OldBinDir, in.NewBinDir, int(in.OldPort))
 	if err != nil {
-		return &idl.InitializeReply{}, err
+		return err
 	}
 
 	err = h.startAgentsSubStep()
 	if err != nil {
-		return &idl.InitializeReply{}, err
+		return err
 	}
 
-	return &idl.InitializeReply{}, nil
+	return nil
 }
 
 // create old/new clusters, write to disk and re-read from disk to make sure it is "durable"
@@ -35,20 +34,31 @@ func (h *Hub) fillClusterConfigsSubStep(oldBinDir, newBinDir string, oldPort int
 	gplog.Info("starting %s", upgradestatus.CONFIG)
 
 	step, err := h.InitializeStep(upgradestatus.CONFIG)
+
 	if err != nil {
 		gplog.Error(err.Error())
 		return err
 	}
+
+	//err = stream_step_status.StreamStepStatus(stream, idl.UpgradeSteps_CONFIG, idl.StepStatus_RUNNING)
+
+	//if err != nil {
+	//	gplog.Error(err.Error())
+	//	return err
+	//}
 
 	err = h.fillClusterConfigs(oldBinDir, newBinDir, oldPort)
 
 	if err != nil {
 		gplog.Error(err.Error())
 		step.MarkFailed()
+		//stream_step_status.StreamStepStatus(stream, idl.UpgradeSteps_CONFIG, idl.StepStatus_FAILED)
 		return err
 	}
 
 	step.MarkComplete()
+	//stream_step_status.StreamStepStatus(stream, idl.UpgradeSteps_CONFIG, idl.StepStatus_COMPLETE)
+
 	return nil
 }
 

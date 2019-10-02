@@ -62,6 +62,6 @@ func (m *MockHubClient) GetConfig(ctx context.Context, in *idl.GetConfigRequest,
 	return nil, m.Err
 }
 
-func (m *MockHubClient) Initialize(ctx context.Context, in *idl.InitializeRequest, opts ...grpc.CallOption) (*idl.InitializeReply, error) {
+func (m *MockHubClient) Initialize(ctx context.Context, in *idl.InitializeRequest, opts ...grpc.CallOption) (idl.CliToHub_InitializeClient, error) {
 	return nil, nil
 }

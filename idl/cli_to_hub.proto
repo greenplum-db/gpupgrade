@@ -8,7 +8,7 @@ service CliToHub {
     rpc CheckObjectCount(CheckObjectCountRequest) returns (CheckObjectCountReply) {}
     rpc CheckVersion (CheckVersionRequest) returns (CheckVersionReply) {}
     rpc CheckDiskSpace (CheckDiskSpaceRequest) returns (CheckDiskSpaceReply) {}
-    rpc Initialize(InitializeRequest) returns (InitializeReply) {}
+    rpc Initialize(InitializeRequest) returns (stream UpgradeStream) {}
     rpc Execute(ExecuteRequest) returns (stream UpgradeStream) {}
     rpc Finalize (FinalizeRequest) returns (FinalizeReply) {}
     rpc SetConfig (SetConfigRequest) returns (SetConfigReply) {}
@@ -20,7 +20,6 @@ message InitializeRequest {
     string newBinDir = 2;
     int32 oldPort = 3;
 }
-message InitializeReply {}
 
 message ExecuteRequest {}
 
