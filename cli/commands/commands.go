@@ -50,7 +50,7 @@ func BuildRootCommand() *cobra.Command {
 	// TODO: if called without a subcommand, the cli prints a help message with timestamp.  Remove the timestamp.
 	root := &cobra.Command{Use: "gpupgrade"}
 
-	root.AddCommand(prepare, config, status, check, version)
+	root.AddCommand(config, status, check, version)
 	root.AddCommand(initialize())
 	root.AddCommand(execute)
 	root.AddCommand(subUpgradeReconfigurePorts)
@@ -241,13 +241,6 @@ func createConfigShowSubcommand() *cobra.Command {
 	subShow.Flags().Bool("new-bindir", false, "show install directory for new gpdb version")
 
 	return subShow
-}
-
-//////////////////////////////////////// PREPARE and its subcommands
-var prepare = &cobra.Command{
-	Use:   "prepare",
-	Short: "subcommands to help you get ready for a gpupgrade",
-	Long:  "subcommands to help you get ready for a gpupgrade",
 }
 
 //////////////////////////////////////// STATUS and its subcommands
