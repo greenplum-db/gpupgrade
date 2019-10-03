@@ -3,11 +3,9 @@ package tui
 import (
 	"fmt"
 	"math"
-	"sort"
 	"strings"
 
 	"github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 var UpgradeStepStatusDescription = map[idl.StepStatus]string{
@@ -34,26 +32,19 @@ var UpgradeStepsDescription = map[idl.UpgradeSteps]string{
 var displayed = make(map[idl.UpgradeSteps]bool)
 
 // OutputStatus prints out all COMPLETED||FAILED steps and the current pending one
-func OutputStatus(statusList []*idl.UpgradeStepStatus, included map[idl.UpgradeSteps]bool) string {
+func OutputStatus(status *idl.UpgradeStepStatus) string {
 	var s strings.Builder
 
-	statuses := utils.StepStatuses(statusList)
-	sort.Sort(statuses)
+	completeOrFailed := status.GetStatus() == idl.StepStatus_COMPLETE ||
+		status.GetStatus() == idl.StepStatus_FAILED
+	haveNotDisplayedFinalStepState := !displayed[status.GetStep()]
 
-	for _, status := range statuses {
-		if included[status.GetStep()] {
-			if status.GetStatus() == idl.StepStatus_COMPLETE ||
-				status.GetStatus() == idl.StepStatus_FAILED {
-				if !displayed[status.GetStep()] {
-					fmt.Fprintf(&s, "%s\n",
-						getDisplayLine(status.GetStep(), status.GetStatus()))
-					displayed[status.GetStep()] = true
-				}
-			} else {
-				fmt.Fprintf(&s, "%s\r", getDisplayLine(status.GetStep(), status.GetStatus()))
-				break
-			}
-		}
+	if completeOrFailed && haveNotDisplayedFinalStepState {
+		fmt.Fprintf(&s, "%s\n",
+			getDisplayLine(status.GetStep(), status.GetStatus()))
+		displayed[status.GetStep()] = true
+	} else if !completeOrFailed {
+		fmt.Fprintf(&s, "%s\r", getDisplayLine(status.GetStep(), status.GetStatus()))
 	}
 
 	return s.String()

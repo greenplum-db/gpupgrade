@@ -91,38 +91,6 @@ func StartHub() error {
 }
 
 func Initialize(client idl.CliToHubClient, oldBinDir, newBinDir string, oldPort int) (err error) {
-
-	// TODO: separate out the function performed from status printing
-	// print the results of the status to stdout, making sure to obtain the
-	// status after the command itself has completed.
-	//go func() {
-	//	stopRequested := false
-	//
-	//	for {
-	//		select {
-	//		case <-stop:
-	//			stopRequested = true
-	//		default:
-	//		}
-	//		statusList, err := client.StatusUpgrade(context.Background(), &idl.StatusUpgradeRequest{})
-	//		if err != nil {
-	//			fmt.Fprintf(os.Stderr, "could not get status: %s", err.Error())
-	//		} else {
-	//			curStatus := tui.OutputStatus(statusList.GetListOfUpgradeStepStatuses(),
-	//				map[idl.UpgradeSteps]bool{
-	//					idl.UpgradeSteps_CONFIG:       true,
-	//					idl.UpgradeSteps_START_AGENTS: true,
-	//				})
-	//			fmt.Fprintf(os.Stdout, "%s", curStatus)
-	//		}
-	//
-	//		if stopRequested {
-	//			return
-	//		}
-	//		time.Sleep(500 * time.Millisecond)
-	//	}
-	//}()
-
 	request := &idl.InitializeRequest{
 		OldBinDir: oldBinDir,
 		NewBinDir: newBinDir,
@@ -139,12 +107,7 @@ func Initialize(client idl.CliToHubClient, oldBinDir, newBinDir string, oldPort 
 		streamType, err = stream.Recv()
 		if err == nil {
 			if streamType.GetType() == idl.UpgradeStream_STEP_STATUS {
-				stepStatus := streamType.GetStatus()
-				curStatus := tui.OutputStatus([]*idl.UpgradeStepStatus{stepStatus},
-					map[idl.UpgradeSteps]bool{
-						idl.UpgradeSteps_CONFIG:       true,
-						idl.UpgradeSteps_START_AGENTS: true,
-					})
+				curStatus := tui.OutputStatus(streamType.GetStatus())
 				fmt.Fprintf(os.Stdout, "%s", curStatus)
 			}
 		} else {

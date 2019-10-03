@@ -23,21 +23,18 @@ func TestOutputStatus(t *testing.T) {
 	var includedValid2 = map[idl.UpgradeSteps]bool{}
 	includedValid2[idl.UpgradeSteps_CONFIG] = true
 
-	var includedEmpty = map[idl.UpgradeSteps]bool{}
-
 	type args struct {
-		statusList []*idl.UpgradeStepStatus
-		included   map[idl.UpgradeSteps]bool
+		status *idl.UpgradeStepStatus
 	}
-	validStatus1 := []*idl.UpgradeStepStatus{{
+	validStatus1 := &idl.UpgradeStepStatus{
 		Step:   idl.UpgradeSteps_START_AGENTS,
 		Status: idl.StepStatus_RUNNING,
-	}}
+	}
 
-	validStatus2 := []*idl.UpgradeStepStatus{{
+	validStatus2 := &idl.UpgradeStepStatus{
 		Step:   idl.UpgradeSteps_CONFIG,
 		Status: idl.StepStatus_COMPLETE,
-	}}
+	}
 
 	tests := []struct {
 		name string
@@ -46,25 +43,20 @@ func TestOutputStatus(t *testing.T) {
 	}{
 		{
 			"OutputStatus when using a valid input that is in progress",
-			args{validStatus1, includedValid1},
+			args{validStatus1},
 			`^starting agents[.]{3}\s*\[IN_PROGRESS\]\s*\r$`,
 		},
 		{
 			"OutputStatus when using a valid input that is completed",
-			args{validStatus2, includedValid2},
+			args{validStatus2},
 			`^retrieving configs[.]{3}\s*\[COMPLETE\]\s*\n$`,
-		},
-		{
-			"OutputStatus when including nothing",
-			args{validStatus1, includedEmpty},
-			`^\s*$`,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := setupTest(t)
 
-			got := OutputStatus(tt.args.statusList, tt.args.included)
+			got := OutputStatus(tt.args.status)
 			g.Expect(got).To(MatchRegexp(tt.want))
 		})
 	}
