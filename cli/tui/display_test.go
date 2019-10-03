@@ -53,3 +53,11 @@ func Test_getDisplayLine_UsingUnknownStepStatus(t *testing.T) {
 	g.Expect(got).To(MatchRegexp(`^unknown step value[.]{3}\s*\[UNKNOWN\]\s*$`))
 	g.Expect(len(got) < 80).To(BeTrue())
 }
+
+func Test_getDisplayLine_UsingInvalidStepStatus(t *testing.T) {
+	g := setupTest(t)
+
+	got := getDisplayLine(42, 24)
+	g.Expect(got).To(MatchRegexp(`^invalid step value[.]{3}\s*\[INVALID\]\s*$`))
+	g.Expect(len(got) < 80).To(BeTrue())
+}
