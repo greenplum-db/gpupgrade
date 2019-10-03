@@ -31,6 +31,23 @@ teardown() {
 
     gpupgrade execute
     gpupgrade finalize
+
+    run gpupgrade status upgrade
+    [ "$status" -eq 0 ]
+    # TODO: fix the PENDING step to go to the COMPLETE state.
+    if ! [[
+            "${lines[0]}" = *"COMPLETE - Configuration Check"* &&
+            "${lines[1]}" = *"COMPLETE - Agents Started on Cluster"* &&
+            "${lines[2]}" = *"COMPLETE - Initialize new cluster"* &&
+            "${lines[3]}" = *"COMPLETE - Shutdown clusters"* &&
+            "${lines[4]}" = *"COMPLETE - Run pg_upgrade on master"* &&
+            "${lines[5]}" = *"COMPLETE - Copy master data directory to segments"* &&
+            "${lines[6]}" = *"PENDING - Run pg_upgrade on primaries"* &&
+            "${lines[7]}" = *"COMPLETE - Validate the upgraded cluster can start up"* &&
+            "${lines[8]}" = *"COMPLETE - Adjust upgraded cluster ports"*
+         ]]; then
+        fail "actual: $output"
+    fi
 }
 
 clean_target_cluster() {
