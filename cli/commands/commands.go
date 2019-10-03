@@ -52,7 +52,7 @@ func BuildRootCommand() *cobra.Command {
 
 	root.AddCommand(config, status, check, version)
 	root.AddCommand(initialize())
-	root.AddCommand(execute)
+	root.AddCommand(execute())
 	root.AddCommand(finalize)
 
 	subConfigSet := createConfigSetSubcommand()
@@ -338,18 +338,26 @@ func initialize() *cobra.Command {
 	return subInit
 }
 
-var execute = &cobra.Command{
-	Use:   "execute",
-	Short: "executes the upgrade",
-	Long:  "Executes the upgrade",
-	Run: func(cmd *cobra.Command, args []string) {
-		client := connectToHub()
-		err := commanders.Execute(client)
-		if err != nil {
-			gplog.Error(err.Error())
-			os.Exit(1)
-		}
-	},
+func execute() *cobra.Command {
+	var verbose bool
+
+	cmd := &cobra.Command{
+		Use:   "execute",
+		Short: "executes the upgrade",
+		Long:  "Executes the upgrade",
+		Run: func(cmd *cobra.Command, args []string) {
+			client := connectToHub()
+			err := commanders.Execute(client, verbose)
+			if err != nil {
+				gplog.Error(err.Error())
+				os.Exit(1)
+			}
+		},
+	}
+
+	cmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print the output stream from all substeps")
+
+	return cmd
 }
 
 var finalize = &cobra.Command{

@@ -351,6 +351,9 @@ _gpupgrade_execute()
     flags_with_completion=()
     flags_completion=()
 
+    flags+=("--verbose")
+    flags+=("-v")
+    local_nonpersistent_flags+=("--verbose")
 
     must_have_one_flag=()
     must_have_one_noun=()

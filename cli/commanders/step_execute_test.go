@@ -68,13 +68,13 @@ func TestExecute(t *testing.T) {
 		go func() {
 			defer wOut.Close()
 			defer wErr.Close()
-			err := commanders.Execute(client)
+			err := commanders.Execute(client, true)
 			g.Expect(err).To(BeNil())
 		}()
 		actualOut, _ := ioutil.ReadAll(rOut)
 		actualErr, _ := ioutil.ReadAll(rErr)
 
-		g.Expect(string(actualOut)).To(Equal("my string1my string2"))
+		g.Expect(string(actualOut)).To(ContainSubstring("my string1my string2"))
 		g.Expect(string(actualErr)).To(Equal("my error"))
 	})
 
@@ -93,7 +93,7 @@ func TestExecute(t *testing.T) {
 		).Return(clientStream, nil)
 		clientStream.EXPECT().Recv().Return(nil, io.ErrUnexpectedEOF)
 
-		err := commanders.Execute(client)
+		err := commanders.Execute(client, true)
 		g.Expect(err).To(Equal(io.ErrUnexpectedEOF))
 	})
 
@@ -111,7 +111,7 @@ func TestExecute(t *testing.T) {
 			&idl.ExecuteRequest{},
 		).Return(clientStream, expectedErr).Times(1)
 
-		err := commanders.Execute(client)
+		err := commanders.Execute(client, true)
 
 		if err != expectedErr {
 			t.Errorf("got error: %#v wanted: %#v", err, expectedErr)
