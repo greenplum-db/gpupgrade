@@ -17,7 +17,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-func (h *Hub) ExecuteCopyMasterSubStep() error {
+func (h *Hub) ExecuteCopyMasterSubStep(stream idl.CliToHub_ExecuteServer) error {
 	gplog.Info("starting %s", upgradestatus.COPY_MASTER)
 
 	step, err := h.InitializeStep(upgradestatus.COPY_MASTER)
@@ -26,12 +26,33 @@ func (h *Hub) ExecuteCopyMasterSubStep() error {
 		return err
 	}
 
+	_ = stream.Send(&idl.ExecuteMessage{
+		Contents: &idl.ExecuteMessage_Status{&idl.UpgradeStepStatus{
+			Step:   idl.UpgradeSteps_COPY_MASTER,
+			Status: idl.StepStatus_RUNNING,
+		}},
+	})
+
 	err = h.copyMasterDataDir()
 	if err != nil {
 		gplog.Error(err.Error())
 		step.MarkFailed()
+
+		_ = stream.Send(&idl.ExecuteMessage{
+			Contents: &idl.ExecuteMessage_Status{&idl.UpgradeStepStatus{
+				Step:   idl.UpgradeSteps_COPY_MASTER,
+				Status: idl.StepStatus_FAILED,
+			}},
+		})
 	} else {
 		step.MarkComplete()
+
+		_ = stream.Send(&idl.ExecuteMessage{
+			Contents: &idl.ExecuteMessage_Status{&idl.UpgradeStepStatus{
+				Step:   idl.UpgradeSteps_COPY_MASTER,
+				Status: idl.StepStatus_COMPLETE,
+			}},
+		})
 	}
 
 	return err

@@ -2,6 +2,7 @@ package commanders
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 
@@ -18,15 +19,25 @@ func Execute(client idl.CliToHubClient) error {
 	}
 
 	for {
-		var chunk *idl.Chunk
-		chunk, err = stream.Recv()
+		var msg *idl.ExecuteMessage
+		msg, err = stream.Recv()
 		if err != nil {
 			break
 		}
-		if chunk.Type == idl.Chunk_STDOUT {
-			os.Stdout.Write(chunk.Buffer)
-		} else if chunk.Type == idl.Chunk_STDERR {
-			os.Stderr.Write(chunk.Buffer)
+
+		switch x := msg.Contents.(type) {
+		case *idl.ExecuteMessage_Chunk:
+			if x.Chunk.Type == idl.Chunk_STDOUT {
+				os.Stdout.Write(x.Chunk.Buffer)
+			} else if x.Chunk.Type == idl.Chunk_STDERR {
+				os.Stderr.Write(x.Chunk.Buffer)
+			}
+
+		case *idl.ExecuteMessage_Status:
+			fmt.Printf("Step: %s, Status: %s\n", x.Status.Step, x.Status.Status)
+
+		default:
+			panic(fmt.Sprintf("Unknown message type for Execute: %T", x))
 		}
 	}
 

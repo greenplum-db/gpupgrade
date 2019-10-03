@@ -9,7 +9,7 @@ service CliToHub {
     rpc CheckVersion (CheckVersionRequest) returns (CheckVersionReply) {}
     rpc CheckDiskSpace (CheckDiskSpaceRequest) returns (CheckDiskSpaceReply) {}
     rpc Initialize(InitializeRequest) returns (InitializeReply) {}
-    rpc Execute(ExecuteRequest) returns (stream Chunk) {}
+    rpc Execute(ExecuteRequest) returns (stream ExecuteMessage) {}
     rpc Finalize (FinalizeRequest) returns (FinalizeReply) {}
     rpc SetConfig (SetConfigRequest) returns (SetConfigReply) {}
     rpc GetConfig (GetConfigRequest) returns (GetConfigReply) {}
@@ -106,6 +106,13 @@ message Chunk {
     STDERR = 2;
   }
   Type type = 2;
+}
+
+message ExecuteMessage {
+  oneof contents {
+    Chunk chunk = 1;
+    UpgradeStepStatus status = 2;
+  }
 }
 
 message SetConfigRequest {

@@ -5,10 +5,11 @@ import (
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/pkg/errors"
 )
 
-func (h *Hub) ExecuteStartTargetClusterSubStep() error {
+func (h *Hub) ExecuteStartTargetClusterSubStep(stream idl.CliToHub_ExecuteServer) error {
 	gplog.Info("starting %s", upgradestatus.VALIDATE_START_CLUSTER)
 
 	step, err := h.InitializeStep(upgradestatus.VALIDATE_START_CLUSTER)
@@ -17,12 +18,33 @@ func (h *Hub) ExecuteStartTargetClusterSubStep() error {
 		return err
 	}
 
+	_ = stream.Send(&idl.ExecuteMessage{
+		Contents: &idl.ExecuteMessage_Status{&idl.UpgradeStepStatus{
+			Step:   idl.UpgradeSteps_VALIDATE_START_CLUSTER,
+			Status: idl.StepStatus_RUNNING,
+		}},
+	})
+
 	err = h.startNewCluster()
 	if err != nil {
 		gplog.Error(err.Error())
 		step.MarkFailed()
+
+		_ = stream.Send(&idl.ExecuteMessage{
+			Contents: &idl.ExecuteMessage_Status{&idl.UpgradeStepStatus{
+				Step:   idl.UpgradeSteps_VALIDATE_START_CLUSTER,
+				Status: idl.StepStatus_FAILED,
+			}},
+		})
 	} else {
 		step.MarkComplete()
+
+		_ = stream.Send(&idl.ExecuteMessage{
+			Contents: &idl.ExecuteMessage_Status{&idl.UpgradeStepStatus{
+				Step:   idl.UpgradeSteps_VALIDATE_START_CLUSTER,
+				Status: idl.StepStatus_COMPLETE,
+			}},
+		})
 	}
 
 	return nil

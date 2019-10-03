@@ -169,10 +169,12 @@ var _ = Describe("ConvertMaster", func() {
 		mockStream.EXPECT().
 			Send(gomock.Any()).
 			AnyTimes(). // Send will be called an indeterminate number of times
-			DoAndReturn(func(c *idl.Chunk) error {
+
+			DoAndReturn(func(msg *idl.ExecuteMessage) error {
 				defer GinkgoRecover()
 
 				var buf *bytes.Buffer
+				c := msg.GetChunk()
 
 				switch c.Type {
 				case idl.Chunk_STDOUT:

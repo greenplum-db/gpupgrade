@@ -27,12 +27,33 @@ func (h *Hub) ExecuteUpgradeMasterSubStep(stream idl.CliToHub_ExecuteServer) err
 		return err
 	}
 
+	_ = stream.Send(&idl.ExecuteMessage{
+		Contents: &idl.ExecuteMessage_Status{&idl.UpgradeStepStatus{
+			Step:   idl.UpgradeSteps_CONVERT_MASTER,
+			Status: idl.StepStatus_RUNNING,
+		}},
+	})
+
 	err = h.UpgradeMaster(stream)
 	if err != nil {
 		gplog.Error(err.Error())
 		step.MarkFailed()
+
+		_ = stream.Send(&idl.ExecuteMessage{
+			Contents: &idl.ExecuteMessage_Status{&idl.UpgradeStepStatus{
+				Step:   idl.UpgradeSteps_CONVERT_MASTER,
+				Status: idl.StepStatus_FAILED,
+			}},
+		})
 	} else {
 		step.MarkComplete()
+
+		_ = stream.Send(&idl.ExecuteMessage{
+			Contents: &idl.ExecuteMessage_Status{&idl.UpgradeStepStatus{
+				Step:   idl.UpgradeSteps_CONVERT_MASTER,
+				Status: idl.StepStatus_COMPLETE,
+			}},
+		})
 	}
 
 	return err
@@ -101,9 +122,14 @@ func (w *streamWriter) Write(p []byte) (int, error) {
 		// Attempt to send the chunk to the client. Since the client may close
 		// the connection at any point, errors here are logged and otherwise
 		// ignored. After the first send error, no more attempts are made.
-		err = w.stream.Send(&idl.Chunk{
+
+		chunk := &idl.Chunk{
 			Buffer: p,
 			Type:   w.cType,
+		}
+
+		err = w.stream.Send(&idl.ExecuteMessage{
+			Contents: &idl.ExecuteMessage_Chunk{chunk},
 		})
 
 		if err != nil {

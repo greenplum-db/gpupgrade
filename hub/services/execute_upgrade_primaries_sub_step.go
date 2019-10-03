@@ -15,9 +15,34 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 )
 
-func (h *Hub) ExecuteUpgradePrimariesSubStep() error {
+func (h *Hub) ExecuteUpgradePrimariesSubStep(stream idl.CliToHub_ExecuteServer) error {
 	gplog.Info("starting %s", upgradestatus.CONVERT_PRIMARIES)
-	return h.convertPrimaries()
+
+	_ = stream.Send(&idl.ExecuteMessage{
+		Contents: &idl.ExecuteMessage_Status{&idl.UpgradeStepStatus{
+			Step:   idl.UpgradeSteps_CONVERT_PRIMARIES,
+			Status: idl.StepStatus_RUNNING,
+		}},
+	})
+
+	err := h.convertPrimaries()
+	if err != nil {
+		_ = stream.Send(&idl.ExecuteMessage{
+			Contents: &idl.ExecuteMessage_Status{&idl.UpgradeStepStatus{
+				Step:   idl.UpgradeSteps_CONVERT_PRIMARIES,
+				Status: idl.StepStatus_FAILED,
+			}},
+		})
+	} else {
+		_ = stream.Send(&idl.ExecuteMessage{
+			Contents: &idl.ExecuteMessage_Status{&idl.UpgradeStepStatus{
+				Step:   idl.UpgradeSteps_CONVERT_PRIMARIES,
+				Status: idl.StepStatus_COMPLETE,
+			}},
+		})
+	}
+
+	return err
 }
 
 func (h *Hub) convertPrimaries() error {

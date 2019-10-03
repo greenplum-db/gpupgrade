@@ -4,13 +4,13 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 )
 
-func (h *Hub) Execute (request *idl.ExecuteRequest, stream idl.CliToHub_ExecuteServer) error {
-	err := h.ExecuteInitTargetClusterSubStep()
+func (h *Hub) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_ExecuteServer) error {
+	err := h.ExecuteInitTargetClusterSubStep(stream)
 	if err != nil {
 		return err
 	}
 
-	err = h.ExecuteShutdownClustersSubStep()
+	err = h.ExecuteShutdownClustersSubStep(stream)
 	if err != nil {
 		return err
 	}
@@ -20,16 +20,16 @@ func (h *Hub) Execute (request *idl.ExecuteRequest, stream idl.CliToHub_ExecuteS
 		return err
 	}
 
-	err = h.ExecuteCopyMasterSubStep()
+	err = h.ExecuteCopyMasterSubStep(stream)
 	if err != nil {
 		return err
 	}
 
-	err = h.ExecuteUpgradePrimariesSubStep()
+	err = h.ExecuteUpgradePrimariesSubStep(stream)
 	if err != nil {
 		return err
 	}
 
-	err = h.ExecuteStartTargetClusterSubStep()
+	err = h.ExecuteStartTargetClusterSubStep(stream)
 	return err
 }

@@ -19,7 +19,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-func (h *Hub) ExecuteInitTargetClusterSubStep() error {
+func (h *Hub) ExecuteInitTargetClusterSubStep(stream idl.CliToHub_ExecuteServer) error {
 	gplog.Info("starting %s", upgradestatus.INIT_CLUSTER)
 
 	step, err := h.InitializeStep(upgradestatus.INIT_CLUSTER)
@@ -28,12 +28,35 @@ func (h *Hub) ExecuteInitTargetClusterSubStep() error {
 		return err
 	}
 
+	// Since it is possible for the client to disconnect after issuing execute,
+	// we ignore the errors in sending status
+	_ = stream.Send(&idl.ExecuteMessage{
+		Contents: &idl.ExecuteMessage_Status{&idl.UpgradeStepStatus{
+			Step:   idl.UpgradeSteps_INIT_CLUSTER,
+			Status: idl.StepStatus_RUNNING,
+		}},
+	})
+
 	err = h.CreateTargetCluster()
 	if err != nil {
 		gplog.Error(err.Error())
 		step.MarkFailed()
+
+		_ = stream.Send(&idl.ExecuteMessage{
+			Contents: &idl.ExecuteMessage_Status{&idl.UpgradeStepStatus{
+				Step:   idl.UpgradeSteps_INIT_CLUSTER,
+				Status: idl.StepStatus_FAILED,
+			}},
+		})
 	} else {
 		step.MarkComplete()
+
+		_ = stream.Send(&idl.ExecuteMessage{
+			Contents: &idl.ExecuteMessage_Status{&idl.UpgradeStepStatus{
+				Step:   idl.UpgradeSteps_INIT_CLUSTER,
+				Status: idl.StepStatus_COMPLETE,
+			}},
+		})
 	}
 
 	return err

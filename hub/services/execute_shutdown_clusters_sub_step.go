@@ -5,12 +5,13 @@ import (
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 )
 
-func (h *Hub) ExecuteShutdownClustersSubStep() error {
+func (h *Hub) ExecuteShutdownClustersSubStep(stream idl.CliToHub_ExecuteServer) error {
 	gplog.Info("starting %s", upgradestatus.SHUTDOWN_CLUSTERS)
 
 	step, err := h.InitializeStep(upgradestatus.SHUTDOWN_CLUSTERS)
@@ -19,12 +20,33 @@ func (h *Hub) ExecuteShutdownClustersSubStep() error {
 		return err
 	}
 
+	_ = stream.Send(&idl.ExecuteMessage{
+		Contents: &idl.ExecuteMessage_Status{&idl.UpgradeStepStatus{
+			Step:   idl.UpgradeSteps_SHUTDOWN_CLUSTERS,
+			Status: idl.StepStatus_RUNNING,
+		}},
+	})
+
 	err = h.ShutdownClusters()
 	if err != nil {
 		gplog.Error(err.Error())
 		step.MarkFailed()
+
+		_ = stream.Send(&idl.ExecuteMessage{
+			Contents: &idl.ExecuteMessage_Status{&idl.UpgradeStepStatus{
+				Step:   idl.UpgradeSteps_SHUTDOWN_CLUSTERS,
+				Status: idl.StepStatus_FAILED,
+			}},
+		})
 	} else {
 		step.MarkComplete()
+
+		_ = stream.Send(&idl.ExecuteMessage{
+			Contents: &idl.ExecuteMessage_Status{&idl.UpgradeStepStatus{
+				Step:   idl.UpgradeSteps_SHUTDOWN_CLUSTERS,
+				Status: idl.StepStatus_COMPLETE,
+			}},
+		})
 	}
 
 	return err
