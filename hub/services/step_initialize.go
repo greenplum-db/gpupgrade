@@ -30,11 +30,17 @@ func (h *Hub) Initialize(ctx context.Context, in *idl.InitializeRequest) (*idl.I
 	return &idl.InitializeReply{}, nil
 }
 
+type TODOStream struct{}
+
+func (_ TODOStream) Send(_ *idl.UpgradeMessage) error {
+	return nil
+}
+
 // create old/new clusters, write to disk and re-read from disk to make sure it is "durable"
 func (h *Hub) fillClusterConfigsSubStep(oldBinDir, newBinDir string, oldPort int) error {
 	gplog.Info("starting %s", upgradestatus.CONFIG)
 
-	step, err := h.InitializeStep(upgradestatus.CONFIG)
+	step, err := h.InitializeStep(upgradestatus.CONFIG, TODOStream{})
 	if err != nil {
 		gplog.Error(err.Error())
 		return err
@@ -55,7 +61,7 @@ func (h *Hub) fillClusterConfigsSubStep(oldBinDir, newBinDir string, oldPort int
 func (h *Hub) startAgentsSubStep() error {
 	gplog.Info("starting %s", upgradestatus.START_AGENTS)
 
-	step, err := h.InitializeStep(upgradestatus.START_AGENTS)
+	step, err := h.InitializeStep(upgradestatus.START_AGENTS, TODOStream{})
 	if err != nil {
 		gplog.Error(err.Error())
 		return err

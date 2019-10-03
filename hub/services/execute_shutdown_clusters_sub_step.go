@@ -14,39 +14,18 @@ import (
 func (h *Hub) ExecuteShutdownClustersSubStep(stream idl.CliToHub_ExecuteServer) error {
 	gplog.Info("starting %s", upgradestatus.SHUTDOWN_CLUSTERS)
 
-	step, err := h.InitializeStep(upgradestatus.SHUTDOWN_CLUSTERS)
+	step, err := h.InitializeStep(upgradestatus.SHUTDOWN_CLUSTERS, stream)
 	if err != nil {
 		gplog.Error(err.Error())
 		return err
 	}
 
-	_ = stream.Send(&idl.ExecuteMessage{
-		Contents: &idl.ExecuteMessage_Status{&idl.UpgradeStepStatus{
-			Step:   idl.UpgradeSteps_SHUTDOWN_CLUSTERS,
-			Status: idl.StepStatus_RUNNING,
-		}},
-	})
-
 	err = h.ShutdownClusters()
 	if err != nil {
 		gplog.Error(err.Error())
 		step.MarkFailed()
-
-		_ = stream.Send(&idl.ExecuteMessage{
-			Contents: &idl.ExecuteMessage_Status{&idl.UpgradeStepStatus{
-				Step:   idl.UpgradeSteps_SHUTDOWN_CLUSTERS,
-				Status: idl.StepStatus_FAILED,
-			}},
-		})
 	} else {
 		step.MarkComplete()
-
-		_ = stream.Send(&idl.ExecuteMessage{
-			Contents: &idl.ExecuteMessage_Status{&idl.UpgradeStepStatus{
-				Step:   idl.UpgradeSteps_SHUTDOWN_CLUSTERS,
-				Status: idl.StepStatus_COMPLETE,
-			}},
-		})
 	}
 
 	return err

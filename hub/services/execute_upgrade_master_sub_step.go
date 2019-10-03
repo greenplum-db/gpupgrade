@@ -21,39 +21,18 @@ var execCommand = exec.Command
 func (h *Hub) ExecuteUpgradeMasterSubStep(stream idl.CliToHub_ExecuteServer) error {
 	gplog.Info("starting %s", upgradestatus.CONVERT_MASTER)
 
-	step, err := h.InitializeStep(upgradestatus.CONVERT_MASTER)
+	step, err := h.InitializeStep(upgradestatus.CONVERT_MASTER, stream)
 	if err != nil {
 		gplog.Error(err.Error())
 		return err
 	}
 
-	_ = stream.Send(&idl.ExecuteMessage{
-		Contents: &idl.ExecuteMessage_Status{&idl.UpgradeStepStatus{
-			Step:   idl.UpgradeSteps_CONVERT_MASTER,
-			Status: idl.StepStatus_RUNNING,
-		}},
-	})
-
 	err = h.UpgradeMaster(stream)
 	if err != nil {
 		gplog.Error(err.Error())
 		step.MarkFailed()
-
-		_ = stream.Send(&idl.ExecuteMessage{
-			Contents: &idl.ExecuteMessage_Status{&idl.UpgradeStepStatus{
-				Step:   idl.UpgradeSteps_CONVERT_MASTER,
-				Status: idl.StepStatus_FAILED,
-			}},
-		})
 	} else {
 		step.MarkComplete()
-
-		_ = stream.Send(&idl.ExecuteMessage{
-			Contents: &idl.ExecuteMessage_Status{&idl.UpgradeStepStatus{
-				Step:   idl.UpgradeSteps_CONVERT_MASTER,
-				Status: idl.StepStatus_COMPLETE,
-			}},
-		})
 	}
 
 	return err
@@ -128,8 +107,8 @@ func (w *streamWriter) Write(p []byte) (int, error) {
 			Type:   w.cType,
 		}
 
-		err = w.stream.Send(&idl.ExecuteMessage{
-			Contents: &idl.ExecuteMessage_Chunk{chunk},
+		err = w.stream.Send(&idl.UpgradeMessage{
+			Contents: &idl.UpgradeMessage_Chunk{chunk},
 		})
 
 		if err != nil {

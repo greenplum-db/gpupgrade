@@ -219,9 +219,63 @@ func (h *Hub) closeConns() {
 	}
 }
 
-// Extracts common hub logic to reset state directory and mark step as in-progress
-func (h *Hub) InitializeStep(step string) (upgradestatus.StateWriter, error) {
-	stepWriter := h.checklist.GetStepWriter(step)
+// streamStepWriter extends the standard StepWriter, which only writes state to
+// disk, with functionality that sends status updates across the given stream.
+// (In practice this stream will be a gRPC CliToHub_XxxServer interface.)
+type streamStepWriter struct {
+	upgradestatus.StateWriter
+	stream messageSender
+}
+
+type messageSender interface {
+	Send(*idl.UpgradeMessage) error // matches gRPC streaming Send()
+}
+
+func sendStatus(stream messageSender, step idl.UpgradeSteps, status idl.StepStatus) {
+	// A stream is not guaranteed to remain connected during execution, so
+	// errors are explicitly ignored.
+	_ = stream.Send(&idl.UpgradeMessage{
+		Contents: &idl.UpgradeMessage_Status{&idl.UpgradeStepStatus{
+			Step:   step,
+			Status: status,
+		}},
+	})
+}
+
+func (s streamStepWriter) MarkInProgress() error {
+	if err := s.StateWriter.MarkInProgress(); err != nil {
+		return err
+	}
+
+	sendStatus(s.stream, s.Code(), idl.StepStatus_RUNNING)
+	return nil
+}
+
+func (s streamStepWriter) MarkComplete() error {
+	if err := s.StateWriter.MarkComplete(); err != nil {
+		return err
+	}
+
+	sendStatus(s.stream, s.Code(), idl.StepStatus_COMPLETE)
+	return nil
+}
+
+func (s streamStepWriter) MarkFailed() error {
+	if err := s.StateWriter.MarkFailed(); err != nil {
+		return err
+	}
+
+	sendStatus(s.stream, s.Code(), idl.StepStatus_FAILED)
+	return nil
+}
+
+// Extracts common hub logic to reset state directory, mark step as in-progress,
+// and control status streaming.
+func (h *Hub) InitializeStep(step string, stream messageSender) (upgradestatus.StateWriter, error) {
+	stepWriter := streamStepWriter{
+		h.checklist.GetStepWriter(step),
+		stream,
+	}
 
 	err := stepWriter.ResetStateDir()
 	if err != nil {

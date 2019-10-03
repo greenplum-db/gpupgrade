@@ -88,6 +88,10 @@ type MockStepWriter struct {
 	MarkInProgressErr error
 }
 
+func (w MockStepWriter) Code() idl.UpgradeSteps {
+	return w.manager.loadedCodes[w.step]
+}
+
 func (w MockStepWriter) MarkComplete() error {
 	w.manager.mapComplete[w.step] = true
 	return nil

@@ -15,7 +15,7 @@ import (
 func (h *Hub) UpgradeReconfigurePortsSubStep() error {
 	gplog.Info("starting %s", upgradestatus.RECONFIGURE_PORTS)
 
-	step, err := h.InitializeStep(upgradestatus.RECONFIGURE_PORTS)
+	step, err := h.InitializeStep(upgradestatus.RECONFIGURE_PORTS, TODOStream{})
 	if err != nil {
 		gplog.Error(err.Error())
 		return err

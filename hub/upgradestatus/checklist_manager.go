@@ -36,6 +36,8 @@ type StateReader interface {
 }
 
 type StateWriter interface {
+	Code() idl.UpgradeSteps
+
 	MarkInProgress() error
 	ResetStateDir() error
 	MarkFailed() error
@@ -131,11 +133,19 @@ func (c *ChecklistManager) GetStepWriter(step string) StateWriter {
 	}
 
 	stepdir := filepath.Join(c.stateDir, step)
-	return StepWriter{stepdir: stepdir}
+
+	code := idl.UpgradeSteps_UNKNOWN_STEP
+	reader := c.stepmap[step]
+	if reader != nil {
+		code = reader.Code()
+	}
+
+	return StepWriter{stepdir, code}
 }
 
 type StepWriter struct {
-	stepdir string // path to step-specific state directory
+	stepdir string           // path to step-specific state directory
+	code    idl.UpgradeSteps // the gRPC code associated with this step
 }
 
 // FIXME: none of these operations are atomic on the FS; just move the progress
@@ -189,4 +199,8 @@ func (sw StepWriter) ResetStateDir() error {
 	}
 
 	return nil
+}
+
+func (sw StepWriter) Code() idl.UpgradeSteps {
+	return sw.code
 }

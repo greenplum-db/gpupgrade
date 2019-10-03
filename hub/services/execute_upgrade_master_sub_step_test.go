@@ -170,7 +170,7 @@ var _ = Describe("ConvertMaster", func() {
 			Send(gomock.Any()).
 			AnyTimes(). // Send will be called an indeterminate number of times
 
-			DoAndReturn(func(msg *idl.ExecuteMessage) error {
+			DoAndReturn(func(msg *idl.UpgradeMessage) error {
 				defer GinkgoRecover()
 
 				var buf *bytes.Buffer

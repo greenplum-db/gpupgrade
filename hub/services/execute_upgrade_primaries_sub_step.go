@@ -17,31 +17,17 @@ import (
 
 func (h *Hub) ExecuteUpgradePrimariesSubStep(stream idl.CliToHub_ExecuteServer) error {
 	gplog.Info("starting %s", upgradestatus.CONVERT_PRIMARIES)
+	const step = idl.UpgradeSteps_CONVERT_PRIMARIES
 
-	_ = stream.Send(&idl.ExecuteMessage{
-		Contents: &idl.ExecuteMessage_Status{&idl.UpgradeStepStatus{
-			Step:   idl.UpgradeSteps_CONVERT_PRIMARIES,
-			Status: idl.StepStatus_RUNNING,
-		}},
-	})
+	sendStatus(stream, step, idl.StepStatus_RUNNING)
 
+	status := idl.StepStatus_COMPLETE
 	err := h.convertPrimaries()
 	if err != nil {
-		_ = stream.Send(&idl.ExecuteMessage{
-			Contents: &idl.ExecuteMessage_Status{&idl.UpgradeStepStatus{
-				Step:   idl.UpgradeSteps_CONVERT_PRIMARIES,
-				Status: idl.StepStatus_FAILED,
-			}},
-		})
-	} else {
-		_ = stream.Send(&idl.ExecuteMessage{
-			Contents: &idl.ExecuteMessage_Status{&idl.UpgradeStepStatus{
-				Step:   idl.UpgradeSteps_CONVERT_PRIMARIES,
-				Status: idl.StepStatus_COMPLETE,
-			}},
-		})
+		status = idl.StepStatus_FAILED
 	}
 
+	sendStatus(stream, step, status)
 	return err
 }
 

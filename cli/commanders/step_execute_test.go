@@ -17,9 +17,9 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func newExecuteMessage(chunk *idl.Chunk) *idl.ExecuteMessage {
-	return &idl.ExecuteMessage{
-		Contents: &idl.ExecuteMessage_Chunk{chunk},
+func newUpgradeMessage(chunk *idl.Chunk) *idl.UpgradeMessage {
+	return &idl.UpgradeMessage{
+		Contents: &idl.UpgradeMessage_Chunk{chunk},
 	}
 }
 
@@ -40,15 +40,15 @@ func TestExecute(t *testing.T) {
 			&idl.ExecuteRequest{},
 		).Return(clientStream, nil)
 		gomock.InOrder(
-			clientStream.EXPECT().Recv().Return(newExecuteMessage(&idl.Chunk{
+			clientStream.EXPECT().Recv().Return(newUpgradeMessage(&idl.Chunk{
 				Buffer: []byte("my string1"),
 				Type:   idl.Chunk_STDOUT,
 			}), nil),
-			clientStream.EXPECT().Recv().Return(newExecuteMessage(&idl.Chunk{
+			clientStream.EXPECT().Recv().Return(newUpgradeMessage(&idl.Chunk{
 				Buffer: []byte("my error"),
 				Type:   idl.Chunk_STDERR,
 			}), nil),
-			clientStream.EXPECT().Recv().Return(newExecuteMessage(&idl.Chunk{
+			clientStream.EXPECT().Recv().Return(newUpgradeMessage(&idl.Chunk{
 				Buffer: []byte("my string2"),
 				Type:   idl.Chunk_STDOUT,
 			}), nil),

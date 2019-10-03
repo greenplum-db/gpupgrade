@@ -41,14 +41,14 @@ func Execute(client idl.CliToHubClient, verbose bool) error {
 
 	var lastStep idl.UpgradeSteps
 	for {
-		var msg *idl.ExecuteMessage
+		var msg *idl.UpgradeMessage
 		msg, err = stream.Recv()
 		if err != nil {
 			break
 		}
 
 		switch x := msg.Contents.(type) {
-		case *idl.ExecuteMessage_Chunk:
+		case *idl.UpgradeMessage_Chunk:
 			if !verbose {
 				continue
 			}
@@ -59,7 +59,7 @@ func Execute(client idl.CliToHubClient, verbose bool) error {
 				os.Stderr.Write(x.Chunk.Buffer)
 			}
 
-		case *idl.ExecuteMessage_Status:
+		case *idl.UpgradeMessage_Status:
 			line, ok := lines[x.Status.Step]
 			if !ok {
 				panic(fmt.Sprintf("unexpected step %#v", x.Status.Step))

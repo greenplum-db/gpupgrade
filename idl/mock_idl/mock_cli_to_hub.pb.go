@@ -460,7 +460,7 @@ func (mr *MockCliToHub_ExecuteServerMockRecorder) RecvMsg(arg0 interface{}) *gom
 }
 
 // Send mocks base method
-func (m *MockCliToHub_ExecuteServer) Send(arg0 *idl.ExecuteMessage) error {
+func (m *MockCliToHub_ExecuteServer) Send(arg0 *idl.UpgradeMessage) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Send", arg0)
 	ret0, _ := ret[0].(error)
@@ -594,10 +594,10 @@ func (mr *MockCliToHub_ExecuteClientMockRecorder) Header() *gomock.Call {
 }
 
 // Recv mocks base method
-func (m *MockCliToHub_ExecuteClient) Recv() (*idl.ExecuteMessage, error) {
+func (m *MockCliToHub_ExecuteClient) Recv() (*idl.UpgradeMessage, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Recv")
-	ret0, _ := ret[0].(*idl.ExecuteMessage)
+	ret0, _ := ret[0].(*idl.UpgradeMessage)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
