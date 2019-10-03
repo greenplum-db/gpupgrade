@@ -2,7 +2,6 @@ package tui
 
 import (
 	"fmt"
-	"math"
 	"strings"
 
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -53,56 +52,10 @@ func OutputStatus(status *idl.UpgradeStepStatus) string {
 // GetDisplayLine returns a string that justifies the step and its status
 // stepString...(pad to max stepString)(blanks)[status](trailing blanks)
 func getDisplayLine(step idl.UpgradeSteps, status idl.StepStatus) string {
-
-	stepString := getStepString(step)
-	statusString := getStepStatusString(status)
-
-	numBrackets := 2
-	numDots := 3
-	maxLeftEndBackoff := getMaxStepStringLength()
-	maxRightEndBackoff := getMaxStepStatusStringLength()
-
-	stepStringPad := maxLeftEndBackoff - len(stepString)
-	numBlanks := 80 - numBrackets - numDots - maxLeftEndBackoff - maxRightEndBackoff
-	numTrailingBlanks := maxRightEndBackoff - len(statusString)
-	if numBlanks < 0 {
-		stepStringPad = 0
-		numBlanks = 0
-	}
-
-	stepStringSpaces := strings.Repeat(" ", stepStringPad)
-	numBlanksSpaces := strings.Repeat(" ", numBlanks)
-	trailingSpaces := strings.Repeat(" ", numTrailingBlanks)
-
 	var s strings.Builder
-	fmt.Fprintf(&s, "%s...%s%s[%s]%s", stepString, stepStringSpaces, numBlanksSpaces, statusString, trailingSpaces)
+	fmt.Fprintf(&s, "%s...%40s[%s]", getStepString(step), "", getStepStatusString(status))
 
 	return s.String()
-
-}
-
-func getMaxStepStringLength() int {
-	maxLen := float64(len(getStepString(idl.UpgradeSteps(math.MaxInt32))))
-	for step, _ := range idl.UpgradeSteps_name {
-		maxLen = math.Max(
-			float64(maxLen),
-			float64(len(getStepString(idl.UpgradeSteps(step)))),
-		)
-	}
-
-	return int(maxLen)
-}
-
-func getMaxStepStatusStringLength() int {
-	maxLen := float64(len(getStepStatusString(idl.StepStatus(math.MaxInt32))))
-	for step, _ := range idl.StepStatus_name {
-		maxLen = math.Max(
-			float64(maxLen),
-			float64(len(getStepStatusString(idl.StepStatus(step)))),
-		)
-	}
-
-	return int(maxLen)
 }
 
 func getStepString(step idl.UpgradeSteps) string {

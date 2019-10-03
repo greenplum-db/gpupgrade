@@ -43,7 +43,7 @@ func Test_getDisplayLine_UsingKnownStepStatus(t *testing.T) {
 
 	got := getDisplayLine(idl.UpgradeSteps_START_AGENTS, idl.StepStatus_COMPLETE)
 	g.Expect(got).To(MatchRegexp(`^starting agents[.]{3}\s*\[COMPLETE\]\s*$`))
-	g.Expect(len(got)).To(Equal(80))
+	g.Expect(len(got) < 80).To(BeTrue())
 }
 
 func Test_getDisplayLine_UsingUnknownStepStatus(t *testing.T) {
@@ -51,5 +51,5 @@ func Test_getDisplayLine_UsingUnknownStepStatus(t *testing.T) {
 
 	got := getDisplayLine(idl.UpgradeSteps_UNKNOWN_STEP, idl.StepStatus_UNKNOWN_STATUS)
 	g.Expect(got).To(MatchRegexp(`^unknown step value[.]{3}\s*\[UNKNOWN\]\s*$`))
-	g.Expect(len(got)).To(Equal(80))
+	g.Expect(len(got) < 80).To(BeTrue())
 }
