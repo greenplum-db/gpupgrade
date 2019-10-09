@@ -57,7 +57,7 @@ var _ = Describe("Hub", func() {
 		}
 		hub := services.NewHub(source, target, mockDialer, hubConfig, nil)
 
-		hub.Stop()
+		hub.Stop(true)
 		go func() {
 			err = hub.Start()
 		}()
@@ -103,7 +103,7 @@ var _ = Describe("Hub", func() {
 			hub.Start()
 			done <- true
 		}()
-		hub.Stop()
+		hub.Stop(true)
 
 		Eventually(done).Should(Receive())
 	})
@@ -124,7 +124,7 @@ var _ = Describe("Hub", func() {
 		}
 
 		By("closing the connections")
-		hub.Stop()
+		hub.Stop(true)
 		Expect(err).ToNot(HaveOccurred())
 
 		for _, conn := range conns {

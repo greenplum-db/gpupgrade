@@ -65,3 +65,11 @@ func (m *MockHubClient) GetConfig(ctx context.Context, in *idl.GetConfigRequest,
 func (m *MockHubClient) Initialize(ctx context.Context, in *idl.InitializeRequest, opts ...grpc.CallOption) (idl.CliToHub_InitializeClient, error) {
 	return nil, nil
 }
+
+func (m *MockHubClient) RestartAgents(ctx context.Context, in *idl.RestartAgentsRequest, opts ...grpc.CallOption) (*idl.RestartAgentsReply, error) {
+	return nil, nil
+}
+
+func (m *MockHubClient) StopServices(ctx context.Context, in *idl.StopServicesRequest, opts ...grpc.CallOption) (*idl.StopServicesReply, error) {
+	return nil, nil
+}

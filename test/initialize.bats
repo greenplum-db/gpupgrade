@@ -8,8 +8,7 @@ setup() {
     STATE_DIR=`mktemp -d`
     export GPUPGRADE_HOME="${STATE_DIR}/gpupgrade"
 
-    kill_agents
-    kill_hub
+    gpupgrade kill-services
 
     # XXX We use $PWD here instead of a real binary directory because
     # `make check` is expected to test the locally built binaries, not the
@@ -24,8 +23,7 @@ setup() {
 teardown() {
     # XXX Beware, BATS_TEST_SKIPPED is not a documented export.
     if [ -z "${BATS_TEST_SKIPPED}" ]; then
-        kill_agents
-        kill_hub
+        gpupgrade kill-services
         rm -r "$STATE_DIR"
     fi
 }
@@ -46,7 +44,7 @@ teardown() {
 }
 
 @test "hub daemonizes and prints the PID when passed the --daemonize option" {
-    kill_hub
+    gpupgrade kill-services
 
     run gpupgrade_hub --daemonize 3>&-
     [ "$status" -eq 0 ] || fail "$output"
@@ -60,7 +58,7 @@ teardown() {
 }
 
 @test "hub fails if the source configuration hasn't been initialized" {
-    kill_hub
+    gpupgrade kill-services
 
     rm $GPUPGRADE_HOME/source_cluster_config.json
     run gpupgrade_hub --daemonize
@@ -70,7 +68,7 @@ teardown() {
 }
 
 @test "hub fails if the target configuration hasn't been initialized" {
-    kill_hub
+    gpupgrade kill-services
 
     rm $GPUPGRADE_HOME/target_cluster_config.json
     run gpupgrade_hub --daemonize
@@ -86,7 +84,7 @@ teardown() {
 }
 
 @test "hub does not return an error if an unrelated process has gpupgrade_hub in its name" {
-    kill_hub
+    gpupgrade kill-services
 
     # Create a long-running process with gpupgrade_hub in the name.
     exec -a gpupgrade_hub_test_log sleep 5 3>&- &
@@ -113,7 +111,7 @@ outputContains() {
 }
 
 @test "subcommands return an error if the hub is not started" {
-    kill_hub
+    gpupgrade kill-services
 
     commands=(
         'config set --old-bindir /dummy'

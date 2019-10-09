@@ -155,6 +155,26 @@ func (mr *MockAgentClientMockRecorder) CopyMasterDirectoryToSegmentDirectories(c
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CopyMasterDirectoryToSegmentDirectories", reflect.TypeOf((*MockAgentClient)(nil).CopyMasterDirectoryToSegmentDirectories), varargs...)
 }
 
+// StopAgent mocks base method
+func (m *MockAgentClient) StopAgent(ctx context.Context, in *idl.StopAgentRequest, opts ...grpc.CallOption) (*idl.StopAgentReply, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "StopAgent", varargs...)
+	ret0, _ := ret[0].(*idl.StopAgentReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// StopAgent indicates an expected call of StopAgent
+func (mr *MockAgentClientMockRecorder) StopAgent(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StopAgent", reflect.TypeOf((*MockAgentClient)(nil).StopAgent), varargs...)
+}
+
 // MockAgentServer is a mock of AgentServer interface
 type MockAgentServer struct {
 	ctrl     *gomock.Controller
@@ -266,4 +286,19 @@ func (m *MockAgentServer) CopyMasterDirectoryToSegmentDirectories(arg0 context.C
 func (mr *MockAgentServerMockRecorder) CopyMasterDirectoryToSegmentDirectories(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CopyMasterDirectoryToSegmentDirectories", reflect.TypeOf((*MockAgentServer)(nil).CopyMasterDirectoryToSegmentDirectories), arg0, arg1)
+}
+
+// StopAgent mocks base method
+func (m *MockAgentServer) StopAgent(arg0 context.Context, arg1 *idl.StopAgentRequest) (*idl.StopAgentReply, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StopAgent", arg0, arg1)
+	ret0, _ := ret[0].(*idl.StopAgentReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// StopAgent indicates an expected call of StopAgent
+func (mr *MockAgentServerMockRecorder) StopAgent(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StopAgent", reflect.TypeOf((*MockAgentServer)(nil).StopAgent), arg0, arg1)
 }

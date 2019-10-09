@@ -130,6 +130,10 @@ func (m *MockAgentServer) CopyMasterDirectoryToSegmentDirectories(ctx context.Co
 	return &idl.CopyMasterDirReply{}, err
 }
 
+func (m *MockAgentServer) StopAgent(ctx context.Context, in *idl.StopAgentRequest) (*idl.StopAgentReply, error) {
+	return &idl.StopAgentReply{}, nil
+}
+
 func (m *MockAgentServer) Stop() {
 	m.grpcServer.Stop()
 }

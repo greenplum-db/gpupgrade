@@ -8,14 +8,12 @@ load helpers
 setup() {
     STATE_DIR=`mktemp -d`
     export GPUPGRADE_HOME="${STATE_DIR}/gpupgrade"
-    kill_agents
-    kill_hub
+    gpupgrade kill-services
     gpupgrade initialize --old-bindir /usr/local/gpdb6/bin/ --new-bindir /usr/local/gpdb6/bin/
 }
 
 teardown() {
-    kill_agents
-    kill_hub
+    gpupgrade kill-services
     rm -r "${STATE_DIR}"
 }
 

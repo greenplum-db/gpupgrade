@@ -3,13 +3,11 @@
 load helpers
 
 setup() {
-    skip "we can't run initialize on the CI until kill_agents operates on all hosts"
     skip_if_no_gpdb
 
     STATE_DIR=`mktemp -d`
     export GPUPGRADE_HOME="${STATE_DIR}/gpupgrade"
-    kill_hub
-    kill_agents
+    gpupgrade kill-services
 
     # If this variable is set (to a master data directory), teardown() will call
     # gpdeletesystem on this cluster.
@@ -30,8 +28,7 @@ setup() {
 teardown() {
     # XXX Beware, BATS_TEST_SKIPPED is not a documented export.
     if [ -z "${BATS_TEST_SKIPPED}" ]; then
-        kill_hub
-        kill_agents
+        gpupgrade kill-services
 
         if [ -n "$NEW_CLUSTER" ]; then
             delete_cluster $NEW_CLUSTER
@@ -77,7 +74,7 @@ EOF
     # Generate a new target cluster configuration that the hub can use, then
     # restart the hub.
     PGPORT=40000 go run ./testutils/dump_config "$GPHOME/bin" "$GPUPGRADE_HOME/target_cluster_config.json"
-    kill_hub
+    gpupgrade kill-services
     gpupgrade_hub --daemonize 3>&-
 
     gpupgrade finalize

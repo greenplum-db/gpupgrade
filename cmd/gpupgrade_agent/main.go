@@ -50,9 +50,8 @@ func main() {
 				agentServer.MakeDaemon()
 			}
 
+			// blocking call
 			agentServer.Start()
-
-			agentServer.Stop()
 
 			return nil
 		},

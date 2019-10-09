@@ -34,15 +34,18 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/greenplum-db/gpupgrade/cli/commanders"
-	"github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/utils"
-
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"golang.org/x/xerrors"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	grpcStatus "google.golang.org/grpc/status"
+
+	"github.com/greenplum-db/gp-common-go-libs/gplog"
+	"github.com/greenplum-db/gpupgrade/cli/commanders"
+	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 func BuildRootCommand() *cobra.Command {
@@ -54,6 +57,8 @@ func BuildRootCommand() *cobra.Command {
 	root.AddCommand(initialize())
 	root.AddCommand(execute())
 	root.AddCommand(finalize)
+	root.AddCommand(restartServices)
+	root.AddCommand(killServices)
 
 	subConfigSet := createConfigSetSubcommand()
 	subConfigShow := createConfigShowSubcommand()
@@ -318,6 +323,16 @@ This step can be reverted.
 				return errors.Wrap(err, "tried to create state directory")
 			}
 
+			running, err := commanders.IsHubRunning()
+			if err != nil {
+				gplog.Error("failed to determine if hub already running")
+				return err
+			}
+			if running {
+				gplog.Error("gpupgrade_hub process already running")
+				return errors.New("gpupgrade_hub process already running")
+			}
+
 			err = commanders.StartHub()
 			if err != nil {
 				return errors.Wrap(err, "starting hub")
@@ -395,5 +410,74 @@ This step can not be reverted.
 			gplog.Error(err.Error())
 			os.Exit(1)
 		}
+	},
+}
+
+var restartServices = &cobra.Command{
+	Use:   "restart-services",
+	Short: "restarts hub/agents that are not currently running",
+	Long:  "restarts hub/agents that are not currently running",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		running, err := commanders.IsHubRunning()
+		if err != nil {
+			return xerrors.Errorf("failed to determine if there is a hub running: %w", err)
+		}
+
+		if !running {
+			err = commanders.StartHub()
+			if err != nil {
+				return err
+			}
+			fmt.Println("Restarted hub")
+		}
+
+		reply, err := connectToHub().RestartAgents(context.Background(), &idl.RestartAgentsRequest{})
+		for _, host := range reply.GetAgentHosts() {
+			fmt.Printf("Restarted agent on: %s\n", host)
+		}
+
+		if err != nil {
+			return xerrors.Errorf("failed to start all agents: %w", err)
+		}
+
+		return nil
+	},
+}
+
+var killServices = &cobra.Command{
+	Use:   "kill-services",
+	Short: "Abruptly stops the hub and agents that are currently running.",
+	Long: "Abruptly stops the hub and agents that are currently running.\n" +
+		"Return if no hub is running, which may leave spurious agents running.",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		running, err := commanders.IsHubRunning()
+		if err != nil {
+			return xerrors.Errorf("failed to determine if there is a hub running: %w", err)
+		}
+
+		if !running {
+			// FIXME: Returning early if the hub is not running, means that we
+			//  cannot kill spurious agents.
+			// We cannot simply start the hub in order to kill spurious agents
+			// since this requires initialize to have been run and the source
+			// cluster config to exist. The main use case for kill-services is
+			// at the start of BATS testing where we do not want to make any
+			// assumption about the state of the cluster or environment.
+			return nil
+		}
+
+		_, err = connectToHub().StopServices(context.Background(), &idl.StopServicesRequest{})
+		if err != nil {
+			errCode := grpcStatus.Code(err)
+			errMsg := grpcStatus.Convert(err).Message()
+			// XXX: "transport is closing" is not documented but is needed to uniquely interpret codes.Unavailable
+			// https://github.com/grpc/grpc/blob/v1.24.0/doc/statuscodes.md
+			if errCode != codes.Unavailable || errMsg != "transport is closing" {
+				return err
+			}
+			return nil
+		}
+
+		return nil
 	},
 }

@@ -12,14 +12,19 @@ import (
 
 // Streams the above stdout/err constants to the corresponding standard file
 // descriptors, alternately interleaving five-byte chunks.
-func HowManyHubsRunning_0_Main() {
-	fmt.Print("0")
-}
-func HowManyHubsRunning_1_Main() {
+func IsHubRunning_True() {
 	fmt.Print("1")
+	os.Exit(0)
 }
-func HowManyHubsRunning_badoutput_Main() {
+
+func IsHubRunning_False() {
+	fmt.Print("0")
+	os.Exit(1)
+}
+
+func IsHubRunning_Error() {
 	fmt.Print("bengie")
+	os.Exit(2)
 }
 
 func GpupgradeHub_good_Main() {
@@ -33,9 +38,9 @@ func GpupgradeHub_bad_Main() {
 
 func init() {
 	exectest.RegisterMains(
-		HowManyHubsRunning_0_Main,
-		HowManyHubsRunning_1_Main,
-		HowManyHubsRunning_badoutput_Main,
+		IsHubRunning_True,
+		IsHubRunning_False,
+		IsHubRunning_Error,
 		GpupgradeHub_good_Main,
 		GpupgradeHub_bad_Main,
 	)
@@ -60,28 +65,29 @@ func TestNoHubIsAlreadyRunning(t *testing.T) {
 	setup(t)
 	defer teardown()
 
-	execCommandHubCount = exectest.NewCommand(HowManyHubsRunning_0_Main)
-	numHubs, err := HowManyHubsRunning()
+	execCommandHubCount = exectest.NewCommand(IsHubRunning_False)
+	running, err := IsHubRunning()
 	g.Expect(err).To(BeNil())
-	g.Expect(numHubs).To(Equal(0))
+	g.Expect(running).To(BeFalse())
 }
 
 func TestHubIsAlreadyRunning(t *testing.T) {
 	setup(t)
 	defer teardown()
 
-	execCommandHubCount = exectest.NewCommand(HowManyHubsRunning_1_Main)
-	numHubs, err := HowManyHubsRunning()
+	execCommandHubCount = exectest.NewCommand(IsHubRunning_True)
+	running, err := IsHubRunning()
 	g.Expect(err).To(BeNil())
-	g.Expect(numHubs).To(Equal(1))
+	g.Expect(running).To(BeTrue())
 }
 
 func TestHowManyHubsRunningFails(t *testing.T) {
 	setup(t)
 	defer teardown()
 
-	execCommandHubCount = exectest.NewCommand(HowManyHubsRunning_badoutput_Main)
-	_, err := HowManyHubsRunning()
+	execCommandHubCount = exectest.NewCommand(IsHubRunning_Error)
+	running, err := IsHubRunning()
+	g.Expect(running).To(BeFalse())
 	g.Expect(err).ToNot(BeNil())
 }
 
@@ -89,37 +95,15 @@ func TestWeCanStartHub(t *testing.T) {
 	setup(t)
 	defer teardown()
 
-	execCommandHubCount = exectest.NewCommand(HowManyHubsRunning_0_Main)
 	execCommandHubStart = exectest.NewCommand(GpupgradeHub_good_Main)
 	err := StartHub()
 	g.Expect(err).To(BeNil())
 }
 
-func TestStartHubHFails(t *testing.T) {
+func TestStartHubFails(t *testing.T) {
 	setup(t)
 	defer teardown()
 
-	execCommandHubCount = exectest.NewCommand(HowManyHubsRunning_badoutput_Main)
-	execCommandHubStart = exectest.NewCommand(GpupgradeHub_good_Main)
-	err := StartHub()
-	g.Expect(err).ToNot(BeNil())
-}
-
-func TestStartHubRestartFails(t *testing.T) {
-	setup(t)
-	defer teardown()
-
-	execCommandHubCount = exectest.NewCommand(HowManyHubsRunning_1_Main)
-	execCommandHubStart = exectest.NewCommand(GpupgradeHub_good_Main)
-	err := StartHub()
-	g.Expect(err).ToNot(BeNil())
-}
-
-func TestStartHubBadExec(t *testing.T) {
-	setup(t)
-	defer teardown()
-
-	execCommandHubCount = exectest.NewCommand(HowManyHubsRunning_0_Main)
 	execCommandHubStart = exectest.NewCommand(GpupgradeHub_bad_Main)
 	err := StartHub()
 	g.Expect(err).ToNot(BeNil())

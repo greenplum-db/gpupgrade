@@ -9,12 +9,11 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
-	"github.com/pkg/errors"
-
 	"github.com/greenplum-db/gpupgrade/db"
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
+	"github.com/pkg/errors"
 )
 
 func (h *Hub) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_InitializeServer) error {
@@ -122,16 +121,26 @@ func ReloadAndCommitCluster(cluster *utils.Cluster, conn *dbconn.DBConn) error {
 	return nil
 }
 
+func getAgentPath() (string, error) {
+	hubPath, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(filepath.Dir(hubPath), "gpupgrade_agent"), nil
+}
+
+// TODO: use the implementation in RestartAgents() for this function and combine them
 func StartAgents(source *utils.Cluster, target *utils.Cluster, stateDir string) error {
 	// XXX If there are failures, does it matter what agents have successfully
 	// started, or do we just want to stop all of them and kick back to the
 	// user?
 	logStr := "start agents on master and hosts"
-	hubPath, err := os.Executable()
+
+	agentPath, err := getAgentPath()
 	if err != nil {
 		return errors.Errorf("failed to get the hub executable path %v", err)
 	}
-	agentPath := filepath.Join(filepath.Dir(hubPath), "gpupgrade_agent")
 
 	// XXX State directory handling on agents needs to be improved. See issue
 	// #127: all agents will silently recreate that directory if it doesn't

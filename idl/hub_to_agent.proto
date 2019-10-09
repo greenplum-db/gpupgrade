@@ -10,6 +10,7 @@ service Agent {
     rpc AgentExecuteUpgradePrimariesSubStep (UpgradePrimariesRequest) returns (UpgradePrimariesReply) {}
     rpc CreateSegmentDataDirectories (CreateSegmentDataDirRequest) returns (CreateSegmentDataDirReply) {}
     rpc CopyMasterDirectoryToSegmentDirectories (CopyMasterDirRequest) returns (CopyMasterDirReply) {}
+    rpc StopAgent(StopAgentRequest) returns (StopAgentReply) {}
 }
 
 message UpgradePrimariesRequest {
@@ -73,3 +74,6 @@ message CopyMasterDirRequest {
 }
 
 message CopyMasterDirReply {}
+
+message StopAgentRequest {}
+message StopAgentReply {}

@@ -6,15 +6,12 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-	"strconv"
-	"strings"
-
-	"github.com/greenplum-db/gp-common-go-libs/cluster"
-	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/pkg/errors"
 
+	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 // introduce this variable to allow exec.Command to be mocked out in tests
@@ -67,16 +64,6 @@ func StartHub() (err error) {
 	s := Substep("Starting hub...")
 	defer s.Finish(&err)
 
-	countHubs, err := HowManyHubsRunning()
-	if err != nil {
-		gplog.Error("failed to determine if hub already running")
-		return err
-	}
-	if countHubs >= 1 {
-		gplog.Error("gpupgrade_hub process already running")
-		return errors.New("gpupgrade_hub process already running")
-	}
-
 	cmd := execCommandHubStart("gpupgrade_hub", "--daemonize")
 	stdout, cmdErr := cmd.Output()
 	if cmdErr != nil {
@@ -91,22 +78,18 @@ func StartHub() (err error) {
 	return nil
 }
 
-func HowManyHubsRunning() (int, error) {
-	howToLookForHub := `ps -ef | grep -Gc "[g]pupgrade_hub$"` // use square brackets to avoid finding yourself in matches
-	output, err := execCommandHubCount("bash", "-c", howToLookForHub).Output()
-	value, convErr := strconv.Atoi(strings.TrimSpace(string(output)))
-	if convErr != nil {
-		if err != nil {
-			return -1, err
+func IsHubRunning() (bool, error) {
+	script := `ps -ef | grep -wGc "[g]pupgrade_hub"` // use square brackets to avoid finding yourself in matches
+	_, err := execCommandHubCount("bash", "-c", script).Output()
+
+	if exitError, ok := err.(*exec.ExitError); ok {
+		if exitError.ProcessState.ExitCode() == 1 { // hub not found
+			return false, nil
 		}
-		return -1, convErr
+	}
+	if err != nil { // grep failed
+		return false, err
 	}
 
-	// let value == 0 through before checking err, for when grep finds nothing and its error-code is 1
-	if value >= 0 {
-		return value, nil
-	}
-
-	// only needed if the command errors, but somehow put a parsable & negative value on stdout
-	return -1, err
+	return true, nil
 }

@@ -7,8 +7,7 @@ setup() {
 
     STATE_DIR=`mktemp -d /tmp/gpupgrade.XXXXXX`
     export GPUPGRADE_HOME="${STATE_DIR}/gpupgrade"
-    kill_hub
-    kill_agents
+    gpupgrade kill-services
 
     # If this variable is set (to a master data directory), teardown() will call
     # gpdeletesystem on this cluster.
@@ -18,8 +17,7 @@ setup() {
 teardown() {
     skip_if_no_gpdb
 
-    kill_hub
-    kill_agents
+    gpupgrade kill-services
     rm -r "$STATE_DIR"
 
     if [ -n "$NEW_CLUSTER" ]; then
