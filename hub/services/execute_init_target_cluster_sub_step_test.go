@@ -170,14 +170,6 @@ var _ = Describe("Hub prepare init-cluster", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		//It("successfully runs gpinitsystem", func() {
-		//	testExecutor.LocalError = errors.New("exit status 1")
-		//	err := hub.RunInitsystemForTargetCluster(mockStream, "filepath")
-		//
-		//	Expect(err).To(BeNil())
-		//	testhelper.ExpectRegexp(stdout, "[WARNING]:-gpinitsystem completed with warnings")
-		//})
-
 		It("gpinitsystem fails", func() {
 			execCommand = exectest.NewCommand(FailedMain)
 
