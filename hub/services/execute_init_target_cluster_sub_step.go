@@ -2,8 +2,11 @@ package services
 
 import (
 	"fmt"
+	"golang.org/x/xerrors"
+	"io"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
@@ -12,37 +15,16 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/greenplum-db/gpupgrade/db"
-	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 )
 
-func (h *Hub) ExecuteInitTargetClusterSubStep(stream messageSender) error {
-	gplog.Info("starting %s", upgradestatus.INIT_CLUSTER)
-
-	step, err := h.InitializeStep(upgradestatus.INIT_CLUSTER, stream)
-	if err != nil {
-		gplog.Error(err.Error())
-		return err
-	}
-
-	err = h.CreateTargetCluster()
-	if err != nil {
-		gplog.Error(err.Error())
-		step.MarkFailed()
-	} else {
-		step.MarkComplete()
-	}
-
-	return err
-}
-
-func (h *Hub) CreateTargetCluster() error {
+func (h *Hub) CreateTargetCluster(stream messageSender, log io.Writer) error {
 	sourceDBConn := db.NewDBConn("localhost", int(h.source.MasterPort()), "template1")
 
-	targetDBConn, err := h.InitTargetCluster(sourceDBConn)
+	targetDBConn, err := h.InitTargetCluster(stream, log, sourceDBConn)
 	if err != nil {
 		return errors.Wrap(err, "failed to connect to old database")
 	}
@@ -50,7 +32,7 @@ func (h *Hub) CreateTargetCluster() error {
 	return ReloadAndCommitCluster(h.target, targetDBConn)
 }
 
-func (h *Hub) InitTargetCluster(sourceDBConn *dbconn.DBConn) (*dbconn.DBConn, error) {
+func (h *Hub) InitTargetCluster(stream messageSender, log io.Writer, sourceDBConn *dbconn.DBConn) (*dbconn.DBConn, error) {
 	err := sourceDBConn.Connect(1)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not connect to database")
@@ -85,7 +67,7 @@ func (h *Hub) InitTargetCluster(sourceDBConn *dbconn.DBConn) (*dbconn.DBConn, er
 		return nil, err
 	}
 
-	err = h.RunInitsystemForTargetCluster(gpinitsystemFilepath)
+	err = RunInitsystemForTargetCluster(stream, log, h.target.BinDir, gpinitsystemFilepath)
 	if err != nil {
 		return nil, err
 	}
@@ -187,23 +169,31 @@ func (h *Hub) CreateAllDataDirectories(agentConns []*Connection, segmentDataDirM
 	return nil
 }
 
-func (h *Hub) RunInitsystemForTargetCluster(gpinitsystemFilepath string) error {
+func RunInitsystemForTargetCluster(stream messageSender, log io.Writer, targetBinDir string, gpinitsystemFilepath string) error {
 	// gpinitsystem the new cluster
-	gphome := filepath.Dir(path.Clean(h.target.BinDir)) //works around https://github.com/golang/go/issues/4837 in go10.4
-	cmdStr := fmt.Sprintf("source %s/greenplum_path.sh; %s/gpinitsystem -a -I %s",
+	gphome := filepath.Dir(path.Clean(targetBinDir)) //works around https://github.com/golang/go/issues/4837 in go10.4
+	script := fmt.Sprintf("source %[1]s/greenplum_path.sh && %[1]s/bin/gpinitsystem -a -I %[2]s",
 		gphome,
-		h.target.BinDir,
 		gpinitsystemFilepath)
+	cmd := execCommand("bash", "-c", script)
 
-	output, err := h.source.Executor.ExecuteLocalCommand(cmdStr)
-	if err != nil {
-		// gpinitsystem has a return code of 1 for warnings, so we can ignore that return code
-		if err.Error() == "exit status 1" {
-			gplog.Warn("gpinitsystem completed with warnings")
-			return nil
+	mux := newMultiplexedStream(stream, log)
+	cmd.Stdout = mux.NewStreamWriter(idl.Chunk_STDOUT)
+	cmd.Stderr = mux.NewStreamWriter(idl.Chunk_STDERR)
+
+	err := cmd.Run()
+	var gpinitsystemWarning bool
+	if exitErr, ok := err.(*exec.ExitError); ok {
+		// gpinitsystem exits with 1 on warnings and 2 on errors. Continue gpupgrade even when gpinitsystem has warnings.
+		gpinitsystemWarning = exitErr.ExitCode() == 1
+		if gpinitsystemWarning {
+			gplog.Warn("gpinitsystem had warnings and exited with status %d", exitErr.ExitCode())
 		}
-		return errors.Wrapf(err, "gpinitsystem failed: %s", output)
 	}
+	if err != nil && !gpinitsystemWarning {
+		return xerrors.Errorf("gpinitsystem failed: %w", err)
+	}
+
 	return nil
 }
 

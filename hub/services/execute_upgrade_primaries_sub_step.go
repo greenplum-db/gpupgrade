@@ -16,7 +16,7 @@ import (
 )
 
 func (h *Hub) ExecuteUpgradePrimariesSubStep(stream messageSender) error {
-	gplog.Info("starting %s", upgradestatus.CONVERT_PRIMARIES)
+	gplog.Info("starting %s", upgradestatus.UPGRADE_PRIMARIES)
 	const step = idl.UpgradeSteps_CONVERT_PRIMARIES
 
 	// NOTE: this substep is special in that it handled differently by the

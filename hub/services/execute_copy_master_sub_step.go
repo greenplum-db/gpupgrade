@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"io"
 	"path/filepath"
 	"sync"
 
@@ -9,35 +10,13 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/pkg/errors"
 
-	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/hashicorp/go-multierror"
 	"golang.org/x/net/context"
 )
 
-func (h *Hub) ExecuteCopyMasterSubStep(stream messageSender) error {
-	gplog.Info("starting %s", upgradestatus.COPY_MASTER)
-
-	step, err := h.InitializeStep(upgradestatus.COPY_MASTER, stream)
-	if err != nil {
-		gplog.Error(err.Error())
-		return err
-	}
-
-	err = h.copyMasterDataDir()
-	if err != nil {
-		gplog.Error(err.Error())
-		step.MarkFailed()
-	} else {
-		step.MarkComplete()
-	}
-
-	return err
-}
-
-func (h *Hub) copyMasterDataDir() error {
+func (h *Hub) CopyMasterDataDir(stream messageSender, log io.Writer) error {
 	var err error
 	rsyncFlags := "-rzpogt"
 

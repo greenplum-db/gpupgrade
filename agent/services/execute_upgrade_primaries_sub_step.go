@@ -22,7 +22,7 @@ import (
 var execCommand = exec.Command
 
 func (s *AgentServer) AgentExecuteUpgradePrimariesSubStep(ctx context.Context, in *idl.UpgradePrimariesRequest) (*idl.UpgradePrimariesReply, error) {
-	gplog.Info("agent starting %s", upgradestatus.CONVERT_PRIMARIES)
+	gplog.Info("agent starting %s", upgradestatus.UPGRADE_PRIMARIES)
 
 	err := UpgradePrimaries(in.OldBinDir, in.NewBinDir, in.DataDirPairs)
 	return &idl.UpgradePrimariesReply{}, err

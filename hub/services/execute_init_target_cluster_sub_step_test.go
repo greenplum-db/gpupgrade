@@ -3,24 +3,18 @@ package services_test
 import (
 	"database/sql/driver"
 	"fmt"
-	"os"
-	"path"
-	"path/filepath"
-
-	"github.com/pkg/errors"
-
+	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/greenplum-db/gpupgrade/hub/services"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils"
-	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gbytes"
+	"github.com/pkg/errors"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
+	"os"
 )
 
 var _ = Describe("Hub prepare init-cluster", func() {
@@ -140,56 +134,7 @@ var _ = Describe("Hub prepare init-cluster", func() {
 	})
 
 	Describe("RunInitsystemForTargetCluster", func() {
-		var (
-			stdout *gbytes.Buffer
-		)
-
-		BeforeEach(func() {
-			stdout, _, _ = testhelper.SetupTestLogger()
-		})
-
-		It("should use executables in the source's bindir even if bindir has a trailing slash", func() {
-			target.BinDir = target.BinDir + string(os.PathSeparator)
-			err := hub.RunInitsystemForTargetCluster("filepath")
-			Expect(err).To(BeNil())
-
-			gphome := filepath.Dir(path.Clean(target.BinDir)) //works around https://github.com/golang/go/issues/4837(in go10.4)
-			expectedCommandString := fmt.Sprintf("source %s/greenplum_path.sh; %s/gpinitsystem -a -I", gphome, target.BinDir)
-			Expect(testExecutor.LocalCommands[0]).Should(ContainSubstring(expectedCommandString))
-		})
-
-		It("successfully runs gpinitsystem", func() {
-			testExecutor.LocalError = errors.New("exit status 1")
-			err := hub.RunInitsystemForTargetCluster("filepath")
-
-			Expect(err).To(BeNil())
-			testhelper.ExpectRegexp(stdout, "[WARNING]:-gpinitsystem completed with warnings")
-		})
-
-		It("should use executables in the source's bindir", func() {
-			err := hub.RunInitsystemForTargetCluster("filepath")
-			Expect(err).To(BeNil())
-
-			gphome := filepath.Dir(path.Clean(target.BinDir)) //works around https://github.com/golang/go/issues/4837(in go10.4)
-			expectedCommandString := fmt.Sprintf("source %s/greenplum_path.sh; %s/gpinitsystem -a -I", gphome, target.BinDir)
-			Expect(testExecutor.LocalCommands[0]).Should(ContainSubstring(expectedCommandString))
-		})
-
-		It("runs gpinitsystem and fails", func() {
-			testExecutor.LocalError = errors.New("exit status 2")
-			testExecutor.LocalOutput = "some output"
-
-			err := hub.RunInitsystemForTargetCluster("filepath")
-			Expect(err.Error()).To(Equal("gpinitsystem failed: some output: exit status 2"))
-		})
-
-		It("runs gpinitsystem and receives an interrupt", func() {
-			testExecutor.LocalError = errors.New("exit status 127")
-			testExecutor.LocalOutput = "some output"
-
-			err := hub.RunInitsystemForTargetCluster("filepath")
-			Expect(err.Error()).To(Equal("gpinitsystem failed: some output: exit status 127"))
-		})
+		// XXX: See other test file that is in package services which enables us to test execCommand.
 	})
 
 	Describe("GetMasterSegPrefix", func() {

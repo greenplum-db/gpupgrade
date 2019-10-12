@@ -1,64 +1,117 @@
-package services_test
+package services
 
 import (
-	"errors"
+	"bytes"
 	"os"
+	"os/exec"
+	"testing"
 
-	"github.com/greenplum-db/gpupgrade/hub/services"
+	"github.com/golang/mock/gomock"
+
+	"github.com/greenplum-db/gp-common-go-libs/cluster"
+	"github.com/greenplum-db/gp-common-go-libs/dbconn"
+	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
+	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/utils"
 
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("ExecuteShutdownClustersSubStep", func() {
-	BeforeEach(func() {
-		utils.System.RemoveAll = func(s string) error { return nil }
-		utils.System.MkdirAll = func(s string, perm os.FileMode) error { return nil }
+func StopClusterCmd() {}
+
+func IsPostmasterRunningCmd() {}
+
+func IsPostmasterRunningCmd_Errors() {
+	os.Stderr.WriteString("exit status 2")
+	os.Exit(2)
+}
+
+func init() {
+	exectest.RegisterMains(
+		StopClusterCmd,
+		IsPostmasterRunningCmd,
+		IsPostmasterRunningCmd_Errors,
+	)
+}
+
+func TestShutdownClusters(t *testing.T) {
+	g := NewGomegaWithT(t)
+	ctrl := gomock.NewController(GinkgoT())
+	defer ctrl.Finish()
+
+	mockStream := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
+	mockStream.EXPECT().
+		Send(gomock.Any()).
+		AnyTimes()
+
+	var buf bytes.Buffer
+	var source     *utils.Cluster
+	cluster := cluster.NewCluster([]cluster.SegConfig{cluster.SegConfig{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "basedir/seg-1"}})
+	source = &utils.Cluster{
+		Cluster:    cluster,
+		BinDir:     "/source/bindir",
+		ConfigPath: "my/config/path",
+		Version:    dbconn.GPDBVersion{},
+	}
+	utils.System.RemoveAll = func(s string) error { return nil }
+	utils.System.MkdirAll = func(s string, perm os.FileMode) error { return nil }
+
+	isPostmasterRunningCmd = nil
+	stopClusterCmd = nil
+
+	defer func() {
+		isPostmasterRunningCmd = exec.Command
+		stopClusterCmd = exec.Command
+	}()
+
+	t.Run("isPostmasterRunning succeeds", func(t *testing.T) {
+		isPostmasterRunningCmd = exectest.NewCommandWithVerifier(IsPostmasterRunningCmd,
+			func(path string, args ...string) {
+				g.Expect(path).To(Equal("bash"))
+				g.Expect(args).To(Equal([]string{"-c", "pgrep -F basedir/seg-1/postmaster.pid"}))
+			})
+
+		err := IsPostmasterRunning(mockStream, &buf, source)
+		g.Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("isPostmasterRunning() succeeds", func() {
-		testExecutor := &testhelper.TestExecutor{}
-		source.Executor = testExecutor
+	t.Run("isPostmasterRunning fails", func(t *testing.T) {
+		isPostmasterRunningCmd = exectest.NewCommand(IsPostmasterRunningCmd_Errors)
 
-		postmasterRunning := services.IsPostmasterRunning(source)
-		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("pgrep"))
-		Expect(postmasterRunning).To(BeTrue())
+		err := IsPostmasterRunning(mockStream, &buf, source)
+		g.Expect(err).To(HaveOccurred())
 	})
 
-	It("isPostmasterRunning() fails", func() {
-		testExecutor := &testhelper.TestExecutor{}
-		testExecutor.LocalError = errors.New("some error message")
-		source.Executor = testExecutor
+	t.Run("stopCluster successfully shuts down cluster", func(t *testing.T) {
+		isPostmasterRunningCmd = exectest.NewCommandWithVerifier(IsPostmasterRunningCmd,
+			func(path string, args ...string) {
+				g.Expect(path).To(Equal("bash"))
+				g.Expect(args).To(Equal([]string{"-c", "pgrep -F basedir/seg-1/postmaster.pid"}))
+			})
 
-		postmasterRunning := services.IsPostmasterRunning(source)
-		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("pgrep"))
-		Expect(postmasterRunning).To(BeFalse())
+		stopClusterCmd = exectest.NewCommandWithVerifier(StopClusterCmd,
+			func(path string, args ...string) {
+				g.Expect(path).To(Equal("bash"))
+				g.Expect(args).To(Equal([]string{"-c", "source /source/bindir/../greenplum_path.sh " +
+					"&& /source/bindir/gpstop -a -d basedir/seg-1"}))
+			})
+
+		err := StopCluster(mockStream, &buf, source)
+		g.Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("stopCluster() succeesfully shuts down cluster", func() {
-		testExecutor := &testhelper.TestExecutor{}
-		source.Executor = testExecutor
+	t.Run("stopCluster detects that cluster is already shutdown", func(t *testing.T) {
+		isPostmasterRunningCmd = exectest.NewCommand(IsPostmasterRunningCmd_Errors)
 
-		err := services.StopCluster(source)
+		var skippedStopClusterCommand = true
+		stopClusterCmd = exectest.NewCommandWithVerifier(IsPostmasterRunningCmd,
+			func(path string, args ...string) {
+				skippedStopClusterCommand = false
+			})
 
-		Expect(testExecutor.NumExecutions).To(Equal(2))
-		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("pgrep"))
-		Expect(testExecutor.LocalCommands[1]).To(ContainSubstring("gpstop"))
-		Expect(err).ToNot(HaveOccurred())
+		err := StopCluster(mockStream, &buf, source)
+		g.Expect(err).To(HaveOccurred())
+		g.Expect(skippedStopClusterCommand).To(Equal(true))
 	})
-
-	It("stopCluster() detects that cluster is already shutdown", func() {
-		testExecutor := &testhelper.TestExecutor{}
-		testExecutor.LocalError = errors.New("some error message")
-		source.Executor = testExecutor
-
-		err := services.StopCluster(source)
-
-		Expect(testExecutor.NumExecutions).To(Equal(1))
-		Expect(testExecutor.LocalCommands[0]).To(ContainSubstring("pgrep"))
-		Expect(err).ToNot(HaveOccurred())
-	})
-
-})
+}

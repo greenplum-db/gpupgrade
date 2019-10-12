@@ -1,6 +1,7 @@
 package services_test
 
 import (
+	"bytes"
 	"path/filepath"
 
 	"github.com/golang/mock/gomock"
@@ -21,6 +22,7 @@ var _ = Describe("ExecuteCopyMasterSubStep", func() {
 
 		ctrl       *gomock.Controller
 		mockStream *mock_idl.MockCliToHub_ExecuteServer
+		buf bytes.Buffer
 	)
 
 	BeforeEach(func() {
@@ -43,7 +45,7 @@ var _ = Describe("ExecuteCopyMasterSubStep", func() {
 			AnyTimes()
 
 		source.Version = dbconn.NewVersion("6.0.0")
-		err := hub.ExecuteCopyMasterSubStep(mockStream)
+		err := hub.CopyMasterDataDir(mockStream, &buf)
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func() int { return testExecutor.NumExecutions }).Should(Equal(1))
@@ -67,7 +69,7 @@ var _ = Describe("ExecuteCopyMasterSubStep", func() {
 			target.Segments[content] = segment
 		}
 
-		err := hub.ExecuteCopyMasterSubStep(mockStream)
+		err := hub.CopyMasterDataDir(mockStream, &buf)
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func() int { return testExecutor.NumExecutions }).Should(Equal(1))

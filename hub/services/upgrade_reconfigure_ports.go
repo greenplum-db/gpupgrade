@@ -3,6 +3,7 @@ package services
 import (
 	"database/sql"
 	"fmt"
+	"io/ioutil"
 	"os/exec"
 
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -23,7 +24,7 @@ func (h *Hub) UpgradeReconfigurePortsSubStep(stream messageSender) error {
 		return err
 	}
 
-	if err := h.reconfigurePorts(); err != nil {
+	if err := h.reconfigurePorts(stream); err != nil {
 		gplog.Error(err.Error())
 
 		// Log any stderr from failed commands.
@@ -44,9 +45,9 @@ func (h *Hub) UpgradeReconfigurePortsSubStep(stream messageSender) error {
 // change the ports on a cluster.
 //
 // TODO: this method needs test coverage.
-func (h *Hub) reconfigurePorts() (err error) {
+func (h *Hub) reconfigurePorts(stream messageSender) (err error) {
 	// 1). bring down the cluster
-	err = StopCluster(h.target)
+	err = StopCluster(stream, ioutil.Discard, h.target)
 	if err != nil {
 		return xerrors.Errorf("%s failed to stop cluster: %w",
 			upgradestatus.RECONFIGURE_PORTS, err)

@@ -2,43 +2,19 @@ package services
 
 import (
 	"fmt"
+	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/utils"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
-	"sync"
-
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
-	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-	"github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 // Allow exec.Command to be mocked out by exectest.NewCommand.
 var execCommand = exec.Command
 
-func (h *Hub) ExecuteUpgradeMasterSubStep(stream messageSender) error {
-	gplog.Info("starting %s", upgradestatus.CONVERT_MASTER)
-
-	step, err := h.InitializeStep(upgradestatus.CONVERT_MASTER, stream)
-	if err != nil {
-		gplog.Error(err.Error())
-		return err
-	}
-
-	err = h.UpgradeMaster(stream)
-	if err != nil {
-		gplog.Error(err.Error())
-		step.MarkFailed()
-	} else {
-		step.MarkComplete()
-	}
-
-	return err
-}
-
-func (h *Hub) UpgradeMaster(stream messageSender) error {
+func (h *Hub) UpgradeMaster(stream messageSender, log io.Writer) error {
 	// Make sure our working directory exists.
 	wd := utils.MasterPGUpgradeDirectory(h.conf.StateDir)
 	err := utils.System.MkdirAll(wd, 0700)
@@ -46,78 +22,8 @@ func (h *Hub) UpgradeMaster(stream messageSender) error {
 		return err
 	}
 
-	// Create a log file to contain pg_upgrade output.
-	log, err := utils.System.OpenFile(
-		filepath.Join(wd, "pg_upgrade.log"),
-		os.O_WRONLY|os.O_CREATE,
-		0600,
-	)
-	if err != nil {
-		return err
-	}
-
 	pair := clusterPair{h.source, h.target}
 	return pair.ConvertMaster(stream, log, wd)
-}
-
-// multiplexedStream provides io.Writers that wrap both gRPC stream and a parallel
-// io.Writer (in case the gRPC stream closes) and safely serialize any
-// simultaneous writes.
-type multiplexedStream struct {
-	stream messageSender
-	writer io.Writer
-	mutex  sync.Mutex
-}
-
-func newMultiplexedStream(stream messageSender, writer io.Writer) *multiplexedStream {
-	return &multiplexedStream{
-		stream: stream,
-		writer: writer,
-	}
-}
-
-func (m *multiplexedStream) NewStreamWriter(cType idl.Chunk_Type) io.Writer {
-	return &streamWriter{
-		multiplexedStream: m,
-		cType:             cType,
-	}
-}
-
-type streamWriter struct {
-	*multiplexedStream
-	cType idl.Chunk_Type
-}
-
-func (w *streamWriter) Write(p []byte) (int, error) {
-	w.mutex.Lock()
-	defer w.mutex.Unlock()
-
-	n, err := w.writer.Write(p)
-	if err != nil {
-		return n, err
-	}
-
-	if w.stream != nil {
-		// Attempt to send the chunk to the client. Since the client may close
-		// the connection at any point, errors here are logged and otherwise
-		// ignored. After the first send error, no more attempts are made.
-
-		chunk := &idl.Chunk{
-			Buffer: p,
-			Type:   w.cType,
-		}
-
-		err = w.stream.Send(&idl.Message{
-			Contents: &idl.Message_Chunk{chunk},
-		})
-
-		if err != nil {
-			gplog.Info("halting client stream: %v", err)
-			w.stream = nil
-		}
-	}
-
-	return len(p), nil
 }
 
 // clusterPair simply holds the source and target clusters.

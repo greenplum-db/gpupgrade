@@ -14,12 +14,12 @@ import (
 const (
 	CONFIG                 = "check-config"
 	START_AGENTS           = "start-agents"
-	INIT_CLUSTER           = "init-cluster"
+	INIT_TARGET_CLUSTER    = "init-target-cluster"
 	SHUTDOWN_CLUSTERS      = "shutdown-clusters"
-	CONVERT_MASTER         = "convert-master"
+	UPGRADE_MASTER         = "upgrade-master"
 	COPY_MASTER            = "copy-master"
-	CONVERT_PRIMARIES      = "convert-primaries"
-	VALIDATE_START_CLUSTER = "validate-start-cluster"
+	UPGRADE_PRIMARIES      = "upgrade-primaries"
+	START_TARGET_CLUSTER   = "start-target-cluster"
 	RECONFIGURE_PORTS      = "reconfigure-ports"
 )
 

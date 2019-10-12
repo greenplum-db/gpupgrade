@@ -2,38 +2,20 @@ package services
 
 import (
 	"fmt"
-
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
-	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-	"github.com/pkg/errors"
+	"github.com/greenplum-db/gpupgrade/idl"
+	"io"
 )
 
-func (h *Hub) ExecuteStartTargetClusterSubStep(stream messageSender) error {
-	gplog.Info("starting %s", upgradestatus.VALIDATE_START_CLUSTER)
+func (h *Hub) StartTargetCluster(stream messageSender, log io.Writer) error {
+	cmd := execCommand("bash", "-c",
+		fmt.Sprintf("source %[1]s/../greenplum_path.sh && %[1]s/gpstart -a -d %[2]s",
+			h.target.BinDir,
+			h.target.MasterDataDir(),
+		))
 
-	step, err := h.InitializeStep(upgradestatus.VALIDATE_START_CLUSTER, stream)
-	if err != nil {
-		gplog.Error(err.Error())
-		return err
-	}
+	mux := newMultiplexedStream(stream, log)
+	cmd.Stdout = mux.NewStreamWriter(idl.Chunk_STDOUT)
+	cmd.Stderr = mux.NewStreamWriter(idl.Chunk_STDERR)
 
-	err = h.startNewCluster()
-	if err != nil {
-		gplog.Error(err.Error())
-		step.MarkFailed()
-	} else {
-		step.MarkComplete()
-	}
-
-	return nil
-}
-
-func (h *Hub) startNewCluster() error {
-	startCmd := fmt.Sprintf("source %s/../greenplum_path.sh; %s/gpstart -a -d %s", h.target.BinDir, h.target.BinDir, h.target.MasterDataDir())
-	_, err := h.target.ExecuteLocalCommand(startCmd)
-	if err != nil {
-		return errors.Wrap(err, "failed to start new cluster")
-	}
-
-	return nil
+	return cmd.Run()
 }
