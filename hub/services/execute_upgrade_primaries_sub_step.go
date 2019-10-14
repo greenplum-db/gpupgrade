@@ -17,7 +17,7 @@ import (
 
 func (h *Hub) ExecuteUpgradePrimariesSubStep(stream messageSender) error {
 	gplog.Info("starting %s", upgradestatus.UPGRADE_PRIMARIES)
-	const step = idl.UpgradeSteps_CONVERT_PRIMARIES
+	const step = idl.UpgradeSteps_UPGRADE_PRIMARIES
 
 	// NOTE: this substep is special in that it handled differently by the
 	//   checklist_manager; this is why we stream directly here

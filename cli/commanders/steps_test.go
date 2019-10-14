@@ -86,7 +86,7 @@ func TestUILoop(t *testing.T) {
 	t.Run("writes status and stdout chunks serially in verbose mode", func(t *testing.T) {
 		msgs := msgStream{
 			{Contents: &idl.Message_Status{&idl.UpgradeStepStatus{
-				Step:   idl.UpgradeSteps_INIT_CLUSTER,
+				Step:   idl.UpgradeSteps_INIT_TARGET_CLUSTER,
 				Status: idl.StepStatus_RUNNING,
 			}}},
 			{Contents: &idl.Message_Chunk{&idl.Chunk{
@@ -94,11 +94,11 @@ func TestUILoop(t *testing.T) {
 				Type:   idl.Chunk_STDOUT,
 			}}},
 			{Contents: &idl.Message_Status{&idl.UpgradeStepStatus{
-				Step:   idl.UpgradeSteps_INIT_CLUSTER,
+				Step:   idl.UpgradeSteps_INIT_TARGET_CLUSTER,
 				Status: idl.StepStatus_COMPLETE,
 			}}},
 			{Contents: &idl.Message_Status{&idl.UpgradeStepStatus{
-				Step:   idl.UpgradeSteps_CONVERT_MASTER,
+				Step:   idl.UpgradeSteps_UPGRADE_MASTER,
 				Status: idl.StepStatus_FAILED,
 			}}},
 		}
@@ -131,7 +131,7 @@ func TestUILoop(t *testing.T) {
 	t.Run("overwrites status lines and ignores chunks in non-verbose mode", func(t *testing.T) {
 		msgs := msgStream{
 			{Contents: &idl.Message_Status{&idl.UpgradeStepStatus{
-				Step:   idl.UpgradeSteps_INIT_CLUSTER,
+				Step:   idl.UpgradeSteps_INIT_TARGET_CLUSTER,
 				Status: idl.StepStatus_RUNNING,
 			}}},
 			{Contents: &idl.Message_Chunk{&idl.Chunk{
@@ -139,7 +139,7 @@ func TestUILoop(t *testing.T) {
 				Type:   idl.Chunk_STDOUT,
 			}}},
 			{Contents: &idl.Message_Status{&idl.UpgradeStepStatus{
-				Step:   idl.UpgradeSteps_INIT_CLUSTER,
+				Step:   idl.UpgradeSteps_INIT_TARGET_CLUSTER,
 				Status: idl.StepStatus_COMPLETE,
 			}}},
 			{Contents: &idl.Message_Chunk{&idl.Chunk{
@@ -147,7 +147,7 @@ func TestUILoop(t *testing.T) {
 				Type:   idl.Chunk_STDERR,
 			}}},
 			{Contents: &idl.Message_Status{&idl.UpgradeStepStatus{
-				Step:   idl.UpgradeSteps_CONVERT_MASTER,
+				Step:   idl.UpgradeSteps_UPGRADE_MASTER,
 				Status: idl.StepStatus_FAILED,
 			}}},
 		}

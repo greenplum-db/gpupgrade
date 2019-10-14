@@ -93,8 +93,8 @@ var _ = Describe("Reporter", func() {
 		It("sends all the right messages to the logger in the right order when reply contains multiple step-statuses", func() {
 			spyClient.statusUpgradeReply = &idl.StatusUpgradeReply{
 				ListOfUpgradeStepStatuses: []*idl.UpgradeStepStatus{
-					{Step: idl.UpgradeSteps_INIT_CLUSTER, Status: idl.StepStatus_RUNNING},
-					{Step: idl.UpgradeSteps_CONVERT_MASTER, Status: idl.StepStatus_PENDING},
+					{Step: idl.UpgradeSteps_INIT_TARGET_CLUSTER, Status: idl.StepStatus_RUNNING},
+					{Step: idl.UpgradeSteps_UPGRADE_MASTER, Status: idl.StepStatus_PENDING},
 				},
 			}
 			err := reporter.OverallUpgradeStatus()
@@ -126,8 +126,8 @@ var _ = Describe("Reporter", func() {
 			},
 			Entry("unknown step", idl.UpgradeSteps_UNKNOWN_STEP, idl.StepStatus_PENDING, "PENDING - Unknown step"),
 			Entry("configuration check", idl.UpgradeSteps_CONFIG, idl.StepStatus_RUNNING, "RUNNING - Configuration Check"),
-			Entry("prepare init cluster", idl.UpgradeSteps_INIT_CLUSTER, idl.StepStatus_FAILED, "FAILED - Initialize new cluster"),
-			Entry("upgrade on master", idl.UpgradeSteps_CONVERT_MASTER, idl.StepStatus_PENDING, "PENDING - Run pg_upgrade on master"),
+			Entry("prepare init cluster", idl.UpgradeSteps_INIT_TARGET_CLUSTER, idl.StepStatus_FAILED, "FAILED - Initialize new cluster"),
+			Entry("upgrade on master", idl.UpgradeSteps_UPGRADE_MASTER, idl.StepStatus_PENDING, "PENDING - Run pg_upgrade on master"),
 			Entry("shutdown cluster", idl.UpgradeSteps_SHUTDOWN_CLUSTERS, idl.StepStatus_PENDING, "PENDING - Shutdown clusters"),
 			Entry("reconfigure ports", idl.UpgradeSteps_RECONFIGURE_PORTS, idl.StepStatus_PENDING, "PENDING - Adjust upgraded cluster ports"),
 		)

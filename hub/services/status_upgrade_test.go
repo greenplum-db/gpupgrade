@@ -29,13 +29,13 @@ var _ = Describe("status upgrade", func() {
 
 		cm = testutils.NewMockChecklistManager()
 		cm.AddStep(upgradestatus.CONFIG, idl.UpgradeSteps_CONFIG)
-		cm.AddStep(upgradestatus.INIT_TARGET_CLUSTER, idl.UpgradeSteps_INIT_CLUSTER)
+		cm.AddStep(upgradestatus.INIT_TARGET_CLUSTER, idl.UpgradeSteps_INIT_TARGET_CLUSTER)
 		cm.AddStep(upgradestatus.SHUTDOWN_CLUSTERS, idl.UpgradeSteps_SHUTDOWN_CLUSTERS)
-		cm.AddStep(upgradestatus.UPGRADE_MASTER, idl.UpgradeSteps_CONVERT_MASTER)
+		cm.AddStep(upgradestatus.UPGRADE_MASTER, idl.UpgradeSteps_UPGRADE_MASTER)
 		cm.AddStep(upgradestatus.START_AGENTS, idl.UpgradeSteps_START_AGENTS)
 		cm.AddStep(upgradestatus.COPY_MASTER, idl.UpgradeSteps_COPY_MASTER)
-		cm.AddStep(upgradestatus.START_TARGET_CLUSTER, idl.UpgradeSteps_VALIDATE_START_CLUSTER)
-		cm.AddStep(upgradestatus.UPGRADE_PRIMARIES, idl.UpgradeSteps_CONVERT_PRIMARIES)
+		cm.AddStep(upgradestatus.START_TARGET_CLUSTER, idl.UpgradeSteps_START_TARGET_CLUSTER)
+		cm.AddStep(upgradestatus.UPGRADE_PRIMARIES, idl.UpgradeSteps_UPGRADE_PRIMARIES)
 		cm.AddStep(upgradestatus.RECONFIGURE_PORTS, idl.UpgradeSteps_RECONFIGURE_PORTS)
 
 		hub = services.NewHub(source, target, dialer, hubConf, cm)
@@ -61,13 +61,13 @@ var _ = Describe("status upgrade", func() {
 					Step:   idl.UpgradeSteps_CONFIG,
 					Status: idl.StepStatus_COMPLETE,
 				}, {
-					Step:   idl.UpgradeSteps_INIT_CLUSTER,
+					Step:   idl.UpgradeSteps_INIT_TARGET_CLUSTER,
 					Status: idl.StepStatus_PENDING,
 				}, {
 					Step:   idl.UpgradeSteps_SHUTDOWN_CLUSTERS,
 					Status: idl.StepStatus_PENDING,
 				}, {
-					Step:   idl.UpgradeSteps_CONVERT_MASTER,
+					Step:   idl.UpgradeSteps_UPGRADE_MASTER,
 					Status: idl.StepStatus_PENDING,
 				}, {
 					Step:   idl.UpgradeSteps_START_AGENTS,
@@ -76,10 +76,10 @@ var _ = Describe("status upgrade", func() {
 					Step:   idl.UpgradeSteps_COPY_MASTER,
 					Status: idl.StepStatus_FAILED,
 				}, {
-					Step:   idl.UpgradeSteps_VALIDATE_START_CLUSTER,
+					Step:   idl.UpgradeSteps_START_TARGET_CLUSTER,
 					Status: idl.StepStatus_PENDING,
 				}, {
-					Step:   idl.UpgradeSteps_CONVERT_PRIMARIES,
+					Step:   idl.UpgradeSteps_UPGRADE_PRIMARIES,
 					Status: idl.StepStatus_PENDING,
 				}, {
 					Step:   idl.UpgradeSteps_RECONFIGURE_PORTS,

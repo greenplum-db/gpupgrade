@@ -20,12 +20,12 @@ type receiver interface {
 var lines = map[idl.UpgradeSteps]string{
 	idl.UpgradeSteps_CONFIG:                 "Retrieving configs...",
 	idl.UpgradeSteps_START_AGENTS:           "Starting agents...",
-	idl.UpgradeSteps_INIT_CLUSTER:           "Creating new cluster...",
+	idl.UpgradeSteps_INIT_TARGET_CLUSTER:    "Creating new cluster...",
 	idl.UpgradeSteps_SHUTDOWN_CLUSTERS:      "Stopping clusters...",
-	idl.UpgradeSteps_CONVERT_MASTER:         "Upgrading master...",
+	idl.UpgradeSteps_UPGRADE_MASTER:         "Upgrading master...",
 	idl.UpgradeSteps_COPY_MASTER:            "Copying master to segments...",
-	idl.UpgradeSteps_CONVERT_PRIMARIES:      "Upgrading segments...",
-	idl.UpgradeSteps_VALIDATE_START_CLUSTER: "Starting upgraded cluster...",
+	idl.UpgradeSteps_UPGRADE_PRIMARIES:      "Upgrading segments...",
+	idl.UpgradeSteps_START_TARGET_CLUSTER:   "Starting upgraded cluster...",
 	idl.UpgradeSteps_RECONFIGURE_PORTS:      "Changing cluster ports...",
 }
 

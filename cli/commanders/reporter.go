@@ -26,12 +26,12 @@ var UpgradeStepsMessage = map[idl.UpgradeSteps]string{
 	idl.UpgradeSteps_UNKNOWN_STEP:           "- Unknown step",
 	idl.UpgradeSteps_CONFIG:                 "- Configuration Check",
 	idl.UpgradeSteps_START_AGENTS:           "- Agents Started on Cluster",
-	idl.UpgradeSteps_INIT_CLUSTER:           "- Initialize new cluster",
-	idl.UpgradeSteps_CONVERT_MASTER:         "- Run pg_upgrade on master",
+	idl.UpgradeSteps_INIT_TARGET_CLUSTER:    "- Initialize new cluster",
 	idl.UpgradeSteps_SHUTDOWN_CLUSTERS:      "- Shutdown clusters",
+	idl.UpgradeSteps_UPGRADE_MASTER:         "- Run pg_upgrade on master",
 	idl.UpgradeSteps_COPY_MASTER:            "- Copy master data directory to segments",
-	idl.UpgradeSteps_CONVERT_PRIMARIES:      "- Run pg_upgrade on primaries",
-	idl.UpgradeSteps_VALIDATE_START_CLUSTER: "- Validate the upgraded cluster can start up",
+	idl.UpgradeSteps_UPGRADE_PRIMARIES:      "- Run pg_upgrade on primaries",
+	idl.UpgradeSteps_START_TARGET_CLUSTER:   "- Validate the upgraded cluster can start up",
 	idl.UpgradeSteps_RECONFIGURE_PORTS:      "- Adjust upgraded cluster ports",
 }
 
@@ -65,12 +65,12 @@ var UpgradeStepsOrder = map[idl.UpgradeSteps]int{
 	idl.UpgradeSteps_UNKNOWN_STEP:           0,
 	idl.UpgradeSteps_CONFIG:                 1,
 	idl.UpgradeSteps_START_AGENTS:           2,
-	idl.UpgradeSteps_INIT_CLUSTER:           3,
+	idl.UpgradeSteps_INIT_TARGET_CLUSTER:    3,
 	idl.UpgradeSteps_SHUTDOWN_CLUSTERS:      4,
-	idl.UpgradeSteps_CONVERT_MASTER:         5,
+	idl.UpgradeSteps_UPGRADE_MASTER:         5,
 	idl.UpgradeSteps_COPY_MASTER:            6,
-	idl.UpgradeSteps_CONVERT_PRIMARIES:      7,
-	idl.UpgradeSteps_VALIDATE_START_CLUSTER: 8,
+	idl.UpgradeSteps_UPGRADE_PRIMARIES:      7,
+	idl.UpgradeSteps_START_TARGET_CLUSTER:   8,
 	idl.UpgradeSteps_RECONFIGURE_PORTS:      9,
 }
 

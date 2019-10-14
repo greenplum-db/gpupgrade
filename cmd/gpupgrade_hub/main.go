@@ -92,17 +92,17 @@ func main() {
 			// interfaces aren't well componentized.
 			cm.AddWritableStep(upgradestatus.CONFIG, idl.UpgradeSteps_CONFIG)
 			cm.AddWritableStep(upgradestatus.START_AGENTS, idl.UpgradeSteps_START_AGENTS)
-			cm.AddWritableStep(upgradestatus.INIT_TARGET_CLUSTER, idl.UpgradeSteps_INIT_CLUSTER)
+			cm.AddWritableStep(upgradestatus.INIT_TARGET_CLUSTER, idl.UpgradeSteps_INIT_TARGET_CLUSTER)
 			cm.AddWritableStep(upgradestatus.SHUTDOWN_CLUSTERS, idl.UpgradeSteps_SHUTDOWN_CLUSTERS)
-			cm.AddWritableStep(upgradestatus.UPGRADE_MASTER, idl.UpgradeSteps_CONVERT_MASTER)
+			cm.AddWritableStep(upgradestatus.UPGRADE_MASTER, idl.UpgradeSteps_UPGRADE_MASTER)
 			cm.AddWritableStep(upgradestatus.COPY_MASTER, idl.UpgradeSteps_COPY_MASTER)
 
-			cm.AddReadOnlyStep(upgradestatus.UPGRADE_PRIMARIES, idl.UpgradeSteps_CONVERT_PRIMARIES,
+			cm.AddReadOnlyStep(upgradestatus.UPGRADE_PRIMARIES, idl.UpgradeSteps_UPGRADE_PRIMARIES,
 				func(stepName string) idl.StepStatus {
 					return services.PrimaryConversionStatus(hub)
 				})
 
-			cm.AddWritableStep(upgradestatus.START_TARGET_CLUSTER, idl.UpgradeSteps_VALIDATE_START_CLUSTER)
+			cm.AddWritableStep(upgradestatus.START_TARGET_CLUSTER, idl.UpgradeSteps_START_TARGET_CLUSTER)
 			cm.AddWritableStep(upgradestatus.RECONFIGURE_PORTS, idl.UpgradeSteps_RECONFIGURE_PORTS)
 
 			if shouldDaemonize {

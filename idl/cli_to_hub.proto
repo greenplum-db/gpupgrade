@@ -51,12 +51,12 @@ enum UpgradeSteps {
     UNKNOWN_STEP = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
     CONFIG = 1;
     START_AGENTS = 2;
-    INIT_CLUSTER = 3;
+    INIT_TARGET_CLUSTER = 3;
     SHUTDOWN_CLUSTERS = 4;
-    CONVERT_MASTER = 5;
+    UPGRADE_MASTER = 5;
     COPY_MASTER = 6;
-    CONVERT_PRIMARIES = 7;
-    VALIDATE_START_CLUSTER = 8;
+    UPGRADE_PRIMARIES = 7;
+    START_TARGET_CLUSTER = 8;
     RECONFIGURE_PORTS = 9;
 }
 
