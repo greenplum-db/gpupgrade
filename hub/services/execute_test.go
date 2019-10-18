@@ -7,14 +7,15 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"os/signal"
 	"syscall"
+	"testing"
 
 	"github.com/golang/mock/gomock"
-
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
+	"github.com/onsi/gomega/gbytes"
+
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
@@ -22,7 +23,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gbytes"
 )
 
 const StreamingMainStdout = "expected\nstdout\n"
@@ -83,58 +83,54 @@ func (f *failingWriter) Write(_ []byte) (int, error) {
 	return 0, f.err
 }
 
-var _ = Describe("ConvertMaster", func() {
+func TestStreaming(t *testing.T) {
+	g := NewGomegaWithT(t)
+
 	var pair clusterPair   // the unit under test
 	var log *gbytes.Buffer // contains gplog output
 
-	BeforeEach(func() {
-		// Disable exec.Command. This way, if a test forgets to mock it out, we
-		// crash the test instead of executing code on a dev system.
-		execCommand = nil
+	// Disable exec.Command. This way, if a test forgets to mock it out, we
+	// crash the test instead of executing code on a dev system.
+	execCommand = nil
 
-		// Store gplog output.
-		_, _, log = testhelper.SetupTestLogger()
+	// Store gplog output.
+	_, _, log = testhelper.SetupTestLogger()
 
-		// Initialize the sample cluster pair.
-		pair = clusterPair{
-			Source: &utils.Cluster{
-				BinDir: "/old/bin",
-				Cluster: &cluster.Cluster{
-					ContentIDs: []int{-1},
-					Segments: map[int]cluster.SegConfig{
-						-1: cluster.SegConfig{
-							Port:    5432,
-							DataDir: "/data/old",
-						},
+	// Initialize the sample cluster pair.
+	pair = clusterPair{
+		Source: &utils.Cluster{
+			BinDir: "/old/bin",
+			Cluster: &cluster.Cluster{
+				ContentIDs: []int{-1},
+				Segments: map[int]cluster.SegConfig{
+					-1: cluster.SegConfig{
+						Port:    5432,
+						DataDir: "/data/old",
 					},
 				},
 			},
-			Target: &utils.Cluster{
-				BinDir: "/new/bin",
-				Cluster: &cluster.Cluster{
-					ContentIDs: []int{-1},
-					Segments: map[int]cluster.SegConfig{
-						-1: cluster.SegConfig{
-							Port:    5433,
-							DataDir: "/data/new",
-						},
+		},
+		Target: &utils.Cluster{
+			BinDir: "/new/bin",
+			Cluster: &cluster.Cluster{
+				ContentIDs: []int{-1},
+				Segments: map[int]cluster.SegConfig{
+					-1: cluster.SegConfig{
+						Port:    5433,
+						DataDir: "/data/new",
 					},
 				},
 			},
-		}
-	})
+		},
+	}
 
-	AfterEach(func() {
-		execCommand = exec.Command
-	})
-
-	It("streams stdout and stderr to the client", func() {
-		ctrl := gomock.NewController(GinkgoT())
-		defer ctrl.Finish()
-
+	t.Run("streams stdout and stderr to the client", func(t *testing.T) {
 		// We can't rely on each write from the subprocess to result in exactly
 		// one call to stream.Send(). Instead, concatenate the byte buffers as
 		// they are sent and compare them at the end.
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
 		mockStream := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 		var stdout bytes.Buffer
 		var stderr bytes.Buffer
@@ -165,14 +161,14 @@ var _ = Describe("ConvertMaster", func() {
 		execCommand = exectest.NewCommand(StreamingMain)
 
 		err := pair.ConvertMaster(mockStream, ioutil.Discard, "")
-		Expect(err).NotTo(HaveOccurred())
+		g.Expect(err).NotTo(HaveOccurred())
 
-		Expect(stdout.String()).To(Equal(StreamingMainStdout))
-		Expect(stderr.String()).To(Equal(StreamingMainStderr))
+		g.Expect(stdout.String()).To(Equal(StreamingMainStdout))
+		g.Expect(stderr.String()).To(Equal(StreamingMainStderr))
 	})
 
-	It("also writes all data to a local io.Writer", func() {
-		ctrl := gomock.NewController(GinkgoT())
+	t.Run("also writes all data to a local io.Writer", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
 		mockStream := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
@@ -185,7 +181,7 @@ var _ = Describe("ConvertMaster", func() {
 
 		var buf bytes.Buffer
 		err := pair.ConvertMaster(mockStream, &buf, "")
-		Expect(err).NotTo(HaveOccurred())
+		g.Expect(err).NotTo(HaveOccurred())
 
 		// Stdout and stderr are not guaranteed to interleave in any particular
 		// order. Just count the number of bytes in each that we see (there
@@ -203,12 +199,12 @@ var _ = Describe("ConvertMaster", func() {
 			}
 		}
 
-		Expect(numO).To(Equal(10))
-		Expect(numE).To(Equal(10))
+		g.Expect(numO).To(Equal(10))
+		g.Expect(numE).To(Equal(10))
 	})
 
-	It("returns an error if the command succeeds but the io.Writer fails", func() {
-		ctrl := gomock.NewController(GinkgoT())
+	t.Run("returns an error if the command succeeds but the io.Writer fails", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
 		mockStream := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
@@ -222,11 +218,11 @@ var _ = Describe("ConvertMaster", func() {
 		expectedErr := errors.New("write failed!")
 		err := pair.ConvertMaster(mockStream, NewFailingWriter(expectedErr), "")
 
-		Expect(err).To(Equal(expectedErr))
+		g.Expect(err).To(Equal(expectedErr))
 	})
 
-	It("continues writing to the local io.Writer even if Send fails", func() {
-		ctrl := gomock.NewController(GinkgoT())
+	t.Run("continues writing to the local io.Writer even if Send fails", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
 		// Return an error during Send.
@@ -241,10 +237,10 @@ var _ = Describe("ConvertMaster", func() {
 
 		var buf bytes.Buffer
 		err := pair.ConvertMaster(mockStream, &buf, "")
-		Expect(err).NotTo(HaveOccurred())
+		g.Expect(err).NotTo(HaveOccurred())
 
 		// The Writer should not have been affected in any way.
-		Expect(buf.Bytes()).To(HaveLen(20))
-		Expect(log).To(gbytes.Say("halting client stream: error during send"))
+		g.Expect(buf.Bytes()).To(HaveLen(20))
+		g.Expect(log).To(gbytes.Say("halting client stream: error during send"))
 	})
-})
+}
