@@ -16,6 +16,11 @@ const (
 	diskUsageWarningLimit = 80
 )
 
+type ClientAndHostname struct {
+	Client   idl.AgentClient
+	Hostname string
+}
+
 func (h *Hub) CheckDiskSpace(ctx context.Context,
 	in *idl.CheckDiskSpaceRequest) (*idl.CheckDiskSpaceReply, error) {
 

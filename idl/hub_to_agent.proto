@@ -7,7 +7,6 @@ service Agent {
     rpc CheckUpgradeStatus (CheckUpgradeStatusRequest) returns (CheckUpgradeStatusReply) {}
     rpc CheckConversionStatus (CheckConversionStatusRequest) returns (CheckConversionStatusReply) {}
     rpc CheckDiskSpaceOnAgents (CheckDiskSpaceRequestToAgent) returns (CheckDiskSpaceReplyFromAgent) {}
-    rpc PingAgents (PingAgentsRequest) returns (PingAgentsReply) {}
     rpc AgentExecuteUpgradePrimariesSubStep (UpgradePrimariesRequest) returns (UpgradePrimariesReply) {}
     rpc CreateSegmentDataDirectories (CreateSegmentDataDirRequest) returns (CreateSegmentDataDirReply) {}
     rpc CopyMasterDirectoryToSegmentDirectories (CopyMasterDirRequest) returns (CopyMasterDirReply) {}
@@ -29,9 +28,6 @@ message DataDirPair {
 }
 
 message UpgradePrimariesReply {}
-
-message PingAgentsRequest {}
-message PingAgentsReply {}
 
 message CheckUpgradeStatusRequest {}
 

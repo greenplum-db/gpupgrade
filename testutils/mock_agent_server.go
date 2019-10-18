@@ -85,12 +85,6 @@ func (m *MockAgentServer) CheckDiskSpaceOnAgents(context.Context, *idl.CheckDisk
 	return &idl.CheckDiskSpaceReplyFromAgent{}, nil
 }
 
-func (m *MockAgentServer) PingAgents(context.Context, *idl.PingAgentsRequest) (*idl.PingAgentsReply, error) {
-	m.increaseCalls()
-
-	return &idl.PingAgentsReply{}, nil
-}
-
 func (m *MockAgentServer) AgentExecuteUpgradePrimariesSubStep(ctx context.Context, in *idl.UpgradePrimariesRequest) (*idl.UpgradePrimariesReply, error) {
 	m.increaseCalls()
 

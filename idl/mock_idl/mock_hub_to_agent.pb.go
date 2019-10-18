@@ -95,26 +95,6 @@ func (mr *MockAgentClientMockRecorder) CheckDiskSpaceOnAgents(ctx, in interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckDiskSpaceOnAgents", reflect.TypeOf((*MockAgentClient)(nil).CheckDiskSpaceOnAgents), varargs...)
 }
 
-// PingAgents mocks base method
-func (m *MockAgentClient) PingAgents(ctx context.Context, in *idl.PingAgentsRequest, opts ...grpc.CallOption) (*idl.PingAgentsReply, error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "PingAgents", varargs...)
-	ret0, _ := ret[0].(*idl.PingAgentsReply)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// PingAgents indicates an expected call of PingAgents
-func (mr *MockAgentClientMockRecorder) PingAgents(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PingAgents", reflect.TypeOf((*MockAgentClient)(nil).PingAgents), varargs...)
-}
-
 // AgentExecuteUpgradePrimariesSubStep mocks base method
 func (m *MockAgentClient) AgentExecuteUpgradePrimariesSubStep(ctx context.Context, in *idl.UpgradePrimariesRequest, opts ...grpc.CallOption) (*idl.UpgradePrimariesReply, error) {
 	m.ctrl.T.Helper()
@@ -241,21 +221,6 @@ func (m *MockAgentServer) CheckDiskSpaceOnAgents(arg0 context.Context, arg1 *idl
 func (mr *MockAgentServerMockRecorder) CheckDiskSpaceOnAgents(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckDiskSpaceOnAgents", reflect.TypeOf((*MockAgentServer)(nil).CheckDiskSpaceOnAgents), arg0, arg1)
-}
-
-// PingAgents mocks base method
-func (m *MockAgentServer) PingAgents(arg0 context.Context, arg1 *idl.PingAgentsRequest) (*idl.PingAgentsReply, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PingAgents", arg0, arg1)
-	ret0, _ := ret[0].(*idl.PingAgentsReply)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// PingAgents indicates an expected call of PingAgents
-func (mr *MockAgentServerMockRecorder) PingAgents(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PingAgents", reflect.TypeOf((*MockAgentServer)(nil).PingAgents), arg0, arg1)
 }
 
 // AgentExecuteUpgradePrimariesSubStep mocks base method
