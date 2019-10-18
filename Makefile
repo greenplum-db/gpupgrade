@@ -143,7 +143,7 @@ endif
 
 # Concourse does not allow "/" in pipeline names
 PIPELINE_NAME ?= gpupgrade:$(shell git rev-parse --abbrev-ref HEAD | tr '/' ':')
-FLY_TARGET ?= dev
+FLY_TARGET ?= cm
 ifeq ($(FLY_TARGET),prod)
 SECRETS_TYPE := prod
 else
