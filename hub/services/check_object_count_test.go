@@ -1,33 +1,42 @@
-package services_test
+package services
 
 import (
 	"database/sql/driver"
+	"testing"
 
-	"github.com/greenplum-db/gpupgrade/hub/services"
-
+	"github.com/golang/mock/gomock"
 	"gopkg.in/DATA-DOG/go-sqlmock.v1"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 )
 
-var _ = Describe("hub", func() {
-	Describe("GetCountsForDb", func() {
-		It("returns count for AO and HEAP tables", func() {
-			fakeResults := sqlmock.NewRows([]string{"count"}).
-				AddRow([]driver.Value{int32(2)}...)
-			mock.ExpectQuery(".*c.relstorage IN.*").
-				WillReturnRows(fakeResults)
+func TestCheckObjectCount(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-			fakeResults = sqlmock.NewRows([]string{"count"}).
-				AddRow([]driver.Value{int32(3)}...)
-			mock.ExpectQuery(".*c.relstorage NOT IN.*").
-				WillReturnRows(fakeResults)
+	testhelper.SetupTestLogger() // initialize gplog
 
-			aocount, heapcount, err := services.GetCountsForDb(dbConnector)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(aocount).To(Equal(int32(2)))
-			Expect(heapcount).To(Equal(int32(3)))
-		})
-	})
-})
+	dbConn, sqlMock := testhelper.CreateAndConnectMockDB(1)
+
+	fakeResults := sqlmock.NewRows([]string{"count"}).
+		AddRow([]driver.Value{int32(2)}...)
+	sqlMock.ExpectQuery(".*c.relstorage IN.*").
+		WillReturnRows(fakeResults)
+
+	fakeResults = sqlmock.NewRows([]string{"count"}).
+		AddRow([]driver.Value{int32(3)}...)
+	sqlMock.ExpectQuery(".*c.relstorage NOT IN.*").
+		WillReturnRows(fakeResults)
+
+	aocount, heapcount, err := GetCountsForDb(dbConn)
+	if err != nil {
+		t.Errorf("getting object counts failed: #%v", err)
+	}
+
+	if aocount != 2 {
+		t.Errorf("wanted: 2 got: %d", aocount)
+	}
+
+	if heapcount != 3 {
+		t.Errorf("wanted: 3 got: %d", heapcount)
+	}
+}
