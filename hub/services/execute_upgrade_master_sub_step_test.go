@@ -4,16 +4,16 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/golang/mock/gomock"
 	"os"
-	"os/exec"
+	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
+
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/utils"
 
-	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
@@ -42,49 +42,43 @@ func init() {
 	)
 }
 
-var _ = Describe("ConvertMaster", func() {
-	var pair clusterPair   // the unit under test
+func TestUpgradeMaster(t *testing.T) {
+	g := NewGomegaWithT(t)
 
-	BeforeEach(func() {
-		// Disable exec.Command. This way, if a test forgets to mock it out, we
-		// crash the test instead of executing code on a dev system.
-		execCommand = nil
+	// Disable exec.Command. This way, if a test forgets to mock it out, we
+	// crash the test instead of executing code on a dev system.
+	execCommand = nil
 
-		// Initialize the sample cluster pair.
-		pair = clusterPair{
-			Source: &utils.Cluster{
-				BinDir: "/old/bin",
-				Cluster: &cluster.Cluster{
-					ContentIDs: []int{-1},
-					Segments: map[int]cluster.SegConfig{
-						-1: cluster.SegConfig{
-							Port:    5432,
-							DataDir: "/data/old",
-						},
+	// Initialize the sample cluster pair.
+	pair := clusterPair{
+		Source: &utils.Cluster{
+			BinDir: "/old/bin",
+			Cluster: &cluster.Cluster{
+				ContentIDs: []int{-1},
+				Segments: map[int]cluster.SegConfig{
+					-1: cluster.SegConfig{
+						Port:    5432,
+						DataDir: "/data/old",
 					},
 				},
 			},
-			Target: &utils.Cluster{
-				BinDir: "/new/bin",
-				Cluster: &cluster.Cluster{
-					ContentIDs: []int{-1},
-					Segments: map[int]cluster.SegConfig{
-						-1: cluster.SegConfig{
-							Port:    5433,
-							DataDir: "/data/new",
-						},
+		},
+		Target: &utils.Cluster{
+			BinDir: "/new/bin",
+			Cluster: &cluster.Cluster{
+				ContentIDs: []int{-1},
+				Segments: map[int]cluster.SegConfig{
+					-1: cluster.SegConfig{
+						Port:    5433,
+						DataDir: "/data/new",
 					},
 				},
 			},
-		}
-	})
+		},
+	}
 
-	AfterEach(func() {
-		execCommand = exec.Command
-	})
-
-	It("sets the working directory", func() {
-		ctrl := gomock.NewController(GinkgoT())
+	t.Run("sets the working directory", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
 		mockStream := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
@@ -100,14 +94,14 @@ var _ = Describe("ConvertMaster", func() {
 		// subprocess.
 		var buf bytes.Buffer
 		err := pair.ConvertMaster(mockStream, &buf, "/")
-		Expect(err).NotTo(HaveOccurred())
+		g.Expect(err).NotTo(HaveOccurred())
 
 		wd := buf.String()
-		Expect(wd).To(Equal("/"))
+		g.Expect(wd).To(Equal("/"))
 	})
 
-	It("unsets PGPORT and PGHOST", func() {
-		ctrl := gomock.NewController(GinkgoT())
+	t.Run("unsets PGPORT and PGHOST", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
 		mockStream := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
@@ -128,15 +122,15 @@ var _ = Describe("ConvertMaster", func() {
 
 		var buf bytes.Buffer
 		err := pair.ConvertMaster(mockStream, &buf, "")
-		Expect(err).NotTo(HaveOccurred())
+		g.Expect(err).NotTo(HaveOccurred())
 
 		scanner := bufio.NewScanner(&buf)
 		for scanner.Scan() {
-			Expect(scanner.Text()).NotTo(HavePrefix("PGPORT="),
+			g.Expect(scanner.Text()).NotTo(HavePrefix("PGPORT="),
 				"PGPORT was not stripped from the child environment")
-			Expect(scanner.Text()).NotTo(HavePrefix("PGHOST="),
+			g.Expect(scanner.Text()).NotTo(HavePrefix("PGHOST="),
 				"PGHOST was not stripped from the child environment")
 		}
-		Expect(scanner.Err()).NotTo(HaveOccurred())
+		g.Expect(scanner.Err()).NotTo(HaveOccurred())
 	})
-})
+}
