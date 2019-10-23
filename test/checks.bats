@@ -97,7 +97,9 @@ are_equivalent_within_tolerance() {
         --disk-free-ratio=1.0 \
         --old-bindir="$PWD" \
         --new-bindir="$PWD" \
-        --old-port="${PGPORT}" 3>&-
+        --old-port="${PGPORT}" \
+        --stop-before-cluster-creation 3>&-
+
     [ "$status" -eq 1 ]
 
     # XXX Currently, we assume a single-host demo cluster.

@@ -14,6 +14,7 @@ setup() {
         --old-bindir="${GPHOME}/bin" \
         --new-bindir="${GPHOME}/bin" \
         --old-port="${PGPORT}" \
+        --stop-before-cluster-creation \
         --disk-free-ratio 0 3>&-
 }
 

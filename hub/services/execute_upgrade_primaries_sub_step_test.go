@@ -33,7 +33,7 @@ var _ = Describe("hub.ExecuteUpgradePrimariesSubStep()", func() {
 		sourceSeg2.Hostname = seg2.Hostname
 		source.Segments[1] = sourceSeg2
 
-		err := hub.ConvertPrimaries()
+		err := hub.ConvertPrimaries(false)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(mockAgent.UpgradeConvertPrimarySegmentsRequest.OldBinDir).To(Equal("/source/bindir"))
@@ -52,7 +52,7 @@ var _ = Describe("hub.ExecuteUpgradePrimariesSubStep()", func() {
 			},
 		}
 
-		err := hub.ConvertPrimaries()
+		err := hub.ConvertPrimaries(false)
 		Expect(err).To(HaveOccurred())
 		Expect(mockAgent.NumberOfCalls()).To(Equal(0))
 	})
@@ -62,7 +62,7 @@ var _ = Describe("hub.ExecuteUpgradePrimariesSubStep()", func() {
 		differentSeg.Hostname = "localhost2"
 		target.Segments[0] = differentSeg
 
-		err := hub.ConvertPrimaries()
+		err := hub.ConvertPrimaries(false)
 		Expect(err).To(HaveOccurred())
 
 		Expect(mockAgent.NumberOfCalls()).To(Equal(0))
@@ -71,7 +71,7 @@ var _ = Describe("hub.ExecuteUpgradePrimariesSubStep()", func() {
 	It("returns an error if any upgrade primary call to any agent fails", func() {
 		mockAgent.Err <- errors.New("fail upgrade primary call")
 
-		err := hub.ConvertPrimaries()
+		err := hub.ConvertPrimaries(false)
 		Expect(err).To(HaveOccurred())
 
 		Expect(mockAgent.NumberOfCalls()).To(Equal(2))

@@ -14,11 +14,12 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/disk"
 )
 
-func RunChecks(client idl.CliToHubClient, ratio float32) error {
-	err := CheckVersion(client)
-	if err != nil {
-		return errors.Wrap(err, "checking version compatibility")
-	}
+func RunPreChecks(client idl.CliToHubClient, ratio float32) error {
+	//TODO: when do we check this?  It requires the source cluster to be up.
+	//err := CheckVersion(client)
+	//if err != nil {
+	//	return errors.Wrap(err, "checking version compatibility")
+	//}
 
 	return CheckDiskSpace(client, ratio)
 }

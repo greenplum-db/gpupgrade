@@ -339,6 +339,8 @@ _gpupgrade_initialize()
     flags+=("--new-bindir=")
     flags+=("--old-bindir=")
     flags+=("--old-port=")
+    flags+=("--verbose")
+    flags+=("-v")
 
     must_have_one_flag=()
     must_have_one_flag+=("--new-bindir=")

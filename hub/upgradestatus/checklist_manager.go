@@ -18,6 +18,7 @@ const (
 	SHUTDOWN_SOURCE_CLUSTER = "shutdown-source-cluster"
 	INIT_TARGET_CLUSTER     = "init-target-cluster"
 	SHUTDOWN_TARGET_CLUSTER = "shutdown-target-cluster"
+	CHECK_UPGRADE           = "check-upgrade"
 	UPGRADE_MASTER          = "upgrade-master"
 	COPY_MASTER             = "copy-master"
 	UPGRADE_PRIMARIES       = "upgrade-primaries"

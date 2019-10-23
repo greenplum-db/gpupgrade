@@ -17,7 +17,8 @@ setup() {
     gpupgrade initialize \
         --old-bindir="$PWD" \
         --new-bindir="$PWD" \
-        --old-port="${PGPORT}" \
+        --old-port="${PGPORT}"\
+        --stop-before-cluster-creation \
         --disk-free-ratio 0 3>&-
 }
 
@@ -143,7 +144,8 @@ outputContains() {
             $opts \
             --old-bindir="$GPHOME"/bin \
             --new-bindir="$GPHOME"/bin \
-            --old-port="${PGPORT}" 3>&-
+            --old-port="${PGPORT}" \
+            --stop-before-cluster-creation 3>&-
 
         # Trace which command we're on to make debugging easier.
         echo "\$ gpupgrade initialize $opts ... -> $status"

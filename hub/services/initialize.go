@@ -2,9 +2,13 @@ package services
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
+
+	"github.com/hashicorp/go-multierror"
+	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
@@ -16,59 +20,139 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (h *Hub) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_InitializeServer) error {
-	err := h.fillClusterConfigsSubStep(stream, in.OldBinDir, in.NewBinDir, int(in.OldPort))
+type InitializeStream struct {
+	stream messageSender
+	log    *os.File
+}
+
+func (h *Hub) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_InitializeServer) (err error) {
+	log, err := utils.System.OpenFile(
+		filepath.Join(utils.GetStateDir(), "initialize.log"),
+		os.O_WRONLY|os.O_CREATE,
+		0600,
+	)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if closeErr := log.Close(); closeErr != nil {
+			err = multierror.Append(err,
+				xerrors.Errorf("failed to close initialize log: %w", closeErr))
+		}
+	}()
+
+	initializeStream := &InitializeStream{stream: stream, log: log}
+
+	_, err = log.WriteString("\nInitialize in progress.\n")
+	if err != nil {
+		return xerrors.Errorf("failed writing to initialize log: %w", err)
+	}
+
+	err = h.InitializeSubStep(initializeStream, upgradestatus.CONFIG, func(stream messageSender, log io.Writer) error {
+		return h.fillClusterConfigsSubStep(stream, log, in.OldBinDir, in.NewBinDir, int(in.OldPort))
+	})
 	if err != nil {
 		return err
 	}
 
-	err = h.startAgentsSubStep(stream)
+	err = h.InitializeSubStep(initializeStream, upgradestatus.START_AGENTS, func(stream messageSender, log io.Writer) error {
+		return startAgentsSubStep(h.source, h.conf.StateDir)
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (h *Hub) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest, stream idl.CliToHub_InitializeCreateClusterServer) (err error) {
+	log, err := utils.System.OpenFile(
+		filepath.Join(utils.GetStateDir(), "initialize.log"),
+		os.O_WRONLY|os.O_APPEND,
+		0600,
+	)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if closeErr := log.Close(); closeErr != nil {
+			err = multierror.Append(err,
+				xerrors.Errorf("failed to close initialize log: %w", closeErr))
+		}
+	}()
+
+	initializeStream := &InitializeStream{stream: stream, log: log}
+
+	_, err = log.WriteString("\nInitialize hub in progress.\n")
+	if err != nil {
+		return xerrors.Errorf("failed writing to initialize log for hub: %w", err)
+	}
+
+	err = h.InitializeSubStep(initializeStream, upgradestatus.CREATE_TARGET_CONFIG,
+		func(_ messageSender, _ io.Writer) error {
+			return h.GenerateInitsystemConfig()
+		})
+	if err != nil {
+		return err
+	}
+
+	err = h.InitializeSubStep(initializeStream, upgradestatus.SHUTDOWN_SOURCE_CLUSTER,
+		func(stream messageSender, log io.Writer) error {
+			return StopCluster(stream, log, h.source)
+		})
+	if err != nil {
+		return err
+	}
+
+	err = h.InitializeSubStep(initializeStream, upgradestatus.INIT_TARGET_CLUSTER, h.CreateTargetCluster)
+	if err != nil {
+		return err
+	}
+
+	err = h.InitializeSubStep(initializeStream, upgradestatus.SHUTDOWN_TARGET_CLUSTER, func(stream messageSender, log io.Writer) error {
+		return h.ShutdownCluster(stream, log, false)
+	})
+
+	if err != nil {
+		return err
+	}
+
+	err = h.InitializeSubStep(initializeStream, upgradestatus.CHECK_UPGRADE, func(stream messageSender, log io.Writer) error {
+		return h.CheckUpgrade(stream, log)
+	})
+
+	return err
+}
+
+func (h *Hub) InitializeSubStep(initializeStream *InitializeStream, subStep string,
+	subStepFunc func(stream messageSender, log io.Writer) error) error {
+
+	gplog.Info("starting %s", subStep)
+	_, err := initializeStream.log.WriteString(fmt.Sprintf("\nStarting %s...\n\n", subStep))
+	if err != nil {
+		return xerrors.Errorf("failed writing to initialize log: %w", err)
+	}
+
+	step, err := h.InitializeStep(subStep, initializeStream.stream)
+	if err != nil {
+		gplog.Error(err.Error())
+		return err
+	}
+
+	err = subStepFunc(initializeStream.stream, initializeStream.log)
+	if err != nil {
+		gplog.Error(err.Error())
+		step.MarkFailed()
+	} else {
+		step.MarkComplete()
+	}
+
 	return err
 }
 
 // create old/new clusters, write to disk and re-read from disk to make sure it is "durable"
-func (h *Hub) fillClusterConfigsSubStep(stream messageSender, oldBinDir, newBinDir string, oldPort int) error {
-	gplog.Info("starting %s", upgradestatus.CONFIG)
+func (h *Hub) fillClusterConfigsSubStep(stream messageSender, log io.Writer, oldBinDir string, newBinDir string, oldPort int) error {
 
-	step, err := h.InitializeStep(upgradestatus.CONFIG, stream)
-	if err != nil {
-		gplog.Error(err.Error())
-		return err
-	}
-
-	err = h.fillClusterConfigs(oldBinDir, newBinDir, oldPort)
-
-	if err != nil {
-		gplog.Error(err.Error())
-		step.MarkFailed()
-		return err
-	}
-
-	step.MarkComplete()
-	return nil
-}
-
-func (h *Hub) startAgentsSubStep(stream messageSender) error {
-	gplog.Info("starting %s", upgradestatus.START_AGENTS)
-
-	step, err := h.InitializeStep(upgradestatus.START_AGENTS, stream)
-	if err != nil {
-		gplog.Error(err.Error())
-		return err
-	}
-
-	err = StartAgents(h.source, h.target, h.conf.StateDir)
-	if err != nil {
-		gplog.Error(err.Error())
-		step.MarkFailed()
-		return err
-	}
-
-	step.MarkComplete()
-	return nil
-}
-
-func (h *Hub) fillClusterConfigs(oldBinDir, newBinDir string, oldPort int) error {
 	source := &utils.Cluster{BinDir: path.Clean(oldBinDir), ConfigPath: filepath.Join(h.conf.StateDir, utils.SOURCE_CONFIG_FILENAME)}
 	dbConn := db.NewDBConn("localhost", oldPort, "template1")
 	defer dbConn.Close()
@@ -131,7 +215,7 @@ func getAgentPath() (string, error) {
 }
 
 // TODO: use the implementation in RestartAgents() for this function and combine them
-func StartAgents(source *utils.Cluster, target *utils.Cluster, stateDir string) error {
+func startAgentsSubStep(source *utils.Cluster, stateDir string) error {
 	// XXX If there are failures, does it matter what agents have successfully
 	// started, or do we just want to stop all of them and kick back to the
 	// user?

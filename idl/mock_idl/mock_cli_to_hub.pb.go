@@ -156,6 +156,26 @@ func (mr *MockCliToHubClientMockRecorder) Initialize(arg0, arg1 interface{}, arg
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Initialize", reflect.TypeOf((*MockCliToHubClient)(nil).Initialize), varargs...)
 }
 
+// InitializeCreateCluster mocks base method
+func (m *MockCliToHubClient) InitializeCreateCluster(arg0 context.Context, arg1 *idl.InitializeCreateClusterRequest, arg2 ...grpc.CallOption) (idl.CliToHub_InitializeCreateClusterClient, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "InitializeCreateCluster", varargs...)
+	ret0, _ := ret[0].(idl.CliToHub_InitializeCreateClusterClient)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// InitializeCreateCluster indicates an expected call of InitializeCreateCluster
+func (mr *MockCliToHubClientMockRecorder) InitializeCreateCluster(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InitializeCreateCluster", reflect.TypeOf((*MockCliToHubClient)(nil).InitializeCreateCluster), varargs...)
+}
+
 // RestartAgents mocks base method
 func (m *MockCliToHubClient) RestartAgents(arg0 context.Context, arg1 *idl.RestartAgentsRequest, arg2 ...grpc.CallOption) (*idl.RestartAgentsReply, error) {
 	m.ctrl.T.Helper()
@@ -324,6 +344,20 @@ func (m *MockCliToHubServer) Initialize(arg0 *idl.InitializeRequest, arg1 idl.Cl
 func (mr *MockCliToHubServerMockRecorder) Initialize(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Initialize", reflect.TypeOf((*MockCliToHubServer)(nil).Initialize), arg0, arg1)
+}
+
+// InitializeCreateCluster mocks base method
+func (m *MockCliToHubServer) InitializeCreateCluster(arg0 *idl.InitializeCreateClusterRequest, arg1 idl.CliToHub_InitializeCreateClusterServer) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "InitializeCreateCluster", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// InitializeCreateCluster indicates an expected call of InitializeCreateCluster
+func (mr *MockCliToHubServerMockRecorder) InitializeCreateCluster(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InitializeCreateCluster", reflect.TypeOf((*MockCliToHubServer)(nil).InitializeCreateCluster), arg0, arg1)
 }
 
 // RestartAgents mocks base method

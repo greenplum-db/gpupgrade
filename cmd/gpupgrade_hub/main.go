@@ -97,6 +97,7 @@ func main() {
 			cm.AddWritableStep(upgradestatus.SHUTDOWN_SOURCE_CLUSTER, idl.UpgradeSteps_SHUTDOWN_SOURCE_CLUSTER)
 			cm.AddWritableStep(upgradestatus.INIT_TARGET_CLUSTER, idl.UpgradeSteps_INIT_TARGET_CLUSTER)
 			cm.AddWritableStep(upgradestatus.SHUTDOWN_TARGET_CLUSTER, idl.UpgradeSteps_SHUTDOWN_TARGET_CLUSTER)
+			cm.AddWritableStep(upgradestatus.CHECK_UPGRADE, idl.UpgradeSteps_CHECK_UPGRADE)
 			cm.AddWritableStep(upgradestatus.UPGRADE_MASTER, idl.UpgradeSteps_UPGRADE_MASTER)
 			cm.AddWritableStep(upgradestatus.COPY_MASTER, idl.UpgradeSteps_COPY_MASTER)
 			cm.AddWritableStep(upgradestatus.UPGRADE_PRIMARIES, idl.UpgradeSteps_UPGRADE_PRIMARIES)

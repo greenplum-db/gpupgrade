@@ -18,6 +18,7 @@ setup() {
         --old-bindir "$PWD" \
         --new-bindir "$PWD" \
         --old-port ${PGPORT} \
+        --stop-before-cluster-creation \
         --disk-free-ratio 0 3>&-
 }
 

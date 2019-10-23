@@ -3,13 +3,14 @@
 
 package idl
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-
 import (
-	context "golang.org/x/net/context"
+	context "context"
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
+	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -21,13 +22,14 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type UpgradePrimariesRequest struct {
-	OldBinDir            string         `protobuf:"bytes,1,opt,name=OldBinDir" json:"OldBinDir,omitempty"`
-	NewBinDir            string         `protobuf:"bytes,2,opt,name=NewBinDir" json:"NewBinDir,omitempty"`
-	NewVersion           string         `protobuf:"bytes,3,opt,name=NewVersion" json:"NewVersion,omitempty"`
-	DataDirPairs         []*DataDirPair `protobuf:"bytes,4,rep,name=DataDirPairs" json:"DataDirPairs,omitempty"`
+	OldBinDir            string         `protobuf:"bytes,1,opt,name=OldBinDir,proto3" json:"OldBinDir,omitempty"`
+	NewBinDir            string         `protobuf:"bytes,2,opt,name=NewBinDir,proto3" json:"NewBinDir,omitempty"`
+	NewVersion           string         `protobuf:"bytes,3,opt,name=NewVersion,proto3" json:"NewVersion,omitempty"`
+	DataDirPairs         []*DataDirPair `protobuf:"bytes,4,rep,name=DataDirPairs,proto3" json:"DataDirPairs,omitempty"`
+	CheckOnly            bool           `protobuf:"varint,5,opt,name=CheckOnly,proto3" json:"CheckOnly,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_unrecognized     []byte         `json:"-"`
 	XXX_sizecache        int32          `json:"-"`
@@ -37,16 +39,17 @@ func (m *UpgradePrimariesRequest) Reset()         { *m = UpgradePrimariesRequest
 func (m *UpgradePrimariesRequest) String() string { return proto.CompactTextString(m) }
 func (*UpgradePrimariesRequest) ProtoMessage()    {}
 func (*UpgradePrimariesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_2dd4879384d9ec0b, []int{0}
+	return fileDescriptor_9e73bb06acc917d8, []int{0}
 }
+
 func (m *UpgradePrimariesRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpgradePrimariesRequest.Unmarshal(m, b)
 }
 func (m *UpgradePrimariesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_UpgradePrimariesRequest.Marshal(b, m, deterministic)
 }
-func (dst *UpgradePrimariesRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UpgradePrimariesRequest.Merge(dst, src)
+func (m *UpgradePrimariesRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UpgradePrimariesRequest.Merge(m, src)
 }
 func (m *UpgradePrimariesRequest) XXX_Size() int {
 	return xxx_messageInfo_UpgradePrimariesRequest.Size(m)
@@ -85,12 +88,19 @@ func (m *UpgradePrimariesRequest) GetDataDirPairs() []*DataDirPair {
 	return nil
 }
 
+func (m *UpgradePrimariesRequest) GetCheckOnly() bool {
+	if m != nil {
+		return m.CheckOnly
+	}
+	return false
+}
+
 type DataDirPair struct {
-	OldDataDir           string   `protobuf:"bytes,1,opt,name=OldDataDir" json:"OldDataDir,omitempty"`
-	NewDataDir           string   `protobuf:"bytes,2,opt,name=NewDataDir" json:"NewDataDir,omitempty"`
-	OldPort              int32    `protobuf:"varint,3,opt,name=OldPort" json:"OldPort,omitempty"`
-	NewPort              int32    `protobuf:"varint,4,opt,name=NewPort" json:"NewPort,omitempty"`
-	Content              int32    `protobuf:"varint,5,opt,name=Content" json:"Content,omitempty"`
+	OldDataDir           string   `protobuf:"bytes,1,opt,name=OldDataDir,proto3" json:"OldDataDir,omitempty"`
+	NewDataDir           string   `protobuf:"bytes,2,opt,name=NewDataDir,proto3" json:"NewDataDir,omitempty"`
+	OldPort              int32    `protobuf:"varint,3,opt,name=OldPort,proto3" json:"OldPort,omitempty"`
+	NewPort              int32    `protobuf:"varint,4,opt,name=NewPort,proto3" json:"NewPort,omitempty"`
+	Content              int32    `protobuf:"varint,5,opt,name=Content,proto3" json:"Content,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -100,16 +110,17 @@ func (m *DataDirPair) Reset()         { *m = DataDirPair{} }
 func (m *DataDirPair) String() string { return proto.CompactTextString(m) }
 func (*DataDirPair) ProtoMessage()    {}
 func (*DataDirPair) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_2dd4879384d9ec0b, []int{1}
+	return fileDescriptor_9e73bb06acc917d8, []int{1}
 }
+
 func (m *DataDirPair) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DataDirPair.Unmarshal(m, b)
 }
 func (m *DataDirPair) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_DataDirPair.Marshal(b, m, deterministic)
 }
-func (dst *DataDirPair) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DataDirPair.Merge(dst, src)
+func (m *DataDirPair) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DataDirPair.Merge(m, src)
 }
 func (m *DataDirPair) XXX_Size() int {
 	return xxx_messageInfo_DataDirPair.Size(m)
@@ -165,16 +176,17 @@ func (m *UpgradePrimariesReply) Reset()         { *m = UpgradePrimariesReply{} }
 func (m *UpgradePrimariesReply) String() string { return proto.CompactTextString(m) }
 func (*UpgradePrimariesReply) ProtoMessage()    {}
 func (*UpgradePrimariesReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_2dd4879384d9ec0b, []int{2}
+	return fileDescriptor_9e73bb06acc917d8, []int{2}
 }
+
 func (m *UpgradePrimariesReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpgradePrimariesReply.Unmarshal(m, b)
 }
 func (m *UpgradePrimariesReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_UpgradePrimariesReply.Marshal(b, m, deterministic)
 }
-func (dst *UpgradePrimariesReply) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UpgradePrimariesReply.Merge(dst, src)
+func (m *UpgradePrimariesReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UpgradePrimariesReply.Merge(m, src)
 }
 func (m *UpgradePrimariesReply) XXX_Size() int {
 	return xxx_messageInfo_UpgradePrimariesReply.Size(m)
@@ -186,7 +198,7 @@ func (m *UpgradePrimariesReply) XXX_DiscardUnknown() {
 var xxx_messageInfo_UpgradePrimariesReply proto.InternalMessageInfo
 
 type CreateSegmentDataDirRequest struct {
-	Datadirs             []string `protobuf:"bytes,1,rep,name=datadirs" json:"datadirs,omitempty"`
+	Datadirs             []string `protobuf:"bytes,1,rep,name=datadirs,proto3" json:"datadirs,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -196,16 +208,17 @@ func (m *CreateSegmentDataDirRequest) Reset()         { *m = CreateSegmentDataDi
 func (m *CreateSegmentDataDirRequest) String() string { return proto.CompactTextString(m) }
 func (*CreateSegmentDataDirRequest) ProtoMessage()    {}
 func (*CreateSegmentDataDirRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_2dd4879384d9ec0b, []int{3}
+	return fileDescriptor_9e73bb06acc917d8, []int{3}
 }
+
 func (m *CreateSegmentDataDirRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CreateSegmentDataDirRequest.Unmarshal(m, b)
 }
 func (m *CreateSegmentDataDirRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CreateSegmentDataDirRequest.Marshal(b, m, deterministic)
 }
-func (dst *CreateSegmentDataDirRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CreateSegmentDataDirRequest.Merge(dst, src)
+func (m *CreateSegmentDataDirRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateSegmentDataDirRequest.Merge(m, src)
 }
 func (m *CreateSegmentDataDirRequest) XXX_Size() int {
 	return xxx_messageInfo_CreateSegmentDataDirRequest.Size(m)
@@ -233,16 +246,17 @@ func (m *CreateSegmentDataDirReply) Reset()         { *m = CreateSegmentDataDirR
 func (m *CreateSegmentDataDirReply) String() string { return proto.CompactTextString(m) }
 func (*CreateSegmentDataDirReply) ProtoMessage()    {}
 func (*CreateSegmentDataDirReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_2dd4879384d9ec0b, []int{4}
+	return fileDescriptor_9e73bb06acc917d8, []int{4}
 }
+
 func (m *CreateSegmentDataDirReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CreateSegmentDataDirReply.Unmarshal(m, b)
 }
 func (m *CreateSegmentDataDirReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CreateSegmentDataDirReply.Marshal(b, m, deterministic)
 }
-func (dst *CreateSegmentDataDirReply) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CreateSegmentDataDirReply.Merge(dst, src)
+func (m *CreateSegmentDataDirReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateSegmentDataDirReply.Merge(m, src)
 }
 func (m *CreateSegmentDataDirReply) XXX_Size() int {
 	return xxx_messageInfo_CreateSegmentDataDirReply.Size(m)
@@ -254,8 +268,8 @@ func (m *CreateSegmentDataDirReply) XXX_DiscardUnknown() {
 var xxx_messageInfo_CreateSegmentDataDirReply proto.InternalMessageInfo
 
 type CopyMasterDirRequest struct {
-	MasterDir            string   `protobuf:"bytes,1,opt,name=masterDir" json:"masterDir,omitempty"`
-	Datadirs             []string `protobuf:"bytes,2,rep,name=datadirs" json:"datadirs,omitempty"`
+	MasterDir            string   `protobuf:"bytes,1,opt,name=masterDir,proto3" json:"masterDir,omitempty"`
+	Datadirs             []string `protobuf:"bytes,2,rep,name=datadirs,proto3" json:"datadirs,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -265,16 +279,17 @@ func (m *CopyMasterDirRequest) Reset()         { *m = CopyMasterDirRequest{} }
 func (m *CopyMasterDirRequest) String() string { return proto.CompactTextString(m) }
 func (*CopyMasterDirRequest) ProtoMessage()    {}
 func (*CopyMasterDirRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_2dd4879384d9ec0b, []int{5}
+	return fileDescriptor_9e73bb06acc917d8, []int{5}
 }
+
 func (m *CopyMasterDirRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CopyMasterDirRequest.Unmarshal(m, b)
 }
 func (m *CopyMasterDirRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CopyMasterDirRequest.Marshal(b, m, deterministic)
 }
-func (dst *CopyMasterDirRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CopyMasterDirRequest.Merge(dst, src)
+func (m *CopyMasterDirRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CopyMasterDirRequest.Merge(m, src)
 }
 func (m *CopyMasterDirRequest) XXX_Size() int {
 	return xxx_messageInfo_CopyMasterDirRequest.Size(m)
@@ -309,16 +324,17 @@ func (m *CopyMasterDirReply) Reset()         { *m = CopyMasterDirReply{} }
 func (m *CopyMasterDirReply) String() string { return proto.CompactTextString(m) }
 func (*CopyMasterDirReply) ProtoMessage()    {}
 func (*CopyMasterDirReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_2dd4879384d9ec0b, []int{6}
+	return fileDescriptor_9e73bb06acc917d8, []int{6}
 }
+
 func (m *CopyMasterDirReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CopyMasterDirReply.Unmarshal(m, b)
 }
 func (m *CopyMasterDirReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CopyMasterDirReply.Marshal(b, m, deterministic)
 }
-func (dst *CopyMasterDirReply) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CopyMasterDirReply.Merge(dst, src)
+func (m *CopyMasterDirReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CopyMasterDirReply.Merge(m, src)
 }
 func (m *CopyMasterDirReply) XXX_Size() int {
 	return xxx_messageInfo_CopyMasterDirReply.Size(m)
@@ -339,16 +355,17 @@ func (m *StopAgentRequest) Reset()         { *m = StopAgentRequest{} }
 func (m *StopAgentRequest) String() string { return proto.CompactTextString(m) }
 func (*StopAgentRequest) ProtoMessage()    {}
 func (*StopAgentRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_2dd4879384d9ec0b, []int{7}
+	return fileDescriptor_9e73bb06acc917d8, []int{7}
 }
+
 func (m *StopAgentRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StopAgentRequest.Unmarshal(m, b)
 }
 func (m *StopAgentRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_StopAgentRequest.Marshal(b, m, deterministic)
 }
-func (dst *StopAgentRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_StopAgentRequest.Merge(dst, src)
+func (m *StopAgentRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StopAgentRequest.Merge(m, src)
 }
 func (m *StopAgentRequest) XXX_Size() int {
 	return xxx_messageInfo_StopAgentRequest.Size(m)
@@ -369,16 +386,17 @@ func (m *StopAgentReply) Reset()         { *m = StopAgentReply{} }
 func (m *StopAgentReply) String() string { return proto.CompactTextString(m) }
 func (*StopAgentReply) ProtoMessage()    {}
 func (*StopAgentReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_2dd4879384d9ec0b, []int{8}
+	return fileDescriptor_9e73bb06acc917d8, []int{8}
 }
+
 func (m *StopAgentReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StopAgentReply.Unmarshal(m, b)
 }
 func (m *StopAgentReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_StopAgentReply.Marshal(b, m, deterministic)
 }
-func (dst *StopAgentReply) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_StopAgentReply.Merge(dst, src)
+func (m *StopAgentReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StopAgentReply.Merge(m, src)
 }
 func (m *StopAgentReply) XXX_Size() int {
 	return xxx_messageInfo_StopAgentReply.Size(m)
@@ -390,8 +408,8 @@ func (m *StopAgentReply) XXX_DiscardUnknown() {
 var xxx_messageInfo_StopAgentReply proto.InternalMessageInfo
 
 type CheckSegmentDiskSpaceRequest struct {
-	Request              *CheckDiskSpaceRequest `protobuf:"bytes,1,opt,name=request" json:"request,omitempty"`
-	Datadirs             []string               `protobuf:"bytes,2,rep,name=datadirs" json:"datadirs,omitempty"`
+	Request              *CheckDiskSpaceRequest `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
+	Datadirs             []string               `protobuf:"bytes,2,rep,name=datadirs,proto3" json:"datadirs,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
 	XXX_unrecognized     []byte                 `json:"-"`
 	XXX_sizecache        int32                  `json:"-"`
@@ -401,16 +419,17 @@ func (m *CheckSegmentDiskSpaceRequest) Reset()         { *m = CheckSegmentDiskSp
 func (m *CheckSegmentDiskSpaceRequest) String() string { return proto.CompactTextString(m) }
 func (*CheckSegmentDiskSpaceRequest) ProtoMessage()    {}
 func (*CheckSegmentDiskSpaceRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_2dd4879384d9ec0b, []int{9}
+	return fileDescriptor_9e73bb06acc917d8, []int{9}
 }
+
 func (m *CheckSegmentDiskSpaceRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CheckSegmentDiskSpaceRequest.Unmarshal(m, b)
 }
 func (m *CheckSegmentDiskSpaceRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CheckSegmentDiskSpaceRequest.Marshal(b, m, deterministic)
 }
-func (dst *CheckSegmentDiskSpaceRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CheckSegmentDiskSpaceRequest.Merge(dst, src)
+func (m *CheckSegmentDiskSpaceRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CheckSegmentDiskSpaceRequest.Merge(m, src)
 }
 func (m *CheckSegmentDiskSpaceRequest) XXX_Size() int {
 	return xxx_messageInfo_CheckSegmentDiskSpaceRequest.Size(m)
@@ -448,6 +467,45 @@ func init() {
 	proto.RegisterType((*CheckSegmentDiskSpaceRequest)(nil), "idl.CheckSegmentDiskSpaceRequest")
 }
 
+func init() { proto.RegisterFile("hub_to_agent.proto", fileDescriptor_9e73bb06acc917d8) }
+
+var fileDescriptor_9e73bb06acc917d8 = []byte{
+	// 517 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x54, 0xc1, 0x72, 0xda, 0x30,
+	0x10, 0xad, 0x21, 0x34, 0x61, 0xe9, 0x64, 0x18, 0x35, 0x19, 0x1c, 0x87, 0xc9, 0x50, 0xf7, 0x50,
+	0x4e, 0x1c, 0x68, 0x2e, 0x39, 0xb6, 0xd0, 0x63, 0x81, 0x31, 0x6d, 0xaf, 0x8c, 0xb0, 0x77, 0x40,
+	0x13, 0x63, 0xb9, 0xb2, 0x3c, 0x94, 0x6f, 0xe9, 0xa7, 0xf4, 0x0b, 0xfa, 0x57, 0x1d, 0xc9, 0x96,
+	0x31, 0xae, 0xc9, 0x8d, 0x7d, 0x6f, 0xf5, 0xde, 0x93, 0x76, 0x31, 0x90, 0x6d, 0xba, 0x5e, 0x49,
+	0xbe, 0xa2, 0x1b, 0x8c, 0xe4, 0x28, 0x16, 0x5c, 0x72, 0xd2, 0x64, 0x41, 0xe8, 0x74, 0xfd, 0x90,
+	0x29, 0x62, 0x9b, 0xae, 0x33, 0xd8, 0xfd, 0x6b, 0x41, 0xef, 0x7b, 0xbc, 0x11, 0x34, 0xc0, 0x85,
+	0x60, 0x3b, 0x2a, 0x18, 0x26, 0x1e, 0xfe, 0x4c, 0x31, 0x91, 0xa4, 0x0f, 0xed, 0x79, 0x18, 0x7c,
+	0x66, 0xd1, 0x94, 0x09, 0xdb, 0x1a, 0x58, 0xc3, 0xb6, 0x77, 0x04, 0x14, 0x3b, 0xc3, 0x7d, 0xce,
+	0x36, 0x32, 0xb6, 0x00, 0xc8, 0x03, 0xc0, 0x0c, 0xf7, 0x3f, 0x50, 0x24, 0x8c, 0x47, 0x76, 0x53,
+	0xd3, 0x25, 0x84, 0x3c, 0xc2, 0x9b, 0x29, 0x95, 0x74, 0xca, 0xc4, 0x82, 0x32, 0x91, 0xd8, 0x17,
+	0x83, 0xe6, 0xb0, 0x33, 0xee, 0x8e, 0x58, 0x10, 0x8e, 0x4a, 0x84, 0x77, 0xd2, 0xa5, 0x3c, 0x27,
+	0x5b, 0xf4, 0x9f, 0xe7, 0x51, 0x78, 0xb0, 0x5b, 0x03, 0x6b, 0x78, 0xe5, 0x1d, 0x01, 0xf7, 0xb7,
+	0x05, 0x9d, 0x52, 0xbb, 0xca, 0x30, 0x0f, 0x83, 0x1c, 0xc9, 0x2f, 0x50, 0x42, 0xf2, 0x8c, 0x86,
+	0x6f, 0x14, 0x19, 0x0d, 0x6f, 0xc3, 0xe5, 0x3c, 0x0c, 0x16, 0x5c, 0x48, 0x7d, 0x81, 0x96, 0x67,
+	0x4a, 0xc5, 0xcc, 0x70, 0xaf, 0x99, 0x8b, 0x8c, 0xc9, 0x4b, 0xc5, 0x4c, 0x78, 0x24, 0x31, 0x92,
+	0x3a, 0x5f, 0xcb, 0x33, 0xa5, 0xdb, 0x83, 0xdb, 0xff, 0x1f, 0x3a, 0x0e, 0x0f, 0xee, 0x13, 0xdc,
+	0x4f, 0x04, 0x52, 0x89, 0x4b, 0xdc, 0xec, 0x30, 0x92, 0xb9, 0xbd, 0x99, 0x82, 0x03, 0x57, 0x01,
+	0x95, 0x34, 0x50, 0xaf, 0x64, 0x0d, 0x9a, 0xc3, 0xb6, 0x57, 0xd4, 0xee, 0x3d, 0xdc, 0xd5, 0x1f,
+	0x55, 0xba, 0x0b, 0xb8, 0x99, 0xf0, 0xf8, 0xf0, 0x95, 0x26, 0x12, 0x45, 0x49, 0xb0, 0x0f, 0xed,
+	0x9d, 0xc1, 0xcc, 0x58, 0x0b, 0xe0, 0xc4, 0xae, 0x51, 0xb1, 0xbb, 0x01, 0x52, 0x51, 0x54, 0x3e,
+	0x04, 0xba, 0x4b, 0xc9, 0xe3, 0x4f, 0x6a, 0xd9, 0x72, 0x0f, 0xb7, 0x0b, 0xd7, 0x25, 0x4c, 0x75,
+	0xc5, 0xd0, 0xd7, 0x93, 0x32, 0x49, 0x59, 0xf2, 0xbc, 0x8c, 0xa9, 0x8f, 0x26, 0xd5, 0x23, 0x5c,
+	0x8a, 0xec, 0xa7, 0xce, 0xd4, 0x19, 0x3b, 0x7a, 0x17, 0xf4, 0x99, 0x6a, 0xb3, 0x67, 0x5a, 0x5f,
+	0x4a, 0x3b, 0xfe, 0xd3, 0x84, 0x96, 0x0e, 0x40, 0xe6, 0x70, 0x7d, 0xaa, 0x43, 0xde, 0x1d, 0xc5,
+	0xcf, 0x04, 0x72, 0xec, 0x5a, 0x7f, 0x75, 0x95, 0x57, 0x84, 0xc2, 0x7b, 0xad, 0xfc, 0xe5, 0x17,
+	0xfa, 0xa9, 0xc4, 0xea, 0x5c, 0x97, 0xe9, 0x7a, 0x29, 0x31, 0x26, 0x7d, 0x2d, 0x71, 0xe6, 0xef,
+	0xe5, 0x38, 0x67, 0xd8, 0xcc, 0x62, 0x0d, 0xfd, 0xba, 0xd1, 0xa2, 0x2f, 0xb9, 0x6a, 0x23, 0x83,
+	0x2c, 0xde, 0xf9, 0xc5, 0x71, 0x1e, 0x5e, 0xe8, 0xc8, 0x3c, 0x56, 0xf0, 0xe1, 0x64, 0x9e, 0x5a,
+	0xfc, 0xf0, 0x8d, 0x17, 0x4f, 0x72, 0xb4, 0xbb, 0xcb, 0xc4, 0x6a, 0xf6, 0xc9, 0xe9, 0xd5, 0x51,
+	0x99, 0xc1, 0x13, 0xb4, 0x8b, 0x35, 0x20, 0xb7, 0xba, 0xaf, 0xba, 0x2a, 0xce, 0xdb, 0x2a, 0xac,
+	0x8f, 0xae, 0x5f, 0xeb, 0xef, 0xd3, 0xc7, 0x7f, 0x01, 0x00, 0x00, 0xff, 0xff, 0x9a, 0x6c, 0x5a,
+	0x21, 0xcc, 0x04, 0x00, 0x00,
+}
+
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
 var _ grpc.ClientConn
@@ -456,8 +514,9 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// Client API for Agent service
-
+// AgentClient is the client API for Agent service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type AgentClient interface {
 	CheckDiskSpace(ctx context.Context, in *CheckSegmentDiskSpaceRequest, opts ...grpc.CallOption) (*CheckDiskSpaceReply, error)
 	AgentExecuteUpgradePrimariesSubStep(ctx context.Context, in *UpgradePrimariesRequest, opts ...grpc.CallOption) (*UpgradePrimariesReply, error)
@@ -476,7 +535,7 @@ func NewAgentClient(cc *grpc.ClientConn) AgentClient {
 
 func (c *agentClient) CheckDiskSpace(ctx context.Context, in *CheckSegmentDiskSpaceRequest, opts ...grpc.CallOption) (*CheckDiskSpaceReply, error) {
 	out := new(CheckDiskSpaceReply)
-	err := grpc.Invoke(ctx, "/idl.Agent/CheckDiskSpace", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/idl.Agent/CheckDiskSpace", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -485,7 +544,7 @@ func (c *agentClient) CheckDiskSpace(ctx context.Context, in *CheckSegmentDiskSp
 
 func (c *agentClient) AgentExecuteUpgradePrimariesSubStep(ctx context.Context, in *UpgradePrimariesRequest, opts ...grpc.CallOption) (*UpgradePrimariesReply, error) {
 	out := new(UpgradePrimariesReply)
-	err := grpc.Invoke(ctx, "/idl.Agent/AgentExecuteUpgradePrimariesSubStep", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/idl.Agent/AgentExecuteUpgradePrimariesSubStep", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -494,7 +553,7 @@ func (c *agentClient) AgentExecuteUpgradePrimariesSubStep(ctx context.Context, i
 
 func (c *agentClient) CreateSegmentDataDirectories(ctx context.Context, in *CreateSegmentDataDirRequest, opts ...grpc.CallOption) (*CreateSegmentDataDirReply, error) {
 	out := new(CreateSegmentDataDirReply)
-	err := grpc.Invoke(ctx, "/idl.Agent/CreateSegmentDataDirectories", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/idl.Agent/CreateSegmentDataDirectories", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -503,7 +562,7 @@ func (c *agentClient) CreateSegmentDataDirectories(ctx context.Context, in *Crea
 
 func (c *agentClient) CopyMasterDirectoryToSegmentDirectories(ctx context.Context, in *CopyMasterDirRequest, opts ...grpc.CallOption) (*CopyMasterDirReply, error) {
 	out := new(CopyMasterDirReply)
-	err := grpc.Invoke(ctx, "/idl.Agent/CopyMasterDirectoryToSegmentDirectories", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/idl.Agent/CopyMasterDirectoryToSegmentDirectories", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -512,21 +571,40 @@ func (c *agentClient) CopyMasterDirectoryToSegmentDirectories(ctx context.Contex
 
 func (c *agentClient) StopAgent(ctx context.Context, in *StopAgentRequest, opts ...grpc.CallOption) (*StopAgentReply, error) {
 	out := new(StopAgentReply)
-	err := grpc.Invoke(ctx, "/idl.Agent/StopAgent", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/idl.Agent/StopAgent", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// Server API for Agent service
-
+// AgentServer is the server API for Agent service.
 type AgentServer interface {
 	CheckDiskSpace(context.Context, *CheckSegmentDiskSpaceRequest) (*CheckDiskSpaceReply, error)
 	AgentExecuteUpgradePrimariesSubStep(context.Context, *UpgradePrimariesRequest) (*UpgradePrimariesReply, error)
 	CreateSegmentDataDirectories(context.Context, *CreateSegmentDataDirRequest) (*CreateSegmentDataDirReply, error)
 	CopyMasterDirectoryToSegmentDirectories(context.Context, *CopyMasterDirRequest) (*CopyMasterDirReply, error)
 	StopAgent(context.Context, *StopAgentRequest) (*StopAgentReply, error)
+}
+
+// UnimplementedAgentServer can be embedded to have forward compatible implementations.
+type UnimplementedAgentServer struct {
+}
+
+func (*UnimplementedAgentServer) CheckDiskSpace(ctx context.Context, req *CheckSegmentDiskSpaceRequest) (*CheckDiskSpaceReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckDiskSpace not implemented")
+}
+func (*UnimplementedAgentServer) AgentExecuteUpgradePrimariesSubStep(ctx context.Context, req *UpgradePrimariesRequest) (*UpgradePrimariesReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AgentExecuteUpgradePrimariesSubStep not implemented")
+}
+func (*UnimplementedAgentServer) CreateSegmentDataDirectories(ctx context.Context, req *CreateSegmentDataDirRequest) (*CreateSegmentDataDirReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateSegmentDataDirectories not implemented")
+}
+func (*UnimplementedAgentServer) CopyMasterDirectoryToSegmentDirectories(ctx context.Context, req *CopyMasterDirRequest) (*CopyMasterDirReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CopyMasterDirectoryToSegmentDirectories not implemented")
+}
+func (*UnimplementedAgentServer) StopAgent(ctx context.Context, req *StopAgentRequest) (*StopAgentReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StopAgent not implemented")
 }
 
 func RegisterAgentServer(s *grpc.Server, srv AgentServer) {
@@ -650,42 +728,4 @@ var _Agent_serviceDesc = grpc.ServiceDesc{
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "hub_to_agent.proto",
-}
-
-func init() { proto.RegisterFile("hub_to_agent.proto", fileDescriptor_hub_to_agent_2dd4879384d9ec0b) }
-
-var fileDescriptor_hub_to_agent_2dd4879384d9ec0b = []byte{
-	// 501 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x54, 0xc1, 0x6e, 0xda, 0x40,
-	0x10, 0x2d, 0x10, 0x9a, 0x32, 0x54, 0x11, 0xda, 0x26, 0xc2, 0x71, 0x50, 0x44, 0xdd, 0x43, 0x39,
-	0x71, 0xa0, 0xb9, 0xe4, 0xd8, 0x42, 0x8f, 0x05, 0x64, 0xda, 0x5e, 0xd1, 0xda, 0x1e, 0xc1, 0x2a,
-	0xc6, 0xeb, 0xae, 0xd7, 0xa2, 0x7c, 0x4b, 0x3f, 0xa1, 0x9f, 0xd0, 0x9f, 0xab, 0x76, 0xd7, 0x36,
-	0xc6, 0x31, 0xb9, 0x31, 0xef, 0xcd, 0xbe, 0xf7, 0x98, 0x19, 0x00, 0xb2, 0x4d, 0xbd, 0xb5, 0xe4,
-	0x6b, 0xba, 0xc1, 0x48, 0x8e, 0x63, 0xc1, 0x25, 0x27, 0x2d, 0x16, 0x84, 0x76, 0xcf, 0x0f, 0x99,
-	0x22, 0xb6, 0xa9, 0x67, 0x60, 0xe7, 0x6f, 0x03, 0xfa, 0x3f, 0xe2, 0x8d, 0xa0, 0x01, 0x2e, 0x05,
-	0xdb, 0x51, 0xc1, 0x30, 0x71, 0xf1, 0x57, 0x8a, 0x89, 0x24, 0x03, 0xe8, 0x2c, 0xc2, 0xe0, 0x0b,
-	0x8b, 0x66, 0x4c, 0x58, 0x8d, 0x61, 0x63, 0xd4, 0x71, 0x8f, 0x80, 0x62, 0xe7, 0xb8, 0xcf, 0xd8,
-	0xa6, 0x61, 0x0b, 0x80, 0xdc, 0x03, 0xcc, 0x71, 0xff, 0x13, 0x45, 0xc2, 0x78, 0x64, 0xb5, 0x34,
-	0x5d, 0x42, 0xc8, 0x03, 0xbc, 0x9d, 0x51, 0x49, 0x67, 0x4c, 0x2c, 0x29, 0x13, 0x89, 0x75, 0x31,
-	0x6c, 0x8d, 0xba, 0x93, 0xde, 0x98, 0x05, 0xe1, 0xb8, 0x44, 0xb8, 0x27, 0x5d, 0xce, 0x9f, 0x06,
-	0x74, 0x4b, 0x80, 0x72, 0x59, 0x84, 0x41, 0x86, 0x64, 0x11, 0x4b, 0x48, 0x96, 0x22, 0xe7, 0x9b,
-	0x45, 0x8a, 0x9c, 0xb7, 0xe0, 0x72, 0x11, 0x06, 0x4b, 0x2e, 0xa4, 0x8e, 0xd8, 0x76, 0xf3, 0x52,
-	0x31, 0x73, 0xdc, 0x6b, 0xe6, 0xc2, 0x30, 0x59, 0xa9, 0x98, 0x29, 0x8f, 0x24, 0x46, 0xd2, 0x6a,
-	0x1b, 0x26, 0x2b, 0x9d, 0x3e, 0xdc, 0x3c, 0x1f, 0x65, 0x1c, 0x1e, 0x9c, 0x47, 0xb8, 0x9b, 0x0a,
-	0xa4, 0x12, 0x57, 0xb8, 0xd9, 0x61, 0x24, 0x33, 0xfb, 0x7c, 0xce, 0x36, 0xbc, 0x09, 0xa8, 0xa4,
-	0x81, 0x9a, 0x43, 0x63, 0xd8, 0x1a, 0x75, 0xdc, 0xa2, 0x76, 0xee, 0xe0, 0xb6, 0xfe, 0xa9, 0xd2,
-	0x5d, 0xc2, 0xf5, 0x94, 0xc7, 0x87, 0x6f, 0x34, 0x91, 0x28, 0x4a, 0x82, 0x03, 0xe8, 0xec, 0x72,
-	0x2c, 0x5f, 0x5c, 0x01, 0x9c, 0xd8, 0x35, 0x2b, 0x76, 0xd7, 0x40, 0x2a, 0x8a, 0xca, 0x87, 0x40,
-	0x6f, 0x25, 0x79, 0xfc, 0x59, 0x9d, 0x53, 0xe6, 0xe1, 0xf4, 0xe0, 0xaa, 0x84, 0xa9, 0xae, 0x18,
-	0x06, 0xd3, 0x2d, 0xfa, 0x4f, 0x79, 0x52, 0x96, 0x3c, 0xad, 0x62, 0xea, 0x63, 0x9e, 0xea, 0x01,
-	0x2e, 0x85, 0xf9, 0xa8, 0x33, 0x75, 0x27, 0xb6, 0xde, 0xb6, 0x7e, 0x53, 0x6d, 0x76, 0xf3, 0xd6,
-	0x97, 0xd2, 0x4e, 0xfe, 0xb5, 0xa0, 0xad, 0x03, 0x90, 0x05, 0x5c, 0x9d, 0xea, 0x90, 0xf7, 0x47,
-	0xf1, 0x33, 0x81, 0x6c, 0xab, 0xd6, 0x5f, 0x7d, 0x95, 0x57, 0x84, 0xc2, 0x07, 0xad, 0xfc, 0xf5,
-	0x37, 0xfa, 0xa9, 0xc4, 0xea, 0x5e, 0x57, 0xa9, 0xb7, 0x92, 0x18, 0x93, 0x81, 0x96, 0x38, 0xf3,
-	0x03, 0xb2, 0xed, 0x33, 0xac, 0xb1, 0xf0, 0x60, 0x50, 0xb7, 0x5a, 0xf4, 0x25, 0x57, 0x6d, 0x64,
-	0x68, 0xe2, 0x9d, 0x3f, 0x1c, 0xfb, 0xfe, 0x85, 0x0e, 0xe3, 0xb1, 0x86, 0x8f, 0x27, 0xfb, 0xd4,
-	0xe2, 0x87, 0xef, 0xbc, 0x18, 0xc9, 0xd1, 0xee, 0xd6, 0x88, 0xd5, 0xdc, 0x93, 0xdd, 0xaf, 0xa3,
-	0x8c, 0xc1, 0x23, 0x74, 0x8a, 0x33, 0x20, 0x37, 0xba, 0xaf, 0x7a, 0x2a, 0xf6, 0xbb, 0x2a, 0xac,
-	0x9f, 0x7a, 0xaf, 0xf5, 0x3f, 0xd0, 0xa7, 0xff, 0x01, 0x00, 0x00, 0xff, 0xff, 0x51, 0x47, 0x25,
-	0xb0, 0xae, 0x04, 0x00, 0x00,
 }

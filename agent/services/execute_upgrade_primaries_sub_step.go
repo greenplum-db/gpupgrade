@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"sync"
 
+	"golang.org/x/xerrors"
+
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
@@ -24,7 +26,7 @@ var execCommand = exec.Command
 func (s *AgentServer) AgentExecuteUpgradePrimariesSubStep(ctx context.Context, in *idl.UpgradePrimariesRequest) (*idl.UpgradePrimariesReply, error) {
 	gplog.Info("agent starting %s", upgradestatus.UPGRADE_PRIMARIES)
 
-	err := UpgradePrimaries(in.OldBinDir, in.NewBinDir, in.DataDirPairs)
+	err := UpgradePrimaries(in.OldBinDir, in.NewBinDir, in.DataDirPairs, s.conf.StateDir, in.CheckOnly)
 	return &idl.UpgradePrimariesReply{}, err
 }
 
@@ -33,7 +35,7 @@ type Segment struct {
 	UpgradeDir string
 }
 
-func UpgradePrimaries(sourceBinDir string, targetBinDir string, dataDirPairs []*idl.DataDirPair) error {
+func UpgradePrimaries(sourceBinDir string, targetBinDir string, dataDirPairs []*idl.DataDirPair, stateDir string, checkOnly bool) error {
 	segments := make([]Segment, 0, len(dataDirPairs))
 
 	for _, dataPair := range dataDirPairs {
@@ -46,7 +48,7 @@ func UpgradePrimaries(sourceBinDir string, targetBinDir string, dataDirPairs []*
 		segments = append(segments, Segment{DataDirPair: dataPair, UpgradeDir: dataPair.NewDataDir})
 	}
 
-	err := UpgradeSegments(sourceBinDir, targetBinDir, segments)
+	err := UpgradeSegments(sourceBinDir, targetBinDir, segments, stateDir, checkOnly)
 	if err != nil {
 		return errors.Wrap(err, "failed to upgrade segments")
 	}
@@ -54,7 +56,7 @@ func UpgradePrimaries(sourceBinDir string, targetBinDir string, dataDirPairs []*
 	return nil
 }
 
-func UpgradeSegments(sourceBinDir string, targetBinDir string, segments []Segment) error {
+func UpgradeSegments(sourceBinDir string, targetBinDir string, segments []Segment, stateDir string, checkOnly bool) (err error) {
 	// TODO: consolidate this logic with Hub.ConvertMaster().
 
 	host, err := os.Hostname()
@@ -69,7 +71,7 @@ func UpgradeSegments(sourceBinDir string, targetBinDir string, segments []Segmen
 		wg.Add(1)
 
 		path := filepath.Join(targetBinDir, "pg_upgrade")
-		cmd := execCommand(path,
+		args := []string{
 			"--old-bindir", sourceBinDir,
 			"--old-datadir", segment.OldDataDir,
 			"--old-port", strconv.Itoa(int(segment.OldPort)),
@@ -77,7 +79,11 @@ func UpgradeSegments(sourceBinDir string, targetBinDir string, segments []Segmen
 			"--new-datadir", segment.NewDataDir,
 			"--new-port", strconv.Itoa(int(segment.NewPort)),
 			"--mode=segment",
-		)
+		}
+		if checkOnly {
+			args = append(args, "--check")
+		}
+		cmd := execCommand(path, args...)
 
 		cmd.Dir = segment.UpgradeDir
 
@@ -92,13 +98,53 @@ func UpgradeSegments(sourceBinDir string, targetBinDir string, segments []Segmen
 			cmd.Env = append(cmd.Env, fmt.Sprintf("LD_LIBRARY_PATH=%s", path))
 		}
 
+		content := segment.Content
 		go func() {
-			err := cmd.Run()
-			if err != nil {
-				agentErrs <- errors.Wrapf(err, "failed to upgrade primary on host %s with content %d", host, segment.Content)
+			defer wg.Done()
+
+			if checkOnly {
+				//TODO: put this in the "official" segment dir location
+				stdout, err := utils.System.OpenFile(
+					filepath.Join(stateDir, fmt.Sprintf("pg_upgrade_check_stdout_seg_%d.log", content)),
+					os.O_WRONLY|os.O_CREATE,
+					0600,
+				)
+				if err != nil {
+					agentErrs <- errors.Wrap(err, "could not open stdout log file")
+					return
+				}
+				stderr, err := utils.System.OpenFile(
+					filepath.Join(stateDir, fmt.Sprintf("pg_upgrade_check_stderr_seg_%d.log", content)),
+					os.O_WRONLY|os.O_CREATE,
+					0600,
+				)
+				if err != nil {
+					agentErrs <- errors.Wrap(err, "could not open stderr log file")
+					return
+				}
+				defer func() {
+					if closeErr := stdout.Close(); closeErr != nil {
+						err = multierror.Append(err,
+							xerrors.Errorf("failed to close pg_upgrade_check_stdout log: %w", closeErr))
+					}
+					if closeErr := stderr.Close(); closeErr != nil {
+						err = multierror.Append(err,
+							xerrors.Errorf("failed to close pg_upgrade_check_stderr log: %w", closeErr))
+					}
+				}()
+
+				cmd.Stdout = stdout
+				cmd.Stderr = stderr
 			}
 
-			wg.Done()
+			err = cmd.Run()
+			if err != nil {
+				failedAction := "upgrade"
+				if checkOnly {
+					failedAction = "check"
+				}
+				agentErrs <- errors.Wrapf(err, "failed to %s primary on host %s with content %d", failedAction, host, content)
+			}
 		}()
 	}
 

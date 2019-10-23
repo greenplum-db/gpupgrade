@@ -93,7 +93,7 @@ func TestUpgradeMaster(t *testing.T) {
 		// the "actual" working directory might look different to the
 		// subprocess.
 		var buf bytes.Buffer
-		err := pair.ConvertMaster(mockStream, &buf, "/")
+		err := pair.ConvertMaster(mockStream, &buf, "/", false)
 		g.Expect(err).NotTo(HaveOccurred())
 
 		wd := buf.String()
@@ -121,7 +121,7 @@ func TestUpgradeMaster(t *testing.T) {
 		execCommand = exectest.NewCommand(EnvironmentMain)
 
 		var buf bytes.Buffer
-		err := pair.ConvertMaster(mockStream, &buf, "")
+		err := pair.ConvertMaster(mockStream, &buf, "", false)
 		g.Expect(err).NotTo(HaveOccurred())
 
 		scanner := bufio.NewScanner(&buf)

@@ -26,15 +26,6 @@ func (h *Hub) GenerateInitsystemConfig() error {
 	return h.writeConf(sourceDBConn)
 }
 
-func (h *Hub) CreateTargetCluster(stream messageSender, log io.Writer) error {
-	targetDBConn, err := h.InitTargetCluster(stream, log)
-	if err != nil {
-		return err
-	}
-
-	return ReloadAndCommitCluster(h.target, targetDBConn)
-}
-
 func (h *Hub) initsystemConfPath() string {
 	return filepath.Join(h.conf.StateDir, "gpinitsystem_config")
 }
@@ -59,6 +50,15 @@ func (h *Hub) writeConf(sourceDBConn *dbconn.DBConn) error {
 	gpinitsystemConfig = DeclareDataDirectories(gpinitsystemConfig, *h.source)
 
 	return WriteInitsystemFile(gpinitsystemConfig, h.initsystemConfPath())
+}
+
+func (h *Hub) CreateTargetCluster(stream messageSender, log io.Writer) error {
+	targetDBConn, err := h.InitTargetCluster(stream, log)
+	if err != nil {
+		return err
+	}
+
+	return ReloadAndCommitCluster(h.target, targetDBConn)
 }
 
 func (h *Hub) InitTargetCluster(stream messageSender, log io.Writer) (*dbconn.DBConn, error) {
@@ -195,9 +195,7 @@ func RunInitsystemForTargetCluster(stream messageSender, log io.Writer, target *
 	)
 	cmd := execCommand("bash", "-c", script)
 
-	mux := newMultiplexedStream(stream, log)
-	cmd.Stdout = mux.NewStreamWriter(idl.Chunk_STDOUT)
-	cmd.Stderr = mux.NewStreamWriter(idl.Chunk_STDERR)
+	attachMultiplexedStreamToCmd(cmd, stream, log)
 
 	err := cmd.Run()
 	if err != nil {

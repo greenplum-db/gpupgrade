@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sync"
 
@@ -45,36 +46,9 @@ func (h *Hub) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSe
 		return xerrors.Errorf("failed writing to execute log: %w", err)
 	}
 
-	err = h.ExecuteSubStep(executeStream, upgradestatus.CREATE_TARGET_CONFIG,
-		func(_ messageSender, _ io.Writer) error {
-			return h.GenerateInitsystemConfig()
-		})
-	if err != nil {
-		return err
-	}
-
-	err = h.ExecuteSubStep(executeStream, upgradestatus.SHUTDOWN_SOURCE_CLUSTER,
-		func(stream messageSender, log io.Writer) error {
-			return StopCluster(stream, log, h.source)
-		})
-	if err != nil {
-		return err
-	}
-
-	err = h.ExecuteSubStep(executeStream, upgradestatus.INIT_TARGET_CLUSTER, h.CreateTargetCluster)
-	if err != nil {
-		return err
-	}
-
-	err = h.ExecuteSubStep(executeStream, upgradestatus.SHUTDOWN_TARGET_CLUSTER,
-		func(stream messageSender, log io.Writer) error {
-			return StopCluster(stream, log, h.target)
-		})
-	if err != nil {
-		return err
-	}
-
-	err = h.ExecuteSubStep(executeStream, upgradestatus.UPGRADE_MASTER, h.UpgradeMaster)
+	err = h.ExecuteSubStep(executeStream, upgradestatus.UPGRADE_MASTER, func(stream messageSender, log io.Writer) error {
+		return h.UpgradeMaster(stream, log, false)
+	})
 	if err != nil {
 		return err
 	}
@@ -86,17 +60,21 @@ func (h *Hub) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSe
 
 	err = h.ExecuteSubStep(executeStream, upgradestatus.UPGRADE_PRIMARIES,
 		func(_ messageSender, _ io.Writer) error {
-			return h.ConvertPrimaries()
+			return h.ConvertPrimaries(false)
 		})
 	if err != nil {
 		return err
 	}
 
-	err = h.ExecuteSubStep(executeStream, upgradestatus.START_TARGET_CLUSTER, h.StartTargetCluster)
+	err = h.ExecuteSubStep(executeStream, upgradestatus.START_TARGET_CLUSTER,
+		func(stream messageSender, log io.Writer) error {
+			return StartCluster(stream, log, h.target)
+		})
 	return err
 }
 
-func (h *Hub) ExecuteSubStep(executeStream *ExecuteStream, subStep string, subStepFunc func(stream messageSender, log io.Writer) error) error {
+func (h *Hub) ExecuteSubStep(executeStream *ExecuteStream, subStep string,
+	subStepFunc func(stream messageSender, log io.Writer) error) error {
 	gplog.Info("starting %s", subStep)
 	_, err := executeStream.log.Write([]byte(fmt.Sprintf("\nStarting %s...\n\n", subStep)))
 	if err != nil {
@@ -127,6 +105,12 @@ type multiplexedStream struct {
 	stream messageSender
 	writer io.Writer
 	mutex  sync.Mutex
+}
+
+func attachMultiplexedStreamToCmd(cmd *exec.Cmd, stream messageSender, log io.Writer) {
+	mux := newMultiplexedStream(stream, log)
+	cmd.Stdout = mux.NewStreamWriter(idl.Chunk_STDOUT)
+	cmd.Stderr = mux.NewStreamWriter(idl.Chunk_STDERR)
 }
 
 func newMultiplexedStream(stream messageSender, writer io.Writer) *multiplexedStream {
