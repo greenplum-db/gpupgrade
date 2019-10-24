@@ -56,7 +56,7 @@ func TestCreateInitialInitsystemConfig(t *testing.T) {
 
 		actualConfig, err := CreateInitialInitsystemConfig("/data/qddir/seg-1")
 		if err != nil {
-			t.Errorf("create initial gpinitsystem config failed: %v", err)
+			t.Fatalf("got: %#v, want: nil", err)
 		}
 
 		expectedConfig := []string{
@@ -64,8 +64,8 @@ func TestCreateInitialInitsystemConfig(t *testing.T) {
 			"SEG_PREFIX=seg",
 			"TRUSTED_SHELL=ssh",
 		}
-		if !reflect.DeepEqual(expectedConfig, actualConfig) {
-			t.Errorf("wanted: %v, got: %v", expectedConfig, actualConfig)
+		if !reflect.DeepEqual(actualConfig, expectedConfig) {
+			t.Errorf("got: %v, want: %v", actualConfig, expectedConfig)
 		}
 	})
 }
@@ -81,12 +81,12 @@ func TestGetCheckpointSegmentsAndEncoding(t *testing.T) {
 
 		actualConfig, err := GetCheckpointSegmentsAndEncoding([]string{}, dbConn)
 		if err != nil {
-			t.Errorf("create initial gpinitsystem config failed: %v", err)
+			t.Fatalf("got: %#v, want: nil", err)
 		}
 
 		expectedConfig := []string{"CHECK_POINT_SEGMENTS=8", "ENCODING=UNICODE"}
-		if !reflect.DeepEqual(expectedConfig, actualConfig) {
-			t.Errorf("wanted: %v, got: %v", expectedConfig, actualConfig)
+		if !reflect.DeepEqual(actualConfig, expectedConfig) {
+			t.Errorf("got: %v, want: %v", actualConfig, expectedConfig)
 		}
 	})
 }
@@ -112,21 +112,21 @@ func TestDeclareDataDirectories(t *testing.T) {
 	host1~29432~/data/dbfast1_upgrade/seg1~2~0~0
 	host2~29433~/data/dbfast2_upgrade/seg2~3~1~0
 )`}
-		if !reflect.DeepEqual(expectedConfig, actualConfig) {
-			t.Errorf("wanted: %v, got: %v", expectedConfig, actualConfig)
+		if !reflect.DeepEqual(actualConfig, expectedConfig) {
+			t.Errorf("got: %v, want: %v", actualConfig, expectedConfig)
 		}
 
 		expectedDataDirMap := map[string][]string{
 			"host1": {"/data/dbfast1_upgrade"},
 			"host2": {"/data/dbfast2_upgrade"},
 		}
-		if !reflect.DeepEqual(expectedDataDirMap, actualSegDataDirMap) {
-			t.Errorf("wanted: %v, got: %v", expectedDataDirMap, actualSegDataDirMap)
+		if !reflect.DeepEqual(actualSegDataDirMap, expectedDataDirMap) {
+			t.Errorf("got: %v, want: %v", actualSegDataDirMap, expectedDataDirMap)
 		}
 
 		expectedPort := 15433
-		if expectedPort != actualPort {
-			t.Errorf("wanted: %v, got: %v", expectedPort, actualPort)
+		if actualPort != expectedPort {
+			t.Errorf("got: %d, want: %d", actualPort, expectedPort)
 		}
 	})
 }
@@ -154,17 +154,17 @@ func TestCreateAllDataDirectories(t *testing.T) {
 
 		err := CreateAllDataDirectories([]*Connection{}, segDataDirMap, sourceMasterDataDir)
 		if err != nil {
-			t.Errorf("expected no error, but got: %#v", err)
+			t.Fatalf("got: %#v, want: nil", err)
 		}
 
 		expectedStatCalls := []string{"/data/qddir_upgrade"}
 		if !reflect.DeepEqual(statCalls, expectedStatCalls) {
-			t.Errorf("wanted: %#v, got: %#v", expectedStatCalls, statCalls)
+			t.Errorf("got: %#v, want: %#v", statCalls, expectedStatCalls)
 		}
 
 		expectedMkdirCalls := []string{"/data/qddir_upgrade"}
-		if !reflect.DeepEqual(statCalls, expectedMkdirCalls) {
-			t.Errorf("wanted: %#v, got: %#v", expectedMkdirCalls, statCalls)
+		if !reflect.DeepEqual(mkdirCalls, expectedMkdirCalls) {
+			t.Errorf("got: %#v, want: %#v", mkdirCalls, expectedMkdirCalls)
 		}
 	})
 
@@ -176,7 +176,7 @@ func TestCreateAllDataDirectories(t *testing.T) {
 
 		err := CreateAllDataDirectories([]*Connection{}, segDataDirMap, sourceMasterDataDir)
 		if !xerrors.Is(err, expected) {
-			t.Errorf("wanted: %#v got: %#v", expected, err)
+			t.Errorf("got: %#v, want: %#v", err, expected)
 		}
 	})
 
@@ -192,7 +192,7 @@ func TestCreateAllDataDirectories(t *testing.T) {
 
 		err := CreateAllDataDirectories([]*Connection{}, segDataDirMap, sourceMasterDataDir)
 		if !xerrors.Is(err, expected) {
-			t.Errorf("wanted: %#v got: %#v", expected, err)
+			t.Errorf("got: %#v, want: %#v", err, expected)
 		}
 	})
 }
@@ -204,15 +204,15 @@ func TestCreateSegmentDataDirectories(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		client1 := mock_idl.NewMockAgentClient(ctrl)
-		client1.EXPECT().CreateSegmentDataDirectories(
+		client := mock_idl.NewMockAgentClient(ctrl)
+		client.EXPECT().CreateSegmentDataDirectories(
 			gomock.Any(),
 			gomock.Any(),
 		).Return(&idl.CreateSegmentDataDirReply{}, nil)
 
 		expected := errors.New("permission denied")
-		client2 := mock_idl.NewMockAgentClient(ctrl)
-		client2.EXPECT().CreateSegmentDataDirectories(
+		failedClient := mock_idl.NewMockAgentClient(ctrl)
+		failedClient.EXPECT().CreateSegmentDataDirectories(
 			gomock.Any(),
 			gomock.Any(),
 		).Return(nil, expected)
@@ -223,13 +223,13 @@ func TestCreateSegmentDataDirectories(t *testing.T) {
 		}
 
 		agentConns := []*Connection{
-			{nil, client1, "host1", nil},
-			{nil, client2, "host2", nil},
+			{nil, client, "host1", nil},
+			{nil, failedClient, "host2", nil},
 		}
 
 		err := CreateSegmentDataDirectories(agentConns, segDataDirMap)
 		if !xerrors.Is(err, expected) {
-			t.Errorf("want: %#v got: %#v", expected, err)
+			t.Errorf("got: %#v, want: %#v", err, expected)
 		}
 	})
 }
@@ -330,12 +330,13 @@ func TestGetMasterSegPrefix(t *testing.T) {
 
 		for _, c := range cases {
 			actual, err := GetMasterSegPrefix(c.MasterDataDir)
+			if err != nil {
+				t.Fatalf("got: %#v, want: nil", err)
+			}
+
 			expected := "gpseg"
 			if actual != expected {
-				t.Errorf("wanted: %q got: %q", expected, actual)
-			}
-			if err != nil {
-				t.Fatalf("couldn't get master segment prefix: %v", err)
+				t.Errorf("got: %q want: %q", actual, expected)
 			}
 		}
 	})
@@ -355,7 +356,7 @@ func TestGetMasterSegPrefix(t *testing.T) {
 		for _, c := range cases {
 			_, err := GetMasterSegPrefix(c.MasterDataDir)
 			if err == nil {
-				t.Fatalf("Expected err, but got none")
+				t.Fatalf("got: nil, want: err")
 			}
 		}
 	})
