@@ -56,7 +56,7 @@ func TestCreateInitialInitsystemConfig(t *testing.T) {
 
 		actualConfig, err := CreateInitialInitsystemConfig("/data/qddir/seg-1")
 		if err != nil {
-			t.Fatalf("got: %#v, want: nil", err)
+			t.Fatalf("got %#v, want nil", err)
 		}
 
 		expectedConfig := []string{
@@ -65,7 +65,7 @@ func TestCreateInitialInitsystemConfig(t *testing.T) {
 			"TRUSTED_SHELL=ssh",
 		}
 		if !reflect.DeepEqual(actualConfig, expectedConfig) {
-			t.Errorf("got: %v, want: %v", actualConfig, expectedConfig)
+			t.Errorf("got %v, want %v", actualConfig, expectedConfig)
 		}
 	})
 }
@@ -81,12 +81,12 @@ func TestGetCheckpointSegmentsAndEncoding(t *testing.T) {
 
 		actualConfig, err := GetCheckpointSegmentsAndEncoding([]string{}, dbConn)
 		if err != nil {
-			t.Fatalf("got: %#v, want: nil", err)
+			t.Fatalf("got %#v, want nil", err)
 		}
 
 		expectedConfig := []string{"CHECK_POINT_SEGMENTS=8", "ENCODING=UNICODE"}
 		if !reflect.DeepEqual(actualConfig, expectedConfig) {
-			t.Errorf("got: %v, want: %v", actualConfig, expectedConfig)
+			t.Errorf("got %v, want %v", actualConfig, expectedConfig)
 		}
 	})
 }
@@ -113,7 +113,7 @@ func TestDeclareDataDirectories(t *testing.T) {
 	host2~29433~/data/dbfast2_upgrade/seg2~3~1~0
 )`}
 		if !reflect.DeepEqual(actualConfig, expectedConfig) {
-			t.Errorf("got: %v, want: %v", actualConfig, expectedConfig)
+			t.Errorf("got %v, want %v", actualConfig, expectedConfig)
 		}
 
 		expectedDataDirMap := map[string][]string{
@@ -121,12 +121,12 @@ func TestDeclareDataDirectories(t *testing.T) {
 			"host2": {"/data/dbfast2_upgrade"},
 		}
 		if !reflect.DeepEqual(actualSegDataDirMap, expectedDataDirMap) {
-			t.Errorf("got: %v, want: %v", actualSegDataDirMap, expectedDataDirMap)
+			t.Errorf("got %v, want %v", actualSegDataDirMap, expectedDataDirMap)
 		}
 
 		expectedPort := 15433
 		if actualPort != expectedPort {
-			t.Errorf("got: %d, want: %d", actualPort, expectedPort)
+			t.Errorf("got %d, want %d", actualPort, expectedPort)
 		}
 	})
 }
@@ -154,17 +154,17 @@ func TestCreateAllDataDirectories(t *testing.T) {
 
 		err := CreateAllDataDirectories([]*Connection{}, segDataDirMap, sourceMasterDataDir)
 		if err != nil {
-			t.Fatalf("got: %#v, want: nil", err)
+			t.Fatalf("got %#v, want nil", err)
 		}
 
 		expectedStatCalls := []string{"/data/qddir_upgrade"}
 		if !reflect.DeepEqual(statCalls, expectedStatCalls) {
-			t.Errorf("got: %#v, want: %#v", statCalls, expectedStatCalls)
+			t.Errorf("got %#v, want %#v", statCalls, expectedStatCalls)
 		}
 
 		expectedMkdirCalls := []string{"/data/qddir_upgrade"}
 		if !reflect.DeepEqual(mkdirCalls, expectedMkdirCalls) {
-			t.Errorf("got: %#v, want: %#v", mkdirCalls, expectedMkdirCalls)
+			t.Errorf("got %#v, want %#v", mkdirCalls, expectedMkdirCalls)
 		}
 	})
 
@@ -176,7 +176,7 @@ func TestCreateAllDataDirectories(t *testing.T) {
 
 		err := CreateAllDataDirectories([]*Connection{}, segDataDirMap, sourceMasterDataDir)
 		if !xerrors.Is(err, expected) {
-			t.Errorf("got: %#v, want: %#v", err, expected)
+			t.Errorf("got %#v, want %#v", err, expected)
 		}
 	})
 
@@ -192,7 +192,7 @@ func TestCreateAllDataDirectories(t *testing.T) {
 
 		err := CreateAllDataDirectories([]*Connection{}, segDataDirMap, sourceMasterDataDir)
 		if !xerrors.Is(err, expected) {
-			t.Errorf("got: %#v, want: %#v", err, expected)
+			t.Errorf("got %#v, want %#v", err, expected)
 		}
 	})
 }
@@ -229,7 +229,7 @@ func TestCreateSegmentDataDirectories(t *testing.T) {
 
 		err := CreateSegmentDataDirectories(agentConns, segDataDirMap)
 		if !xerrors.Is(err, expected) {
-			t.Errorf("got: %#v, want: %#v", err, expected)
+			t.Errorf("got %#v, want %#v", err, expected)
 		}
 	})
 }
@@ -296,7 +296,7 @@ func TestRunInitsystemForTargetCluster(t *testing.T) {
 		actual := string(log.Contents())
 		expected := "[WARNING]:-gpinitsystem had warnings and exited with status 1"
 		if strings.HasSuffix(actual, expected) {
-			t.Errorf("want: %q got: %q", expected, actual)
+			t.Errorf("want %q got %q", expected, actual)
 		}
 	})
 
@@ -308,11 +308,11 @@ func TestRunInitsystemForTargetCluster(t *testing.T) {
 
 		var actual *exec.ExitError
 		if !xerrors.As(err, &actual) {
-			t.Fatalf("want ExitError, but got: %#v", err)
+			t.Fatalf("want ExitError, but got %#v", err)
 		}
 
 		if actual.ExitCode() != 2 {
-			t.Errorf("want: 2 got: %d", actual.ExitCode())
+			t.Errorf("want 2 got %d", actual.ExitCode())
 		}
 	})
 }
@@ -331,12 +331,12 @@ func TestGetMasterSegPrefix(t *testing.T) {
 		for _, c := range cases {
 			actual, err := GetMasterSegPrefix(c.MasterDataDir)
 			if err != nil {
-				t.Fatalf("got: %#v, want: nil", err)
+				t.Fatalf("got %#v, want nil", err)
 			}
 
 			expected := "gpseg"
 			if actual != expected {
-				t.Errorf("got: %q want: %q", actual, expected)
+				t.Errorf("got %q want %q", actual, expected)
 			}
 		}
 	})
@@ -356,7 +356,7 @@ func TestGetMasterSegPrefix(t *testing.T) {
 		for _, c := range cases {
 			_, err := GetMasterSegPrefix(c.MasterDataDir)
 			if err == nil {
-				t.Fatalf("got: nil, want: err")
+				t.Fatalf("got nil, want err")
 			}
 		}
 	})
