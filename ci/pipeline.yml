@@ -83,6 +83,15 @@ resources:
       bucket: gpdb5-pipeline-dynamic-terraform
       bucket_path: clusters-google/
 
+- name: terraform.d
+  type: s3
+  source:
+    bucket: ccp-terraform-provider-plugins
+    versioned_file: plugin-cache.tgz
+    access_key_id: {{tf-machine-access-key-id}}
+    secret_access_key: {{tf-machine-secret-access-key}}
+    region_name: {{aws-region}}
+
 - name: dump_gpdb6_icw_gporca_centos6
   type: gcs
   source:
@@ -103,6 +112,7 @@ anchors:
     delete_on_failure: true
     generate_random_name: true
     terraform_source: ccp_src/google/
+    plugin_dir: ../../terraform.d/plugin-cache/linux_amd64
 
   - &ccp_gen_cluster_default_params
     AWS_ACCESS_KEY_ID: {{tf-machine-access-key-id}}
@@ -118,6 +128,7 @@ anchors:
       action: destroy
       env_name_file: terraform/name
       terraform_source: ccp_src/google/
+      plugin_dir: ../../terraform.d/plugin-cache/linux_amd64
       vars:
         aws_instance-node-instance_type: t2.micro #t2.micro is ignored in destroy, but aws_instance-node-instance_type is required.
         aws_ebs_volume_type: standard
@@ -207,6 +218,9 @@ jobs:
     # binary...
     - get: sqldump
       resource: dump_gpdb6_icw_gporca_centos6
+    - get: terraform.d
+      params:
+        unpack: true
   - put: terraform
     params:
       <<: *ccp_default_params
@@ -249,6 +263,9 @@ jobs:
         - get: ccp_src
         - get: sqldump
           resource: dump_gpdb5_simple
+        - get: terraform.d
+          params:
+            unpack: true
     - put: terraform
       params:
         <<: *ccp_default_params
