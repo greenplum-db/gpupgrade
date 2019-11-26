@@ -1,0 +1,299 @@
+---
+resource_types:
+- name: gcs
+  type: docker-image
+  source:
+    repository: frodenas/gcs-resource
+
+- name: slack-notification
+  type: docker-image
+  source:
+    repository: cfcommunity/slack-notification-resource
+    tag: latest
+
+- name: terraform
+  type: docker-image
+  source:
+    repository: ljfranklin/terraform-resource
+    tag: 0.11.14
+
+anchors:
+- &terraform_resource
+  type: terraform
+  source:
+    env:
+      AWS_ACCESS_KEY_ID: {{tf-machine-access-key-id}}
+      AWS_SECRET_ACCESS_KEY: {{tf-machine-secret-access-key}}
+      GOOGLE_CREDENTIALS: {{google-service-account-key}}
+    vars:
+      project_id: {{google-project-id}}
+    storage:
+      access_key_id: {{tf-machine-access-key-id}}
+      secret_access_key: {{tf-machine-secret-access-key}}
+      region_name: {{aws-region}}
+      # This is not parameterized, on purpose. All tfstates will go to this spot,
+      # and different teams will place there clusters' tfstate files under different paths
+      bucket: gpdb5-pipeline-dynamic-terraform
+      bucket_path: clusters-google/
+
+- &destroy_common
+  action: destroy
+  terraform_source: ccp_src/google/
+  vars:
+    aws_instance-node-instance_type: t2.micro #t2.micro is ignored in destroy, but aws_instance-node-instance_type is required.
+    aws_ebs_volume_type: standard
+
+- &two_cluster_destroy
+  in_parallel:
+  - put: terraform-1
+    params:
+      <<: *destroy_common
+      env_name_file: terraform-1/name
+    get_params:
+      action: destroy
+  - put: terraform-2
+    params:
+      <<: *destroy_common
+      env_name_file: terraform-2/name
+    get_params:
+      action: destroy
+
+- &set_failed_common
+  platform: linux
+  image_resource:
+    type: docker-image
+    source:
+      repository: pivotaldata/ccp
+      tag: "7"
+  run:
+    path: 'ccp_src/google/ccp_failed_test.sh'
+  params:
+    GOOGLE_CREDENTIALS: {{google-service-account-key}}
+    GOOGLE_PROJECT_ID: {{google-project-id}}
+    GOOGLE_ZONE: {{google-zone}}
+    GOOGLE_SERVICE_ACCOUNT: {{google-service-account}}
+    AWS_ACCESS_KEY_ID: {{tf-machine-access-key-id}}
+    AWS_SECRET_ACCESS_KEY: {{tf-machine-secret-access-key}}
+    AWS_DEFAULT_REGION: {{tf-machine-region}}
+    BUCKET_PATH: clusters-google/
+    BUCKET_NAME: {{tf-bucket-name}}
+
+- &two_cluster_set_failed
+  in_parallel:
+  - task: on_failure_set_failed-1
+    config:
+      <<: *set_failed_common
+      inputs:
+        - name: ccp_src
+        - name: terraform-1
+  - task: on_failure_set_failed-2
+    config:
+      <<: *set_failed_common
+      inputs:
+        - name: ccp_src
+        - name: terraform-2
+
+- &terraform_common_params
+  action: create
+  delete_on_failure: true
+  generate_random_name: true
+  terraform_source: ccp_src/google/
+
+- &terraform_common_vars
+  instance_type: n1-standard-2
+  number_of_nodes: 2
+  PLATFORM: centos6
+
+- &alpine
+  platform: linux
+  image_resource:
+    type: docker-image
+    source:
+      repository: alpine
+      tag: latest
+
+- &gen_cluster
+  file: ccp_src/ci/tasks/gen_cluster.yml
+  params:
+    AWS_ACCESS_KEY_ID: {{tf-machine-access-key-id}}
+    AWS_SECRET_ACCESS_KEY: {{tf-machine-secret-access-key}}
+    AWS_DEFAULT_REGION: {{aws-region}}
+    BUCKET_PATH: clusters-google/
+    BUCKET_NAME: {{tf-bucket-name}}
+    CLOUD_PROVIDER: google
+    PLATFORM: centos6
+
+resources:
+- name: bin_gpdb6_centos6
+  type: gcs
+  source:
+    bucket: {{gcs-bucket}}
+    json_key: {{concourse-gcs-resources-service-account-key}}
+    regexp: server/published/gpdb6/server-rc-(.*)-rhel6_x86_64.debug.tar.gz
+
+- name: ccp_src
+  type: git
+  source:
+    branch: {{ccp-git-branch}}
+    private_key: {{ccp-git-key}}
+    uri: {{ccp-git-remote}}
+
+- name: terraform-1
+  <<: *terraform_resource
+
+- name: terraform-2
+  <<: *terraform_resource
+
+jobs:
+- name: multicluster
+  plan:
+  - in_parallel:
+    - get: bin_gpdb6
+      resource: bin_gpdb6_centos6
+    - get: ccp_src
+  - task: generate-ssh-keys
+    config:
+      <<: *alpine
+      outputs:
+      - name: ssh-extra-key
+      run:
+        path: sh
+        args:
+        - -exc
+        - |
+          apk add --update --no-progress openssh-client openssl
+          ssh-keygen -b 4096 -t rsa -m PEM -f ssh-extra-key/key -N "" -C ""
+          openssl rsa -in ssh-extra-key/key -pubout -out ssh-extra-key/key.pem
+          sed -i 's/*//;s/ *$//' ssh-extra-key/key.pub
+  - in_parallel:
+    - do:
+      - put: terraform-1
+        params:
+          <<: *terraform_common_params
+          vars:
+            <<: *terraform_common_vars
+            subnet: dynamic
+            cluster_suffix: '-1'
+            custom_ssh_key: "/tmp/build/put/ssh-extra-key/key"
+      - task: gen_cluster_1
+        <<: *gen_cluster
+        input_mapping:
+          gpdb_binary: bin_gpdb6
+          terraform: terraform-1
+        output_mapping:
+          cluster_env_files: cluster-1
+    - do:
+      - put: terraform-2
+        params:
+          <<: *terraform_common_params
+          vars:
+            <<: *terraform_common_vars
+            subnet: toolshed
+            cluster_suffix: '-2'
+            custom_ssh_key: "/tmp/build/put/ssh-extra-key/key"
+      - task: gen_cluster_2
+        <<: *gen_cluster
+        input_mapping:
+          gpdb_binary: bin_gpdb6
+          terraform: terraform-2
+        output_mapping:
+          cluster_env_files: cluster-2
+  - task: exchange_keys
+    config:
+      <<: *alpine
+      inputs:
+      - name: cluster-1
+      - name: cluster-2
+      run:
+        path: sh
+        args:
+        - -exc
+        - |
+          apk add --update --no-progress openssh-client
+
+          opts="-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i cluster-1/private_key.pem"
+          while read -r ip host extra; do
+              scp $opts cluster-2/.ssh/*private_key.pem gpadmin@"$ip":~/.ssh/
+              ssh $opts gpadmin@"$ip" -- bash -c "cat - >> ~/.ssh/config && chmod 0600 ~/.ssh/config" < cluster-2/.ssh/config
+              ssh $opts centos@"$ip" -- "sudo bash -c 'cat - >> /etc/hosts'" < cluster-2/etc_hostfile
+              ssh $opts gpadmin@"$ip" -- bash -c "cat - >> ~/.ssh/known_hosts" < cluster-2/.ssh/known_hosts
+          done < cluster-1/etc_hostfile
+
+          opts="-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -i cluster-2/private_key.pem"
+          while read -r ip host extra; do
+              scp $opts cluster-1/.ssh/*private_key.pem gpadmin@"$ip":~/.ssh/
+              ssh $opts gpadmin@"$ip" -- bash -c "cat - >> ~/.ssh/config && chmod 0600 ~/.ssh/config" < cluster-1/.ssh/config
+              ssh $opts centos@"$ip" -- "sudo bash -c 'cat - >> /etc/hosts'" < cluster-1/etc_hostfile
+              ssh $opts gpadmin@"$ip" -- bash -c "cat - >> ~/.ssh/known_hosts" < cluster-1/.ssh/known_hosts
+          done < cluster-2/etc_hostfile
+
+  - task: gpinitsystem-multisubnet
+    config:
+      <<: *alpine
+      inputs:
+      - name: cluster-1
+      - name: cluster-2
+      run:
+        path: sh
+        args:
+        - -exc
+        - |
+          apk add --update --no-progress openssh-client
+
+          mkdir ~/.ssh
+          chmod 0700 ~/.ssh
+          cat cluster-*/.ssh/known_hosts > ~/.ssh/known_hosts
+          cat cluster-*/.ssh/config > ~/.ssh/config
+          cp cluster-*/.ssh/*.pem ~/.ssh
+
+          ssh gpadmin@mdw-1 "cat - > gpinitsystem_config" <<EOF
+              ARRAY_NAME="Greenplum Data Platform"
+              SEG_PREFIX=seg
+              MASTER_HOSTNAME=mdw-1
+              MASTER_DIRECTORY=/data/master
+              MASTER_PORT=5432
+              declare -a DATA_DIRECTORY=(/data/primary /data/primary)
+              PORT_BASE=6000
+              declare -a MIRROR_DATA_DIRECTORY=(/data/mirror /data/mirror)
+              MIRROR_PORT_BASE=7000
+              TRUSTED_SHELL=ssh
+              CHECK_POINT_SEGMENTS=8
+              ENCODING=UNICODE
+          EOF
+          cat cluster-*/hostfile_init | ssh gpadmin@mdw-1 "cat - > hostfile"
+
+          for host in mdw-1 mdw-2; do
+              ssh -n "gpadmin@$host" mkdir /data/master
+          done
+          cat cluster-*/hostfile_init | while read -r host; do
+              ssh -n "gpadmin@$host" mkdir /data/{primary,mirror}
+          done
+
+          ssh -n gpadmin@mdw-1 "
+              source /usr/local/greenplum-db-devel/greenplum_path.sh
+              gpinitsystem -a -s mdw-2 -c gpinitsystem_config -h hostfile
+              psql postgres -c 'select * from gp_segment_configuration'
+          "
+
+          # Test: ensure each primary/mirror pair has one segment on each subnet.
+          ssh -n gpadmin@mdw-1 '
+              source /usr/local/greenplum-db-devel/greenplum_path.sh
+              psql -AtF" " postgres -c "
+                  SELECT DISTINCT p.hostname, m.hostname
+                    FROM gp_segment_configuration p
+                    JOIN gp_segment_configuration m
+                      ON p.content = m.content
+                   WHERE p.role = '"'"'p'"'"'
+                     AND m.role = '"'"'m'"'"'
+              "
+          ' | while read -r host1 host2; do
+              brd1="$(ssh -n "$host1" "/sbin/ip addr show eth0 | grep 'inet .* brd' | awk '{ print \$4 }'")"
+              brd2="$(ssh -n "$host2" "/sbin/ip addr show eth0 | grep 'inet .* brd' | awk '{ print \$4 }'")"
+
+              [ -n "$brd1" -a -n "$brd2" -a "$brd1" != "$brd2" ]
+          done
+
+  on_success:
+    <<: *two_cluster_destroy
+  ensure:
+    <<: *two_cluster_set_failed
