@@ -6,8 +6,9 @@ import (
 	"os/exec"
 	"testing"
 
-	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	. "github.com/onsi/gomega"
+
+	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 )
 
 // Streams the above stdout/err constants to the corresponding standard file
