@@ -6,9 +6,9 @@ import "cli_to_hub.proto";
 
 service Agent {
     rpc CheckDiskSpace (CheckSegmentDiskSpaceRequest) returns (CheckDiskSpaceReply) {}
-    rpc AgentExecuteUpgradePrimariesSubStep (UpgradePrimariesRequest) returns (UpgradePrimariesReply) {}
+    rpc UpgradePrimaries (UpgradePrimariesRequest) returns (UpgradePrimariesReply) {}
     rpc CreateSegmentDataDirectories (CreateSegmentDataDirRequest) returns (CreateSegmentDataDirReply) {}
-    rpc CopyMasterDirectoryToSegmentDirectories (CopyMasterDirRequest) returns (CopyMasterDirReply) {}
+    rpc CopyMaster (CopyMasterRequest) returns (CopyMasterReply) {}
     rpc StopAgent(StopAgentRequest) returns (StopAgentReply) {}
 }
 
@@ -37,12 +37,12 @@ message CreateSegmentDataDirRequest {
 
 message CreateSegmentDataDirReply {}
 
-message CopyMasterDirRequest {
+message CopyMasterRequest {
 	string masterDir = 1;
 	repeated string datadirs = 2;
 }
 
-message CopyMasterDirReply {}
+message CopyMasterReply {}
 
 message StopAgentRequest {}
 message StopAgentReply {}

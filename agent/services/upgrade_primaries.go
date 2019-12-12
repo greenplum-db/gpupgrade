@@ -22,10 +22,10 @@ import (
 // Allow exec.Command to be mocked out by exectest.NewCommand.
 var execCommand = exec.Command
 
-func (s *AgentServer) AgentExecuteUpgradePrimariesSubStep(ctx context.Context, in *idl.UpgradePrimariesRequest) (*idl.UpgradePrimariesReply, error) {
+func (s *AgentServer) UpgradePrimaries(ctx context.Context, in *idl.UpgradePrimariesRequest) (*idl.UpgradePrimariesReply, error) {
 	gplog.Info("agent starting %s", upgradestatus.UPGRADE_PRIMARIES)
 
-	err := UpgradePrimaries(in.OldBinDir, in.NewBinDir, in.DataDirPairs, s.conf.StateDir, in.CheckOnly)
+	err := UpgradePrimary(in.OldBinDir, in.NewBinDir, in.DataDirPairs, s.conf.StateDir, in.CheckOnly)
 	return &idl.UpgradePrimariesReply{}, err
 }
 
@@ -35,7 +35,7 @@ type Segment struct {
 	WorkDir string // the pg_upgrade working directory, where logs are stored
 }
 
-func UpgradePrimaries(sourceBinDir string, targetBinDir string, dataDirPairs []*idl.DataDirPair, stateDir string, checkOnly bool) error {
+func UpgradePrimary(sourceBinDir string, targetBinDir string, dataDirPairs []*idl.DataDirPair, stateDir string, checkOnly bool) error {
 	segments := make([]Segment, 0, len(dataDirPairs))
 
 	for _, dataPair := range dataDirPairs {

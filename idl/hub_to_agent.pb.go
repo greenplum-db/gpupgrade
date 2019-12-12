@@ -38,7 +38,7 @@ func (m *UpgradePrimariesRequest) Reset()         { *m = UpgradePrimariesRequest
 func (m *UpgradePrimariesRequest) String() string { return proto.CompactTextString(m) }
 func (*UpgradePrimariesRequest) ProtoMessage()    {}
 func (*UpgradePrimariesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_6a89de6921f85cc5, []int{0}
+	return fileDescriptor_hub_to_agent_2e2f0ee2edb15dae, []int{0}
 }
 func (m *UpgradePrimariesRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpgradePrimariesRequest.Unmarshal(m, b)
@@ -109,7 +109,7 @@ func (m *DataDirPair) Reset()         { *m = DataDirPair{} }
 func (m *DataDirPair) String() string { return proto.CompactTextString(m) }
 func (*DataDirPair) ProtoMessage()    {}
 func (*DataDirPair) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_6a89de6921f85cc5, []int{1}
+	return fileDescriptor_hub_to_agent_2e2f0ee2edb15dae, []int{1}
 }
 func (m *DataDirPair) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DataDirPair.Unmarshal(m, b)
@@ -181,7 +181,7 @@ func (m *UpgradePrimariesReply) Reset()         { *m = UpgradePrimariesReply{} }
 func (m *UpgradePrimariesReply) String() string { return proto.CompactTextString(m) }
 func (*UpgradePrimariesReply) ProtoMessage()    {}
 func (*UpgradePrimariesReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_6a89de6921f85cc5, []int{2}
+	return fileDescriptor_hub_to_agent_2e2f0ee2edb15dae, []int{2}
 }
 func (m *UpgradePrimariesReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpgradePrimariesReply.Unmarshal(m, b)
@@ -212,7 +212,7 @@ func (m *CreateSegmentDataDirRequest) Reset()         { *m = CreateSegmentDataDi
 func (m *CreateSegmentDataDirRequest) String() string { return proto.CompactTextString(m) }
 func (*CreateSegmentDataDirRequest) ProtoMessage()    {}
 func (*CreateSegmentDataDirRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_6a89de6921f85cc5, []int{3}
+	return fileDescriptor_hub_to_agent_2e2f0ee2edb15dae, []int{3}
 }
 func (m *CreateSegmentDataDirRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CreateSegmentDataDirRequest.Unmarshal(m, b)
@@ -249,7 +249,7 @@ func (m *CreateSegmentDataDirReply) Reset()         { *m = CreateSegmentDataDirR
 func (m *CreateSegmentDataDirReply) String() string { return proto.CompactTextString(m) }
 func (*CreateSegmentDataDirReply) ProtoMessage()    {}
 func (*CreateSegmentDataDirReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_6a89de6921f85cc5, []int{4}
+	return fileDescriptor_hub_to_agent_2e2f0ee2edb15dae, []int{4}
 }
 func (m *CreateSegmentDataDirReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CreateSegmentDataDirReply.Unmarshal(m, b)
@@ -269,7 +269,7 @@ func (m *CreateSegmentDataDirReply) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_CreateSegmentDataDirReply proto.InternalMessageInfo
 
-type CopyMasterDirRequest struct {
+type CopyMasterRequest struct {
 	MasterDir            string   `protobuf:"bytes,1,opt,name=masterDir" json:"masterDir,omitempty"`
 	Datadirs             []string `protobuf:"bytes,2,rep,name=datadirs" json:"datadirs,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -277,73 +277,73 @@ type CopyMasterDirRequest struct {
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *CopyMasterDirRequest) Reset()         { *m = CopyMasterDirRequest{} }
-func (m *CopyMasterDirRequest) String() string { return proto.CompactTextString(m) }
-func (*CopyMasterDirRequest) ProtoMessage()    {}
-func (*CopyMasterDirRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_6a89de6921f85cc5, []int{5}
+func (m *CopyMasterRequest) Reset()         { *m = CopyMasterRequest{} }
+func (m *CopyMasterRequest) String() string { return proto.CompactTextString(m) }
+func (*CopyMasterRequest) ProtoMessage()    {}
+func (*CopyMasterRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_hub_to_agent_2e2f0ee2edb15dae, []int{5}
 }
-func (m *CopyMasterDirRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_CopyMasterDirRequest.Unmarshal(m, b)
+func (m *CopyMasterRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CopyMasterRequest.Unmarshal(m, b)
 }
-func (m *CopyMasterDirRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_CopyMasterDirRequest.Marshal(b, m, deterministic)
+func (m *CopyMasterRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CopyMasterRequest.Marshal(b, m, deterministic)
 }
-func (dst *CopyMasterDirRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CopyMasterDirRequest.Merge(dst, src)
+func (dst *CopyMasterRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CopyMasterRequest.Merge(dst, src)
 }
-func (m *CopyMasterDirRequest) XXX_Size() int {
-	return xxx_messageInfo_CopyMasterDirRequest.Size(m)
+func (m *CopyMasterRequest) XXX_Size() int {
+	return xxx_messageInfo_CopyMasterRequest.Size(m)
 }
-func (m *CopyMasterDirRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_CopyMasterDirRequest.DiscardUnknown(m)
+func (m *CopyMasterRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_CopyMasterRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_CopyMasterDirRequest proto.InternalMessageInfo
+var xxx_messageInfo_CopyMasterRequest proto.InternalMessageInfo
 
-func (m *CopyMasterDirRequest) GetMasterDir() string {
+func (m *CopyMasterRequest) GetMasterDir() string {
 	if m != nil {
 		return m.MasterDir
 	}
 	return ""
 }
 
-func (m *CopyMasterDirRequest) GetDatadirs() []string {
+func (m *CopyMasterRequest) GetDatadirs() []string {
 	if m != nil {
 		return m.Datadirs
 	}
 	return nil
 }
 
-type CopyMasterDirReply struct {
+type CopyMasterReply struct {
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *CopyMasterDirReply) Reset()         { *m = CopyMasterDirReply{} }
-func (m *CopyMasterDirReply) String() string { return proto.CompactTextString(m) }
-func (*CopyMasterDirReply) ProtoMessage()    {}
-func (*CopyMasterDirReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_6a89de6921f85cc5, []int{6}
+func (m *CopyMasterReply) Reset()         { *m = CopyMasterReply{} }
+func (m *CopyMasterReply) String() string { return proto.CompactTextString(m) }
+func (*CopyMasterReply) ProtoMessage()    {}
+func (*CopyMasterReply) Descriptor() ([]byte, []int) {
+	return fileDescriptor_hub_to_agent_2e2f0ee2edb15dae, []int{6}
 }
-func (m *CopyMasterDirReply) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_CopyMasterDirReply.Unmarshal(m, b)
+func (m *CopyMasterReply) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CopyMasterReply.Unmarshal(m, b)
 }
-func (m *CopyMasterDirReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_CopyMasterDirReply.Marshal(b, m, deterministic)
+func (m *CopyMasterReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CopyMasterReply.Marshal(b, m, deterministic)
 }
-func (dst *CopyMasterDirReply) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CopyMasterDirReply.Merge(dst, src)
+func (dst *CopyMasterReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CopyMasterReply.Merge(dst, src)
 }
-func (m *CopyMasterDirReply) XXX_Size() int {
-	return xxx_messageInfo_CopyMasterDirReply.Size(m)
+func (m *CopyMasterReply) XXX_Size() int {
+	return xxx_messageInfo_CopyMasterReply.Size(m)
 }
-func (m *CopyMasterDirReply) XXX_DiscardUnknown() {
-	xxx_messageInfo_CopyMasterDirReply.DiscardUnknown(m)
+func (m *CopyMasterReply) XXX_DiscardUnknown() {
+	xxx_messageInfo_CopyMasterReply.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_CopyMasterDirReply proto.InternalMessageInfo
+var xxx_messageInfo_CopyMasterReply proto.InternalMessageInfo
 
 type StopAgentRequest struct {
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -355,7 +355,7 @@ func (m *StopAgentRequest) Reset()         { *m = StopAgentRequest{} }
 func (m *StopAgentRequest) String() string { return proto.CompactTextString(m) }
 func (*StopAgentRequest) ProtoMessage()    {}
 func (*StopAgentRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_6a89de6921f85cc5, []int{7}
+	return fileDescriptor_hub_to_agent_2e2f0ee2edb15dae, []int{7}
 }
 func (m *StopAgentRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StopAgentRequest.Unmarshal(m, b)
@@ -385,7 +385,7 @@ func (m *StopAgentReply) Reset()         { *m = StopAgentReply{} }
 func (m *StopAgentReply) String() string { return proto.CompactTextString(m) }
 func (*StopAgentReply) ProtoMessage()    {}
 func (*StopAgentReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_6a89de6921f85cc5, []int{8}
+	return fileDescriptor_hub_to_agent_2e2f0ee2edb15dae, []int{8}
 }
 func (m *StopAgentReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StopAgentReply.Unmarshal(m, b)
@@ -417,7 +417,7 @@ func (m *CheckSegmentDiskSpaceRequest) Reset()         { *m = CheckSegmentDiskSp
 func (m *CheckSegmentDiskSpaceRequest) String() string { return proto.CompactTextString(m) }
 func (*CheckSegmentDiskSpaceRequest) ProtoMessage()    {}
 func (*CheckSegmentDiskSpaceRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_6a89de6921f85cc5, []int{9}
+	return fileDescriptor_hub_to_agent_2e2f0ee2edb15dae, []int{9}
 }
 func (m *CheckSegmentDiskSpaceRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CheckSegmentDiskSpaceRequest.Unmarshal(m, b)
@@ -457,8 +457,8 @@ func init() {
 	proto.RegisterType((*UpgradePrimariesReply)(nil), "idl.UpgradePrimariesReply")
 	proto.RegisterType((*CreateSegmentDataDirRequest)(nil), "idl.CreateSegmentDataDirRequest")
 	proto.RegisterType((*CreateSegmentDataDirReply)(nil), "idl.CreateSegmentDataDirReply")
-	proto.RegisterType((*CopyMasterDirRequest)(nil), "idl.CopyMasterDirRequest")
-	proto.RegisterType((*CopyMasterDirReply)(nil), "idl.CopyMasterDirReply")
+	proto.RegisterType((*CopyMasterRequest)(nil), "idl.CopyMasterRequest")
+	proto.RegisterType((*CopyMasterReply)(nil), "idl.CopyMasterReply")
 	proto.RegisterType((*StopAgentRequest)(nil), "idl.StopAgentRequest")
 	proto.RegisterType((*StopAgentReply)(nil), "idl.StopAgentReply")
 	proto.RegisterType((*CheckSegmentDiskSpaceRequest)(nil), "idl.CheckSegmentDiskSpaceRequest")
@@ -476,9 +476,9 @@ const _ = grpc.SupportPackageIsVersion4
 
 type AgentClient interface {
 	CheckDiskSpace(ctx context.Context, in *CheckSegmentDiskSpaceRequest, opts ...grpc.CallOption) (*CheckDiskSpaceReply, error)
-	AgentExecuteUpgradePrimariesSubStep(ctx context.Context, in *UpgradePrimariesRequest, opts ...grpc.CallOption) (*UpgradePrimariesReply, error)
+	UpgradePrimaries(ctx context.Context, in *UpgradePrimariesRequest, opts ...grpc.CallOption) (*UpgradePrimariesReply, error)
 	CreateSegmentDataDirectories(ctx context.Context, in *CreateSegmentDataDirRequest, opts ...grpc.CallOption) (*CreateSegmentDataDirReply, error)
-	CopyMasterDirectoryToSegmentDirectories(ctx context.Context, in *CopyMasterDirRequest, opts ...grpc.CallOption) (*CopyMasterDirReply, error)
+	CopyMaster(ctx context.Context, in *CopyMasterRequest, opts ...grpc.CallOption) (*CopyMasterReply, error)
 	StopAgent(ctx context.Context, in *StopAgentRequest, opts ...grpc.CallOption) (*StopAgentReply, error)
 }
 
@@ -499,9 +499,9 @@ func (c *agentClient) CheckDiskSpace(ctx context.Context, in *CheckSegmentDiskSp
 	return out, nil
 }
 
-func (c *agentClient) AgentExecuteUpgradePrimariesSubStep(ctx context.Context, in *UpgradePrimariesRequest, opts ...grpc.CallOption) (*UpgradePrimariesReply, error) {
+func (c *agentClient) UpgradePrimaries(ctx context.Context, in *UpgradePrimariesRequest, opts ...grpc.CallOption) (*UpgradePrimariesReply, error) {
 	out := new(UpgradePrimariesReply)
-	err := grpc.Invoke(ctx, "/idl.Agent/AgentExecuteUpgradePrimariesSubStep", in, out, c.cc, opts...)
+	err := grpc.Invoke(ctx, "/idl.Agent/UpgradePrimaries", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -517,9 +517,9 @@ func (c *agentClient) CreateSegmentDataDirectories(ctx context.Context, in *Crea
 	return out, nil
 }
 
-func (c *agentClient) CopyMasterDirectoryToSegmentDirectories(ctx context.Context, in *CopyMasterDirRequest, opts ...grpc.CallOption) (*CopyMasterDirReply, error) {
-	out := new(CopyMasterDirReply)
-	err := grpc.Invoke(ctx, "/idl.Agent/CopyMasterDirectoryToSegmentDirectories", in, out, c.cc, opts...)
+func (c *agentClient) CopyMaster(ctx context.Context, in *CopyMasterRequest, opts ...grpc.CallOption) (*CopyMasterReply, error) {
+	out := new(CopyMasterReply)
+	err := grpc.Invoke(ctx, "/idl.Agent/CopyMaster", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -539,9 +539,9 @@ func (c *agentClient) StopAgent(ctx context.Context, in *StopAgentRequest, opts 
 
 type AgentServer interface {
 	CheckDiskSpace(context.Context, *CheckSegmentDiskSpaceRequest) (*CheckDiskSpaceReply, error)
-	AgentExecuteUpgradePrimariesSubStep(context.Context, *UpgradePrimariesRequest) (*UpgradePrimariesReply, error)
+	UpgradePrimaries(context.Context, *UpgradePrimariesRequest) (*UpgradePrimariesReply, error)
 	CreateSegmentDataDirectories(context.Context, *CreateSegmentDataDirRequest) (*CreateSegmentDataDirReply, error)
-	CopyMasterDirectoryToSegmentDirectories(context.Context, *CopyMasterDirRequest) (*CopyMasterDirReply, error)
+	CopyMaster(context.Context, *CopyMasterRequest) (*CopyMasterReply, error)
 	StopAgent(context.Context, *StopAgentRequest) (*StopAgentReply, error)
 }
 
@@ -567,20 +567,20 @@ func _Agent_CheckDiskSpace_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Agent_AgentExecuteUpgradePrimariesSubStep_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Agent_UpgradePrimaries_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpgradePrimariesRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AgentServer).AgentExecuteUpgradePrimariesSubStep(ctx, in)
+		return srv.(AgentServer).UpgradePrimaries(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/idl.Agent/AgentExecuteUpgradePrimariesSubStep",
+		FullMethod: "/idl.Agent/UpgradePrimaries",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AgentServer).AgentExecuteUpgradePrimariesSubStep(ctx, req.(*UpgradePrimariesRequest))
+		return srv.(AgentServer).UpgradePrimaries(ctx, req.(*UpgradePrimariesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -603,20 +603,20 @@ func _Agent_CreateSegmentDataDirectories_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Agent_CopyMasterDirectoryToSegmentDirectories_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CopyMasterDirRequest)
+func _Agent_CopyMaster_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CopyMasterRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AgentServer).CopyMasterDirectoryToSegmentDirectories(ctx, in)
+		return srv.(AgentServer).CopyMaster(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/idl.Agent/CopyMasterDirectoryToSegmentDirectories",
+		FullMethod: "/idl.Agent/CopyMaster",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AgentServer).CopyMasterDirectoryToSegmentDirectories(ctx, req.(*CopyMasterDirRequest))
+		return srv.(AgentServer).CopyMaster(ctx, req.(*CopyMasterRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -648,16 +648,16 @@ var _Agent_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Agent_CheckDiskSpace_Handler,
 		},
 		{
-			MethodName: "AgentExecuteUpgradePrimariesSubStep",
-			Handler:    _Agent_AgentExecuteUpgradePrimariesSubStep_Handler,
+			MethodName: "UpgradePrimaries",
+			Handler:    _Agent_UpgradePrimaries_Handler,
 		},
 		{
 			MethodName: "CreateSegmentDataDirectories",
 			Handler:    _Agent_CreateSegmentDataDirectories_Handler,
 		},
 		{
-			MethodName: "CopyMasterDirectoryToSegmentDirectories",
-			Handler:    _Agent_CopyMasterDirectoryToSegmentDirectories_Handler,
+			MethodName: "CopyMaster",
+			Handler:    _Agent_CopyMaster_Handler,
 		},
 		{
 			MethodName: "StopAgent",
@@ -668,42 +668,40 @@ var _Agent_serviceDesc = grpc.ServiceDesc{
 	Metadata: "hub_to_agent.proto",
 }
 
-func init() { proto.RegisterFile("hub_to_agent.proto", fileDescriptor_hub_to_agent_6a89de6921f85cc5) }
+func init() { proto.RegisterFile("hub_to_agent.proto", fileDescriptor_hub_to_agent_2e2f0ee2edb15dae) }
 
-var fileDescriptor_hub_to_agent_6a89de6921f85cc5 = []byte{
-	// 531 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x54, 0xcd, 0x72, 0xda, 0x3c,
-	0x14, 0xfd, 0xcc, 0x4f, 0x12, 0x2e, 0xdf, 0x64, 0x18, 0x35, 0x19, 0x1c, 0x87, 0xc9, 0x50, 0x77,
-	0x51, 0x56, 0x2c, 0x68, 0x36, 0x59, 0x36, 0xd0, 0x45, 0x17, 0x05, 0xc6, 0xb4, 0xdd, 0x32, 0x02,
-	0xdf, 0x01, 0x4d, 0x8c, 0xe5, 0xca, 0xf2, 0x50, 0x9e, 0xaa, 0x0f, 0xd0, 0x27, 0xe8, 0x5b, 0x75,
-	0x24, 0x5b, 0xc6, 0xb8, 0x26, 0x3b, 0xdf, 0x73, 0xae, 0xce, 0x39, 0xd2, 0xbd, 0x00, 0x64, 0x9b,
-	0xac, 0x96, 0x92, 0x2f, 0xe9, 0x06, 0x43, 0x39, 0x8c, 0x04, 0x97, 0x9c, 0xd4, 0x99, 0x1f, 0x38,
-	0x9d, 0x75, 0xc0, 0x14, 0xb1, 0x4d, 0x56, 0x29, 0xec, 0xfe, 0xb1, 0xa0, 0xfb, 0x2d, 0xda, 0x08,
-	0xea, 0xe3, 0x5c, 0xb0, 0x1d, 0x15, 0x0c, 0x63, 0x0f, 0x7f, 0x24, 0x18, 0x4b, 0xd2, 0x83, 0xd6,
-	0x2c, 0xf0, 0x9f, 0x59, 0x38, 0x61, 0xc2, 0xb6, 0xfa, 0xd6, 0xa0, 0xe5, 0x1d, 0x01, 0xc5, 0x4e,
-	0x71, 0x9f, 0xb1, 0xb5, 0x94, 0xcd, 0x01, 0xf2, 0x00, 0x30, 0xc5, 0xfd, 0x77, 0x14, 0x31, 0xe3,
-	0xa1, 0x5d, 0xd7, 0x74, 0x01, 0x21, 0x8f, 0xf0, 0xff, 0x84, 0x4a, 0x3a, 0x61, 0x62, 0x4e, 0x99,
-	0x88, 0xed, 0x46, 0xbf, 0x3e, 0x68, 0x8f, 0x3a, 0x43, 0xe6, 0x07, 0xc3, 0x02, 0xe1, 0x9d, 0x74,
-	0x29, 0xcf, 0xf1, 0x16, 0xd7, 0x2f, 0xb3, 0x30, 0x38, 0xd8, 0xcd, 0xbe, 0x35, 0xb8, 0xf2, 0x8e,
-	0x80, 0xfb, 0xcb, 0x82, 0x76, 0xa1, 0x5d, 0x65, 0x98, 0x05, 0x7e, 0x86, 0x64, 0x17, 0x28, 0x20,
-	0x59, 0x46, 0xc3, 0xd7, 0xf2, 0x8c, 0x86, 0xb7, 0xe1, 0x72, 0x16, 0xf8, 0x73, 0x2e, 0xa4, 0xbe,
-	0x40, 0xd3, 0x33, 0xa5, 0x62, 0xa6, 0xb8, 0xd7, 0x4c, 0x23, 0x65, 0xb2, 0x52, 0x31, 0x63, 0x1e,
-	0x4a, 0x0c, 0xa5, 0xce, 0xd7, 0xf4, 0x4c, 0x49, 0x08, 0x34, 0x26, 0xcf, 0x9f, 0x27, 0xf6, 0x85,
-	0x86, 0xf5, 0xb7, 0xdb, 0x85, 0xdb, 0x7f, 0x1f, 0x3f, 0x0a, 0x0e, 0xee, 0x13, 0xdc, 0x8f, 0x05,
-	0x52, 0x89, 0x0b, 0xdc, 0xec, 0x30, 0x94, 0x59, 0x24, 0x33, 0x19, 0x07, 0xae, 0x7c, 0x2a, 0xa9,
-	0xaf, 0x5e, 0xce, 0xea, 0xd7, 0x07, 0x2d, 0x2f, 0xaf, 0xdd, 0x7b, 0xb8, 0xab, 0x3e, 0xaa, 0x74,
-	0xe7, 0x70, 0x33, 0xe6, 0xd1, 0xe1, 0x0b, 0x8d, 0x25, 0x8a, 0x82, 0x60, 0x0f, 0x5a, 0x3b, 0x83,
-	0x99, 0x51, 0xe7, 0xc0, 0x89, 0x5d, 0xad, 0x64, 0x77, 0x03, 0xa4, 0xa4, 0xa8, 0x7c, 0x08, 0x74,
-	0x16, 0x92, 0x47, 0x1f, 0xd5, 0x02, 0x66, 0x1e, 0x6e, 0x07, 0xae, 0x0b, 0x98, 0xea, 0x8a, 0xa0,
-	0xa7, 0xa7, 0x67, 0x92, 0xb2, 0xf8, 0x65, 0x11, 0xd1, 0x35, 0x9a, 0x54, 0x8f, 0x70, 0x29, 0xd2,
-	0x4f, 0x9d, 0xa9, 0x3d, 0x72, 0xf4, 0x7e, 0xe8, 0x33, 0xe5, 0x66, 0xcf, 0xb4, 0xbe, 0x96, 0x76,
-	0xf4, 0xbb, 0x0e, 0x4d, 0x1d, 0x80, 0xcc, 0xe0, 0xfa, 0x54, 0x87, 0xbc, 0x3d, 0x8a, 0x9f, 0x09,
-	0xe4, 0xd8, 0x95, 0xfe, 0xea, 0x2a, 0xff, 0x11, 0x0a, 0xef, 0xb4, 0xf2, 0xa7, 0x9f, 0xb8, 0x4e,
-	0x24, 0x96, 0xe7, 0xba, 0x48, 0x56, 0x0b, 0x89, 0x11, 0xe9, 0x69, 0x89, 0x33, 0x3f, 0x39, 0xc7,
-	0x39, 0xc3, 0xa6, 0x16, 0x2b, 0xe8, 0x55, 0x8d, 0x16, 0xd7, 0x92, 0xab, 0x36, 0xd2, 0x4f, 0xe3,
-	0x9d, 0x5f, 0x1c, 0xe7, 0xe1, 0x95, 0x8e, 0xd4, 0x63, 0x09, 0xef, 0x4f, 0xe6, 0xa9, 0xc5, 0x0f,
-	0x5f, 0x79, 0xfe, 0x24, 0x47, 0xbb, 0xbb, 0x54, 0xac, 0x62, 0x9f, 0x9c, 0x6e, 0x15, 0x95, 0x1a,
-	0x3c, 0x41, 0x2b, 0x5f, 0x03, 0x72, 0xab, 0xfb, 0xca, 0xab, 0xe2, 0xbc, 0x29, 0xc3, 0xfa, 0xe8,
-	0xea, 0x42, 0xff, 0x67, 0x7d, 0xf8, 0x1b, 0x00, 0x00, 0xff, 0xff, 0x79, 0x22, 0x95, 0x30, 0xe0,
-	0x04, 0x00, 0x00,
+var fileDescriptor_hub_to_agent_2e2f0ee2edb15dae = []byte{
+	// 508 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x54, 0x41, 0x6f, 0xda, 0x4c,
+	0x10, 0xfd, 0x8c, 0x21, 0x09, 0xc3, 0xa7, 0xd4, 0xd9, 0x36, 0x8d, 0xeb, 0xa0, 0xc8, 0xf5, 0x89,
+	0x13, 0x07, 0x9a, 0x4b, 0xa4, 0x5e, 0x1a, 0x7c, 0xe9, 0x21, 0x18, 0x19, 0xb5, 0xd7, 0x68, 0xc1,
+	0x23, 0x58, 0xc5, 0xd8, 0xee, 0x7a, 0x11, 0xe2, 0x07, 0xf4, 0xf7, 0xf4, 0x77, 0xf4, 0x5f, 0x55,
+	0xbb, 0x6b, 0x1b, 0xe3, 0x40, 0x6e, 0xde, 0xf7, 0xde, 0xcc, 0xbc, 0xdd, 0x37, 0x00, 0x64, 0xb5,
+	0x99, 0x3f, 0x8b, 0xf4, 0x99, 0x2e, 0x31, 0x11, 0xc3, 0x8c, 0xa7, 0x22, 0x25, 0x26, 0x8b, 0x62,
+	0xc7, 0x5a, 0xc4, 0x4c, 0x12, 0xab, 0xcd, 0x5c, 0xc3, 0xde, 0x5f, 0x03, 0x6e, 0x7e, 0x64, 0x4b,
+	0x4e, 0x23, 0x9c, 0x72, 0xb6, 0xa6, 0x9c, 0x61, 0x1e, 0xe2, 0xaf, 0x0d, 0xe6, 0x82, 0xf4, 0xa1,
+	0x1b, 0xc4, 0xd1, 0x23, 0x4b, 0x7c, 0xc6, 0x6d, 0xc3, 0x35, 0x06, 0xdd, 0x70, 0x0f, 0x48, 0x76,
+	0x82, 0xdb, 0x82, 0x6d, 0x69, 0xb6, 0x02, 0xc8, 0x1d, 0xc0, 0x04, 0xb7, 0x3f, 0x91, 0xe7, 0x2c,
+	0x4d, 0x6c, 0x53, 0xd1, 0x35, 0x84, 0xdc, 0xc3, 0xff, 0x3e, 0x15, 0xd4, 0x67, 0x7c, 0x4a, 0x19,
+	0xcf, 0xed, 0xb6, 0x6b, 0x0e, 0x7a, 0x23, 0x6b, 0xc8, 0xa2, 0x78, 0x58, 0x23, 0xc2, 0x03, 0x95,
+	0x9c, 0x39, 0x5e, 0xe1, 0xe2, 0x25, 0x48, 0xe2, 0x9d, 0xdd, 0x71, 0x8d, 0xc1, 0x45, 0xb8, 0x07,
+	0xbc, 0x3f, 0x06, 0xf4, 0x6a, 0x72, 0xe9, 0x21, 0x88, 0xa3, 0x02, 0x29, 0x2e, 0x50, 0x43, 0x0a,
+	0x8f, 0x25, 0xdf, 0xaa, 0x3c, 0x96, 0xbc, 0x0d, 0xe7, 0x41, 0x1c, 0x4d, 0x53, 0x2e, 0xd4, 0x05,
+	0x3a, 0x61, 0x79, 0x94, 0xcc, 0x04, 0xb7, 0x8a, 0x69, 0x6b, 0xa6, 0x38, 0x4a, 0x66, 0x9c, 0x26,
+	0x02, 0x13, 0xa1, 0xfc, 0x75, 0xc2, 0xf2, 0x48, 0x08, 0xb4, 0xfd, 0xc7, 0xef, 0xbe, 0x7d, 0xa6,
+	0x60, 0xf5, 0xed, 0xdd, 0xc0, 0xf5, 0xeb, 0xc7, 0xcf, 0xe2, 0x9d, 0xf7, 0x00, 0xb7, 0x63, 0x8e,
+	0x54, 0xe0, 0x0c, 0x97, 0x6b, 0x4c, 0x44, 0x61, 0xa9, 0x4c, 0xc6, 0x81, 0x8b, 0x88, 0x0a, 0x1a,
+	0xc9, 0x97, 0x33, 0x5c, 0x73, 0xd0, 0x0d, 0xab, 0xb3, 0x77, 0x0b, 0x9f, 0x8e, 0x97, 0xca, 0xbe,
+	0x4f, 0x70, 0x35, 0x4e, 0xb3, 0xdd, 0x13, 0xcd, 0x05, 0xf2, 0x5a, 0xce, 0x6b, 0x05, 0xd4, 0x72,
+	0xae, 0x80, 0x83, 0x59, 0xad, 0xc6, 0xac, 0x2b, 0x78, 0x57, 0x6f, 0x27, 0x27, 0x10, 0xb0, 0x66,
+	0x22, 0xcd, 0xbe, 0xc9, 0xd5, 0x2b, 0x06, 0x78, 0x16, 0x5c, 0xd6, 0x30, 0xa9, 0xca, 0xa0, 0xaf,
+	0x72, 0x2b, 0x3d, 0xb2, 0xfc, 0x65, 0x96, 0xd1, 0x05, 0x96, 0x96, 0xee, 0xe1, 0x9c, 0xeb, 0x4f,
+	0x65, 0xa8, 0x37, 0x72, 0xd4, 0x66, 0xa8, 0x9a, 0xa6, 0x38, 0x2c, 0xa5, 0x6f, 0x59, 0x1d, 0xfd,
+	0x36, 0xa1, 0xa3, 0x0c, 0x90, 0x00, 0x2e, 0x0f, 0xfb, 0x90, 0xcf, 0xfb, 0xe6, 0x27, 0x0c, 0x39,
+	0xf6, 0xd1, 0xf9, 0xf2, 0x2a, 0xff, 0x91, 0x09, 0x58, 0xcd, 0x14, 0x49, 0x5f, 0xe9, 0x4f, 0xfc,
+	0xb2, 0x1c, 0xe7, 0x04, 0xab, 0xfb, 0xcd, 0xa1, 0x7f, 0x2c, 0x41, 0x5c, 0x88, 0x54, 0xf5, 0x76,
+	0xb5, 0x97, 0xd3, 0xfb, 0xe1, 0xdc, 0xbd, 0xa1, 0xd0, 0x33, 0xbe, 0x02, 0xec, 0x93, 0x23, 0x1f,
+	0xb5, 0xbe, 0xb9, 0x19, 0xce, 0x87, 0x57, 0xb8, 0xae, 0x7e, 0x80, 0x6e, 0x15, 0x28, 0xb9, 0x56,
+	0xa2, 0x66, 0xe8, 0xce, 0xfb, 0x26, 0xac, 0x4a, 0xe7, 0x67, 0xea, 0x7f, 0xe7, 0xcb, 0xbf, 0x00,
+	0x00, 0x00, 0xff, 0xff, 0xbd, 0x5c, 0x84, 0x29, 0xa4, 0x04, 0x00, 0x00,
 }

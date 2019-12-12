@@ -46,7 +46,7 @@ func (h *Hub) CopyMasterDataDir(_ OutStreams) error {
 		}
 	}
 
-	copyErr := CopyMasterDirectoryToSegmentDirectories(h.agentConns, h.target, destinationDirName)
+	copyErr := CopyMaster(h.agentConns, h.target, destinationDirName)
 	if copyErr != nil {
 		return multierror.Append(err, copyErr)
 	}
@@ -54,7 +54,7 @@ func (h *Hub) CopyMasterDataDir(_ OutStreams) error {
 	return err
 }
 
-func CopyMasterDirectoryToSegmentDirectories(agentConns []*Connection, target *utils.Cluster, destinationDirName string) error {
+func CopyMaster(agentConns []*Connection, target *utils.Cluster, destinationDirName string) error {
 	segmentDataDirMap := map[string][]string{}
 	for _, content := range target.ContentIDs {
 		if content != -1 {
@@ -73,8 +73,8 @@ func CopyMasterDirectoryToSegmentDirectories(agentConns []*Connection, target *u
 		go func(conn *Connection) {
 			defer wg.Done()
 
-			_, err := conn.AgentClient.CopyMasterDirectoryToSegmentDirectories(context.Background(),
-				&idl.CopyMasterDirRequest{
+			_, err := conn.AgentClient.CopyMaster(context.Background(),
+				&idl.CopyMasterRequest{
 					MasterDir: destinationDirName,
 					Datadirs:  segmentDataDirMap[conn.Hostname],
 				})

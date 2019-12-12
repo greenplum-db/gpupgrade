@@ -55,24 +55,24 @@ func (mr *MockAgentClientMockRecorder) CheckDiskSpace(ctx, in interface{}, opts 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckDiskSpace", reflect.TypeOf((*MockAgentClient)(nil).CheckDiskSpace), varargs...)
 }
 
-// AgentExecuteUpgradePrimariesSubStep mocks base method
-func (m *MockAgentClient) AgentExecuteUpgradePrimariesSubStep(ctx context.Context, in *idl.UpgradePrimariesRequest, opts ...grpc.CallOption) (*idl.UpgradePrimariesReply, error) {
+// UpgradePrimaries mocks base method
+func (m *MockAgentClient) UpgradePrimaries(ctx context.Context, in *idl.UpgradePrimariesRequest, opts ...grpc.CallOption) (*idl.UpgradePrimariesReply, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "AgentExecuteUpgradePrimariesSubStep", varargs...)
+	ret := m.ctrl.Call(m, "UpgradePrimaries", varargs...)
 	ret0, _ := ret[0].(*idl.UpgradePrimariesReply)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// AgentExecuteUpgradePrimariesSubStep indicates an expected call of AgentExecuteUpgradePrimariesSubStep
-func (mr *MockAgentClientMockRecorder) AgentExecuteUpgradePrimariesSubStep(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+// UpgradePrimaries indicates an expected call of UpgradePrimaries
+func (mr *MockAgentClientMockRecorder) UpgradePrimaries(ctx, in interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AgentExecuteUpgradePrimariesSubStep", reflect.TypeOf((*MockAgentClient)(nil).AgentExecuteUpgradePrimariesSubStep), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpgradePrimaries", reflect.TypeOf((*MockAgentClient)(nil).UpgradePrimaries), varargs...)
 }
 
 // CreateSegmentDataDirectories mocks base method
@@ -95,24 +95,24 @@ func (mr *MockAgentClientMockRecorder) CreateSegmentDataDirectories(ctx, in inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSegmentDataDirectories", reflect.TypeOf((*MockAgentClient)(nil).CreateSegmentDataDirectories), varargs...)
 }
 
-// CopyMasterDirectoryToSegmentDirectories mocks base method
-func (m *MockAgentClient) CopyMasterDirectoryToSegmentDirectories(ctx context.Context, in *idl.CopyMasterDirRequest, opts ...grpc.CallOption) (*idl.CopyMasterDirReply, error) {
+// CopyMaster mocks base method
+func (m *MockAgentClient) CopyMaster(ctx context.Context, in *idl.CopyMasterRequest, opts ...grpc.CallOption) (*idl.CopyMasterReply, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "CopyMasterDirectoryToSegmentDirectories", varargs...)
-	ret0, _ := ret[0].(*idl.CopyMasterDirReply)
+	ret := m.ctrl.Call(m, "CopyMaster", varargs...)
+	ret0, _ := ret[0].(*idl.CopyMasterReply)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// CopyMasterDirectoryToSegmentDirectories indicates an expected call of CopyMasterDirectoryToSegmentDirectories
-func (mr *MockAgentClientMockRecorder) CopyMasterDirectoryToSegmentDirectories(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+// CopyMaster indicates an expected call of CopyMaster
+func (mr *MockAgentClientMockRecorder) CopyMaster(ctx, in interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CopyMasterDirectoryToSegmentDirectories", reflect.TypeOf((*MockAgentClient)(nil).CopyMasterDirectoryToSegmentDirectories), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CopyMaster", reflect.TypeOf((*MockAgentClient)(nil).CopyMaster), varargs...)
 }
 
 // StopAgent mocks base method
@@ -173,19 +173,19 @@ func (mr *MockAgentServerMockRecorder) CheckDiskSpace(arg0, arg1 interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckDiskSpace", reflect.TypeOf((*MockAgentServer)(nil).CheckDiskSpace), arg0, arg1)
 }
 
-// AgentExecuteUpgradePrimariesSubStep mocks base method
-func (m *MockAgentServer) AgentExecuteUpgradePrimariesSubStep(arg0 context.Context, arg1 *idl.UpgradePrimariesRequest) (*idl.UpgradePrimariesReply, error) {
+// UpgradePrimaries mocks base method
+func (m *MockAgentServer) UpgradePrimaries(arg0 context.Context, arg1 *idl.UpgradePrimariesRequest) (*idl.UpgradePrimariesReply, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AgentExecuteUpgradePrimariesSubStep", arg0, arg1)
+	ret := m.ctrl.Call(m, "UpgradePrimaries", arg0, arg1)
 	ret0, _ := ret[0].(*idl.UpgradePrimariesReply)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// AgentExecuteUpgradePrimariesSubStep indicates an expected call of AgentExecuteUpgradePrimariesSubStep
-func (mr *MockAgentServerMockRecorder) AgentExecuteUpgradePrimariesSubStep(arg0, arg1 interface{}) *gomock.Call {
+// UpgradePrimaries indicates an expected call of UpgradePrimaries
+func (mr *MockAgentServerMockRecorder) UpgradePrimaries(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AgentExecuteUpgradePrimariesSubStep", reflect.TypeOf((*MockAgentServer)(nil).AgentExecuteUpgradePrimariesSubStep), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpgradePrimaries", reflect.TypeOf((*MockAgentServer)(nil).UpgradePrimaries), arg0, arg1)
 }
 
 // CreateSegmentDataDirectories mocks base method
@@ -203,19 +203,19 @@ func (mr *MockAgentServerMockRecorder) CreateSegmentDataDirectories(arg0, arg1 i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSegmentDataDirectories", reflect.TypeOf((*MockAgentServer)(nil).CreateSegmentDataDirectories), arg0, arg1)
 }
 
-// CopyMasterDirectoryToSegmentDirectories mocks base method
-func (m *MockAgentServer) CopyMasterDirectoryToSegmentDirectories(arg0 context.Context, arg1 *idl.CopyMasterDirRequest) (*idl.CopyMasterDirReply, error) {
+// CopyMaster mocks base method
+func (m *MockAgentServer) CopyMaster(arg0 context.Context, arg1 *idl.CopyMasterRequest) (*idl.CopyMasterReply, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CopyMasterDirectoryToSegmentDirectories", arg0, arg1)
-	ret0, _ := ret[0].(*idl.CopyMasterDirReply)
+	ret := m.ctrl.Call(m, "CopyMaster", arg0, arg1)
+	ret0, _ := ret[0].(*idl.CopyMasterReply)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// CopyMasterDirectoryToSegmentDirectories indicates an expected call of CopyMasterDirectoryToSegmentDirectories
-func (mr *MockAgentServerMockRecorder) CopyMasterDirectoryToSegmentDirectories(arg0, arg1 interface{}) *gomock.Call {
+// CopyMaster indicates an expected call of CopyMaster
+func (mr *MockAgentServerMockRecorder) CopyMaster(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CopyMasterDirectoryToSegmentDirectories", reflect.TypeOf((*MockAgentServer)(nil).CopyMasterDirectoryToSegmentDirectories), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CopyMaster", reflect.TypeOf((*MockAgentServer)(nil).CopyMaster), arg0, arg1)
 }
 
 // StopAgent mocks base method

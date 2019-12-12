@@ -20,7 +20,7 @@ type MockAgentServer struct {
 
 	UpgradeConvertPrimarySegmentsRequest *idl.UpgradePrimariesRequest
 	CreateSegmentDataDirRequest          *idl.CreateSegmentDataDirRequest
-	CopyMasterDirRequest                 *idl.CopyMasterDirRequest
+	CopyMasterRequest                    *idl.CopyMasterRequest
 
 	Err chan error
 }
@@ -63,7 +63,7 @@ func (m *MockAgentServer) CheckDiskSpace(context.Context, *idl.CheckSegmentDiskS
 	return &idl.CheckDiskSpaceReply{}, nil
 }
 
-func (m *MockAgentServer) AgentExecuteUpgradePrimariesSubStep(ctx context.Context, in *idl.UpgradePrimariesRequest) (*idl.UpgradePrimariesReply, error) {
+func (m *MockAgentServer) UpgradePrimaries(ctx context.Context, in *idl.UpgradePrimariesRequest) (*idl.UpgradePrimariesReply, error) {
 	m.increaseCalls()
 
 	m.mu.Lock()
@@ -93,19 +93,19 @@ func (m *MockAgentServer) CreateSegmentDataDirectories(ctx context.Context, in *
 	return &idl.CreateSegmentDataDirReply{}, err
 }
 
-func (m *MockAgentServer) CopyMasterDirectoryToSegmentDirectories(ctx context.Context, in *idl.CopyMasterDirRequest) (*idl.CopyMasterDirReply, error) {
+func (m *MockAgentServer) CopyMaster(ctx context.Context, in *idl.CopyMasterRequest) (*idl.CopyMasterReply, error) {
 	m.increaseCalls()
 
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.CopyMasterDirRequest = in
+	m.CopyMasterRequest = in
 
 	var err error
 	if len(m.Err) != 0 {
 		err = <-m.Err
 	}
 
-	return &idl.CopyMasterDirReply{}, err
+	return &idl.CopyMasterReply{}, err
 }
 
 func (m *MockAgentServer) StopAgent(ctx context.Context, in *idl.StopAgentRequest) (*idl.StopAgentReply, error) {

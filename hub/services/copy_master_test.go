@@ -59,10 +59,10 @@ func TestCopyMaster(t *testing.T) {
 		sourceNodes.Executor = testExecutor
 
 		client := mock_idl.NewMockAgentClient(ctrl)
-		client.EXPECT().CopyMasterDirectoryToSegmentDirectories(
+		client.EXPECT().CopyMaster(
 			gomock.Any(),
 			gomock.Any(),
-		).Return(&idl.CopyMasterDirReply{}, nil)
+		).Return(&idl.CopyMasterReply{}, nil)
 
 		agentConns := []*Connection{
 			{nil, client, "host1", nil},
@@ -92,10 +92,10 @@ func TestCopyMaster(t *testing.T) {
 		sourceNodes.Executor = testExecutor
 
 		client := mock_idl.NewMockAgentClient(ctrl)
-		client.EXPECT().CopyMasterDirectoryToSegmentDirectories(
+		client.EXPECT().CopyMaster(
 			gomock.Any(),
 			gomock.Any(),
-		).Return(&idl.CopyMasterDirReply{}, nil)
+		).Return(&idl.CopyMasterReply{}, nil)
 
 		agentConns := []*Connection{
 			{nil, client, "localhost", nil},

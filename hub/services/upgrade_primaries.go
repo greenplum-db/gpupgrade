@@ -31,7 +31,7 @@ func (h *Hub) ConvertPrimaries(checkOnly bool) error {
 		go func(conn *Connection) {
 			defer wg.Done()
 
-			_, err := idl.NewAgentClient(conn.Conn).AgentExecuteUpgradePrimariesSubStep(context.Background(), &idl.UpgradePrimariesRequest{
+			_, err := idl.NewAgentClient(conn.Conn).UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{
 				OldBinDir:    h.source.BinDir,
 				NewBinDir:    h.target.BinDir,
 				NewVersion:   h.target.Version.SemVer.String(),
