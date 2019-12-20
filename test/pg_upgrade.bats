@@ -99,10 +99,12 @@ setup_newmasterdir() {
 
     grep "Clusters are compatible" "$GPUPGRADE_HOME"/initialize.log
 
+    [ -e "$GPUPGRADE_HOME"/pg_upgrade/seg-1/pg_upgrade_internal.log ]
     [ -e "$GPUPGRADE_HOME"/pg_upgrade/seg0/pg_upgrade_internal.log ]
     [ -e "$GPUPGRADE_HOME"/pg_upgrade/seg1/pg_upgrade_internal.log ]
     [ -e "$GPUPGRADE_HOME"/pg_upgrade/seg2/pg_upgrade_internal.log ]
 
+    grep -c "Clusters are compatible" "$GPUPGRADE_HOME"/pg_upgrade/seg-1/pg_upgrade_internal.log
     grep -c "Clusters are compatible" "$GPUPGRADE_HOME"/pg_upgrade/seg0/pg_upgrade_internal.log
     grep -c "Clusters are compatible" "$GPUPGRADE_HOME"/pg_upgrade/seg1/pg_upgrade_internal.log
     grep -c "Clusters are compatible" "$GPUPGRADE_HOME"/pg_upgrade/seg2/pg_upgrade_internal.log

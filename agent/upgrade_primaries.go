@@ -2,11 +2,8 @@ package agent
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
-	"strconv"
 	"sync"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -16,6 +13,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
@@ -39,14 +37,8 @@ func UpgradePrimary(sourceBinDir string, targetBinDir string, dataDirPairs []*id
 	segments := make([]Segment, 0, len(dataDirPairs))
 
 	for _, dataPair := range dataDirPairs {
-		err := utils.System.MkdirAll(dataPair.NewDataDir, 0700)
-		if err != nil {
-			gplog.Error("failed to create segment data directory due to: %v", err)
-			return err
-		}
-
 		workdir := utils.SegmentPGUpgradeDirectory(stateDir, int(dataPair.Content))
-		err = utils.System.MkdirAll(workdir, 0700)
+		err := utils.System.MkdirAll(workdir, 0700)
 		if err != nil {
 			return xerrors.Errorf("upgrading primaries: %w", err)
 		}
@@ -66,8 +58,6 @@ func UpgradePrimary(sourceBinDir string, targetBinDir string, dataDirPairs []*id
 }
 
 func UpgradeSegments(sourceBinDir string, targetBinDir string, segments []Segment, checkOnly bool) (err error) {
-	// TODO: consolidate this logic with Hub.ConvertMaster().
-
 	host, err := os.Hostname()
 	if err != nil {
 		return err
@@ -75,38 +65,21 @@ func UpgradeSegments(sourceBinDir string, targetBinDir string, segments []Segmen
 
 	wg := sync.WaitGroup{}
 	agentErrs := make(chan error, len(segments))
-	path := filepath.Join(targetBinDir, "pg_upgrade")
 
 	for _, segment := range segments {
-		dbid := strconv.Itoa(int(segment.DBID))
-		args := []string{
-			"--old-bindir", sourceBinDir,
-			"--old-datadir", segment.OldDataDir,
-			"--old-port", strconv.Itoa(int(segment.OldPort)),
-			"--old-gp-dbid", dbid,
-			"--new-bindir", targetBinDir,
-			"--new-datadir", segment.NewDataDir,
-			"--new-port", strconv.Itoa(int(segment.NewPort)),
-			"--new-gp-dbid", dbid,
-			"--mode=segment",
-			"--retain",
+		dbid := int(segment.DBID)
+		segmentPair := upgrade.SegmentPair{
+			Source: &upgrade.Segment{sourceBinDir, segment.OldDataDir, dbid, int(segment.OldPort)},
+			Target: &upgrade.Segment{targetBinDir, segment.NewDataDir, dbid, int(segment.NewPort)},
+		}
+
+		options := []upgrade.Option{
+			upgrade.WithExecCommand(execCommand),
+			upgrade.WithWorkDir(segment.WorkDir),
+			upgrade.WithSegmentMode(),
 		}
 		if checkOnly {
-			args = append(args, "--check")
-		}
-		cmd := execCommand(path, args...)
-
-		cmd.Dir = segment.WorkDir
-
-		// Explicitly clear the child environment. pg_upgrade shouldn't need things
-		// like PATH, and PGPORT et al are explicitly forbidden to be set.
-		cmd.Env = []string{}
-
-		// XXX ...but we make a single exception for now, for LD_LIBRARY_PATH, to
-		// work around pervasive problems with RPATH settings in our Postgres
-		// extension modules.
-		if path, ok := os.LookupEnv("LD_LIBRARY_PATH"); ok {
-			cmd.Env = append(cmd.Env, fmt.Sprintf("LD_LIBRARY_PATH=%s", path))
+			options = append(options, upgrade.WithCheckOnly())
 		}
 
 		content := segment.Content
@@ -114,7 +87,7 @@ func UpgradeSegments(sourceBinDir string, targetBinDir string, segments []Segmen
 		go func() {
 			defer wg.Done()
 
-			_, err := cmd.Output()
+			err := upgrade.Run(segmentPair, options...)
 			if err != nil {
 				failedAction := "upgrade"
 				if checkOnly {

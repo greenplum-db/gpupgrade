@@ -1,25 +1,58 @@
 package hub
 
 import (
-	"bufio"
-	"flag"
+	"bytes"
+	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"os"
-	"path/filepath"
+	"os/signal"
+	"strings"
+	"syscall"
 	"testing"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
+	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/utils"
-
-	. "github.com/onsi/gomega"
 )
 
-func EmptyMain() {}
+func Success() {}
+
+const StreamingMainStdout = "expected\nstdout\n"
+const StreamingMainStderr = "process\nstderr\n"
+
+// Streams the above stdout/err constants to the corresponding standard file
+// descriptors, alternately interleaving five-byte chunks.
+func StreamingMain() {
+	stdout := bytes.NewBufferString(StreamingMainStdout)
+	stderr := bytes.NewBufferString(StreamingMainStderr)
+
+	for stdout.Len() > 0 || stderr.Len() > 0 {
+		os.Stdout.Write(stdout.Next(5))
+		os.Stderr.Write(stderr.Next(5))
+	}
+}
+
+// Writes to stdout and ignores any failure to do so.
+func BlindlyWritingMain() {
+	// Ignore SIGPIPE. Note that the obvious signal.Ignore(syscall.SIGPIPE)
+	// doesn't work as expected; see https://github.com/golang/go/issues/32386.
+	signal.Notify(make(chan os.Signal), syscall.SIGPIPE)
+
+	fmt.Println("blah blah blah blah")
+	fmt.Println("blah blah blah blah")
+	fmt.Println("blah blah blah blah")
+}
 
 func init() {
-	exectest.RegisterMains(EmptyMain)
+	exectest.RegisterMains(
+		Success,
+		StreamingMain,
+		BlindlyWritingMain,
+	)
 }
 
 // Writes the current working directory to stdout.
@@ -48,174 +81,155 @@ func init() {
 }
 
 func TestUpgradeMaster(t *testing.T) {
-	// Disable exec.Command. This way, if a test forgets to mock it out, we
-	// crash the test instead of executing code on a dev system.
-	execCommand = nil
-
-	// Initialize the sample cluster pair.
-	pair := clusterPair{
-		Source: &utils.Cluster{
-			BinDir: "/old/bin",
-			Cluster: &cluster.Cluster{
-				ContentIDs: []int{-1},
-				Segments: map[int]cluster.SegConfig{
-					-1: cluster.SegConfig{
-						Port:    5432,
-						DataDir: "/data/old",
-						DbID:    1,
-					},
-				},
-			},
-		},
-		Target: &utils.Cluster{
-			BinDir: "/new/bin",
-			Cluster: &cluster.Cluster{
-				ContentIDs: []int{-1},
-				Segments: map[int]cluster.SegConfig{
-					-1: cluster.SegConfig{
-						Port:    5433,
-						DataDir: "/data/new",
-						DbID:    2,
-					},
+	source := &utils.Cluster{
+		BinDir: "/old/bin",
+		Cluster: &cluster.Cluster{
+			ContentIDs: []int{-1},
+			Segments: map[int]cluster.SegConfig{
+				-1: cluster.SegConfig{
+					Port:    5432,
+					DataDir: "/data/old",
+					DbID:    1,
 				},
 			},
 		},
 	}
 
-	t.Run("sets the working directory", func(t *testing.T) {
-		g := NewGomegaWithT(t)
-		stream := new(bufferedStreams)
+	t.Run("masterSegmentFromCluster() creates a correct upgrade segment", func(t *testing.T) {
+		seg := masterSegmentFromCluster(source)
 
-		// Print the working directory of the command.
-		execCommand = exectest.NewCommand(WorkingDirectoryMain)
-
-		// NOTE: avoid testing paths that might be symlinks, such as /tmp, as
-		// the "actual" working directory might look different to the
-		// subprocess.
-		err := pair.ConvertMaster(stream, "/", false)
-		g.Expect(err).NotTo(HaveOccurred())
-
-		wd := stream.stdout.String()
-		g.Expect(wd).To(Equal("/"))
-	})
-
-	t.Run("unsets PGPORT and PGHOST", func(t *testing.T) {
-		g := NewGomegaWithT(t)
-		stream := new(bufferedStreams)
-
-		// Set our environment.
-		os.Setenv("PGPORT", "5432")
-		os.Setenv("PGHOST", "localhost")
-		defer func() {
-			os.Unsetenv("PGPORT")
-			os.Unsetenv("PGHOST")
-		}()
-
-		// Echo the environment to stdout.
-		execCommand = exectest.NewCommand(EnvironmentMain)
-
-		err := pair.ConvertMaster(stream, "", false)
-		g.Expect(err).NotTo(HaveOccurred())
-
-		scanner := bufio.NewScanner(&stream.stdout)
-		for scanner.Scan() {
-			g.Expect(scanner.Text()).NotTo(HavePrefix("PGPORT="),
-				"PGPORT was not stripped from the child environment")
-			g.Expect(scanner.Text()).NotTo(HavePrefix("PGHOST="),
-				"PGHOST was not stripped from the child environment")
+		if seg.BinDir != source.BinDir {
+			t.Errorf("BinDir was %q, want %q", seg.BinDir, source.BinDir)
 		}
-		g.Expect(scanner.Err()).NotTo(HaveOccurred())
+		if seg.DataDir != source.MasterDataDir() {
+			t.Errorf("DataDir was %q, want %q", seg.DataDir, source.MasterDataDir())
+		}
+		if seg.DBID != source.GetDbidForContent(-1) {
+			t.Errorf("DBID was %d, want %d", seg.DBID, source.GetDbidForContent(-1))
+		}
+		if seg.Port != source.MasterPort() {
+			t.Errorf("Port was %d, want %d", seg.Port, source.MasterPort())
+		}
 	})
 
-	t.Run("calls pg_upgrade with the expected options with no check", func(t *testing.T) {
-		g := NewGomegaWithT(t)
+	// UpgradeMaster defers to upgrade.Run() for most of its work. Rather than
+	// repeat those tests here, do some simple integration tests to verify that
+	// output streams are hooked up correctly, then defer to the acceptance
+	// tests for full end-to-end verification.
+
+	target := &utils.Cluster{
+		BinDir: "/new/bin",
+		Cluster: &cluster.Cluster{
+			ContentIDs: []int{-1},
+			Segments: map[int]cluster.SegConfig{
+				-1: cluster.SegConfig{
+					Port:    5433,
+					DataDir: "/data/new",
+					DbID:    2,
+				},
+			},
+		},
+	}
+
+	// We need a real temporary directory to change to. Replace MkdirAll() so
+	// that we can make sure the directory is the correct one.
+	tempDir, err := ioutil.TempDir("", "gpupgrade")
+	if err != nil {
+		t.Fatalf("creating temporary directory: %+v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	var createdWD string
+	utils.System.MkdirAll = func(path string, perms os.FileMode) error {
+		createdWD = path
+
+		// Bail out if the implementation tries to touch any other directories.
+		if !strings.HasPrefix(path, tempDir) {
+			t.Fatalf("requested directory %q is not under temporary directory %q; refusing to create it",
+				path, tempDir)
+		}
+
+		return os.MkdirAll(path, perms)
+	}
+	defer func() {
+		utils.System = utils.InitializeSystemFunctions()
+	}()
+
+	t.Run("creates the desired working directory", func(t *testing.T) {
+		SetExecCommand(exectest.NewCommand(Success))
+		defer ResetExecCommand()
+
+		err := UpgradeMaster(source, target, tempDir, DevNull, false)
+		if err != nil {
+			t.Errorf("returned error %+v", err)
+		}
+
+		expectedWD := utils.MasterPGUpgradeDirectory(tempDir)
+		if createdWD != expectedWD {
+			t.Errorf("created working directory %q, want %q", createdWD, expectedWD)
+		}
+	})
+
+	t.Run("streams stdout and stderr to the client", func(t *testing.T) {
+		SetExecCommand(exectest.NewCommand(StreamingMain))
+		defer ResetExecCommand()
+
 		stream := new(bufferedStreams)
 
-		execCommand = exectest.NewCommandWithVerifier(EmptyMain,
-			func(path string, args ...string) {
-				// pg_upgrade should be run from the target installation.
-				expectedPath := filepath.Join(pair.Target.BinDir, "pg_upgrade")
-				g.Expect(path).To(Equal(expectedPath))
+		err := UpgradeMaster(source, target, tempDir, stream, false)
+		if err != nil {
+			t.Errorf("returned error %+v", err)
+		}
 
-				// Check the arguments. We use a FlagSet so as not to couple
-				// against option order.
-				var fs flag.FlagSet
+		stdout := stream.stdout.String()
+		if stdout != StreamingMainStdout {
+			t.Errorf("got stdout %q, want %q", stdout, StreamingMainStdout)
+		}
 
-				oldBinDir := fs.String("old-bindir", "", "")
-				newBinDir := fs.String("new-bindir", "", "")
-				oldDataDir := fs.String("old-datadir", "", "")
-				newDataDir := fs.String("new-datadir", "", "")
-				oldPort := fs.Int("old-port", -1, "")
-				newPort := fs.Int("new-port", -1, "")
-				oldDBID := fs.Int("old-gp-dbid", -1, "")
-				newDBID := fs.Int("new-gp-dbid", -1, "")
-				mode := fs.String("mode", "", "")
-
-				err := fs.Parse(args)
-				g.Expect(err).NotTo(HaveOccurred())
-
-				g.Expect(*oldBinDir).To(Equal(pair.Source.BinDir))
-				g.Expect(*newBinDir).To(Equal(pair.Target.BinDir))
-				g.Expect(*oldDataDir).To(Equal(pair.Source.MasterDataDir()))
-				g.Expect(*newDataDir).To(Equal(pair.Target.MasterDataDir()))
-				g.Expect(*oldPort).To(Equal(pair.Source.MasterPort()))
-				g.Expect(*newPort).To(Equal(pair.Target.MasterPort()))
-				g.Expect(*oldDBID).To(Equal(pair.Source.GetDbidForContent(-1)))
-				g.Expect(*newDBID).To(Equal(pair.Target.GetDbidForContent(-1)))
-				g.Expect(*mode).To(Equal("dispatcher"))
-
-				// No other arguments should be passed.
-				g.Expect(fs.Args()).To(BeEmpty())
-			})
-
-		err := pair.ConvertMaster(stream, "", false)
-		g.Expect(err).NotTo(HaveOccurred())
+		stderr := stream.stderr.String()
+		if stderr != StreamingMainStderr {
+			t.Errorf("got stderr %q, want %q", stderr, StreamingMainStderr)
+		}
 	})
 
-	t.Run("calls pg_upgrade with the expected options with no check", func(t *testing.T) {
-		g := NewGomegaWithT(t)
-		stream := new(bufferedStreams)
+	t.Run("returns an error if the command succeeds but the io.Writer fails", func(t *testing.T) {
+		// Don't fail in the subprocess even when the stdout stream is closed.
+		SetExecCommand(exectest.NewCommand(BlindlyWritingMain))
+		defer ResetExecCommand()
 
-		execCommand = exectest.NewCommandWithVerifier(EmptyMain,
-			func(path string, args ...string) {
-				// pg_upgrade should be run from the target installation.
-				expectedPath := filepath.Join(pair.Target.BinDir, "pg_upgrade")
-				g.Expect(path).To(Equal(expectedPath))
-
-				// Check the arguments. We use a FlagSet so as not to couple
-				// against option order.
-				var fs flag.FlagSet
-
-				oldBinDir := fs.String("old-bindir", "", "")
-				newBinDir := fs.String("new-bindir", "", "")
-				oldDataDir := fs.String("old-datadir", "", "")
-				newDataDir := fs.String("new-datadir", "", "")
-				oldPort := fs.Int("old-port", -1, "")
-				newPort := fs.Int("new-port", -1, "")
-				oldDBID := fs.Int("old-gp-dbid", -1, "")
-				newDBID := fs.Int("new-gp-dbid", -1, "")
-				mode := fs.String("mode", "", "")
-				checkOnly := fs.Bool("check", false, "")
-
-				err := fs.Parse(args)
-				g.Expect(err).NotTo(HaveOccurred())
-
-				g.Expect(*oldBinDir).To(Equal(pair.Source.BinDir))
-				g.Expect(*newBinDir).To(Equal(pair.Target.BinDir))
-				g.Expect(*oldDataDir).To(Equal(pair.Source.MasterDataDir()))
-				g.Expect(*newDataDir).To(Equal(pair.Target.MasterDataDir()))
-				g.Expect(*oldPort).To(Equal(pair.Source.MasterPort()))
-				g.Expect(*newPort).To(Equal(pair.Target.MasterPort()))
-				g.Expect(*oldDBID).To(Equal(pair.Source.GetDbidForContent(-1)))
-				g.Expect(*newDBID).To(Equal(pair.Target.GetDbidForContent(-1)))
-				g.Expect(*mode).To(Equal("dispatcher"))
-				g.Expect(*checkOnly).To(Equal(true))
-
-				// No other arguments should be passed.
-				g.Expect(fs.Args()).To(BeEmpty())
-			})
-
-		err := pair.ConvertMaster(stream, "", true)
-		g.Expect(err).NotTo(HaveOccurred())
+		expectedErr := errors.New("write failed!")
+		err := UpgradeMaster(source, target, tempDir, failingStreams{expectedErr}, false)
+		if !xerrors.Is(err, expectedErr) {
+			t.Errorf("returned error %+v, want %+v", err, expectedErr)
+		}
 	})
+}
+
+// bufferedStreams is an implementation of OutStreams that just writes to
+// bytes.Buffers.
+type bufferedStreams struct {
+	stdout bytes.Buffer
+	stderr bytes.Buffer
+}
+
+func (b *bufferedStreams) Stdout() io.Writer {
+	return &b.stdout
+}
+
+func (b *bufferedStreams) Stderr() io.Writer {
+	return &b.stderr
+}
+
+// failingStreams is an implementation of OutStreams for which every call to a
+// stream's Write() method will fail with the given error.
+type failingStreams struct {
+	err error
+}
+
+func (f failingStreams) Stdout() io.Writer {
+	return &failingWriter{f.err}
+}
+
+func (f failingStreams) Stderr() io.Writer {
+	return &failingWriter{f.err}
 }

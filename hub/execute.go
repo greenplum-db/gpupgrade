@@ -38,7 +38,8 @@ func (h *Hub) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSe
 
 	err = h.Substep(executeStream, upgradestatus.UPGRADE_MASTER,
 		func(streams OutStreams) error {
-			return h.UpgradeMaster(streams, false)
+			stateDir := h.conf.StateDir
+			return UpgradeMaster(h.source, h.target, stateDir, streams, false)
 		})
 	if err != nil {
 		return err
