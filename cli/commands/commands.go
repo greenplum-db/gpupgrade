@@ -272,9 +272,14 @@ This step can be reverted.
 			fmt.Println("Initialization in progress.")
 			fmt.Println()
 
-			err = commanders.CreateStateDirAndClusterConfigs(oldBinDir, newBinDir)
+			err = commanders.CreateStateDir()
 			if err != nil {
-				return errors.Wrap(err, "tried to create state directory")
+				return errors.Wrap(err, "creating state directory")
+			}
+
+			err = commanders.CreateInitialClusterConfigs(oldBinDir, newBinDir)
+			if err != nil {
+				return errors.Wrap(err, "creating initial cluster configs")
 			}
 
 			running, err := commanders.IsHubRunning()

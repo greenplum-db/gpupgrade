@@ -23,7 +23,9 @@ var _ = Describe("gpupgrade hub", func() {
 	})
 
 	It("does not daemonize unless explicitly told to", func() {
-		err := commanders.CreateStateDirAndClusterConfigs("", "")
+		err := commanders.CreateStateDir()
+		Expect(err).ToNot(HaveOccurred())
+		err = commanders.CreateInitialClusterConfigs("", "")
 		Expect(err).ToNot(HaveOccurred())
 
 		cmd := exec.Command("gpupgrade", "hub")

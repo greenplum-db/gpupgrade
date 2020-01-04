@@ -19,23 +19,31 @@ import (
 var execCommandHubStart = exec.Command
 var execCommandHubCount = exec.Command
 
-// we create the state directory in the cli to ensure that at most one gpupgrade is occuring
+// we create the state directory in the cli to ensure that at most one gpupgrade is occurring
 // at the same time.
-func CreateStateDirAndClusterConfigs(sourceBinDir, targetBinDir string) (err error) {
-	s := Substep("Creating directories...")
+func CreateStateDir() (err error) {
+	s := Substep("Creating state directory...")
 	defer s.Finish(&err)
 
 	stateDir := utils.GetStateDir()
 	err = os.Mkdir(stateDir, 0700)
 	if os.IsExist(err) {
-		return fmt.Errorf("gpupgrade state dir (%s) already exists. Did you already run gpupgrade initialize?", stateDir)
-	} else if err != nil {
+		gplog.Debug("State directory %s already present...skipping", stateDir)
+		return nil
+	}
+	if err != nil {
+		gplog.Debug("State directory %s could not be created.", stateDir)
 		return err
 	}
 
-	// Create empty clusters in source and target so that gpupgrade hub can
-	// start without having replaced them with current values.
-	// TODO: implement a slicker scheme to allow this.
+	return nil
+}
+
+func CreateInitialClusterConfigs(sourceBinDir, targetBinDir string) (err error) {
+	s := Substep("Creating initial cluster config files...")
+	defer s.Finish(&err)
+
+	stateDir := utils.GetStateDir()
 	emptyCluster := cluster.NewCluster([]cluster.SegConfig{})
 
 	source := &utils.Cluster{
@@ -43,16 +51,26 @@ func CreateStateDirAndClusterConfigs(sourceBinDir, targetBinDir string) (err err
 		BinDir:     path.Clean(sourceBinDir),
 		ConfigPath: filepath.Join(stateDir, utils.SOURCE_CONFIG_FILENAME),
 	}
-	err = source.Commit()
-	if err != nil {
-		return errors.Wrap(err, "Unable to save empty source cluster configuration")
-	}
 
 	target := &utils.Cluster{
 		Cluster:    emptyCluster,
 		BinDir:     path.Clean(targetBinDir),
 		ConfigPath: filepath.Join(stateDir, utils.TARGET_CONFIG_FILENAME),
 	}
+
+	if source.Load() == nil && target.Load() == nil {
+		gplog.Debug("Initial cluster config files(%s or %s) already present...skipping.", source.ConfigPath, target.ConfigPath)
+		return nil
+	}
+
+	// Create empty clusters in source and target so that gpupgrade hub can
+	// start without having replaced them with current values.
+	// TODO: implement a slicker scheme to allow this.
+	err = source.Commit()
+	if err != nil {
+		return errors.Wrap(err, "Unable to save empty source cluster configuration")
+	}
+
 	err = target.Commit()
 	if err != nil {
 		return errors.Wrap(err, "Unable to save empty target cluster configuration")
@@ -64,6 +82,16 @@ func CreateStateDirAndClusterConfigs(sourceBinDir, targetBinDir string) (err err
 func StartHub() (err error) {
 	s := Substep("Starting hub...")
 	defer s.Finish(&err)
+
+	running, err := IsHubRunning()
+	if err != nil {
+		gplog.Error("failed to determine if hub already running")
+		return err
+	}
+	if running {
+		gplog.Debug("gpupgrade hub already running...")
+		return nil
+	}
 
 	cmd := execCommandHubStart("gpupgrade", "hub", "--daemonize")
 	stdout, cmdErr := cmd.Output()
