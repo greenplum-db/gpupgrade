@@ -67,7 +67,7 @@ func teardown() {
 	execCommandHubCount = exec.Command
 }
 
-func TestNoHubIsAlreadyRunning(t *testing.T) {
+func TestIsHubRunning_ReturnsFalseWhenNotRunning(t *testing.T) {
 	setup(t)
 	defer teardown()
 
@@ -77,7 +77,7 @@ func TestNoHubIsAlreadyRunning(t *testing.T) {
 	g.Expect(running).To(BeFalse())
 }
 
-func TestHubIsAlreadyRunning(t *testing.T) {
+func TestIsHubRunning_ReturnsTrueWhenRunning(t *testing.T) {
 	setup(t)
 	defer teardown()
 
@@ -87,7 +87,7 @@ func TestHubIsAlreadyRunning(t *testing.T) {
 	g.Expect(running).To(BeTrue())
 }
 
-func TestHowManyHubsRunningFails(t *testing.T) {
+func TestIsHubRunning_ErrorsWhenCheckFails(t *testing.T) {
 	setup(t)
 	defer teardown()
 
@@ -97,19 +97,41 @@ func TestHowManyHubsRunningFails(t *testing.T) {
 	g.Expect(err).ToNot(BeNil())
 }
 
-func TestWeCanStartHub(t *testing.T) {
+func TestStartHub_Succeeds(t *testing.T) {
 	setup(t)
 	defer teardown()
 
+	execCommandHubCount = exectest.NewCommand(IsHubRunning_False)
 	execCommandHubStart = exectest.NewCommand(GpupgradeHub_good_Main)
 	err := StartHub()
 	g.Expect(err).To(BeNil())
 }
 
-func TestStartHubFails(t *testing.T) {
+func TestStartHub_FailsToStartWhenHubIsRunningErrors(t *testing.T) {
 	setup(t)
 	defer teardown()
 
+	execCommandHubCount = exectest.NewCommand(IsHubRunning_Error)
+	execCommandHubStart = exectest.NewCommand(GpupgradeHub_good_Main) // should not hit this, but fail it we do
+	err := StartHub()
+	g.Expect(err).ToNot(BeNil())
+}
+
+func TestStartHub_ReturnsWhenHubIsRunning(t *testing.T) {
+	setup(t)
+	defer teardown()
+
+	execCommandHubCount = exectest.NewCommand(IsHubRunning_True)
+	execCommandHubStart = exectest.NewCommand(GpupgradeHub_bad_Main) // should not hit this, but fail if we do
+	err := StartHub()
+	g.Expect(err).To(BeNil())
+}
+
+func TestStartHub_FailsWhenStartingTheHubErrors(t *testing.T) {
+	setup(t)
+	defer teardown()
+
+	execCommandHubCount = exectest.NewCommand(IsHubRunning_False)
 	execCommandHubStart = exectest.NewCommand(GpupgradeHub_bad_Main)
 	err := StartHub()
 	g.Expect(err).ToNot(BeNil())

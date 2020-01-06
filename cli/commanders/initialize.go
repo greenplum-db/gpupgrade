@@ -89,7 +89,7 @@ func StartHub() (err error) {
 		return err
 	}
 	if running {
-		gplog.Debug("gpupgrade hub already running...")
+		gplog.Debug("gpupgrade hub already running...skipping.")
 		return nil
 	}
 
