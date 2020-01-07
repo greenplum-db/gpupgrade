@@ -37,10 +37,9 @@ func TestStartOrStopCluster(t *testing.T) {
 	var source *utils.Cluster
 	cluster := cluster.NewCluster([]cluster.SegConfig{cluster.SegConfig{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "basedir/seg-1"}})
 	source = &utils.Cluster{
-		Cluster:    cluster,
-		BinDir:     "/source/bindir",
-		ConfigPath: "my/config/path",
-		Version:    dbconn.GPDBVersion{},
+		Cluster: cluster,
+		BinDir:  "/source/bindir",
+		Version: dbconn.GPDBVersion{},
 	}
 	utils.System.RemoveAll = func(s string) error { return nil }
 	utils.System.MkdirAll = func(s string, perm os.FileMode) error { return nil }

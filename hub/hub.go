@@ -2,9 +2,12 @@ package hub
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -35,17 +38,21 @@ var ErrHubStopped = errors.New("hub is stopped")
 type Dialer func(ctx context.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error)
 
 type Hub struct {
-	conf *Config
+	*PersistedConfig
+
+	conf *Config // TODO merge with PersistedConfig above
 
 	agentConns []*Connection
-	source     *utils.Cluster
-	target     *utils.Cluster
 	grpcDialer Dialer
 	checklist  upgradestatus.Checklist
 
 	mu     sync.Mutex
 	server *grpc.Server
 	lis    net.Listener
+
+	// TODO merge with PersistedConfig
+	source *utils.Cluster
+	target *utils.Cluster
 
 	// This is used both as a channel to communicate from Start() to
 	// Stop() to indicate to Stop() that it can finally terminate
@@ -73,14 +80,17 @@ type Config struct {
 	LogDir         string
 }
 
-func New(sourceCluster *utils.Cluster, targetCluster *utils.Cluster, grpcDialer Dialer, conf *Config, checklist upgradestatus.Checklist) *Hub {
+func New(pconf *PersistedConfig, grpcDialer Dialer, conf *Config, checklist upgradestatus.Checklist) *Hub {
 	h := &Hub{
-		stopped:    make(chan struct{}, 1),
-		conf:       conf,
-		source:     sourceCluster,
-		target:     targetCluster,
-		grpcDialer: grpcDialer,
-		checklist:  checklist,
+		PersistedConfig: pconf, // TODO merge with conf
+		stopped:         make(chan struct{}, 1),
+		conf:            conf,
+		grpcDialer:      grpcDialer,
+		checklist:       checklist,
+
+		// XXX these are duplicated
+		source: pconf.Source,
+		target: pconf.Target,
 	}
 
 	return h
@@ -358,4 +368,48 @@ func (h *Hub) closeAgentConns() {
 		}
 		conn.Conn.WaitForStateChange(context.Background(), currState)
 	}
+}
+
+// PersistedConfig contains all the information that will be persisted to/loaded
+// from disk during calls to Save() and Load().
+type PersistedConfig struct {
+	Source *utils.Cluster
+	Target *utils.Cluster
+}
+
+func (p *PersistedConfig) Load(r io.Reader) error {
+	dec := json.NewDecoder(r)
+	return dec.Decode(p)
+}
+
+func (p *PersistedConfig) Save(w io.Writer) error {
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	return enc.Encode(p)
+}
+
+// SaveConfig persists the hub's configuration to disk.
+func (h *Hub) SaveConfig() (err error) {
+	// TODO: Switch to an atomic implementation like renameio. Consider what
+	// happens if PersistedConfig.Save() panics: we'll have truncated the file
+	// on disk and the hub will be unable to recover. For now, since we normally
+	// only save the configuration during initialize and any configuration
+	// errors could be fixed by reinitializing, the risk seems small.
+	file, err := utils.System.Create(filepath.Join(h.conf.StateDir, ConfigFileName))
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if cerr := file.Close(); cerr != nil {
+			cerr = xerrors.Errorf("closing hub configuration: %w", cerr)
+			err = multierror.Append(err, cerr).ErrorOrNil()
+		}
+	}()
+
+	err = h.PersistedConfig.Save(file)
+	if err != nil {
+		return xerrors.Errorf("saving hub configuration: %w", err)
+	}
+
+	return nil
 }

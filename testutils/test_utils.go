@@ -3,11 +3,11 @@ package testutils
 import (
 	"fmt"
 	"net"
-	"path/filepath"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
+
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
@@ -99,18 +99,16 @@ func assembleClusters(baseDir string, sourceCluster *cluster.Cluster, targetClus
 
 	sourceCluster.Executor = &testhelper.TestExecutor{}
 	source = &utils.Cluster{
-		Cluster:    sourceCluster,
-		BinDir:     "/source/bindir",
-		ConfigPath: filepath.Join(baseDir, utils.SOURCE_CONFIG_FILENAME),
-		Version:    gpdbVersion,
+		Cluster: sourceCluster,
+		BinDir:  "/source/bindir",
+		Version: gpdbVersion,
 	}
 
 	targetCluster.Executor = &testhelper.TestExecutor{}
 	target = &utils.Cluster{
-		Cluster:    targetCluster,
-		BinDir:     "/target/bindir",
-		ConfigPath: filepath.Join(baseDir, utils.TARGET_CONFIG_FILENAME),
-		Version:    gpdbVersion,
+		Cluster: targetCluster,
+		BinDir:  "/target/bindir",
+		Version: gpdbVersion,
 	}
 
 	return

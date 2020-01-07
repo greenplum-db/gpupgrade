@@ -3,11 +3,18 @@ package hub_test
 import (
 	"context"
 	"net"
+	"os"
+	"reflect"
 	"strconv"
+	"testing"
 
+	multierror "github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
+	"golang.org/x/xerrors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
+
+	"github.com/greenplum-db/gp-common-go-libs/cluster"
 
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -36,6 +43,7 @@ var _ = Describe("Hub", func() {
 		hubToAgentPort int
 		source         *utils.Cluster
 		target         *utils.Cluster
+		conf           *hub.PersistedConfig
 		err            error
 		mockDialer     hub.Dialer
 		mockStream     *msgStream
@@ -44,6 +52,7 @@ var _ = Describe("Hub", func() {
 	BeforeEach(func() {
 		agentA, mockDialer, hubToAgentPort = mock_agent.NewMockAgentServer()
 		source, target = testutils.CreateMultinodeSampleClusterPair("/tmp")
+		conf = &hub.PersistedConfig{source, target}
 		mockStream = &msgStream{}
 	})
 
@@ -56,7 +65,7 @@ var _ = Describe("Hub", func() {
 		hubConfig := &hub.Config{
 			CliToHubPort: cliToHubPort,
 		}
-		h := hub.New(source, target, mockDialer, hubConfig, nil)
+		h := hub.New(conf, mockDialer, hubConfig, nil)
 
 		h.Stop(true)
 		go func() {
@@ -81,7 +90,7 @@ var _ = Describe("Hub", func() {
 		hubConfig := &hub.Config{
 			CliToHubPort: cliToHubPort,
 		}
-		h := hub.New(source, target, mockDialer, hubConfig, nil)
+		h := hub.New(conf, mockDialer, hubConfig, nil)
 
 		go func() {
 			err = h.Start()
@@ -97,7 +106,7 @@ var _ = Describe("Hub", func() {
 		hubConfig := &hub.Config{
 			CliToHubPort: cliToHubPort,
 		}
-		h := hub.New(source, target, mockDialer, hubConfig, nil)
+		h := hub.New(conf, mockDialer, hubConfig, nil)
 		done := make(chan bool, 1)
 
 		go func() {
@@ -113,7 +122,7 @@ var _ = Describe("Hub", func() {
 		hubConfig := &hub.Config{
 			HubToAgentPort: hubToAgentPort,
 		}
-		h := hub.New(source, target, mockDialer, hubConfig, nil)
+		h := hub.New(conf, mockDialer, hubConfig, nil)
 		go h.Start()
 
 		By("creating connections")
@@ -137,7 +146,7 @@ var _ = Describe("Hub", func() {
 		hubConfig := &hub.Config{
 			HubToAgentPort: hubToAgentPort,
 		}
-		h := hub.New(source, target, mockDialer, hubConfig, nil)
+		h := hub.New(conf, mockDialer, hubConfig, nil)
 
 		conns, err := h.AgentConns()
 		Expect(err).ToNot(HaveOccurred())
@@ -157,7 +166,7 @@ var _ = Describe("Hub", func() {
 		hubConfig := &hub.Config{
 			HubToAgentPort: hubToAgentPort,
 		}
-		h := hub.New(source, target, mockDialer, hubConfig, nil)
+		h := hub.New(conf, mockDialer, hubConfig, nil)
 
 		newConns, err := h.AgentConns()
 		Expect(err).ToNot(HaveOccurred())
@@ -173,7 +182,7 @@ var _ = Describe("Hub", func() {
 		hubConfig := &hub.Config{
 			HubToAgentPort: hubToAgentPort,
 		}
-		h := hub.New(source, target, mockDialer, hubConfig, nil)
+		h := hub.New(conf, mockDialer, hubConfig, nil)
 
 		conns, err := h.AgentConns()
 		Expect(err).ToNot(HaveOccurred())
@@ -197,7 +206,7 @@ var _ = Describe("Hub", func() {
 			HubToAgentPort: hubToAgentPort,
 		}
 
-		h := hub.New(source, target, errDialer, hubConfig, nil)
+		h := hub.New(conf, errDialer, hubConfig, nil)
 
 		_, err := h.AgentConns()
 		Expect(err).To(HaveOccurred())
@@ -208,7 +217,7 @@ var _ = Describe("Hub", func() {
 			CliToHubPort: cliToHubPort,
 		}
 		mockChecklistManager := testutils.NewMockChecklistManager()
-		h := hub.New(source, target, mockDialer, hubConfig, mockChecklistManager)
+		h := hub.New(conf, mockDialer, hubConfig, mockChecklistManager)
 		h.InitializeStep("dub-step", mockStream)
 
 		Expect(mockChecklistManager.GetStepReader("dub-step").Status()).To(Equal(idl.StepStatus_RUNNING))
@@ -222,7 +231,7 @@ var _ = Describe("Hub", func() {
 		mockChecklistManager := testutils.NewMockChecklistManager()
 		mockChecklistManager.StepWriter.ResetStateDirErr = errors.New("permission denied")
 
-		h := hub.New(source, target, mockDialer, hubConfig, mockChecklistManager)
+		h := hub.New(conf, mockDialer, hubConfig, mockChecklistManager)
 		_, err := h.InitializeStep("dub-step", mockStream)
 
 		Expect(err).To(HaveOccurred())
@@ -237,7 +246,7 @@ var _ = Describe("Hub", func() {
 		mockChecklistManager := testutils.NewMockChecklistManager()
 		mockChecklistManager.StepWriter.MarkInProgressErr = errors.New("EAGAIN")
 
-		h := hub.New(source, target, mockDialer, hubConfig, mockChecklistManager)
+		h := hub.New(conf, mockDialer, hubConfig, mockChecklistManager)
 		_, err := h.InitializeStep("dub-step", mockStream)
 
 		Expect(err).To(HaveOccurred())
@@ -252,7 +261,7 @@ var _ = Describe("Hub", func() {
 		mockChecklistManager := testutils.NewMockChecklistManager()
 		mockChecklistManager.StepWriter.MarkCompleteErr = errors.New("ENOENT")
 
-		h := hub.New(source, target, mockDialer, hubConfig, mockChecklistManager)
+		h := hub.New(conf, mockDialer, hubConfig, mockChecklistManager)
 		step, err := h.InitializeStep("dub-step", mockStream)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -270,7 +279,7 @@ var _ = Describe("Hub", func() {
 		mockChecklistManager := testutils.NewMockChecklistManager()
 		mockChecklistManager.StepWriter.MarkFailedErr = errors.New("EPERM")
 
-		h := hub.New(source, target, mockDialer, hubConfig, mockChecklistManager)
+		h := hub.New(conf, mockDialer, hubConfig, mockChecklistManager)
 		step, err := h.InitializeStep("dub-step", mockStream)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -286,7 +295,7 @@ var _ = Describe("Hub", func() {
 			CliToHubPort: cliToHubPort,
 		}
 		mockChecklistManager := testutils.NewMockChecklistManager()
-		h := hub.New(source, target, mockDialer, hubConfig, mockChecklistManager)
+		h := hub.New(conf, mockDialer, hubConfig, mockChecklistManager)
 
 		step, err := h.InitializeStep("dub-step", mockStream)
 		Expect(err).ToNot(HaveOccurred())
@@ -298,3 +307,89 @@ var _ = Describe("Hub", func() {
 		Expect(mockStream.LastStatus).To(Equal(idl.StepStatus_FAILED))
 	})
 })
+
+func TestHubSaveConfig(t *testing.T) {
+	source, target := testutils.CreateMultinodeSampleClusterPair("/tmp")
+	source.Executor = new(cluster.GPDBExecutor)
+	target.Executor = new(cluster.GPDBExecutor)
+	conf := &hub.PersistedConfig{source, target}
+
+	h := hub.New(conf, nil, &hub.Config{}, nil)
+
+	t.Run("saves correct contents to disk", func(t *testing.T) {
+		// Set up utils.System.Create to return the write side of a pipe. We can
+		// read from the other side to confirm what was saved to "disk".
+		read, write, err := os.Pipe()
+		if err != nil {
+			t.Fatalf("creating pipe: %+v", err)
+		}
+		defer func() {
+			read.Close()
+			write.Close()
+		}()
+
+		utils.System.Create = func(path string) (*os.File, error) {
+			return write, nil
+		}
+		defer func() {
+			utils.System = utils.InitializeSystemFunctions()
+		}()
+
+		// Write the hub's configuration to the pipe.
+		if err := h.SaveConfig(); err != nil {
+			t.Errorf("SaveConfig() returned error %+v", err)
+		}
+
+		// Reload the configuration from the read side of the pipe and ensure the
+		// contents are the same.
+		result := new(hub.PersistedConfig)
+		if err := result.Load(read); err != nil {
+			t.Errorf("loading configuration results: %+v", err)
+		}
+
+		if !reflect.DeepEqual(h.PersistedConfig, result) {
+			t.Errorf("wrote config %#v, want %#v", result, h.PersistedConfig)
+		}
+	})
+
+	t.Run("correctly bubbles up file creation errors", func(t *testing.T) {
+		expected := errors.New("can't create")
+
+		utils.System.Create = func(path string) (*os.File, error) {
+			return nil, expected
+		}
+		defer func() {
+			utils.System = utils.InitializeSystemFunctions()
+		}()
+
+		err := h.SaveConfig()
+		if !xerrors.Is(err, expected) {
+			t.Errorf("returned %#v, want %#v", err, expected)
+		}
+	})
+
+	t.Run("correctly bubbles up file manipulation errors", func(t *testing.T) {
+		// A nil file will fail to write and close, so we can make sure things
+		// are handled correctly.
+		utils.System.Create = func(path string) (*os.File, error) {
+			return nil, nil
+		}
+		defer func() {
+			utils.System = utils.InitializeSystemFunctions()
+		}()
+
+		err := h.SaveConfig()
+
+		var merr *multierror.Error
+		if !xerrors.As(err, &merr) {
+			t.Fatalf("returned %#v, want error type %T", err, merr)
+		}
+
+		for _, err := range merr.Errors {
+			// For nil Files, operations return os.ErrInvalid.
+			if !xerrors.Is(err, os.ErrInvalid) {
+				t.Errorf("returned error %#v, want %#v", err, os.ErrInvalid)
+			}
+		}
+	})
+}

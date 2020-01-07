@@ -10,32 +10,17 @@ import (
 	"golang.org/x/xerrors"
 )
 
-const (
-	SOURCE_CONFIG_FILENAME = "source_cluster_config.json"
-	TARGET_CONFIG_FILENAME = "target_cluster_config.json"
-)
-
 type Cluster struct {
 	*cluster.Cluster
-	BinDir     string
-	ConfigPath string
-	Version    dbconn.GPDBVersion
-}
 
-/*
- * We need to use an intermediary struct for reading and writing fields not
- * present in cluster.Cluster
- */
-type ClusterConfig struct {
-	SegConfigs []cluster.SegConfig
-	BinDir     string
-	Version    dbconn.GPDBVersion
+	BinDir  string
+	Version dbconn.GPDBVersion
 }
 
 // ClusterFromDB will create a Cluster by querying the passed DBConn for
-// information. You must pass the cluster's binary directory and configuration
-// path, since these cannot be divined from the database.
-func ClusterFromDB(conn *dbconn.DBConn, binDir, configPath string) (*Cluster, error) {
+// information. You must pass the cluster's binary directory, since it cannot be
+// divined from the database.
+func ClusterFromDB(conn *dbconn.DBConn, binDir string) (*Cluster, error) {
 	err := conn.Connect(1)
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't connect to cluster")
@@ -52,39 +37,8 @@ func ClusterFromDB(conn *dbconn.DBConn, binDir, configPath string) (*Cluster, er
 
 	c.Cluster = cluster.NewCluster(segments)
 	c.BinDir = binDir
-	c.ConfigPath = configPath
 
 	return c, nil
-}
-
-func (c *Cluster) Load() error {
-	contents, err := System.ReadFile(c.ConfigPath)
-	if err != nil {
-		return err
-	}
-	clusterConfig := &ClusterConfig{}
-	err = json.Unmarshal([]byte(contents), clusterConfig)
-	if err != nil {
-		return err
-	}
-	c.Cluster = cluster.NewCluster(clusterConfig.SegConfigs)
-	c.BinDir = clusterConfig.BinDir
-	c.Version = clusterConfig.Version
-	return nil
-}
-
-func (c *Cluster) Commit() error {
-	segConfigs := make([]cluster.SegConfig, 0)
-	clusterConfig := &ClusterConfig{BinDir: c.BinDir}
-
-	for _, contentID := range c.Cluster.ContentIDs {
-		segConfigs = append(segConfigs, c.Segments[contentID])
-	}
-
-	clusterConfig.SegConfigs = segConfigs
-	clusterConfig.Version = c.Version
-
-	return WriteJSONFile(c.ConfigPath, clusterConfig)
 }
 
 func (c *Cluster) MasterDataDir() string {
@@ -122,6 +76,62 @@ func (c *Cluster) PrimaryHostnames() []string {
 	}
 
 	return list
+}
+
+// serializableCluster contains all of the members of utils.Cluster that can be
+// serialized to disk.
+//
+// Ideally, utils.Cluster would be serializable itself, but unfortunately the
+// Executor member cannot be put through a JSON marshal/unmarshal round trip. We
+// exclude it here.
+type serializableCluster struct {
+	ContentIDs []int
+	Segments   map[int]cluster.SegConfig
+	BinDir     string
+	Version    dbconn.GPDBVersion
+}
+
+func newSerializableCluster(c *Cluster) *serializableCluster {
+	return &serializableCluster{
+		c.ContentIDs,
+		c.Segments,
+		c.BinDir,
+		c.Version,
+	}
+}
+
+func (s *serializableCluster) cluster() *Cluster {
+	// Members are unnamed on purpose. If the underlying types add more members,
+	// we want them to be explicitly added to the serializableCluster.
+	return &Cluster{
+		&cluster.Cluster{
+			s.ContentIDs,
+			s.Segments,
+			&cluster.GPDBExecutor{},
+		},
+		s.BinDir,
+		s.Version,
+	}
+}
+
+func (c *Cluster) MarshalJSON() ([]byte, error) {
+	// See notes for serializableCluster for why we override the standard
+	// marshal operation.
+	return json.Marshal(newSerializableCluster(c))
+}
+
+func (c *Cluster) UnmarshalJSON(b []byte) error {
+	// See notes for serializableCluster for why we override the standard
+	// unmarshal operation.
+	s := new(serializableCluster)
+
+	err := json.Unmarshal(b, s)
+	if err != nil {
+		return err
+	}
+
+	*c = *s.cluster()
+	return nil
 }
 
 // ErrUnknownHost can be returned by Cluster.SegmentsOn.

@@ -277,7 +277,7 @@ This step can be reverted.
 				return errors.Wrap(err, "creating state directory")
 			}
 
-			err = commanders.CreateInitialClusterConfigs(oldBinDir, newBinDir)
+			err = commanders.CreateInitialClusterConfigs()
 			if err != nil {
 				return errors.Wrap(err, "creating initial cluster configs")
 			}

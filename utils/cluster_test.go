@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
+
+	"github.com/pkg/errors"
 
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils"
-	"github.com/pkg/errors"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
@@ -30,32 +30,14 @@ var _ = Describe("Cluster", func() {
 
 		testhelper.SetupTestLogger()
 		expectedCluster = &utils.Cluster{
-			Cluster:    testutils.CreateMultinodeSampleCluster("/tmp"),
-			BinDir:     "/fake/path",
-			ConfigPath: path.Join(testStateDir, "cluster_config.json"),
-			Version:    dbconn.NewVersion("6.0.0"),
+			Cluster: testutils.CreateMultinodeSampleCluster("/tmp"),
+			BinDir:  "/fake/path",
+			Version: dbconn.NewVersion("6.0.0"),
 		}
 	})
 
 	AfterEach(func() {
 		os.RemoveAll(testStateDir)
-	})
-
-	Describe("Commit and Load", func() {
-		It("can save a config and successfully load it back in", func() {
-			err := expectedCluster.Commit()
-			Expect(err).ToNot(HaveOccurred())
-			givenCluster := &utils.Cluster{
-				ConfigPath: path.Join(testStateDir, "cluster_config.json"),
-			}
-			err = givenCluster.Load()
-			Expect(err).ToNot(HaveOccurred())
-
-			// We don't serialize the Executor
-			givenCluster.Executor = expectedCluster.Executor
-
-			Expect(expectedCluster).To(Equal(givenCluster))
-		})
 	})
 
 	Describe("PrimaryHostnames", func() {
@@ -131,7 +113,7 @@ var _ = Describe("Cluster", func() {
 			conn := dbconn.NewDBConnFromEnvironment("testdb")
 			conn.Driver = testhelper.TestDriver{ErrToReturn: connErr}
 
-			cluster, err := utils.ClusterFromDB(conn, "", "")
+			cluster, err := utils.ClusterFromDB(conn, "")
 
 			Expect(err).To(HaveOccurred())
 			Expect(cluster).To(BeNil())
@@ -145,7 +127,7 @@ var _ = Describe("Cluster", func() {
 			queryErr := errors.New("failed to get segment configuration")
 			mock.ExpectQuery("SELECT .* FROM gp_segment_configuration").WillReturnError(queryErr)
 
-			cluster, err := utils.ClusterFromDB(conn, "", "")
+			cluster, err := utils.ClusterFromDB(conn, "")
 
 			Expect(err).To(HaveOccurred())
 			Expect(cluster).To(BeNil())
@@ -159,14 +141,12 @@ var _ = Describe("Cluster", func() {
 			mock.ExpectQuery("SELECT .* FROM gp_segment_configuration").WillReturnRows(testutils.MockSegmentConfiguration())
 
 			binDir := "/usr/local/gpdb/bin"
-			configPath := "/tmp/config.json"
 
-			cluster, err := utils.ClusterFromDB(conn, binDir, configPath)
+			cluster, err := utils.ClusterFromDB(conn, binDir)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(cluster.Cluster).To(Equal(testutils.MockCluster()))
 			Expect(cluster.BinDir).To(Equal(binDir))
-			Expect(cluster.ConfigPath).To(Equal(configPath))
 			Expect(cluster.Version.Is("5.3.4")).To(BeTrue())
 		})
 	})

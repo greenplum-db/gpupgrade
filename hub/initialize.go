@@ -3,11 +3,9 @@ package hub
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
-	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
@@ -89,54 +87,25 @@ func (h *Hub) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest, st
 
 // create old/new clusters, write to disk and re-read from disk to make sure it is "durable"
 func (h *Hub) fillClusterConfigsSubStep(_ OutStreams, oldBinDir, newBinDir string, oldPort int) error {
-	source := &utils.Cluster{BinDir: path.Clean(oldBinDir), ConfigPath: filepath.Join(h.conf.StateDir, utils.SOURCE_CONFIG_FILENAME)}
-	dbConn := db.NewDBConn("localhost", oldPort, "template1")
-	defer dbConn.Close()
-	err := ReloadAndCommitCluster(source, dbConn)
+	conn := db.NewDBConn("localhost", oldPort, "template1")
+	defer conn.Close()
+
+	var err error
+	h.Source, err = utils.ClusterFromDB(conn, oldBinDir)
 	if err != nil {
+		return errors.Wrap(err, "could not retrieve source configuration")
+	}
+
+	h.Target = &utils.Cluster{Cluster: new(cluster.Cluster), BinDir: newBinDir}
+
+	if err := h.SaveConfig(); err != nil {
 		return err
 	}
 
-	emptyCluster := cluster.NewCluster([]cluster.SegConfig{})
-	target := &utils.Cluster{Cluster: emptyCluster, BinDir: path.Clean(newBinDir), ConfigPath: filepath.Join(h.conf.StateDir, utils.TARGET_CONFIG_FILENAME)}
-	err = target.Commit()
-	if err != nil {
-		return errors.Wrap(err, "Unable to save target cluster configuration")
-	}
-
-	// XXX: This is really not necessary as we are just verifying that
-	// the configuration that we just wrote is readable.
-	errSource := source.Load()
-	errTarget := target.Load()
-	if errSource != nil && errTarget != nil {
-		errBoth := errors.Errorf("Source error: %s\nTarget error: %s", errSource.Error(), errTarget.Error())
-		return errors.Wrap(errBoth, "Unable to load source or target cluster configuration")
-	} else if errSource != nil {
-		return errors.Wrap(errSource, "Unable to load source cluster configuration")
-	} else if errTarget != nil {
-		return errors.Wrap(errTarget, "Unable to load target cluster configuration")
-	}
-
 	// link in source/target to hub
-	h.source = source
-	h.target = target
-
-	return err
-}
-
-// ReloadAndCommitCluster() will fill in a utils.Cluster using a database
-// connection and additionally write the results to disk.
-func ReloadAndCommitCluster(cluster *utils.Cluster, conn *dbconn.DBConn) error {
-	newCluster, err := utils.ClusterFromDB(conn, cluster.BinDir, cluster.ConfigPath)
-	if err != nil {
-		return errors.Wrap(err, "could not retrieve cluster configuration")
-	}
-
-	*cluster = *newCluster
-	err = cluster.Commit()
-	if err != nil {
-		return errors.Wrap(err, "could not save cluster configuration")
-	}
+	// TODO: remove once we deduplicate
+	h.source = h.Source
+	h.target = h.Target
 
 	return nil
 }

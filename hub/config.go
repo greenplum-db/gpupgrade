@@ -20,13 +20,7 @@ func (h *Hub) SetConfig(ctx context.Context, in *idl.SetConfigRequest) (*idl.Set
 		return nil, status.Errorf(codes.NotFound, "%s is not a valid configuration key", in.Name)
 	}
 
-	// Persist.
-	err := h.source.Commit()
-	if err != nil {
-		return &idl.SetConfigReply{}, err
-	}
-	err = h.target.Commit()
-	if err != nil {
+	if err := h.SaveConfig(); err != nil {
 		return &idl.SetConfigReply{}, err
 	}
 

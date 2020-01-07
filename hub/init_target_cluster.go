@@ -62,8 +62,23 @@ func (h *Hub) CreateTargetCluster(stream OutStreams, masterPort int) error {
 		return err
 	}
 
-	targetDBConn := db.NewDBConn("localhost", masterPort, "template1")
-	return ReloadAndCommitCluster(h.target, targetDBConn)
+	conn := db.NewDBConn("localhost", masterPort, "template1")
+	defer conn.Close()
+
+	h.Target, err = utils.ClusterFromDB(conn, h.Target.BinDir)
+	if err != nil {
+		return errors.Wrap(err, "could not retrieve target configuration")
+	}
+
+	if err := h.SaveConfig(); err != nil {
+		return err
+	}
+
+	// link in target to hub
+	// TODO: remove once we deduplicate
+	h.target = h.Target
+
+	return nil
 }
 
 func (h *Hub) InitTargetCluster(stream OutStreams) error {

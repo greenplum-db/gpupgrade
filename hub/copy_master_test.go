@@ -29,10 +29,9 @@ func TestCopyMaster(t *testing.T) {
 		cluster.SegConfig{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2"},
 	})
 	sourceCluster := utils.Cluster{
-		Cluster:    sourceNodes,
-		BinDir:     "/source/bindir",
-		ConfigPath: "my/config/path",
-		Version:    dbconn.GPDBVersion{},
+		Cluster: sourceNodes,
+		BinDir:  "/source/bindir",
+		Version: dbconn.GPDBVersion{},
 	}
 
 	targetNodes := cluster.NewCluster([]cluster.SegConfig{
@@ -41,13 +40,12 @@ func TestCopyMaster(t *testing.T) {
 		cluster.SegConfig{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2"},
 	})
 	targetCluster := utils.Cluster{
-		Cluster:    targetNodes,
-		BinDir:     "/target/bindir",
-		ConfigPath: "my/config/path",
-		Version:    dbconn.GPDBVersion{},
+		Cluster: targetNodes,
+		BinDir:  "/target/bindir",
+		Version: dbconn.GPDBVersion{},
 	}
 
-	hub := New(&sourceCluster, &targetCluster, grpc.DialContext, &Config{}, &upgradestatus.ChecklistManager{})
+	hub := New(&PersistedConfig{&sourceCluster, &targetCluster}, grpc.DialContext, &Config{}, &upgradestatus.ChecklistManager{})
 
 	t.Run("copies the master data directory to each primary host", func(t *testing.T) {
 		ctrl := gomock.NewController(t)

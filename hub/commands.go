@@ -6,10 +6,9 @@ import (
 	"path/filepath"
 	"runtime/debug"
 
-	"github.com/pkg/errors"
-
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/spf13/cobra"
+	"golang.org/x/xerrors"
 	"google.golang.org/grpc"
 
 	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
@@ -18,6 +17,8 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/daemon"
 	"github.com/greenplum-db/gpupgrade/utils/log"
 )
+
+const ConfigFileName = "config"
 
 // This directory to have the implementation code for the gRPC server to serve
 // Minimal CLI command parsing to embrace that booting this binary to run the hub might have some flags like a log dir
@@ -53,30 +54,16 @@ func Command() *cobra.Command {
 				return fmt.Errorf("gpupgrade state dir (%s) does not exist as a directory.", conf.StateDir)
 			}
 
-			// the hub needs to be able to be restarted at any time, including
-			//  the first time.  So we populate the cluster here.
-			// TODO: design a better scheme for this.
-			source := &utils.Cluster{
-				ConfigPath: filepath.Join(conf.StateDir, utils.SOURCE_CONFIG_FILENAME),
-			}
-			target := &utils.Cluster{
-				ConfigPath: filepath.Join(conf.StateDir, utils.TARGET_CONFIG_FILENAME),
-			}
-
-			errSource := source.Load()
-			errTarget := target.Load()
-			if errSource != nil && errTarget != nil {
-				errBoth := errors.Errorf("Source error: %s\nTarget error: %s", errSource.Error(), errTarget.Error())
-				return errors.Wrap(errBoth, "Unable to load source or target cluster configuration")
-			} else if errSource != nil {
-				return errors.Wrap(errSource, "Unable to load source cluster configuration")
-			} else if errTarget != nil {
-				return errors.Wrap(errTarget, "Unable to load target cluster configuration")
+			// Load the hub persistent configuration.
+			path := filepath.Join(conf.StateDir, ConfigFileName)
+			pconf, err := loadConfig(path)
+			if err != nil {
+				return err
 			}
 
 			cm := upgradestatus.NewChecklistManager(conf.StateDir)
 
-			h := New(source, target, grpc.DialContext, conf, cm)
+			h := New(pconf, grpc.DialContext, conf, cm)
 
 			// Set up the checklist steps in order.
 			//
@@ -115,4 +102,20 @@ func Command() *cobra.Command {
 	daemon.MakeDaemonizable(cmd, &shouldDaemonize)
 
 	return cmd
+}
+
+func loadConfig(path string) (*PersistedConfig, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, xerrors.Errorf("opening configuration file: %w", err)
+	}
+	defer file.Close()
+
+	conf := new(PersistedConfig)
+	err = conf.Load(file)
+	if err != nil {
+		return nil, xerrors.Errorf("reading configuration file: %w", err)
+	}
+
+	return conf, nil
 }

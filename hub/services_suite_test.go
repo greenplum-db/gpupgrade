@@ -63,7 +63,8 @@ var _ = BeforeEach(func() {
 		HubToAgentPort: port,
 		StateDir:       dir,
 	}
-	testHub = hub.New(source, target, dialer, hubConf, cm)
+	conf := &hub.PersistedConfig{source, target}
+	testHub = hub.New(conf, dialer, hubConf, cm)
 })
 
 var _ = AfterEach(func() {

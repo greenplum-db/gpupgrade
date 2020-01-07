@@ -9,7 +9,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/greenplum-db/gpupgrade/utils"
+	"github.com/greenplum-db/gpupgrade/hub"
 
 	. "github.com/onsi/gomega"
 
@@ -225,50 +225,39 @@ func TestCreateInitialClusterConfigs(t *testing.T) {
 		t.Fatalf("failed to create state dir %#v", err)
 	}
 
-	oldBinDir := "old/dir/bin"
-	newBinDir := "new/dir/bin"
-	var sourceOld, targetOld os.FileInfo
+	var sourceOld os.FileInfo
 
 	t.Run("test idempotence", func(t *testing.T) {
 
 		{ // creates initial cluster config files if none exist or fails"
-			err = CreateInitialClusterConfigs(oldBinDir, newBinDir)
+			err = CreateInitialClusterConfigs()
 			if err != nil {
 				t.Fatalf("unexpected error %#v", err)
 			}
 
-			if sourceOld, err = os.Stat(filepath.Join(stateDir, utils.SOURCE_CONFIG_FILENAME)); err != nil {
-				t.Errorf("unexpected error %#v", err)
-			}
-			if targetOld, err = os.Stat(filepath.Join(stateDir, utils.TARGET_CONFIG_FILENAME)); err != nil {
+			if sourceOld, err = os.Stat(filepath.Join(stateDir, hub.ConfigFileName)); err != nil {
 				t.Errorf("unexpected error %#v", err)
 			}
 		}
 
 		{ // creating cluster config files is idempotent
-			err = CreateInitialClusterConfigs(oldBinDir, newBinDir)
+			err = CreateInitialClusterConfigs()
 			if err != nil {
 				t.Fatalf("unexpected error %#v", err)
 			}
 
-			var sourceNew, targetNew os.FileInfo
-			if sourceNew, err = os.Stat(filepath.Join(stateDir, utils.SOURCE_CONFIG_FILENAME)); err != nil {
-				t.Errorf("got unexpected error %#v", err)
-			}
-			if targetNew, err = os.Stat(filepath.Join(stateDir, utils.TARGET_CONFIG_FILENAME)); err != nil {
+			var sourceNew os.FileInfo
+			if sourceNew, err = os.Stat(filepath.Join(stateDir, hub.ConfigFileName)); err != nil {
 				t.Errorf("got unexpected error %#v", err)
 			}
 
 			if sourceOld.ModTime() != sourceNew.ModTime() {
 				t.Errorf("want %#v got %#v", sourceOld.ModTime(), sourceNew.ModTime())
 			}
-			if targetOld.ModTime() != targetNew.ModTime() {
-				t.Errorf("want %#v got %#v", targetOld.ModTime(), targetNew.ModTime())
-			}
 		}
 
 		{ // creating cluster config files succeeds on multiple runs
-			err = CreateInitialClusterConfigs(oldBinDir, newBinDir)
+			err = CreateInitialClusterConfigs()
 			if err != nil {
 				t.Fatalf("unexpected error %#v", err)
 			}

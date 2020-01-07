@@ -4,14 +4,11 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 
-	"github.com/pkg/errors"
-
-	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 
+	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
@@ -39,43 +36,26 @@ func CreateStateDir() (err error) {
 	return nil
 }
 
-func CreateInitialClusterConfigs(sourceBinDir, targetBinDir string) (err error) {
+func CreateInitialClusterConfigs() (err error) {
 	s := Substep("Creating initial cluster config files...")
 	defer s.Finish(&err)
 
-	stateDir := utils.GetStateDir()
-	emptyCluster := cluster.NewCluster([]cluster.SegConfig{})
+	// if empty json configuration file exists, skip recreating it
+	filename := filepath.Join(utils.GetStateDir(), hub.ConfigFileName)
+	_, err = os.Stat(filename)
 
-	source := &utils.Cluster{
-		Cluster:    emptyCluster,
-		BinDir:     path.Clean(sourceBinDir),
-		ConfigPath: filepath.Join(stateDir, utils.SOURCE_CONFIG_FILENAME),
-	}
-
-	target := &utils.Cluster{
-		Cluster:    emptyCluster,
-		BinDir:     path.Clean(targetBinDir),
-		ConfigPath: filepath.Join(stateDir, utils.TARGET_CONFIG_FILENAME),
-	}
-
-	if source.Load() == nil && target.Load() == nil {
-		gplog.Debug("Initial cluster config files(%s or %s) already present...skipping.", source.ConfigPath, target.ConfigPath)
+	if err == nil {
+		gplog.Debug("Initial cluster configuration file %s already present...skipping", filename)
 		return nil
 	}
 
-	// Create empty clusters in source and target so that gpupgrade hub can
-	// start without having replaced them with current values.
-	// TODO: implement a slicker scheme to allow this.
-	err = source.Commit()
+	file, err := os.Create(filename)
 	if err != nil {
-		return errors.Wrap(err, "Unable to save empty source cluster configuration")
+		return err
 	}
+	defer file.Close()
 
-	err = target.Commit()
-	if err != nil {
-		return errors.Wrap(err, "Unable to save empty target cluster configuration")
-	}
-
+	fmt.Fprintf(file, "{}") // the hub will fill this in during initialization
 	return nil
 }
 

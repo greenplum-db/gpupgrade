@@ -30,12 +30,6 @@ teardown() {
     fi
 }
 
-@test "hub saves cluster configs to disk when initialized" {
-    # XXX how useful is a test for this behavior?
-    [ -f "$GPUPGRADE_HOME"/source_cluster_config.json ]
-    [ -f "$GPUPGRADE_HOME"/target_cluster_config.json ]
-}
-
 @test "hub daemonizes and prints the PID when passed the --daemonize option" {
     gpupgrade kill-services
 
@@ -50,24 +44,14 @@ teardown() {
     [ $procname = "gpupgrade" ] || fail "actual process name: $procname"
 }
 
-@test "hub fails if the source configuration hasn't been initialized" {
+@test "hub fails if the configuration hasn't been initialized" {
     gpupgrade kill-services
 
-    rm $GPUPGRADE_HOME/source_cluster_config.json
+    rm $GPUPGRADE_HOME/config
     run gpupgrade hub --daemonize
     [ "$status" -eq 1 ]
 
-    [[ "$output" = *"Unable to load source cluster configuration"* ]]
-}
-
-@test "hub fails if the target configuration hasn't been initialized" {
-    gpupgrade kill-services
-
-    rm $GPUPGRADE_HOME/target_cluster_config.json
-    run gpupgrade hub --daemonize
-    [ "$status" -eq 1 ]
-
-    [[ "$output" = *"Unable to load target cluster configuration"* ]]
+    [[ "$output" = *"config: no such file or directory"* ]]
 }
 
 @test "initialize returns an error when it is ran twice" {
