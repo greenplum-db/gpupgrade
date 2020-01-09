@@ -82,8 +82,10 @@ teardown() {
     # Clean up. Use SIGINT rather than SIGTERM to avoid a nasty-gram from BATS.
     kill -INT $bgproc
 
-    # ensure that the process is cleared
-    wait $bgproc
+    # ensure that the process is cleared. Any exit code other than 127
+    # (indicating that the process didn't exist) is fine, just as long as the
+    # process exits.
+    wait $bgproc || [ "$?" -ne 127 ]
 }
 
 outputContains() {
