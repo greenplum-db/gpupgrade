@@ -69,7 +69,6 @@ type Connection struct {
 type Config struct {
 	CliToHubPort   int
 	HubToAgentPort int
-	StateDir       string
 	LogDir         string
 }
 
@@ -210,7 +209,7 @@ func (h *Hub) Stop(closeAgentConns bool) {
 }
 
 func (h *Hub) RestartAgents(ctx context.Context, in *idl.RestartAgentsRequest) (*idl.RestartAgentsReply, error) {
-	restartedHosts, err := RestartAgents(ctx, nil, h.source.GetHostnames(), h.conf.HubToAgentPort, h.conf.StateDir)
+	restartedHosts, err := RestartAgents(ctx, nil, h.source.GetHostnames(), h.conf.HubToAgentPort, utils.GetStateDir())
 	return &idl.RestartAgentsReply{AgentHosts: restartedHosts}, err
 }
 

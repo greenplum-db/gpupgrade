@@ -28,7 +28,7 @@ func (h *Hub) GenerateInitsystemConfig(ports []uint32) (int, error) {
 }
 
 func (h *Hub) initsystemConfPath() string {
-	return filepath.Join(h.conf.StateDir, "gpinitsystem_config")
+	return filepath.Join(utils.GetStateDir(), "gpinitsystem_config")
 }
 
 func (h *Hub) writeConf(sourceDBConn *dbconn.DBConn, ports []uint32) (int, error) {

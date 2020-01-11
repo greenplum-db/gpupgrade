@@ -14,7 +14,7 @@ import (
 var execCommand = exec.Command
 
 func (h *Hub) UpgradeMaster(stream OutStreams, checkOnly bool) error {
-	wd := utils.MasterPGUpgradeDirectory(h.conf.StateDir)
+	wd := utils.MasterPGUpgradeDirectory(utils.GetStateDir())
 	err := utils.System.MkdirAll(wd, 0700)
 	if err != nil {
 		return err

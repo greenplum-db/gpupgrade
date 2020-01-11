@@ -61,7 +61,6 @@ var _ = BeforeEach(func() {
 	client = mock_idl.NewMockAgentClient(ctrl)
 	hubConf = &hub.Config{
 		HubToAgentPort: port,
-		StateDir:       dir,
 	}
 	testHub = hub.New(source, target, dialer, hubConf, cm)
 })

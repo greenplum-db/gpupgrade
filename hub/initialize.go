@@ -121,7 +121,7 @@ func (h *Hub) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest, st
 
 // create old/new clusters, write to disk and re-read from disk to make sure it is "durable"
 func (h *Hub) fillClusterConfigsSubStep(_ OutStreams, oldBinDir, newBinDir string, oldPort int) error {
-	source := &utils.Cluster{BinDir: path.Clean(oldBinDir), ConfigPath: filepath.Join(h.conf.StateDir, utils.SOURCE_CONFIG_FILENAME)}
+	source := &utils.Cluster{BinDir: path.Clean(oldBinDir), ConfigPath: filepath.Join(utils.GetStateDir(), utils.SOURCE_CONFIG_FILENAME)}
 	dbConn := db.NewDBConn("localhost", oldPort, "template1")
 	defer dbConn.Close()
 	err := ReloadAndCommitCluster(source, dbConn)
@@ -130,7 +130,7 @@ func (h *Hub) fillClusterConfigsSubStep(_ OutStreams, oldBinDir, newBinDir strin
 	}
 
 	emptyCluster := cluster.NewCluster([]cluster.SegConfig{})
-	target := &utils.Cluster{Cluster: emptyCluster, BinDir: path.Clean(newBinDir), ConfigPath: filepath.Join(h.conf.StateDir, utils.TARGET_CONFIG_FILENAME)}
+	target := &utils.Cluster{Cluster: emptyCluster, BinDir: path.Clean(newBinDir), ConfigPath: filepath.Join(utils.GetStateDir(), utils.TARGET_CONFIG_FILENAME)}
 	err = target.Commit()
 	if err != nil {
 		return errors.Wrap(err, "Unable to save target cluster configuration")
@@ -185,7 +185,6 @@ func getAgentPath() (string, error) {
 // TODO: use the implementation in RestartAgents() for this function and combine them
 func (h *Hub) startAgentsSubStep(stream OutStreams) error {
 	source := h.source
-	stateDir := h.conf.StateDir
 
 	// XXX If there are failures, does it matter what agents have successfully
 	// started, or do we just want to stop all of them and kick back to the
@@ -203,7 +202,7 @@ func (h *Hub) startAgentsSubStep(stream OutStreams) error {
 	// we execute locally or via SSH for the master, so we don't know whether
 	// GPUPGRADE_HOME is going to be inherited.
 	runAgentCmd := func(contentID int) string {
-		return agentPath + " agent --daemonize --state-directory " + stateDir
+		return agentPath + " agent --daemonize --state-directory " + utils.GetStateDir()
 	}
 
 	errStr := "Failed to start all gpupgrade agents"

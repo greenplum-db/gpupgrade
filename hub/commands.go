@@ -40,27 +40,26 @@ func Command() *cobra.Command {
 			conf := &Config{
 				CliToHubPort:   7527,
 				HubToAgentPort: 6416,
-				StateDir:       utils.GetStateDir(),
 				LogDir:         logdir,
 			}
 
-			finfo, err := os.Stat(conf.StateDir)
+			finfo, err := os.Stat(utils.GetStateDir())
 			if os.IsNotExist(err) {
-				return fmt.Errorf("gpupgrade state dir (%s) does not exist. Did you run gpupgrade initialize?", conf.StateDir)
+				return fmt.Errorf("gpupgrade state dir (%s) does not exist. Did you run gpupgrade initialize?", utils.GetStateDir())
 			} else if err != nil {
 				return err
 			} else if !finfo.IsDir() {
-				return fmt.Errorf("gpupgrade state dir (%s) does not exist as a directory.", conf.StateDir)
+				return fmt.Errorf("gpupgrade state dir (%s) does not exist as a directory.", utils.GetStateDir())
 			}
 
 			// the hub needs to be able to be restarted at any time, including
 			//  the first time.  So we populate the cluster here.
 			// TODO: design a better scheme for this.
 			source := &utils.Cluster{
-				ConfigPath: filepath.Join(conf.StateDir, utils.SOURCE_CONFIG_FILENAME),
+				ConfigPath: filepath.Join(utils.GetStateDir(), utils.SOURCE_CONFIG_FILENAME),
 			}
 			target := &utils.Cluster{
-				ConfigPath: filepath.Join(conf.StateDir, utils.TARGET_CONFIG_FILENAME),
+				ConfigPath: filepath.Join(utils.GetStateDir(), utils.TARGET_CONFIG_FILENAME),
 			}
 
 			errSource := source.Load()
@@ -74,7 +73,7 @@ func Command() *cobra.Command {
 				return errors.Wrap(errTarget, "Unable to load target cluster configuration")
 			}
 
-			cm := upgradestatus.NewChecklistManager(conf.StateDir)
+			cm := upgradestatus.NewChecklistManager(utils.GetStateDir())
 
 			h := New(source, target, grpc.DialContext, conf, cm)
 
