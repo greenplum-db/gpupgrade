@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -15,7 +16,9 @@ import (
 )
 
 var (
-	System = InitializeSystemFunctions()
+	System          = InitializeSystemFunctions()
+	setStateDirOnce sync.Once
+	stateDir        string
 )
 
 /*
@@ -113,10 +116,13 @@ func GetHost() (string, error) {
 }
 
 func GetStateDir() string {
-	stateDir := os.Getenv("GPUPGRADE_HOME")
-	if stateDir == "" {
-		stateDir = filepath.Join(os.Getenv("HOME"), ".gpupgrade")
-	}
+
+	setStateDirOnce.Do(func() {
+		stateDir = os.Getenv("GPUPGRADE_HOME")
+		if stateDir == "" {
+			stateDir = filepath.Join(os.Getenv("HOME"), ".gpupgrade")
+		}
+	})
 
 	return stateDir
 }

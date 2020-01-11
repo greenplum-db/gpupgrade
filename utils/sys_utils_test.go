@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/user"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 
@@ -193,6 +194,42 @@ var _ = Describe("user utils", func() {
 
 			_, err = os.Stat(tempFileName)
 			Expect(err).ToNot(HaveOccurred())
+		})
+	})
+
+	Describe("GetStateDir()", func() {
+		It("correctly uses sync.Once and latches the value on the first call", func() {
+
+			var stateDir_1 string
+			{ // the first call to GetStateDir() sets the value to GPUPGRADE_HOME
+				home_1, err := ioutil.TempDir("", "GetStateDir_")
+				Expect(err).ToNot(HaveOccurred())
+
+				oldStateDir, isSet := os.LookupEnv("GPUGRADE_HOME")
+				defer func() {
+					if isSet {
+						os.Setenv("GPUPGRADE_HOME", oldStateDir)
+					}
+				}()
+				stateDir_1 = filepath.Join(home_1, ".stateDir_1")
+				err = os.Setenv("GPUPGRADE_HOME", stateDir_1)
+				Expect(err).ToNot(HaveOccurred())
+
+				curStateDir := GetStateDir()
+				Expect(curStateDir).To(Equal(stateDir_1))
+			}
+
+			{ // the second call to GetStateDir() preserves the value of the first call
+				home_2, err := ioutil.TempDir("", "GetStateDir_")
+				Expect(err).ToNot(HaveOccurred())
+				stateDir_2 := filepath.Join(home_2, ".stateDir_2")
+				err = os.Setenv("GPUPGRADE_HOME", stateDir_2)
+				Expect(err).ToNot(HaveOccurred())
+
+				curStateDir := GetStateDir()
+				Expect(curStateDir).To(Equal(stateDir_1))
+				Expect(curStateDir).ToNot(Equal(stateDir_2))
+			}
 		})
 	})
 })
