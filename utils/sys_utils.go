@@ -116,14 +116,17 @@ func GetHost() (string, error) {
 }
 
 func GetStateDir() string {
-
 	setStateDirOnce.Do(func() {
-		stateDir = os.Getenv("GPUPGRADE_HOME")
-		if stateDir == "" {
-			stateDir = filepath.Join(os.Getenv("HOME"), ".gpupgrade")
-		}
+		getStateDirInternal()
 	})
+	return stateDir
+}
 
+func getStateDirInternal() string {
+	stateDir = os.Getenv("GPUPGRADE_HOME")
+	if stateDir == "" {
+		stateDir = filepath.Join(os.Getenv("HOME"), ".gpupgrade")
+	}
 	return stateDir
 }
 

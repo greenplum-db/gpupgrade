@@ -209,6 +209,8 @@ var _ = Describe("user utils", func() {
 				defer func() {
 					if isSet {
 						os.Setenv("GPUPGRADE_HOME", oldStateDir)
+					} else {
+						os.Unsetenv("GPUPGRADE_HOME")
 					}
 				}()
 				stateDir_1 = filepath.Join(home_1, ".stateDir_1")
@@ -230,6 +232,50 @@ var _ = Describe("user utils", func() {
 				Expect(curStateDir).To(Equal(stateDir_1))
 				Expect(curStateDir).ToNot(Equal(stateDir_2))
 			}
+		})
+	})
+
+	Describe("getStateDirInternal()", func() {
+
+		origStateDir, isSet := os.LookupEnv("GPUGRADE_HOME")
+		defer func() {
+			if isSet {
+				os.Setenv("GPUPGRADE_HOME", origStateDir)
+			} else {
+				os.Unsetenv("GPUPGRADE_HOME")
+			}
+		}()
+
+		It("uses GPUPGRADE_HOME instead of HOME if set", func() {
+
+			home, err := ioutil.TempDir("", "")
+			Expect(err).ToNot(HaveOccurred())
+
+			_, isSet := os.LookupEnv("HOME")
+			Expect(isSet).To(Equal(true))
+
+			expectedDir := filepath.Join(home, ".gpupgrade")
+			err = os.Setenv("GPUPGRADE_HOME", expectedDir)
+			Expect(err).ToNot(HaveOccurred())
+
+			actualDir := getStateDirInternal()
+			Expect(expectedDir).To(Equal(actualDir))
+
+		})
+
+		It("uses HOME if GPUPGRADE_HOME is not set", func() {
+
+			curHOME, isSet := os.LookupEnv("HOME")
+			Expect(isSet).To(Equal(true))
+
+			err := os.Unsetenv("GPUPGRADE_HOME")
+			Expect(err).ToNot(HaveOccurred())
+
+			expectedDir := filepath.Join(curHOME, ".gpupgrade")
+
+			actualDir := getStateDirInternal()
+			Expect(expectedDir).To(Equal(actualDir))
+
 		})
 	})
 })

@@ -147,6 +147,8 @@ func TestCreateStateDir_TestCreateInitialClusterConfigs(t *testing.T) {
 	defer func() {
 		if isSet {
 			os.Setenv("GPUPGRADE_HOME", oldStateDir)
+		} else {
+			os.Unsetenv("GPUPGRADE_HOME")
 		}
 	}()
 
