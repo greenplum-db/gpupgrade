@@ -59,12 +59,8 @@ var _ = BeforeEach(func() {
 	source, target = testutils.CreateMultinodeSampleClusterPair(dir)
 	mockAgent, dialer, port = mock_agent.NewMockAgentServer()
 	client = mock_idl.NewMockAgentClient(ctrl)
-	hubConf = &hub.Config{
-		HubToAgentPort: port,
-		StateDir:       dir,
-	}
-	conf := &hub.PersistedConfig{source, target}
-	testHub = hub.New(conf, dialer, hubConf, cm)
+	conf := &hub.Config{source, target, 0, port}
+	testHub = hub.New(conf, dialer, dir, cm)
 })
 
 var _ = AfterEach(func() {

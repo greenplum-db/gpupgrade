@@ -38,8 +38,8 @@ func (h *Hub) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSe
 
 	err = h.Substep(executeStream, upgradestatus.UPGRADE_MASTER,
 		func(streams OutStreams) error {
-			stateDir := h.conf.StateDir
-			return UpgradeMaster(h.source, h.target, stateDir, streams, false)
+			stateDir := h.StateDir
+			return UpgradeMaster(h.Source, h.Target, stateDir, streams, false)
 		})
 	if err != nil {
 		return err
@@ -60,7 +60,7 @@ func (h *Hub) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSe
 
 	err = h.Substep(executeStream, upgradestatus.START_TARGET_CLUSTER,
 		func(streams OutStreams) error {
-			return StartCluster(streams, h.target)
+			return StartCluster(streams, h.Target)
 		})
 	return err
 }

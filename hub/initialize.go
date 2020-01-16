@@ -17,7 +17,7 @@ import (
 )
 
 func (h *Hub) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_InitializeServer) (err error) {
-	s, err := BeginStep(h.conf.StateDir, "initialize", stream)
+	s, err := BeginStep(h.StateDir, "initialize", stream)
 	if err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ func (h *Hub) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initiali
 }
 
 func (h *Hub) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest, stream idl.CliToHub_InitializeCreateClusterServer) (err error) {
-	s, err := BeginStep(h.conf.StateDir, "initialize", stream)
+	s, err := BeginStep(h.StateDir, "initialize", stream)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func (h *Hub) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest, st
 	})
 
 	s.Run(idl.UpgradeSteps_SHUTDOWN_SOURCE_CLUSTER, func(stream step.OutStreams) error {
-		return StopCluster(stream, h.source)
+		return StopCluster(stream, h.Source)
 	})
 
 	s.Run(idl.UpgradeSteps_INIT_TARGET_CLUSTER, func(stream step.OutStreams) error {
@@ -102,11 +102,6 @@ func (h *Hub) fillClusterConfigsSubStep(_ OutStreams, oldBinDir, newBinDir strin
 		return err
 	}
 
-	// link in source/target to hub
-	// TODO: remove once we deduplicate
-	h.source = h.Source
-	h.target = h.Target
-
 	return nil
 }
 
@@ -121,8 +116,8 @@ func getAgentPath() (string, error) {
 
 // TODO: use the implementation in RestartAgents() for this function and combine them
 func (h *Hub) startAgentsSubStep(stream OutStreams) error {
-	source := h.source
-	stateDir := h.conf.StateDir
+	source := h.Source
+	stateDir := h.StateDir
 
 	// XXX If there are failures, does it matter what agents have successfully
 	// started, or do we just want to stop all of them and kick back to the

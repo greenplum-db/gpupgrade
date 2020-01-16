@@ -23,12 +23,12 @@ import (
 )
 
 func (h *Hub) GenerateInitsystemConfig(ports []uint32) (int, error) {
-	sourceDBConn := db.NewDBConn("localhost", int(h.source.MasterPort()), "template1")
+	sourceDBConn := db.NewDBConn("localhost", int(h.Source.MasterPort()), "template1")
 	return h.writeConf(sourceDBConn, ports)
 }
 
 func (h *Hub) initsystemConfPath() string {
-	return filepath.Join(h.conf.StateDir, "gpinitsystem_config")
+	return filepath.Join(h.StateDir, "gpinitsystem_config")
 }
 
 func (h *Hub) writeConf(sourceDBConn *dbconn.DBConn, ports []uint32) (int, error) {
@@ -38,7 +38,7 @@ func (h *Hub) writeConf(sourceDBConn *dbconn.DBConn, ports []uint32) (int, error
 	}
 	defer sourceDBConn.Close()
 
-	gpinitsystemConfig, err := CreateInitialInitsystemConfig(h.source.MasterDataDir())
+	gpinitsystemConfig, err := CreateInitialInitsystemConfig(h.Source.MasterDataDir())
 	if err != nil {
 		return 0, err
 	}
@@ -48,7 +48,7 @@ func (h *Hub) writeConf(sourceDBConn *dbconn.DBConn, ports []uint32) (int, error
 		return 0, err
 	}
 
-	gpinitsystemConfig, masterPort, err := WriteSegmentArray(gpinitsystemConfig, h.source, ports)
+	gpinitsystemConfig, masterPort, err := WriteSegmentArray(gpinitsystemConfig, h.Source, ports)
 	if err != nil {
 		return 0, xerrors.Errorf("generating segment array: %w", err)
 	}
@@ -74,10 +74,6 @@ func (h *Hub) CreateTargetCluster(stream OutStreams, masterPort int) error {
 		return err
 	}
 
-	// link in target to hub
-	// TODO: remove once we deduplicate
-	h.target = h.Target
-
 	return nil
 }
 
@@ -87,12 +83,12 @@ func (h *Hub) InitTargetCluster(stream OutStreams) error {
 		return errors.Wrap(err, "Could not get/create agents")
 	}
 
-	err = CreateAllDataDirectories(agentConns, h.source)
+	err = CreateAllDataDirectories(agentConns, h.Source)
 	if err != nil {
 		return err
 	}
 
-	return RunInitsystemForTargetCluster(stream, h.target, h.initsystemConfPath())
+	return RunInitsystemForTargetCluster(stream, h.Target, h.initsystemConfPath())
 }
 
 func GetCheckpointSegmentsAndEncoding(gpinitsystemConfig []string, dbConnector *dbconn.DBConn) ([]string, error) {

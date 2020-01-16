@@ -14,12 +14,12 @@ var startStopClusterCmd = exec.Command
 
 func (h *Hub) ShutdownCluster(stream OutStreams, isSource bool) error {
 	if isSource {
-		err := StopCluster(stream, h.source)
+		err := StopCluster(stream, h.Source)
 		if err != nil {
 			return errors.Wrap(err, "failed to stop source cluster")
 		}
 	} else {
-		err := StopCluster(stream, h.target)
+		err := StopCluster(stream, h.Target)
 		if err != nil {
 			return errors.Wrap(err, "failed to stop target cluster")
 		}

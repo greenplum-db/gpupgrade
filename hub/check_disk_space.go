@@ -21,7 +21,7 @@ func (h *Hub) CheckDiskSpace(ctx context.Context, in *idl.CheckDiskSpaceRequest)
 		return reply, err
 	}
 
-	reply.Failed, err = checkDiskSpace(ctx, h.source, agents, disk.Local, in)
+	reply.Failed, err = checkDiskSpace(ctx, h.Source, agents, disk.Local, in)
 	return reply, err
 }
 

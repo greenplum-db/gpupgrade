@@ -127,7 +127,7 @@ func TestSubstep(t *testing.T) {
 	testhelper.SetupTestLogger()
 
 	cm := testutils.NewMockChecklistManager()
-	hub := New(&PersistedConfig{nil, nil}, nil, nil, cm)
+	hub := New(&Config{}, nil, "", cm)
 
 	t.Run("sends execution status to checklist and client", func(t *testing.T) {
 		ctrl := gomock.NewController(t)

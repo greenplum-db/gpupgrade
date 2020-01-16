@@ -38,32 +38,34 @@ func Command() *cobra.Command {
 			debug.SetTraceback("all")
 			defer log.WritePanics()
 
-			conf := &Config{
-				CliToHubPort:   7527,
-				HubToAgentPort: 6416,
-				StateDir:       utils.GetStateDir(),
-				LogDir:         logdir,
-			}
-
-			finfo, err := os.Stat(conf.StateDir)
+			stateDir := utils.GetStateDir()
+			finfo, err := os.Stat(stateDir)
 			if os.IsNotExist(err) {
-				return fmt.Errorf("gpupgrade state dir (%s) does not exist. Did you run gpupgrade initialize?", conf.StateDir)
+				return fmt.Errorf("gpupgrade state dir (%s) does not exist. Did you run gpupgrade initialize?", stateDir)
 			} else if err != nil {
 				return err
 			} else if !finfo.IsDir() {
-				return fmt.Errorf("gpupgrade state dir (%s) does not exist as a directory.", conf.StateDir)
+				return fmt.Errorf("gpupgrade state dir (%s) does not exist as a directory.", stateDir)
 			}
 
 			// Load the hub persistent configuration.
-			path := filepath.Join(conf.StateDir, ConfigFileName)
-			pconf, err := loadConfig(path)
+			//
+			// they're not defined in the configuration (as happens
+			// pre-initialize), we still need good defaults.
+			conf := &Config{
+				Port:      7527,
+				AgentPort: 6416,
+			}
+
+			path := filepath.Join(stateDir, ConfigFileName)
+			err = loadConfig(conf, path)
 			if err != nil {
 				return err
 			}
 
-			cm := upgradestatus.NewChecklistManager(conf.StateDir)
+			cm := upgradestatus.NewChecklistManager(stateDir)
 
-			h := New(pconf, grpc.DialContext, conf, cm)
+			h := New(conf, grpc.DialContext, stateDir, cm)
 
 			// Set up the checklist steps in order.
 			//
@@ -104,18 +106,17 @@ func Command() *cobra.Command {
 	return cmd
 }
 
-func loadConfig(path string) (*PersistedConfig, error) {
+func loadConfig(conf *Config, path string) error {
 	file, err := os.Open(path)
 	if err != nil {
-		return nil, xerrors.Errorf("opening configuration file: %w", err)
+		return xerrors.Errorf("opening configuration file: %w", err)
 	}
 	defer file.Close()
 
-	conf := new(PersistedConfig)
 	err = conf.Load(file)
 	if err != nil {
-		return nil, xerrors.Errorf("reading configuration file: %w", err)
+		return xerrors.Errorf("reading configuration file: %w", err)
 	}
 
-	return conf, nil
+	return nil
 }

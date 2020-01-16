@@ -43,7 +43,7 @@ var _ = Describe("Hub", func() {
 		hubToAgentPort int
 		source         *utils.Cluster
 		target         *utils.Cluster
-		conf           *hub.PersistedConfig
+		conf           *hub.Config
 		err            error
 		mockDialer     hub.Dialer
 		mockStream     *msgStream
@@ -52,7 +52,7 @@ var _ = Describe("Hub", func() {
 	BeforeEach(func() {
 		agentA, mockDialer, hubToAgentPort = mock_agent.NewMockAgentServer()
 		source, target = testutils.CreateMultinodeSampleClusterPair("/tmp")
-		conf = &hub.PersistedConfig{source, target}
+		conf = &hub.Config{source, target, cliToHubPort, hubToAgentPort}
 		mockStream = &msgStream{}
 	})
 
@@ -62,10 +62,7 @@ var _ = Describe("Hub", func() {
 	})
 
 	It("will return from Start() with an error if Stop() is called first", func() {
-		hubConfig := &hub.Config{
-			CliToHubPort: cliToHubPort,
-		}
-		h := hub.New(conf, mockDialer, hubConfig, nil)
+		h := hub.New(conf, mockDialer, "", nil)
 
 		h.Stop(true)
 		go func() {
@@ -84,13 +81,10 @@ var _ = Describe("Hub", func() {
 		_, portString, err := net.SplitHostPort(listener.Addr().String())
 		Expect(err).NotTo(HaveOccurred())
 
-		cliToHubPort, err := strconv.Atoi(portString)
+		conf.Port, err = strconv.Atoi(portString)
 		Expect(err).NotTo(HaveOccurred())
 
-		hubConfig := &hub.Config{
-			CliToHubPort: cliToHubPort,
-		}
-		h := hub.New(conf, mockDialer, hubConfig, nil)
+		h := hub.New(conf, mockDialer, "", nil)
 
 		go func() {
 			err = h.Start()
@@ -103,10 +97,7 @@ var _ = Describe("Hub", func() {
 	// This is inherently testing a race. It will give false successes instead
 	// of false failures, so DO NOT ignore transient failures in this test!
 	It("will return from Start() if Stop is called concurrently", func() {
-		hubConfig := &hub.Config{
-			CliToHubPort: cliToHubPort,
-		}
-		h := hub.New(conf, mockDialer, hubConfig, nil)
+		h := hub.New(conf, mockDialer, "", nil)
 		done := make(chan bool, 1)
 
 		go func() {
@@ -119,10 +110,7 @@ var _ = Describe("Hub", func() {
 	})
 
 	It("closes open connections when shutting down", func() {
-		hubConfig := &hub.Config{
-			HubToAgentPort: hubToAgentPort,
-		}
-		h := hub.New(conf, mockDialer, hubConfig, nil)
+		h := hub.New(conf, mockDialer, "", nil)
 		go h.Start()
 
 		By("creating connections")
@@ -143,10 +131,7 @@ var _ = Describe("Hub", func() {
 	})
 
 	It("retrieves the agent connections for the hosts of non-master segments", func() {
-		hubConfig := &hub.Config{
-			HubToAgentPort: hubToAgentPort,
-		}
-		h := hub.New(conf, mockDialer, hubConfig, nil)
+		h := hub.New(conf, mockDialer, "", nil)
 
 		conns, err := h.AgentConns()
 		Expect(err).ToNot(HaveOccurred())
@@ -163,10 +148,7 @@ var _ = Describe("Hub", func() {
 	})
 
 	It("saves grpc connections for future calls", func() {
-		hubConfig := &hub.Config{
-			HubToAgentPort: hubToAgentPort,
-		}
-		h := hub.New(conf, mockDialer, hubConfig, nil)
+		h := hub.New(conf, mockDialer, "", nil)
 
 		newConns, err := h.AgentConns()
 		Expect(err).ToNot(HaveOccurred())
@@ -179,10 +161,7 @@ var _ = Describe("Hub", func() {
 
 	// XXX This test takes 1.5 seconds because of EnsureConnsAreReady(...)
 	It("returns an error if any connections have non-ready states", func() {
-		hubConfig := &hub.Config{
-			HubToAgentPort: hubToAgentPort,
-		}
-		h := hub.New(conf, mockDialer, hubConfig, nil)
+		h := hub.New(conf, mockDialer, "", nil)
 
 		conns, err := h.AgentConns()
 		Expect(err).ToNot(HaveOccurred())
@@ -202,22 +181,15 @@ var _ = Describe("Hub", func() {
 			return nil, errors.New("grpc dialer error")
 		}
 
-		hubConfig := &hub.Config{
-			HubToAgentPort: hubToAgentPort,
-		}
-
-		h := hub.New(conf, errDialer, hubConfig, nil)
+		h := hub.New(conf, errDialer, "", nil)
 
 		_, err := h.AgentConns()
 		Expect(err).To(HaveOccurred())
 	})
 
 	It("successfully initializes step by marking it as in-progress with status running", func() {
-		hubConfig := &hub.Config{
-			CliToHubPort: cliToHubPort,
-		}
 		mockChecklistManager := testutils.NewMockChecklistManager()
-		h := hub.New(conf, mockDialer, hubConfig, mockChecklistManager)
+		h := hub.New(conf, mockDialer, "", mockChecklistManager)
 		h.InitializeStep("dub-step", mockStream)
 
 		Expect(mockChecklistManager.GetStepReader("dub-step").Status()).To(Equal(idl.StepStatus_RUNNING))
@@ -225,13 +197,10 @@ var _ = Describe("Hub", func() {
 	})
 
 	It("returns an error when InitializeStep fails to reset state directory", func() {
-		hubConfig := &hub.Config{
-			CliToHubPort: cliToHubPort,
-		}
 		mockChecklistManager := testutils.NewMockChecklistManager()
 		mockChecklistManager.StepWriter.ResetStateDirErr = errors.New("permission denied")
 
-		h := hub.New(conf, mockDialer, hubConfig, mockChecklistManager)
+		h := hub.New(conf, mockDialer, "", mockChecklistManager)
 		_, err := h.InitializeStep("dub-step", mockStream)
 
 		Expect(err).To(HaveOccurred())
@@ -240,13 +209,10 @@ var _ = Describe("Hub", func() {
 	})
 
 	It("returns an error when InitializeStep fails to mark step as in-progress", func() {
-		hubConfig := &hub.Config{
-			CliToHubPort: cliToHubPort,
-		}
 		mockChecklistManager := testutils.NewMockChecklistManager()
 		mockChecklistManager.StepWriter.MarkInProgressErr = errors.New("EAGAIN")
 
-		h := hub.New(conf, mockDialer, hubConfig, mockChecklistManager)
+		h := hub.New(conf, mockDialer, "", mockChecklistManager)
 		_, err := h.InitializeStep("dub-step", mockStream)
 
 		Expect(err).To(HaveOccurred())
@@ -255,13 +221,10 @@ var _ = Describe("Hub", func() {
 	})
 
 	It("returns an error when stepwriter MarkComplete fails to mark step as complete", func() {
-		hubConfig := &hub.Config{
-			CliToHubPort: cliToHubPort,
-		}
 		mockChecklistManager := testutils.NewMockChecklistManager()
 		mockChecklistManager.StepWriter.MarkCompleteErr = errors.New("ENOENT")
 
-		h := hub.New(conf, mockDialer, hubConfig, mockChecklistManager)
+		h := hub.New(conf, mockDialer, "", mockChecklistManager)
 		step, err := h.InitializeStep("dub-step", mockStream)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -273,13 +236,10 @@ var _ = Describe("Hub", func() {
 	})
 
 	It("returns an error when stepwriter MarkFailed fails to mark step as failed", func() {
-		hubConfig := &hub.Config{
-			CliToHubPort: cliToHubPort,
-		}
 		mockChecklistManager := testutils.NewMockChecklistManager()
 		mockChecklistManager.StepWriter.MarkFailedErr = errors.New("EPERM")
 
-		h := hub.New(conf, mockDialer, hubConfig, mockChecklistManager)
+		h := hub.New(conf, mockDialer, "", mockChecklistManager)
 		step, err := h.InitializeStep("dub-step", mockStream)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -291,11 +251,8 @@ var _ = Describe("Hub", func() {
 	})
 
 	It("streams status updates from step transitions", func() {
-		hubConfig := &hub.Config{
-			CliToHubPort: cliToHubPort,
-		}
 		mockChecklistManager := testutils.NewMockChecklistManager()
-		h := hub.New(conf, mockDialer, hubConfig, mockChecklistManager)
+		h := hub.New(conf, mockDialer, "", mockChecklistManager)
 
 		step, err := h.InitializeStep("dub-step", mockStream)
 		Expect(err).ToNot(HaveOccurred())
@@ -312,9 +269,9 @@ func TestHubSaveConfig(t *testing.T) {
 	source, target := testutils.CreateMultinodeSampleClusterPair("/tmp")
 	source.Executor = new(cluster.GPDBExecutor)
 	target.Executor = new(cluster.GPDBExecutor)
-	conf := &hub.PersistedConfig{source, target}
+	conf := &hub.Config{source, target, 12345, 54321}
 
-	h := hub.New(conf, nil, &hub.Config{}, nil)
+	h := hub.New(conf, nil, "", nil)
 
 	t.Run("saves correct contents to disk", func(t *testing.T) {
 		// Set up utils.System.Create to return the write side of a pipe. We can
@@ -342,13 +299,13 @@ func TestHubSaveConfig(t *testing.T) {
 
 		// Reload the configuration from the read side of the pipe and ensure the
 		// contents are the same.
-		result := new(hub.PersistedConfig)
+		result := new(hub.Config)
 		if err := result.Load(read); err != nil {
 			t.Errorf("loading configuration results: %+v", err)
 		}
 
-		if !reflect.DeepEqual(h.PersistedConfig, result) {
-			t.Errorf("wrote config %#v, want %#v", result, h.PersistedConfig)
+		if !reflect.DeepEqual(h.Config, result) {
+			t.Errorf("wrote config %#v, want %#v", result, h.Config)
 		}
 	})
 

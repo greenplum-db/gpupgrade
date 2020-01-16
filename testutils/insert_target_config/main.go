@@ -34,7 +34,7 @@ func main() {
 
 	defer file.Close()
 
-	var config hub.PersistedConfig
+	var config hub.Config
 	err = config.Load(file)
 	if err != nil {
 		log.Fatal(err)

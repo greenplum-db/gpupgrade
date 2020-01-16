@@ -13,9 +13,9 @@ import (
 func (h *Hub) SetConfig(ctx context.Context, in *idl.SetConfigRequest) (*idl.SetConfigReply, error) {
 	switch in.Name {
 	case "old-bindir":
-		h.source.BinDir = in.Value
+		h.Source.BinDir = in.Value
 	case "new-bindir":
-		h.target.BinDir = in.Value
+		h.Target.BinDir = in.Value
 	default:
 		return nil, status.Errorf(codes.NotFound, "%s is not a valid configuration key", in.Name)
 	}
@@ -33,9 +33,9 @@ func (h *Hub) GetConfig(ctx context.Context, in *idl.GetConfigRequest) (*idl.Get
 
 	switch in.Name {
 	case "old-bindir":
-		resp.Value = h.source.BinDir
+		resp.Value = h.Source.BinDir
 	case "new-bindir":
-		resp.Value = h.target.BinDir
+		resp.Value = h.Target.BinDir
 	default:
 		return nil, status.Errorf(codes.NotFound, "%s is not a valid configuration key", in.Name)
 	}

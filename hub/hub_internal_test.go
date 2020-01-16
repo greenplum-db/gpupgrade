@@ -10,12 +10,12 @@ import (
 	"github.com/greenplum-db/gpupgrade/testutils"
 )
 
-func TestPersistedConfig(t *testing.T) {
+func TestConfig(t *testing.T) {
 	t.Run("saves itself to the provided stream", func(t *testing.T) {
 		source, target := testutils.CreateMultinodeSampleClusterPair("/tmp")
 		source.Executor = new(cluster.GPDBExecutor)
 		target.Executor = new(cluster.GPDBExecutor)
-		original := &PersistedConfig{source, target}
+		original := &Config{source, target, 12345, 54321}
 
 		buf := new(bytes.Buffer)
 		err := original.Save(buf)
@@ -27,7 +27,7 @@ func TestPersistedConfig(t *testing.T) {
 		// consumed by Load()).
 		contents := buf.String()
 
-		duplicate := new(PersistedConfig)
+		duplicate := new(Config)
 		err = duplicate.Load(buf)
 		if err != nil {
 			t.Errorf("Load() returned error %+v", err)

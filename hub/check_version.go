@@ -23,7 +23,7 @@ func (h *Hub) CheckVersion(ctx context.Context,
 
 	gplog.Info("starting CheckVersion")
 
-	masterPort := h.source.MasterPort()
+	masterPort := h.Source.MasterPort()
 
 	dbConnector := db.NewDBConn("localhost", masterPort, "template1")
 	defer dbConnector.Close()

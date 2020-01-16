@@ -45,7 +45,11 @@ func TestCopyMaster(t *testing.T) {
 		Version: dbconn.GPDBVersion{},
 	}
 
-	hub := New(&PersistedConfig{&sourceCluster, &targetCluster}, grpc.DialContext, &Config{}, &upgradestatus.ChecklistManager{})
+	conf := &Config{
+		Source: &sourceCluster,
+		Target: &targetCluster,
+	}
+	hub := New(conf, grpc.DialContext, "", &upgradestatus.ChecklistManager{})
 
 	t.Run("copies the master data directory to each primary host", func(t *testing.T) {
 		ctrl := gomock.NewController(t)

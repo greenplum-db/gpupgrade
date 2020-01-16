@@ -22,8 +22,8 @@ func (h *Hub) CopyMasterDataDir(_ OutStreams) error {
 
 	// Make sure sourceDir ends with a trailing slash so that rsync will
 	// transfer the directory contents and not the directory itself.
-	sourceDir := filepath.Clean(h.target.MasterDataDir()) + string(filepath.Separator)
-	commandMap := make(map[int][]string, len(h.target.ContentIDs)-1)
+	sourceDir := filepath.Clean(h.Target.MasterDataDir()) + string(filepath.Separator)
+	commandMap := make(map[int][]string, len(h.Target.ContentIDs)-1)
 
 	destinationDirName := "/tmp/masterDirCopy"
 
@@ -34,19 +34,19 @@ func (h *Hub) CopyMasterDataDir(_ OutStreams) error {
 	 * If there are primaries on the same host, the hostname will be
 	 * added for the corresponding primaries.
 	 */
-	for _, content := range contentsByHost(h.target, false) {
-		destinationDirectory := fmt.Sprintf("%s:%s", h.target.GetHostForContent(content), destinationDirName)
+	for _, content := range contentsByHost(h.Target, false) {
+		destinationDirectory := fmt.Sprintf("%s:%s", h.Target.GetHostForContent(content), destinationDirName)
 		commandMap[content] = []string{"rsync", rsyncFlags, sourceDir, destinationDirectory}
 	}
 
-	remoteOutput := h.source.ExecuteClusterCommand(cluster.ON_HOSTS, commandMap)
+	remoteOutput := h.Source.ExecuteClusterCommand(cluster.ON_HOSTS, commandMap)
 	for segmentID, segmentErr := range remoteOutput.Errors {
 		if segmentErr != nil { // TODO: Refactor remoteOutput to return maps with keys and valid values, and not values that can be nil. If there is no value, then do not have a key.
 			return multierror.Append(err, errors.Wrapf(segmentErr, "failed to copy master data directory to segment %d", segmentID))
 		}
 	}
 
-	copyErr := CopyMaster(h.agentConns, h.target, destinationDirName)
+	copyErr := CopyMaster(h.agentConns, h.Target, destinationDirName)
 	if copyErr != nil {
 		return multierror.Append(err, copyErr)
 	}

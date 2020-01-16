@@ -14,8 +14,8 @@ func (h *Hub) CheckUpgrade(stream OutStreams) error {
 	go func() {
 		defer wg.Done()
 
-		stateDir := h.conf.StateDir
-		err := UpgradeMaster(h.source, h.target, stateDir, stream, true)
+		stateDir := h.StateDir
+		err := UpgradeMaster(h.Source, h.Target, stateDir, stream, true)
 		if err != nil {
 			checkErrs <- err
 		}

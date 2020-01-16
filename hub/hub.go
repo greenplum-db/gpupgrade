@@ -38,9 +38,9 @@ var ErrHubStopped = errors.New("hub is stopped")
 type Dialer func(ctx context.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error)
 
 type Hub struct {
-	*PersistedConfig
+	*Config
 
-	conf *Config // TODO merge with PersistedConfig above
+	StateDir string
 
 	agentConns []*Connection
 	grpcDialer Dialer
@@ -49,10 +49,6 @@ type Hub struct {
 	mu     sync.Mutex
 	server *grpc.Server
 	lis    net.Listener
-
-	// TODO merge with PersistedConfig
-	source *utils.Cluster
-	target *utils.Cluster
 
 	// This is used both as a channel to communicate from Start() to
 	// Stop() to indicate to Stop() that it can finally terminate
@@ -73,24 +69,13 @@ type Connection struct {
 	CancelContext func()
 }
 
-type Config struct {
-	CliToHubPort   int
-	HubToAgentPort int
-	StateDir       string
-	LogDir         string
-}
-
-func New(pconf *PersistedConfig, grpcDialer Dialer, conf *Config, checklist upgradestatus.Checklist) *Hub {
+func New(conf *Config, grpcDialer Dialer, stateDir string, checklist upgradestatus.Checklist) *Hub {
 	h := &Hub{
-		PersistedConfig: pconf, // TODO merge with conf
-		stopped:         make(chan struct{}, 1),
-		conf:            conf,
-		grpcDialer:      grpcDialer,
-		checklist:       checklist,
-
-		// XXX these are duplicated
-		source: pconf.Source,
-		target: pconf.Target,
+		Config:     conf,
+		StateDir:   stateDir,
+		stopped:    make(chan struct{}, 1),
+		grpcDialer: grpcDialer,
+		checklist:  checklist,
 	}
 
 	return h
@@ -103,7 +88,7 @@ func (h *Hub) MakeDaemon() {
 }
 
 func (h *Hub) Start() error {
-	lis, err := net.Listen("tcp", ":"+strconv.Itoa(h.conf.CliToHubPort))
+	lis, err := net.Listen("tcp", ":"+strconv.Itoa(h.Port))
 	if err != nil {
 		return errors.Wrap(err, "failed to listen")
 	}
@@ -130,7 +115,7 @@ func (h *Hub) Start() error {
 	reflection.Register(server)
 
 	if h.daemon {
-		fmt.Printf("Hub started on port %d (pid %d)\n", h.conf.CliToHubPort, os.Getpid())
+		fmt.Printf("Hub started on port %d (pid %d)\n", h.Port, os.Getpid())
 		daemon.Daemonize()
 	}
 
@@ -220,7 +205,7 @@ func (h *Hub) Stop(closeAgentConns bool) {
 }
 
 func (h *Hub) RestartAgents(ctx context.Context, in *idl.RestartAgentsRequest) (*idl.RestartAgentsReply, error) {
-	restartedHosts, err := RestartAgents(ctx, nil, h.source.GetHostnames(), h.conf.HubToAgentPort, h.conf.StateDir)
+	restartedHosts, err := RestartAgents(ctx, nil, h.Source.GetHostnames(), h.AgentPort, h.StateDir)
 	return &idl.RestartAgentsReply{AgentHosts: restartedHosts}, err
 }
 
@@ -316,11 +301,11 @@ func (h *Hub) AgentConns() ([]*Connection, error) {
 		return h.agentConns, nil
 	}
 
-	hostnames := h.source.PrimaryHostnames()
+	hostnames := h.Source.PrimaryHostnames()
 	for _, host := range hostnames {
 		ctx, cancelFunc := context.WithTimeout(context.Background(), DialTimeout)
 		conn, err := h.grpcDialer(ctx,
-			host+":"+strconv.Itoa(h.conf.HubToAgentPort),
+			host+":"+strconv.Itoa(h.AgentPort),
 			grpc.WithInsecure(), grpc.WithBlock())
 		if err != nil {
 			err = errors.Errorf("grpcDialer failed: %s", err.Error())
@@ -370,32 +355,35 @@ func (h *Hub) closeAgentConns() {
 	}
 }
 
-// PersistedConfig contains all the information that will be persisted to/loaded
+// Config contains all the information that will be persisted to/loaded from
 // from disk during calls to Save() and Load().
-type PersistedConfig struct {
+type Config struct {
 	Source *utils.Cluster
 	Target *utils.Cluster
+
+	Port      int
+	AgentPort int
 }
 
-func (p *PersistedConfig) Load(r io.Reader) error {
+func (c *Config) Load(r io.Reader) error {
 	dec := json.NewDecoder(r)
-	return dec.Decode(p)
+	return dec.Decode(c)
 }
 
-func (p *PersistedConfig) Save(w io.Writer) error {
+func (c *Config) Save(w io.Writer) error {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
-	return enc.Encode(p)
+	return enc.Encode(c)
 }
 
 // SaveConfig persists the hub's configuration to disk.
 func (h *Hub) SaveConfig() (err error) {
 	// TODO: Switch to an atomic implementation like renameio. Consider what
-	// happens if PersistedConfig.Save() panics: we'll have truncated the file
+	// happens if Config.Save() panics: we'll have truncated the file
 	// on disk and the hub will be unable to recover. For now, since we normally
 	// only save the configuration during initialize and any configuration
 	// errors could be fixed by reinitializing, the risk seems small.
-	file, err := utils.System.Create(filepath.Join(h.conf.StateDir, ConfigFileName))
+	file, err := utils.System.Create(filepath.Join(h.StateDir, ConfigFileName))
 	if err != nil {
 		return err
 	}
@@ -406,7 +394,7 @@ func (h *Hub) SaveConfig() (err error) {
 		}
 	}()
 
-	err = h.PersistedConfig.Save(file)
+	err = h.Config.Save(file)
 	if err != nil {
 		return xerrors.Errorf("saving hub configuration: %w", err)
 	}
