@@ -159,7 +159,7 @@ func TestUpgradeMaster(t *testing.T) {
 		SetExecCommand(exectest.NewCommand(Success))
 		defer ResetExecCommand()
 
-		err := UpgradeMaster(source, target, tempDir, DevNull, false)
+		err := UpgradeMaster(source, target, tempDir, DevNull, false, false)
 		if err != nil {
 			t.Errorf("returned error %+v", err)
 		}
@@ -176,7 +176,7 @@ func TestUpgradeMaster(t *testing.T) {
 
 		stream := new(bufferedStreams)
 
-		err := UpgradeMaster(source, target, tempDir, stream, false)
+		err := UpgradeMaster(source, target, tempDir, stream, false, false)
 		if err != nil {
 			t.Errorf("returned error %+v", err)
 		}
@@ -198,7 +198,7 @@ func TestUpgradeMaster(t *testing.T) {
 		defer ResetExecCommand()
 
 		expectedErr := errors.New("write failed!")
-		err := UpgradeMaster(source, target, tempDir, failingStreams{expectedErr}, false)
+		err := UpgradeMaster(source, target, tempDir, failingStreams{expectedErr}, false, false)
 		if !xerrors.Is(err, expectedErr) {
 			t.Errorf("returned error %+v, want %+v", err, expectedErr)
 		}

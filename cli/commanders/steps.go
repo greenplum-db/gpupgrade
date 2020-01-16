@@ -38,12 +38,13 @@ var indicators = map[idl.StepStatus]string{
 	idl.StepStatus_FAILED:   "[FAILED]",
 }
 
-func Initialize(client idl.CliToHubClient, oldBinDir, newBinDir string, oldPort int, verbose bool) (err error) {
+func Initialize(client idl.CliToHubClient, oldBinDir, newBinDir string, oldPort int, linkMode bool, verbose bool) (err error) {
 
 	request := &idl.InitializeRequest{
-		OldBinDir: oldBinDir,
-		NewBinDir: newBinDir,
-		OldPort:   int32(oldPort),
+		OldBinDir:   oldBinDir,
+		NewBinDir:   newBinDir,
+		OldPort:     int32(oldPort),
+		UseLinkMode: linkMode,
 	}
 
 	stream, err := client.Initialize(context.Background(), request)

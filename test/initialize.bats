@@ -47,11 +47,11 @@ teardown() {
 @test "hub fails if the configuration hasn't been initialized" {
     gpupgrade kill-services
 
-    rm $GPUPGRADE_HOME/config
+    rm $GPUPGRADE_HOME/config.json
     run gpupgrade hub --daemonize
     [ "$status" -eq 1 ]
 
-    [[ "$output" = *"config: no such file or directory"* ]]
+    [[ "$output" = *"config.json: no such file or directory"* ]]
 }
 
 @test "initialize returns an error when it is ran twice" {

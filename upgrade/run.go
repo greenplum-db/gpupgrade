@@ -50,8 +50,13 @@ func Run(p SegmentPair, options ...Option) error {
 		"--new-port", strconv.Itoa(p.Target.Port),
 		"--mode", mode,
 	}
+
 	if opts.CheckOnly {
 		args = append(args, "--check")
+	}
+
+	if opts.UseLinkMode {
+		args = append(args, "--link")
 	}
 
 	// If the caller specified an explicit Command implementation to use, get
@@ -118,6 +123,13 @@ func WithCheckOnly() Option {
 	}
 }
 
+// WithLinkMode allows pg_upgrade to run upgrade with --link mode
+func WithLinkMode() Option {
+	return func(o *optionList) {
+		o.UseLinkMode = true
+	}
+}
+
 // WithExecCommand tells Run to use the provided function to obtain an exec.Cmd
 // for execution. This is provided so that callers that use the exectest package
 // may stub out execution of pg_upgrade during testing.
@@ -133,6 +145,7 @@ func WithExecCommand(execCommand func(string, ...string) *exec.Cmd) Option {
 type optionList struct {
 	Dir            string
 	CheckOnly      bool
+	UseLinkMode    bool
 	ExecCommand    func(string, ...string) *exec.Cmd
 	ExecCommandSet bool // was ExecCommand explicitly set?
 	SegmentMode    bool

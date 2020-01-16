@@ -13,7 +13,7 @@ var execCommand = exec.Command
 // XXX this makes more sense as a Hub method, but it's so difficult to stub a
 // Hub that the parameters have been split out for testing. Revisit if/when the
 // Hub monolith is broken up.
-func UpgradeMaster(source, target *utils.Cluster, stateDir string, stream OutStreams, checkOnly bool) error {
+func UpgradeMaster(source, target *utils.Cluster, stateDir string, stream OutStreams, checkOnly bool, useLinkMode bool) error {
 	wd := utils.MasterPGUpgradeDirectory(stateDir)
 	err := utils.System.MkdirAll(wd, 0700)
 	if err != nil {
@@ -32,6 +32,10 @@ func UpgradeMaster(source, target *utils.Cluster, stateDir string, stream OutStr
 	}
 	if checkOnly {
 		options = append(options, upgrade.WithCheckOnly())
+	}
+
+	if useLinkMode {
+		options = append(options, upgrade.WithLinkMode())
 	}
 
 	return upgrade.Run(pair, options...)

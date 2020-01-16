@@ -47,12 +47,14 @@ var _ = Describe("Hub", func() {
 		err            error
 		mockDialer     hub.Dialer
 		mockStream     *msgStream
+		useLinkMode    bool
 	)
 
 	BeforeEach(func() {
 		agentA, mockDialer, hubToAgentPort = mock_agent.NewMockAgentServer()
 		source, target = testutils.CreateMultinodeSampleClusterPair("/tmp")
-		conf = &hub.Config{source, target, cliToHubPort, hubToAgentPort}
+		useLinkMode = false
+		conf = &hub.Config{source, target, cliToHubPort, hubToAgentPort, useLinkMode}
 		mockStream = &msgStream{}
 	})
 
@@ -269,11 +271,12 @@ func TestHubSaveConfig(t *testing.T) {
 	source, target := testutils.CreateMultinodeSampleClusterPair("/tmp")
 	source.Executor = new(cluster.GPDBExecutor)
 	target.Executor = new(cluster.GPDBExecutor)
-	conf := &hub.Config{source, target, 12345, 54321}
+	useLinkMode := false
+	conf := &hub.Config{source, target, 12345, 54321, useLinkMode}
 
 	h := hub.New(conf, nil, "", nil)
 
-	t.Run("saves correct contents to disk", func(t *testing.T) {
+	t.Run("saves configuration contents to disk", func(t *testing.T) {
 		// Set up utils.System.Create to return the write side of a pipe. We can
 		// read from the other side to confirm what was saved to "disk".
 		read, write, err := os.Pipe()
@@ -299,17 +302,17 @@ func TestHubSaveConfig(t *testing.T) {
 
 		// Reload the configuration from the read side of the pipe and ensure the
 		// contents are the same.
-		result := new(hub.Config)
-		if err := result.Load(read); err != nil {
+		actual := new(hub.Config)
+		if err := actual.Load(read); err != nil {
 			t.Errorf("loading configuration results: %+v", err)
 		}
 
-		if !reflect.DeepEqual(h.Config, result) {
-			t.Errorf("wrote config %#v, want %#v", result, h.Config)
+		if !reflect.DeepEqual(h.Config, actual) {
+			t.Errorf("wrote config %#v, want %#v", actual, h.Config)
 		}
 	})
 
-	t.Run("correctly bubbles up file creation errors", func(t *testing.T) {
+	t.Run("bubbles up file creation errors", func(t *testing.T) {
 		expected := errors.New("can't create")
 
 		utils.System.Create = func(path string) (*os.File, error) {
@@ -325,7 +328,7 @@ func TestHubSaveConfig(t *testing.T) {
 		}
 	})
 
-	t.Run("correctly bubbles up file manipulation errors", func(t *testing.T) {
+	t.Run("bubbles up file manipulation errors", func(t *testing.T) {
 		// A nil file will fail to write and close, so we can make sure things
 		// are handled correctly.
 		utils.System.Create = func(path string) (*os.File, error) {
@@ -337,6 +340,8 @@ func TestHubSaveConfig(t *testing.T) {
 
 		err := h.SaveConfig()
 
+		// multierror.Error that contains os.ErrInvalid is not itself an instance
+		// of os.ErrInvalid, so unpack it to check existence of os.ErrInvalid
 		var merr *multierror.Error
 		if !xerrors.As(err, &merr) {
 			t.Fatalf("returned %#v, want error type %T", err, merr)

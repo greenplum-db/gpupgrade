@@ -46,8 +46,9 @@ func TestCopyMaster(t *testing.T) {
 	}
 
 	conf := &Config{
-		Source: &sourceCluster,
-		Target: &targetCluster,
+		Source:      &sourceCluster,
+		Target:      &targetCluster,
+		UseLinkMode: false,
 	}
 	hub := New(conf, grpc.DialContext, "", &upgradestatus.ChecklistManager{})
 

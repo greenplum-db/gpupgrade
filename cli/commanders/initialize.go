@@ -44,9 +44,17 @@ func CreateInitialClusterConfigs() (err error) {
 	filename := filepath.Join(utils.GetStateDir(), hub.ConfigFileName)
 	_, err = os.Stat(filename)
 
-	if err == nil {
+	// if the file exists, there will be no error or if there is an error it might
+	// also indicate that the file exists, in either case don't overwrite the file
+	if err == nil || os.IsExist(err) {
 		gplog.Debug("Initial cluster configuration file %s already present...skipping", filename)
 		return nil
+	}
+
+	// if the err is anything other than file does not exist, error out
+	if !os.IsNotExist(err) {
+		gplog.Debug("Check to find presence of initial cluster configuration file %s failed", filename)
+		return err
 	}
 
 	file, err := os.Create(filename)

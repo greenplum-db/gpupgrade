@@ -35,6 +35,7 @@ var (
 	source      *utils.Cluster
 	target      *utils.Cluster
 	testHub     *hub.Hub
+	useLinkMode bool
 )
 
 func TestCommands(t *testing.T) {
@@ -59,7 +60,8 @@ var _ = BeforeEach(func() {
 	source, target = testutils.CreateMultinodeSampleClusterPair(dir)
 	mockAgent, dialer, port = mock_agent.NewMockAgentServer()
 	client = mock_idl.NewMockAgentClient(ctrl)
-	conf := &hub.Config{source, target, 0, port}
+	useLinkMode = false
+	conf := &hub.Config{source, target, 0, port, useLinkMode}
 	testHub = hub.New(conf, dialer, dir, cm)
 })
 

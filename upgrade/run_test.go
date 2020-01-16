@@ -233,6 +233,7 @@ func TestRun(t *testing.T) {
 				fs.String("mode", "", "")
 				fs.Bool("check", false, "")
 				fs.Bool("retain", false, "")
+				fs.Bool("link", false, "")
 
 				err := fs.Parse(args)
 				if err != nil {
@@ -251,6 +252,7 @@ func TestRun(t *testing.T) {
 					"mode":        mode,
 					"check":       options.CheckOnly,
 					"retain":      true,
+					"link":        options.UseLinkMode,
 				}
 
 				fs.VisitAll(func(f *flag.Flag) {
@@ -278,6 +280,8 @@ func TestRun(t *testing.T) {
 			{"segments", []upgrade.Option{upgrade.WithSegmentMode()}},
 			{"--check mode on master", []upgrade.Option{upgrade.WithCheckOnly()}},
 			{"--check mode on segments", []upgrade.Option{upgrade.WithSegmentMode(), upgrade.WithCheckOnly()}},
+			{"--link mode on master", []upgrade.Option{upgrade.WithLinkMode()}},
+			{"--link mode on segments", []upgrade.Option{upgrade.WithSegmentMode(), upgrade.WithLinkMode()}},
 		}
 
 		for _, c := range cases {

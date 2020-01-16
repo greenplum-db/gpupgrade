@@ -18,7 +18,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/log"
 )
 
-const ConfigFileName = "config"
+const ConfigFileName = "config.json"
 
 // This directory to have the implementation code for the gRPC server to serve
 // Minimal CLI command parsing to embrace that booting this binary to run the hub might have some flags like a log dir
@@ -53,8 +53,9 @@ func Command() *cobra.Command {
 			// they're not defined in the configuration (as happens
 			// pre-initialize), we still need good defaults.
 			conf := &Config{
-				Port:      7527,
-				AgentPort: 6416,
+				Port:        7527,
+				AgentPort:   6416,
+				UseLinkMode: false,
 			}
 
 			path := filepath.Join(stateDir, ConfigFileName)

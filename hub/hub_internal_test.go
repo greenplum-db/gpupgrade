@@ -11,11 +11,12 @@ import (
 )
 
 func TestConfig(t *testing.T) {
+	// "stream" refers to the io.Writer/Reader interfaces.
 	t.Run("saves itself to the provided stream", func(t *testing.T) {
 		source, target := testutils.CreateMultinodeSampleClusterPair("/tmp")
 		source.Executor = new(cluster.GPDBExecutor)
 		target.Executor = new(cluster.GPDBExecutor)
-		original := &Config{source, target, 12345, 54321}
+		original := &Config{source, target, 12345, 54321, false}
 
 		buf := new(bytes.Buffer)
 		err := original.Save(buf)

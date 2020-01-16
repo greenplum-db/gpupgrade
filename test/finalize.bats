@@ -75,7 +75,7 @@ EOF
 
     # Generate a new target cluster configuration that the hub can use, then
     # restart the hub.
-    PGPORT=40000 go run ./testutils/insert_target_config "$GPHOME/bin" "$GPUPGRADE_HOME/config"
+    PGPORT=40000 go run ./testutils/insert_target_config "$GPHOME/bin" "$GPUPGRADE_HOME/config.json"
     gpupgrade kill-services
     gpupgrade hub --daemonize 3>&-
 

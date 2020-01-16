@@ -81,7 +81,7 @@ func TestUpgradePrimary(t *testing.T) {
 		execCommand = exectest.NewCommand(FailedMain)
 		defer func() { execCommand = nil }()
 
-		err := UpgradePrimary("/old/bin", "/new/bin", pairs, tempDir, true)
+		err := UpgradePrimary("/old/bin", "/new/bin", pairs, tempDir, true, false)
 		if err == nil {
 			t.Fatal("UpgradeSegments() returned no error")
 		}
@@ -100,7 +100,7 @@ func TestUpgradePrimary(t *testing.T) {
 		execCommand = exectest.NewCommand(FailedMain)
 		defer func() { execCommand = nil }()
 
-		err := UpgradePrimary("/old/bin", "/new/bin", pairs, tempDir, false)
+		err := UpgradePrimary("/old/bin", "/new/bin", pairs, tempDir, false, false)
 		if err == nil {
 			t.Fatal("UpgradeSegments() returned no error")
 		}

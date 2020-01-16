@@ -33,7 +33,7 @@ func (h *Hub) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initiali
 	}()
 
 	s.Run(idl.UpgradeSteps_CONFIG, func(stream step.OutStreams) error {
-		return h.fillClusterConfigsSubStep(stream, in.OldBinDir, in.NewBinDir, int(in.OldPort))
+		return h.fillClusterConfigsSubStep(stream, in.OldBinDir, in.NewBinDir, int(in.OldPort), in.UseLinkMode)
 	})
 
 	s.Run(idl.UpgradeSteps_START_AGENTS, func(stream step.OutStreams) error {
@@ -86,7 +86,7 @@ func (h *Hub) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest, st
 }
 
 // create old/new clusters, write to disk and re-read from disk to make sure it is "durable"
-func (h *Hub) fillClusterConfigsSubStep(_ OutStreams, oldBinDir, newBinDir string, oldPort int) error {
+func (h *Hub) fillClusterConfigsSubStep(_ OutStreams, oldBinDir, newBinDir string, oldPort int, linkMode bool) error {
 	conn := db.NewDBConn("localhost", oldPort, "template1")
 	defer conn.Close()
 
@@ -97,6 +97,7 @@ func (h *Hub) fillClusterConfigsSubStep(_ OutStreams, oldBinDir, newBinDir strin
 	}
 
 	h.Target = &utils.Cluster{Cluster: new(cluster.Cluster), BinDir: newBinDir}
+	h.UseLinkMode = linkMode
 
 	if err := h.SaveConfig(); err != nil {
 		return err

@@ -37,6 +37,7 @@ func (h *Hub) ConvertPrimaries(checkOnly bool) error {
 				NewVersion:   h.Target.Version.SemVer.String(),
 				DataDirPairs: dataDirPair[conn.Hostname],
 				CheckOnly:    checkOnly,
+				UseLinkMode:  h.UseLinkMode,
 			})
 
 			if err != nil {

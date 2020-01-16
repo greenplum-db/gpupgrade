@@ -23,7 +23,7 @@ var execCommand = exec.Command
 func (s *Server) UpgradePrimaries(ctx context.Context, in *idl.UpgradePrimariesRequest) (*idl.UpgradePrimariesReply, error) {
 	gplog.Info("agent starting %s", upgradestatus.UPGRADE_PRIMARIES)
 
-	err := UpgradePrimary(in.OldBinDir, in.NewBinDir, in.DataDirPairs, s.conf.StateDir, in.CheckOnly)
+	err := UpgradePrimary(in.OldBinDir, in.NewBinDir, in.DataDirPairs, s.conf.StateDir, in.CheckOnly, in.UseLinkMode)
 	return &idl.UpgradePrimariesReply{}, err
 }
 
@@ -33,7 +33,7 @@ type Segment struct {
 	WorkDir string // the pg_upgrade working directory, where logs are stored
 }
 
-func UpgradePrimary(sourceBinDir string, targetBinDir string, dataDirPairs []*idl.DataDirPair, stateDir string, checkOnly bool) error {
+func UpgradePrimary(sourceBinDir string, targetBinDir string, dataDirPairs []*idl.DataDirPair, stateDir string, checkOnly bool, useLinkMode bool) error {
 	segments := make([]Segment, 0, len(dataDirPairs))
 
 	for _, dataPair := range dataDirPairs {
@@ -49,7 +49,7 @@ func UpgradePrimary(sourceBinDir string, targetBinDir string, dataDirPairs []*id
 		})
 	}
 
-	err := UpgradeSegments(sourceBinDir, targetBinDir, segments, checkOnly)
+	err := UpgradeSegments(sourceBinDir, targetBinDir, segments, checkOnly, useLinkMode)
 	if err != nil {
 		return errors.Wrap(err, "failed to upgrade segments")
 	}
@@ -57,7 +57,7 @@ func UpgradePrimary(sourceBinDir string, targetBinDir string, dataDirPairs []*id
 	return nil
 }
 
-func UpgradeSegments(sourceBinDir string, targetBinDir string, segments []Segment, checkOnly bool) (err error) {
+func UpgradeSegments(sourceBinDir string, targetBinDir string, segments []Segment, checkOnly bool, useLinkMode bool) (err error) {
 	host, err := os.Hostname()
 	if err != nil {
 		return err
@@ -80,6 +80,10 @@ func UpgradeSegments(sourceBinDir string, targetBinDir string, segments []Segmen
 		}
 		if checkOnly {
 			options = append(options, upgrade.WithCheckOnly())
+		}
+
+		if useLinkMode {
+			options = append(options, upgrade.WithLinkMode())
 		}
 
 		content := segment.Content
