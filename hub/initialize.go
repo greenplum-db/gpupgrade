@@ -33,7 +33,7 @@ func (h *Hub) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initiali
 	}()
 
 	s.Run(idl.Substep_CONFIG, func(stream step.OutStreams) error {
-		return h.fillClusterConfigsSubStep(stream, in.OldBinDir, in.NewBinDir, int(in.OldPort), in.UseLinkMode)
+		return h.fillClusterConfigsSubStep(stream, in)
 	})
 
 	s.Run(idl.Substep_START_AGENTS, func(stream step.OutStreams) error {
@@ -86,18 +86,18 @@ func (h *Hub) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest, st
 }
 
 // create old/new clusters, write to disk and re-read from disk to make sure it is "durable"
-func (h *Hub) fillClusterConfigsSubStep(_ step.OutStreams, oldBinDir, newBinDir string, oldPort int, linkMode bool) error {
-	conn := db.NewDBConn("localhost", oldPort, "template1")
+func (h *Hub) fillClusterConfigsSubStep(_ step.OutStreams, request *idl.InitializeRequest) error {
+	conn := db.NewDBConn("localhost", int(request.OldPort), "template1")
 	defer conn.Close()
 
 	var err error
-	h.Source, err = utils.ClusterFromDB(conn, oldBinDir)
+	h.Source, err = utils.ClusterFromDB(conn, request.OldBinDir)
 	if err != nil {
 		return errors.Wrap(err, "could not retrieve source configuration")
 	}
 
-	h.Target = &utils.Cluster{Cluster: new(cluster.Cluster), BinDir: newBinDir}
-	h.UseLinkMode = linkMode
+	h.Target = &utils.Cluster{Cluster: new(cluster.Cluster), BinDir: request.NewBinDir}
+	h.UseLinkMode = request.UseLinkMode
 
 	if err := h.SaveConfig(); err != nil {
 		return err

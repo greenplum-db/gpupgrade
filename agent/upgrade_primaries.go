@@ -19,10 +19,10 @@ import (
 // Allow exec.Command to be mocked out by exectest.NewCommand.
 var execCommand = exec.Command
 
-func (s *Server) UpgradePrimaries(ctx context.Context, in *idl.UpgradePrimariesRequest) (*idl.UpgradePrimariesReply, error) {
+func (s *Server) UpgradePrimaries(ctx context.Context, request *idl.UpgradePrimariesRequest) (*idl.UpgradePrimariesReply, error) {
 	gplog.Info("agent starting %s", idl.Substep_UPGRADE_PRIMARIES)
 
-	err := UpgradePrimary(in.OldBinDir, in.NewBinDir, in.DataDirPairs, s.conf.StateDir, in.CheckOnly, in.UseLinkMode)
+	err := UpgradePrimary(s.conf.StateDir, request)
 	return &idl.UpgradePrimariesReply{}, err
 }
 
@@ -32,10 +32,10 @@ type Segment struct {
 	WorkDir string // the pg_upgrade working directory, where logs are stored
 }
 
-func UpgradePrimary(sourceBinDir string, targetBinDir string, dataDirPairs []*idl.DataDirPair, stateDir string, checkOnly bool, useLinkMode bool) error {
-	segments := make([]Segment, 0, len(dataDirPairs))
+func UpgradePrimary(stateDir string, request *idl.UpgradePrimariesRequest) error {
+	segments := make([]Segment, 0, len(request.DataDirPairs))
 
-	for _, dataPair := range dataDirPairs {
+	for _, dataPair := range request.DataDirPairs {
 		workdir := utils.SegmentPGUpgradeDirectory(stateDir, int(dataPair.Content))
 		err := utils.System.MkdirAll(workdir, 0700)
 		if err != nil {
@@ -48,7 +48,7 @@ func UpgradePrimary(sourceBinDir string, targetBinDir string, dataDirPairs []*id
 		})
 	}
 
-	err := UpgradeSegments(sourceBinDir, targetBinDir, segments, checkOnly, useLinkMode)
+	err := UpgradeSegments(segments, request)
 	if err != nil {
 		return errors.Wrap(err, "failed to upgrade segments")
 	}
@@ -56,7 +56,7 @@ func UpgradePrimary(sourceBinDir string, targetBinDir string, dataDirPairs []*id
 	return nil
 }
 
-func UpgradeSegments(sourceBinDir string, targetBinDir string, segments []Segment, checkOnly bool, useLinkMode bool) (err error) {
+func UpgradeSegments(segments []Segment, request *idl.UpgradePrimariesRequest) (err error) {
 	host, err := os.Hostname()
 	if err != nil {
 		return err
@@ -68,8 +68,8 @@ func UpgradeSegments(sourceBinDir string, targetBinDir string, segments []Segmen
 	for _, segment := range segments {
 		dbid := int(segment.DBID)
 		segmentPair := upgrade.SegmentPair{
-			Source: &upgrade.Segment{sourceBinDir, segment.OldDataDir, dbid, int(segment.OldPort)},
-			Target: &upgrade.Segment{targetBinDir, segment.NewDataDir, dbid, int(segment.NewPort)},
+			Source: &upgrade.Segment{request.OldBinDir, segment.OldDataDir, dbid, int(segment.OldPort)},
+			Target: &upgrade.Segment{request.NewBinDir, segment.NewDataDir, dbid, int(segment.NewPort)},
 		}
 
 		options := []upgrade.Option{
@@ -77,11 +77,11 @@ func UpgradeSegments(sourceBinDir string, targetBinDir string, segments []Segmen
 			upgrade.WithWorkDir(segment.WorkDir),
 			upgrade.WithSegmentMode(),
 		}
-		if checkOnly {
+		if request.CheckOnly {
 			options = append(options, upgrade.WithCheckOnly())
 		}
 
-		if useLinkMode {
+		if request.UseLinkMode {
 			options = append(options, upgrade.WithLinkMode())
 		}
 
@@ -93,7 +93,7 @@ func UpgradeSegments(sourceBinDir string, targetBinDir string, segments []Segmen
 			err := upgrade.Run(segmentPair, options...)
 			if err != nil {
 				failedAction := "upgrade"
-				if checkOnly {
+				if request.CheckOnly {
 					failedAction = "check"
 				}
 				agentErrs <- errors.Wrapf(err, "failed to %s primary on host %s with content %d", failedAction, host, content)

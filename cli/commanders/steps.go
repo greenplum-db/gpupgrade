@@ -38,14 +38,7 @@ var indicators = map[idl.Status]string{
 	idl.Status_FAILED:   "[FAILED]",
 }
 
-func Initialize(client idl.CliToHubClient, oldBinDir, newBinDir string, oldPort int, linkMode bool, verbose bool) (err error) {
-
-	request := &idl.InitializeRequest{
-		OldBinDir:   oldBinDir,
-		NewBinDir:   newBinDir,
-		OldPort:     int32(oldPort),
-		UseLinkMode: linkMode,
-	}
+func Initialize(client idl.CliToHubClient, request *idl.InitializeRequest, verbose bool) (err error) {
 
 	stream, err := client.Initialize(context.Background(), request)
 	if err != nil {

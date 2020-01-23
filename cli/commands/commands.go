@@ -290,7 +290,13 @@ This step can be reverted.
 
 			client := connectToHub()
 
-			err = commanders.Initialize(client, oldBinDir, newBinDir, oldPort, linkMode, verbose)
+			request := &idl.InitializeRequest{
+				OldBinDir:   oldBinDir,
+				NewBinDir:   newBinDir,
+				OldPort:     int32(oldPort),
+				UseLinkMode: linkMode,
+			}
+			err = commanders.Initialize(client, request, verbose)
 			if err != nil {
 				return errors.Wrap(err, "initializing hub")
 			}
