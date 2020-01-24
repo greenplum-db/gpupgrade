@@ -23,7 +23,6 @@ import (
 	"google.golang.org/grpc/reflection"
 	grpcStatus "google.golang.org/grpc/status"
 
-	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/daemon"
@@ -44,7 +43,6 @@ type Hub struct {
 
 	agentConns []*Connection
 	grpcDialer Dialer
-	checklist  upgradestatus.Checklist
 
 	mu     sync.Mutex
 	server *grpc.Server
@@ -69,13 +67,12 @@ type Connection struct {
 	CancelContext func()
 }
 
-func New(conf *Config, grpcDialer Dialer, stateDir string, checklist upgradestatus.Checklist) *Hub {
+func New(conf *Config, grpcDialer Dialer, stateDir string) *Hub {
 	h := &Hub{
 		Config:     conf,
 		StateDir:   stateDir,
 		stopped:    make(chan struct{}, 1),
 		grpcDialer: grpcDialer,
-		checklist:  checklist,
 	}
 
 	return h

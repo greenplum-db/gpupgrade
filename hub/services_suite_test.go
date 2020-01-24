@@ -28,7 +28,6 @@ var (
 	mockAgent   *mock_agent.MockAgentServer
 	dialer      hub.Dialer
 	client      *mock_idl.MockAgentClient
-	cm          *testutils.MockChecklistManager
 	port        int
 	dir         string
 	hubConf     *hub.Config
@@ -51,7 +50,6 @@ var _ = BeforeSuite(func() {
 var _ = BeforeEach(func() {
 	ctrl = gomock.NewController(GinkgoT())
 	dbConnector, mock = testhelper.CreateAndConnectMockDB(1)
-	cm = testutils.NewMockChecklistManager()
 
 	var err error
 	dir, err = ioutil.TempDir("", "")
@@ -62,7 +60,7 @@ var _ = BeforeEach(func() {
 	client = mock_idl.NewMockAgentClient(ctrl)
 	useLinkMode = false
 	conf := &hub.Config{source, target, 0, port, useLinkMode}
-	testHub = hub.New(conf, dialer, dir, cm)
+	testHub = hub.New(conf, dialer, dir)
 })
 
 var _ = AfterEach(func() {

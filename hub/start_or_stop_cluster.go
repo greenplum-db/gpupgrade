@@ -6,13 +6,14 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 var isPostmasterRunningCmd = exec.Command
 var startStopClusterCmd = exec.Command
 
-func (h *Hub) ShutdownCluster(stream OutStreams, isSource bool) error {
+func (h *Hub) ShutdownCluster(stream step.OutStreams, isSource bool) error {
 	if isSource {
 		err := StopCluster(stream, h.Source)
 		if err != nil {
@@ -28,14 +29,14 @@ func (h *Hub) ShutdownCluster(stream OutStreams, isSource bool) error {
 	return nil
 }
 
-func StopCluster(stream OutStreams, cluster *utils.Cluster) error {
+func StopCluster(stream step.OutStreams, cluster *utils.Cluster) error {
 	return startStopCluster(stream, cluster, true)
 }
-func StartCluster(stream OutStreams, cluster *utils.Cluster) error {
+func StartCluster(stream step.OutStreams, cluster *utils.Cluster) error {
 	return startStopCluster(stream, cluster, false)
 }
 
-func startStopCluster(stream OutStreams, cluster *utils.Cluster, stop bool) error {
+func startStopCluster(stream step.OutStreams, cluster *utils.Cluster, stop bool) error {
 	// TODO: why can't we call IsPostmasterRunning for the !stop case?  If we do, we get this on the pipeline:
 	// Usage: pgrep [-flvx] [-d DELIM] [-n|-o] [-P PPIDLIST] [-g PGRPLIST] [-s SIDLIST]
 	// [-u EUIDLIST] [-U UIDLIST] [-G GIDLIST] [-t TERMLIST] [PATTERN]
@@ -63,7 +64,7 @@ func startStopCluster(stream OutStreams, cluster *utils.Cluster, stop bool) erro
 	return cmd.Run()
 }
 
-func IsPostmasterRunning(stream OutStreams, cluster *utils.Cluster) error {
+func IsPostmasterRunning(stream step.OutStreams, cluster *utils.Cluster) error {
 	cmd := isPostmasterRunningCmd("bash", "-c",
 		fmt.Sprintf("pgrep -F %s/postmaster.pid",
 			cluster.MasterDataDir(),

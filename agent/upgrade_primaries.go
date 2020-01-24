@@ -11,7 +11,6 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
-	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -21,7 +20,7 @@ import (
 var execCommand = exec.Command
 
 func (s *Server) UpgradePrimaries(ctx context.Context, in *idl.UpgradePrimariesRequest) (*idl.UpgradePrimariesReply, error) {
-	gplog.Info("agent starting %s", upgradestatus.UPGRADE_PRIMARIES)
+	gplog.Info("agent starting %s", idl.Substep_UPGRADE_PRIMARIES)
 
 	err := UpgradePrimary(in.OldBinDir, in.NewBinDir, in.DataDirPairs, s.conf.StateDir, in.CheckOnly, in.UseLinkMode)
 	return &idl.UpgradePrimariesReply{}, err

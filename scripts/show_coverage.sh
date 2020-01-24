@@ -12,7 +12,6 @@ go test -coverpkg $DIR/utils $DIR/utils \
 PACKAGES=("agent/services"
 "cli/commanders"
 "hub/services"
-"hub/upgradestatus"
 )
 
 for PACKAGE in "${PACKAGES[@]}"; do

@@ -4,9 +4,11 @@ import (
 	"sync"
 
 	"github.com/hashicorp/go-multierror"
+
+	"github.com/greenplum-db/gpupgrade/step"
 )
 
-func (h *Hub) CheckUpgrade(stream OutStreams) error {
+func (h *Hub) CheckUpgrade(stream step.OutStreams) error {
 	var wg sync.WaitGroup
 	checkErrs := make(chan error, 2)
 

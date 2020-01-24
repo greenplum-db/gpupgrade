@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -12,11 +14,10 @@ import (
 	"github.com/onsi/gomega/gbytes"
 	"golang.org/x/xerrors"
 
+	. "github.com/onsi/gomega"
+
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
-	"github.com/greenplum-db/gpupgrade/testutils"
-
-	. "github.com/onsi/gomega"
 )
 
 func TestMultiplexedStream(t *testing.T) {
@@ -123,91 +124,60 @@ func TestMultiplexedStream(t *testing.T) {
 	})
 }
 
-func TestSubstep(t *testing.T) {
-	testhelper.SetupTestLogger()
+func TestStatusFile(t *testing.T) {
+	stateDir, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := os.RemoveAll(stateDir); err != nil {
+			t.Errorf("removing temp directory: %v", err)
+		}
+	}()
 
-	cm := testutils.NewMockChecklistManager()
-	hub := New(&Config{}, nil, "", cm)
+	path := filepath.Join(stateDir, "status.json")
 
-	t.Run("sends execution status to checklist and client", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
+	t.Run("creates status file if it does not exist", func(t *testing.T) {
+		_, err := os.Open(path)
+		if !os.IsNotExist(err) {
+			t.Errorf("returned error %#v want ErrNotExist", err)
+		}
 
-		sender := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
-		stream := newMultiplexedStream(sender, ioutil.Discard)
-
-		sender.EXPECT().
-			Send(&idl.Message{Contents: &idl.Message_Status{&idl.SubstepStatus{
-				Step:   idl.Substep_UNKNOWN_STEP,
-				Status: idl.Status_RUNNING,
-			}}})
-		sender.EXPECT().
-			Send(&idl.Message{Contents: &idl.Message_Status{&idl.SubstepStatus{
-				Step:   idl.Substep_UNKNOWN_STEP,
-				Status: idl.Status_COMPLETE,
-			}}})
-
-		var called bool
-		step := "mystep"
-
-		err := hub.Substep(stream, step,
-			func(_ OutStreams) error {
-				called = true
-
-				// We shouldn't be marked complete until this returns.
-				actual := cm.GetStepReader(step).Status()
-				if actual != idl.Status_RUNNING {
-					t.Errorf("step was marked %s, want %s", actual, idl.Status_RUNNING)
-				}
-
-				return nil
-			})
-
+		statusFile, err := getStatusFile(stateDir)
 		if err != nil {
-			t.Errorf("returned error %#v", err)
-		}
-		if !called {
-			t.Error("substep callback was not executed")
+			t.Errorf("unexpected error %v", err)
 		}
 
-		actual := cm.GetStepReader(step).Status()
-		if actual != idl.Status_COMPLETE {
-			t.Errorf("step was marked %s, want %s", actual, idl.Status_COMPLETE)
+		actual, err := ioutil.ReadFile(statusFile)
+		if err != nil {
+			t.Fatalf("ReadFile(%q) returned error %#v", statusFile, err)
+		}
+
+		expected := "{}"
+		if string(actual) != expected {
+			t.Errorf("read %v want %v", string(actual), expected)
 		}
 	})
 
-	t.Run("bubbles up errors from substep callbacks", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		sender := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
-		stream := newMultiplexedStream(sender, ioutil.Discard)
-
-		sender.EXPECT().
-			Send(&idl.Message{Contents: &idl.Message_Status{&idl.SubstepStatus{
-				Step:   idl.Substep_UNKNOWN_STEP,
-				Status: idl.Status_RUNNING,
-			}}})
-		sender.EXPECT().
-			Send(&idl.Message{Contents: &idl.Message_Status{&idl.SubstepStatus{
-				Step:   idl.Substep_UNKNOWN_STEP,
-				Status: idl.Status_FAILED,
-			}}})
-
-		step := "mystep"
-		expected := errors.New("ahhhh")
-		err := hub.Substep(stream, step,
-			func(_ OutStreams) error {
-				return expected
-			})
-
-		if !xerrors.Is(err, expected) {
-			t.Errorf("returned %#v, want %#v", err, expected)
+	t.Run("does not create status file if it already exists", func(t *testing.T) {
+		expected := "1234"
+		err := ioutil.WriteFile(path, []byte(expected), 0600)
+		if err != nil {
+			t.Fatalf("unexpected error %v", err)
 		}
 
-		actual := cm.GetStepReader(step).Status()
-		if actual != idl.Status_FAILED {
-			t.Errorf("step was marked %s, want %s", actual, idl.Status_FAILED)
+		statusFile, err := getStatusFile(stateDir)
+		if err != nil {
+			t.Errorf("unexpected error %v", err)
+		}
+
+		actual, err := ioutil.ReadFile(statusFile)
+		if err != nil {
+			t.Errorf("ReadFile(%q) returned error %#v", statusFile, err)
+		}
+
+		if string(actual) != expected {
+			t.Errorf("read %v want %v", string(actual), expected)
 		}
 	})
 }

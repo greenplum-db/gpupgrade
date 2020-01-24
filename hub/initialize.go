@@ -86,7 +86,7 @@ func (h *Hub) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest, st
 }
 
 // create old/new clusters, write to disk and re-read from disk to make sure it is "durable"
-func (h *Hub) fillClusterConfigsSubStep(_ OutStreams, oldBinDir, newBinDir string, oldPort int, linkMode bool) error {
+func (h *Hub) fillClusterConfigsSubStep(_ step.OutStreams, oldBinDir, newBinDir string, oldPort int, linkMode bool) error {
 	conn := db.NewDBConn("localhost", oldPort, "template1")
 	defer conn.Close()
 
@@ -116,7 +116,7 @@ func getAgentPath() (string, error) {
 }
 
 // TODO: use the implementation in RestartAgents() for this function and combine them
-func (h *Hub) startAgentsSubStep(stream OutStreams) error {
+func (h *Hub) startAgentsSubStep(stream step.OutStreams) error {
 	source := h.Source
 	stateDir := h.StateDir
 

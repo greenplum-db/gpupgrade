@@ -10,7 +10,6 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 
-	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -50,7 +49,7 @@ func TestCopyMaster(t *testing.T) {
 		Target:      &targetCluster,
 		UseLinkMode: false,
 	}
-	hub := New(conf, grpc.DialContext, "", &upgradestatus.ChecklistManager{})
+	hub := New(conf, grpc.DialContext, "")
 
 	t.Run("copies the master data directory to each primary host", func(t *testing.T) {
 		ctrl := gomock.NewController(t)

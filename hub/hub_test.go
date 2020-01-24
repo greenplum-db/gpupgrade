@@ -46,7 +46,6 @@ var _ = Describe("Hub", func() {
 		conf           *hub.Config
 		err            error
 		mockDialer     hub.Dialer
-		mockStream     *msgStream
 		useLinkMode    bool
 	)
 
@@ -55,7 +54,6 @@ var _ = Describe("Hub", func() {
 		source, target = testutils.CreateMultinodeSampleClusterPair("/tmp")
 		useLinkMode = false
 		conf = &hub.Config{source, target, cliToHubPort, hubToAgentPort, useLinkMode}
-		mockStream = &msgStream{}
 	})
 
 	AfterEach(func() {
@@ -64,7 +62,7 @@ var _ = Describe("Hub", func() {
 	})
 
 	It("will return from Start() with an error if Stop() is called first", func() {
-		h := hub.New(conf, mockDialer, "", nil)
+		h := hub.New(conf, mockDialer, "")
 
 		h.Stop(true)
 		go func() {
@@ -86,7 +84,7 @@ var _ = Describe("Hub", func() {
 		conf.Port, err = strconv.Atoi(portString)
 		Expect(err).NotTo(HaveOccurred())
 
-		h := hub.New(conf, mockDialer, "", nil)
+		h := hub.New(conf, mockDialer, "")
 
 		go func() {
 			err = h.Start()
@@ -99,7 +97,7 @@ var _ = Describe("Hub", func() {
 	// This is inherently testing a race. It will give false successes instead
 	// of false failures, so DO NOT ignore transient failures in this test!
 	It("will return from Start() if Stop is called concurrently", func() {
-		h := hub.New(conf, mockDialer, "", nil)
+		h := hub.New(conf, mockDialer, "")
 		done := make(chan bool, 1)
 
 		go func() {
@@ -112,7 +110,7 @@ var _ = Describe("Hub", func() {
 	})
 
 	It("closes open connections when shutting down", func() {
-		h := hub.New(conf, mockDialer, "", nil)
+		h := hub.New(conf, mockDialer, "")
 		go h.Start()
 
 		By("creating connections")
@@ -133,7 +131,7 @@ var _ = Describe("Hub", func() {
 	})
 
 	It("retrieves the agent connections for the hosts of non-master segments", func() {
-		h := hub.New(conf, mockDialer, "", nil)
+		h := hub.New(conf, mockDialer, "")
 
 		conns, err := h.AgentConns()
 		Expect(err).ToNot(HaveOccurred())
@@ -150,7 +148,7 @@ var _ = Describe("Hub", func() {
 	})
 
 	It("saves grpc connections for future calls", func() {
-		h := hub.New(conf, mockDialer, "", nil)
+		h := hub.New(conf, mockDialer, "")
 
 		newConns, err := h.AgentConns()
 		Expect(err).ToNot(HaveOccurred())
@@ -163,7 +161,7 @@ var _ = Describe("Hub", func() {
 
 	// XXX This test takes 1.5 seconds because of EnsureConnsAreReady(...)
 	It("returns an error if any connections have non-ready states", func() {
-		h := hub.New(conf, mockDialer, "", nil)
+		h := hub.New(conf, mockDialer, "")
 
 		conns, err := h.AgentConns()
 		Expect(err).ToNot(HaveOccurred())
@@ -183,87 +181,10 @@ var _ = Describe("Hub", func() {
 			return nil, errors.New("grpc dialer error")
 		}
 
-		h := hub.New(conf, errDialer, "", nil)
+		h := hub.New(conf, errDialer, "")
 
 		_, err := h.AgentConns()
 		Expect(err).To(HaveOccurred())
-	})
-
-	It("successfully initializes step by marking it as in-progress with status running", func() {
-		mockChecklistManager := testutils.NewMockChecklistManager()
-		h := hub.New(conf, mockDialer, "", mockChecklistManager)
-		h.InitializeStep("dub-step", mockStream)
-
-		Expect(mockChecklistManager.GetStepReader("dub-step").Status()).To(Equal(idl.Status_RUNNING))
-		Expect(mockStream.LastStatus).To(Equal(idl.Status_RUNNING))
-	})
-
-	It("returns an error when InitializeStep fails to reset state directory", func() {
-		mockChecklistManager := testutils.NewMockChecklistManager()
-		mockChecklistManager.StepWriter.ResetStateDirErr = errors.New("permission denied")
-
-		h := hub.New(conf, mockDialer, "", mockChecklistManager)
-		_, err := h.InitializeStep("dub-step", mockStream)
-
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(Equal("failed to reset state directory: permission denied"))
-		Expect(mockStream.LastStatus).To(Equal(idl.Status_UNKNOWN_STATUS))
-	})
-
-	It("returns an error when InitializeStep fails to mark step as in-progress", func() {
-		mockChecklistManager := testutils.NewMockChecklistManager()
-		mockChecklistManager.StepWriter.MarkInProgressErr = errors.New("EAGAIN")
-
-		h := hub.New(conf, mockDialer, "", mockChecklistManager)
-		_, err := h.InitializeStep("dub-step", mockStream)
-
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(Equal("failed to set dub-step to in.progress: EAGAIN"))
-		Expect(mockStream.LastStatus).To(Equal(idl.Status_UNKNOWN_STATUS))
-	})
-
-	It("returns an error when stepwriter MarkComplete fails to mark step as complete", func() {
-		mockChecklistManager := testutils.NewMockChecklistManager()
-		mockChecklistManager.StepWriter.MarkCompleteErr = errors.New("ENOENT")
-
-		h := hub.New(conf, mockDialer, "", mockChecklistManager)
-		step, err := h.InitializeStep("dub-step", mockStream)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = step.MarkComplete()
-
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(Equal("ENOENT"))
-		Expect(mockStream.LastStatus).To(Equal(idl.Status_RUNNING))
-	})
-
-	It("returns an error when stepwriter MarkFailed fails to mark step as failed", func() {
-		mockChecklistManager := testutils.NewMockChecklistManager()
-		mockChecklistManager.StepWriter.MarkFailedErr = errors.New("EPERM")
-
-		h := hub.New(conf, mockDialer, "", mockChecklistManager)
-		step, err := h.InitializeStep("dub-step", mockStream)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = step.MarkFailed()
-
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(Equal("EPERM"))
-		Expect(mockStream.LastStatus).To(Equal(idl.Status_RUNNING))
-	})
-
-	It("streams status updates from step transitions", func() {
-		mockChecklistManager := testutils.NewMockChecklistManager()
-		h := hub.New(conf, mockDialer, "", mockChecklistManager)
-
-		step, err := h.InitializeStep("dub-step", mockStream)
-		Expect(err).ToNot(HaveOccurred())
-
-		step.MarkComplete()
-		Expect(mockStream.LastStatus).To(Equal(idl.Status_COMPLETE))
-
-		step.MarkFailed()
-		Expect(mockStream.LastStatus).To(Equal(idl.Status_FAILED))
 	})
 })
 
@@ -274,7 +195,7 @@ func TestHubSaveConfig(t *testing.T) {
 	useLinkMode := false
 	conf := &hub.Config{source, target, 12345, 54321, useLinkMode}
 
-	h := hub.New(conf, nil, "", nil)
+	h := hub.New(conf, nil, "")
 
 	t.Run("saves configuration contents to disk", func(t *testing.T) {
 		// Set up utils.System.Create to return the write side of a pipe. We can

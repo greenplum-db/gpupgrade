@@ -3,121 +3,69 @@ package hub
 import (
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
-	"github.com/pkg/errors"
+
+	"github.com/greenplum-db/gpupgrade/idl"
+
+	"github.com/hashicorp/go-multierror"
 	"golang.org/x/xerrors"
 
-	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
-	"github.com/greenplum-db/gpupgrade/hub/upgradestatus/file"
-	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/step"
 )
 
-// OutStreams collects the conceptual output and error streams into a single
-// interface.
-type OutStreams interface {
-	Stdout() io.Writer
-	Stderr() io.Writer
-}
-
-// Substep executes an upgrade substep of the given name using the provided
-// implementation callback. All status and error reporting is coordinated on the
-// provided stream.
-func (h *Hub) Substep(stream *multiplexedStream, name string, f func(OutStreams) error) error {
-	gplog.Info("starting %s", name)
-	_, err := fmt.Fprintf(stream.writer, "\nStarting %s...\n\n", name)
+func BeginStep(stateDir string, name string, sender idl.MessageSender) (*step.Step, error) {
+	path := filepath.Join(stateDir, fmt.Sprintf("%s.log", name))
+	log, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
-		return xerrors.Errorf("failed writing to log: %w", err)
+		return nil, xerrors.Errorf(`step "%s": %w`, name, err)
 	}
 
-	step, err := h.InitializeStep(name, stream.stream)
+	_, err = fmt.Fprintf(log, "\n%s in progress.\n", strings.Title(name))
 	if err != nil {
-		gplog.Error(err.Error())
-		return err
+		log.Close()
+		return nil, xerrors.Errorf(`logging step "%s": %w`, name, err)
 	}
 
-	err = f(stream)
+	statusPath, err := getStatusFile(stateDir)
 	if err != nil {
-		gplog.Error(err.Error())
-		step.MarkFailed()
-	} else {
-		step.MarkComplete()
+		return nil, xerrors.Errorf("step %q: %w", name, err)
 	}
 
-	return err
+	streams := newMultiplexedStream(sender, log)
+	return step.New(name, sender, step.NewFileStore(statusPath), streams), nil
 }
 
-// Extracts common hub logic to reset state directory, mark step as in-progress,
-// and control status streaming.
-func (h *Hub) InitializeStep(step string, stream messageSender) (upgradestatus.StateWriter, error) {
-	stepWriter := streamStepWriter{
-		h.checklist.GetStepWriter(step),
-		stream,
-	}
+// Returns path to status file, and if one does not exist it creates an empty
+// JSON file.
+func getStatusFile(stateDir string) (path string, err error) {
+	path = filepath.Join(stateDir, "status.json")
 
-	err := stepWriter.ResetStateDir()
+	f, err := os.OpenFile(path, os.O_EXCL|os.O_CREATE|os.O_WRONLY, 0600)
+	if os.IsExist(err) {
+		return path, nil
+	}
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to reset state directory")
+		return "", err
 	}
 
-	err = stepWriter.MarkInProgress()
+	defer func() {
+		if cErr := f.Close(); cErr != nil {
+			err = multierror.Append(err, cErr).ErrorOrNil()
+		}
+	}()
+
+	// MarshallJSON requires a well-formed JSON file
+	_, err = f.WriteString("{}")
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to set %s to %s", step, file.InProgress)
+		return "", err
 	}
 
-	return stepWriter, nil
-}
-
-// streamStepWriter extends the standard StepWriter, which only writes state to
-// disk, with functionality that sends status updates across the given stream.
-// (In practice this stream will be a gRPC CliToHub_XxxServer interface.)
-type streamStepWriter struct {
-	upgradestatus.StateWriter
-	stream messageSender
-}
-
-type messageSender interface {
-	Send(*idl.Message) error // matches gRPC streaming Send()
-}
-
-// TODO: remove; this is part of step.Step now
-func sendStatus(stream messageSender, step idl.Substep, status idl.Status) {
-	// A stream is not guaranteed to remain connected during execution, so
-	// errors are explicitly ignored.
-	_ = stream.Send(&idl.Message{
-		Contents: &idl.Message_Status{&idl.SubstepStatus{
-			Step:   step,
-			Status: status,
-		}},
-	})
-}
-
-func (s streamStepWriter) MarkInProgress() error {
-	if err := s.StateWriter.MarkInProgress(); err != nil {
-		return err
-	}
-
-	sendStatus(s.stream, s.Code(), idl.Status_RUNNING)
-	return nil
-}
-
-func (s streamStepWriter) MarkComplete() error {
-	if err := s.StateWriter.MarkComplete(); err != nil {
-		return err
-	}
-
-	sendStatus(s.stream, s.Code(), idl.Status_COMPLETE)
-	return nil
-}
-
-func (s streamStepWriter) MarkFailed() error {
-	if err := s.StateWriter.MarkFailed(); err != nil {
-		return err
-	}
-
-	sendStatus(s.stream, s.Code(), idl.Status_FAILED)
-	return nil
+	return path, nil
 }
 
 // multiplexedStream provides an implementation of OutStreams that safely
@@ -125,7 +73,7 @@ func (s streamStepWriter) MarkFailed() error {
 // io.Writer (in case the gRPC stream closes) also receives any output that is
 // written to the streams.
 type multiplexedStream struct {
-	stream messageSender
+	stream idl.MessageSender
 	writer io.Writer
 	mutex  sync.Mutex
 
@@ -133,7 +81,7 @@ type multiplexedStream struct {
 	stderr io.Writer
 }
 
-func newMultiplexedStream(stream messageSender, writer io.Writer) *multiplexedStream {
+func newMultiplexedStream(stream idl.MessageSender, writer io.Writer) *multiplexedStream {
 	m := &multiplexedStream{
 		stream: stream,
 		writer: writer,
