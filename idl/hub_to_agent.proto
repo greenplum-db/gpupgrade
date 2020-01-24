@@ -18,6 +18,7 @@ message UpgradePrimariesRequest {
     string NewVersion = 3;
     repeated DataDirPair DataDirPairs = 4;
     bool CheckOnly = 5;
+    bool UseLinkMode = 6;
 }
 
 message DataDirPair {

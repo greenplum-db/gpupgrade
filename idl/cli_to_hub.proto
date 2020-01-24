@@ -19,6 +19,7 @@ message InitializeRequest {
     string oldBinDir = 1;
     string newBinDir = 2;
     int32 oldPort = 3;
+    bool useLinkMode = 4;
 }
 message InitializeCreateClusterRequest {
     repeated uint32 ports = 1;
