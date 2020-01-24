@@ -177,7 +177,7 @@ func TestDiskSpaceCheck(t *testing.T) {
 			err := commanders.CheckDiskSpace(client, ratio)
 			actualOut, _ := d.Collect()
 
-			expectedStatus := idl.StepStatus_FAILED
+			expectedStatus := idl.Status_FAILED
 			switch {
 			case c.grpcErr != nil:
 				if !xerrors.Is(err, c.grpcErr) {
@@ -193,7 +193,7 @@ func TestDiskSpaceCheck(t *testing.T) {
 				}
 
 			default:
-				expectedStatus = idl.StepStatus_COMPLETE
+				expectedStatus = idl.Status_COMPLETE
 				if err != nil {
 					t.Errorf("returned error %#v, expected no error", err)
 				}

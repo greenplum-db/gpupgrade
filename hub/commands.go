@@ -74,18 +74,18 @@ func Command() *cobra.Command {
 			// fully exercised in end-to-end tests. It feels like we should be able to
 			// pull these into a Hub method or helper function, but currently the
 			// interfaces aren't well componentized.
-			cm.AddWritableStep(upgradestatus.CONFIG, idl.UpgradeSteps_CONFIG)
-			cm.AddWritableStep(upgradestatus.START_AGENTS, idl.UpgradeSteps_START_AGENTS)
-			cm.AddWritableStep(upgradestatus.CREATE_TARGET_CONFIG, idl.UpgradeSteps_CREATE_TARGET_CONFIG)
-			cm.AddWritableStep(upgradestatus.SHUTDOWN_SOURCE_CLUSTER, idl.UpgradeSteps_SHUTDOWN_SOURCE_CLUSTER)
-			cm.AddWritableStep(upgradestatus.INIT_TARGET_CLUSTER, idl.UpgradeSteps_INIT_TARGET_CLUSTER)
-			cm.AddWritableStep(upgradestatus.SHUTDOWN_TARGET_CLUSTER, idl.UpgradeSteps_SHUTDOWN_TARGET_CLUSTER)
-			cm.AddWritableStep(upgradestatus.CHECK_UPGRADE, idl.UpgradeSteps_CHECK_UPGRADE)
-			cm.AddWritableStep(upgradestatus.UPGRADE_MASTER, idl.UpgradeSteps_UPGRADE_MASTER)
-			cm.AddWritableStep(upgradestatus.COPY_MASTER, idl.UpgradeSteps_COPY_MASTER)
-			cm.AddWritableStep(upgradestatus.UPGRADE_PRIMARIES, idl.UpgradeSteps_UPGRADE_PRIMARIES)
-			cm.AddWritableStep(upgradestatus.START_TARGET_CLUSTER, idl.UpgradeSteps_START_TARGET_CLUSTER)
-			cm.AddWritableStep(upgradestatus.RECONFIGURE_PORTS, idl.UpgradeSteps_RECONFIGURE_PORTS)
+			cm.AddWritableStep(upgradestatus.CONFIG, idl.Substep_CONFIG)
+			cm.AddWritableStep(upgradestatus.START_AGENTS, idl.Substep_START_AGENTS)
+			cm.AddWritableStep(upgradestatus.CREATE_TARGET_CONFIG, idl.Substep_CREATE_TARGET_CONFIG)
+			cm.AddWritableStep(upgradestatus.SHUTDOWN_SOURCE_CLUSTER, idl.Substep_SHUTDOWN_SOURCE_CLUSTER)
+			cm.AddWritableStep(upgradestatus.INIT_TARGET_CLUSTER, idl.Substep_INIT_TARGET_CLUSTER)
+			cm.AddWritableStep(upgradestatus.SHUTDOWN_TARGET_CLUSTER, idl.Substep_SHUTDOWN_TARGET_CLUSTER)
+			cm.AddWritableStep(upgradestatus.CHECK_UPGRADE, idl.Substep_CHECK_UPGRADE)
+			cm.AddWritableStep(upgradestatus.UPGRADE_MASTER, idl.Substep_UPGRADE_MASTER)
+			cm.AddWritableStep(upgradestatus.COPY_MASTER, idl.Substep_COPY_MASTER)
+			cm.AddWritableStep(upgradestatus.UPGRADE_PRIMARIES, idl.Substep_UPGRADE_PRIMARIES)
+			cm.AddWritableStep(upgradestatus.START_TARGET_CLUSTER, idl.Substep_START_TARGET_CLUSTER)
+			cm.AddWritableStep(upgradestatus.RECONFIGURE_PORTS, idl.Substep_RECONFIGURE_PORTS)
 
 			if shouldDaemonize {
 				h.MakeDaemon()

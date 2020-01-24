@@ -34,12 +34,12 @@ type Checklist interface {
 
 type StateReader interface {
 	Name() string
-	Code() idl.UpgradeSteps
-	Status() idl.StepStatus
+	Code() idl.Substep
+	Status() idl.Status
 }
 
 type StateWriter interface {
-	Code() idl.UpgradeSteps
+	Code() idl.Substep
 
 	MarkInProgress() error
 	ResetStateDir() error
@@ -56,11 +56,11 @@ type ChecklistManager struct {
 
 // A StatusFunc returns a StepStatus for a read-only step. It is passed the name
 // of the step to facilitate sharing of step implementations.
-type StatusFunc func(name string) idl.StepStatus
+type StatusFunc func(name string) idl.Status
 
 type step struct {
 	name   string
-	code   idl.UpgradeSteps
+	code   idl.Substep
 	status StatusFunc
 }
 
@@ -68,11 +68,11 @@ func (s step) Name() string {
 	return s.name
 }
 
-func (s step) Code() idl.UpgradeSteps {
+func (s step) Code() idl.Substep {
 	return s.code
 }
 
-func (s step) Status() idl.StepStatus {
+func (s step) Status() idl.Status {
 	return s.status(s.name)
 }
 
@@ -87,8 +87,8 @@ func NewChecklistManager(stateDirPath string) *ChecklistManager {
 // AddWritableStep creates a step with a writable status that is backed by the
 // filesystem. The given name must be filesystem-friendly, since it will be used
 // in the backing path.
-func (c *ChecklistManager) AddWritableStep(name string, code idl.UpgradeSteps) {
-	statusFunc := func(name string) idl.StepStatus {
+func (c *ChecklistManager) AddWritableStep(name string, code idl.Substep) {
+	statusFunc := func(name string) idl.Status {
 		checker := StateCheck{
 			Path: filepath.Join(c.stateDir, name),
 			Step: code,
@@ -101,12 +101,12 @@ func (c *ChecklistManager) AddWritableStep(name string, code idl.UpgradeSteps) {
 
 // AddReadOnlyStep creates a step with a custom status retrieval mechanism, as
 // determined by the given StatusFunc.
-func (c *ChecklistManager) AddReadOnlyStep(name string, code idl.UpgradeSteps, status StatusFunc) {
+func (c *ChecklistManager) AddReadOnlyStep(name string, code idl.Substep, status StatusFunc) {
 	c.addStep(name, code, status)
 	c.readOnly[name] = true
 }
 
-func (c *ChecklistManager) addStep(name string, code idl.UpgradeSteps, status StatusFunc) {
+func (c *ChecklistManager) addStep(name string, code idl.Substep, status StatusFunc) {
 	s := step{name, code, status}
 
 	// Since checklist setup isn't influenced by the user, it's always a
@@ -137,7 +137,7 @@ func (c *ChecklistManager) GetStepWriter(step string) StateWriter {
 
 	stepdir := filepath.Join(c.stateDir, step)
 
-	code := idl.UpgradeSteps_UNKNOWN_STEP
+	code := idl.Substep_UNKNOWN_STEP
 	reader := c.stepmap[step]
 	if reader != nil {
 		code = reader.Code()
@@ -147,8 +147,8 @@ func (c *ChecklistManager) GetStepWriter(step string) StateWriter {
 }
 
 type StepWriter struct {
-	stepdir string           // path to step-specific state directory
-	code    idl.UpgradeSteps // the gRPC code associated with this step
+	stepdir string      // path to step-specific state directory
+	code    idl.Substep // the gRPC code associated with this step
 }
 
 // FIXME: none of these operations are atomic on the FS; just move the progress
@@ -204,6 +204,6 @@ func (sw StepWriter) ResetStateDir() error {
 	return nil
 }
 
-func (sw StepWriter) Code() idl.UpgradeSteps {
+func (sw StepWriter) Code() idl.Substep {
 	return sw.code
 }

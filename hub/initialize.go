@@ -32,11 +32,11 @@ func (h *Hub) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initiali
 		}
 	}()
 
-	s.Run(idl.UpgradeSteps_CONFIG, func(stream step.OutStreams) error {
+	s.Run(idl.Substep_CONFIG, func(stream step.OutStreams) error {
 		return h.fillClusterConfigsSubStep(stream, in.OldBinDir, in.NewBinDir, int(in.OldPort), in.UseLinkMode)
 	})
 
-	s.Run(idl.UpgradeSteps_START_AGENTS, func(stream step.OutStreams) error {
+	s.Run(idl.Substep_START_AGENTS, func(stream step.OutStreams) error {
 		return h.startAgentsSubStep(stream)
 	})
 
@@ -60,25 +60,25 @@ func (h *Hub) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest, st
 	}()
 
 	var targetMasterPort int
-	s.Run(idl.UpgradeSteps_CREATE_TARGET_CONFIG, func(_ step.OutStreams) error {
+	s.Run(idl.Substep_CREATE_TARGET_CONFIG, func(_ step.OutStreams) error {
 		var err error
 		targetMasterPort, err = h.GenerateInitsystemConfig(in.Ports)
 		return err
 	})
 
-	s.Run(idl.UpgradeSteps_SHUTDOWN_SOURCE_CLUSTER, func(stream step.OutStreams) error {
+	s.Run(idl.Substep_SHUTDOWN_SOURCE_CLUSTER, func(stream step.OutStreams) error {
 		return StopCluster(stream, h.Source)
 	})
 
-	s.Run(idl.UpgradeSteps_INIT_TARGET_CLUSTER, func(stream step.OutStreams) error {
+	s.Run(idl.Substep_INIT_TARGET_CLUSTER, func(stream step.OutStreams) error {
 		return h.CreateTargetCluster(stream, targetMasterPort)
 	})
 
-	s.Run(idl.UpgradeSteps_SHUTDOWN_TARGET_CLUSTER, func(stream step.OutStreams) error {
+	s.Run(idl.Substep_SHUTDOWN_TARGET_CLUSTER, func(stream step.OutStreams) error {
 		return h.ShutdownCluster(stream, false)
 	})
 
-	s.Run(idl.UpgradeSteps_CHECK_UPGRADE, func(stream step.OutStreams) error {
+	s.Run(idl.Substep_CHECK_UPGRADE, func(stream step.OutStreams) error {
 		return h.CheckUpgrade(stream)
 	})
 

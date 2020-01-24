@@ -17,25 +17,25 @@ type receiver interface {
 	Recv() (*idl.Message, error)
 }
 
-var lines = map[idl.UpgradeSteps]string{
-	idl.UpgradeSteps_CONFIG:                  "Retrieving configs...",
-	idl.UpgradeSteps_START_AGENTS:            "Starting agents...",
-	idl.UpgradeSteps_CREATE_TARGET_CONFIG:    "Generating new cluster configuration...",
-	idl.UpgradeSteps_SHUTDOWN_SOURCE_CLUSTER: "Stopping old cluster...",
-	idl.UpgradeSteps_INIT_TARGET_CLUSTER:     "Creating new cluster...",
-	idl.UpgradeSteps_SHUTDOWN_TARGET_CLUSTER: "Stopping new cluster...",
-	idl.UpgradeSteps_CHECK_UPGRADE:           "Running pg_upgrade checks...",
-	idl.UpgradeSteps_UPGRADE_MASTER:          "Upgrading master...",
-	idl.UpgradeSteps_COPY_MASTER:             "Copying master to segments...",
-	idl.UpgradeSteps_UPGRADE_PRIMARIES:       "Upgrading segments...",
-	idl.UpgradeSteps_START_TARGET_CLUSTER:    "Starting new cluster...",
-	idl.UpgradeSteps_RECONFIGURE_PORTS:       "Changing cluster ports...",
+var lines = map[idl.Substep]string{
+	idl.Substep_CONFIG:                  "Retrieving configs...",
+	idl.Substep_START_AGENTS:            "Starting agents...",
+	idl.Substep_CREATE_TARGET_CONFIG:    "Generating new cluster configuration...",
+	idl.Substep_SHUTDOWN_SOURCE_CLUSTER: "Stopping old cluster...",
+	idl.Substep_INIT_TARGET_CLUSTER:     "Creating new cluster...",
+	idl.Substep_SHUTDOWN_TARGET_CLUSTER: "Stopping new cluster...",
+	idl.Substep_CHECK_UPGRADE:           "Running pg_upgrade checks...",
+	idl.Substep_UPGRADE_MASTER:          "Upgrading master...",
+	idl.Substep_COPY_MASTER:             "Copying master to segments...",
+	idl.Substep_UPGRADE_PRIMARIES:       "Upgrading segments...",
+	idl.Substep_START_TARGET_CLUSTER:    "Starting new cluster...",
+	idl.Substep_RECONFIGURE_PORTS:       "Changing cluster ports...",
 }
 
-var indicators = map[idl.StepStatus]string{
-	idl.StepStatus_RUNNING:  "[IN PROGRESS]",
-	idl.StepStatus_COMPLETE: "[COMPLETE]",
-	idl.StepStatus_FAILED:   "[FAILED]",
+var indicators = map[idl.Status]string{
+	idl.Status_RUNNING:  "[IN PROGRESS]",
+	idl.Status_COMPLETE: "[COMPLETE]",
+	idl.Status_FAILED:   "[FAILED]",
 }
 
 func Initialize(client idl.CliToHubClient, oldBinDir, newBinDir string, oldPort int, linkMode bool, verbose bool) (err error) {
@@ -134,7 +134,7 @@ The cluster is now upgraded and is ready to be used.`)
 }
 
 func UILoop(stream receiver, verbose bool) error {
-	var lastStep idl.UpgradeSteps
+	var lastStep idl.Substep
 	var err error
 
 	for {
@@ -161,7 +161,7 @@ func UILoop(stream receiver, verbose bool) error {
 			// current step. (This behavior is switched off in verbose mode,
 			// because it interferes with the output stream.)
 			if !verbose {
-				if lastStep == idl.UpgradeSteps_UNKNOWN_STEP {
+				if lastStep == idl.Substep_UNKNOWN_STEP {
 					// This is the first call, so we don't need to "terminate"
 					// the previous line at all.
 				} else if x.Status.Step == lastStep {
@@ -198,7 +198,7 @@ func UILoop(stream receiver, verbose bool) error {
 //
 // FormatStatus panics if it doesn't have a string representation for a given
 // protobuf code.
-func FormatStatus(status *idl.UpgradeStepStatus) string {
+func FormatStatus(status *idl.SubstepStatus) string {
 	line, ok := lines[status.Step]
 	if !ok {
 		panic(fmt.Sprintf("unexpected step %#v", status.Step))
@@ -209,7 +209,7 @@ func FormatStatus(status *idl.UpgradeStepStatus) string {
 
 // Format is also exported for ease of testing (see FormatStatus). Use Substep
 // instead.
-func Format(description string, status idl.StepStatus) string {
+func Format(description string, status idl.Status) string {
 	indicator, ok := indicators[status]
 	if !ok {
 		panic(fmt.Sprintf("unexpected status %#v", status))
@@ -226,7 +226,7 @@ type substep struct {
 // and returns a struct that can be .Finish()d (in a defer statement) to print
 // the final complete/failed state.
 func Substep(description string) *substep {
-	fmt.Printf("%s\r", Format(description, idl.StepStatus_RUNNING))
+	fmt.Printf("%s\r", Format(description, idl.Status_RUNNING))
 	return &substep{description}
 }
 
@@ -242,9 +242,9 @@ func Substep(description string) *substep {
 //    }
 //
 func (s *substep) Finish(err *error) {
-	status := idl.StepStatus_COMPLETE
+	status := idl.Status_COMPLETE
 	if *err != nil {
-		status = idl.StepStatus_FAILED
+		status = idl.Status_FAILED
 	}
 
 	fmt.Printf("%s\n", Format(s.description, status))

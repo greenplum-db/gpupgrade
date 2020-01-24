@@ -40,7 +40,7 @@ var _ = Describe("utility status checker", func() {
 			return true
 		}
 		status := upgradestatus.SegmentConversionStatus("/tmp", "", testExecutor)
-		Expect(status).To(Equal(idl.StepStatus_PENDING))
+		Expect(status).To(Equal(idl.Status_PENDING))
 
 	})
 
@@ -62,7 +62,7 @@ var _ = Describe("utility status checker", func() {
 		}
 
 		status := upgradestatus.SegmentConversionStatus("/tmp", "", testExecutor)
-		Expect(status).To(Equal(idl.StepStatus_RUNNING))
+		Expect(status).To(Equal(idl.Status_RUNNING))
 	})
 
 	It("If pg_upgrade is not running and .done files exist and contain the string "+
@@ -95,7 +95,7 @@ var _ = Describe("utility status checker", func() {
 		defer operating.InitializeSystemFunctions()
 		status := upgradestatus.SegmentConversionStatus("/tmp", "/data/dir", testExecutor)
 		Expect(testExecutor.LocalCommands).To(Equal([]string{"ps -ef | grep [p]g_upgrade | grep /data/dir"}))
-		Expect(status).To(Equal(idl.StepStatus_COMPLETE))
+		Expect(status).To(Equal(idl.Status_COMPLETE))
 	})
 
 	// We are assuming that no inprogress actually exists in the path we're using,
@@ -112,7 +112,7 @@ var _ = Describe("utility status checker", func() {
 		testExecutor.LocalError = errors.New("pg_upgrade failed")
 
 		status := upgradestatus.SegmentConversionStatus("/tmp", "", testExecutor)
-		Expect(status).To(Equal(idl.StepStatus_FAILED))
+		Expect(status).To(Equal(idl.Status_FAILED))
 	})
 
 })

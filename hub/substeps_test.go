@@ -137,14 +137,14 @@ func TestSubstep(t *testing.T) {
 		stream := newMultiplexedStream(sender, ioutil.Discard)
 
 		sender.EXPECT().
-			Send(&idl.Message{Contents: &idl.Message_Status{&idl.UpgradeStepStatus{
-				Step:   idl.UpgradeSteps_UNKNOWN_STEP,
-				Status: idl.StepStatus_RUNNING,
+			Send(&idl.Message{Contents: &idl.Message_Status{&idl.SubstepStatus{
+				Step:   idl.Substep_UNKNOWN_STEP,
+				Status: idl.Status_RUNNING,
 			}}})
 		sender.EXPECT().
-			Send(&idl.Message{Contents: &idl.Message_Status{&idl.UpgradeStepStatus{
-				Step:   idl.UpgradeSteps_UNKNOWN_STEP,
-				Status: idl.StepStatus_COMPLETE,
+			Send(&idl.Message{Contents: &idl.Message_Status{&idl.SubstepStatus{
+				Step:   idl.Substep_UNKNOWN_STEP,
+				Status: idl.Status_COMPLETE,
 			}}})
 
 		var called bool
@@ -156,8 +156,8 @@ func TestSubstep(t *testing.T) {
 
 				// We shouldn't be marked complete until this returns.
 				actual := cm.GetStepReader(step).Status()
-				if actual != idl.StepStatus_RUNNING {
-					t.Errorf("step was marked %s, want %s", actual, idl.StepStatus_RUNNING)
+				if actual != idl.Status_RUNNING {
+					t.Errorf("step was marked %s, want %s", actual, idl.Status_RUNNING)
 				}
 
 				return nil
@@ -171,8 +171,8 @@ func TestSubstep(t *testing.T) {
 		}
 
 		actual := cm.GetStepReader(step).Status()
-		if actual != idl.StepStatus_COMPLETE {
-			t.Errorf("step was marked %s, want %s", actual, idl.StepStatus_COMPLETE)
+		if actual != idl.Status_COMPLETE {
+			t.Errorf("step was marked %s, want %s", actual, idl.Status_COMPLETE)
 		}
 	})
 
@@ -184,14 +184,14 @@ func TestSubstep(t *testing.T) {
 		stream := newMultiplexedStream(sender, ioutil.Discard)
 
 		sender.EXPECT().
-			Send(&idl.Message{Contents: &idl.Message_Status{&idl.UpgradeStepStatus{
-				Step:   idl.UpgradeSteps_UNKNOWN_STEP,
-				Status: idl.StepStatus_RUNNING,
+			Send(&idl.Message{Contents: &idl.Message_Status{&idl.SubstepStatus{
+				Step:   idl.Substep_UNKNOWN_STEP,
+				Status: idl.Status_RUNNING,
 			}}})
 		sender.EXPECT().
-			Send(&idl.Message{Contents: &idl.Message_Status{&idl.UpgradeStepStatus{
-				Step:   idl.UpgradeSteps_UNKNOWN_STEP,
-				Status: idl.StepStatus_FAILED,
+			Send(&idl.Message{Contents: &idl.Message_Status{&idl.SubstepStatus{
+				Step:   idl.Substep_UNKNOWN_STEP,
+				Status: idl.Status_FAILED,
 			}}})
 
 		step := "mystep"
@@ -206,8 +206,8 @@ func TestSubstep(t *testing.T) {
 		}
 
 		actual := cm.GetStepReader(step).Status()
-		if actual != idl.StepStatus_FAILED {
-			t.Errorf("step was marked %s, want %s", actual, idl.StepStatus_FAILED)
+		if actual != idl.Status_FAILED {
+			t.Errorf("step was marked %s, want %s", actual, idl.Status_FAILED)
 		}
 	})
 }

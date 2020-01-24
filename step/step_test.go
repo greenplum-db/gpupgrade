@@ -21,20 +21,20 @@ func TestStepRun(t *testing.T) {
 
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 		server.EXPECT().
-			Send(&idl.Message{Contents: &idl.Message_Status{&idl.UpgradeStepStatus{
-				Step:   idl.UpgradeSteps_CONFIG,
-				Status: idl.StepStatus_RUNNING,
+			Send(&idl.Message{Contents: &idl.Message_Status{&idl.SubstepStatus{
+				Step:   idl.Substep_CONFIG,
+				Status: idl.Status_RUNNING,
 			}}})
 		server.EXPECT().
-			Send(&idl.Message{Contents: &idl.Message_Status{&idl.UpgradeStepStatus{
-				Step:   idl.UpgradeSteps_CONFIG,
-				Status: idl.StepStatus_COMPLETE,
+			Send(&idl.Message{Contents: &idl.Message_Status{&idl.SubstepStatus{
+				Step:   idl.Substep_CONFIG,
+				Status: idl.Status_COMPLETE,
 			}}})
 
 		s := step.New("Initialize", server, &TestStore{}, DevNull)
 
 		var called bool
-		s.Run(idl.UpgradeSteps_CONFIG, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_CONFIG, func(streams step.OutStreams) error {
 			called = true
 			return nil
 		})
@@ -50,20 +50,20 @@ func TestStepRun(t *testing.T) {
 
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 		server.EXPECT().
-			Send(&idl.Message{Contents: &idl.Message_Status{&idl.UpgradeStepStatus{
-				Step:   idl.UpgradeSteps_CONFIG,
-				Status: idl.StepStatus_RUNNING,
+			Send(&idl.Message{Contents: &idl.Message_Status{&idl.SubstepStatus{
+				Step:   idl.Substep_CONFIG,
+				Status: idl.Status_RUNNING,
 			}}})
 		server.EXPECT().
-			Send(&idl.Message{Contents: &idl.Message_Status{&idl.UpgradeStepStatus{
-				Step:   idl.UpgradeSteps_CONFIG,
-				Status: idl.StepStatus_FAILED,
+			Send(&idl.Message{Contents: &idl.Message_Status{&idl.SubstepStatus{
+				Step:   idl.Substep_CONFIG,
+				Status: idl.Status_FAILED,
 			}}})
 
 		s := step.New("Initialize", server, &TestStore{}, DevNull)
 
 		var called bool
-		s.Run(idl.UpgradeSteps_CONFIG, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_CONFIG, func(streams step.OutStreams) error {
 			called = true
 			return errors.New("oops")
 		})
@@ -83,7 +83,7 @@ func TestStepRun(t *testing.T) {
 		s := step.New("Initialize", server, failingStore, DevNull)
 
 		var called bool
-		s.Run(idl.UpgradeSteps_CHECK_UPGRADE, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_CHECK_UPGRADE, func(streams step.OutStreams) error {
 			called = true
 			return nil
 		})
@@ -103,16 +103,16 @@ func TestStepRun(t *testing.T) {
 
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 		server.EXPECT().
-			Send(&idl.Message{Contents: &idl.Message_Status{&idl.UpgradeStepStatus{
-				Step:   idl.UpgradeSteps_CHECK_UPGRADE,
-				Status: idl.StepStatus_COMPLETE,
+			Send(&idl.Message{Contents: &idl.Message_Status{&idl.SubstepStatus{
+				Step:   idl.Substep_CHECK_UPGRADE,
+				Status: idl.Status_COMPLETE,
 			}}})
 
-		store := &TestStore{Status: idl.StepStatus_COMPLETE}
+		store := &TestStore{Status: idl.Status_COMPLETE}
 		s := step.New("Initialize", server, store, DevNull)
 
 		var called bool
-		s.Run(idl.UpgradeSteps_CHECK_UPGRADE, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_CHECK_UPGRADE, func(streams step.OutStreams) error {
 			called = true
 			return nil
 		})
@@ -132,12 +132,12 @@ func TestStepRun(t *testing.T) {
 		s := step.New("Initialize", server, &TestStore{}, DevNull)
 
 		expected := errors.New("oops")
-		s.Run(idl.UpgradeSteps_CONFIG, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_CONFIG, func(streams step.OutStreams) error {
 			return expected
 		})
 
 		var called bool
-		s.Run(idl.UpgradeSteps_START_AGENTS, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_START_AGENTS, func(streams step.OutStreams) error {
 			called = true
 			return nil
 		})
@@ -158,11 +158,11 @@ func TestStepRun(t *testing.T) {
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 		server.EXPECT().Send(gomock.Any()).AnyTimes()
 
-		store := &TestStore{Status: idl.StepStatus_RUNNING}
+		store := &TestStore{Status: idl.Status_RUNNING}
 		s := step.New("Initialize", server, store, DevNull)
 
 		var called bool
-		s.Run(idl.UpgradeSteps_CONFIG, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_CONFIG, func(streams step.OutStreams) error {
 			called = true
 			return nil
 		})
@@ -205,15 +205,15 @@ func TestStepFinish(t *testing.T) {
 }
 
 type TestStore struct {
-	Status   idl.StepStatus
+	Status   idl.Status
 	WriteErr error
 }
 
-func (t *TestStore) Read(substep idl.UpgradeSteps) (idl.StepStatus, error) {
+func (t *TestStore) Read(substep idl.Substep) (idl.Status, error) {
 	return t.Status, nil
 }
 
-func (t *TestStore) Write(substep idl.UpgradeSteps, status idl.StepStatus) (err error) {
+func (t *TestStore) Write(substep idl.Substep, status idl.Status) (err error) {
 	return t.WriteErr
 }
 

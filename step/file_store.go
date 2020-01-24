@@ -20,10 +20,10 @@ func NewFileStore(path string) *FileStore {
 	return &FileStore{path}
 }
 
-// PrettyStatus exists only to write a string description of idl.StepStatus to
+// PrettyStatus exists only to write a string description of idl.Status to
 // the JSON representation, instead of an integer.
 type PrettyStatus struct {
-	idl.StepStatus
+	idl.Status
 }
 
 func (p PrettyStatus) MarshalText() ([]byte, error) {
@@ -33,16 +33,16 @@ func (p PrettyStatus) MarshalText() ([]byte, error) {
 func (p *PrettyStatus) UnmarshalText(buf []byte) error {
 	name := string(buf)
 
-	val, ok := idl.StepStatus_value[name]
+	val, ok := idl.Status_value[name]
 	if !ok {
 		return fmt.Errorf("unknown substep name %q", name)
 	}
 
-	p.StepStatus = idl.StepStatus(val)
+	p.Status = idl.Status(val)
 	return nil
 }
 
-func (f *FileStore) load() (map[string]idl.StepStatus, error) {
+func (f *FileStore) load() (map[string]idl.Status, error) {
 	data, err := ioutil.ReadFile(f.path)
 	if err != nil {
 		return nil, err
@@ -54,22 +54,22 @@ func (f *FileStore) load() (map[string]idl.StepStatus, error) {
 		return nil, err
 	}
 
-	substeps := make(map[string]idl.StepStatus)
+	substeps := make(map[string]idl.Status)
 	for k, v := range prettySubsteps {
-		substeps[k] = v.StepStatus
+		substeps[k] = v.Status
 	}
 	return substeps, nil
 }
 
-func (f *FileStore) Read(substep idl.UpgradeSteps) (idl.StepStatus, error) {
+func (f *FileStore) Read(substep idl.Substep) (idl.Status, error) {
 	steps, err := f.load()
 	if err != nil {
-		return idl.StepStatus_UNKNOWN_STATUS, err
+		return idl.Status_UNKNOWN_STATUS, err
 	}
 
 	status, ok := steps[substep.String()]
 	if !ok {
-		return idl.StepStatus_UNKNOWN_STATUS, nil
+		return idl.Status_UNKNOWN_STATUS, nil
 	}
 
 	return status, nil
@@ -78,7 +78,7 @@ func (f *FileStore) Read(substep idl.UpgradeSteps) (idl.StepStatus, error) {
 // Write atomically updates the status file.
 // Load the latest values from the filesystem, rather than storing
 // in-memory on a struct to avoid having two sources of truth.
-func (f *FileStore) Write(substep idl.UpgradeSteps, status idl.StepStatus) (err error) {
+func (f *FileStore) Write(substep idl.Substep, status idl.Status) (err error) {
 	steps, err := f.load()
 	if err != nil {
 		return err

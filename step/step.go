@@ -19,8 +19,8 @@ type Step struct {
 }
 
 type Store interface {
-	Read(idl.UpgradeSteps) (idl.StepStatus, error)
-	Write(idl.UpgradeSteps, idl.StepStatus) error
+	Read(idl.Substep) (idl.Status, error)
+	Write(idl.Substep, idl.Status) error
 }
 
 type OutStreams interface {
@@ -54,7 +54,7 @@ func (s *Step) Err() error {
 	return s.err
 }
 
-func (s *Step) Run(substep idl.UpgradeSteps, f func(OutStreams) error) {
+func (s *Step) Run(substep idl.Substep, f func(OutStreams) error) {
 	var err error
 	defer func() {
 		if err != nil {
@@ -71,17 +71,17 @@ func (s *Step) Run(substep idl.UpgradeSteps, f func(OutStreams) error) {
 		return
 	}
 
-	if status == idl.StepStatus_RUNNING {
+	if status == idl.Status_RUNNING {
 		// TODO: Finalize error wording and recommended action
 		err = fmt.Errorf("Found previous substep %s was running. Manual intervention needed to cleanup. Please contact support.", substep)
-		s.sendStatus(substep, idl.StepStatus_FAILED)
+		s.sendStatus(substep, idl.Status_FAILED)
 		return
 	}
 
 	// Only re-run subteps that have failed or pending
-	if status == idl.StepStatus_COMPLETE {
+	if status == idl.Status_COMPLETE {
 		// Only send the status back to the UI; don't re-persist to the store
-		s.sendStatus(substep, idl.StepStatus_COMPLETE)
+		s.sendStatus(substep, idl.Status_COMPLETE)
 		return
 	}
 
@@ -90,23 +90,23 @@ func (s *Step) Run(substep idl.UpgradeSteps, f func(OutStreams) error) {
 		return
 	}
 
-	err = s.write(substep, idl.StepStatus_RUNNING)
+	err = s.write(substep, idl.Status_RUNNING)
 	if err != nil {
 		return
 	}
 
 	err = f(s.streams)
 	if err != nil {
-		if werr := s.write(substep, idl.StepStatus_FAILED); werr != nil {
+		if werr := s.write(substep, idl.Status_FAILED); werr != nil {
 			err = multierror.Append(err, werr).ErrorOrNil()
 		}
 		return
 	}
 
-	err = s.write(substep, idl.StepStatus_COMPLETE)
+	err = s.write(substep, idl.Status_COMPLETE)
 }
 
-func (s *Step) write(substep idl.UpgradeSteps, status idl.StepStatus) error {
+func (s *Step) write(substep idl.Substep, status idl.Status) error {
 	err := s.store.Write(substep, status)
 	if err != nil {
 		return err
@@ -116,11 +116,11 @@ func (s *Step) write(substep idl.UpgradeSteps, status idl.StepStatus) error {
 	return nil
 }
 
-func (s *Step) sendStatus(substep idl.UpgradeSteps, status idl.StepStatus) {
+func (s *Step) sendStatus(substep idl.Substep, status idl.Status) {
 	// A stream is not guaranteed to remain connected during execution, so
 	// errors are explicitly ignored.
 	_ = s.sender.Send(&idl.Message{
-		Contents: &idl.Message_Status{&idl.UpgradeStepStatus{
+		Contents: &idl.Message_Status{&idl.SubstepStatus{
 			Step:   substep,
 			Status: status,
 		}},

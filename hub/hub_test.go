@@ -28,7 +28,7 @@ import (
 
 // msgStream is a mock server stream for InitializeStep().
 type msgStream struct {
-	LastStatus idl.StepStatus
+	LastStatus idl.Status
 }
 
 func (m *msgStream) Send(msg *idl.Message) error {
@@ -194,8 +194,8 @@ var _ = Describe("Hub", func() {
 		h := hub.New(conf, mockDialer, "", mockChecklistManager)
 		h.InitializeStep("dub-step", mockStream)
 
-		Expect(mockChecklistManager.GetStepReader("dub-step").Status()).To(Equal(idl.StepStatus_RUNNING))
-		Expect(mockStream.LastStatus).To(Equal(idl.StepStatus_RUNNING))
+		Expect(mockChecklistManager.GetStepReader("dub-step").Status()).To(Equal(idl.Status_RUNNING))
+		Expect(mockStream.LastStatus).To(Equal(idl.Status_RUNNING))
 	})
 
 	It("returns an error when InitializeStep fails to reset state directory", func() {
@@ -207,7 +207,7 @@ var _ = Describe("Hub", func() {
 
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(Equal("failed to reset state directory: permission denied"))
-		Expect(mockStream.LastStatus).To(Equal(idl.StepStatus_UNKNOWN_STATUS))
+		Expect(mockStream.LastStatus).To(Equal(idl.Status_UNKNOWN_STATUS))
 	})
 
 	It("returns an error when InitializeStep fails to mark step as in-progress", func() {
@@ -219,7 +219,7 @@ var _ = Describe("Hub", func() {
 
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(Equal("failed to set dub-step to in.progress: EAGAIN"))
-		Expect(mockStream.LastStatus).To(Equal(idl.StepStatus_UNKNOWN_STATUS))
+		Expect(mockStream.LastStatus).To(Equal(idl.Status_UNKNOWN_STATUS))
 	})
 
 	It("returns an error when stepwriter MarkComplete fails to mark step as complete", func() {
@@ -234,7 +234,7 @@ var _ = Describe("Hub", func() {
 
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(Equal("ENOENT"))
-		Expect(mockStream.LastStatus).To(Equal(idl.StepStatus_RUNNING))
+		Expect(mockStream.LastStatus).To(Equal(idl.Status_RUNNING))
 	})
 
 	It("returns an error when stepwriter MarkFailed fails to mark step as failed", func() {
@@ -249,7 +249,7 @@ var _ = Describe("Hub", func() {
 
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(Equal("EPERM"))
-		Expect(mockStream.LastStatus).To(Equal(idl.StepStatus_RUNNING))
+		Expect(mockStream.LastStatus).To(Equal(idl.Status_RUNNING))
 	})
 
 	It("streams status updates from step transitions", func() {
@@ -260,10 +260,10 @@ var _ = Describe("Hub", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		step.MarkComplete()
-		Expect(mockStream.LastStatus).To(Equal(idl.StepStatus_COMPLETE))
+		Expect(mockStream.LastStatus).To(Equal(idl.Status_COMPLETE))
 
 		step.MarkFailed()
-		Expect(mockStream.LastStatus).To(Equal(idl.StepStatus_FAILED))
+		Expect(mockStream.LastStatus).To(Equal(idl.Status_FAILED))
 	})
 })
 

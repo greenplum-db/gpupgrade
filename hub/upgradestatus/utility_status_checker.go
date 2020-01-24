@@ -22,21 +22,21 @@ import (
 	- pg_upgrade will not fail without error before writing an inprogress file
 	- when a new pg_upgrade is started it deletes all *.done and *.inprogress files
 */
-func SegmentConversionStatus(pgUpgradePath, oldDataDir string, executor cluster.Executor) idl.StepStatus {
+func SegmentConversionStatus(pgUpgradePath, oldDataDir string, executor cluster.Executor) idl.Status {
 	return GetUtilityStatus(pgUpgradePath, oldDataDir, "*.inprogress", executor, isUpgradeComplete)
 }
 
-func GetUtilityStatus(utilityStatePath, dataDir, progressFilePattern string, executor cluster.Executor, isCompleteFunc func(string) bool) idl.StepStatus {
+func GetUtilityStatus(utilityStatePath, dataDir, progressFilePattern string, executor cluster.Executor, isCompleteFunc func(string) bool) idl.Status {
 	_, err := utils.System.Stat(utilityStatePath)
 	switch {
 	case utils.System.IsNotExist(err):
-		return idl.StepStatus_PENDING
+		return idl.Status_PENDING
 	case isBinaryRunning(dataDir, executor):
-		return idl.StepStatus_RUNNING
+		return idl.Status_RUNNING
 	case !inProgressFilesExist(utilityStatePath, progressFilePattern) && isCompleteFunc(utilityStatePath):
-		return idl.StepStatus_COMPLETE
+		return idl.Status_COMPLETE
 	default:
-		return idl.StepStatus_FAILED
+		return idl.Status_FAILED
 	}
 }
 

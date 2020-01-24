@@ -26,7 +26,7 @@ func TestFileStore(t *testing.T) {
 	fs := step.NewFileStore(path)
 
 	t.Run("bubbles up any read failures", func(t *testing.T) {
-		_, err := fs.Read(idl.UpgradeSteps_CHECK_UPGRADE)
+		_, err := fs.Read(idl.Substep_CHECK_UPGRADE)
 
 		if !os.IsNotExist(err) {
 			t.Errorf("returned error %#v, want ErrNotExist", err)
@@ -39,8 +39,8 @@ func TestFileStore(t *testing.T) {
 	}
 
 	t.Run("reads the same status that was written", func(t *testing.T) {
-		substep := idl.UpgradeSteps_CHECK_UPGRADE
-		expected := idl.StepStatus_COMPLETE
+		substep := idl.Substep_CHECK_UPGRADE
+		expected := idl.Status_COMPLETE
 
 		err := fs.Write(substep, expected)
 		if err != nil {
@@ -62,20 +62,20 @@ func TestFileStore(t *testing.T) {
 			t.Fatalf("clearing status file: %v", err)
 		}
 
-		status, err := fs.Read(idl.UpgradeSteps_INIT_TARGET_CLUSTER)
+		status, err := fs.Read(idl.Substep_INIT_TARGET_CLUSTER)
 		if err != nil {
 			t.Errorf("Read() returned error %#v", err)
 		}
 
-		expected := idl.StepStatus_UNKNOWN_STATUS
+		expected := idl.Status_UNKNOWN_STATUS
 		if status != expected {
 			t.Errorf("read %v, want %v", status, expected)
 		}
 	})
 
 	t.Run("uses human-readable serialization", func(t *testing.T) {
-		substep := idl.UpgradeSteps_INIT_TARGET_CLUSTER
-		status := idl.StepStatus_FAILED
+		substep := idl.Substep_INIT_TARGET_CLUSTER
+		status := idl.Status_FAILED
 		if err := fs.Write(substep, status); err != nil {
 			t.Fatalf("Write(): %+v", err)
 		}

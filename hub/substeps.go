@@ -82,11 +82,11 @@ type messageSender interface {
 }
 
 // TODO: remove; this is part of step.Step now
-func sendStatus(stream messageSender, step idl.UpgradeSteps, status idl.StepStatus) {
+func sendStatus(stream messageSender, step idl.Substep, status idl.Status) {
 	// A stream is not guaranteed to remain connected during execution, so
 	// errors are explicitly ignored.
 	_ = stream.Send(&idl.Message{
-		Contents: &idl.Message_Status{&idl.UpgradeStepStatus{
+		Contents: &idl.Message_Status{&idl.SubstepStatus{
 			Step:   step,
 			Status: status,
 		}},
@@ -98,7 +98,7 @@ func (s streamStepWriter) MarkInProgress() error {
 		return err
 	}
 
-	sendStatus(s.stream, s.Code(), idl.StepStatus_RUNNING)
+	sendStatus(s.stream, s.Code(), idl.Status_RUNNING)
 	return nil
 }
 
@@ -107,7 +107,7 @@ func (s streamStepWriter) MarkComplete() error {
 		return err
 	}
 
-	sendStatus(s.stream, s.Code(), idl.StepStatus_COMPLETE)
+	sendStatus(s.stream, s.Code(), idl.Status_COMPLETE)
 	return nil
 }
 
@@ -116,7 +116,7 @@ func (s streamStepWriter) MarkFailed() error {
 		return err
 	}
 
-	sendStatus(s.stream, s.Code(), idl.StepStatus_FAILED)
+	sendStatus(s.stream, s.Code(), idl.Status_FAILED)
 	return nil
 }
 

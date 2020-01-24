@@ -85,21 +85,21 @@ func TestUILoop(t *testing.T) {
 
 	t.Run("writes status and stdout chunks serially in verbose mode", func(t *testing.T) {
 		msgs := msgStream{
-			{Contents: &idl.Message_Status{&idl.UpgradeStepStatus{
-				Step:   idl.UpgradeSteps_INIT_TARGET_CLUSTER,
-				Status: idl.StepStatus_RUNNING,
+			{Contents: &idl.Message_Status{&idl.SubstepStatus{
+				Step:   idl.Substep_INIT_TARGET_CLUSTER,
+				Status: idl.Status_RUNNING,
 			}}},
 			{Contents: &idl.Message_Chunk{&idl.Chunk{
 				Buffer: []byte("my string\n"),
 				Type:   idl.Chunk_STDOUT,
 			}}},
-			{Contents: &idl.Message_Status{&idl.UpgradeStepStatus{
-				Step:   idl.UpgradeSteps_INIT_TARGET_CLUSTER,
-				Status: idl.StepStatus_COMPLETE,
+			{Contents: &idl.Message_Status{&idl.SubstepStatus{
+				Step:   idl.Substep_INIT_TARGET_CLUSTER,
+				Status: idl.Status_COMPLETE,
 			}}},
-			{Contents: &idl.Message_Status{&idl.UpgradeStepStatus{
-				Step:   idl.UpgradeSteps_UPGRADE_MASTER,
-				Status: idl.StepStatus_FAILED,
+			{Contents: &idl.Message_Status{&idl.SubstepStatus{
+				Step:   idl.Substep_UPGRADE_MASTER,
+				Status: idl.Status_FAILED,
 			}}},
 		}
 
@@ -130,25 +130,25 @@ func TestUILoop(t *testing.T) {
 
 	t.Run("overwrites status lines and ignores chunks in non-verbose mode", func(t *testing.T) {
 		msgs := msgStream{
-			{Contents: &idl.Message_Status{&idl.UpgradeStepStatus{
-				Step:   idl.UpgradeSteps_INIT_TARGET_CLUSTER,
-				Status: idl.StepStatus_RUNNING,
+			{Contents: &idl.Message_Status{&idl.SubstepStatus{
+				Step:   idl.Substep_INIT_TARGET_CLUSTER,
+				Status: idl.Status_RUNNING,
 			}}},
 			{Contents: &idl.Message_Chunk{&idl.Chunk{
 				Buffer: []byte("output ignored"),
 				Type:   idl.Chunk_STDOUT,
 			}}},
-			{Contents: &idl.Message_Status{&idl.UpgradeStepStatus{
-				Step:   idl.UpgradeSteps_INIT_TARGET_CLUSTER,
-				Status: idl.StepStatus_COMPLETE,
+			{Contents: &idl.Message_Status{&idl.SubstepStatus{
+				Step:   idl.Substep_INIT_TARGET_CLUSTER,
+				Status: idl.Status_COMPLETE,
 			}}},
 			{Contents: &idl.Message_Chunk{&idl.Chunk{
 				Buffer: []byte("error ignored"),
 				Type:   idl.Chunk_STDERR,
 			}}},
-			{Contents: &idl.Message_Status{&idl.UpgradeStepStatus{
-				Step:   idl.UpgradeSteps_UPGRADE_MASTER,
-				Status: idl.StepStatus_FAILED,
+			{Contents: &idl.Message_Status{&idl.SubstepStatus{
+				Step:   idl.Substep_UPGRADE_MASTER,
+				Status: idl.Status_FAILED,
 			}}},
 		}
 
@@ -183,15 +183,15 @@ func TestUILoop(t *testing.T) {
 			msg  *idl.Message
 		}{{
 			"bad step",
-			&idl.Message{Contents: &idl.Message_Status{&idl.UpgradeStepStatus{
-				Step:   idl.UpgradeSteps_UNKNOWN_STEP,
-				Status: idl.StepStatus_COMPLETE,
+			&idl.Message{Contents: &idl.Message_Status{&idl.SubstepStatus{
+				Step:   idl.Substep_UNKNOWN_STEP,
+				Status: idl.Status_COMPLETE,
 			}}},
 		}, {
 			"bad status",
-			&idl.Message{Contents: &idl.Message_Status{&idl.UpgradeStepStatus{
-				Step:   idl.UpgradeSteps_COPY_MASTER,
-				Status: idl.StepStatus_UNKNOWN_STATUS,
+			&idl.Message{Contents: &idl.Message_Status{&idl.SubstepStatus{
+				Step:   idl.Substep_COPY_MASTER,
+				Status: idl.Status_UNKNOWN_STATUS,
 			}}},
 		}, {
 			"bad message type",
@@ -233,10 +233,10 @@ func TestSubstep(t *testing.T) {
 		t.Errorf("unexpected stderr %#v", string(stderr))
 	}
 
-	expected := commanders.Format(description, idl.StepStatus_RUNNING) + "\r"
-	expected += commanders.Format(description, idl.StepStatus_COMPLETE) + "\n"
-	expected += commanders.Format(description, idl.StepStatus_RUNNING) + "\r"
-	expected += commanders.Format(description, idl.StepStatus_FAILED) + "\n"
+	expected := commanders.Format(description, idl.Status_RUNNING) + "\r"
+	expected += commanders.Format(description, idl.Status_COMPLETE) + "\n"
+	expected += commanders.Format(description, idl.Status_RUNNING) + "\r"
+	expected += commanders.Format(description, idl.Status_FAILED) + "\n"
 
 	actual := string(stdout)
 	if actual != expected {

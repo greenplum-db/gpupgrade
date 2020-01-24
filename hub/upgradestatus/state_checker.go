@@ -12,7 +12,7 @@ import (
 
 type StateCheck struct {
 	Path string
-	Step idl.UpgradeSteps
+	Step idl.Substep
 }
 
 // GetStatus returns the UpgradeStepStatus corresponding to the StateCheck's
@@ -22,12 +22,12 @@ type StateCheck struct {
 // affected step should clear the issue).
 //
 // XXX That last assumption is unlikely to hold for the more complicated steps.
-func (c StateCheck) GetStatus() idl.StepStatus {
+func (c StateCheck) GetStatus() idl.Status {
 	_, err := utils.System.Stat(c.Path)
 	if err != nil {
 		// It's okay if the state directory doesn't exist; that just means we
 		// haven't run the step yet.
-		return idl.StepStatus_PENDING
+		return idl.Status_PENDING
 	}
 
 	files, err := utils.System.FilePathGlob(filepath.Join(c.Path, "*"))
@@ -41,16 +41,16 @@ func (c StateCheck) GetStatus() idl.StepStatus {
 	// to COMPLETE/FAILED.
 	if len(files) > 1 {
 		gplog.Error("Status directory %s has more than one file", c.Path)
-		return idl.StepStatus_PENDING
+		return idl.Status_PENDING
 	} else if len(files) == 1 {
 		switch files[0] {
 		case filepath.Join(c.Path, file.Failed):
-			return idl.StepStatus_FAILED
+			return idl.Status_FAILED
 		case filepath.Join(c.Path, file.Complete):
-			return idl.StepStatus_COMPLETE
+			return idl.Status_COMPLETE
 		case filepath.Join(c.Path, file.InProgress):
-			return idl.StepStatus_RUNNING
+			return idl.Status_RUNNING
 		}
 	}
-	return idl.StepStatus_PENDING
+	return idl.Status_PENDING
 }

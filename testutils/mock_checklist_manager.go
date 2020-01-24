@@ -11,7 +11,7 @@ type MockChecklistManager struct {
 	mapInProgress map[string]bool
 	mapReset      map[string]bool
 	loadedNames   []string
-	loadedCodes   map[string]idl.UpgradeSteps
+	loadedCodes   map[string]idl.Substep
 	StepWriter    MockStepWriter
 }
 
@@ -22,7 +22,7 @@ func NewMockChecklistManager() *MockChecklistManager {
 		mapInProgress: make(map[string]bool, 0),
 		mapReset:      make(map[string]bool, 0),
 		loadedNames:   make([]string, 0),
-		loadedCodes:   make(map[string]idl.UpgradeSteps, 0),
+		loadedCodes:   make(map[string]idl.Substep, 0),
 		StepWriter:    MockStepWriter{},
 	}
 }
@@ -31,7 +31,7 @@ func (cm *MockChecklistManager) GetStepReader(step string) upgradestatus.StateRe
 	return MockStepReader{step: step, code: cm.loadedCodes[step], manager: cm}
 }
 
-func (cm *MockChecklistManager) AddStep(name string, code idl.UpgradeSteps) {
+func (cm *MockChecklistManager) AddStep(name string, code idl.Substep) {
 	cm.loadedNames = append(cm.loadedNames, name)
 	cm.loadedCodes[name] = code
 }
@@ -54,20 +54,20 @@ func (cm *MockChecklistManager) GetStepWriter(step string) upgradestatus.StateWr
 
 type MockStepReader struct {
 	step    string
-	code    idl.UpgradeSteps
+	code    idl.Substep
 	manager *MockChecklistManager
 }
 
-func (r MockStepReader) Status() idl.StepStatus {
+func (r MockStepReader) Status() idl.Status {
 	switch {
 	case r.manager.IsPending(r.step):
-		return idl.StepStatus_PENDING
+		return idl.Status_PENDING
 	case r.manager.IsInProgress(r.step):
-		return idl.StepStatus_RUNNING
+		return idl.Status_RUNNING
 	case r.manager.IsComplete(r.step):
-		return idl.StepStatus_COMPLETE
+		return idl.Status_COMPLETE
 	case r.manager.IsFailed(r.step):
-		return idl.StepStatus_FAILED
+		return idl.Status_FAILED
 	default:
 		panic("unexpected step state in MockChecklistManager")
 	}
@@ -77,7 +77,7 @@ func (r MockStepReader) Name() string {
 	return r.step
 }
 
-func (r MockStepReader) Code() idl.UpgradeSteps {
+func (r MockStepReader) Code() idl.Substep {
 	return r.code
 }
 
@@ -90,7 +90,7 @@ type MockStepWriter struct {
 	MarkFailedErr     error
 }
 
-func (w MockStepWriter) Code() idl.UpgradeSteps {
+func (w MockStepWriter) Code() idl.Substep {
 	return w.manager.loadedCodes[w.step]
 }
 

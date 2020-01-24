@@ -35,14 +35,12 @@ message RestartAgentsReply {
 message StopServicesRequest {}
 message StopServicesReply {}
 
-// TODO: rename to SubstepStatus
-message UpgradeStepStatus {
-    UpgradeSteps step = 1;
-    StepStatus status = 2;
+message SubstepStatus {
+  Substep step = 1;
+  Status status = 2;
 }
 
-// TODO: rename to Substep
-enum UpgradeSteps {
+enum Substep {
     UNKNOWN_STEP = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
     CONFIG = 1;
     START_AGENTS = 2;
@@ -58,8 +56,7 @@ enum UpgradeSteps {
     RECONFIGURE_PORTS = 12;
 }
 
-// TODO: rename to Status
-enum StepStatus {
+enum Status {
     UNKNOWN_STATUS = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
     PENDING = 1; // TODO remove
     RUNNING = 2;
@@ -101,7 +98,7 @@ message Chunk {
 message Message {
   oneof contents {
     Chunk chunk = 1;
-    UpgradeStepStatus status = 2;
+    SubstepStatus status = 2;
   }
 }
 
