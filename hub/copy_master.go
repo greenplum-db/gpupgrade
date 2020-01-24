@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/greenplum-db/gpupgrade/step"
+
 	"github.com/pkg/errors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -16,7 +18,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-func (h *Hub) CopyMasterDataDir(_ OutStreams) error {
+func (h *Hub) CopyMasterDataDir(_ step.OutStreams) error {
 	var err error
 	rsyncFlags := "-rzpogt"
 

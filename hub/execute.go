@@ -1,66 +1,45 @@
 package hub
 
 import (
-	"os"
-	"path/filepath"
+	"fmt"
 
+	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/hashicorp/go-multierror"
-	"golang.org/x/xerrors"
 
-	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 	"github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/utils"
+	"github.com/greenplum-db/gpupgrade/step"
 )
 
 func (h *Hub) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_ExecuteServer) (err error) {
-	// Create a log file to contain execute output.
-	log, err := utils.System.OpenFile(
-		filepath.Join(utils.GetStateDir(), "execute.log"),
-		os.O_WRONLY|os.O_CREATE,
-		0600,
-	)
+	s, err := BeginStep(h.StateDir, "execute", stream)
 	if err != nil {
 		return err
 	}
+
 	defer func() {
-		if closeErr := log.Close(); closeErr != nil {
-			err = multierror.Append(err,
-				xerrors.Errorf("failed to close execute log: %w", closeErr))
+		if ferr := s.Finish(); ferr != nil {
+			err = multierror.Append(err, ferr).ErrorOrNil()
+		}
+
+		if err != nil {
+			gplog.Error(fmt.Sprintf("execute: %s", err))
 		}
 	}()
 
-	executeStream := newMultiplexedStream(stream, log)
+	s.Run(idl.Substep_UPGRADE_MASTER, func(streams step.OutStreams) error {
+		stateDir := h.StateDir
+		return UpgradeMaster(h.Source, h.Target, stateDir, streams, false, h.UseLinkMode)
+	})
 
-	_, err = log.WriteString("\nExecute in progress.\n")
-	if err != nil {
-		return xerrors.Errorf("failed writing to execute log: %w", err)
-	}
+	s.Run(idl.Substep_COPY_MASTER, h.CopyMasterDataDir)
 
-	err = h.Substep(executeStream, upgradestatus.UPGRADE_MASTER,
-		func(streams OutStreams) error {
-			stateDir := h.StateDir
-			return UpgradeMaster(h.Source, h.Target, stateDir, streams, false, h.UseLinkMode)
-		})
-	if err != nil {
-		return err
-	}
+	s.Run(idl.Substep_UPGRADE_PRIMARIES, func(_ step.OutStreams) error {
+		return h.ConvertPrimaries(false)
+	})
 
-	err = h.Substep(executeStream, upgradestatus.COPY_MASTER, h.CopyMasterDataDir)
-	if err != nil {
-		return err
-	}
+	s.Run(idl.Substep_START_TARGET_CLUSTER, func(streams step.OutStreams) error {
+		return StartCluster(streams, h.Target)
+	})
 
-	err = h.Substep(executeStream, upgradestatus.UPGRADE_PRIMARIES,
-		func(_ OutStreams) error {
-			return h.ConvertPrimaries(false)
-		})
-	if err != nil {
-		return err
-	}
-
-	err = h.Substep(executeStream, upgradestatus.START_TARGET_CLUSTER,
-		func(streams OutStreams) error {
-			return StartCluster(streams, h.Target)
-		})
-	return err
+	return s.Err()
 }
