@@ -5,51 +5,27 @@ import (
 	"fmt"
 	"os/exec"
 
+	"github.com/greenplum-db/gpupgrade/idl"
+
+	"github.com/greenplum-db/gpupgrade/step"
+
 	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
-	multierror "github.com/hashicorp/go-multierror"
+	"github.com/hashicorp/go-multierror"
 	"golang.org/x/xerrors"
-
-	"github.com/greenplum-db/gpupgrade/hub/upgradestatus"
 )
 
-func (h *Hub) UpgradeReconfigurePortsSubStep(stream *multiplexedStream) error {
-	gplog.Info("starting %s", upgradestatus.RECONFIGURE_PORTS)
-
-	step, err := h.InitializeStep(upgradestatus.RECONFIGURE_PORTS, stream.stream)
-	if err != nil {
-		gplog.Error(err.Error())
-		return err
-	}
-
-	if err := h.reconfigurePorts(stream); err != nil {
-		gplog.Error(err.Error())
-
-		// Log any stderr from failed commands.
-		var exitErr *exec.ExitError
-		if xerrors.As(err, &exitErr) {
-			gplog.Debug(string(exitErr.Stderr))
-		}
-
-		step.MarkFailed()
-		return err
-	}
-
-	step.MarkComplete()
-	return nil
-}
-
-// reconfigurePorts executes the tricky sequence of operations required to
+// ReconfigurePorts executes the tricky sequence of operations required to
 // change the ports on a cluster.
 //
 // TODO: this method needs test coverage.
-func (h *Hub) reconfigurePorts(stream *multiplexedStream) (err error) {
+func (h *Hub) ReconfigurePorts(stream step.OutStreams) (err error) {
 	// 1). bring down the cluster
 	err = StopCluster(stream, h.Target)
 	if err != nil {
 		return xerrors.Errorf("%s failed to stop cluster: %w",
-			upgradestatus.RECONFIGURE_PORTS, err)
+			idl.Substep_RECONFIGURE_PORTS, err)
 	}
 
 	// 2). bring up the master(fts will not "freak out", etc)
@@ -59,7 +35,7 @@ func (h *Hub) reconfigurePorts(stream *multiplexedStream) (err error) {
 	_, err = cmd.Output()
 	if err != nil {
 		return xerrors.Errorf("%s failed to start target cluster in utility mode: %w",
-			upgradestatus.RECONFIGURE_PORTS, err)
+			idl.Substep_RECONFIGURE_PORTS, err)
 	}
 
 	// 3). rewrite gp_segment_configuration with the updated port number
@@ -75,7 +51,7 @@ func (h *Hub) reconfigurePorts(stream *multiplexedStream) (err error) {
 	_, err = cmd.Output()
 	if err != nil {
 		return xerrors.Errorf("%s failed to stop target cluster in utility mode: %w",
-			upgradestatus.RECONFIGURE_PORTS, err)
+			idl.Substep_RECONFIGURE_PORTS, err)
 	}
 
 	// 5). rewrite the "port" field in the master's postgresql.conf
@@ -90,7 +66,7 @@ func (h *Hub) reconfigurePorts(stream *multiplexedStream) (err error) {
 	_, err = cmd.Output()
 	if err != nil {
 		return xerrors.Errorf("%s failed to execute sed command: %w",
-			upgradestatus.RECONFIGURE_PORTS, err)
+			idl.Substep_RECONFIGURE_PORTS, err)
 	}
 
 	// 6. bring up the cluster
@@ -100,7 +76,7 @@ func (h *Hub) reconfigurePorts(stream *multiplexedStream) (err error) {
 	_, err = cmd.Output()
 	if err != nil {
 		return xerrors.Errorf("%s failed to start target cluster: %w",
-			upgradestatus.RECONFIGURE_PORTS, err)
+			idl.Substep_RECONFIGURE_PORTS, err)
 	}
 
 	return nil
@@ -118,12 +94,12 @@ func updateSegmentConfiguration(source, target *utils.Cluster) error {
 	}()
 	if err != nil {
 		return xerrors.Errorf("%s failed to open connection to utility master: %w",
-			upgradestatus.RECONFIGURE_PORTS, err)
+			idl.Substep_RECONFIGURE_PORTS, err)
 	}
 	err = ClonePortsFromCluster(targetDB, source.Cluster)
 	if err != nil {
 		return xerrors.Errorf("%s failed to clone ports: %w",
-			upgradestatus.RECONFIGURE_PORTS, err)
+			idl.Substep_RECONFIGURE_PORTS, err)
 	}
 	return nil
 }
