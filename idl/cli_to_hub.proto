@@ -58,10 +58,9 @@ enum Substep {
 
 enum Status {
     UNKNOWN_STATUS = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
-    PENDING = 1; // TODO remove
-    RUNNING = 2;
-    COMPLETE = 3;
-    FAILED = 4;
+    RUNNING = 1;
+    COMPLETE = 2;
+    FAILED = 3;
 }
 
 message CheckVersionRequest {}
