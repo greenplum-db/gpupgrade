@@ -18,35 +18,35 @@ var execCommandHubCount = exec.Command
 
 // we create the state directory in the cli to ensure that at most one gpupgrade is occurring
 // at the same time.
-func CreateStateDir() (err error) {
+func CreateStateDir() (stateDir string, err error) {
 	s := Substep("Creating state directory...")
 	defer s.Finish(&err)
 
-	stateDir := utils.GetStateDir()
+	stateDir = utils.GetStateDir()
 	err = os.Mkdir(stateDir, 0700)
 	if os.IsExist(err) {
 		gplog.Debug("State directory %s already present...skipping", stateDir)
-		return nil
+		return stateDir, nil
 	}
 	if err != nil {
 		gplog.Debug("State directory %s could not be created.", stateDir)
-		return err
+		return "", err
 	}
 
-	return nil
+	return stateDir, nil
 }
 
-func CreateInitialClusterConfigs() (err error) {
+func CreateInitialClusterConfigs(stateDir string) (err error) {
 	s := Substep("Creating initial cluster config files...")
 	defer s.Finish(&err)
 
 	// if empty json configuration file exists, skip recreating it
-	filename := filepath.Join(utils.GetStateDir(), hub.ConfigFileName)
+	filename := filepath.Join(stateDir, hub.ConfigFileName)
 	_, err = os.Stat(filename)
 
 	// if the file exists, there will be no error or if there is an error it might
 	// also indicate that the file exists, in either case don't overwrite the file
-	if err == nil || os.IsExist(err) {
+	if err == nil {
 		gplog.Debug("Initial cluster configuration file %s already present...skipping", filename)
 		return nil
 	}
@@ -67,7 +67,7 @@ func CreateInitialClusterConfigs() (err error) {
 	return nil
 }
 
-func StartHub() (err error) {
+func StartHub(stateDir string) (err error) {
 	s := Substep("Starting hub...")
 	defer s.Finish(&err)
 
@@ -81,7 +81,7 @@ func StartHub() (err error) {
 		return nil
 	}
 
-	cmd := execCommandHubStart("gpupgrade", "hub", "--daemonize")
+	cmd := execCommandHubStart("gpupgrade", "hub", "--daemonize", "--state-directory", stateDir)
 	stdout, cmdErr := cmd.Output()
 	if cmdErr != nil {
 		err := fmt.Errorf("failed to start hub (%s)", cmdErr)

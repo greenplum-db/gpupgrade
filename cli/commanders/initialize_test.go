@@ -103,7 +103,7 @@ func TestStartHub_Succeeds(t *testing.T) {
 
 	execCommandHubCount = exectest.NewCommand(IsHubRunning_False)
 	execCommandHubStart = exectest.NewCommand(GpupgradeHub_good_Main)
-	err := StartHub()
+	err := StartHub("")
 	g.Expect(err).To(BeNil())
 }
 
@@ -113,7 +113,7 @@ func TestStartHub_FailsToStartWhenHubIsRunningErrors(t *testing.T) {
 
 	execCommandHubCount = exectest.NewCommand(IsHubRunning_Error)
 	execCommandHubStart = exectest.NewCommand(GpupgradeHub_good_Main) // should not hit this, but fail it we do
-	err := StartHub()
+	err := StartHub("")
 	g.Expect(err).ToNot(BeNil())
 }
 
@@ -123,7 +123,7 @@ func TestStartHub_ReturnsWhenHubIsRunning(t *testing.T) {
 
 	execCommandHubCount = exectest.NewCommand(IsHubRunning_True)
 	execCommandHubStart = exectest.NewCommand(GpupgradeHub_bad_Main) // should not hit this, but fail if we do
-	err := StartHub()
+	err := StartHub("")
 	g.Expect(err).To(BeNil())
 }
 
@@ -133,7 +133,7 @@ func TestStartHub_FailsWhenStartingTheHubErrors(t *testing.T) {
 
 	execCommandHubCount = exectest.NewCommand(IsHubRunning_False)
 	execCommandHubStart = exectest.NewCommand(GpupgradeHub_bad_Main)
-	err := StartHub()
+	err := StartHub("")
 	g.Expect(err).ToNot(BeNil())
 }
 
@@ -164,9 +164,12 @@ func TestCreateStateDir(t *testing.T) {
 				t.Errorf("stateDir exists")
 			}
 
-			err = CreateStateDir()
+			result, err := CreateStateDir()
 			if err != nil {
 				t.Fatalf("unexpected error %#v", err)
+			}
+			if result != stateDir {
+				t.Errorf("expected %q got %q", stateDir, result)
 			}
 
 			if infoOld, err = os.Stat(home); err != nil {
@@ -175,9 +178,12 @@ func TestCreateStateDir(t *testing.T) {
 		}
 
 		{ // creating state directory is idempotent
-			err = CreateStateDir()
+			result, err := CreateStateDir()
 			if err != nil {
 				t.Fatalf("unexpected error %#v", err)
+			}
+			if result != stateDir {
+				t.Errorf("expected %q got %q", stateDir, result)
 			}
 
 			var infoNew os.FileInfo
@@ -191,9 +197,12 @@ func TestCreateStateDir(t *testing.T) {
 		}
 
 		{ //  creating state directory succeeds on multiple runs
-			err = CreateStateDir()
+			result, err := CreateStateDir()
 			if err != nil {
 				t.Fatalf("unexpected error %#v", err)
+			}
+			if result != stateDir {
+				t.Errorf("expected %q got %q", stateDir, result)
 			}
 		}
 	})
@@ -220,9 +229,12 @@ func TestCreateInitialClusterConfigs(t *testing.T) {
 	if _, err := os.Stat(stateDir); err == nil {
 		t.Errorf("stateDir exists")
 	}
-	err = CreateStateDir()
+	result, err := CreateStateDir()
 	if err != nil {
 		t.Fatalf("failed to create state dir %#v", err)
+	}
+	if result != stateDir {
+		t.Errorf("expected %q got %q", stateDir, result)
 	}
 
 	var sourceOld os.FileInfo
@@ -230,7 +242,7 @@ func TestCreateInitialClusterConfigs(t *testing.T) {
 	t.Run("test idempotence", func(t *testing.T) {
 
 		{ // creates initial cluster config files if none exist or fails"
-			err = CreateInitialClusterConfigs()
+			err = CreateInitialClusterConfigs(stateDir)
 			if err != nil {
 				t.Fatalf("unexpected error %#v", err)
 			}
@@ -241,7 +253,7 @@ func TestCreateInitialClusterConfigs(t *testing.T) {
 		}
 
 		{ // creating cluster config files is idempotent
-			err = CreateInitialClusterConfigs()
+			err = CreateInitialClusterConfigs(stateDir)
 			if err != nil {
 				t.Fatalf("unexpected error %#v", err)
 			}
@@ -257,7 +269,7 @@ func TestCreateInitialClusterConfigs(t *testing.T) {
 		}
 
 		{ // creating cluster config files succeeds on multiple runs
-			err = CreateInitialClusterConfigs()
+			err = CreateInitialClusterConfigs(stateDir)
 			if err != nil {
 				t.Fatalf("unexpected error %#v", err)
 			}

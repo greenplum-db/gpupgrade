@@ -24,7 +24,7 @@ const ConfigFileName = "config.json"
 // Minimal CLI command parsing to embrace that booting this binary to run the hub might have some flags like a log dir
 
 func Command() *cobra.Command {
-	var logdir string
+	var logdir, stateDir string
 	var shouldDaemonize bool
 
 	var cmd = &cobra.Command{
@@ -38,7 +38,6 @@ func Command() *cobra.Command {
 			debug.SetTraceback("all")
 			defer log.WritePanics()
 
-			stateDir := utils.GetStateDir()
 			finfo, err := os.Stat(stateDir)
 			if os.IsNotExist(err) {
 				return fmt.Errorf("gpupgrade state dir (%s) does not exist. Did you run gpupgrade initialize?", stateDir)
@@ -101,6 +100,7 @@ func Command() *cobra.Command {
 	}
 
 	cmd.PersistentFlags().StringVar(&logdir, "log-directory", "", "gpupgrade hub log directory")
+	cmd.Flags().StringVar(&stateDir, "state-directory", utils.GetStateDir(), "Agent state directory")
 
 	daemon.MakeDaemonizable(cmd, &shouldDaemonize)
 

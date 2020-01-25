@@ -273,17 +273,17 @@ This step can be reverted.
 			fmt.Println("Initialization in progress.")
 			fmt.Println()
 
-			err = commanders.CreateStateDir()
+			stateDir, err := commanders.CreateStateDir()
 			if err != nil {
 				return errors.Wrap(err, "creating state directory")
 			}
 
-			err = commanders.CreateInitialClusterConfigs()
+			err = commanders.CreateInitialClusterConfigs(stateDir)
 			if err != nil {
 				return errors.Wrap(err, "creating initial cluster configs")
 			}
 
-			err = commanders.StartHub()
+			err = commanders.StartHub(stateDir)
 			if err != nil {
 				return errors.Wrap(err, "starting hub")
 			}
@@ -429,7 +429,7 @@ var restartServices = &cobra.Command{
 		}
 
 		if !running {
-			err = commanders.StartHub()
+			err = commanders.StartHub(utils.GetStateDir())
 			if err != nil {
 				return err
 			}
