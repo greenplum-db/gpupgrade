@@ -62,13 +62,12 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:b7388e8388cea56e5fd6b604eecfe56f5d02c0f41c49ad5a853da39b6dc197a0"
+  digest = "1:8c2e9bb4264b0993ec59e55b2cd79c05545572d684586d3e9b227a83f1756dff"
   name = "github.com/greenplum-db/gp-common-go-libs"
   packages = [
     "cluster",
     "dbconn",
     "gplog",
-    "iohelper",
     "operating",
     "testhelper",
   ]
@@ -395,8 +394,6 @@
     "github.com/greenplum-db/gp-common-go-libs/cluster",
     "github.com/greenplum-db/gp-common-go-libs/dbconn",
     "github.com/greenplum-db/gp-common-go-libs/gplog",
-    "github.com/greenplum-db/gp-common-go-libs/iohelper",
-    "github.com/greenplum-db/gp-common-go-libs/operating",
     "github.com/greenplum-db/gp-common-go-libs/testhelper",
     "github.com/hashicorp/go-multierror",
     "github.com/lib/pq",
