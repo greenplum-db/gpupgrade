@@ -54,7 +54,15 @@ func (s *Step) Err() error {
 	return s.err
 }
 
+func (s *Step) AlwaysRun(substep idl.Substep, f func(OutStreams) error) {
+	s.run(substep, f, true)
+}
+
 func (s *Step) Run(substep idl.Substep, f func(OutStreams) error) {
+	s.run(substep, f, false)
+}
+
+func (s *Step) run(substep idl.Substep, f func(OutStreams) error, alwaysRun bool) {
 	var err error
 	defer func() {
 		if err != nil {
@@ -78,8 +86,8 @@ func (s *Step) Run(substep idl.Substep, f func(OutStreams) error) {
 		return
 	}
 
-	// Only re-run subteps that have failed or pending
-	if status == idl.Status_COMPLETE {
+	// Only re-run substeps that are failed or pending. Do not skip substeps that must always be run.
+	if status == idl.Status_COMPLETE && !alwaysRun {
 		// Only send the status back to the UI; don't re-persist to the store
 		s.sendStatus(substep, idl.Status_COMPLETE)
 		return

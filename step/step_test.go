@@ -44,6 +44,36 @@ func TestStepRun(t *testing.T) {
 		}
 	})
 
+	t.Run("re-runs a completed substep when it must always be run", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
+		server.EXPECT().
+			Send(&idl.Message{Contents: &idl.Message_Status{&idl.SubstepStatus{
+				Step:   idl.Substep_CHECK_UPGRADE,
+				Status: idl.Status_RUNNING,
+			}}})
+		server.EXPECT().
+			Send(&idl.Message{Contents: &idl.Message_Status{&idl.SubstepStatus{
+				Step:   idl.Substep_CHECK_UPGRADE,
+				Status: idl.Status_COMPLETE,
+			}}})
+
+		store := &TestStore{Status: idl.Status_COMPLETE}
+		s := step.New("Initialize", server, store, DevNull)
+
+		var called bool
+		s.AlwaysRun(idl.Substep_CHECK_UPGRADE, func(streams step.OutStreams) error {
+			called = true
+			return nil
+		})
+
+		if !called {
+			t.Error("expected substep to be called")
+		}
+	})
+
 	t.Run("marks a failed substep run as failed", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
