@@ -15,7 +15,7 @@ import (
 )
 
 func TestStepRun(t *testing.T) {
-	t.Run("marks a successful substep run as complete", func(t *testing.T) {
+	t.Run("marks a successful substep as complete", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -81,7 +81,7 @@ func TestStepRun(t *testing.T) {
 		}
 	})
 
-	t.Run("re-runs a completed substep when it must always be run", func(t *testing.T) {
+	t.Run("AlwaysRun re-runs a completed substep", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -111,7 +111,7 @@ func TestStepRun(t *testing.T) {
 		}
 	})
 
-	t.Run("marks a failed substep run as failed", func(t *testing.T) {
+	t.Run("marks a failed substep as failed", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
