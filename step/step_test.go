@@ -44,6 +44,43 @@ func TestStepRun(t *testing.T) {
 		}
 	})
 
+	t.Run("run correctly sets the substep status", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
+		server.EXPECT().
+			Send(&idl.Message{Contents: &idl.Message_Status{&idl.SubstepStatus{
+				Step:   idl.Substep_CONFIG,
+				Status: idl.Status_RUNNING,
+			}}})
+		server.EXPECT().
+			Send(&idl.Message{Contents: &idl.Message_Status{&idl.SubstepStatus{
+				Step:   idl.Substep_CONFIG,
+				Status: idl.Status_COMPLETE,
+			}}})
+
+		store := &TestStore{}
+		s := step.New("Initialize", server, store, DevNull)
+
+		var status idl.Status
+		s.Run(idl.Substep_CONFIG, func(streams step.OutStreams) error {
+			// save off status to verify that it is running
+			status = store.Status
+			return nil
+		})
+
+		expected := idl.Status_RUNNING
+		if status != expected {
+			t.Errorf("got %q want %q", status, expected)
+		}
+
+		expected = idl.Status_COMPLETE
+		if store.Status != expected {
+			t.Errorf("got %q want %q", store.Status, expected)
+		}
+	})
+
 	t.Run("re-runs a completed substep when it must always be run", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
@@ -244,6 +281,7 @@ func (t *TestStore) Read(substep idl.Substep) (idl.Status, error) {
 }
 
 func (t *TestStore) Write(substep idl.Substep, status idl.Status) (err error) {
+	t.Status = status
 	return t.WriteErr
 }
 
