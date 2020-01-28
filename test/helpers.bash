@@ -51,3 +51,19 @@ delete_cluster() {
     # data directory to segments with "file exists".
     rm -rf "${datadir}"/*_upgrade
 }
+
+# require_gnu_stat tries to find a GNU stat program. If one is found, it will be
+# assigned to the STAT global variable; otherwise the current test is skipped.
+require_gnu_stat() {
+    if command -v gstat > /dev/null; then
+        STAT=gstat
+    elif command -v stat > /dev/null; then
+        STAT=stat
+    else
+        skip "GNU stat is required for this test"
+    fi
+
+    # Check to make sure what we have is really GNU.
+    local version=$($STAT --version || true)
+    [[ $version = *"GNU coreutils"* ]] || skip "GNU stat is required for this test"
+}
