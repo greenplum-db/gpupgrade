@@ -236,8 +236,8 @@ var version = &cobra.Command{
 //
 
 func initialize() *cobra.Command {
-	var oldBinDir, newBinDir string
-	var oldPort int
+	var sourceBinDir, targetBinDir string
+	var sourcePort int
 	var diskFreeRatio float64
 	var stopBeforeClusterCreation bool
 	var verbose bool
@@ -291,10 +291,10 @@ This step can be reverted.
 			client := connectToHub()
 
 			request := &idl.InitializeRequest{
-				OldBinDir:   oldBinDir,
-				NewBinDir:   newBinDir,
-				OldPort:     int32(oldPort),
-				UseLinkMode: linkMode,
+				SourceBinDir: sourceBinDir,
+				TargetBinDir: targetBinDir,
+				SourcePort:   int32(sourcePort),
+				UseLinkMode:  linkMode,
 			}
 			err = commanders.Initialize(client, request, verbose)
 			if err != nil {
@@ -326,11 +326,11 @@ If you would like to return the cluster to its original state, run
 		},
 	}
 
-	subInit.PersistentFlags().StringVar(&oldBinDir, "old-bindir", "", "install directory for old gpdb version")
+	subInit.PersistentFlags().StringVar(&sourceBinDir, "old-bindir", "", "install directory for old gpdb version")
 	subInit.MarkPersistentFlagRequired("old-bindir")
-	subInit.PersistentFlags().StringVar(&newBinDir, "new-bindir", "", "install directory for new gpdb version")
+	subInit.PersistentFlags().StringVar(&targetBinDir, "new-bindir", "", "install directory for new gpdb version")
 	subInit.MarkPersistentFlagRequired("new-bindir")
-	subInit.PersistentFlags().IntVar(&oldPort, "old-port", 0, "master port for old gpdb cluster")
+	subInit.PersistentFlags().IntVar(&sourcePort, "old-port", 0, "master port for old gpdb cluster")
 	subInit.MarkPersistentFlagRequired("old-port")
 	subInit.PersistentFlags().BoolVar(&stopBeforeClusterCreation, "stop-before-cluster-creation", false, "only run up to pre-init")
 	subInit.PersistentFlags().MarkHidden("stop-before-cluster-creation")

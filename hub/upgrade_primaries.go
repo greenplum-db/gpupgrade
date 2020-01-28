@@ -32,12 +32,12 @@ func (h *Hub) ConvertPrimaries(checkOnly bool) error {
 			defer wg.Done()
 
 			_, err := idl.NewAgentClient(conn.Conn).UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{
-				OldBinDir:    h.Source.BinDir,
-				NewBinDir:    h.Target.BinDir,
-				NewVersion:   h.Target.Version.SemVer.String(),
-				DataDirPairs: dataDirPair[conn.Hostname],
-				CheckOnly:    checkOnly,
-				UseLinkMode:  h.UseLinkMode,
+				SourceBinDir:  h.Source.BinDir,
+				TargetBinDir:  h.Target.BinDir,
+				TargetVersion: h.Target.Version.SemVer.String(),
+				DataDirPairs:  dataDirPair[conn.Hostname],
+				CheckOnly:     checkOnly,
+				UseLinkMode:   h.UseLinkMode,
 			})
 
 			if err != nil {
@@ -59,15 +59,15 @@ func (h *Hub) ConvertPrimaries(checkOnly bool) error {
 func (h *Hub) getDataDirPairs() (map[string][]*idl.DataDirPair, error) {
 	dataDirPairMap := make(map[string][]*idl.DataDirPair)
 
-	oldContents := h.Source.ContentIDs
-	newContents := h.Target.ContentIDs
-	if len(oldContents) != len(newContents) {
+	sourceContents := h.Source.ContentIDs
+	targetContents := h.Target.ContentIDs
+	if len(sourceContents) != len(targetContents) {
 		return nil, fmt.Errorf("old and new cluster content identifiers do not match")
 	}
-	sort.Ints(oldContents)
-	sort.Ints(newContents)
-	for i := range oldContents {
-		if oldContents[i] != newContents[i] {
+	sort.Ints(sourceContents)
+	sort.Ints(targetContents)
+	for i := range sourceContents {
+		if sourceContents[i] != targetContents[i] {
 			return nil, fmt.Errorf("old and new cluster content identifiers do not match")
 		}
 	}
@@ -76,22 +76,22 @@ func (h *Hub) getDataDirPairs() (map[string][]*idl.DataDirPair, error) {
 		if contentID == -1 {
 			continue
 		}
-		oldSeg := h.Source.Segments[contentID]
-		newSeg := h.Target.Segments[contentID]
-		if oldSeg.Hostname != newSeg.Hostname {
-			return nil, fmt.Errorf("hostnames do not match between old and new cluster with content ID %d. Found old cluster hostname: '%s', and new cluster hostname: '%s'", contentID, oldSeg.Hostname, newSeg.Hostname)
+		sourceSeg := h.Source.Segments[contentID]
+		targetSeg := h.Target.Segments[contentID]
+		if sourceSeg.Hostname != targetSeg.Hostname {
+			return nil, fmt.Errorf("hostnames do not match between old and new cluster with content ID %d. Found old cluster hostname: '%s', and new cluster hostname: '%s'", contentID, sourceSeg.Hostname, targetSeg.Hostname)
 		}
 
 		dataPair := &idl.DataDirPair{
-			OldDataDir: oldSeg.DataDir,
-			NewDataDir: newSeg.DataDir,
-			OldPort:    int32(oldSeg.Port),
-			NewPort:    int32(newSeg.Port),
-			Content:    int32(contentID),
-			DBID:       int32(oldSeg.DbID),
+			SourceDataDir: sourceSeg.DataDir,
+			TargetDataDir: targetSeg.DataDir,
+			SourcePort:    int32(sourceSeg.Port),
+			TargetPort:    int32(targetSeg.Port),
+			Content:       int32(contentID),
+			DBID:          int32(sourceSeg.DbID),
 		}
 
-		dataDirPairMap[oldSeg.Hostname] = append(dataDirPairMap[oldSeg.Hostname], dataPair)
+		dataDirPairMap[sourceSeg.Hostname] = append(dataDirPairMap[sourceSeg.Hostname], dataPair)
 	}
 
 	return dataDirPairMap, nil

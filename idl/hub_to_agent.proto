@@ -13,19 +13,19 @@ service Agent {
 }
 
 message UpgradePrimariesRequest {
-    string OldBinDir = 1;
-    string NewBinDir = 2;
-    string NewVersion = 3;
+    string SourceBinDir = 1;
+    string TargetBinDir = 2;
+    string TargetVersion = 3;
     repeated DataDirPair DataDirPairs = 4;
     bool CheckOnly = 5;
     bool UseLinkMode = 6;
 }
 
 message DataDirPair {
-    string OldDataDir = 1;
-    string NewDataDir = 2;
-    int32  OldPort    = 3;
-    int32  NewPort    = 4;
+    string SourceDataDir = 1;
+    string TargetDataDir = 2;
+    int32  SourcePort    = 3;
+    int32  TargetPort    = 4;
     int32  Content    = 5;
     int32  DBID       = 6;
 }

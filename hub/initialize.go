@@ -87,16 +87,16 @@ func (h *Hub) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest, st
 
 // create old/new clusters, write to disk and re-read from disk to make sure it is "durable"
 func (h *Hub) fillClusterConfigsSubStep(_ step.OutStreams, request *idl.InitializeRequest) error {
-	conn := db.NewDBConn("localhost", int(request.OldPort), "template1")
+	conn := db.NewDBConn("localhost", int(request.SourcePort), "template1")
 	defer conn.Close()
 
 	var err error
-	h.Source, err = utils.ClusterFromDB(conn, request.OldBinDir)
+	h.Source, err = utils.ClusterFromDB(conn, request.SourceBinDir)
 	if err != nil {
 		return errors.Wrap(err, "could not retrieve source configuration")
 	}
 
-	h.Target = &utils.Cluster{Cluster: new(cluster.Cluster), BinDir: request.NewBinDir}
+	h.Target = &utils.Cluster{Cluster: new(cluster.Cluster), BinDir: request.TargetBinDir}
 	h.UseLinkMode = request.UseLinkMode
 
 	if err := h.SaveConfig(); err != nil {

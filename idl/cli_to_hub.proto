@@ -16,9 +16,9 @@ service CliToHub {
 }
 
 message InitializeRequest {
-    string oldBinDir = 1;
-    string newBinDir = 2;
-    int32 oldPort = 3;
+    string sourceBinDir = 1;
+    string targetBinDir = 2;
+    int32 sourcePort = 3;
     bool useLinkMode = 4;
 }
 message InitializeCreateClusterRequest {

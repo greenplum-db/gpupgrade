@@ -68,8 +68,8 @@ func UpgradeSegments(segments []Segment, request *idl.UpgradePrimariesRequest) (
 	for _, segment := range segments {
 		dbid := int(segment.DBID)
 		segmentPair := upgrade.SegmentPair{
-			Source: &upgrade.Segment{request.OldBinDir, segment.OldDataDir, dbid, int(segment.OldPort)},
-			Target: &upgrade.Segment{request.NewBinDir, segment.NewDataDir, dbid, int(segment.NewPort)},
+			Source: &upgrade.Segment{request.SourceBinDir, segment.SourceDataDir, dbid, int(segment.SourcePort)},
+			Target: &upgrade.Segment{request.TargetBinDir, segment.TargetDataDir, dbid, int(segment.TargetPort)},
 		}
 
 		options := []upgrade.Option{

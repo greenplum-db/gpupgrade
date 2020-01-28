@@ -62,12 +62,12 @@ func TestUpgradePrimary(t *testing.T) {
 
 	pairs := []*idl.DataDirPair{
 		{
-			OldDataDir: "/data/old",
-			NewDataDir: "/data/new",
-			OldPort:    15432,
-			NewPort:    15433,
-			Content:    1,
-			DBID:       2,
+			SourceDataDir: "/data/old",
+			TargetDataDir: "/data/new",
+			SourcePort:    15432,
+			TargetPort:    15433,
+			Content:       1,
+			DBID:          2,
 		},
 		// TODO add a second pair when we can run multiple execCommand
 		// invocations in a single test
@@ -82,8 +82,8 @@ func TestUpgradePrimary(t *testing.T) {
 		defer func() { execCommand = nil }()
 
 		request := &idl.UpgradePrimariesRequest{
-			OldBinDir:    "/old/bin",
-			NewBinDir:    "/new/bin",
+			SourceBinDir: "/old/bin",
+			TargetBinDir: "/new/bin",
 			DataDirPairs: pairs,
 			CheckOnly:    true,
 			UseLinkMode:  false,
@@ -108,8 +108,8 @@ func TestUpgradePrimary(t *testing.T) {
 		defer func() { execCommand = nil }()
 
 		request := &idl.UpgradePrimariesRequest{
-			OldBinDir:    "/old/bin",
-			NewBinDir:    "/new/bin",
+			SourceBinDir: "/old/bin",
+			TargetBinDir: "/new/bin",
 			DataDirPairs: pairs,
 			CheckOnly:    false,
 			UseLinkMode:  false}
