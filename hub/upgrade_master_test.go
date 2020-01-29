@@ -20,6 +20,9 @@ import (
 )
 
 func Success() {}
+func Failure() {
+	os.Exit(1)
+}
 
 const StreamingMainStdout = "expected\nstdout\n"
 const StreamingMainStderr = "process\nstderr\n"
@@ -52,6 +55,7 @@ func init() {
 		Success,
 		StreamingMain,
 		BlindlyWritingMain,
+		Failure,
 	)
 }
 
@@ -159,6 +163,9 @@ func TestUpgradeMaster(t *testing.T) {
 		SetExecCommand(exectest.NewCommand(Success))
 		defer ResetExecCommand()
 
+		SetRsyncExecCommand(exectest.NewCommand(Success))
+		defer ResetRsyncExecCommand()
+
 		err := UpgradeMaster(source, target, tempDir, DevNull, false, false)
 		if err != nil {
 			t.Errorf("returned error %+v", err)
@@ -173,6 +180,9 @@ func TestUpgradeMaster(t *testing.T) {
 	t.Run("streams stdout and stderr to the client", func(t *testing.T) {
 		SetExecCommand(exectest.NewCommand(StreamingMain))
 		defer ResetExecCommand()
+
+		SetRsyncExecCommand(exectest.NewCommand(Success))
+		defer ResetRsyncExecCommand()
 
 		stream := new(bufferedStreams)
 
@@ -197,12 +207,56 @@ func TestUpgradeMaster(t *testing.T) {
 		SetExecCommand(exectest.NewCommand(BlindlyWritingMain))
 		defer ResetExecCommand()
 
+		SetRsyncExecCommand(exectest.NewCommand(Success))
+		defer ResetRsyncExecCommand()
+
 		expectedErr := errors.New("write failed!")
 		err := UpgradeMaster(source, target, tempDir, failingStreams{expectedErr}, false, false)
 		if !xerrors.Is(err, expectedErr) {
 			t.Errorf("returned error %+v, want %+v", err, expectedErr)
 		}
 	})
+
+	t.Run("rsync during upgrade master errors out", func(t *testing.T) {
+		SetExecCommand(exectest.NewCommand(StreamingMain))
+		defer ResetExecCommand()
+
+		SetRsyncExecCommand(exectest.NewCommand(Failure))
+		defer ResetRsyncExecCommand()
+
+		stream := new(bufferedStreams)
+
+		err := UpgradeMaster(source, target, tempDir, stream, false, false)
+		if err == nil {
+			t.Errorf("expected error, returned nil")
+		}
+
+	})
+}
+
+func TestRsyncMasterDir(t *testing.T) {
+	t.Run("rsync streams stdout and stderr to the client", func(t *testing.T) {
+		SetRsyncExecCommand(exectest.NewCommand(StreamingMain))
+		defer ResetRsyncExecCommand()
+
+		stream := new(bufferedStreams)
+		err := RsyncMasterDataDir(stream, "", "")
+
+		if err != nil {
+			t.Errorf("returned: %+v", err)
+		}
+
+		stdout := stream.stdout.String()
+		if stdout != StreamingMainStdout {
+			t.Errorf("got stdout %q, want %q", stdout, StreamingMainStdout)
+		}
+
+		stderr := stream.stderr.String()
+		if stderr != StreamingMainStderr {
+			t.Errorf("got stderr %q, want %q", stderr, StreamingMainStderr)
+		}
+	})
+
 }
 
 // bufferedStreams is an implementation of OutStreams that just writes to

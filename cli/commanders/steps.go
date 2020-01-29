@@ -24,6 +24,7 @@ var lines = map[idl.Substep]string{
 	idl.Substep_SHUTDOWN_SOURCE_CLUSTER: "Stopping old cluster...",
 	idl.Substep_INIT_TARGET_CLUSTER:     "Creating new cluster...",
 	idl.Substep_SHUTDOWN_TARGET_CLUSTER: "Stopping new cluster...",
+	idl.Substep_BACKUP_TARGET_MASTER:    "Backing up new master...",
 	idl.Substep_CHECK_UPGRADE:           "Running pg_upgrade checks...",
 	idl.Substep_UPGRADE_MASTER:          "Upgrading master...",
 	idl.Substep_COPY_MASTER:             "Copying master to segments...",

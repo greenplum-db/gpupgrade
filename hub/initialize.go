@@ -92,6 +92,12 @@ func (h *Hub) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest, st
 		return h.ShutdownCluster(stream, false)
 	})
 
+	s.Run(idl.Substep_BACKUP_TARGET_MASTER, func(stream step.OutStreams) error {
+		sourceDir := h.Target.MasterDataDir()
+		targetDir := filepath.Join(h.StateDir, masterBackup)
+		return RsyncMasterDataDir(stream, sourceDir, targetDir)
+	})
+
 	s.AlwaysRun(idl.Substep_CHECK_UPGRADE, func(stream step.OutStreams) error {
 		return h.CheckUpgrade(stream)
 	})

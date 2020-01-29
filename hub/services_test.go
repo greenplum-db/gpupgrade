@@ -10,14 +10,23 @@ import (
 // Set it to nil so we don't accidentally execute a command for real during tests
 func init() {
 	ResetExecCommand()
+	ResetRsyncExecCommand()
 }
 
 func SetExecCommand(cmdFunc exectest.Command) {
 	execCommand = cmdFunc
 }
 
+func SetRsyncExecCommand(cmdFunc exectest.Command) {
+	execCommandRsync = cmdFunc
+}
+
 func ResetExecCommand() {
 	execCommand = nil
+}
+
+func ResetRsyncExecCommand() {
+	execCommandRsync = nil
 }
 
 // DevNull implements OutStreams by just discarding all writes.
