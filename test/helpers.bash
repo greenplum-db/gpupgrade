@@ -30,7 +30,6 @@ skip_if_no_gpdb() {
 # directory.
 delete_cluster() {
     local masterdir="$1"
-    local datadir=$(dirname $(dirname "$masterdir"))
 
     # Sanity check.
     if [[ $masterdir != *_upgrade/demoDataDir* ]]; then
@@ -49,7 +48,25 @@ delete_cluster() {
     # XXX The master datadir copy moves the datadirs to .old instead of
     # removing them. This causes gpupgrade to fail when copying the master
     # data directory to segments with "file exists".
+    delete_target_datadirs "${masterdir}"
+}
+
+delete_target_datadirs() {
+    local masterdir="$1"
+    local datadir=$(dirname $(dirname "$masterdir"))
     rm -rf "${datadir}"/*_upgrade
+}
+
+# Takes an old datadir and echoes the expected new datadir path.
+upgrade_datadir() {
+    local base="$(basename $1)"
+    local dir="$(dirname $1)_upgrade"
+
+    # Sanity check.
+    [ -n "$base" ]
+    [ -n "$dir" ]
+
+    echo "$dir/$base"
 }
 
 # require_gnu_stat tries to find a GNU stat program. If one is found, it will be

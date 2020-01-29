@@ -29,18 +29,6 @@ teardown() {
     gpstart -a
 }
 
-# Takes an old datadir and echoes the expected new datadir path.
-upgrade_datadir() {
-    local base="$(basename $1)"
-    local dir="$(dirname $1)_upgrade"
-
-    # Sanity check.
-    [ -n "$base" ]
-    [ -n "$dir" ]
-
-    echo "$dir/$base"
-}
-
 @test "initialize runs gpinitsystem based on the source cluster" {
     # Store the data directories for each source segment by port.
     run $PSQL -AtF$'\t' -p $PGPORT postgres -c "select port, datadir from gp_segment_configuration where role = 'p'"

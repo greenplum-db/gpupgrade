@@ -36,18 +36,6 @@ teardown() {
     $PSQL -d postgres -p $PGPORT -c "DROP TABLE IF EXISTS test_pg_upgrade CASCADE;"
 }
 
-# Takes an old datadir and echoes the expected new datadir path.
-upgrade_datadir() {
-    local base="$(basename $1)"
-    local dir="$(dirname $1)_upgrade"
-
-    # Sanity check.
-    [ -n "$base" ]
-    [ -n "$dir" ]
-
-    echo "$dir/$base"
-}
-
 setup_newmasterdir() {
     # TODO: code factor this with execute.bats
     run $PSQL -At -p $PGPORT postgres -c "SELECT datadir FROM gp_segment_configuration WHERE role = 'p' and content = -1"

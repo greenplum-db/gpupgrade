@@ -5,21 +5,23 @@ load helpers
 setup() {
     skip_if_no_gpdb
 
-    STATE_DIR=`mktemp -d`
+    STATE_DIR=`mktemp -d /tmp/gpupgrade.XXXXXX`
     export GPUPGRADE_HOME="${STATE_DIR}/gpupgrade"
 
-    gpupgrade kill-services
+    # If this variable is set (to a master data directory), teardown() will call
+    # gpdeletesystem on this cluster.
+    TARGET_CLUSTER=
 
-    # XXX We use $PWD here instead of a real binary directory because
-    # `make check` is expected to test the locally built binaries, not the
-    # installation. This causes problems for tests that need to call GPDB
-    # executables...
+    gpupgrade kill-services
     gpupgrade initialize \
-        --old-bindir="$PWD" \
-        --new-bindir="$PWD" \
+        --old-bindir="${GPHOME}/bin" \
+        --new-bindir="${GPHOME}/bin" \
         --old-port="${PGPORT}"\
         --stop-before-cluster-creation \
         --disk-free-ratio 0 3>&-
+
+    PSQL="$GPHOME"/bin/psql
+    TEARDOWN_FUNCTIONS=()
 }
 
 teardown() {
@@ -28,6 +30,29 @@ teardown() {
         gpupgrade kill-services
         rm -r "$STATE_DIR"
     fi
+
+    for FUNCTION in "${TEARDOWN_FUNCTIONS[@]}"; do
+        $FUNCTION
+    done
+}
+
+set_target_cluster_var_for_teardown() {
+    local newmasterdir="$(upgrade_datadir $MASTER_DATA_DIRECTORY)"
+    TARGET_CLUSTER="${newmasterdir}"
+}
+
+teardown_target_cluster() {
+    delete_target_datadirs $TARGET_CLUSTER
+}
+
+setup_check_upgrade_to_fail() {
+    gpstart -a
+    $PSQL -d postgres -p $PGPORT -c "CREATE TABLE test_pg_upgrade(a int) DISTRIBUTED BY (a) PARTITION BY RANGE (a)(start (1) end(4) every(1));"
+    $PSQL -d postgres -p $PGPORT -c "CREATE UNIQUE INDEX fomo ON test_pg_upgrade (a);"
+}
+
+teardown_check_upgrade_failure() {
+    $PSQL -d postgres -p $PGPORT -c "DROP TABLE IF EXISTS test_pg_upgrade CASCADE;"
 }
 
 @test "hub daemonizes and prints the PID when passed the --daemonize option" {
@@ -52,12 +77,6 @@ teardown() {
     [ "$status" -eq 1 ]
 
     [[ "$output" = *"config.json: no such file or directory"* ]]
-}
-
-@test "initialize returns an error when it is ran twice" {
-    # second start should return an error
-    ! gpupgrade initialize --old-bindir="${GPHOME}/bin" --new-bindir="${GPHOME}/bin" --old-port="${PGPORT}"
-    # TODO: check for a useful error message
 }
 
 @test "hub does not return an error if an unrelated process has gpupgrade hub in its name" {
@@ -143,4 +162,28 @@ outputContains() {
         [ "$status" -eq 1 ]
         [[ $output = *'invalid argument '*' for "--disk-free-ratio" flag:'* ]] || fail
     done
+}
+
+@test "the check_upgrade substep always runs" {
+    set_target_cluster_var_for_teardown
+    TEARDOWN_FUNCTIONS+=( teardown_target_cluster )
+
+    gpupgrade initialize \
+        --old-bindir="$GPHOME/bin" \
+        --new-bindir="$GPHOME/bin" \
+        --old-port="${PGPORT}" \
+        --disk-free-ratio 0 3>&-
+
+    setup_check_upgrade_to_fail
+    TEARDOWN_FUNCTIONS+=( teardown_check_upgrade_failure )
+
+    run gpupgrade initialize \
+        --old-bindir="$GPHOME/bin" \
+        --new-bindir="$GPHOME/bin" \
+        --old-port="${PGPORT}" \
+        --disk-free-ratio 0 3>&-
+
+    # Other substeps are skipped when marked completed in the state dir,
+    # for check_upgrade, we always run it.
+    [ "$status" -eq 1 ] || fail "$output"
 }

@@ -78,7 +78,7 @@ func (h *Hub) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest, st
 		return h.ShutdownCluster(stream, false)
 	})
 
-	s.Run(idl.Substep_CHECK_UPGRADE, func(stream step.OutStreams) error {
+	s.AlwaysRun(idl.Substep_CHECK_UPGRADE, func(stream step.OutStreams) error {
 		return h.CheckUpgrade(stream)
 	})
 
