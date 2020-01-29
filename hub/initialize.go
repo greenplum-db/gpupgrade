@@ -1,6 +1,7 @@
 package hub
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -36,8 +37,9 @@ func (h *Hub) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initiali
 		return h.fillClusterConfigsSubStep(stream, in)
 	})
 
-	s.Run(idl.Substep_START_AGENTS, func(stream step.OutStreams) error {
-		return h.startAgentsSubStep(stream)
+	s.Run(idl.Substep_START_AGENTS, func(_ step.OutStreams) error {
+		_, err := RestartAgents(context.Background(), nil, h.Source.GetHostnames(), h.AgentPort, h.StateDir)
+		return err
 	})
 
 	return s.Err()
@@ -125,55 +127,4 @@ func getAgentPath() (string, error) {
 	}
 
 	return filepath.Join(filepath.Dir(hubPath), "gpupgrade"), nil
-}
-
-// TODO: use the implementation in RestartAgents() for this function and combine them
-func (h *Hub) startAgentsSubStep(stream step.OutStreams) error {
-	source := h.Source
-	stateDir := h.StateDir
-
-	// XXX If there are failures, does it matter what agents have successfully
-	// started, or do we just want to stop all of them and kick back to the
-	// user?
-	logStr := "start agents on master and hosts"
-
-	agentPath, err := getAgentPath()
-	if err != nil {
-		return errors.Errorf("failed to get the hub executable path %v", err)
-	}
-
-	// XXX State directory handling on agents needs to be improved. See issue
-	// #127: all agents will silently recreate that directory if it doesn't
-	// already exist. Plus, ExecuteOnAllHosts() doesn't let us control whether
-	// we execute locally or via SSH for the master, so we don't know whether
-	// GPUPGRADE_HOME is going to be inherited.
-	runAgentCmd := func(contentID int) string {
-		return agentPath + " agent --daemonize --state-directory " + stateDir
-	}
-
-	errStr := "Failed to start all gpupgrade agents"
-
-	remoteOutput, err := source.ExecuteOnAllHosts(logStr, runAgentCmd)
-	if err != nil {
-		return errors.Wrap(err, errStr)
-	}
-
-	errMessage := func(contentID int) string {
-		return fmt.Sprintf("Could not start gpupgrade agent on segment with contentID %d", contentID)
-	}
-	source.CheckClusterError(remoteOutput, errStr, errMessage, true)
-
-	// Agents print their port and PID to stdout; log them for posterity.
-	for content, output := range remoteOutput.Stdouts {
-		if remoteOutput.Errors[content] == nil {
-			gplog.Info("[%s] %s", source.Segments[content].Hostname, output)
-		}
-	}
-
-	if remoteOutput.NumErrors > 0 {
-		// CheckClusterError() will have already logged each error.
-		return errors.New("could not start agents on segment hosts; see log for details")
-	}
-
-	return nil
 }

@@ -12,6 +12,10 @@ setup() {
     # gpdeletesystem on this cluster.
     TARGET_CLUSTER=
 
+    # The process that is holding onto the port
+    HELD_PORT_PID=
+    AGENT_PORT=
+
     gpupgrade kill-services
     gpupgrade initialize \
         --old-bindir="${GPHOME}/bin" \
@@ -53,6 +57,14 @@ setup_check_upgrade_to_fail() {
 
 teardown_check_upgrade_failure() {
     $PSQL -d postgres -p $PGPORT -c "DROP TABLE IF EXISTS test_pg_upgrade CASCADE;"
+}
+
+release_held_port() {
+    if [ -n "${HELD_PORT_PID}" ]; then
+        pkill -TERM -P $HELD_PORT_PID
+        wait_for_port_change $AGENT_PORT 1
+        HELD_PORT_PID=
+    fi
 }
 
 @test "hub daemonizes and prints the PID when passed the --daemonize option" {
@@ -162,6 +174,77 @@ outputContains() {
         [ "$status" -eq 1 ]
         [[ $output = *'invalid argument '*' for "--disk-free-ratio" flag:'* ]] || fail
     done
+}
+
+# TODO: Remove this test once PR #179 is merged.
+@test "start agents idempotent" {
+    run gpupgrade initialize \
+        --old-bindir="$GPHOME/bin" \
+        --new-bindir="$GPHOME/bin" \
+        --old-port="${PGPORT}" \
+        --disk-free-ratio 0 \
+        --stop-before-cluster-creation 3>&-
+    [ "$status" -eq 0 ] || fail "failed to initialize: $output"
+
+    sed  -i -e 's/"START_AGENTS": "COMPLETE"/"START_AGENTS": "FAILED"/g' "$GPUPGRADE_HOME/status.json"
+
+    run gpupgrade initialize \
+        --old-bindir="$GPHOME/bin" \
+        --new-bindir="$GPHOME/bin" \
+        --old-port="${PGPORT}" \
+        --disk-free-ratio 0 \
+        --stop-before-cluster-creation 3>&-
+    [ "$status" -eq 0 ] || fail "failed to initialize: $output"
+}
+
+wait_for_port_change() {
+    local port=$1
+    local ret=$2
+    local timeout=5
+
+    for i in $(seq 1 $timeout);
+    do
+       sleep 1
+       run lsof -i :$port
+       if [ $status -eq $ret ]; then
+           return
+       fi
+    done
+
+    fail "timeout exceed when waiting for port change"
+}
+
+@test "start agents fails if a process is connected on the same TCP port" {
+    # Ensure the agent is down, so that we can test port in use.
+    gpupgrade kill-services
+    rm -r "$GPUPGRADE_HOME"
+
+    # squat gpupgrade agent port
+    AGENT_PORT=6416
+    go run ./testutils/port_listener/main.go $AGENT_PORT 3>&- &
+
+    # Store the pid of the process group leader since the port is held by its child
+    HELD_PORT_PID=$!
+    TEARDOWN_FUNCTIONS+=( release_held_port )
+    wait_for_port_change $AGENT_PORT 0
+
+    run gpupgrade initialize \
+        --old-bindir="$GPHOME/bin" \
+        --new-bindir="$GPHOME/bin" \
+        --old-port="${PGPORT}" \
+        --disk-free-ratio 0 \
+        --stop-before-cluster-creation 3>&-
+    [ "$status" -ne 0 ] || fail "expected start_agent substep to fail with port already in use: $output"
+
+    release_held_port
+
+    run gpupgrade initialize \
+        --old-bindir="$GPHOME/bin" \
+        --new-bindir="$GPHOME/bin" \
+        --old-port="${PGPORT}" \
+        --disk-free-ratio 0 \
+        --stop-before-cluster-creation 3>&-
+    [ "$status" -eq 0 ] || fail "expected start_agent substep to succeed: $output"
 }
 
 @test "the check_upgrade substep always runs" {
