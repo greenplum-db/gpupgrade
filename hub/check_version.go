@@ -1,9 +1,10 @@
 package hub
 
 import (
+	"golang.org/x/xerrors"
+
 	"github.com/greenplum-db/gpupgrade/db"
 	"github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/net/context"
@@ -30,7 +31,7 @@ func (h *Hub) CheckVersion(ctx context.Context,
 	err := dbConnector.Connect(1)
 	if err != nil {
 		gplog.Error(err.Error())
-		return &idl.CheckVersionReply{}, utils.DatabaseConnectionError{Parent: err}
+		return &idl.CheckVersionReply{}, xerrors.Errorf("connecting to database %w", err)
 	}
 
 	isVersionCompatible := dbConnector.Version.AtLeast(MINIMUM_VERSION)
