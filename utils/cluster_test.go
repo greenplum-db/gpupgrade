@@ -1,7 +1,6 @@
 package utils_test
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 
@@ -79,31 +78,6 @@ var _ = Describe("Cluster", func() {
 
 			segments, err = expectedCluster.SegmentsOn("localhost")
 			Expect(err).To(HaveOccurred())
-		})
-	})
-
-	Describe("ExecuteOnAllHosts", func() {
-		It("returns an error for an unloaded cluster", func() {
-			emptyCluster := &utils.Cluster{Cluster: &cluster.Cluster{}}
-
-			_, err := emptyCluster.ExecuteOnAllHosts("description", func(int) string { return "" })
-			Expect(err).To(HaveOccurred())
-		})
-
-		It("executes a command on each separate host", func() {
-			executor := &testhelper.TestExecutor{}
-			expectedCluster.Executor = executor
-
-			_, err := expectedCluster.ExecuteOnAllHosts("description",
-				func(contentID int) string {
-					return fmt.Sprintf("command %d", contentID)
-				})
-
-			Expect(err).NotTo(HaveOccurred())
-			Expect(len(executor.ClusterCommands)).To(Equal(1))
-			for _, id := range expectedCluster.ContentIDs {
-				Expect(executor.ClusterCommands[0][id]).To(ContainElement(fmt.Sprintf("command %d", id)))
-			}
 		})
 	})
 

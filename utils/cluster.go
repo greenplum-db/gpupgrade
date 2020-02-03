@@ -166,15 +166,3 @@ func (c Cluster) SegmentsOn(hostname string) ([]cluster.SegConfig, error) {
 
 	return segments, nil
 }
-
-// ExecuteOnAllHosts is a convenience wrapper for
-// Cluster.GenerateAndExecuteCommand(..., ON_HOSTS_AND_MASTER). It will error
-// out if the cluster doesn't have any loaded segments yet.
-func (c *Cluster) ExecuteOnAllHosts(desc string, cmd func(contentID int) string) (*cluster.RemoteOutput, error) {
-	if len(c.Segments) == 0 {
-		return nil, errors.New("cluster has no loaded segments")
-	}
-
-	remoteOutput := c.GenerateAndExecuteCommand(desc, cmd, cluster.ON_HOSTS_AND_MASTER)
-	return remoteOutput, nil
-}
