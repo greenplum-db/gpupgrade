@@ -1,5 +1,6 @@
-// The port_listener utility listens on the specified port on all ipv4 and ipv6
-// interfaces. If no ipv6 interface is detected it will not listen on ipv6.
+// The port_listener utility listens on the specified port even during gRPC
+// retries. One can inspect the ports in use on OS X with `netstat -an` rather
+// than `lsof -Pi`.
 // Usage:
 //
 //   go run port_listener <port>
@@ -11,8 +12,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"os/signal"
-	"syscall"
 )
 
 func main() {
@@ -23,64 +22,12 @@ func main() {
 
 	port := args[0]
 
-	signals := make(chan os.Signal, 1)
-	done := make(chan bool, 1)
-	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
-
-	log := "tcp4"
-
-	go func() {
-		connect("tcp4", port)
-	}()
-
-	if isIpv6Enabled() {
-		log += " and tcp6"
-		go func() {
-			connect("tcp6", port)
-		}()
-	}
-
-	fmt.Printf("listening on %s on port %s...\n", log, port)
-
-	go func() {
-		signal := <-signals
-		fmt.Printf("\nReceived %s. Exiting.", signal)
-		done <- true
-	}()
-
-	<-done
-}
-
-func connect(network string, port string) net.Listener {
-	listener, err := net.Listen(network, ":"+port)
+	_, err := net.Listen("tcp", ":"+port)
 	if err != nil {
-		log.Fatalf("failed to listen on port %s for %s: %v", port, network, err)
+		log.Fatalf("failed to listen on port %s: %v", port, err)
 	}
 
-	_, err = listener.Accept()
-	if err != nil {
-		log.Fatalf("failed to accept on port %s for %s: %v", port, network, err)
-	}
+	fmt.Printf("listening on port %s...\n", port)
 
-	return listener
-}
-
-func isIpv6Enabled() bool {
-	addrs, err := net.InterfaceAddrs()
-	if err != nil {
-		log.Fatalf("failed to determine interface addrs: %v", err)
-	}
-
-	for _, addr := range addrs {
-		ip, _, err := net.ParseCIDR(addr.String())
-		if err != nil {
-			log.Fatalf("failed to parse network address %s: %v", addr.String(), err)
-		}
-
-		if ip.To4() == nil {
-			return true
-		}
-	}
-
-	return false
+	select {} // wait forever
 }
