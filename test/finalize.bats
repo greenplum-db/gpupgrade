@@ -38,7 +38,7 @@ teardown() {
         rm -rf "$STATE_DIR/demoDataDir*"
         rm -r "$STATE_DIR"
 
-        gpstart -a
+        start_source_cluster
     fi
 }
 

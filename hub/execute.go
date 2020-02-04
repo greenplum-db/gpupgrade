@@ -26,6 +26,10 @@ func (h *Hub) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSe
 		}
 	}()
 
+	s.Run(idl.Substep_SHUTDOWN_SOURCE_CLUSTER, func(stream step.OutStreams) error {
+		return StopCluster(stream, h.Source)
+	})
+
 	s.Run(idl.Substep_UPGRADE_MASTER, func(streams step.OutStreams) error {
 		stateDir := h.StateDir
 		return UpgradeMaster(h.Source, h.Target, stateDir, streams, false, h.UseLinkMode)

@@ -31,7 +31,7 @@ teardown() {
         delete_cluster $NEW_CLUSTER
     fi
 
-    gpstart -a
+    start_source_cluster
 
     $PSQL -d postgres -p $PGPORT -c "DROP TABLE IF EXISTS test_pg_upgrade CASCADE;"
 }
@@ -69,9 +69,7 @@ setup_newmasterdir() {
     grep "Checking for indexes on partitioned tables                  fatal" "$GPUPGRADE_HOME"/initialize.log
 
     # revert added index
-    gpstart -a
     $PSQL -d postgres -p $PGPORT -c "DROP TABLE test_pg_upgrade CASCADE;"
-    gpstop -a
 
     KEEP_STATE_DIR=0
 }

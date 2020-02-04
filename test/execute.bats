@@ -32,7 +32,7 @@ teardown() {
         $FUNCTION
     done
 
-    gpstart -a
+    start_source_cluster
 }
 
 ensure_hardlinks_for_relfilenode_on_master_and_segments() {
@@ -141,5 +141,4 @@ reset_master_and_primary_pg_control_files() {
     [ ! -d "${datadir}"/qddir_upgrade/demoDataDir-1/base_extra ]
 
     TEARDOWN_FUNCTIONS+=( reset_master_and_primary_pg_control_files )
-
 }

@@ -80,10 +80,6 @@ func (h *Hub) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest, st
 		return err
 	})
 
-	s.Run(idl.Substep_SHUTDOWN_SOURCE_CLUSTER, func(stream step.OutStreams) error {
-		return StopCluster(stream, h.Source)
-	})
-
 	s.Run(idl.Substep_INIT_TARGET_CLUSTER, func(stream step.OutStreams) error {
 		return h.CreateTargetCluster(stream, h.Config.TargetMasterPort)
 	})

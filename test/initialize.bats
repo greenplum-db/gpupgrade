@@ -50,7 +50,6 @@ teardown_target_cluster() {
 }
 
 setup_check_upgrade_to_fail() {
-    gpstart -a
     $PSQL -d postgres -p $PGPORT -c "CREATE TABLE test_pg_upgrade(a int) DISTRIBUTED BY (a) PARTITION BY RANGE (a)(start (1) end(4) every(1));"
     $PSQL -d postgres -p $PGPORT -c "CREATE UNIQUE INDEX fomo ON test_pg_upgrade (a);"
 }
@@ -269,4 +268,11 @@ wait_for_port_change() {
     # Other substeps are skipped when marked completed in the state dir,
     # for check_upgrade, we always run it.
     [ "$status" -eq 1 ] || fail "$output"
+}
+
+@test "the source cluster is running at the end of initialize" {
+    set_target_cluster_var_for_teardown
+    TEARDOWN_FUNCTIONS+=( teardown_target_cluster )
+
+    pg_isready -q || fail "expected source cluster to be available"
 }

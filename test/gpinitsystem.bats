@@ -25,8 +25,6 @@ teardown() {
     if [ -n "$NEW_CLUSTER" ]; then
         delete_cluster $NEW_CLUSTER
     fi
-
-    gpstart -a
 }
 
 @test "initialize runs gpinitsystem based on the source cluster" {

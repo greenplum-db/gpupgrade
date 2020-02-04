@@ -26,6 +26,11 @@ skip_if_no_gpdb() {
     [ -n "${PGPORT}" ] || skip "this test requires an active GPDB cluster (set PGPORT)"
 }
 
+# start_source_cluster() ensures that database is up before returning
+start_source_cluster() {
+    "${GPHOME}"/bin/pg_isready -q || "${GPHOME}"/bin/gpstart -a
+}
+
 # Calls gpdeletesystem on the cluster pointed to by the given master data
 # directory.
 delete_cluster() {
