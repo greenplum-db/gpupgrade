@@ -66,7 +66,7 @@ func masterSegmentFromCluster(cluster *utils.Cluster) *upgrade.Segment {
 
 func RsyncMasterDataDir(stream step.OutStreams, sourceDir, targetDir string) error {
 	sourceDirRsync := filepath.Clean(sourceDir) + string(os.PathSeparator)
-	cmd := execCommandRsync("rsync", "--archive", "--exclude=pg_log/*", sourceDirRsync, targetDir)
+	cmd := execCommandRsync("rsync", "--archive", "--delete", "--exclude=pg_log/*", sourceDirRsync, targetDir)
 
 	cmd.Stdout = stream.Stdout()
 	cmd.Stderr = stream.Stderr()

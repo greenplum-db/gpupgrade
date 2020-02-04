@@ -130,7 +130,16 @@ reset_master_and_primary_pg_control_files() {
     # ensure that initialize created a backup and upgrade master refreshed the
     # target master data directory with the backup.
     rm -rf "${datadir}"/qddir_upgrade/demoDataDir-1/*
+    
+    # create an extra file to ensure that its deleted during rsync as we pass
+    # --delete flag
+    mkdir "${datadir}"/qddir_upgrade/demoDataDir-1/base_extra    
+    touch "${datadir}"/qddir_upgrade/demoDataDir-1/base_extra/1101
     gpupgrade execute --verbose
+    
+    # check that the extraneous files are deleted
+    [ ! -d "${datadir}"/qddir_upgrade/demoDataDir-1/base_extra ]
+
     TEARDOWN_FUNCTIONS+=( reset_master_and_primary_pg_control_files )
 
 }
