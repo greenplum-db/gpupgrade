@@ -44,9 +44,7 @@ import (
 	"google.golang.org/grpc/codes"
 	grpcStatus "google.golang.org/grpc/status"
 
-	"github.com/greenplum-db/gpupgrade/agent"
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
-	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
@@ -62,8 +60,8 @@ func BuildRootCommand() *cobra.Command {
 	root.AddCommand(finalize)
 	root.AddCommand(restartServices)
 	root.AddCommand(killServices)
-	root.AddCommand(hub.Command())
-	root.AddCommand(agent.Command())
+	root.AddCommand(Agent())
+	root.AddCommand(Hub())
 
 	subConfigSet := createConfigSetSubcommand()
 	subConfigShow := createConfigShowSubcommand()

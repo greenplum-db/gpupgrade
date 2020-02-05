@@ -10,6 +10,8 @@ import (
 	"golang.org/x/net/context"
 )
 
+const ConfigFileName = "config.json"
+
 func (h *Hub) SetConfig(ctx context.Context, in *idl.SetConfigRequest) (*idl.SetConfigReply, error) {
 	switch in.Name {
 	case "old-bindir":

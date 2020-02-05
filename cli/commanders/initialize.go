@@ -6,9 +6,10 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/greenplum-db/gpupgrade/hub"
+
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 
-	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 

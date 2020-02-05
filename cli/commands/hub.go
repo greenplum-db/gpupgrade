@@ -1,4 +1,4 @@
-package hub
+package commands
 
 import (
 	"fmt"
@@ -11,17 +11,16 @@ import (
 	"golang.org/x/xerrors"
 	"google.golang.org/grpc"
 
+	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/daemon"
 	"github.com/greenplum-db/gpupgrade/utils/log"
 )
 
-const ConfigFileName = "config.json"
-
 // This directory to have the implementation code for the gRPC server to serve
 // Minimal CLI command parsing to embrace that booting this binary to run the hub might have some flags like a log dir
 
-func Command() *cobra.Command {
+func Hub() *cobra.Command {
 	var logdir string
 	var shouldDaemonize bool
 
@@ -50,19 +49,19 @@ func Command() *cobra.Command {
 			//
 			// they're not defined in the configuration (as happens
 			// pre-initialize), we still need good defaults.
-			conf := &Config{
+			conf := &hub.Config{
 				Port:        7527,
 				AgentPort:   6416,
 				UseLinkMode: false,
 			}
 
-			path := filepath.Join(stateDir, ConfigFileName)
+			path := filepath.Join(stateDir, hub.ConfigFileName)
 			err = loadConfig(conf, path)
 			if err != nil {
 				return err
 			}
 
-			h := New(conf, grpc.DialContext, stateDir)
+			h := hub.New(conf, grpc.DialContext, stateDir)
 
 			if shouldDaemonize {
 				h.MakeDaemon()
@@ -84,7 +83,7 @@ func Command() *cobra.Command {
 	return cmd
 }
 
-func loadConfig(conf *Config, path string) error {
+func loadConfig(conf *hub.Config, path string) error {
 	file, err := os.Open(path)
 	if err != nil {
 		return xerrors.Errorf("opening configuration file: %w", err)

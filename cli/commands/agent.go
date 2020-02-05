@@ -1,16 +1,18 @@
-package agent
+package commands
 
 import (
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/spf13/cobra"
 
+	"github.com/greenplum-db/gpupgrade/agent"
+
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/daemon"
 	"github.com/greenplum-db/gpupgrade/utils/log"
 )
 
-func Command() *cobra.Command {
+func Agent() *cobra.Command {
 	var logdir, statedir string
 	var shouldDaemonize bool
 
@@ -24,12 +26,12 @@ func Command() *cobra.Command {
 			gplog.InitializeLogging("gpupgrade agent", logdir)
 			defer log.WritePanics()
 
-			conf := Config{
+			conf := agent.Config{
 				Port:     6416,
 				StateDir: statedir,
 			}
 
-			agentServer := NewServer(&cluster.GPDBExecutor{}, conf)
+			agentServer := agent.NewServer(&cluster.GPDBExecutor{}, conf)
 			if shouldDaemonize {
 				agentServer.MakeDaemon()
 			}

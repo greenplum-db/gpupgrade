@@ -9,10 +9,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/greenplum-db/gpupgrade/hub"
-
 	. "github.com/onsi/gomega"
 
+	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 )
 
