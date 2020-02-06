@@ -12,7 +12,7 @@ import (
 
 const ConfigFileName = "config.json"
 
-func (h *Hub) SetConfig(ctx context.Context, in *idl.SetConfigRequest) (*idl.SetConfigReply, error) {
+func (h *Server) SetConfig(ctx context.Context, in *idl.SetConfigRequest) (*idl.SetConfigReply, error) {
 	switch in.Name {
 	case "old-bindir":
 		h.Source.BinDir = in.Value
@@ -30,7 +30,7 @@ func (h *Hub) SetConfig(ctx context.Context, in *idl.SetConfigRequest) (*idl.Set
 	return &idl.SetConfigReply{}, nil
 }
 
-func (h *Hub) GetConfig(ctx context.Context, in *idl.GetConfigRequest) (*idl.GetConfigReply, error) {
+func (h *Server) GetConfig(ctx context.Context, in *idl.GetConfigRequest) (*idl.GetConfigReply, error) {
 	resp := &idl.GetConfigReply{}
 
 	switch in.Name {

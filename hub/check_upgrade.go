@@ -8,7 +8,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/step"
 )
 
-func (h *Hub) CheckUpgrade(stream step.OutStreams) error {
+func (h *Server) CheckUpgrade(stream step.OutStreams) error {
 	var wg sync.WaitGroup
 	checkErrs := make(chan error, 2)
 

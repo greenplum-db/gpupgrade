@@ -12,7 +12,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 )
 
-func (h *Hub) ConvertPrimaries(checkOnly bool) error {
+func (h *Server) ConvertPrimaries(checkOnly bool) error {
 	agentConns, err := h.AgentConns()
 	if err != nil {
 		return errors.Wrap(err, "failed to connect to gpupgrade agent")
@@ -56,7 +56,7 @@ func (h *Hub) ConvertPrimaries(checkOnly bool) error {
 	return err
 }
 
-func (h *Hub) getDataDirPairs() (map[string][]*idl.DataDirPair, error) {
+func (h *Server) getDataDirPairs() (map[string][]*idl.DataDirPair, error) {
 	dataDirPairMap := make(map[string][]*idl.DataDirPair)
 
 	sourceContents := h.Source.ContentIDs

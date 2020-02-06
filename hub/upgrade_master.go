@@ -18,9 +18,9 @@ var execCommandRsync = exec.Command
 
 const masterBackup = "master.bak"
 
-// XXX this makes more sense as a Hub method, but it's so difficult to stub a
-// Hub that the parameters have been split out for testing. Revisit if/when the
-// Hub monolith is broken up.
+// XXX this makes more sense as a Server method, but it's so difficult to stub a
+// Server that the parameters have been split out for testing. Revisit if/when the
+// Server monolith is broken up.
 func UpgradeMaster(source, target *utils.Cluster, stateDir string, stream step.OutStreams, checkOnly bool, useLinkMode bool) error {
 	wd := utils.MasterPGUpgradeDirectory(stateDir)
 	err := utils.System.MkdirAll(wd, 0700)

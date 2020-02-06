@@ -13,7 +13,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/disk"
 )
 
-func (h *Hub) CheckDiskSpace(ctx context.Context, in *idl.CheckDiskSpaceRequest) (*idl.CheckDiskSpaceReply, error) {
+func (h *Server) CheckDiskSpace(ctx context.Context, in *idl.CheckDiskSpaceRequest) (*idl.CheckDiskSpaceReply, error) {
 	reply := new(idl.CheckDiskSpaceReply)
 
 	agents, err := h.AgentConns()

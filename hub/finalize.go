@@ -15,7 +15,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 )
 
-func (h *Hub) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeServer) (err error) {
+func (h *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeServer) (err error) {
 	s, err := BeginStep(h.StateDir, "finalize", stream)
 	if err != nil {
 		return err

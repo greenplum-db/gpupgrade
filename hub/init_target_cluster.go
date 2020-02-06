@@ -22,16 +22,16 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
-func (h *Hub) GenerateInitsystemConfig(ports []uint32) (int, error) {
+func (h *Server) GenerateInitsystemConfig(ports []uint32) (int, error) {
 	sourceDBConn := db.NewDBConn("localhost", int(h.Source.MasterPort()), "template1")
 	return h.writeConf(sourceDBConn, ports)
 }
 
-func (h *Hub) initsystemConfPath() string {
+func (h *Server) initsystemConfPath() string {
 	return filepath.Join(h.StateDir, "gpinitsystem_config")
 }
 
-func (h *Hub) writeConf(sourceDBConn *dbconn.DBConn, ports []uint32) (int, error) {
+func (h *Server) writeConf(sourceDBConn *dbconn.DBConn, ports []uint32) (int, error) {
 	err := sourceDBConn.Connect(1)
 	if err != nil {
 		return 0, errors.Wrap(err, "could not connect to database")
@@ -56,7 +56,7 @@ func (h *Hub) writeConf(sourceDBConn *dbconn.DBConn, ports []uint32) (int, error
 	return masterPort, WriteInitsystemFile(gpinitsystemConfig, h.initsystemConfPath())
 }
 
-func (h *Hub) CreateTargetCluster(stream step.OutStreams, masterPort int) error {
+func (h *Server) CreateTargetCluster(stream step.OutStreams, masterPort int) error {
 	err := h.InitTargetCluster(stream)
 	if err != nil {
 		return err
@@ -77,7 +77,7 @@ func (h *Hub) CreateTargetCluster(stream step.OutStreams, masterPort int) error 
 	return nil
 }
 
-func (h *Hub) InitTargetCluster(stream step.OutStreams) error {
+func (h *Server) InitTargetCluster(stream step.OutStreams) error {
 	agentConns, err := h.AgentConns()
 	if err != nil {
 		return errors.Wrap(err, "Could not get/create agents")

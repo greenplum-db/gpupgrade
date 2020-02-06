@@ -17,7 +17,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
-func (h *Hub) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_InitializeServer) (err error) {
+func (h *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_InitializeServer) (err error) {
 	s, err := BeginStep(h.StateDir, "initialize", stream)
 	if err != nil {
 		return err
@@ -45,7 +45,7 @@ func (h *Hub) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initiali
 	return s.Err()
 }
 
-func (h *Hub) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest, stream idl.CliToHub_InitializeCreateClusterServer) (err error) {
+func (h *Server) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest, stream idl.CliToHub_InitializeCreateClusterServer) (err error) {
 	s, err := BeginStep(h.StateDir, "initialize", stream)
 	if err != nil {
 		return err
@@ -102,7 +102,7 @@ func (h *Hub) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest, st
 }
 
 // create old/new clusters, write to disk and re-read from disk to make sure it is "durable"
-func (h *Hub) fillClusterConfigsSubStep(_ step.OutStreams, request *idl.InitializeRequest) error {
+func (h *Server) fillClusterConfigsSubStep(_ step.OutStreams, request *idl.InitializeRequest) error {
 	conn := db.NewDBConn("localhost", int(request.SourcePort), "template1")
 	defer conn.Close()
 

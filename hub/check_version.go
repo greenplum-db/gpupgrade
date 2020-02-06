@@ -19,7 +19,7 @@ const (
 	MINIMUM_VERSION = "5.0.0" // FIXME: set to minimum 5.X version we support
 )
 
-func (h *Hub) CheckVersion(ctx context.Context,
+func (h *Server) CheckVersion(ctx context.Context,
 	in *idl.CheckVersionRequest) (*idl.CheckVersionReply, error) {
 
 	gplog.Info("starting CheckVersion")

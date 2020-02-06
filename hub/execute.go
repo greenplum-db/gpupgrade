@@ -10,7 +10,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/step"
 )
 
-func (h *Hub) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_ExecuteServer) (err error) {
+func (h *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_ExecuteServer) (err error) {
 	s, err := BeginStep(h.StateDir, "execute", stream)
 	if err != nil {
 		return err

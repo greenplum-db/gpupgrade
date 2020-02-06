@@ -31,12 +31,12 @@ import (
 
 var DialTimeout = 3 * time.Second
 
-// Returned from Hub.Start() if Hub.Stop() has already been called.
+// Returned from Server.Start() if Server.Stop() has already been called.
 var ErrHubStopped = errors.New("hub is stopped")
 
 type Dialer func(ctx context.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error)
 
-type Hub struct {
+type Server struct {
 	*Config
 
 	StateDir string
@@ -67,8 +67,8 @@ type Connection struct {
 	CancelContext func()
 }
 
-func New(conf *Config, grpcDialer Dialer, stateDir string) *Hub {
-	h := &Hub{
+func New(conf *Config, grpcDialer Dialer, stateDir string) *Server {
+	h := &Server{
 		Config:     conf,
 		StateDir:   stateDir,
 		stopped:    make(chan struct{}, 1),
@@ -78,13 +78,13 @@ func New(conf *Config, grpcDialer Dialer, stateDir string) *Hub {
 	return h
 }
 
-// MakeDaemon tells the Hub to disconnect its stdout/stderr streams after
+// MakeDaemon tells the Server to disconnect its stdout/stderr streams after
 // successfully starting up.
-func (h *Hub) MakeDaemon() {
+func (h *Server) MakeDaemon() {
 	h.daemon = true
 }
 
-func (h *Hub) Start() error {
+func (h *Server) Start() error {
 	lis, err := net.Listen("tcp", ":"+strconv.Itoa(h.Port))
 	if err != nil {
 		return errors.Wrap(err, "failed to listen")
@@ -127,7 +127,7 @@ func (h *Hub) Start() error {
 	return err
 }
 
-func (h *Hub) StopServices(ctx context.Context, in *idl.StopServicesRequest) (*idl.StopServicesReply, error) {
+func (h *Server) StopServices(ctx context.Context, in *idl.StopServicesRequest) (*idl.StopServicesReply, error) {
 	err := h.StopAgents()
 	if err != nil {
 		gplog.Debug("failed to stop agents: %#v", err)
@@ -139,7 +139,7 @@ func (h *Hub) StopServices(ctx context.Context, in *idl.StopServicesRequest) (*i
 
 // TODO: add unit tests for this; this is currently tricky due to h.AgentConns()
 //    mutating global state
-func (h *Hub) StopAgents() error {
+func (h *Server) StopAgents() error {
 	// FIXME: h.AgentConns() fails fast if a single agent isn't available
 	//    we need to connect to all available agents so we can stop just those
 	_, err := h.AgentConns()
@@ -182,7 +182,7 @@ func (h *Hub) StopAgents() error {
 	return multiErr.ErrorOrNil()
 }
 
-func (h *Hub) Stop(closeAgentConns bool) {
+func (h *Server) Stop(closeAgentConns bool) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -201,7 +201,7 @@ func (h *Hub) Stop(closeAgentConns bool) {
 	h.stopped = nil
 }
 
-func (h *Hub) RestartAgents(ctx context.Context, in *idl.RestartAgentsRequest) (*idl.RestartAgentsReply, error) {
+func (h *Server) RestartAgents(ctx context.Context, in *idl.RestartAgentsRequest) (*idl.RestartAgentsReply, error) {
 	restartedHosts, err := RestartAgents(ctx, nil, h.Source.GetHostnames(), h.AgentPort, h.StateDir)
 	return &idl.RestartAgentsReply{AgentHosts: restartedHosts}, err
 }
@@ -279,8 +279,8 @@ func RestartAgents(ctx context.Context,
 	return hosts, multiErr.ErrorOrNil()
 }
 
-func (h *Hub) AgentConns() ([]*Connection, error) {
-	// Lock the mutex to protect against races with Hub.Stop().
+func (h *Server) AgentConns() ([]*Connection, error) {
+	// Lock the mutex to protect against races with Server.Stop().
 	// XXX This is a *ridiculously* broad lock. Have fun waiting for the dial
 	// timeout when calling Stop() and AgentConns() at the same time, for
 	// instance. We should not lock around a network operation, but it seems
@@ -336,11 +336,11 @@ func EnsureConnsAreReady(agentConns []*Connection) error {
 	return nil
 }
 
-// Closes all h.agentConns. Callers must hold the Hub's mutex.
+// Closes all h.agentConns. Callers must hold the Server's mutex.
 // TODO: this function assumes that all h.agentConns are _not_ in a terminal
 //   state(e.g. already closed).  If so, conn.Conn.WaitForStateChange() can block
 //   indefinitely.
-func (h *Hub) closeAgentConns() {
+func (h *Server) closeAgentConns() {
 	for _, conn := range h.agentConns {
 		defer conn.CancelContext()
 		currState := conn.Conn.GetState()
@@ -376,7 +376,7 @@ func (c *Config) Save(w io.Writer) error {
 }
 
 // SaveConfig persists the hub's configuration to disk.
-func (h *Hub) SaveConfig() (err error) {
+func (h *Server) SaveConfig() (err error) {
 	// TODO: Switch to an atomic implementation like renameio. Consider what
 	// happens if Config.Save() panics: we'll have truncated the file
 	// on disk and the hub will be unable to recover. For now, since we normally

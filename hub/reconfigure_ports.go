@@ -20,7 +20,7 @@ import (
 // change the ports on a cluster.
 //
 // TODO: this method needs test coverage.
-func (h *Hub) ReconfigurePorts(stream step.OutStreams) (err error) {
+func (h *Server) ReconfigurePorts(stream step.OutStreams) (err error) {
 	// 1). bring down the cluster
 	err = StopCluster(stream, h.Target)
 	if err != nil {

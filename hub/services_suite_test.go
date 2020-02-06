@@ -35,7 +35,7 @@ var (
 	hubConf     *hub.Config
 	source      *utils.Cluster
 	target      *utils.Cluster
-	testHub     *hub.Hub
+	testHub     *hub.Server
 	useLinkMode bool
 )
 
