@@ -102,7 +102,7 @@ func CopyMaster(agentConns []*Connection, target *utils.Cluster, destinationDirN
  * Generate a list of content IDs such that running ExecuteClusterCommand
  * against them will execute once per host.
  */
-func contentsByHost(c *utils.Cluster, includeMaster bool) []int { // nolint: unparam
+func contentsByHost(c *utils.Cluster, includeMaster bool) []int {
 	hostSegMap := make(map[string]int, 0)
 	for content, seg := range c.Segments {
 		if content == -1 && !includeMaster {

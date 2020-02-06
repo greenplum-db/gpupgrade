@@ -30,16 +30,11 @@ make install # installs into $GOBIN
 
 ### Best Practices
 
-In your development workflow, please run the following commands prior to final testing 
+In your development workflow, please run the following command prior to final testing 
 and commit of your modifications.  The code formatting will automatically place your
-golang code in a canonical format.  The code linting will provide hints on code
-constructs that are likely to result in a bug either now or in the future.  Please
-correct the code to eliminate the lint warnings or provide a line-level ignore
-comment for that particular line, if you feel the linter is being too aggressive. 
-
+golang code in a canonical format.
 ```
 make format  # formats code in canonical way
-make lint    # checks against common go anti-patterns
 ```
 
 ### Dependency vendoring

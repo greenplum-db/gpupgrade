@@ -210,7 +210,7 @@ type daemonizableCommand interface {
 // The passed timeout is used only when waiting for the child to exit after it
 // prints to stderr. This function will wait indefinitely for the standard
 // streams to close.
-func waitForDaemon(command daemonizableCommand, output, errput io.Writer, timeout time.Duration) error { // nolint: unparam
+func waitForDaemon(command daemonizableCommand, output, errput io.Writer, timeout time.Duration) error {
 	// Open up pipes from the child process and start it.
 	stderr, err := command.StderrPipe()
 	if err != nil {

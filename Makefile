@@ -28,9 +28,6 @@ depend-dev: depend
 		go install ./vendor/github.com/golang/protobuf/protoc-gen-go
 		go install ./vendor/github.com/golang/mock/mockgen
 		go get golang.org/x/tools/cmd/goimports
-		go get golang.org/x/lint/golint
-		go get github.com/alecthomas/gometalinter
-		gometalinter --install
 
 # NOTE: goimports subsumes the standard formatting rules of gofmt, but gofmt is
 #       more flexible(custom rules) so we leave it in for this reason.
@@ -38,9 +35,6 @@ format:
 		goimports -l -w agent/ cli/ db/ hub/ integrations/ testutils/ utils/
 		gofmt -l -w agent/ cli/ db/ hub/ integrations/ testutils/ utils/
 
-
-lint:
-		gometalinter --config=gometalinter.config -s vendor ./...
 
 .PHONY: check check-ginkgo check-bats unit integration test
 
@@ -62,7 +56,7 @@ unit: check-ginkgo
 integration: GINKGO_ARGS += integrations
 integration: check-ginkgo
 
-test: lint unit integration
+test: unit integration
 
 .PHONY: coverage
 coverage:
