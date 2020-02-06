@@ -44,13 +44,13 @@ func NewServer(executor cluster.Executor, conf Config) *Server {
 
 // MakeDaemon tells the Server to disconnect its stdout/stderr streams after
 // successfully starting up.
-func (a *Server) MakeDaemon() {
-	a.daemon = true
+func (s *Server) MakeDaemon() {
+	s.daemon = true
 }
 
-func (a *Server) Start() {
-	createIfNotExists(a.conf.StateDir)
-	lis, err := net.Listen("tcp", ":"+strconv.Itoa(a.conf.Port))
+func (s *Server) Start() {
+	createIfNotExists(s.conf.StateDir)
+	lis, err := net.Listen("tcp", ":"+strconv.Itoa(s.conf.Port))
 	if err != nil {
 		gplog.Fatal(err, "failed to listen")
 	}
@@ -63,18 +63,18 @@ func (a *Server) Start() {
 	}
 	server := grpc.NewServer(grpc.UnaryInterceptor(interceptor))
 
-	a.mu.Lock()
-	a.server = server
-	a.lis = lis
-	a.mu.Unlock()
+	s.mu.Lock()
+	s.server = server
+	s.lis = lis
+	s.mu.Unlock()
 
-	idl.RegisterAgentServer(server, a)
+	idl.RegisterAgentServer(server, s)
 	reflection.Register(server)
 
-	if a.daemon {
+	if s.daemon {
 		// Send an identifier string back to the hub, and log it locally for
 		// easier debugging.
-		info := fmt.Sprintf("Agent started on port %d (pid %d)", a.conf.Port, os.Getpid())
+		info := fmt.Sprintf("Agent started on port %d (pid %d)", s.conf.Port, os.Getpid())
 
 		fmt.Println(info)
 		daemon.Daemonize()
@@ -86,21 +86,21 @@ func (a *Server) Start() {
 		gplog.Fatal(err, "failed to serve: %s", err)
 	}
 
-	a.stopped <- struct{}{}
+	s.stopped <- struct{}{}
 }
 
-func (a *Server) StopAgent(ctx context.Context, in *idl.StopAgentRequest) (*idl.StopAgentReply, error) {
-	a.Stop()
+func (s *Server) StopAgent(ctx context.Context, in *idl.StopAgentRequest) (*idl.StopAgentReply, error) {
+	s.Stop()
 	return &idl.StopAgentReply{}, nil
 }
 
-func (a *Server) Stop() {
-	a.mu.Lock()
-	defer a.mu.Unlock()
+func (s *Server) Stop() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
-	if a.server != nil {
-		a.server.Stop()
-		<-a.stopped
+	if s.server != nil {
+		s.server.Stop()
+		<-s.stopped
 	}
 }
 
