@@ -48,7 +48,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 func BuildRootCommand() *cobra.Command {
@@ -227,7 +226,7 @@ var version = &cobra.Command{
 	Short: "Version of gpupgrade",
 	Long:  `Version of gpupgrade`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println(utils.VersionString("gpupgrade"))
+		fmt.Println(VersionString("gpupgrade"))
 	},
 }
 
