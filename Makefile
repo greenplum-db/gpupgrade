@@ -10,7 +10,7 @@ MODULE_NAME=gpupgrade
 #   YOUR_BRANCH> git tag -a TAGNAME -m "version 0.1.1: add version" GIT_HASH
 #   YOUR_BRANCH> git push origin TAGNAME
 GIT_VERSION := $(shell git describe --tags --long| perl -pe 's/(.*)-([0-9]*)-(g[0-9a-f]*)/\1+dev.\2.\3/')
-VERSION_LD_STR="-X github.com/greenplum-db/$(MODULE_NAME)/utils.UpgradeVersion=$(GIT_VERSION)"
+VERSION_LD_STR="-X github.com/greenplum-db/$(MODULE_NAME)/cli/commands.UpgradeVersion=$(GIT_VERSION)"
 
 BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 LINUX_ENV := env GOOS=linux GOARCH=amd64
