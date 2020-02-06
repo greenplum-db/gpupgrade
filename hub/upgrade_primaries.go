@@ -12,13 +12,13 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 )
 
-func (h *Server) ConvertPrimaries(checkOnly bool) error {
-	agentConns, err := h.AgentConns()
+func (s *Server) ConvertPrimaries(checkOnly bool) error {
+	agentConns, err := s.AgentConns()
 	if err != nil {
 		return errors.Wrap(err, "failed to connect to gpupgrade agent")
 	}
 
-	dataDirPair, err := h.getDataDirPairs()
+	dataDirPair, err := s.getDataDirPairs()
 	if err != nil {
 		return errors.Wrap(err, "failed to get old and new primary data directories")
 	}
@@ -32,12 +32,12 @@ func (h *Server) ConvertPrimaries(checkOnly bool) error {
 			defer wg.Done()
 
 			_, err := idl.NewAgentClient(conn.Conn).UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{
-				SourceBinDir:  h.Source.BinDir,
-				TargetBinDir:  h.Target.BinDir,
-				TargetVersion: h.Target.Version.SemVer.String(),
+				SourceBinDir:  s.Source.BinDir,
+				TargetBinDir:  s.Target.BinDir,
+				TargetVersion: s.Target.Version.SemVer.String(),
 				DataDirPairs:  dataDirPair[conn.Hostname],
 				CheckOnly:     checkOnly,
-				UseLinkMode:   h.UseLinkMode,
+				UseLinkMode:   s.UseLinkMode,
 			})
 
 			if err != nil {
@@ -56,11 +56,11 @@ func (h *Server) ConvertPrimaries(checkOnly bool) error {
 	return err
 }
 
-func (h *Server) getDataDirPairs() (map[string][]*idl.DataDirPair, error) {
+func (s *Server) getDataDirPairs() (map[string][]*idl.DataDirPair, error) {
 	dataDirPairMap := make(map[string][]*idl.DataDirPair)
 
-	sourceContents := h.Source.ContentIDs
-	targetContents := h.Target.ContentIDs
+	sourceContents := s.Source.ContentIDs
+	targetContents := s.Target.ContentIDs
 	if len(sourceContents) != len(targetContents) {
 		return nil, fmt.Errorf("old and new cluster content identifiers do not match")
 	}
@@ -72,12 +72,12 @@ func (h *Server) getDataDirPairs() (map[string][]*idl.DataDirPair, error) {
 		}
 	}
 
-	for _, contentID := range h.Source.ContentIDs {
+	for _, contentID := range s.Source.ContentIDs {
 		if contentID == -1 {
 			continue
 		}
-		sourceSeg := h.Source.Segments[contentID]
-		targetSeg := h.Target.Segments[contentID]
+		sourceSeg := s.Source.Segments[contentID]
+		targetSeg := s.Target.Segments[contentID]
 		if sourceSeg.Hostname != targetSeg.Hostname {
 			return nil, fmt.Errorf("hostnames do not match between old and new cluster with content ID %d. Found old cluster hostname: '%s', and new cluster hostname: '%s'", contentID, sourceSeg.Hostname, targetSeg.Hostname)
 		}

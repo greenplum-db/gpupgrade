@@ -20,9 +20,9 @@ import (
 // change the ports on a cluster.
 //
 // TODO: this method needs test coverage.
-func (h *Server) ReconfigurePorts(stream step.OutStreams) (err error) {
+func (s *Server) ReconfigurePorts(stream step.OutStreams) (err error) {
 	// 1). bring down the cluster
-	err = StopCluster(stream, h.Target)
+	err = StopCluster(stream, s.Target)
 	if err != nil {
 		return xerrors.Errorf("%s failed to stop cluster: %w",
 			idl.Substep_RECONFIGURE_PORTS, err)
@@ -30,7 +30,7 @@ func (h *Server) ReconfigurePorts(stream step.OutStreams) (err error) {
 
 	// 2). bring up the master(fts will not "freak out", etc)
 	script := fmt.Sprintf("source %s/../greenplum_path.sh && %s/gpstart -am -d %s",
-		h.Target.BinDir, h.Target.BinDir, h.Target.MasterDataDir())
+		s.Target.BinDir, s.Target.BinDir, s.Target.MasterDataDir())
 	cmd := exec.Command("bash", "-c", script)
 	_, err = cmd.Output()
 	if err != nil {
@@ -39,14 +39,14 @@ func (h *Server) ReconfigurePorts(stream step.OutStreams) (err error) {
 	}
 
 	// 3). rewrite gp_segment_configuration with the updated port number
-	err = updateSegmentConfiguration(h.Source, h.Target)
+	err = updateSegmentConfiguration(s.Source, s.Target)
 	if err != nil {
 		return err
 	}
 
 	// 4). bring down the master
 	script = fmt.Sprintf("source %s/../greenplum_path.sh && %s/gpstop -aim -d %s",
-		h.Target.BinDir, h.Target.BinDir, h.Target.MasterDataDir())
+		s.Target.BinDir, s.Target.BinDir, s.Target.MasterDataDir())
 	cmd = exec.Command("bash", "-c", script)
 	_, err = cmd.Output()
 	if err != nil {
@@ -59,7 +59,7 @@ func (h *Server) ReconfigurePorts(stream step.OutStreams) (err error) {
 		"sed 's/port=%d/port=%d/' %[3]s/postgresql.conf > %[3]s/postgresql.conf.updated && "+
 			"mv %[3]s/postgresql.conf %[3]s/postgresql.conf.bak && "+
 			"mv %[3]s/postgresql.conf.updated %[3]s/postgresql.conf",
-		h.Target.MasterPort(), h.Source.MasterPort(), h.Target.MasterDataDir(),
+		s.Target.MasterPort(), s.Source.MasterPort(), s.Target.MasterDataDir(),
 	)
 	gplog.Debug("executing command: %+v", script) // TODO: Move this debug log into ExecuteLocalCommand()
 	cmd = exec.Command("bash", "-c", script)
@@ -71,7 +71,7 @@ func (h *Server) ReconfigurePorts(stream step.OutStreams) (err error) {
 
 	// 6. bring up the cluster
 	script = fmt.Sprintf("source %s/../greenplum_path.sh && %s/gpstart -a -d %s",
-		h.Target.BinDir, h.Target.BinDir, h.Target.MasterDataDir())
+		s.Target.BinDir, s.Target.BinDir, s.Target.MasterDataDir())
 	cmd = exec.Command("bash", "-c", script)
 	_, err = cmd.Output()
 	if err != nil {

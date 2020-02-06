@@ -13,14 +13,14 @@ import (
 var isPostmasterRunningCmd = exec.Command
 var startStopClusterCmd = exec.Command
 
-func (h *Server) ShutdownCluster(stream step.OutStreams, isSource bool) error {
+func (s *Server) ShutdownCluster(stream step.OutStreams, isSource bool) error {
 	if isSource {
-		err := StopCluster(stream, h.Source)
+		err := StopCluster(stream, s.Source)
 		if err != nil {
 			return errors.Wrap(err, "failed to stop source cluster")
 		}
 	} else {
-		err := StopCluster(stream, h.Target)
+		err := StopCluster(stream, s.Target)
 		if err != nil {
 			return errors.Wrap(err, "failed to stop target cluster")
 		}

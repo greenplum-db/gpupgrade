@@ -22,23 +22,23 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
-func (h *Server) GenerateInitsystemConfig(ports []uint32) (int, error) {
-	sourceDBConn := db.NewDBConn("localhost", int(h.Source.MasterPort()), "template1")
-	return h.writeConf(sourceDBConn, ports)
+func (s *Server) GenerateInitsystemConfig(ports []uint32) (int, error) {
+	sourceDBConn := db.NewDBConn("localhost", int(s.Source.MasterPort()), "template1")
+	return s.writeConf(sourceDBConn, ports)
 }
 
-func (h *Server) initsystemConfPath() string {
-	return filepath.Join(h.StateDir, "gpinitsystem_config")
+func (s *Server) initsystemConfPath() string {
+	return filepath.Join(s.StateDir, "gpinitsystem_config")
 }
 
-func (h *Server) writeConf(sourceDBConn *dbconn.DBConn, ports []uint32) (int, error) {
+func (s *Server) writeConf(sourceDBConn *dbconn.DBConn, ports []uint32) (int, error) {
 	err := sourceDBConn.Connect(1)
 	if err != nil {
 		return 0, errors.Wrap(err, "could not connect to database")
 	}
 	defer sourceDBConn.Close()
 
-	gpinitsystemConfig, err := CreateInitialInitsystemConfig(h.Source.MasterDataDir())
+	gpinitsystemConfig, err := CreateInitialInitsystemConfig(s.Source.MasterDataDir())
 	if err != nil {
 		return 0, err
 	}
@@ -48,16 +48,16 @@ func (h *Server) writeConf(sourceDBConn *dbconn.DBConn, ports []uint32) (int, er
 		return 0, err
 	}
 
-	gpinitsystemConfig, masterPort, err := WriteSegmentArray(gpinitsystemConfig, h.Source, ports)
+	gpinitsystemConfig, masterPort, err := WriteSegmentArray(gpinitsystemConfig, s.Source, ports)
 	if err != nil {
 		return 0, xerrors.Errorf("generating segment array: %w", err)
 	}
 
-	return masterPort, WriteInitsystemFile(gpinitsystemConfig, h.initsystemConfPath())
+	return masterPort, WriteInitsystemFile(gpinitsystemConfig, s.initsystemConfPath())
 }
 
-func (h *Server) CreateTargetCluster(stream step.OutStreams, masterPort int) error {
-	err := h.InitTargetCluster(stream)
+func (s *Server) CreateTargetCluster(stream step.OutStreams, masterPort int) error {
+	err := s.InitTargetCluster(stream)
 	if err != nil {
 		return err
 	}
@@ -65,30 +65,30 @@ func (h *Server) CreateTargetCluster(stream step.OutStreams, masterPort int) err
 	conn := db.NewDBConn("localhost", masterPort, "template1")
 	defer conn.Close()
 
-	h.Target, err = utils.ClusterFromDB(conn, h.Target.BinDir)
+	s.Target, err = utils.ClusterFromDB(conn, s.Target.BinDir)
 	if err != nil {
 		return errors.Wrap(err, "could not retrieve target configuration")
 	}
 
-	if err := h.SaveConfig(); err != nil {
+	if err := s.SaveConfig(); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (h *Server) InitTargetCluster(stream step.OutStreams) error {
-	agentConns, err := h.AgentConns()
+func (s *Server) InitTargetCluster(stream step.OutStreams) error {
+	agentConns, err := s.AgentConns()
 	if err != nil {
 		return errors.Wrap(err, "Could not get/create agents")
 	}
 
-	err = CreateAllDataDirectories(agentConns, h.Source)
+	err = CreateAllDataDirectories(agentConns, s.Source)
 	if err != nil {
 		return err
 	}
 
-	return RunInitsystemForTargetCluster(stream, h.Target, h.initsystemConfPath())
+	return RunInitsystemForTargetCluster(stream, s.Target, s.initsystemConfPath())
 }
 
 func GetCheckpointSegmentsAndEncoding(gpinitsystemConfig []string, dbConnector *dbconn.DBConn) ([]string, error) {

@@ -10,14 +10,14 @@ import (
 	"github.com/greenplum-db/gpupgrade/step"
 )
 
-func (h *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_ExecuteServer) (err error) {
-	s, err := BeginStep(h.StateDir, "execute", stream)
+func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_ExecuteServer) (err error) {
+	st, err := BeginStep(s.StateDir, "execute", stream)
 	if err != nil {
 		return err
 	}
 
 	defer func() {
-		if ferr := s.Finish(); ferr != nil {
+		if ferr := st.Finish(); ferr != nil {
 			err = multierror.Append(err, ferr).ErrorOrNil()
 		}
 
@@ -26,24 +26,24 @@ func (h *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 		}
 	}()
 
-	s.Run(idl.Substep_SHUTDOWN_SOURCE_CLUSTER, func(stream step.OutStreams) error {
-		return StopCluster(stream, h.Source)
+	st.Run(idl.Substep_SHUTDOWN_SOURCE_CLUSTER, func(stream step.OutStreams) error {
+		return StopCluster(stream, s.Source)
 	})
 
-	s.Run(idl.Substep_UPGRADE_MASTER, func(streams step.OutStreams) error {
-		stateDir := h.StateDir
-		return UpgradeMaster(h.Source, h.Target, stateDir, streams, false, h.UseLinkMode)
+	st.Run(idl.Substep_UPGRADE_MASTER, func(streams step.OutStreams) error {
+		stateDir := s.StateDir
+		return UpgradeMaster(s.Source, s.Target, stateDir, streams, false, s.UseLinkMode)
 	})
 
-	s.Run(idl.Substep_COPY_MASTER, h.CopyMasterDataDir)
+	st.Run(idl.Substep_COPY_MASTER, s.CopyMasterDataDir)
 
-	s.Run(idl.Substep_UPGRADE_PRIMARIES, func(_ step.OutStreams) error {
-		return h.ConvertPrimaries(false)
+	st.Run(idl.Substep_UPGRADE_PRIMARIES, func(_ step.OutStreams) error {
+		return s.ConvertPrimaries(false)
 	})
 
-	s.Run(idl.Substep_START_TARGET_CLUSTER, func(streams step.OutStreams) error {
-		return StartCluster(streams, h.Target)
+	st.Run(idl.Substep_START_TARGET_CLUSTER, func(streams step.OutStreams) error {
+		return StartCluster(streams, s.Target)
 	})
 
-	return s.Err()
+	return st.Err()
 }

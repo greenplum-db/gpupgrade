@@ -15,14 +15,14 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 )
 
-func (h *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeServer) (err error) {
-	s, err := BeginStep(h.StateDir, "finalize", stream)
+func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeServer) (err error) {
+	st, err := BeginStep(s.StateDir, "finalize", stream)
 	if err != nil {
 		return err
 	}
 
 	defer func() {
-		if ferr := s.Finish(); ferr != nil {
+		if ferr := st.Finish(); ferr != nil {
 			err = multierror.Append(err, ferr).ErrorOrNil()
 		}
 
@@ -31,11 +31,11 @@ func (h *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 		}
 	}()
 
-	s.Run(idl.Substep_RECONFIGURE_PORTS, func(stream step.OutStreams) error {
-		return h.ReconfigurePorts(stream)
+	st.Run(idl.Substep_RECONFIGURE_PORTS, func(stream step.OutStreams) error {
+		return s.ReconfigurePorts(stream)
 	})
 
-	return s.Err()
+	return st.Err()
 }
 
 // ClonePortsFromCluster will modify the gp_segment_configuration of the passed

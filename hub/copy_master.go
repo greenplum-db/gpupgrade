@@ -18,14 +18,14 @@ import (
 	"golang.org/x/net/context"
 )
 
-func (h *Server) CopyMasterDataDir(_ step.OutStreams) error {
+func (s *Server) CopyMasterDataDir(_ step.OutStreams) error {
 	var err error
 	rsyncFlags := "-rzpogt"
 
 	// Make sure sourceDir ends with a trailing slash so that rsync will
 	// transfer the directory contents and not the directory itself.
-	sourceDir := filepath.Clean(h.Target.MasterDataDir()) + string(filepath.Separator)
-	commandMap := make(map[int][]string, len(h.Target.ContentIDs)-1)
+	sourceDir := filepath.Clean(s.Target.MasterDataDir()) + string(filepath.Separator)
+	commandMap := make(map[int][]string, len(s.Target.ContentIDs)-1)
 
 	destinationDirName := "/tmp/masterDirCopy"
 
@@ -36,19 +36,19 @@ func (h *Server) CopyMasterDataDir(_ step.OutStreams) error {
 	 * If there are primaries on the same host, the hostname will be
 	 * added for the corresponding primaries.
 	 */
-	for _, content := range contentsByHost(h.Target, false) {
-		destinationDirectory := fmt.Sprintf("%s:%s", h.Target.GetHostForContent(content), destinationDirName)
+	for _, content := range contentsByHost(s.Target, false) {
+		destinationDirectory := fmt.Sprintf("%s:%s", s.Target.GetHostForContent(content), destinationDirName)
 		commandMap[content] = []string{"rsync", rsyncFlags, sourceDir, destinationDirectory}
 	}
 
-	remoteOutput := h.Source.ExecuteClusterCommand(cluster.ON_HOSTS, commandMap)
+	remoteOutput := s.Source.ExecuteClusterCommand(cluster.ON_HOSTS, commandMap)
 	for segmentID, segmentErr := range remoteOutput.Errors {
 		if segmentErr != nil { // TODO: Refactor remoteOutput to return maps with keys and valid values, and not values that can be nil. If there is no value, then do not have a key.
 			return multierror.Append(err, errors.Wrapf(segmentErr, "failed to copy master data directory to segment %d", segmentID))
 		}
 	}
 
-	copyErr := CopyMaster(h.agentConns, h.Target, destinationDirName)
+	copyErr := CopyMaster(s.agentConns, s.Target, destinationDirName)
 	if copyErr != nil {
 		return multierror.Append(err, copyErr)
 	}

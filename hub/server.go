@@ -80,12 +80,12 @@ func New(conf *Config, grpcDialer Dialer, stateDir string) *Server {
 
 // MakeDaemon tells the Server to disconnect its stdout/stderr streams after
 // successfully starting up.
-func (h *Server) MakeDaemon() {
-	h.daemon = true
+func (s *Server) MakeDaemon() {
+	s.daemon = true
 }
 
-func (h *Server) Start() error {
-	lis, err := net.Listen("tcp", ":"+strconv.Itoa(h.Port))
+func (s *Server) Start() error {
+	lis, err := net.Listen("tcp", ":"+strconv.Itoa(s.Port))
 	if err != nil {
 		return errors.Wrap(err, "failed to listen")
 	}
@@ -98,21 +98,21 @@ func (h *Server) Start() error {
 	}
 	server := grpc.NewServer(grpc.UnaryInterceptor(interceptor))
 
-	h.mu.Lock()
-	if h.stopped == nil {
+	s.mu.Lock()
+	if s.stopped == nil {
 		// Stop() has already been called; return without serving.
-		h.mu.Unlock()
+		s.mu.Unlock()
 		return ErrHubStopped
 	}
-	h.server = server
-	h.lis = lis
-	h.mu.Unlock()
+	s.server = server
+	s.lis = lis
+	s.mu.Unlock()
 
-	idl.RegisterCliToHubServer(server, h)
+	idl.RegisterCliToHubServer(server, s)
 	reflection.Register(server)
 
-	if h.daemon {
-		fmt.Printf("Hub started on port %d (pid %d)\n", h.Port, os.Getpid())
+	if s.daemon {
+		fmt.Printf("Hub started on port %d (pid %d)\n", s.Port, os.Getpid())
 		daemon.Daemonize()
 	}
 
@@ -122,35 +122,35 @@ func (h *Server) Start() error {
 	}
 
 	// inform Stop() that is it is OK to stop now
-	h.stopped <- struct{}{}
+	s.stopped <- struct{}{}
 
 	return err
 }
 
-func (h *Server) StopServices(ctx context.Context, in *idl.StopServicesRequest) (*idl.StopServicesReply, error) {
-	err := h.StopAgents()
+func (s *Server) StopServices(ctx context.Context, in *idl.StopServicesRequest) (*idl.StopServicesReply, error) {
+	err := s.StopAgents()
 	if err != nil {
 		gplog.Debug("failed to stop agents: %#v", err)
 	}
 
-	h.Stop(false)
+	s.Stop(false)
 	return &idl.StopServicesReply{}, nil
 }
 
 // TODO: add unit tests for this; this is currently tricky due to h.AgentConns()
 //    mutating global state
-func (h *Server) StopAgents() error {
-	// FIXME: h.AgentConns() fails fast if a single agent isn't available
+func (s *Server) StopAgents() error {
+	// FIXME: s.AgentConns() fails fast if a single agent isn't available
 	//    we need to connect to all available agents so we can stop just those
-	_, err := h.AgentConns()
+	_, err := s.AgentConns()
 	if err != nil {
 		return err
 	}
 
 	var wg sync.WaitGroup
-	errs := make(chan error, len(h.agentConns))
+	errs := make(chan error, len(s.agentConns))
 
-	for _, conn := range h.agentConns {
+	for _, conn := range s.agentConns {
 		wg.Add(1)
 
 		go func() {
@@ -182,27 +182,27 @@ func (h *Server) StopAgents() error {
 	return multiErr.ErrorOrNil()
 }
 
-func (h *Server) Stop(closeAgentConns bool) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
+func (s *Server) Stop(closeAgentConns bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	// StopServices calls Stop(false) because it has already closed the agentConns
 	if closeAgentConns {
-		h.closeAgentConns()
+		s.closeAgentConns()
 	}
 
-	if h.server != nil {
-		h.server.Stop()
-		<-h.stopped // block until it is OK to stop
+	if s.server != nil {
+		s.server.Stop()
+		<-s.stopped // block until it is OK to stop
 	}
 
 	// Mark this server stopped so that a concurrent Start() doesn't try to
 	// start things up again.
-	h.stopped = nil
+	s.stopped = nil
 }
 
-func (h *Server) RestartAgents(ctx context.Context, in *idl.RestartAgentsRequest) (*idl.RestartAgentsReply, error) {
-	restartedHosts, err := RestartAgents(ctx, nil, h.Source.GetHostnames(), h.AgentPort, h.StateDir)
+func (s *Server) RestartAgents(ctx context.Context, in *idl.RestartAgentsRequest) (*idl.RestartAgentsReply, error) {
+	restartedHosts, err := RestartAgents(ctx, nil, s.Source.GetHostnames(), s.AgentPort, s.StateDir)
 	return &idl.RestartAgentsReply{AgentHosts: restartedHosts}, err
 }
 
@@ -279,30 +279,30 @@ func RestartAgents(ctx context.Context,
 	return hosts, multiErr.ErrorOrNil()
 }
 
-func (h *Server) AgentConns() ([]*Connection, error) {
+func (s *Server) AgentConns() ([]*Connection, error) {
 	// Lock the mutex to protect against races with Server.Stop().
 	// XXX This is a *ridiculously* broad lock. Have fun waiting for the dial
 	// timeout when calling Stop() and AgentConns() at the same time, for
 	// instance. We should not lock around a network operation, but it seems
 	// like the AgentConns concept is not long for this world anyway.
-	h.mu.Lock()
-	defer h.mu.Unlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
-	if h.agentConns != nil {
-		err := EnsureConnsAreReady(h.agentConns)
+	if s.agentConns != nil {
+		err := EnsureConnsAreReady(s.agentConns)
 		if err != nil {
 			gplog.Error("ensureConnsAreReady failed: %s", err)
 			return nil, err
 		}
 
-		return h.agentConns, nil
+		return s.agentConns, nil
 	}
 
-	hostnames := h.Source.PrimaryHostnames()
+	hostnames := s.Source.PrimaryHostnames()
 	for _, host := range hostnames {
 		ctx, cancelFunc := context.WithTimeout(context.Background(), DialTimeout)
-		conn, err := h.grpcDialer(ctx,
-			host+":"+strconv.Itoa(h.AgentPort),
+		conn, err := s.grpcDialer(ctx,
+			host+":"+strconv.Itoa(s.AgentPort),
 			grpc.WithInsecure(), grpc.WithBlock())
 		if err != nil {
 			err = errors.Errorf("grpcDialer failed: %s", err.Error())
@@ -310,7 +310,7 @@ func (h *Server) AgentConns() ([]*Connection, error) {
 			cancelFunc()
 			return nil, err
 		}
-		h.agentConns = append(h.agentConns, &Connection{
+		s.agentConns = append(s.agentConns, &Connection{
 			Conn:          conn,
 			AgentClient:   idl.NewAgentClient(conn),
 			Hostname:      host,
@@ -318,7 +318,7 @@ func (h *Server) AgentConns() ([]*Connection, error) {
 		})
 	}
 
-	return h.agentConns, nil
+	return s.agentConns, nil
 }
 
 func EnsureConnsAreReady(agentConns []*Connection) error {
@@ -340,8 +340,8 @@ func EnsureConnsAreReady(agentConns []*Connection) error {
 // TODO: this function assumes that all h.agentConns are _not_ in a terminal
 //   state(e.g. already closed).  If so, conn.Conn.WaitForStateChange() can block
 //   indefinitely.
-func (h *Server) closeAgentConns() {
-	for _, conn := range h.agentConns {
+func (s *Server) closeAgentConns() {
+	for _, conn := range s.agentConns {
 		defer conn.CancelContext()
 		currState := conn.Conn.GetState()
 		err := conn.Conn.Close()
@@ -376,13 +376,13 @@ func (c *Config) Save(w io.Writer) error {
 }
 
 // SaveConfig persists the hub's configuration to disk.
-func (h *Server) SaveConfig() (err error) {
+func (s *Server) SaveConfig() (err error) {
 	// TODO: Switch to an atomic implementation like renameio. Consider what
 	// happens if Config.Save() panics: we'll have truncated the file
 	// on disk and the hub will be unable to recover. For now, since we normally
 	// only save the configuration during initialize and any configuration
 	// errors could be fixed by reinitializing, the risk seems small.
-	file, err := utils.System.Create(filepath.Join(h.StateDir, ConfigFileName))
+	file, err := utils.System.Create(filepath.Join(s.StateDir, ConfigFileName))
 	if err != nil {
 		return err
 	}
@@ -393,7 +393,7 @@ func (h *Server) SaveConfig() (err error) {
 		}
 	}()
 
-	err = h.Config.Save(file)
+	err = s.Config.Save(file)
 	if err != nil {
 		return xerrors.Errorf("saving hub configuration: %w", err)
 	}

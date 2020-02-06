@@ -8,7 +8,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/step"
 )
 
-func (h *Server) CheckUpgrade(stream step.OutStreams) error {
+func (s *Server) CheckUpgrade(stream step.OutStreams) error {
 	var wg sync.WaitGroup
 	checkErrs := make(chan error, 2)
 
@@ -16,8 +16,8 @@ func (h *Server) CheckUpgrade(stream step.OutStreams) error {
 	go func() {
 		defer wg.Done()
 
-		stateDir := h.StateDir
-		err := UpgradeMaster(h.Source, h.Target, stateDir, stream, true, false)
+		stateDir := s.StateDir
+		err := UpgradeMaster(s.Source, s.Target, stateDir, stream, true, false)
 		if err != nil {
 			checkErrs <- err
 		}
@@ -27,7 +27,7 @@ func (h *Server) CheckUpgrade(stream step.OutStreams) error {
 	go func() {
 		defer wg.Done()
 
-		err := h.ConvertPrimaries(true)
+		err := s.ConvertPrimaries(true)
 		if err != nil {
 			checkErrs <- err
 		}

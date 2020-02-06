@@ -13,15 +13,15 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/disk"
 )
 
-func (h *Server) CheckDiskSpace(ctx context.Context, in *idl.CheckDiskSpaceRequest) (*idl.CheckDiskSpaceReply, error) {
+func (s *Server) CheckDiskSpace(ctx context.Context, in *idl.CheckDiskSpaceRequest) (*idl.CheckDiskSpaceReply, error) {
 	reply := new(idl.CheckDiskSpaceReply)
 
-	agents, err := h.AgentConns()
+	agents, err := s.AgentConns()
 	if err != nil {
 		return reply, err
 	}
 
-	reply.Failed, err = checkDiskSpace(ctx, h.Source, agents, disk.Local, in)
+	reply.Failed, err = checkDiskSpace(ctx, s.Source, agents, disk.Local, in)
 	return reply, err
 }
 

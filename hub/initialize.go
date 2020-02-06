@@ -17,14 +17,14 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
-func (h *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_InitializeServer) (err error) {
-	s, err := BeginStep(h.StateDir, "initialize", stream)
+func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_InitializeServer) (err error) {
+	st, err := BeginStep(s.StateDir, "initialize", stream)
 	if err != nil {
 		return err
 	}
 
 	defer func() {
-		if ferr := s.Finish(); ferr != nil {
+		if ferr := st.Finish(); ferr != nil {
 			err = multierror.Append(err, ferr).ErrorOrNil()
 		}
 
@@ -33,26 +33,26 @@ func (h *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initi
 		}
 	}()
 
-	s.Run(idl.Substep_CONFIG, func(stream step.OutStreams) error {
-		return h.fillClusterConfigsSubStep(stream, in)
+	st.Run(idl.Substep_CONFIG, func(stream step.OutStreams) error {
+		return s.fillClusterConfigsSubStep(stream, in)
 	})
 
-	s.Run(idl.Substep_START_AGENTS, func(_ step.OutStreams) error {
-		_, err := RestartAgents(context.Background(), nil, h.Source.GetHostnames(), h.AgentPort, h.StateDir)
+	st.Run(idl.Substep_START_AGENTS, func(_ step.OutStreams) error {
+		_, err := RestartAgents(context.Background(), nil, s.Source.GetHostnames(), s.AgentPort, s.StateDir)
 		return err
 	})
 
-	return s.Err()
+	return st.Err()
 }
 
-func (h *Server) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest, stream idl.CliToHub_InitializeCreateClusterServer) (err error) {
-	s, err := BeginStep(h.StateDir, "initialize", stream)
+func (s *Server) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest, stream idl.CliToHub_InitializeCreateClusterServer) (err error) {
+	st, err := BeginStep(s.StateDir, "initialize", stream)
 	if err != nil {
 		return err
 	}
 
 	defer func() {
-		if ferr := s.Finish(); ferr != nil {
+		if ferr := st.Finish(); ferr != nil {
 			err = multierror.Append(err, ferr).ErrorOrNil()
 		}
 
@@ -61,9 +61,9 @@ func (h *Server) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest,
 		}
 	}()
 
-	s.Run(idl.Substep_CREATE_TARGET_CONFIG, func(_ step.OutStreams) error {
+	st.Run(idl.Substep_CREATE_TARGET_CONFIG, func(_ step.OutStreams) error {
 		var err error
-		targetMasterPort, err := h.GenerateInitsystemConfig(in.Ports)
+		targetMasterPort, err := s.GenerateInitsystemConfig(in.Ports)
 		if err != nil {
 			return err
 		}
@@ -72,50 +72,50 @@ func (h *Server) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest,
 		// once the target master port is decided, it's persisted in hub configuration
 		// to allow further steps to use it in case they are being re-run after a failed
 		// attempt.
-		h.Config.TargetMasterPort = targetMasterPort
-		if err := h.SaveConfig(); err != nil {
+		s.Config.TargetMasterPort = targetMasterPort
+		if err := s.SaveConfig(); err != nil {
 			return err
 		}
 
 		return err
 	})
 
-	s.Run(idl.Substep_INIT_TARGET_CLUSTER, func(stream step.OutStreams) error {
-		return h.CreateTargetCluster(stream, h.Config.TargetMasterPort)
+	st.Run(idl.Substep_INIT_TARGET_CLUSTER, func(stream step.OutStreams) error {
+		return s.CreateTargetCluster(stream, s.Config.TargetMasterPort)
 	})
 
-	s.Run(idl.Substep_SHUTDOWN_TARGET_CLUSTER, func(stream step.OutStreams) error {
-		return h.ShutdownCluster(stream, false)
+	st.Run(idl.Substep_SHUTDOWN_TARGET_CLUSTER, func(stream step.OutStreams) error {
+		return s.ShutdownCluster(stream, false)
 	})
 
-	s.Run(idl.Substep_BACKUP_TARGET_MASTER, func(stream step.OutStreams) error {
-		sourceDir := h.Target.MasterDataDir()
-		targetDir := filepath.Join(h.StateDir, masterBackup)
+	st.Run(idl.Substep_BACKUP_TARGET_MASTER, func(stream step.OutStreams) error {
+		sourceDir := s.Target.MasterDataDir()
+		targetDir := filepath.Join(s.StateDir, masterBackup)
 		return RsyncMasterDataDir(stream, sourceDir, targetDir)
 	})
 
-	s.AlwaysRun(idl.Substep_CHECK_UPGRADE, func(stream step.OutStreams) error {
-		return h.CheckUpgrade(stream)
+	st.AlwaysRun(idl.Substep_CHECK_UPGRADE, func(stream step.OutStreams) error {
+		return s.CheckUpgrade(stream)
 	})
 
-	return s.Err()
+	return st.Err()
 }
 
 // create old/new clusters, write to disk and re-read from disk to make sure it is "durable"
-func (h *Server) fillClusterConfigsSubStep(_ step.OutStreams, request *idl.InitializeRequest) error {
+func (s *Server) fillClusterConfigsSubStep(_ step.OutStreams, request *idl.InitializeRequest) error {
 	conn := db.NewDBConn("localhost", int(request.SourcePort), "template1")
 	defer conn.Close()
 
 	var err error
-	h.Source, err = utils.ClusterFromDB(conn, request.SourceBinDir)
+	s.Source, err = utils.ClusterFromDB(conn, request.SourceBinDir)
 	if err != nil {
 		return errors.Wrap(err, "could not retrieve source configuration")
 	}
 
-	h.Target = &utils.Cluster{Cluster: new(cluster.Cluster), BinDir: request.TargetBinDir}
-	h.UseLinkMode = request.UseLinkMode
+	s.Target = &utils.Cluster{Cluster: new(cluster.Cluster), BinDir: request.TargetBinDir}
+	s.UseLinkMode = request.UseLinkMode
 
-	if err := h.SaveConfig(); err != nil {
+	if err := s.SaveConfig(); err != nil {
 		return err
 	}
 

@@ -12,17 +12,17 @@ import (
 
 const ConfigFileName = "config.json"
 
-func (h *Server) SetConfig(ctx context.Context, in *idl.SetConfigRequest) (*idl.SetConfigReply, error) {
+func (s *Server) SetConfig(ctx context.Context, in *idl.SetConfigRequest) (*idl.SetConfigReply, error) {
 	switch in.Name {
 	case "old-bindir":
-		h.Source.BinDir = in.Value
+		s.Source.BinDir = in.Value
 	case "new-bindir":
-		h.Target.BinDir = in.Value
+		s.Target.BinDir = in.Value
 	default:
 		return nil, status.Errorf(codes.NotFound, "%s is not a valid configuration key", in.Name)
 	}
 
-	if err := h.SaveConfig(); err != nil {
+	if err := s.SaveConfig(); err != nil {
 		return &idl.SetConfigReply{}, err
 	}
 
@@ -30,16 +30,16 @@ func (h *Server) SetConfig(ctx context.Context, in *idl.SetConfigRequest) (*idl.
 	return &idl.SetConfigReply{}, nil
 }
 
-func (h *Server) GetConfig(ctx context.Context, in *idl.GetConfigRequest) (*idl.GetConfigReply, error) {
+func (s *Server) GetConfig(ctx context.Context, in *idl.GetConfigRequest) (*idl.GetConfigReply, error) {
 	resp := &idl.GetConfigReply{}
 
 	switch in.Name {
 	case "old-bindir":
-		resp.Value = h.Source.BinDir
+		resp.Value = s.Source.BinDir
 	case "new-bindir":
-		resp.Value = h.Target.BinDir
+		resp.Value = s.Target.BinDir
 	case "new-datadir":
-		resp.Value = h.Target.MasterDataDir()
+		resp.Value = s.Target.MasterDataDir()
 	default:
 		return nil, status.Errorf(codes.NotFound, "%s is not a valid configuration key", in.Name)
 	}
