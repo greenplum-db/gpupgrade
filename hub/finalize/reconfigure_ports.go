@@ -1,9 +1,11 @@
-package hub
+package finalize
 
 import (
 	"database/sql"
 	"fmt"
 	"os/exec"
+
+	"github.com/greenplum-db/gpupgrade/hub/cluster"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 
@@ -20,9 +22,9 @@ import (
 // change the ports on a cluster.
 //
 // TODO: this method needs test coverage.
-func (s *Server) ReconfigurePorts(stream step.OutStreams) (err error) {
+func ReconfigurePorts(stream step.OutStreams, source *utils.Cluster, target *utils.Cluster) (err error) {
 	// 1). bring down the cluster
-	err = StopCluster(stream, s.Target)
+	err = cluster.StopCluster(stream, target)
 	if err != nil {
 		return xerrors.Errorf("%s failed to stop cluster: %w",
 			idl.Substep_RECONFIGURE_PORTS, err)
@@ -30,7 +32,7 @@ func (s *Server) ReconfigurePorts(stream step.OutStreams) (err error) {
 
 	// 2). bring up the master(fts will not "freak out", etc)
 	script := fmt.Sprintf("source %s/../greenplum_path.sh && %s/gpstart -am -d %s",
-		s.Target.BinDir, s.Target.BinDir, s.Target.MasterDataDir())
+		target.BinDir, target.BinDir, target.MasterDataDir())
 	cmd := exec.Command("bash", "-c", script)
 	_, err = cmd.Output()
 	if err != nil {
@@ -39,14 +41,14 @@ func (s *Server) ReconfigurePorts(stream step.OutStreams) (err error) {
 	}
 
 	// 3). rewrite gp_segment_configuration with the updated port number
-	err = updateSegmentConfiguration(s.Source, s.Target)
+	err = updateSegmentConfiguration(source, target)
 	if err != nil {
 		return err
 	}
 
 	// 4). bring down the master
 	script = fmt.Sprintf("source %s/../greenplum_path.sh && %s/gpstop -aim -d %s",
-		s.Target.BinDir, s.Target.BinDir, s.Target.MasterDataDir())
+		target.BinDir, target.BinDir, target.MasterDataDir())
 	cmd = exec.Command("bash", "-c", script)
 	_, err = cmd.Output()
 	if err != nil {
@@ -59,7 +61,7 @@ func (s *Server) ReconfigurePorts(stream step.OutStreams) (err error) {
 		"sed 's/port=%d/port=%d/' %[3]s/postgresql.conf > %[3]s/postgresql.conf.updated && "+
 			"mv %[3]s/postgresql.conf %[3]s/postgresql.conf.bak && "+
 			"mv %[3]s/postgresql.conf.updated %[3]s/postgresql.conf",
-		s.Target.MasterPort(), s.Source.MasterPort(), s.Target.MasterDataDir(),
+		target.MasterPort(), source.MasterPort(), target.MasterDataDir(),
 	)
 	gplog.Debug("executing command: %+v", script) // TODO: Move this debug log into ExecuteLocalCommand()
 	cmd = exec.Command("bash", "-c", script)
@@ -71,7 +73,7 @@ func (s *Server) ReconfigurePorts(stream step.OutStreams) (err error) {
 
 	// 6. bring up the cluster
 	script = fmt.Sprintf("source %s/../greenplum_path.sh && %s/gpstart -a -d %s",
-		s.Target.BinDir, s.Target.BinDir, s.Target.MasterDataDir())
+		target.BinDir, target.BinDir, target.MasterDataDir())
 	cmd = exec.Command("bash", "-c", script)
 	_, err = cmd.Output()
 	if err != nil {
@@ -96,7 +98,7 @@ func updateSegmentConfiguration(source, target *utils.Cluster) error {
 		return xerrors.Errorf("%s failed to open connection to utility master: %w",
 			idl.Substep_RECONFIGURE_PORTS, err)
 	}
-	err = ClonePortsFromCluster(targetDB, source.Cluster)
+	err = cluster.ClonePortsFromCluster(targetDB, source.Cluster)
 	if err != nil {
 		return xerrors.Errorf("%s failed to clone ports: %w",
 			idl.Substep_RECONFIGURE_PORTS, err)

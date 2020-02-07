@@ -42,6 +42,20 @@ func (_ devNull) Stderr() io.Writer {
 	return ioutil.Discard
 }
 
+// failingStreams is an implementation of OutStreams for which every call to a
+// stream's Write() method will fail with the given error.
+type failingStreams struct {
+	err error
+}
+
+func (f failingStreams) Stdout() io.Writer {
+	return &failingWriter{f.err}
+}
+
+func (f failingStreams) Stderr() io.Writer {
+	return &failingWriter{f.err}
+}
+
 // failingWriter is an io.Writer for which all calls to Write() return an error.
 type failingWriter struct {
 	err error

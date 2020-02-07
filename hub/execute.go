@@ -3,6 +3,10 @@ package hub
 import (
 	"fmt"
 
+	"github.com/greenplum-db/gpupgrade/hub/cluster"
+
+	"github.com/greenplum-db/gpupgrade/hub/steps"
+
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/hashicorp/go-multierror"
 
@@ -11,7 +15,7 @@ import (
 )
 
 func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_ExecuteServer) (err error) {
-	st, err := BeginStep(s.StateDir, "execute", stream)
+	st, err := steps.BeginStep(s.StateDir, "execute", stream)
 	if err != nil {
 		return err
 	}
@@ -27,7 +31,7 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 	}()
 
 	st.Run(idl.Substep_SHUTDOWN_SOURCE_CLUSTER, func(stream step.OutStreams) error {
-		return StopCluster(stream, s.Source)
+		return cluster.StopCluster(stream, s.Source)
 	})
 
 	st.Run(idl.Substep_UPGRADE_MASTER, func(streams step.OutStreams) error {
@@ -42,7 +46,7 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 	})
 
 	st.Run(idl.Substep_START_TARGET_CLUSTER, func(streams step.OutStreams) error {
-		return StartCluster(streams, s.Target)
+		return cluster.StartCluster(streams, s.Target)
 	})
 
 	return st.Err()

@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/greenplum-db/gpupgrade/hub/steps"
+
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/hashicorp/go-multierror"
@@ -18,7 +20,7 @@ import (
 )
 
 func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_InitializeServer) (err error) {
-	st, err := BeginStep(s.StateDir, "initialize", stream)
+	st, err := steps.BeginStep(s.StateDir, "initialize", stream)
 	if err != nil {
 		return err
 	}
@@ -46,7 +48,7 @@ func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initi
 }
 
 func (s *Server) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest, stream idl.CliToHub_InitializeCreateClusterServer) (err error) {
-	st, err := BeginStep(s.StateDir, "initialize", stream)
+	st, err := steps.BeginStep(s.StateDir, "initialize", stream)
 	if err != nil {
 		return err
 	}

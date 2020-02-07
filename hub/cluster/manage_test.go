@@ -1,6 +1,8 @@
-package hub
+package cluster
 
 import (
+	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"testing"
@@ -20,6 +22,18 @@ func IsPostmasterRunningCmd() {}
 func IsPostmasterRunningCmd_Errors() {
 	os.Stderr.WriteString("exit status 2")
 	os.Exit(2)
+}
+
+var DevNull = devNull{}
+
+type devNull struct{}
+
+func (_ devNull) Stdout() io.Writer {
+	return ioutil.Discard
+}
+
+func (_ devNull) Stderr() io.Writer {
+	return ioutil.Discard
 }
 
 func init() {
@@ -113,4 +127,8 @@ func TestStartOrStopCluster(t *testing.T) {
 		err := StartCluster(DevNull, source)
 		g.Expect(err).ToNot(HaveOccurred())
 	})
+}
+
+func TestMain(m *testing.M) {
+	os.Exit(exectest.Run(m))
 }

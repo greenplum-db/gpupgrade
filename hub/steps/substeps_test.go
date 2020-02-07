@@ -1,9 +1,10 @@
-package hub
+package steps
 
 import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -122,6 +123,29 @@ func TestMultiplexedStream(t *testing.T) {
 			t.Errorf("Stderr().Write() returned %#v, want %#v", err, expected)
 		}
 	})
+}
+
+// failingStreams is an implementation of OutStreams for which every call to a
+// stream's Write() method will fail with the given error.
+type failingStreams struct {
+	err error
+}
+
+func (f failingStreams) Stdout() io.Writer {
+	return &failingWriter{f.err}
+}
+
+func (f failingStreams) Stderr() io.Writer {
+	return &failingWriter{f.err}
+}
+
+// failingWriter is an io.Writer for which all calls to Write() return an error.
+type failingWriter struct {
+	err error
+}
+
+func (f *failingWriter) Write(_ []byte) (int, error) {
+	return 0, f.err
 }
 
 func TestStatusFile(t *testing.T) {
