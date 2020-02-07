@@ -1,11 +1,11 @@
-package finalize_test
+package finalizestep_test
 
 import (
 	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/greenplum-db/gpupgrade/hub/finalize"
+	"github.com/greenplum-db/gpupgrade/hub/finalizestep"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
@@ -73,7 +73,7 @@ func TestClonePortsFromCluster(t *testing.T) {
 
 		mock.ExpectCommit()
 
-		err = finalize.ClonePortsFromCluster(db, src)
+		err = finalizestep.ClonePortsFromCluster(db, src)
 		if err != nil {
 			t.Fatalf("returned error %#v", err)
 		}
@@ -208,7 +208,7 @@ func TestClonePortsFromCluster(t *testing.T) {
 				WillReturnRows(contents)
 			mock.ExpectRollback()
 		},
-		expect(finalize.ErrContentMismatch),
+		expect(finalizestep.ErrContentMismatch),
 	}, {
 		"when there are content ids in the cluster missing from the database",
 		func(mock sqlmock.Sqlmock) {
@@ -223,7 +223,7 @@ func TestClonePortsFromCluster(t *testing.T) {
 				WillReturnRows(contents)
 			mock.ExpectRollback()
 		},
-		expect(finalize.ErrContentMismatch),
+		expect(finalizestep.ErrContentMismatch),
 	}, {
 		"if UPDATE updates multiple rows",
 		func(mock sqlmock.Sqlmock) {
@@ -261,7 +261,7 @@ func TestClonePortsFromCluster(t *testing.T) {
 			// prepare() sets up any mock expectations.
 			c.prepare(mock)
 
-			err = finalize.ClonePortsFromCluster(db, src)
+			err = finalizestep.ClonePortsFromCluster(db, src)
 
 			// Make sure the error is the one we expect.
 			c.verify(t, err)

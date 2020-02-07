@@ -1,4 +1,4 @@
-package finalize
+package finalizestep
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
-func Finalize(stream idl.CliToHub_FinalizeServer, stateDir string, source *utils.Cluster, target *utils.Cluster) error {
+func Run(stream idl.CliToHub_FinalizeServer, stateDir string, source *utils.Cluster, target *utils.Cluster) error {
 	s, err := steps.BeginStep(stateDir, "finalize", stream)
 	if err != nil {
 		return err

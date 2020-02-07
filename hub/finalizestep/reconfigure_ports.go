@@ -1,4 +1,4 @@
-package finalize
+package finalizestep
 
 import (
 	"database/sql"
