@@ -1,9 +1,8 @@
-package hub_test
+package agent_test
 
 import (
 	"log"
 	"net"
-	"os"
 	"os/exec"
 	"strings"
 	"testing"
@@ -15,26 +14,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 
-	"github.com/greenplum-db/gpupgrade/agent"
-	"github.com/greenplum-db/gpupgrade/hub"
-	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/hub/agent"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 )
-
-func gpupgrade_agent() {
-}
-
-func gpupgrade_agent_Errors() {
-	os.Stderr.WriteString("could not find state-directory")
-	os.Exit(1)
-}
-
-func init() {
-	exectest.RegisterMains(
-		gpupgrade_agent,
-		gpupgrade_agent_Errors,
-	)
-}
 
 func TestRestartAgent(t *testing.T) {
 	testhelper.SetupTestLogger()
@@ -42,7 +24,6 @@ func TestRestartAgent(t *testing.T) {
 	agentServer := grpc.NewServer()
 	defer agentServer.Stop()
 
-	idl.RegisterAgentServer(agentServer, &agent.Server{})
 	go func() {
 		if err := agentServer.Serve(listener); err != nil {
 			log.Fatalf("Server exited with error: %v", err)
@@ -54,15 +35,15 @@ func TestRestartAgent(t *testing.T) {
 	stateDir := "/not/existent/directory"
 	ctx := context.Background()
 
-	hub.SetExecCommand(exectest.NewCommand(gpupgrade_agent))
-	defer hub.ResetExecCommand()
+	agent.SetExecCommand(exectest.NewCommand(agent.Gpupgrade_agent))
+	defer agent.ResetExecCommand()
 
 	t.Run("does not start running agents", func(t *testing.T) {
 		dialer := func(ctx context.Context, address string) (net.Conn, error) {
 			return listener.Dial()
 		}
 
-		restartedHosts, err := hub.RestartAgents(ctx, dialer, hostnames, port, stateDir)
+		restartedHosts, err := agent.RestartAll(ctx, dialer, hostnames, port, stateDir)
 		if err != nil {
 			t.Errorf("returned %#v", err)
 		}
@@ -82,7 +63,7 @@ func TestRestartAgent(t *testing.T) {
 			return listener.Dial()
 		}
 
-		restartedHosts, err := hub.RestartAgents(ctx, dialer, hostnames, port, stateDir)
+		restartedHosts, err := agent.RestartAll(ctx, dialer, hostnames, port, stateDir)
 		if err != nil {
 			t.Errorf("returned %#v", err)
 		}
@@ -97,15 +78,15 @@ func TestRestartAgent(t *testing.T) {
 	})
 
 	t.Run("returns an error when gpupgrade agent fails", func(t *testing.T) {
-		hub.SetExecCommand(exectest.NewCommand(gpupgrade_agent_Errors))
+		agent.SetExecCommand(exectest.NewCommand(agent.Gpupgrade_agent_Errors))
 
-		// we fail all connections here so that RestartAgents will run the
+		// we fail all connections here so that RestartAll will run the
 		//  (error producing) gpupgrade_agent_Errors
 		dialer := func(ctx context.Context, address string) (net.Conn, error) {
 			return nil, immediateFailure{}
 		}
 
-		restartedHosts, err := hub.RestartAgents(ctx, dialer, hostnames, port, stateDir)
+		restartedHosts, err := agent.RestartAll(ctx, dialer, hostnames, port, stateDir)
 		if err == nil {
 			t.Errorf("expected restart agents to fail")
 		}

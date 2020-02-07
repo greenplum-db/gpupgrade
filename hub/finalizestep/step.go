@@ -3,10 +3,10 @@ package finalizestep
 import (
 	"fmt"
 
-	"github.com/greenplum-db/gpupgrade/hub/steps"
-
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/hashicorp/go-multierror"
+
+	hubStep "github.com/greenplum-db/gpupgrade/hub/step"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
@@ -14,7 +14,7 @@ import (
 )
 
 func Run(stream idl.CliToHub_FinalizeServer, stateDir string, source *utils.Cluster, target *utils.Cluster) error {
-	s, err := steps.BeginStep(stateDir, "finalize", stream)
+	s, err := hubStep.Begin(stateDir, "finalize", stream)
 	if err != nil {
 		return err
 	}

@@ -3,9 +3,9 @@ package hub
 import (
 	"fmt"
 
-	"github.com/greenplum-db/gpupgrade/hub/cluster"
+	hubStep "github.com/greenplum-db/gpupgrade/hub/step"
 
-	"github.com/greenplum-db/gpupgrade/hub/steps"
+	"github.com/greenplum-db/gpupgrade/hub/cluster"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/hashicorp/go-multierror"
@@ -15,7 +15,7 @@ import (
 )
 
 func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_ExecuteServer) (err error) {
-	st, err := steps.BeginStep(s.StateDir, "execute", stream)
+	st, err := hubStep.Begin(s.StateDir, "execute", stream)
 	if err != nil {
 		return err
 	}

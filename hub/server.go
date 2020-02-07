@@ -23,6 +23,7 @@ import (
 	"google.golang.org/grpc/reflection"
 	grpcStatus "google.golang.org/grpc/status"
 
+	"github.com/greenplum-db/gpupgrade/hub/agent"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/daemon"
@@ -202,81 +203,8 @@ func (s *Server) Stop(closeAgentConns bool) {
 }
 
 func (s *Server) RestartAgents(ctx context.Context, in *idl.RestartAgentsRequest) (*idl.RestartAgentsReply, error) {
-	restartedHosts, err := RestartAgents(ctx, nil, s.Source.GetHostnames(), s.AgentPort, s.StateDir)
+	restartedHosts, err := agent.RestartAll(ctx, nil, s.Source.GetHostnames(), s.AgentPort, s.StateDir)
 	return &idl.RestartAgentsReply{AgentHosts: restartedHosts}, err
-}
-
-func RestartAgents(ctx context.Context,
-	dialer func(context.Context, string) (net.Conn, error),
-	hostnames []string,
-	port int,
-	stateDir string) ([]string, error) {
-
-	var wg sync.WaitGroup
-	restartedHosts := make(chan string, len(hostnames))
-	errs := make(chan error, len(hostnames))
-
-	for _, host := range hostnames {
-		wg.Add(1)
-		go func(host string) {
-			defer wg.Done()
-
-			address := host + ":" + strconv.Itoa(port)
-			timeoutCtx, cancelFunc := context.WithTimeout(ctx, 3*time.Second)
-			opts := []grpc.DialOption{
-				grpc.WithBlock(),
-				grpc.WithInsecure(),
-				grpc.FailOnNonTempDialError(true),
-			}
-			if dialer != nil {
-				opts = append(opts, grpc.WithContextDialer(dialer))
-			}
-			conn, err := grpc.DialContext(timeoutCtx, address, opts...)
-			cancelFunc()
-			if err == nil {
-				err = conn.Close()
-				if err != nil {
-					gplog.Error("failed to close agent connection to %s: %+v", host, err)
-				}
-				return
-			}
-
-			gplog.Debug("failed to dial agent on %s: %+v", host, err)
-			gplog.Info("starting agent on %s", host)
-
-			agentPath, err := getAgentPath()
-			if err != nil {
-				errs <- err
-				return
-			}
-			cmd := execCommand("ssh", host,
-				fmt.Sprintf("bash -c \"%s agent --daemonize --state-directory %s\"", agentPath, stateDir))
-			stdout, err := cmd.Output()
-			if err != nil {
-				errs <- err
-				return
-			}
-
-			gplog.Debug(string(stdout))
-			restartedHosts <- host
-		}(host)
-	}
-
-	wg.Wait()
-	close(errs)
-	close(restartedHosts)
-
-	var hosts []string
-	for h := range restartedHosts {
-		hosts = append(hosts, h)
-	}
-
-	var multiErr *multierror.Error
-	for err := range errs {
-		multiErr = multierror.Append(multiErr, err)
-	}
-
-	return hosts, multiErr.ErrorOrNil()
 }
 
 func (s *Server) AgentConns() ([]*Connection, error) {

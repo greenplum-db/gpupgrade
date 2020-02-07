@@ -3,10 +3,11 @@ package hub
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 
-	"github.com/greenplum-db/gpupgrade/hub/steps"
+	"github.com/greenplum-db/gpupgrade/hub/agent"
+
+	hubStep "github.com/greenplum-db/gpupgrade/hub/step"
 
 	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -20,7 +21,7 @@ import (
 )
 
 func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_InitializeServer) (err error) {
-	st, err := steps.BeginStep(s.StateDir, "initialize", stream)
+	st, err := hubStep.Begin(s.StateDir, "initialize", stream)
 	if err != nil {
 		return err
 	}
@@ -40,7 +41,7 @@ func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initi
 	})
 
 	st.Run(idl.Substep_START_AGENTS, func(_ step.OutStreams) error {
-		_, err := RestartAgents(context.Background(), nil, s.Source.GetHostnames(), s.AgentPort, s.StateDir)
+		_, err := agent.RestartAll(context.Background(), nil, s.Source.GetHostnames(), s.AgentPort, s.StateDir)
 		return err
 	})
 
@@ -48,7 +49,7 @@ func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initi
 }
 
 func (s *Server) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest, stream idl.CliToHub_InitializeCreateClusterServer) (err error) {
-	st, err := steps.BeginStep(s.StateDir, "initialize", stream)
+	st, err := hubStep.Begin(s.StateDir, "initialize", stream)
 	if err != nil {
 		return err
 	}
@@ -122,13 +123,4 @@ func (s *Server) fillClusterConfigsSubStep(_ step.OutStreams, request *idl.Initi
 	}
 
 	return nil
-}
-
-func getAgentPath() (string, error) {
-	hubPath, err := os.Executable()
-	if err != nil {
-		return "", err
-	}
-
-	return filepath.Join(filepath.Dir(hubPath), "gpupgrade"), nil
 }
