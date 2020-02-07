@@ -98,7 +98,7 @@ func updateSegmentConfiguration(source, target *utils.Cluster) error {
 		return xerrors.Errorf("%s failed to open connection to utility master: %w",
 			idl.Substep_RECONFIGURE_PORTS, err)
 	}
-	err = cluster.ClonePortsFromCluster(targetDB, source.Cluster)
+	err = ClonePortsFromCluster(targetDB, source.Cluster)
 	if err != nil {
 		return xerrors.Errorf("%s failed to clone ports: %w",
 			idl.Substep_RECONFIGURE_PORTS, err)
