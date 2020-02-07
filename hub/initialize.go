@@ -1,51 +1,28 @@
 package hub
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
 
-	"github.com/greenplum-db/gpupgrade/hub/agent"
+	"github.com/greenplum-db/gpupgrade/hub/initializestep"
 
 	hubStep "github.com/greenplum-db/gpupgrade/hub/step"
 
-	"github.com/greenplum-db/gp-common-go-libs/cluster"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/hashicorp/go-multierror"
-	"github.com/pkg/errors"
 
-	"github.com/greenplum-db/gpupgrade/db"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_InitializeServer) (err error) {
-	st, err := hubStep.Begin(s.StateDir, "initialize", stream)
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		if ferr := st.Finish(); ferr != nil {
-			err = multierror.Append(err, ferr).ErrorOrNil()
-		}
-
-		if err != nil {
-			gplog.Error(fmt.Sprintf("initialize: %s", err))
-		}
-	}()
-
-	st.Run(idl.Substep_CONFIG, func(stream step.OutStreams) error {
-		return s.fillClusterConfigsSubStep(stream, in)
+	return initializestep.Run(stream, in, s.StateDir, s.AgentPort, func(source *utils.Cluster, target *utils.Cluster) error {
+		s.Source = source
+		s.Target = target
+		s.UseLinkMode = in.UseLinkMode
+		return s.SaveConfig()
 	})
-
-	st.Run(idl.Substep_START_AGENTS, func(_ step.OutStreams) error {
-		_, err := agent.RestartAll(context.Background(), nil, s.Source.GetHostnames(), s.AgentPort, s.StateDir)
-		return err
-	})
-
-	return st.Err()
 }
 
 func (s *Server) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest, stream idl.CliToHub_InitializeCreateClusterServer) (err error) {
@@ -102,25 +79,4 @@ func (s *Server) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest,
 	})
 
 	return st.Err()
-}
-
-// create old/new clusters, write to disk and re-read from disk to make sure it is "durable"
-func (s *Server) fillClusterConfigsSubStep(_ step.OutStreams, request *idl.InitializeRequest) error {
-	conn := db.NewDBConn("localhost", int(request.SourcePort), "template1")
-	defer conn.Close()
-
-	var err error
-	s.Source, err = utils.ClusterFromDB(conn, request.SourceBinDir)
-	if err != nil {
-		return errors.Wrap(err, "could not retrieve source configuration")
-	}
-
-	s.Target = &utils.Cluster{Cluster: new(cluster.Cluster), BinDir: request.TargetBinDir}
-	s.UseLinkMode = request.UseLinkMode
-
-	if err := s.SaveConfig(); err != nil {
-		return err
-	}
-
-	return nil
 }
