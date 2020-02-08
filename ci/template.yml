@@ -186,6 +186,15 @@ jobs:
   on_failure:
     <<: *slack_alert
 
+- name: lint
+  plan:
+  - get: gpupgrade_src
+    trigger: true
+  - task: lint
+    file: gpupgrade_src/ci/tasks/lint.yml
+  on_failure:
+    <<: *slack_alert
+
 - name: noinstall-tests
   plan:
   - in_parallel:

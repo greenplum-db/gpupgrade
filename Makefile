@@ -91,6 +91,21 @@ installcheck:
 		@echo "# FIXME: Make, if run in parallel, hangs after test completes."
 		./installcheck.bats
 
+# To lint, you must install golangci-lint via one of the supported methods
+# listed at
+#
+#     https://github.com/golangci/golangci-lint#install
+#
+# DO NOT add the linter to the project dependencies in Gopkg.toml, as much as
+# you may want to streamline this installation process, because
+# 1. `go get` is an explicitly unsupported installation method for this utility,
+#    much like it is for gpupgrade itself, and
+# 2. adding it as a project dependency opens up the possibility of accidentally
+#    vendoring GPL'd code.
+.PHONY: lint
+lint:
+	golangci-lint run
+
 clean:
 		# Build artifacts
 		rm -f gpupgrade
