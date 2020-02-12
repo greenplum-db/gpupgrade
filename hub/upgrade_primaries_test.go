@@ -91,7 +91,15 @@ func TestUpgradePrimaries(t *testing.T) {
 			{nil, client2, "sdw2", nil},
 		}
 
-		err := hub.UpgradePrimaries(false, "", agentConns, pairs, source, target, false)
+		err := hub.UpgradePrimaries(hub.UpgradePrimaryArgs{
+			CheckOnly:       false,
+			MasterBackupDir: "",
+			AgentConns:      agentConns,
+			DataDirPairMap:  pairs,
+			Source:          source,
+			Target:          target,
+			UseLinkMode:     false,
+		})
 		if err != nil {
 			t.Errorf("got unexpected error: %+v", err)
 		}
@@ -135,7 +143,15 @@ func TestUpgradePrimaries(t *testing.T) {
 			{nil, failedClient, "sdw2", nil},
 		}
 
-		err := hub.UpgradePrimaries(false, "", agentConns, pairs, source, target, false)
+		err := hub.UpgradePrimaries(hub.UpgradePrimaryArgs{
+			CheckOnly:       false,
+			MasterBackupDir: "",
+			AgentConns:      agentConns,
+			DataDirPairMap:  pairs,
+			Source:          source,
+			Target:          target,
+			UseLinkMode:     false,
+		})
 		if err == nil {
 			t.Fatal("expected error got nil")
 		}

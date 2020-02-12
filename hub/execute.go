@@ -39,7 +39,14 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 
 	st.Run(idl.Substep_UPGRADE_MASTER, func(streams step.OutStreams) error {
 		stateDir := s.StateDir
-		return UpgradeMaster(s.Source, s.Target, stateDir, streams, false, s.UseLinkMode)
+		return UpgradeMaster(UpgradeMasterArgs{
+			Source:      s.Source,
+			Target:      s.Target,
+			StateDir:    stateDir,
+			Stream:      streams,
+			CheckOnly:   false,
+			UseLinkMode: s.UseLinkMode,
+		})
 	})
 
 	st.Run(idl.Substep_COPY_MASTER, func(streams step.OutStreams) error {
@@ -59,7 +66,15 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 			return errors.Wrap(err, "failed to get old and new primary data directories")
 		}
 
-		return UpgradePrimaries(false, upgradedMasterBackupDir, agentConns, dataDirPair, s.Source, s.Target, s.UseLinkMode)
+		return UpgradePrimaries(UpgradePrimaryArgs{
+			CheckOnly:       false,
+			MasterBackupDir: upgradedMasterBackupDir,
+			AgentConns:      agentConns,
+			DataDirPairMap:  dataDirPair,
+			Source:          s.Source,
+			Target:          s.Target,
+			UseLinkMode:     s.UseLinkMode,
+		})
 	})
 
 	st.Run(idl.Substep_START_TARGET_CLUSTER, func(streams step.OutStreams) error {

@@ -13,23 +13,34 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
-func UpgradePrimaries(checkOnly bool, masterBackupDir string, agentConns []*Connection, dataDirPairMap map[string][]*idl.DataDirPair, source *utils.Cluster, target *utils.Cluster, useLinkMode bool) error {
+type UpgradePrimaryArgs struct {
+	CheckOnly       bool
+	MasterBackupDir string
+	AgentConns      []*Connection
+	DataDirPairMap  map[string][]*idl.DataDirPair
+	Source          *utils.Cluster
+	Target          *utils.Cluster
+	UseLinkMode     bool
+}
+
+func UpgradePrimaries(args UpgradePrimaryArgs) error {
 	wg := sync.WaitGroup{}
-	agentErrs := make(chan error, len(agentConns))
-	for _, conn := range agentConns {
+
+	agentErrs := make(chan error, len(args.AgentConns))
+	for _, conn := range args.AgentConns {
 		wg.Add(1)
 
 		go func(conn *Connection) {
 			defer wg.Done()
 
 			_, err := conn.AgentClient.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{
-				SourceBinDir:    source.BinDir,
-				TargetBinDir:    target.BinDir,
-				TargetVersion:   target.Version.SemVer.String(),
-				DataDirPairs:    dataDirPairMap[conn.Hostname],
-				CheckOnly:       checkOnly,
-				UseLinkMode:     useLinkMode,
-				MasterBackupDir: masterBackupDir,
+				SourceBinDir:    args.Source.BinDir,
+				TargetBinDir:    args.Target.BinDir,
+				TargetVersion:   args.Target.Version.SemVer.String(),
+				DataDirPairs:    args.DataDirPairMap[conn.Hostname],
+				CheckOnly:       args.CheckOnly,
+				UseLinkMode:     args.UseLinkMode,
+				MasterBackupDir: args.MasterBackupDir,
 			})
 
 			if err != nil {

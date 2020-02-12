@@ -148,7 +148,14 @@ func TestUpgradeMaster(t *testing.T) {
 		SetRsyncExecCommand(exectest.NewCommand(Success))
 		defer ResetRsyncExecCommand()
 
-		err := UpgradeMaster(source, target, tempDir, DevNull, false, false)
+		err := UpgradeMaster(UpgradeMasterArgs{
+			Source:      source,
+			Target:      target,
+			StateDir:    tempDir,
+			Stream:      DevNull,
+			CheckOnly:   false,
+			UseLinkMode: false,
+		})
 		if err != nil {
 			t.Errorf("returned error %+v", err)
 		}
@@ -168,7 +175,14 @@ func TestUpgradeMaster(t *testing.T) {
 
 		stream := new(bufferedStreams)
 
-		err := UpgradeMaster(source, target, tempDir, stream, false, false)
+		err := UpgradeMaster(UpgradeMasterArgs{
+			Source:      source,
+			Target:      target,
+			StateDir:    tempDir,
+			Stream:      stream,
+			CheckOnly:   false,
+			UseLinkMode: false,
+		})
 		if err != nil {
 			t.Errorf("returned error %+v", err)
 		}
@@ -193,7 +207,14 @@ func TestUpgradeMaster(t *testing.T) {
 		defer ResetRsyncExecCommand()
 
 		expectedErr := errors.New("write failed!")
-		err := UpgradeMaster(source, target, tempDir, failingStreams{expectedErr}, false, false)
+		err := UpgradeMaster(UpgradeMasterArgs{
+			Source:      source,
+			Target:      target,
+			StateDir:    tempDir,
+			Stream:      failingStreams{expectedErr},
+			CheckOnly:   false,
+			UseLinkMode: false,
+		})
 		if !xerrors.Is(err, expectedErr) {
 			t.Errorf("returned error %+v, want %+v", err, expectedErr)
 		}
@@ -208,7 +229,14 @@ func TestUpgradeMaster(t *testing.T) {
 
 		stream := new(bufferedStreams)
 
-		err := UpgradeMaster(source, target, tempDir, stream, false, false)
+		err := UpgradeMaster(UpgradeMasterArgs{
+			Source:      source,
+			Target:      target,
+			StateDir:    tempDir,
+			Stream:      stream,
+			CheckOnly:   false,
+			UseLinkMode: false,
+		})
 		if err == nil {
 			t.Errorf("expected error, returned nil")
 		}

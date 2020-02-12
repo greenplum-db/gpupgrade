@@ -18,37 +18,46 @@ var execCommandRsync = exec.Command
 
 const originalMasterBackupName = "master.bak"
 
+type UpgradeMasterArgs struct {
+	Source      *utils.Cluster
+	Target      *utils.Cluster
+	StateDir    string
+	Stream      step.OutStreams
+	CheckOnly   bool
+	UseLinkMode bool
+}
+
 // XXX this makes more sense as a Server method, but it's so difficult to stub a
 // Server that the parameters have been split out for testing. Revisit if/when the
 // Server monolith is broken up.
-func UpgradeMaster(source, target *utils.Cluster, stateDir string, stream step.OutStreams, checkOnly bool, useLinkMode bool) error {
-	wd := upgrade.MasterWorkingDirectory(stateDir)
+func UpgradeMaster(args UpgradeMasterArgs) error {
+	wd := upgrade.MasterWorkingDirectory(args.StateDir)
 	err := utils.System.MkdirAll(wd, 0700)
 	if err != nil {
 		return err
 	}
 
-	sourceDir := filepath.Join(stateDir, originalMasterBackupName)
-	err = RsyncMasterDataDir(stream, sourceDir, target.MasterDataDir())
+	sourceDir := filepath.Join(args.StateDir, originalMasterBackupName)
+	err = RsyncMasterDataDir(args.Stream, sourceDir, args.Target.MasterDataDir())
 	if err != nil {
 		return err
 	}
 
 	pair := upgrade.SegmentPair{
-		Source: masterSegmentFromCluster(source),
-		Target: masterSegmentFromCluster(target),
+		Source: masterSegmentFromCluster(args.Source),
+		Target: masterSegmentFromCluster(args.Target),
 	}
 
 	options := []upgrade.Option{
 		upgrade.WithExecCommand(execCommand),
 		upgrade.WithWorkDir(wd),
-		upgrade.WithOutputStreams(stream.Stdout(), stream.Stderr()),
+		upgrade.WithOutputStreams(args.Stream.Stdout(), args.Stream.Stderr()),
 	}
-	if checkOnly {
+	if args.CheckOnly {
 		options = append(options, upgrade.WithCheckOnly())
 	}
 
-	if useLinkMode {
+	if args.UseLinkMode {
 		options = append(options, upgrade.WithLinkMode())
 	}
 
