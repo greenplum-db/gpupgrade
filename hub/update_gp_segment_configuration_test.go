@@ -35,7 +35,7 @@ func finishMock(mock sqlmock.Sqlmock, t *testing.T) {
 	}
 }
 
-func TestClonePortsFromCluster(t *testing.T) {
+func TestUpdateGpSegmentConfiguration(t *testing.T) {
 	src, err := utils.NewCluster([]utils.SegConfig{
 		{ContentID: -1, Port: 123, Role: "p", PreferredRole: "p"},
 		{ContentID: -1, Port: 789, Role: "m", PreferredRole: "m"},
@@ -43,6 +43,14 @@ func TestClonePortsFromCluster(t *testing.T) {
 		{ContentID: 1, Port: 345, Role: "p", PreferredRole: "p"},
 		{ContentID: 2, Port: 456, Role: "p", PreferredRole: "p"},
 	})
+
+	target, err := utils.NewCluster([]utils.SegConfig{
+		{ContentID: -1, Port: 456, Role: "p", DataDir: "/some/target_upgrade/datadir-1"},
+		{ContentID: 0, Port: 456, Role: "p", DataDir: "/some/target_upgrade/datadir0"},
+		{ContentID: 1, Port: 456, Role: "p", DataDir: "/some/target_upgrade/datadir1"},
+		{ContentID: 2, Port: 456, Role: "p", DataDir: "/some/target_upgrade/datadir2"},
+	})
+
 	if err != nil {
 		t.Fatalf("constructing test cluster: %+v", err)
 	}
@@ -70,19 +78,20 @@ func TestClonePortsFromCluster(t *testing.T) {
 		// Note that ranging over a map doesn't guarantee execution order, so we
 		// range over the contents instead.
 		for _, content := range src.ContentIDs {
-			seg := src.Primaries[content]
-			expectPortUpdate(mock, seg).
+			sourceSegment := src.Primaries[content]
+			targetSegment := target.Primaries[content]
+			expectPortUpdate(mock, sourceSegment, targetSegment).
 				WillReturnResult(sqlmock.NewResult(0, 1))
 
 			if mirror, ok := src.Mirrors[content]; ok {
-				expectPortUpdate(mock, mirror).
+				expectPortUpdate(mock, mirror, target.Mirrors[content]).
 					WillReturnResult(sqlmock.NewResult(0, 1))
 			}
 		}
 
 		mock.ExpectCommit()
 
-		err = ClonePortsFromCluster(db, src)
+		err = UpdateGpSegmentConfiguration(db, src, target)
 		if err != nil {
 			t.Errorf("returned error %+v", err)
 		}
@@ -135,7 +144,7 @@ func TestClonePortsFromCluster(t *testing.T) {
 			mock.ExpectBegin()
 			mock.ExpectQuery("SELECT content FROM gp_segment_configuration").
 				WillReturnRows(contents)
-			expectPortUpdate(mock, src.Primaries[-1]).
+			expectPortUpdate(mock, src.Primaries[-1], target.Primaries[-1]).
 				WillReturnError(ErrSentinel)
 			mock.ExpectRollback()
 		},
@@ -155,12 +164,13 @@ func TestClonePortsFromCluster(t *testing.T) {
 				WillReturnRows(contents)
 
 			for _, content := range src.ContentIDs {
-				seg := src.Primaries[content]
-				expectPortUpdate(mock, seg).
+				sourceSegment := src.Primaries[content]
+				targetSegment := target.Primaries[content]
+				expectPortUpdate(mock, sourceSegment, targetSegment).
 					WillReturnResult(sqlmock.NewResult(0, 1))
 
 				if mirror, ok := src.Mirrors[content]; ok {
-					expectPortUpdate(mock, mirror).
+					expectPortUpdate(mock, mirror, target.Mirrors[content]).
 						WillReturnResult(sqlmock.NewResult(0, 1))
 				}
 			}
@@ -251,7 +261,7 @@ func TestClonePortsFromCluster(t *testing.T) {
 			mock.ExpectQuery("SELECT content FROM gp_segment_configuration").
 				WillReturnRows(contents)
 
-			expectPortUpdate(mock, src.Primaries[-1]).
+			expectPortUpdate(mock, src.Primaries[-1], target.Primaries[-1]).
 				WillReturnResult(sqlmock.NewResult(0, 2))
 
 			mock.ExpectRollback()
@@ -275,7 +285,7 @@ func TestClonePortsFromCluster(t *testing.T) {
 			// prepare() sets up any mock expectations.
 			c.prepare(mock)
 
-			err = ClonePortsFromCluster(db, src)
+			err = UpdateGpSegmentConfiguration(db, src, target)
 
 			// Make sure the error is the one we expect.
 			c.verify(t, err)
@@ -297,8 +307,8 @@ func expect(expected error) func(*testing.T, error) {
 
 // expectPortUpdate is here so we don't have to copy-paste the expected UPDATE
 // statement everywhere.
-func expectPortUpdate(mock sqlmock.Sqlmock, seg utils.SegConfig) *sqlmock.ExpectedExec {
+func expectPortUpdate(mock sqlmock.Sqlmock, sourceSegment utils.SegConfig, targetSegment utils.SegConfig) *sqlmock.ExpectedExec {
 	return mock.ExpectExec(
-		"UPDATE gp_segment_configuration SET port = (.+) WHERE content = (.+) AND role = (.+)",
-	).WithArgs(seg.Port, seg.ContentID, seg.Role)
+		"UPDATE gp_segment_configuration SET port = (.+), datadir = (.+) WHERE content = (.+) AND role = (.+)",
+	).WithArgs(sourceSegment.Port, targetSegment.PublishingDataDirectory(sourceSegment), sourceSegment.ContentID, sourceSegment.Role)
 }

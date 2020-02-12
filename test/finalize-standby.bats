@@ -8,15 +8,14 @@ setup_state_dir() {
 }
 
 teardown_new_cluster() {
-    local NEW_CLUSTER="$(gpupgrade config show --new-datadir)"
-
-    if [ -n "$NEW_CLUSTER" ]; then
-        delete_cluster $NEW_CLUSTER
-    fi
+    delete_finalized_cluster $MASTER_DATA_DIRECTORY
 }
 
 setup() {
     skip_if_no_gpdb
+
+    [ ! -z $GPHOME ]
+    GPHOME_NEW=${GPHOME_NEW:-$GPHOME}
 
     setup_state_dir
 

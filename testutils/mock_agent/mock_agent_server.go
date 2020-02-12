@@ -95,6 +95,12 @@ func (m *MockAgentServer) CreateSegmentDataDirectories(ctx context.Context, in *
 	return &idl.CreateSegmentDataDirReply{}, err
 }
 
+func (m *MockAgentServer) ReconfigureDataDirectories(context.Context, *idl.ReconfigureDataDirRequest) (*idl.ReconfigureDataDirReply, error) {
+	m.increaseCalls()
+
+	return &idl.ReconfigureDataDirReply{}, nil
+}
+
 func (m *MockAgentServer) StopAgent(ctx context.Context, in *idl.StopAgentRequest) (*idl.StopAgentReply, error) {
 	return &idl.StopAgentReply{}, nil
 }

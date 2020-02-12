@@ -11,11 +11,10 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/step"
 
 	"github.com/hashicorp/go-multierror"
 	"golang.org/x/xerrors"
-
-	"github.com/greenplum-db/gpupgrade/step"
 )
 
 func BeginStep(stateDir string, name string, sender idl.MessageSender) (*step.Step, error) {

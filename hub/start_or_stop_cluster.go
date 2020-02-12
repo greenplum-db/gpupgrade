@@ -2,8 +2,9 @@ package hub
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"os/exec"
+
+	"github.com/pkg/errors"
 
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"

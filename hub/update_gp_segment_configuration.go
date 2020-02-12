@@ -3,9 +3,7 @@ package hub
 import (
 	"database/sql"
 	"fmt"
-	"os/exec"
 
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
@@ -13,6 +11,19 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
+
+func UpdateCatalog(source, target *utils.Cluster) (err error) {
+	err = WithinDbConnection(target, func(conn *sql.DB) error {
+		return UpdateGpSegmentConfiguration(conn, source, target)
+	})
+
+	if err != nil {
+		return xerrors.Errorf("%s failed to clone ports: %w",
+			idl.Substep_FINALIZE_UPDATE_CATALOG, err)
+	}
+
+	return nil
+}
 
 var ErrContentMismatch = errors.New("content ids do not match")
 
@@ -113,7 +124,7 @@ func commitOrRollback(tx *sql.Tx, err error) error {
 // As a reminder to developers, we don't have any mirrors up at this point on
 // the target cluster. We copy only the primary information. Good thing too,
 // because utils.Cluster doesn't give us mirror info.
-func ClonePortsFromCluster(db *sql.DB, src *utils.Cluster) (err error) {
+func UpdateGpSegmentConfiguration(db *sql.DB, source *utils.Cluster, target *utils.Cluster) (err error) {
 	tx, err := db.Begin()
 	if err != nil {
 		return xerrors.Errorf("starting transaction for port clone: %w", err)
@@ -124,20 +135,20 @@ func ClonePortsFromCluster(db *sql.DB, src *utils.Cluster) (err error) {
 
 	// Make sure the content IDs in gp_segment_configuration match the source
 	// cluster exactly.
-	if err := sanityCheckContentIDs(tx, src); err != nil {
+	if err := sanityCheckContentIDs(tx, source); err != nil {
 		return err
 	}
 
-	for _, content := range src.ContentIDs {
-		err := updatePort(tx, src.Primaries[content])
+	for _, content := range source.ContentIDs {
+		err := updateConfiguration(tx, source.Primaries[content], target.Primaries[content])
 		if err != nil {
 			return err
 		}
 
 		// TODO: allow all mirrors into this code. For now we only allow
 		// standbys.
-		if mirror, ok := src.Mirrors[content]; ok && content == -1 {
-			err := updatePort(tx, mirror)
+		if mirror, ok := source.Mirrors[content]; ok && content == -1 {
+			err := updateConfiguration(tx, mirror, target.Mirrors[content])
 			if err != nil {
 				return err
 			}
@@ -147,9 +158,9 @@ func ClonePortsFromCluster(db *sql.DB, src *utils.Cluster) (err error) {
 	return nil
 }
 
-func updatePort(tx *sql.Tx, seg utils.SegConfig) error {
-	res, err := tx.Exec("UPDATE gp_segment_configuration SET port = $1 WHERE content = $2 AND role = $3",
-		seg.Port, seg.ContentID, seg.Role)
+func updateConfiguration(tx *sql.Tx, source utils.SegConfig, target utils.SegConfig) error {
+	res, err := tx.Exec("UPDATE gp_segment_configuration SET port = $1, datadir = $2 WHERE content = $3 AND role = $4",
+		source.Port, target.PublishingDataDirectory(source), source.ContentID, source.Role)
 	if err != nil {
 		return xerrors.Errorf("updating segment configuration: %w", err)
 	}
@@ -164,48 +175,8 @@ func updatePort(tx *sql.Tx, seg utils.SegConfig) error {
 		panic(fmt.Sprintf("retrieving number of rows updated: %v", err))
 	}
 	if rows != 1 {
-		return xerrors.Errorf("updated %d rows for content %d, expected 1", rows, seg.ContentID)
+		return xerrors.Errorf("updated %d rows for content %d, expected 1", rows, source.ContentID)
 	}
 
-	return nil
-}
-
-func UpdateCatalogWithPortInformation(source, target *utils.Cluster) error {
-	connURI := fmt.Sprintf("postgresql://localhost:%d/template1?gp_session_role=utility&allow_system_table_mods=true&search_path=", target.MasterPort())
-	targetDB, err := sql.Open("pgx", connURI)
-	defer func() {
-		closeErr := targetDB.Close()
-		if closeErr != nil {
-			closeErr = xerrors.Errorf("closing connection to new master db: %w", closeErr)
-			err = multierror.Append(err, closeErr)
-		}
-	}()
-	if err != nil {
-		return xerrors.Errorf("%s failed to open connection to utility master: %w",
-			idl.Substep_FINALIZE_UPDATE_CATALOG_WITH_PORT, err)
-	}
-	err = ClonePortsFromCluster(targetDB, source)
-	if err != nil {
-		return xerrors.Errorf("%s failed to clone ports: %w",
-			idl.Substep_FINALIZE_UPDATE_CATALOG_WITH_PORT, err)
-	}
-
-	return nil
-}
-
-func UpdateMasterPostgresqlConf(source, target *utils.Cluster) error {
-	script := fmt.Sprintf(
-		"sed 's/port=%d/port=%d/' %[3]s/postgresql.conf > %[3]s/postgresql.conf.updated && "+
-			"mv %[3]s/postgresql.conf %[3]s/postgresql.conf.bak && "+ // XXX not atomic! failure here means we lost the .conf
-			"mv %[3]s/postgresql.conf.updated %[3]s/postgresql.conf",
-		target.MasterPort(), source.MasterPort(), target.MasterDataDir(),
-	)
-	gplog.Debug("executing command: %+v", script) // TODO: Move this debug log into ExecuteLocalCommand()
-	cmd := exec.Command("bash", "-c", script)
-	_, err := cmd.Output()
-	if err != nil {
-		return xerrors.Errorf("%s failed to execute sed command: %w",
-			idl.Substep_FINALIZE_UPDATE_POSTGRESQL_CONF, err)
-	}
 	return nil
 }

@@ -44,6 +44,8 @@ const (
 	MirrorRole  = "m"
 )
 
+const NotSetDbID = -99
+
 // ClusterFromDB will create a Cluster by querying the passed DBConn for
 // information. You must pass the cluster's binary directory, since it cannot be
 // divined from the database.

@@ -5,9 +5,9 @@
 package mock_idl
 
 import (
+	context "context"
 	gomock "github.com/golang/mock/gomock"
 	idl "github.com/greenplum-db/gpupgrade/idl"
-	context "golang.org/x/net/context"
 	grpc "google.golang.org/grpc"
 	reflect "reflect"
 )
@@ -93,6 +93,26 @@ func (mr *MockAgentClientMockRecorder) CreateSegmentDataDirectories(ctx, in inte
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSegmentDataDirectories", reflect.TypeOf((*MockAgentClient)(nil).CreateSegmentDataDirectories), varargs...)
+}
+
+// ReconfigureDataDirectories mocks base method
+func (m *MockAgentClient) ReconfigureDataDirectories(ctx context.Context, in *idl.ReconfigureDataDirRequest, opts ...grpc.CallOption) (*idl.ReconfigureDataDirReply, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ReconfigureDataDirectories", varargs...)
+	ret0, _ := ret[0].(*idl.ReconfigureDataDirReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ReconfigureDataDirectories indicates an expected call of ReconfigureDataDirectories
+func (mr *MockAgentClientMockRecorder) ReconfigureDataDirectories(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReconfigureDataDirectories", reflect.TypeOf((*MockAgentClient)(nil).ReconfigureDataDirectories), varargs...)
 }
 
 // StopAgent mocks base method
@@ -181,6 +201,21 @@ func (m *MockAgentServer) CreateSegmentDataDirectories(arg0 context.Context, arg
 func (mr *MockAgentServerMockRecorder) CreateSegmentDataDirectories(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSegmentDataDirectories", reflect.TypeOf((*MockAgentServer)(nil).CreateSegmentDataDirectories), arg0, arg1)
+}
+
+// ReconfigureDataDirectories mocks base method
+func (m *MockAgentServer) ReconfigureDataDirectories(arg0 context.Context, arg1 *idl.ReconfigureDataDirRequest) (*idl.ReconfigureDataDirReply, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReconfigureDataDirectories", arg0, arg1)
+	ret0, _ := ret[0].(*idl.ReconfigureDataDirReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ReconfigureDataDirectories indicates an expected call of ReconfigureDataDirectories
+func (mr *MockAgentServerMockRecorder) ReconfigureDataDirectories(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReconfigureDataDirectories", reflect.TypeOf((*MockAgentServer)(nil).ReconfigureDataDirectories), arg0, arg1)
 }
 
 // StopAgent mocks base method

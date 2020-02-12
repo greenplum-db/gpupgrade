@@ -3,6 +3,8 @@ package hub_test
 import (
 	"testing"
 
+	"github.com/greenplum-db/gpupgrade/utils"
+
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 
 	"github.com/greenplum-db/gpupgrade/hub"
@@ -10,6 +12,53 @@ import (
 
 func TestUpgradeStandby(t *testing.T) {
 	testhelper.SetupTestLogger()
+
+	t.Run("it returns a SegConfig representing the new standby", func(t *testing.T) {
+		config := hub.StandbyConfig{
+			Port:          8888,
+			Hostname:      "some-hostname",
+			DataDirectory: "/some/standby/data/directory",
+		}
+
+		runner := newSpyRunner()
+		standbySegConfig, err := hub.UpgradeStandby(runner, config)
+
+		if err != nil {
+			t.Errorf("unexpected error while upgrading standby: %v", err)
+		}
+
+		if standbySegConfig.DataDir != "/some/standby/data/directory" {
+			t.Errorf("got standby data dir of %v, expected %v",
+				standbySegConfig.DataDir,
+				"/some/standby/data/directory")
+		}
+
+		if standbySegConfig.Hostname != "some-hostname" {
+			t.Errorf("got standby hostname of %v, expected %v",
+				standbySegConfig.Hostname,
+				"some-hostname")
+		}
+
+		if standbySegConfig.Port != 8888 {
+			t.Errorf("got port of %v, expected port of %v", standbySegConfig.Port, 8888)
+		}
+
+		if standbySegConfig.ContentID != -1 {
+			t.Errorf("got standby content id of %v, expected %v", standbySegConfig.ContentID, -1)
+		}
+
+		if standbySegConfig.Role != utils.MirrorRole {
+			t.Errorf("got standby role of %v, expected role %v",
+				standbySegConfig.Role,
+				utils.MirrorRole)
+		}
+
+		if standbySegConfig.DbID != utils.NotSetDbID {
+			t.Errorf("got standby role of %v, expected role %v",
+				standbySegConfig.Role,
+				utils.MirrorRole)
+		}
+	})
 
 	t.Run("it upgrades the standby through gpinitstandby", func(t *testing.T) {
 		config := hub.StandbyConfig{
