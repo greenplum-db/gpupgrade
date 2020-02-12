@@ -2,11 +2,14 @@ package hub_test
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
-	sqlmock "github.com/DATA-DOG/go-sqlmock"
-	multierror "github.com/hashicorp/go-multierror"
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/hashicorp/go-multierror"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -35,17 +38,61 @@ func finishMock(mock sqlmock.Sqlmock, t *testing.T) {
 	}
 }
 
-func TestClonePortsFromCluster(t *testing.T) {
+func TestUpdateCatalog(t *testing.T) {
 	src, err := utils.NewCluster([]utils.SegConfig{
-		{ContentID: -1, Port: 123, Role: "p", PreferredRole: "p"},
-		{ContentID: -1, Port: 789, Role: "m", PreferredRole: "m"},
-		{ContentID: 0, Port: 234, Role: "p", PreferredRole: "p"},
-		{ContentID: 1, Port: 345, Role: "p", PreferredRole: "p"},
-		{ContentID: 2, Port: 456, Role: "p", PreferredRole: "p"},
+		{ContentID: -1, Port: 123, Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+		{ContentID: -1, Port: 789, Role: utils.MirrorRole, PreferredRole: utils.MirrorRole},
+		{ContentID: 0, Port: 234, Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+		{ContentID: 1, Port: 345, Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+		{ContentID: 2, Port: 456, Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
 	})
+
 	if err != nil {
 		t.Fatalf("constructing test cluster: %+v", err)
 	}
+
+	tempDir, err := ioutil.TempDir("", "gpupgrade")
+	if err != nil {
+		t.Fatalf("creating temporary directory: %#v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	oldStateDir, isSet := os.LookupEnv("GPUGRADE_HOME")
+	defer func() {
+		if isSet {
+			os.Setenv("GPUPGRADE_HOME", oldStateDir)
+		}
+	}()
+
+	err = os.Setenv("GPUPGRADE_HOME", tempDir)
+	if err != nil {
+		t.Fatalf("failed to set GPUPGRADE_HOME %#v", err)
+	}
+
+	config := filepath.Join(tempDir, ConfigFileName)
+	data := `{
+	"Source": {
+		"BinDir": "/usr/local/gpdb5/bin",
+			"Version": {
+			  "VersionString": "5.0.0",
+			  "SemVer": "5.0.0"
+			}
+		},
+	"Target": {
+		"BinDir": "/usr/local/gpdb6/bin",
+			"Version": {
+			  "VersionString": "6.0.0-beta.1 build dev",
+			  "SemVer": "6.0.0"
+			}
+		}
+}`
+	err = ioutil.WriteFile(config, []byte(data), 0600)
+	if err != nil {
+		t.Fatalf("creating %s: %+v", config, err)
+	}
+
+	conf := &Config{src, &utils.Cluster{}, InitializeConfig{}, 0, port, useLinkMode}
+	server := New(conf, nil, tempDir)
 
 	t.Run("updates ports for every segment", func(t *testing.T) {
 		db, mock, err := sqlmock.New()
@@ -71,18 +118,18 @@ func TestClonePortsFromCluster(t *testing.T) {
 		// range over the contents instead.
 		for _, content := range src.ContentIDs {
 			seg := src.Primaries[content]
-			expectPortUpdate(mock, seg).
+			expectCatalogUpdate(mock, seg).
 				WillReturnResult(sqlmock.NewResult(0, 1))
 
 			if mirror, ok := src.Mirrors[content]; ok {
-				expectPortUpdate(mock, mirror).
+				expectCatalogUpdate(mock, mirror).
 					WillReturnResult(sqlmock.NewResult(0, 1))
 			}
 		}
 
 		mock.ExpectCommit()
 
-		err = ClonePortsFromCluster(db, src)
+		err = server.UpdateGpSegmentConfiguration(db)
 		if err != nil {
 			t.Errorf("returned error %+v", err)
 		}
@@ -135,7 +182,7 @@ func TestClonePortsFromCluster(t *testing.T) {
 			mock.ExpectBegin()
 			mock.ExpectQuery("SELECT content FROM gp_segment_configuration").
 				WillReturnRows(contents)
-			expectPortUpdate(mock, src.Primaries[-1]).
+			expectCatalogUpdate(mock, src.Primaries[-1]).
 				WillReturnError(ErrSentinel)
 			mock.ExpectRollback()
 		},
@@ -156,11 +203,11 @@ func TestClonePortsFromCluster(t *testing.T) {
 
 			for _, content := range src.ContentIDs {
 				seg := src.Primaries[content]
-				expectPortUpdate(mock, seg).
+				expectCatalogUpdate(mock, seg).
 					WillReturnResult(sqlmock.NewResult(0, 1))
 
 				if mirror, ok := src.Mirrors[content]; ok {
-					expectPortUpdate(mock, mirror).
+					expectCatalogUpdate(mock, mirror).
 						WillReturnResult(sqlmock.NewResult(0, 1))
 				}
 			}
@@ -251,7 +298,7 @@ func TestClonePortsFromCluster(t *testing.T) {
 			mock.ExpectQuery("SELECT content FROM gp_segment_configuration").
 				WillReturnRows(contents)
 
-			expectPortUpdate(mock, src.Primaries[-1]).
+			expectCatalogUpdate(mock, src.Primaries[-1]).
 				WillReturnResult(sqlmock.NewResult(0, 2))
 
 			mock.ExpectRollback()
@@ -275,7 +322,7 @@ func TestClonePortsFromCluster(t *testing.T) {
 			// prepare() sets up any mock expectations.
 			c.prepare(mock)
 
-			err = ClonePortsFromCluster(db, src)
+			err = server.UpdateGpSegmentConfiguration(db)
 
 			// Make sure the error is the one we expect.
 			c.verify(t, err)
@@ -295,10 +342,10 @@ func expect(expected error) func(*testing.T, error) {
 	}
 }
 
-// expectPortUpdate is here so we don't have to copy-paste the expected UPDATE
+// expectCatalogUpdate is here so we don't have to copy-paste the expected UPDATE
 // statement everywhere.
-func expectPortUpdate(mock sqlmock.Sqlmock, seg utils.SegConfig) *sqlmock.ExpectedExec {
+func expectCatalogUpdate(mock sqlmock.Sqlmock, seg utils.SegConfig) *sqlmock.ExpectedExec {
 	return mock.ExpectExec(
-		"UPDATE gp_segment_configuration SET port = (.+) WHERE content = (.+) AND role = (.+)",
-	).WithArgs(seg.Port, seg.ContentID, seg.Role)
+		"UPDATE gp_segment_configuration SET port = (.+), datadir = (.+) WHERE content = (.+) AND role = (.+)",
+	).WithArgs(seg.Port, seg.DataDir, seg.ContentID, seg.Role)
 }

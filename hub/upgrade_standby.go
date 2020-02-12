@@ -21,7 +21,7 @@ type StandbyConfig struct {
 // standby for the cluster.
 //
 func UpgradeStandby(r GreenplumRunner, standbyConfig StandbyConfig) error {
-	gplog.Info(fmt.Sprintf("removing any existing standby master"))
+	gplog.Info(fmt.Sprintf("removing any existing standby master on new cluster"))
 
 	err := r.Run("gpinitstandby", "-r", "-a")
 

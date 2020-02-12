@@ -8,7 +8,6 @@ import (
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/spf13/cobra"
-	"golang.org/x/xerrors"
 	"google.golang.org/grpc"
 
 	"github.com/greenplum-db/gpupgrade/hub"
@@ -56,7 +55,7 @@ func Hub() *cobra.Command {
 			}
 
 			path := filepath.Join(stateDir, hub.ConfigFileName)
-			err = loadConfig(conf, path)
+			err = hub.LoadConfig(conf, path)
 			if err != nil {
 				return err
 			}
@@ -81,19 +80,4 @@ func Hub() *cobra.Command {
 	daemon.MakeDaemonizable(cmd, &shouldDaemonize)
 
 	return cmd
-}
-
-func loadConfig(conf *hub.Config, path string) error {
-	file, err := os.Open(path)
-	if err != nil {
-		return xerrors.Errorf("opening configuration file: %w", err)
-	}
-	defer file.Close()
-
-	err = conf.Load(file)
-	if err != nil {
-		return xerrors.Errorf("reading configuration file: %w", err)
-	}
-
-	return nil
 }

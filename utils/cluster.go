@@ -30,12 +30,12 @@ type Cluster struct {
 }
 
 type SegConfig struct {
-	DbID      int
-	ContentID int
-	Port      int
-	Hostname  string
-	DataDir   string
-	Role      string
+	DbID          int
+	ContentID     int
+	Port          int
+	Hostname      string
+	DataDir       string
+	Role          string
 	PreferredRole string
 }
 
@@ -133,11 +133,11 @@ func (c *Cluster) PrimaryHostnames() []string {
 var ErrUnknownHost = xerrors.New("no such host in cluster")
 
 type UnknownHostError struct {
-	hostname string
+	Hostname string
 }
 
 func (u UnknownHostError) Error() string {
-	return fmt.Sprintf("cluster has no segments on host %q", u.hostname)
+	return fmt.Sprintf("cluster has no segments on host %q", u.Hostname)
 }
 
 func (u UnknownHostError) Is(err error) bool {

@@ -3,8 +3,9 @@ package hub
 import (
 	"fmt"
 
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/hashicorp/go-multierror"
+
+	"github.com/greenplum-db/gp-common-go-libs/gplog"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
@@ -35,6 +36,8 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 				streams:             streams,
 			}
 
+			// TODO: Persist the standby to config.json and update the
+			//  source & target clusters.
 			return UpgradeStandby(greenplumRunner, StandbyConfig{
 				Port:          s.TargetInitializeConfig.Standby.Port,
 				Hostname:      s.Source.StandbyHostname(),
@@ -47,25 +50,16 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 		return StopCluster(streams, s.Target, false)
 	})
 
-	st.Run(idl.Substep_FINALIZE_START_TARGET_MASTER, func(streams step.OutStreams) error {
-		return StartMasterOnly(streams, s.Target, false)
+	st.Run(idl.Substep_FINALIZE_UPDATE_TARGET_CATALOG_AND_CLUSTER_CONFIG, func(streams step.OutStreams) error {
+		return s.UpdateCatalogAndClusterConfig(streams)
 	})
 
-	// Once UpdateCatalogWithPortInformation && UpdateMasterPostgresqlConf is executed, the port on which the target
-	// cluster starts is changed in the catalog and postgresql.conf, however the server config.json target port is
-	// still the old port on which the target cluster was initialized.
-	// TODO: if any steps needs to connect to the new cluster (that should use new port), we should either
-	// write it to the config.json or add some way to identify the state.
-	st.Run(idl.Substep_FINALIZE_UPDATE_CATALOG_WITH_PORT, func(streams step.OutStreams) error {
-		return UpdateCatalogWithPortInformation(s.Source, s.Target)
+	st.Run(idl.Substep_FINALIZE_RENAME_DATA_DIRECTORIES, func(_ step.OutStreams) error {
+		return s.RenameDataDirectories()
 	})
 
-	st.Run(idl.Substep_FINALIZE_SHUTDOWN_TARGET_MASTER, func(streams step.OutStreams) error {
-		return StopMasterOnly(streams, s.Target, false)
-	})
-
-	st.Run(idl.Substep_FINALIZE_UPDATE_POSTGRESQL_CONF, func(streams step.OutStreams) error {
-		return UpdateMasterPostgresqlConf(s.Source, s.Target)
+	st.Run(idl.Substep_FINALIZE_UPDATE_TARGET_CONF_FILES, func(_ step.OutStreams) error {
+		return s.UpdateConfFiles()
 	})
 
 	st.Run(idl.Substep_FINALIZE_START_TARGET_CLUSTER, func(streams step.OutStreams) error {

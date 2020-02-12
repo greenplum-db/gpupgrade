@@ -3,16 +3,65 @@ package hub
 import (
 	"database/sql"
 	"fmt"
-	"os/exec"
+	"path/filepath"
 
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
+
+// TODO: When in copy mode should we update the catalog and in-memory object of
+//  the source cluster?
+func (s *Server) UpdateCatalogAndClusterConfig(streams step.OutStreams) (err error) {
+	err = StartMasterOnly(streams, s.Target, false)
+	if err != nil {
+		return xerrors.Errorf("starting new master: %w", err)
+	}
+
+	err = WithinDbConnection(s.Target.MasterPort(), func(conn *sql.DB) error {
+		return s.UpdateGpSegmentConfiguration(conn)
+	})
+	if err != nil {
+		return xerrors.Errorf("%s: %w", idl.Substep_FINALIZE_UPDATE_TARGET_CATALOG_AND_CLUSTER_CONFIG, err)
+	}
+
+	// Create an oldTarget cluster to pass to StopMasterOnly since
+	// UpdateCatalogAndClusterConfig mutates the target cluster with the new
+	// data directories which have yet to be reflected on disk in a later substep.
+	master := s.Target.Primaries[-1]
+	master.DataDir = upgradeDataDir(master.DataDir)
+	segs := map[int]utils.SegConfig{-1: master}
+	oldTarget := &utils.Cluster{Primaries: segs, BinDir: s.Target.BinDir}
+
+	err = StopMasterOnly(streams, oldTarget, false)
+	if err != nil {
+		return xerrors.Errorf("stopping new master: %w", err)
+	}
+
+	return nil
+}
+
+func WithinDbConnection(masterPort int, operation func(connection *sql.DB) error) (err error) {
+	connURI := fmt.Sprintf("postgresql://localhost:%d/template1?gp_session_role=utility&allow_system_table_mods=true&search_path=", masterPort)
+	connection, err := sql.Open("pgx", connURI)
+	if err != nil {
+		return xerrors.Errorf("connecting to master on port %d in utility mode with connection URI '%s': %w", masterPort, connURI, err)
+	}
+
+	defer func() {
+		closeErr := connection.Close()
+		if closeErr != nil {
+			closeErr = xerrors.Errorf("closing connection to new master: %w", closeErr)
+			err = multierror.Append(err, closeErr)
+		}
+	}()
+
+	return operation(connection)
+}
 
 var ErrContentMismatch = errors.New("content ids do not match")
 
@@ -107,37 +156,56 @@ func commitOrRollback(tx *sql.Tx, err error) error {
 	return nil
 }
 
-// ClonePortsFromCluster will modify the gp_segment_configuration of the passed
+// UpdateGpSegmentConfiguration will modify the gp_segment_configuration of the passed
 // sql.DB to match the cluster port settings from the source utils.Cluster.
 //
 // As a reminder to developers, we don't have any mirrors up at this point on
-// the target cluster. We copy only the primary information. Good thing too,
-// because utils.Cluster doesn't give us mirror info.
-func ClonePortsFromCluster(db *sql.DB, src *utils.Cluster) (err error) {
+// the target cluster. We copy only the primary information.
+func (s *Server) UpdateGpSegmentConfiguration(db *sql.DB) (err error) {
 	tx, err := db.Begin()
 	if err != nil {
-		return xerrors.Errorf("starting transaction for port clone: %w", err)
+		return xerrors.Errorf("starting transaction to update catalog: %w", err)
 	}
 	defer func() {
 		err = commitOrRollback(tx, err)
+		if err == nil {
+			// After successfully changing the catalog, update the source and
+			// target cluster objects to match the catalog and persist to
+			// disk.
+			origConf := &Config{}
+			path := filepath.Join(utils.GetStateDir(), ConfigFileName)
+			err = LoadConfig(origConf, path)
+			if err != nil {
+				err = xerrors.Errorf("loading config: %w", err)
+				return
+			}
+
+			s.Target = origConf.Source
+			s.Target.BinDir = origConf.Target.BinDir
+			s.Target.Version = origConf.Target.Version
+
+			err = s.SaveConfig()
+		}
 	}()
 
 	// Make sure the content IDs in gp_segment_configuration match the source
 	// cluster exactly.
-	if err := sanityCheckContentIDs(tx, src); err != nil {
+	if err := sanityCheckContentIDs(tx, s.Source); err != nil {
 		return err
 	}
 
-	for _, content := range src.ContentIDs {
-		err := updatePort(tx, src.Primaries[content])
+	// TODO: Consider iterating over dbids instead which is unique and could
+	//  remove the need for specifying the role when updating the catalog.
+	for _, content := range s.Source.ContentIDs {
+		err := updateConfiguration(tx, s.Source.Primaries[content])
 		if err != nil {
 			return err
 		}
 
 		// TODO: allow all mirrors into this code. For now we only allow
-		// standbys.
-		if mirror, ok := src.Mirrors[content]; ok && content == -1 {
-			err := updatePort(tx, mirror)
+		//  standbys.
+		if mirror, ok := s.Source.Mirrors[content]; ok && content == -1 {
+			err := updateConfiguration(tx, mirror)
 			if err != nil {
 				return err
 			}
@@ -147,9 +215,9 @@ func ClonePortsFromCluster(db *sql.DB, src *utils.Cluster) (err error) {
 	return nil
 }
 
-func updatePort(tx *sql.Tx, seg utils.SegConfig) error {
-	res, err := tx.Exec("UPDATE gp_segment_configuration SET port = $1 WHERE content = $2 AND role = $3",
-		seg.Port, seg.ContentID, seg.Role)
+func updateConfiguration(tx *sql.Tx, seg utils.SegConfig) error {
+	res, err := tx.Exec("UPDATE gp_segment_configuration SET port = $1, datadir = $2 WHERE content = $3 AND role = $4",
+		seg.Port, seg.DataDir, seg.ContentID, seg.Role)
 	if err != nil {
 		return xerrors.Errorf("updating segment configuration: %w", err)
 	}
@@ -167,45 +235,5 @@ func updatePort(tx *sql.Tx, seg utils.SegConfig) error {
 		return xerrors.Errorf("updated %d rows for content %d, expected 1", rows, seg.ContentID)
 	}
 
-	return nil
-}
-
-func UpdateCatalogWithPortInformation(source, target *utils.Cluster) error {
-	connURI := fmt.Sprintf("postgresql://localhost:%d/template1?gp_session_role=utility&allow_system_table_mods=true&search_path=", target.MasterPort())
-	targetDB, err := sql.Open("pgx", connURI)
-	defer func() {
-		closeErr := targetDB.Close()
-		if closeErr != nil {
-			closeErr = xerrors.Errorf("closing connection to new master db: %w", closeErr)
-			err = multierror.Append(err, closeErr)
-		}
-	}()
-	if err != nil {
-		return xerrors.Errorf("%s failed to open connection to utility master: %w",
-			idl.Substep_FINALIZE_UPDATE_CATALOG_WITH_PORT, err)
-	}
-	err = ClonePortsFromCluster(targetDB, source)
-	if err != nil {
-		return xerrors.Errorf("%s failed to clone ports: %w",
-			idl.Substep_FINALIZE_UPDATE_CATALOG_WITH_PORT, err)
-	}
-
-	return nil
-}
-
-func UpdateMasterPostgresqlConf(source, target *utils.Cluster) error {
-	script := fmt.Sprintf(
-		"sed 's/port=%d/port=%d/' %[3]s/postgresql.conf > %[3]s/postgresql.conf.updated && "+
-			"mv %[3]s/postgresql.conf %[3]s/postgresql.conf.bak && "+ // XXX not atomic! failure here means we lost the .conf
-			"mv %[3]s/postgresql.conf.updated %[3]s/postgresql.conf",
-		target.MasterPort(), source.MasterPort(), target.MasterDataDir(),
-	)
-	gplog.Debug("executing command: %+v", script) // TODO: Move this debug log into ExecuteLocalCommand()
-	cmd := exec.Command("bash", "-c", script)
-	_, err := cmd.Output()
-	if err != nil {
-		return xerrors.Errorf("%s failed to execute sed command: %w",
-			idl.Substep_FINALIZE_UPDATE_POSTGRESQL_CONF, err)
-	}
 	return nil
 }

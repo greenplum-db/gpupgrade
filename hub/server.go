@@ -409,3 +409,18 @@ func (s *Server) SaveConfig() (err error) {
 
 	return nil
 }
+
+func LoadConfig(conf *Config, path string) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return xerrors.Errorf("opening configuration file: %w", err)
+	}
+	defer file.Close()
+
+	err = conf.Load(file)
+	if err != nil {
+		return xerrors.Errorf("reading configuration file: %w", err)
+	}
+
+	return nil
+}

@@ -5,10 +5,11 @@ package idl;
 import "cli_to_hub.proto";
 
 service Agent {
-    rpc CheckDiskSpace (CheckSegmentDiskSpaceRequest) returns (CheckDiskSpaceReply) {}
-    rpc UpgradePrimaries (UpgradePrimariesRequest) returns (UpgradePrimariesReply) {}
-    rpc CreateSegmentDataDirectories (CreateSegmentDataDirRequest) returns (CreateSegmentDataDirReply) {}
-    rpc StopAgent(StopAgentRequest) returns (StopAgentReply) {}
+  rpc CheckDiskSpace (CheckSegmentDiskSpaceRequest) returns (CheckDiskSpaceReply) {}
+  rpc UpgradePrimaries (UpgradePrimariesRequest) returns (UpgradePrimariesReply) {}
+  rpc CreateSegmentDataDirectories (CreateSegmentDataDirRequest) returns (CreateSegmentDataDirReply) {}
+  rpc RenameDirectories (RenameDirectoriesRequest) returns (RenameDirectoriesReply) {}
+  rpc StopAgent (StopAgentRequest) returns (StopAgentReply) {}
 }
 
 message UpgradePrimariesRequest {
@@ -37,6 +38,17 @@ message CreateSegmentDataDirRequest {
 }
 
 message CreateSegmentDataDirReply {}
+
+message RenamePair {
+  string Src = 1;
+  string Dst = 2;
+}
+
+message RenameDirectoriesRequest {
+  repeated RenamePair Pairs = 1;
+}
+
+message RenameDirectoriesReply {}
 
 message StopAgentRequest {}
 message StopAgentReply {}
