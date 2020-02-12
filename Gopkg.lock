@@ -394,7 +394,6 @@
     "github.com/google/renameio",
     "github.com/greenplum-db/gp-common-go-libs/dbconn",
     "github.com/greenplum-db/gp-common-go-libs/gplog",
-    "github.com/greenplum-db/gp-common-go-libs/operating",
     "github.com/greenplum-db/gp-common-go-libs/testhelper",
     "github.com/hashicorp/go-multierror",
     "github.com/lib/pq",
