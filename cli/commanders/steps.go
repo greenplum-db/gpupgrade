@@ -18,19 +18,24 @@ type receiver interface {
 }
 
 var lines = map[idl.Substep]string{
-	idl.Substep_CONFIG:                  "Retrieving configs...",
-	idl.Substep_START_AGENTS:            "Starting agents...",
-	idl.Substep_CREATE_TARGET_CONFIG:    "Generating new cluster configuration...",
-	idl.Substep_SHUTDOWN_SOURCE_CLUSTER: "Stopping old cluster...",
-	idl.Substep_INIT_TARGET_CLUSTER:     "Creating new cluster...",
-	idl.Substep_SHUTDOWN_TARGET_CLUSTER: "Stopping new cluster...",
-	idl.Substep_BACKUP_TARGET_MASTER:    "Backing up new master...",
-	idl.Substep_CHECK_UPGRADE:           "Running pg_upgrade checks...",
-	idl.Substep_UPGRADE_MASTER:          "Upgrading master...",
-	idl.Substep_COPY_MASTER:             "Copying master to segments...",
-	idl.Substep_UPGRADE_PRIMARIES:       "Upgrading segments...",
-	idl.Substep_START_TARGET_CLUSTER:    "Starting new cluster...",
-	idl.Substep_RECONFIGURE_PORTS:       "Changing cluster ports...",
+	idl.Substep_CONFIG:                            "Retrieving configs...",
+	idl.Substep_START_AGENTS:                      "Starting agents...",
+	idl.Substep_CREATE_TARGET_CONFIG:              "Generating new cluster configuration...",
+	idl.Substep_SHUTDOWN_SOURCE_CLUSTER:           "Stopping old cluster...",
+	idl.Substep_INIT_TARGET_CLUSTER:               "Creating new cluster...",
+	idl.Substep_SHUTDOWN_TARGET_CLUSTER:           "Stopping new cluster...",
+	idl.Substep_BACKUP_TARGET_MASTER:              "Backing up new master...",
+	idl.Substep_CHECK_UPGRADE:                     "Running pg_upgrade checks...",
+	idl.Substep_UPGRADE_MASTER:                    "Upgrading master...",
+	idl.Substep_COPY_MASTER:                       "Copying master to segments...",
+	idl.Substep_UPGRADE_PRIMARIES:                 "Upgrading segments...",
+	idl.Substep_START_TARGET_CLUSTER:              "Starting new cluster...",
+	idl.Substep_FINALIZE_SHUTDOWN_TARGET_CLUSTER:  "Stopping new cluster",
+	idl.Substep_FINALIZE_START_TARGET_MASTER:      "Starting new master...",
+	idl.Substep_FINALIZE_UPDATE_CATALOG_WITH_PORT: "Updating new master with port information...",
+	idl.Substep_FINALIZE_SHUTDOWN_TARGET_MASTER:   "Stopping new master...",
+	idl.Substep_FINALIZE_UPDATE_POSTGRESQL_CONF:   "Updating master postgreql.conf...",
+	idl.Substep_FINALIZE_START_TARGET_CLUSTER:     "Starting new cluster...",
 }
 
 var indicators = map[idl.Status]string{

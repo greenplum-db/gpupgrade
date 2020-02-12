@@ -39,11 +39,11 @@ func TestStartOrStopCluster(t *testing.T) {
 	utils.System.RemoveAll = func(s string) error { return nil }
 	utils.System.MkdirAll = func(s string, perm os.FileMode) error { return nil }
 
-	startStopClusterCmd = nil
+	startStopCmd = nil
 	isPostmasterRunningCmd = nil
 
 	defer func() {
-		startStopClusterCmd = exec.Command
+		startStopCmd = exec.Command
 		isPostmasterRunningCmd = exec.Command
 	}()
 
@@ -65,47 +65,77 @@ func TestStartOrStopCluster(t *testing.T) {
 		g.Expect(err).To(HaveOccurred())
 	})
 
-	t.Run("stopCluster successfully shuts down cluster", func(t *testing.T) {
+	t.Run("stop cluster successfully shuts down cluster", func(t *testing.T) {
 		isPostmasterRunningCmd = exectest.NewCommandWithVerifier(IsPostmasterRunningCmd,
 			func(path string, args ...string) {
 				g.Expect(path).To(Equal("bash"))
 				g.Expect(args).To(Equal([]string{"-c", "pgrep -F basedir/seg-1/postmaster.pid"}))
 			})
 
-		startStopClusterCmd = exectest.NewCommandWithVerifier(StopClusterCmd,
+		startStopCmd = exectest.NewCommandWithVerifier(StopClusterCmd,
 			func(path string, args ...string) {
 				g.Expect(path).To(Equal("bash"))
 				g.Expect(args).To(Equal([]string{"-c", "source /source/bindir/../greenplum_path.sh " +
-					"&& /source/bindir/gpstop -a -d basedir/seg-1"}))
+					"&& /source/bindir/gpstop  -a -d basedir/seg-1"}))
 			})
 
-		err := StopCluster(DevNull, source)
+		err := StopCluster(DevNull, source, true)
 		g.Expect(err).ToNot(HaveOccurred())
 	})
 
-	t.Run("stopCluster detects that cluster is already shutdown", func(t *testing.T) {
+	t.Run("stop cluster detects that cluster is already shutdown", func(t *testing.T) {
 		isPostmasterRunningCmd = exectest.NewCommand(IsPostmasterRunningCmd_Errors)
 
 		var skippedStopClusterCommand = true
-		startStopClusterCmd = exectest.NewCommandWithVerifier(IsPostmasterRunningCmd,
+		startStopCmd = exectest.NewCommandWithVerifier(IsPostmasterRunningCmd,
 			func(path string, args ...string) {
 				skippedStopClusterCommand = false
 			})
 
-		err := StopCluster(DevNull, source)
+		err := StopCluster(DevNull, source, true)
 		g.Expect(err).To(HaveOccurred())
 		g.Expect(skippedStopClusterCommand).To(Equal(true))
 	})
 
-	t.Run("startCluster successfully starts up cluster", func(t *testing.T) {
-		startStopClusterCmd = exectest.NewCommandWithVerifier(StartClusterCmd,
+	t.Run("start cluster successfully starts up cluster", func(t *testing.T) {
+		startStopCmd = exectest.NewCommandWithVerifier(StartClusterCmd,
 			func(path string, args ...string) {
 				g.Expect(path).To(Equal("bash"))
 				g.Expect(args).To(Equal([]string{"-c", "source /source/bindir/../greenplum_path.sh " +
-					"&& /source/bindir/gpstart -a -d basedir/seg-1"}))
+					"&& /source/bindir/gpstart  -a -d basedir/seg-1"}))
 			})
 
-		err := StartCluster(DevNull, source)
+		err := StartCluster(DevNull, source, true)
+		g.Expect(err).ToNot(HaveOccurred())
+	})
+
+	t.Run("start master successfully starts up master only", func(t *testing.T) {
+		startStopCmd = exectest.NewCommandWithVerifier(StartClusterCmd,
+			func(path string, args ...string) {
+				g.Expect(path).To(Equal("bash"))
+				g.Expect(args).To(Equal([]string{"-c", "source /source/bindir/../greenplum_path.sh " +
+					"&& /source/bindir/gpstart -m -a -d basedir/seg-1"}))
+			})
+
+		err := StartMasterOnly(DevNull, source, true)
+		g.Expect(err).ToNot(HaveOccurred())
+	})
+
+	t.Run("stop master successfully shuts down master only", func(t *testing.T) {
+		isPostmasterRunningCmd = exectest.NewCommandWithVerifier(IsPostmasterRunningCmd,
+			func(path string, args ...string) {
+				g.Expect(path).To(Equal("bash"))
+				g.Expect(args).To(Equal([]string{"-c", "pgrep -F basedir/seg-1/postmaster.pid"}))
+			})
+
+		startStopCmd = exectest.NewCommandWithVerifier(StopClusterCmd,
+			func(path string, args ...string) {
+				g.Expect(path).To(Equal("bash"))
+				g.Expect(args).To(Equal([]string{"-c", "source /source/bindir/../greenplum_path.sh " +
+					"&& /source/bindir/gpstop -m -a -d basedir/seg-1"}))
+			})
+
+		err := StopMasterOnly(DevNull, source, true)
 		g.Expect(err).ToNot(HaveOccurred())
 	})
 }

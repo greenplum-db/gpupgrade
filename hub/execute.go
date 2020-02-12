@@ -33,8 +33,8 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 		}
 	}()
 
-	st.Run(idl.Substep_SHUTDOWN_SOURCE_CLUSTER, func(stream step.OutStreams) error {
-		return StopCluster(stream, s.Source)
+	st.Run(idl.Substep_SHUTDOWN_SOURCE_CLUSTER, func(streams step.OutStreams) error {
+		return StopCluster(streams, s.Source, true)
 	})
 
 	st.Run(idl.Substep_UPGRADE_MASTER, func(streams step.OutStreams) error {
@@ -63,7 +63,7 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 	})
 
 	st.Run(idl.Substep_START_TARGET_CLUSTER, func(streams step.OutStreams) error {
-		return StartCluster(streams, s.Target)
+		return StartCluster(streams, s.Target, false)
 	})
 
 	return st.Err()
