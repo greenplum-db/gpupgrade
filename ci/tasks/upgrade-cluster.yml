@@ -19,3 +19,5 @@ run:
 
 params:
   FILTER_DIFF: 0
+  OLD_PACKAGE:
+  NEW_PACKAGE:

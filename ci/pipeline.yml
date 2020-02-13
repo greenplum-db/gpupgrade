@@ -102,6 +102,13 @@ resources:
     json_key: ((concourse-gcs-resources-service-account-key))
     versioned_file: 5X_STABLE/simple_dump/dump.sql.xz
 
+- name: gp-upgrade-packaging
+  type: git
+  source:
+    branch: master
+    private_key: ((gp-upgrade-packaging-git-private-key))
+    uri: git@github.com:pivotal/gp-upgrade-packaging.git
+
 anchors:
   - &ccp_default_params
     action: create
@@ -212,6 +219,13 @@ jobs:
     # binary...
     - get: sqldump
       resource: dump_gpdb6_icw_gporca_centos6
+    - get: gp-upgrade-packaging
+  - task: transform_rpm
+    file: gp-upgrade-packaging/ci/concourse/package/task.yml
+    input_mapping:
+      bin-gpdb: bin_gpdb6
+    output_mapping:
+      rpm-gpdb: rpm_gpdb6
   - put: terraform
     params:
       <<: *ccp_default_params
@@ -225,15 +239,16 @@ jobs:
     params:
       <<: *ccp_gen_cluster_default_params
       PLATFORM: centos6
+      GPDB_RPM: true
     input_mapping:
-      gpdb_binary: bin_gpdb6
+      gpdb_rpm: rpm_gpdb6
   - task: gpinitsystem_old_cluster
     file: ccp_src/ci/tasks/gpinitsystem.yml
   - task: upgrade_cluster
     file: gpupgrade_src/ci/tasks/upgrade-cluster.yml
     params:
-      GPHOME_OLD: /usr/local/greenplum-db-devel
-      GPHOME_NEW: /usr/local/greenplum-db-devel
+      OLD_PACKAGE: greenplum-db-6
+      NEW_PACKAGE: greenplum-db-6
   ensure:
     <<: *set_failed
   on_success:
@@ -254,6 +269,13 @@ jobs:
     # binary...
     - get: sqldump
       resource: dump_gpdb6_icw_gporca_centos6
+    - get: gp-upgrade-packaging
+  - task: transform_rpm
+    file: gp-upgrade-packaging/ci/concourse/package/task.yml
+    input_mapping:
+      bin-gpdb: bin_gpdb6
+    output_mapping:
+      rpm-gpdb: rpm_gpdb6
   - put: terraform
     params:
       <<: *ccp_default_params
@@ -266,15 +288,16 @@ jobs:
     params:
       <<: *ccp_gen_cluster_default_params
       PLATFORM: centos6
+      GPDB_RPM: true
     input_mapping:
-      gpdb_binary: bin_gpdb6
+      gpdb_rpm: rpm_gpdb6
   - task: gpinitsystem_old_cluster
     file: ccp_src/ci/tasks/gpinitsystem.yml
   - task: upgrade_cluster
     file: gpupgrade_src/ci/tasks/upgrade-cluster.yml
     params:
-      GPHOME_OLD: /usr/local/greenplum-db-devel
-      GPHOME_NEW: /usr/local/greenplum-db-devel
+      OLD_PACKAGE: greenplum-db-6
+      NEW_PACKAGE: greenplum-db-6
   ensure:
     <<: *set_failed
   on_success:
@@ -297,6 +320,20 @@ jobs:
         - get: ccp_src
         - get: sqldump
           resource: dump_gpdb5_simple
+        - get: gp-upgrade-packaging
+    - in_parallel:
+      - task: transform_old
+        file: gp-upgrade-packaging/ci/concourse/package/task.yml
+        input_mapping:
+          bin-gpdb: bin_gpdb_old
+        output_mapping:
+          rpm-gpdb: rpm_gpdb_old
+      - task: transform_new
+        file: gp-upgrade-packaging/ci/concourse/package/task.yml
+        input_mapping:
+          bin-gpdb: bin_gpdb_new
+        output_mapping:
+          rpm-gpdb: rpm_gpdb_new
     - put: terraform
       params:
         <<: *ccp_default_params
@@ -310,8 +347,9 @@ jobs:
       params:
         <<: *ccp_gen_cluster_default_params
         PLATFORM: centos6
+        GPDB_RPM: true
       input_mapping:
-        gpdb_binary: bin_gpdb_old
+        gpdb_rpm: rpm_gpdb_old
     - task: gpinitsystem_old_cluster
       file: ccp_src/ci/tasks/gpinitsystem.yml
     - task: prepare_old_and_new_installations
@@ -323,11 +361,8 @@ jobs:
             repository: alpine
             tag: latest
         inputs:
-          - name: bin_gpdb_new
+          - name: rpm_gpdb_new
           - name: cluster_env_files
-        params:
-          GPHOME_OLD: /usr/local/greenplum-db-old
-          GPHOME_NEW: /usr/local/greenplum-db-new
         run:
           path: sh
           args:
@@ -337,47 +372,17 @@ jobs:
 
               cp -R cluster_env_files/.ssh /root/.ssh
 
-              # XXX gen_cluster installs the old binaries under
-              #     /usr/local/greenplum-db-devel
-              # which, due to an incorrect RPATH setting in our build process,
-              # causes cross-linking with the new binaries. Move the binaries
-              # from that path.
-              ssh -ttn mdw '
-                  set -ex
-                  source /usr/local/greenplum-db-devel/greenplum_path.sh
-                  MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1 gpstop -ai
-              '
-              for host in $(cat cluster_env_files/hostfile_all); do
-                  ssh -ttn centos@"$host" GPHOME_OLD="${GPHOME_OLD}" '
-                      set -ex
-                      sudo mv /usr/local/greenplum-db-devel ${GPHOME_OLD}
-                      sudo sed -e "s|GPHOME=.*$|GPHOME=${GPHOME_OLD}|" -i ${GPHOME_OLD}/greenplum_path.sh
-                  '
-              done
-              ssh -ttn mdw GPHOME_OLD="${GPHOME_OLD}" '
-                  set -ex
-                  source ${GPHOME_OLD}/greenplum_path.sh
-                  MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1 gpstart -a
-              '
-
               # Install the new binary.
               for host in $(cat cluster_env_files/hostfile_all); do
-                  scp bin_gpdb_new/*.tar.gz "${host}:/tmp/bin_gpdb_new.tar.gz"
-
-                  ssh -ttn centos@"$host" GPHOME_NEW="${GPHOME_NEW}" '
-                      set -ex
-                      sudo mkdir -p ${GPHOME_NEW}
-                      sudo tar -xf /tmp/bin_gpdb_new.tar.gz -C ${GPHOME_NEW}
-                      sudo chown -R gpadmin:gpadmin ${GPHOME_NEW}
-                      sudo sed -e "s|GPHOME=.*$|GPHOME=${GPHOME_NEW}|" -i ${GPHOME_NEW}/greenplum_path.sh
-                  '
+                  scp rpm_gpdb_new/*.rpm "${host}:/tmp/bin_gpdb_new.rpm"
+                  ssh -ttn centos@"$host" sudo yum install -y /tmp/bin_gpdb_new.rpm
               done
     - task: upgrade_cluster
       file: gpupgrade_src/ci/tasks/upgrade-cluster.yml
       params:
-        GPHOME_OLD: /usr/local/greenplum-db-old
-        GPHOME_NEW: /usr/local/greenplum-db-new
         FILTER_DIFF: 1
+        OLD_PACKAGE: greenplum-db-5
+        NEW_PACKAGE: greenplum-db-6
   ensure:
     <<: *set_failed
   on_success:

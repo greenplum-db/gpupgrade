@@ -2,84 +2,6 @@
 
 set -eux -o pipefail
 
-# Due to buggy RPATH settings and dependencies on LD_LIBRARY_PATH during our
-# build process, it's very difficult to use the old and new binaries at the same
-# time. (They end up cross-linked against each others' dependencies.)
-# make_trampoline_directories() is a temporary workaround for this problem.
-#
-# It sets up a fake binary directory, for both the old and new clusters, that
-# contains a set of symbolic links to the necessary executables. The trampoline
-# binary will set PATH and LD_LIBRARY_PATH as if we had sourced greenplum_path,
-# then call the actual executable with the provided arguments. This way we can
-# avoid polluting the environment with either the old or new link paths; they're
-# set just-in-time.
-make_trampoline_directories() {
-    cat - > /tmp/trampoline <<"EOF"
-#! /bin/bash
-set -eu -o pipefail
-
-executable=$(basename ${BASH_SOURCE[0]})
-gphome=$(readlink -e "$(dirname ${BASH_SOURCE[0]})/..")
-
-if [ -z ${LD_LIBRARY_PATH+x} ]; then
-    export LD_LIBRARY_PATH="${gphome}/lib:${gphome}/ext/python/lib"
-else
-    # Keep any existing paths around too.
-    export LD_LIBRARY_PATH="${gphome}/lib:${gphome}/ext/python/lib:$LD_LIBRARY_PATH"
-fi
-export PATH="${gphome}/bin:$PATH"
-
-"${gphome}/bin/${executable}" "$@"
-EOF
-
-    for host in "$@"; do
-        scp /tmp/trampoline "$host":/tmp/trampoline
-
-        time ssh centos@"$host" bash <<EOF
-set -eux -o pipefail
-
-sudo mkdir "${GPHOME_OLD}/fake-bin"
-cd "${GPHOME_OLD}/fake-bin"
-sudo cp /tmp/trampoline .
-sudo chmod +x ./trampoline
-
-sudo ln -s trampoline pg_controldata
-sudo ln -s trampoline pg_ctl
-sudo ln -s trampoline pg_resetxlog
-sudo ln -s trampoline postgres
-
-sudo ln -s trampoline gpstop
-
-# GPHOME_NEW might be the same as GPHOME_OLD for same-version upgrades.
-if [ "$GPHOME_NEW" != "$GPHOME_OLD" ]; then
-    sudo mkdir "${GPHOME_NEW}/fake-bin"
-    cd "${GPHOME_NEW}/fake-bin"
-    sudo cp /tmp/trampoline .
-    sudo chmod +x ./trampoline
-
-    sudo ln -s trampoline pg_controldata
-    sudo ln -s trampoline pg_ctl
-    sudo ln -s trampoline pg_resetxlog
-    sudo ln -s trampoline postgres
-
-    sudo ln -s trampoline gpstop
-fi
-
-sudo ln -s trampoline initdb
-sudo ln -s trampoline pg_dump
-sudo ln -s trampoline pg_dumpall
-sudo ln -s trampoline pg_restore
-sudo ln -s trampoline pg_upgrade
-sudo ln -s trampoline psql
-sudo ln -s trampoline vacuumdb
-
-sudo ln -s trampoline gpinitstandby
-sudo ln -s trampoline gpinitsystem
-sudo ln -s trampoline gpstart
-EOF
-    done
-}
-
 dump_sql() {
     local port=$1
     local dumpfile=$2
@@ -118,6 +40,14 @@ compare_dumps() {
     "
 }
 
+# Retrieves the installed GPHOME for a given GPDB RPM.
+rpm_gphome() {
+    local package_name=$1
+
+    local version=$(ssh -n gpadmin@mdw rpm -q --qf '%{version}' "$package_name")
+    echo /usr/local/greenplum-db-$version
+}
+
 #
 # MAIN
 #
@@ -130,6 +60,10 @@ mapfile -t hosts < cluster_env_files/hostfile_all
 
 # Copy over the SQL dump we pulled from master.
 scp sqldump/dump.sql.xz gpadmin@mdw:/tmp/
+
+# Figure out where GPHOMEs are.
+export GPHOME_OLD=$(rpm_gphome ${OLD_PACKAGE})
+export GPHOME_NEW=$(rpm_gphome ${NEW_PACKAGE})
 
 # Build gpupgrade.
 export GOPATH=$PWD/go
@@ -154,9 +88,6 @@ time ssh mdw bash <<EOF
     unxz < /tmp/dump.sql.xz | psql -f - postgres
 EOF
 
-echo 'Creating fake binary directories for the environment...'
-make_trampoline_directories "${hosts[@]}"
-
 # Dump the old cluster for later comparison.
 dump_sql 5432 /tmp/old.sql
 
@@ -165,8 +96,8 @@ time ssh mdw bash <<EOF
     set -eux -o pipefail
 
     gpupgrade initialize \
-              --new-bindir ${GPHOME_NEW}/fake-bin \
-              --old-bindir ${GPHOME_OLD}/fake-bin \
+              --new-bindir ${GPHOME_NEW}/bin \
+              --old-bindir ${GPHOME_OLD}/bin \
               --old-port 5432
 
     gpupgrade execute
