@@ -5,11 +5,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/greenplum-db/gpupgrade/utils"
+
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	multierror "github.com/hashicorp/go-multierror"
 	"golang.org/x/xerrors"
-
-	"github.com/greenplum-db/gpupgrade/utils/cluster"
 
 	. "github.com/greenplum-db/gpupgrade/hub"
 )
@@ -36,7 +36,7 @@ func finishMock(mock sqlmock.Sqlmock, t *testing.T) {
 }
 
 func TestClonePortsFromCluster(t *testing.T) {
-	src, err := cluster.NewCluster([]cluster.SegConfig{
+	src, err := utils.NewCluster([]utils.SegConfig{
 		{ContentID: -1, Port: 123, Role: "p"},
 		{ContentID: 0, Port: 234, Role: "p"},
 		{ContentID: 1, Port: 345, Role: "p"},

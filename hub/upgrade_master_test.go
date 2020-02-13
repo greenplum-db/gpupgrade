@@ -17,7 +17,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
-	"github.com/greenplum-db/gpupgrade/utils/cluster"
 )
 
 func Success() {}
@@ -86,7 +85,7 @@ func init() {
 }
 
 func TestUpgradeMaster(t *testing.T) {
-	source := MustCreateCluster(t, []cluster.SegConfig{
+	source := MustCreateCluster(t, []utils.SegConfig{
 		{ContentID: -1, Port: 5432, DataDir: "/data/old", DbID: 1, Role: "p"},
 	})
 	source.BinDir = "/old/bin"
@@ -113,7 +112,7 @@ func TestUpgradeMaster(t *testing.T) {
 	// output streams are hooked up correctly, then defer to the acceptance
 	// tests for full end-to-end verification.
 
-	target := MustCreateCluster(t, []cluster.SegConfig{
+	target := MustCreateCluster(t, []utils.SegConfig{
 		{ContentID: -1, Port: 5433, DataDir: "/data/new", DbID: 2, Role: "p"},
 	})
 	target.BinDir = "/new/bin"

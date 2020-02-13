@@ -20,7 +20,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/utils"
-	"github.com/greenplum-db/gpupgrade/utils/cluster"
 )
 
 func gpinitsystem() {}
@@ -118,7 +117,7 @@ func TestWriteSegmentArray(t *testing.T) {
 	}
 
 	t.Run("correctly chooses ports when the master and segments are all on different hosts", func(t *testing.T) {
-		cluster := MustCreateCluster(t, []cluster.SegConfig{
+		cluster := MustCreateCluster(t, []utils.SegConfig{
 			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: "p"},
 			{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: "p"},
 			{ContentID: 1, DbID: 3, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: "p"},
@@ -135,7 +134,7 @@ func TestWriteSegmentArray(t *testing.T) {
 	})
 
 	t.Run("correctly chooses ports when the master is on one host and segments on another", func(t *testing.T) {
-		cluster := MustCreateCluster(t, []cluster.SegConfig{
+		cluster := MustCreateCluster(t, []utils.SegConfig{
 			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: "p"},
 			{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: "p"},
 			{ContentID: 1, DbID: 3, Hostname: "sdw1", DataDir: "/data/dbfast2/seg2", Role: "p"},
@@ -152,7 +151,7 @@ func TestWriteSegmentArray(t *testing.T) {
 	})
 
 	t.Run("sorts and deduplicates provided port range", func(t *testing.T) {
-		cluster := MustCreateCluster(t, []cluster.SegConfig{
+		cluster := MustCreateCluster(t, []utils.SegConfig{
 			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: "p"},
 			{ContentID: 0, DbID: 2, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: "p"},
 			{ContentID: 1, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: "p"},
@@ -169,7 +168,7 @@ func TestWriteSegmentArray(t *testing.T) {
 	})
 
 	t.Run("uses default port range when port list is empty", func(t *testing.T) {
-		cluster := MustCreateCluster(t, []cluster.SegConfig{
+		cluster := MustCreateCluster(t, []utils.SegConfig{
 			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: "p"},
 			{ContentID: 0, DbID: 2, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: "p"},
 			{ContentID: 1, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: "p"},
@@ -187,7 +186,7 @@ func TestWriteSegmentArray(t *testing.T) {
 	})
 
 	t.Run("errors when old cluster contains no master segment", func(t *testing.T) {
-		cluster := MustCreateCluster(t, []cluster.SegConfig{
+		cluster := MustCreateCluster(t, []utils.SegConfig{
 			{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: "p"},
 		})
 		ports := []uint32{15433}
@@ -199,7 +198,7 @@ func TestWriteSegmentArray(t *testing.T) {
 	})
 
 	t.Run("errors when not given enough ports (single host)", func(t *testing.T) {
-		cluster := MustCreateCluster(t, []cluster.SegConfig{
+		cluster := MustCreateCluster(t, []utils.SegConfig{
 			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: "p"},
 			{ContentID: 0, DbID: 2, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: "p"},
 			{ContentID: 1, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: "p"},
@@ -213,7 +212,7 @@ func TestWriteSegmentArray(t *testing.T) {
 	})
 
 	t.Run("errors when not given enough ports (multiple hosts)", func(t *testing.T) {
-		cluster := MustCreateCluster(t, []cluster.SegConfig{
+		cluster := MustCreateCluster(t, []utils.SegConfig{
 			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: "p"},
 			{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: "p"},
 			{ContentID: 1, DbID: 3, Hostname: "sdw1", DataDir: "/data/dbfast2/seg2", Role: "p"},
@@ -233,7 +232,7 @@ func TestCreateSegmentDataDirectories(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	c := MustCreateCluster(t, []cluster.SegConfig{
+	c := MustCreateCluster(t, []utils.SegConfig{
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: "p"},
 		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: "/data/dbfast1/seg1", Role: "p"},
 		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: "p"},

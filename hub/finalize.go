@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/greenplum-db/gpupgrade/utils"
+
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
@@ -11,7 +13,6 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
-	"github.com/greenplum-db/gpupgrade/utils/cluster"
 )
 
 func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeServer) (err error) {
@@ -43,7 +44,7 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 // As a reminder to developers, we don't have any mirrors up at this point on
 // the target cluster. We copy only the primary information. Good thing too,
 // because cluster.Cluster doesn't give us mirror info.
-func ClonePortsFromCluster(db *sql.DB, src *cluster.Cluster) (err error) {
+func ClonePortsFromCluster(db *sql.DB, src *utils.Cluster) (err error) {
 	tx, err := db.Begin()
 	if err != nil {
 		return xerrors.Errorf("starting transaction for port clone: %w", err)
@@ -134,7 +135,7 @@ func commitOrRollback(tx *sql.Tx, err error) error {
 //
 // There's nothing magic about the map signatures here; the maps' value types
 // are ignored completely.
-func contentsMatch(src map[int]cluster.SegConfig, dst map[int]bool) bool {
+func contentsMatch(src map[int]utils.SegConfig, dst map[int]bool) bool {
 	for content := range src {
 		if _, ok := dst[content]; !ok {
 			return false
@@ -150,7 +151,7 @@ func contentsMatch(src map[int]cluster.SegConfig, dst map[int]bool) bool {
 	return true
 }
 
-func sanityCheckContentIDs(tx *sql.Tx, src *cluster.Cluster) error {
+func sanityCheckContentIDs(tx *sql.Tx, src *utils.Cluster) error {
 	rows, err := tx.Query("SELECT content FROM gp_segment_configuration")
 	if err != nil {
 		return xerrors.Errorf("querying segment configuration: %w", err)

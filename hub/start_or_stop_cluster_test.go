@@ -7,7 +7,6 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/utils"
-	"github.com/greenplum-db/gpupgrade/utils/cluster"
 
 	. "github.com/onsi/gomega"
 )
@@ -32,7 +31,7 @@ func init() {
 func TestStartOrStopCluster(t *testing.T) {
 	g := NewGomegaWithT(t)
 
-	source := MustCreateCluster(t, []cluster.SegConfig{
+	source := MustCreateCluster(t, []utils.SegConfig{
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "basedir/seg-1", Role: "p"},
 	})
 	source.BinDir = "/source/bindir"

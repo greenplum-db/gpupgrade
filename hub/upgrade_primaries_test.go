@@ -1,25 +1,23 @@
 package hub_test
 
 import (
+	"errors"
 	"path/filepath"
-
-	"github.com/pkg/errors"
 
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/utils/cluster"
-
+	"github.com/greenplum-db/gpupgrade/utils"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("GetDataDirPairs", func() {
 	It("returns an error if new config does not contain all the same content as the old config", func() {
-		var err error
-		target.Cluster, err = cluster.NewCluster([]cluster.SegConfig{
-			{ContentID: 0, Hostname: "localhost", DataDir: "new/datadir1", Port: 11, Role: "p"},
+		newTarget, err := utils.NewCluster([]utils.SegConfig{
+			{ContentID: 0, Hostname: "localhost", DataDir: "new/datadir1", Port: 11, Role: utils.PrimaryRole},
 		})
 		Expect(err).NotTo(HaveOccurred())
+		testHub.Target = newTarget
 
 		_, err = testHub.GetDataDirPairs()
 

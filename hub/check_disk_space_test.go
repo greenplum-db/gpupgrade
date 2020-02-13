@@ -18,7 +18,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
 	"github.com/greenplum-db/gpupgrade/utils"
-	"github.com/greenplum-db/gpupgrade/utils/cluster"
 	"github.com/greenplum-db/gpupgrade/utils/disk"
 )
 
@@ -46,7 +45,7 @@ func TestCheckDiskSpace(t *testing.T) {
 	}
 
 	t.Run("reports no failures with enough space", func(t *testing.T) {
-		c = MustCreateCluster(t, []cluster.SegConfig{
+		c = MustCreateCluster(t, []utils.SegConfig{
 			{ContentID: -1, Hostname: "mdw", DataDir: "/data/master", Role: "p"},
 		})
 		req = &idl.CheckDiskSpaceRequest{Ratio: 0.25}
@@ -56,7 +55,7 @@ func TestCheckDiskSpace(t *testing.T) {
 	})
 
 	t.Run("reports disk failures for the master host", func(t *testing.T) {
-		c = MustCreateCluster(t, []cluster.SegConfig{
+		c = MustCreateCluster(t, []utils.SegConfig{
 			{ContentID: -1, Hostname: "mdw", DataDir: "/data/master", Role: "p"},
 		})
 		req = &idl.CheckDiskSpaceRequest{Ratio: 0.75}
@@ -74,7 +73,7 @@ func TestCheckDiskSpace(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c = MustCreateCluster(t, []cluster.SegConfig{
+		c = MustCreateCluster(t, []utils.SegConfig{
 			{ContentID: -1, Hostname: "mdw", DataDir: "/data/master", Role: "p"},
 			{ContentID: 0, Hostname: "sdw1", DataDir: "/data/primary", Role: "p"},
 			{ContentID: 1, Hostname: "sdw2", DataDir: "/data/primary", Role: "p"},
@@ -124,7 +123,7 @@ func TestCheckDiskSpace(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		c = MustCreateCluster(t, []cluster.SegConfig{
+		c = MustCreateCluster(t, []utils.SegConfig{
 			{ContentID: -1, Hostname: "mdw", DataDir: "/data/master", Role: "p"},
 			{ContentID: 0, Hostname: "sdw1", DataDir: "/data/primary", Role: "p"},
 		})

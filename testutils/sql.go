@@ -3,11 +3,11 @@ package testutils
 import (
 	"fmt"
 
+	"github.com/greenplum-db/gpupgrade/utils"
+
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-
-	"github.com/greenplum-db/gpupgrade/utils/cluster"
 )
 
 // MockSegmentConfiguration returns a set of sqlmock.Rows that contains the
@@ -27,8 +27,8 @@ func MockSegmentConfiguration() *sqlmock.Rows {
 //
 // When changing this implementation, make sure you change
 // MockSegmentConfiguration() to match!
-func MockCluster() *cluster.Cluster {
-	c, err := cluster.NewCluster([]cluster.SegConfig{
+func MockCluster() *utils.Cluster {
+	c, err := utils.NewCluster([]utils.SegConfig{
 		{DbID: 1, ContentID: -1, Port: 15432, Hostname: "mdw", DataDir: "/data/master/gpseg-1", Role: "p"},
 		{DbID: 2, ContentID: 0, Port: 25432, Hostname: "sdw1", DataDir: "/data/primary/gpseg0", Role: "p"},
 	})

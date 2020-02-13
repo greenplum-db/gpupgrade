@@ -19,7 +19,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
-	"github.com/greenplum-db/gpupgrade/utils/cluster"
 )
 
 func (s *Server) GenerateInitsystemConfig(ports []uint32) (int, error) {
@@ -160,7 +159,7 @@ func sanitize(ports []uint32) []uint32 {
 
 func WriteSegmentArray(config []string, source *utils.Cluster, ports []uint32) ([]string, int, error) {
 	// Partition segments by host in order to correctly assign ports.
-	segmentsByHost := make(map[string][]cluster.SegConfig)
+	segmentsByHost := make(map[string][]utils.SegConfig)
 	for _, content := range source.ContentIDs {
 		if content == -1 {
 			continue
@@ -193,7 +192,7 @@ func WriteSegmentArray(config []string, source *utils.Cluster, ports []uint32) (
 	// Use a copy of the source cluster's segment configs rather than modifying
 	// the source cluster. This keeps the in-memory representation of source
 	// cluster consistent with its on-disk representation.
-	copySegments := make(map[int]cluster.SegConfig)
+	copySegments := make(map[int]utils.SegConfig)
 	for _, segments := range segmentsByHost {
 		if len(segmentPorts) < len(segments) {
 			return nil, 0, errors.New("not enough ports for each segment")

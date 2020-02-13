@@ -14,7 +14,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
-	"github.com/greenplum-db/gpupgrade/utils/cluster"
 )
 
 func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_InitializeServer) (err error) {
@@ -112,7 +111,7 @@ func (s *Server) fillClusterConfigsSubStep(_ step.OutStreams, request *idl.Initi
 		return errors.Wrap(err, "could not retrieve source configuration")
 	}
 
-	s.Target = &utils.Cluster{Cluster: new(cluster.Cluster), BinDir: request.TargetBinDir}
+	s.Target = &utils.Cluster{BinDir: request.TargetBinDir}
 	s.UseLinkMode = request.UseLinkMode
 
 	if err := s.SaveConfig(); err != nil {
