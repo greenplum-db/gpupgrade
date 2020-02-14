@@ -35,15 +35,16 @@ func Finalize(stateDir string, source *utils.Cluster, target *utils.Cluster, str
 	}()
 
 	st.Run(idl.Substep_UPGRADE_STANDBY, func(streams step.OutStreams) error {
-		return UpgradeStandby(StandbyConfig{
+		greenplumRunner := &greenplumRunner{
+			masterPort:          target.MasterPort(),
+			masterDataDirectory: target.MasterDataDir(),
+			binDir:              target.BinDir,
+		}
+
+		return UpgradeStandby(greenplumRunner, StandbyConfig{
 			Port:          target.StandbyPort(),
 			Hostname:      target.StandbyHostname(),
 			DataDirectory: target.StandbyDataDirectory() + "_upgrade",
-			GreenplumRunner: &greenplumRunner{
-				masterPort:          target.MasterPort(),
-				masterDataDirectory: target.MasterDataDir(),
-				binDir:              target.BinDir,
-			},
 		})
 	})
 

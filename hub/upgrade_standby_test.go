@@ -18,41 +18,40 @@ func TestUpgradeStandby(t *testing.T) {
 	t.Run("it upgrades the standby through gpinitstandby", func(t *testing.T) {
 		hub.ResetUpgradeStandby()
 
-		spyEnv := NewSpyRunner()
-		runner := &spyGreenplumRunner{spyEnv}
+		spyRunner := NewSpyRunner()
 
 		config := hub.StandbyConfig{
-			Port:            8888,
-			Hostname:        "some-hostname",
-			DataDirectory:   "/some/standby/data/directory",
-			GreenplumRunner: runner,
+			Port:          8888,
+			Hostname:      "some-hostname",
+			DataDirectory: "/some/standby/data/directory",
 		}
 
-		hub.UpgradeStandby(config)
+		greenplumRunner := &spyGreenplumRunner{spyRunner}
+		hub.UpgradeStandby(greenplumRunner, config)
 
-		if spyEnv.TimesRunWasCalledWith("gpinitstandby") != 2 {
+		if spyRunner.TimesRunWasCalledWith("gpinitstandby") != 2 {
 			t.Errorf("got %v calls to config.Run, wanted %v calls",
-				spyEnv.TimesRunWasCalledWith("gpinitstandby"),
+				spyRunner.TimesRunWasCalledWith("gpinitstandby"),
 				2)
 		}
 
-		if !spyEnv.Call("gpinitstandby", 1).ArgumentsInclude("-r") {
+		if !spyRunner.Call("gpinitstandby", 1).ArgumentsInclude("-r") {
 			t.Errorf("expected remove to have been called")
 		}
 
-		portArgument := spyEnv.
+		portArgument := spyRunner.
 			Call("gpinitstandby", 2).
 			ArgumentValue("-P")
 
-		hostnameArgument := spyEnv.
+		hostnameArgument := spyRunner.
 			Call("gpinitstandby", 2).
 			ArgumentValue("-s")
 
-		dataDirectoryArgument := spyEnv.
+		dataDirectoryArgument := spyRunner.
 			Call("gpinitstandby", 2).
 			ArgumentValue("-S")
 
-		automaticArgument := spyEnv.
+		automaticArgument := spyRunner.
 			Call("gpinitstandby", 2).
 			ArgumentsInclude("-a")
 

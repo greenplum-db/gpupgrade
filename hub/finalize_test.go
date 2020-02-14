@@ -35,10 +35,12 @@ func TestFinalize(t *testing.T) {
 
 		upgradeWasCalled := false
 		var standbyConfigurationUsed hub.StandbyConfig
+		var greenplumRunner hub.GreenplumRunner
 
-		hub.StubUpgradeStandby(func(config hub.StandbyConfig) error {
+		hub.StubUpgradeStandby(func(shellRunner hub.GreenplumRunner, config hub.StandbyConfig) error {
 			upgradeWasCalled = true
 			standbyConfigurationUsed = config
+			greenplumRunner = shellRunner
 			return nil
 		})
 
@@ -85,21 +87,26 @@ func TestFinalize(t *testing.T) {
 				standbyConfigurationUsed.DataDirectory, "/some/target/master/data/dir_upgrade")
 		}
 
-		if standbyConfigurationUsed.MasterDataDirectory() != target.MasterDataDir() {
-			t.Errorf("got target cluster master data directory for standby configuration = %v, wanted %v",
-				standbyConfigurationUsed.MasterDataDirectory(), target.MasterDataDir())
+		if greenplumRunner.MasterDataDirectory() != target.MasterDataDir() {
+			t.Errorf("got target cluster master data directory in greenplum runner = %v, wanted %v",
+				greenplumRunner.MasterDataDirectory(), target.MasterDataDir())
 		}
 
-		if standbyConfigurationUsed.MasterPort() != target.MasterPort() {
-			t.Errorf("got target cluster master port for standby configuration = %v, wanted %v",
-				standbyConfigurationUsed.MasterPort(), target.MasterPort())
+		if greenplumRunner.MasterPort() != target.MasterPort() {
+			t.Errorf("got target cluster master port in greenplum runner = %v, wanted %v",
+				greenplumRunner.MasterPort(), target.MasterPort())
+		}
+
+		if greenplumRunner.BinDir() != target.BinDir {
+			t.Errorf("got target cluster master bin dir in greenplum runner = %v, wanted %v",
+				greenplumRunner.BinDir(), target.BinDir)
 		}
 	})
 
 	t.Run("it returns an error when upgrading the standby fails with an error", func(t *testing.T) {
 		hub.StubReconfigurePortsToSucceed()
 
-		hub.StubUpgradeStandby(func(config hub.StandbyConfig) error {
+		hub.StubUpgradeStandby(func(runner hub.GreenplumRunner, config hub.StandbyConfig) error {
 			return errors.New("failed")
 		})
 
