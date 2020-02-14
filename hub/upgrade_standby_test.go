@@ -8,19 +8,24 @@ import (
 	"github.com/greenplum-db/gpupgrade/hub"
 )
 
+type spyGreenplumRunner struct {
+	hub.ShellRunner
+}
+
 func TestUpgradeStandby(t *testing.T) {
 	testhelper.SetupTestLogger()
 
 	t.Run("it upgrades the standby through gpinitstandby", func(t *testing.T) {
 		hub.ResetUpgradeStandby()
 
-		spyEnv := NewSpyGreenplumEnv()
+		spyEnv := NewSpyRunner()
+		runner := &spyGreenplumRunner{spyEnv}
 
 		config := hub.StandbyConfig{
-			Port:          8888,
-			Hostname:      "some-hostname",
-			DataDirectory: "/some/standby/data/directory",
-			GreenplumEnv:  spyEnv,
+			Port:            8888,
+			Hostname:        "some-hostname",
+			DataDirectory:   "/some/standby/data/directory",
+			GreenplumRunner: runner,
 		}
 
 		hub.UpgradeStandby(config)
@@ -72,79 +77,14 @@ func TestUpgradeStandby(t *testing.T) {
 	})
 }
 
-func NewSpyGreenplumEnv() *spyGreenplumEnv {
-	return &spyGreenplumEnv{
-		calls: make(map[string][]*SpyCall),
-	}
-}
-
-func (e *spyGreenplumEnv) BinDir() string {
+func (e *spyGreenplumRunner) BinDir() string {
 	return ""
 }
 
-func (e *spyGreenplumEnv) MasterDataDirectory() string {
+func (e *spyGreenplumRunner) MasterDataDirectory() string {
 	return ""
 }
 
-func (e *spyGreenplumEnv) MasterPort() int {
+func (e *spyGreenplumRunner) MasterPort() int {
 	return 9999
-}
-
-type SpyCall struct {
-	arguments []string
-}
-
-func (c *SpyCall) ArgumentsInclude(argName string) bool {
-	for _, arg := range c.arguments {
-		if argName == arg {
-			return true
-		}
-	}
-	return false
-}
-
-func (c *SpyCall) ArgumentValue(flag string) string {
-	for i := 0; i < len(c.arguments)-1; i++ {
-		current := c.arguments[i]
-		next := c.arguments[i+1]
-
-		if flag == current {
-			return next
-		}
-	}
-
-	return ""
-}
-
-func (e *spyGreenplumEnv) Run(utilityName string, arguments ...string) error {
-	if e.calls == nil {
-		e.calls = make(map[string][]*SpyCall)
-	}
-
-	calls := e.calls[utilityName]
-	e.calls[utilityName] = append(calls, &SpyCall{arguments: arguments})
-
-	return nil
-}
-
-type spyGreenplumEnv struct {
-	calls map[string][]*SpyCall
-}
-
-func (e *spyGreenplumEnv) TimesRunWasCalledWith(utilityName string) int {
-	return len(e.calls[utilityName])
-}
-
-func (e *spyGreenplumEnv) Call(utilityName string, nthCall int) *SpyCall {
-	callsToUtility := e.calls[utilityName]
-
-	if len(callsToUtility) == 0 {
-		return &SpyCall{}
-	}
-
-	if len(callsToUtility) >= nthCall-1 {
-		return callsToUtility[nthCall-1]
-	}
-
-	return &SpyCall{}
 }

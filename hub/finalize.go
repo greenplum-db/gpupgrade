@@ -39,7 +39,7 @@ func Finalize(stateDir string, source *utils.Cluster, target *utils.Cluster, str
 			Port:          target.StandbyPort(),
 			Hostname:      target.StandbyHostname(),
 			DataDirectory: target.StandbyDataDirectory() + "_upgrade",
-			GreenplumEnv: &greenplumEnv{
+			GreenplumRunner: &greenplumRunner{
 				masterPort:          target.MasterPort(),
 				masterDataDirectory: target.MasterDataDir(),
 				binDir:              target.BinDir,

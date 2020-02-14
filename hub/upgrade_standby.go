@@ -12,7 +12,7 @@ type UpgradeStandbyFunc func(config StandbyConfig) error
 var upgradeStandbyFunc = upgradeStandby
 
 type StandbyConfig struct {
-	GreenplumEnv
+	GreenplumRunner
 	Port          int
 	Hostname      string
 	DataDirectory string
