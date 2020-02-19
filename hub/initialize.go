@@ -42,6 +42,10 @@ func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initi
 		return err
 	})
 
+	st.AlwaysRun(idl.Substep_CHECK_PREFERRED_ROLE, func(_ step.OutStreams) error {
+		return CheckSegmentNotInPreferredRole(s.Config.Source.MasterPort())
+	})
+
 	return st.Err()
 }
 

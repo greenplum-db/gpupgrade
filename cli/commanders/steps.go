@@ -21,6 +21,7 @@ var lines = map[idl.Substep]string{
 	idl.Substep_CONFIG:                            "Retrieving configs...",
 	idl.Substep_START_AGENTS:                      "Starting agents...",
 	idl.Substep_CREATE_TARGET_CONFIG:              "Generating new cluster configuration...",
+	idl.Substep_CHECK_PREFERRED_ROLE:              "Checking segments not in preferred role...",
 	idl.Substep_SHUTDOWN_SOURCE_CLUSTER:           "Stopping old cluster...",
 	idl.Substep_INIT_TARGET_CLUSTER:               "Creating new cluster...",
 	idl.Substep_SHUTDOWN_TARGET_CLUSTER:           "Stopping new cluster...",
