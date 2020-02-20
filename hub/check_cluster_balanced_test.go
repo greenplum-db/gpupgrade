@@ -1,12 +1,8 @@
 package hub_test
 
 import (
-	"fmt"
 	"reflect"
-	"strings"
 	"testing"
-
-	"golang.org/x/xerrors"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 
@@ -35,20 +31,16 @@ func TestCheckClusterIsBalanced(t *testing.T) {
 			dbidRows.AddRow(dbid)
 		}
 
-		mock.ExpectQuery("SELECT dbid FROM pg_catalog.gp_segment_configuration WHERE role != preferred_role").
+		mock.ExpectQuery(DbidNotInBalancedStateQuery).
 			WillReturnRows(dbidRows)
 
-		message := fmt.Sprintf(`
-		Segment dbid %s are not in balanced state.
-		The cluster must be balanced for gpupgrade to continue. 
-		Use gprecoverseg to rebalance the cluster.`,
-			strings.Join(strings.Fields(fmt.Sprint(dbids)), ","))
-		expectedError := xerrors.Errorf(message)
+		resultingDbids, err := FindUnbalancedSegments(db)
+		if err != nil {
+			t.Errorf("returned %#v", err)
+		}
 
-		err = FindUnbalancedSegments(db)
-
-		if !reflect.DeepEqual(err.Error(), expectedError.Error()) {
-			t.Fatalf("got %#v, want %#v", err, expectedError)
+		if !reflect.DeepEqual(resultingDbids, dbids) {
+			t.Fatalf("got %#v, want %#v", resultingDbids, dbids)
 		}
 	})
 
@@ -65,10 +57,14 @@ func TestCheckClusterIsBalanced(t *testing.T) {
 		mock.ExpectQuery(DbidNotInBalancedStateQuery).
 			WillReturnRows(dbidRows)
 
-		err = FindUnbalancedSegments(db)
+		resultingDbids, err := FindUnbalancedSegments(db)
 
 		if err != nil {
 			t.Fatalf("returned %#v", err)
+		}
+
+		if len(resultingDbids) > 0 {
+			t.Fatalf("returned %d", resultingDbids)
 		}
 	})
 }

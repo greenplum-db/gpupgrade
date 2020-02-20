@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"github.com/hashicorp/go-multierror"
 	"golang.org/x/xerrors"
 
@@ -15,7 +13,7 @@ import (
 
 const DbidNotInBalancedStateQuery = "SELECT dbid FROM pg_catalog.gp_segment_configuration WHERE role != preferred_role"
 
-func CheckClusterIsBalanced(sourcePort int) error {
+func CheckClusterIsBalanced(sourcePort int) (err error) {
 	connURI := fmt.Sprintf("postgresql://localhost:%d/template1?gp_session_role=utility&search_path=", sourcePort)
 	sourceDB, err := sql.Open("pgx", connURI)
 	defer func() {
@@ -30,30 +28,10 @@ func CheckClusterIsBalanced(sourcePort int) error {
 			idl.Substep_CHECK_CLUSTER_BALANCED, err)
 	}
 
-	err = FindUnbalancedSegments(sourceDB)
+	dbidsSwitchedRole, err := FindUnbalancedSegments(sourceDB)
 	if err != nil {
-		return errors.Wrap(err, "checking cluster is balanced")
-	}
-
-	return nil
-}
-
-func FindUnbalancedSegments(db *sql.DB) (err error) {
-	rows, err := db.Query(DbidNotInBalancedStateQuery)
-	if err != nil {
-		return xerrors.Errorf("%s failed to query segment configuration: %w", idl.Substep_CHECK_CLUSTER_BALANCED, err)
-	}
-	defer rows.Close()
-
-	var dbid int
-	var dbidsSwitchedRole []int
-
-	for rows.Next() {
-		err = rows.Scan(&dbid)
-		if err != nil {
-			xerrors.Errorf("%s failed to scan rows: %w", idl.Substep_CHECK_CLUSTER_BALANCED, err)
-		}
-		dbidsSwitchedRole = append(dbidsSwitchedRole, dbid)
+		return xerrors.Errorf("%s failed to find unbalanced segments: %w",
+			idl.Substep_CHECK_CLUSTER_BALANCED, err)
 	}
 
 	if len(dbidsSwitchedRole) > 0 {
@@ -66,4 +44,25 @@ func FindUnbalancedSegments(db *sql.DB) (err error) {
 	}
 
 	return nil
+}
+
+func FindUnbalancedSegments(db *sql.DB) (dbids []int, err error) {
+	rows, err := db.Query(DbidNotInBalancedStateQuery)
+	if err != nil {
+		return nil, xerrors.Errorf("%s failed to query segment configuration: %w", idl.Substep_CHECK_CLUSTER_BALANCED, err)
+	}
+	defer rows.Close()
+
+	var dbid int
+	var dbidsSwitchedRole []int
+
+	for rows.Next() {
+		err = rows.Scan(&dbid)
+		if err != nil {
+			return nil, xerrors.Errorf("%s failed to scan rows: %w", idl.Substep_CHECK_CLUSTER_BALANCED, err)
+		}
+		dbidsSwitchedRole = append(dbidsSwitchedRole, dbid)
+	}
+
+	return dbidsSwitchedRole, nil
 }
