@@ -1,4 +1,4 @@
-package hub
+package hub_test
 
 import (
 	"fmt"
@@ -19,7 +19,7 @@ func finishMock(mock sqlmock.Sqlmock, t *testing.T) {
 	}
 }
 
-func TestCheckSegmentNotInPreferredRole(t *testing.T) {
+func TestCheckClusterIsBalanced(t *testing.T) {
 
 	t.Run("list segments dbids not in preferred role", func(t *testing.T) {
 
@@ -39,13 +39,13 @@ func TestCheckSegmentNotInPreferredRole(t *testing.T) {
 			WillReturnRows(dbidRows)
 
 		message := fmt.Sprintf(`
-		Segment dbid %s are not in preferred role.
-		All the segments must be in their preferred role for gpupgrade to continue. 
-		Use gprecoverseg for bringing the segments in their preferred role.`,
+		Segment dbid %s are not in balanced state.
+		The cluster must be balanced for gpupgrade to continue. 
+		Use gprecoverseg to rebalance the cluster.`,
 			strings.Join(strings.Fields(fmt.Sprint(dbids)), ","))
 		expectedError := xerrors.Errorf(message)
 
-		err = CheckDbIdsNotInPreferredRole(db)
+		err = FindUnbalancedSegments(db)
 
 		if !reflect.DeepEqual(err.Error(), expectedError.Error()) {
 			t.Fatalf("got %#v, want %#v", err, expectedError)
@@ -62,10 +62,10 @@ func TestCheckSegmentNotInPreferredRole(t *testing.T) {
 
 		dbidRows := sqlmock.NewRows([]string{"dbid"})
 
-		mock.ExpectQuery("SELECT dbid FROM pg_catalog.gp_segment_configuration WHERE role != preferred_role").
+		mock.ExpectQuery(DbidNotInBalancedStateQuery).
 			WillReturnRows(dbidRows)
 
-		err = CheckDbIdsNotInPreferredRole(db)
+		err = FindUnbalancedSegments(db)
 
 		if err != nil {
 			t.Fatalf("returned %#v", err)

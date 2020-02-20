@@ -37,13 +37,13 @@ func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initi
 		return s.fillClusterConfigsSubStep(stream, in)
 	})
 
+	st.AlwaysRun(idl.Substep_CHECK_CLUSTER_BALANCED, func(_ step.OutStreams) error {
+		return CheckClusterIsBalanced(s.Config.Source.MasterPort())
+	})
+
 	st.Run(idl.Substep_START_AGENTS, func(_ step.OutStreams) error {
 		_, err := RestartAgents(context.Background(), nil, s.Source.GetHostnames(), s.AgentPort, s.StateDir)
 		return err
-	})
-
-	st.AlwaysRun(idl.Substep_CHECK_PREFERRED_ROLE, func(_ step.OutStreams) error {
-		return CheckSegmentNotInPreferredRole(s.Config.Source.MasterPort())
 	})
 
 	return st.Err()

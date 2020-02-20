@@ -5,13 +5,17 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/hashicorp/go-multierror"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 )
 
-func CheckSegmentNotInPreferredRole(sourcePort int) error {
+const DbidNotInBalancedStateQuery = "SELECT dbid FROM pg_catalog.gp_segment_configuration WHERE role != preferred_role"
+
+func CheckClusterIsBalanced(sourcePort int) error {
 	connURI := fmt.Sprintf("postgresql://localhost:%d/template1?gp_session_role=utility&search_path=", sourcePort)
 	sourceDB, err := sql.Open("pgx", connURI)
 	defer func() {
@@ -23,18 +27,21 @@ func CheckSegmentNotInPreferredRole(sourcePort int) error {
 	}()
 	if err != nil {
 		return xerrors.Errorf("%s failed to open connection to utility master: %w",
-			idl.Substep_CHECK_PREFERRED_ROLE, err)
+			idl.Substep_CHECK_CLUSTER_BALANCED, err)
 	}
 
-	return CheckDbIdsNotInPreferredRole(sourceDB)
+	err = FindUnbalancedSegments(sourceDB)
+	if err != nil {
+		return errors.Wrap(err, "checking cluster is balanced")
+	}
+
+	return nil
 }
 
-func CheckDbIdsNotInPreferredRole(db *sql.DB) error {
-	rows, err := db.Query(`SELECT dbid
-								FROM pg_catalog.gp_segment_configuration
-								WHERE role != preferred_role`)
+func FindUnbalancedSegments(db *sql.DB) (err error) {
+	rows, err := db.Query(DbidNotInBalancedStateQuery)
 	if err != nil {
-		return xerrors.Errorf("%s failed to query segment configuration: %w", idl.Substep_CHECK_PREFERRED_ROLE, err)
+		return xerrors.Errorf("%s failed to query segment configuration: %w", idl.Substep_CHECK_CLUSTER_BALANCED, err)
 	}
 	defer rows.Close()
 
@@ -44,16 +51,16 @@ func CheckDbIdsNotInPreferredRole(db *sql.DB) error {
 	for rows.Next() {
 		err = rows.Scan(&dbid)
 		if err != nil {
-			xerrors.Errorf("%s failed to scan rows: %w", idl.Substep_CHECK_PREFERRED_ROLE, err)
+			xerrors.Errorf("%s failed to scan rows: %w", idl.Substep_CHECK_CLUSTER_BALANCED, err)
 		}
 		dbidsSwitchedRole = append(dbidsSwitchedRole, dbid)
 	}
 
 	if len(dbidsSwitchedRole) > 0 {
 		message := fmt.Sprintf(`
-		Segment dbid %s are not in preferred role.
-		All the segments must be in their preferred role for gpupgrade to continue. 
-		Use gprecoverseg for bringing the segments in their preferred role.`,
+		Segment dbid %s are not in balanced state.
+		The cluster must be balanced for gpupgrade to continue. 
+		Use gprecoverseg to rebalance the cluster.`,
 			strings.Join(strings.Fields(fmt.Sprint(dbidsSwitchedRole)), ","))
 		return xerrors.Errorf(message)
 	}
