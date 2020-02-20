@@ -31,6 +31,10 @@ func TestUpgradeStandby(t *testing.T) {
 			t.Errorf("expected remove to have been called")
 		}
 
+		if !runner.Call("gpinitstandby", 1).ArgumentsInclude("-a") {
+			t.Errorf("expected remove to have been called without user prompt")
+		}
+
 		portArgument := runner.
 			Call("gpinitstandby", 2).
 			ArgumentValue("-P")

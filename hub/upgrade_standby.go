@@ -23,7 +23,7 @@ type StandbyConfig struct {
 func UpgradeStandby(r GreenplumRunner, standbyConfig StandbyConfig) error {
 	gplog.Info(fmt.Sprintf("removing any existing standby master"))
 
-	err := r.Run("gpinitstandby", "-r")
+	err := r.Run("gpinitstandby", "-r", "-a")
 
 	if err != nil {
 		gplog.Debug(fmt.Sprintf(
