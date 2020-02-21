@@ -108,7 +108,7 @@ If you would like to return the cluster to its original state, run
 	return nil
 }
 
-func Finalize(client idl.CliToHubClient) error {
+func Finalize(client idl.CliToHubClient, verbose bool) error {
 	fmt.Println()
 	fmt.Println("Finalize in progress.")
 	fmt.Println()
@@ -119,7 +119,7 @@ func Finalize(client idl.CliToHubClient) error {
 		return err
 	}
 
-	err = UILoop(stream, false)
+	err = UILoop(stream, verbose)
 	if err != nil {
 		return xerrors.Errorf("Finalize: %w", err)
 	}

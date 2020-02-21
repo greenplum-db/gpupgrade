@@ -56,7 +56,7 @@ func BuildRootCommand() *cobra.Command {
 	root.AddCommand(config, version)
 	root.AddCommand(initialize())
 	root.AddCommand(execute())
-	root.AddCommand(finalize)
+	root.AddCommand(finalize())
 	root.AddCommand(restartServices)
 	root.AddCommand(killServices)
 	root.AddCommand(Agent())
@@ -364,21 +364,29 @@ This step can be reverted.
 	return cmd
 }
 
-var finalize = &cobra.Command{
-	Use:   "finalize",
-	Short: "finalizes the cluster after upgrade execution",
-	Long: `
+func finalize() *cobra.Command {
+	var verbose bool
+
+	cmd := &cobra.Command{
+		Use:   "finalize",
+		Short: "finalizes the cluster after upgrade execution",
+		Long: `
 Updates the port of the new cluster.
 This step can not be reverted.
 `,
-	Run: func(cmd *cobra.Command, args []string) {
-		client := connectToHub()
-		err := commanders.Finalize(client)
-		if err != nil {
-			gplog.Error(err.Error())
-			os.Exit(1)
-		}
-	},
+		Run: func(cmd *cobra.Command, args []string) {
+			client := connectToHub()
+			err := commanders.Finalize(client, verbose)
+			if err != nil {
+				gplog.Error(err.Error())
+				os.Exit(1)
+			}
+		},
+	}
+
+	cmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print the output stream from all substeps")
+
+	return cmd
 }
 
 func parsePorts(val string) ([]uint32, error) {
