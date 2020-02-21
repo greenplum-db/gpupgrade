@@ -37,11 +37,11 @@ func finishMock(mock sqlmock.Sqlmock, t *testing.T) {
 
 func TestClonePortsFromCluster(t *testing.T) {
 	src, err := utils.NewCluster([]utils.SegConfig{
-		{ContentID: -1, Port: 123, Role: "p"},
-		{ContentID: -1, Port: 789, Role: "m"},
-		{ContentID: 0, Port: 234, Role: "p"},
-		{ContentID: 1, Port: 345, Role: "p"},
-		{ContentID: 2, Port: 456, Role: "p"},
+		{ContentID: -1, Port: 123, Role: "p", PreferredRole: "p"},
+		{ContentID: -1, Port: 789, Role: "m", PreferredRole: "m"},
+		{ContentID: 0, Port: 234, Role: "p", PreferredRole: "p"},
+		{ContentID: 1, Port: 345, Role: "p", PreferredRole: "p"},
+		{ContentID: 2, Port: 456, Role: "p", PreferredRole: "p"},
 	})
 	if err != nil {
 		t.Fatalf("constructing test cluster: %+v", err)

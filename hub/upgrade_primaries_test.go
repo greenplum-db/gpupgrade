@@ -14,7 +14,7 @@ import (
 var _ = Describe("GetDataDirPairs", func() {
 	It("returns an error if new config does not contain all the same content as the old config", func() {
 		newTarget, err := utils.NewCluster([]utils.SegConfig{
-			{ContentID: 0, Hostname: "localhost", DataDir: "new/datadir1", Port: 11, Role: utils.PrimaryRole},
+			{ContentID: 0, Hostname: "localhost", DataDir: "new/datadir1", Port: 11, Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
 		})
 		Expect(err).NotTo(HaveOccurred())
 		testHub.Target = newTarget
