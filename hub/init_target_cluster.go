@@ -14,14 +14,17 @@ import (
 	"golang.org/x/net/context"
 	"golang.org/x/xerrors"
 
-	"github.com/greenplum-db/gpupgrade/db"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 func (s *Server) GenerateInitsystemConfig() error {
-	sourceDBConn := db.NewDBConn("localhost", int(s.Source.MasterPort()), "template1")
+	user, err := utils.GetUser()
+	if err != nil {
+		return xerrors.Errorf("getting username: %w")
+	}
+	sourceDBConn := dbconn.NewDBConn("template1", user, "localhost", s.Source.MasterPort())
 	return s.writeConf(sourceDBConn)
 }
 
@@ -60,7 +63,12 @@ func (s *Server) CreateTargetCluster(stream step.OutStreams) error {
 		return err
 	}
 
-	conn := db.NewDBConn("localhost", s.TargetPorts.Master, "template1")
+	user, err := utils.GetUser()
+	if err != nil {
+		return xerrors.Errorf("getting username: %w")
+	}
+
+	conn := dbconn.NewDBConn("template1", user, "localhost", s.TargetPorts.Master)
 	defer conn.Close()
 
 	s.Target, err = utils.ClusterFromDB(conn, s.Target.BinDir)

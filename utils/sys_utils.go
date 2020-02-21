@@ -69,25 +69,12 @@ func InitializeSystemFunctions() *SystemFunctions {
 	}
 }
 
-func TryEnv(varname string, defval string) string {
-	val := System.Getenv(varname)
-	if val == "" {
-		return defval
-	}
-	return val
-}
-
-func GetUser() (string, string, error) {
+func GetUser() (string, error) {
 	currentUser, err := System.CurrentUser()
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
-	return currentUser.Username, currentUser.HomeDir, err
-}
-
-func GetHost() (string, error) {
-	hostname, err := System.Hostname()
-	return hostname, err
+	return currentUser.Username, err
 }
 
 func GetStateDir() string {

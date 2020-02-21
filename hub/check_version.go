@@ -1,13 +1,14 @@
 package hub
 
 import (
+	"golang.org/x/net/context"
 	"golang.org/x/xerrors"
 
-	"github.com/greenplum-db/gpupgrade/db"
-	"github.com/greenplum-db/gpupgrade/idl"
-
+	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
-	"golang.org/x/net/context"
+
+	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 // FIXME: we need to rework this as a check for:
@@ -24,11 +25,14 @@ func (s *Server) CheckVersion(ctx context.Context,
 
 	gplog.Info("starting CheckVersion")
 
-	masterPort := s.Source.MasterPort()
+	user, err := utils.GetUser()
+	if err != nil {
+		return &idl.CheckVersionReply{}, xerrors.Errorf("getting username: %w")
+	}
 
-	dbConnector := db.NewDBConn("localhost", masterPort, "template1")
+	dbConnector := dbconn.NewDBConn("template1", user, "localhost", s.Source.MasterPort())
 	defer dbConnector.Close()
-	err := dbConnector.Connect(1)
+	err = dbConnector.Connect(1)
 	if err != nil {
 		gplog.Error(err.Error())
 		return &idl.CheckVersionReply{}, xerrors.Errorf("connecting to database %w", err)

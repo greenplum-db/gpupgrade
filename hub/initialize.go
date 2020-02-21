@@ -7,11 +7,13 @@ import (
 	"path/filepath"
 	"sort"
 
+	"github.com/greenplum-db/gp-common-go-libs/dbconn"
+	"golang.org/x/xerrors"
+
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 
-	"github.com/greenplum-db/gpupgrade/db"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -88,10 +90,14 @@ func (s *Server) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest,
 
 // create old/new clusters, write to disk and re-read from disk to make sure it is "durable"
 func (s *Server) fillClusterConfigsSubStep(_ step.OutStreams, request *idl.InitializeRequest) error {
-	conn := db.NewDBConn("localhost", int(request.SourcePort), "template1")
+	user, err := utils.GetUser()
+	if err != nil {
+		return xerrors.Errorf("getting username: %w")
+	}
+
+	conn := dbconn.NewDBConn("template1", user, "localhost", int(request.SourcePort))
 	defer conn.Close()
 
-	var err error
 	s.Source, err = utils.ClusterFromDB(conn, request.SourceBinDir)
 	if err != nil {
 		return errors.Wrap(err, "could not retrieve source configuration")
