@@ -2,100 +2,215 @@ package hub_test
 
 import (
 	"errors"
-	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/golang/mock/gomock"
+	"golang.org/x/xerrors"
+
+	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
 	"github.com/greenplum-db/gpupgrade/utils"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("GetDataDirPairs", func() {
-	It("returns an error if new config does not contain all the same content as the old config", func() {
-		newTarget, err := utils.NewCluster([]utils.SegConfig{
-			{ContentID: 0, Hostname: "localhost", DataDir: "new/datadir1", Port: 11, Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
-		})
-		Expect(err).NotTo(HaveOccurred())
-		testHub.Target = newTarget
-
-		_, err = testHub.GetDataDirPairs()
-
-		Expect(err).To(HaveOccurred())
-		Expect(mockAgent.NumberOfCalls()).To(Equal(0))
+func TestUpgradePrimaries(t *testing.T) {
+	source := hub.MustCreateCluster(t, []utils.SegConfig{
+		{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+		{ContentID: 1, DbID: 3, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
 	})
+	source.BinDir = "/usr/local/greenplum-db"
+	source.Version = dbconn.NewVersion("5.0.0")
 
-	It("returns an error if the content matches, but the hostname does not", func() {
-		differentSeg := target.Primaries[0]
-		differentSeg.Hostname = "localhost2"
-		target.Primaries[0] = differentSeg
-
-		_, err := testHub.GetDataDirPairs()
-
-		Expect(err).To(HaveOccurred())
-		Expect(mockAgent.NumberOfCalls()).To(Equal(0))
+	target := hub.MustCreateCluster(t, []utils.SegConfig{
+		{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1_upgrade/seg1", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+		{ContentID: 1, DbID: 3, Hostname: "sdw2", DataDir: "/data/dbfast2_upgrade/seg2", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
 	})
-})
+	target.BinDir = "/usr/local/greenplum-db-new"
+	target.Version = dbconn.NewVersion("6.0.0")
 
-var _ = Describe("UpgradePrimaries", func() {
-	It("returns nil error, and agent receives only expected segmentConfig values", func() {
-		seg1 := target.Primaries[0]
-		seg1.DataDir = filepath.Join(dir, "seg1_upgrade")
-		seg1.Port = 27432
-		target.Primaries[0] = seg1
-
-		seg2 := target.Primaries[1]
-		seg2.DataDir = filepath.Join(dir, "seg2_upgrade")
-		seg2.Port = 27433
-
-		// Set up both segments to be on the same host (but still distinct from
-		// the master host).
-		seg2.Hostname = seg1.Hostname
-		target.Primaries[1] = seg2
-
-		// Source hostnames must match the target.
-		sourceSeg2 := source.Primaries[1]
-		sourceSeg2.Hostname = seg2.Hostname
-		source.Primaries[1] = sourceSeg2
-
-		agentConns, _ := testHub.AgentConns()
-		dataDirPairMap, _ := testHub.GetDataDirPairs()
-
-		err := hub.UpgradePrimaries(false, "/some/cool/backupdir", agentConns, dataDirPairMap, source, target, useLinkMode)
-		Expect(err).ToNot(HaveOccurred())
-
-		Expect(mockAgent.UpgradeConvertPrimarySegmentsRequest.SourceBinDir).To(Equal("/source/bindir"))
-		Expect(mockAgent.UpgradeConvertPrimarySegmentsRequest.TargetBinDir).To(Equal("/target/bindir"))
-		Expect(mockAgent.UpgradeConvertPrimarySegmentsRequest.MasterBackupDir).To(Equal("/some/cool/backupdir"))
-		Expect(mockAgent.UpgradeConvertPrimarySegmentsRequest.DataDirPairs).To(ConsistOf([]*idl.DataDirPair{
+	pairs := map[string][]*idl.DataDirPair{
+		"sdw1": {
 			{
-				SourceDataDir: filepath.Join(dir, "seg1"),
-				TargetDataDir: filepath.Join(dir, "seg1_upgrade"),
+				SourceDataDir: "/data/dbfast1",
+				TargetDataDir: "/data/dbfast1_upgrade",
+				SourcePort:    15432,
+				TargetPort:    15433,
 				Content:       0,
-				SourcePort:    25432,
-				TargetPort:    27432,
 				DBID:          2,
 			},
+		},
+		"sdw2": {
 			{
-				SourceDataDir: filepath.Join(dir, "seg2"),
-				TargetDataDir: filepath.Join(dir, "seg2_upgrade"),
+				SourceDataDir: "/data/dbfast2",
+				TargetDataDir: "/data/dbfast2_upgrade",
+				SourcePort:    15432,
+				TargetPort:    15433,
 				Content:       1,
-				SourcePort:    25433,
-				TargetPort:    27433,
 				DBID:          3,
 			},
-		}))
+		},
+	}
+
+	t.Run("sends expected request when upgrading primaries", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		client1 := mock_idl.NewMockAgentClient(ctrl)
+		client1.EXPECT().UpgradePrimaries(
+			gomock.Any(),
+			&idl.UpgradePrimariesRequest{
+				SourceBinDir:    "/usr/local/greenplum-db",
+				TargetBinDir:    "/usr/local/greenplum-db-new",
+				TargetVersion:   dbconn.NewVersion("6.0.0").VersionString,
+				DataDirPairs:    pairs["sdw1"],
+				CheckOnly:       false,
+				UseLinkMode:     false,
+				MasterBackupDir: "",
+			},
+		).Return(&idl.UpgradePrimariesReply{}, nil)
+
+		client2 := mock_idl.NewMockAgentClient(ctrl)
+		client2.EXPECT().UpgradePrimaries(
+			gomock.Any(),
+			&idl.UpgradePrimariesRequest{
+				SourceBinDir:    "/usr/local/greenplum-db",
+				TargetBinDir:    "/usr/local/greenplum-db-new",
+				TargetVersion:   dbconn.NewVersion("6.0.0").VersionString,
+				DataDirPairs:    pairs["sdw2"],
+				CheckOnly:       false,
+				UseLinkMode:     false,
+				MasterBackupDir: "",
+			},
+		).Return(&idl.UpgradePrimariesReply{}, nil)
+
+		agentConns := []*hub.Connection{
+			{nil, client1, "sdw1", nil},
+			{nil, client2, "sdw2", nil},
+		}
+
+		err := hub.UpgradePrimaries(false, "", agentConns, pairs, source, target, false)
+		if err != nil {
+			t.Errorf("got unexpected error: %+v", err)
+		}
 	})
 
-	It("returns an error if any upgrade primary call to any agent fails", func() {
-		mockAgent.Err <- errors.New("fail upgrade primary call")
+	t.Run("errors when upgrading primary fails", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
 
-		agentConns, _ := testHub.AgentConns()
-		dataDirPairMap, _ := testHub.GetDataDirPairs()
+		client1 := mock_idl.NewMockAgentClient(ctrl)
+		client1.EXPECT().UpgradePrimaries(
+			gomock.Any(),
+			&idl.UpgradePrimariesRequest{
+				SourceBinDir:    "/usr/local/greenplum-db",
+				TargetBinDir:    "/usr/local/greenplum-db-new",
+				TargetVersion:   dbconn.NewVersion("6.0.0").VersionString,
+				DataDirPairs:    pairs["sdw1"],
+				CheckOnly:       false,
+				UseLinkMode:     false,
+				MasterBackupDir: "",
+			},
+		).Return(&idl.UpgradePrimariesReply{}, nil)
 
-		err := hub.UpgradePrimaries(false, "", agentConns, dataDirPairMap, source, target, useLinkMode)
-		Expect(err).To(HaveOccurred())
+		expected := errors.New("permission denied")
+		failedClient := mock_idl.NewMockAgentClient(ctrl)
+		failedClient.EXPECT().UpgradePrimaries(
+			gomock.Any(),
+			&idl.UpgradePrimariesRequest{
+				SourceBinDir:    "/usr/local/greenplum-db",
+				TargetBinDir:    "/usr/local/greenplum-db-new",
+				TargetVersion:   dbconn.NewVersion("6.0.0").VersionString,
+				DataDirPairs:    pairs["sdw2"],
+				CheckOnly:       false,
+				UseLinkMode:     false,
+				MasterBackupDir: "",
+			},
+		).Return(&idl.UpgradePrimariesReply{}, expected)
 
-		Expect(mockAgent.NumberOfCalls()).To(Equal(2))
+		agentConns := []*hub.Connection{
+			{nil, client1, "sdw1", nil},
+			{nil, failedClient, "sdw2", nil},
+		}
+
+		err := hub.UpgradePrimaries(false, "", agentConns, pairs, source, target, false)
+		if err == nil {
+			t.Fatal("expected error got nil")
+		}
+
+		// XXX it'd be nice if we didn't couple against a hardcoded string here,
+		// but it's difficult to unwrap multierror with the new xerrors interface.
+		if !strings.Contains(err.Error(), "failed to upgrade primary segment on host sdw2") ||
+			!strings.Contains(err.Error(), expected.Error()) {
+			t.Errorf("error %q did not contain expected contents '%q'", err.Error(), expected.Error())
+		}
 	})
-})
+}
+
+func TestGetDataDirPairs(t *testing.T) {
+	t.Run("errors if source and target clusters have different number of segments", func(t *testing.T) {
+		source := hub.MustCreateCluster(t, []utils.SegConfig{
+			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+			{ContentID: 0, DbID: 2, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+			{ContentID: 1, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+		})
+
+		target := hub.MustCreateCluster(t, []utils.SegConfig{
+			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+		})
+
+		conf := &hub.Config{source, target, hub.PortAssignments{50432, 50432, []int{50433}}, 0, port, useLinkMode}
+		server := hub.New(conf, nil, "")
+
+		_, err := server.GetDataDirPairs()
+		if !xerrors.Is(err, hub.ErrInvalidCluster) {
+			t.Errorf("returned error %#v got: %#v", err, hub.ErrInvalidCluster)
+		}
+	})
+
+	t.Run("errors if source and target clusters have different content ids", func(t *testing.T) {
+		source := hub.MustCreateCluster(t, []utils.SegConfig{
+			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+			{ContentID: 0, DbID: 2, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+			{ContentID: 1, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+		})
+
+		target := hub.MustCreateCluster(t, []utils.SegConfig{
+			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+			{ContentID: 0, DbID: 2, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+			{ContentID: 2, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+		})
+
+		conf := &hub.Config{source, target, hub.PortAssignments{50432, 50432, []int{50433}}, 0, port, useLinkMode}
+		server := hub.New(conf, nil, "")
+
+		_, err := server.GetDataDirPairs()
+		if !xerrors.Is(err, hub.ErrInvalidCluster) {
+			t.Errorf("returned error %#v got: %#v", err, hub.ErrInvalidCluster)
+		}
+	})
+
+	t.Run("errors if source and target cluster hostnames differ", func(t *testing.T) {
+		source := hub.MustCreateCluster(t, []utils.SegConfig{
+			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+			{ContentID: 0, DbID: 2, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+			{ContentID: 1, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+		})
+
+		target := hub.MustCreateCluster(t, []utils.SegConfig{
+			{ContentID: -1, DbID: 1, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+			{ContentID: 0, DbID: 2, Hostname: "localhost", DataDir: "/data/dbfast1/seg1", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+			{ContentID: 1, DbID: 3, Hostname: "localhost", DataDir: "/data/dbfast2/seg2", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+		})
+
+		conf := &hub.Config{source, target, hub.PortAssignments{50432, 50432, []int{50433}}, 0, port, useLinkMode}
+		server := hub.New(conf, nil, "")
+
+		_, err := server.GetDataDirPairs()
+		if !xerrors.Is(err, hub.ErrInvalidCluster) {
+			t.Errorf("returned error %#v got: %#v", err, hub.ErrInvalidCluster)
+		}
+	})
+}
