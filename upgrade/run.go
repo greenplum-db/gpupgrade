@@ -1,7 +1,9 @@
 package upgrade
 
 import (
+	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
@@ -72,6 +74,13 @@ func Run(p SegmentPair, options ...Option) error {
 	// Explicitly clear the child environment. pg_upgrade shouldn't need things
 	// like PATH, and PGPORT et al are explicitly forbidden to be set.
 	cmd.Env = []string{}
+
+	// XXX ...but we make a single exception for now, for LD_LIBRARY_PATH, to
+	// work around pervasive problems with RPATH settings in our Postgres
+	// extension modules.
+	if path, ok := os.LookupEnv("LD_LIBRARY_PATH"); ok {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("LD_LIBRARY_PATH=%s", path))
+	}
 
 	return cmd.Run()
 }
