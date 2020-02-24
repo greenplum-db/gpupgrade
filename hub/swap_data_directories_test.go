@@ -27,13 +27,13 @@ func TestSwapDataDirectories(t *testing.T) {
 		utils.System.Rename = spy.renameFunc()
 
 		source := hub.MustCreateCluster(t, []utils.SegConfig{
-			{ContentID: -1, DataDir: "/some/data/directory", Role: utils.PrimaryRole},
-			{ContentID: 100, DataDir: "/some/data/directory/primary1", Role: utils.PrimaryRole},
+			{ContentID: -1, DataDir: "/some/data/directory", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+			{ContentID: 100, DataDir: "/some/data/directory/primary1", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
 		})
 
 		target := hub.MustCreateCluster(t, []utils.SegConfig{
-			{ContentID: -1, DataDir: "/some/qddir_upgrade/dataDirectory", Role: utils.PrimaryRole},
-			{ContentID: 100, DataDir: "/some/segment1_upgrade/dataDirectory", Role: utils.PrimaryRole},
+			{ContentID: -1, DataDir: "/some/qddir_upgrade/dataDirectory", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+			{ContentID: 100, DataDir: "/some/segment1_upgrade/dataDirectory", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
 		})
 
 		config := &hub.Config{
@@ -78,11 +78,11 @@ func TestSwapDataDirectories(t *testing.T) {
 		}
 
 		source := hub.MustCreateCluster(t, []utils.SegConfig{
-			{ContentID: 99, DataDir: "/some/data/directory", Role: utils.PrimaryRole},
+			{ContentID: 99, DataDir: "/some/data/directory", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
 		})
 
 		target := hub.MustCreateCluster(t, []utils.SegConfig{
-			{ContentID: 99, DataDir: "/some/data/directory", Role: utils.PrimaryRole},
+			{ContentID: 99, DataDir: "/some/data/directory", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
 		})
 
 		config := &hub.Config{
@@ -105,11 +105,11 @@ func TestSwapDataDirectories(t *testing.T) {
 		}
 
 		source := hub.MustCreateCluster(t, []utils.SegConfig{
-			{ContentID: 99, DataDir: "/some/data/directory", Role: utils.PrimaryRole},
+			{ContentID: 99, DataDir: "/some/data/directory", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
 		})
 
 		target := hub.MustCreateCluster(t, []utils.SegConfig{
-			{ContentID: 99, DataDir: "/some/data/directory_upgrade", Role: utils.PrimaryRole},
+			{ContentID: 99, DataDir: "/some/data/directory_upgrade", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
 		})
 
 		config := &hub.Config{
@@ -140,13 +140,13 @@ func TestSwapDataDirectories(t *testing.T) {
 		utils.System.Rename = spy.renameFunc()
 
 		source := hub.MustCreateCluster(t, []utils.SegConfig{
-			{ContentID: 99, Hostname: "host1", DataDir: "/some/data/directory/99", Role: utils.PrimaryRole},
-			{ContentID: 100, Hostname: "host2", DataDir: "/some/data/directory/100", Role: utils.PrimaryRole},
+			{ContentID: 99, Hostname: "host1", DataDir: "/some/data/directory/99", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+			{ContentID: 100, Hostname: "host2", DataDir: "/some/data/directory/100", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
 		})
 
 		target := hub.MustCreateCluster(t, []utils.SegConfig{
-			{ContentID: 99, Hostname: "host1", DataDir: "/some/data/directory_upgrade/99", Role: utils.PrimaryRole},
-			{ContentID: 100, Hostname: "host2", DataDir: "/some/data/directory_upgrade/100", Role: utils.PrimaryRole},
+			{ContentID: 99, Hostname: "host1", DataDir: "/some/data/directory_upgrade/99", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+			{ContentID: 100, Hostname: "host2", DataDir: "/some/data/directory_upgrade/100", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
 		})
 
 		config := &hub.Config{
@@ -201,13 +201,13 @@ func TestSwapDataDirectories(t *testing.T) {
 		utils.System.Rename = spy.renameFunc()
 
 		source := hub.MustCreateCluster(t, []utils.SegConfig{
-			{ContentID: -1, Hostname: "host1", DataDir: "/some/data/master/directory", Role: utils.PrimaryRole},
-			{ContentID: -1, Hostname: "host2", DataDir: "/some/data/standby/directory", Role: utils.MirrorRole},
+			{ContentID: -1, Hostname: "host1", DataDir: "/some/data/master/directory", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+			{ContentID: -1, Hostname: "host2", DataDir: "/some/data/standby/directory", Role: utils.MirrorRole, PreferredRole: utils.MirrorRole},
 		})
 
 		target := hub.MustCreateCluster(t, []utils.SegConfig{
-			{ContentID: -1, Hostname: "host1", DataDir: "/some/data/master_upgrade/directory", Role: utils.PrimaryRole},
-			{ContentID: -1, Hostname: "host2", DataDir: "/some/data/standby_upgrade/directory", Role: utils.MirrorRole},
+			{ContentID: -1, Hostname: "host1", DataDir: "/some/data/master_upgrade/directory", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+			{ContentID: -1, Hostname: "host2", DataDir: "/some/data/standby_upgrade/directory", Role: utils.MirrorRole, PreferredRole: utils.MirrorRole},
 		})
 
 		config := &hub.Config{
@@ -248,7 +248,7 @@ func TestSwapDataDirectories(t *testing.T) {
 		utils.System.Rename = spy.renameFunc()
 
 		source := hub.MustCreateCluster(t, []utils.SegConfig{
-			{ContentID: 99, Hostname: "host1", DataDir: "/some/data/directory/99", Role: utils.PrimaryRole},
+			{ContentID: 99, Hostname: "host1", DataDir: "/some/data/directory/99", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
 		})
 
 		target := hub.MustCreateCluster(t, []utils.SegConfig{})
@@ -282,13 +282,13 @@ func TestSwapDataDirectories(t *testing.T) {
 		utils.System.Rename = spy.renameFunc()
 
 		source := hub.MustCreateCluster(t, []utils.SegConfig{
-			{ContentID: 99, Hostname: "host1", DataDir: "/some/data/directory/99", Role: utils.PrimaryRole},
-			{ContentID: 100, Hostname: "host2", DataDir: "/some/data/directory/100", Role: utils.PrimaryRole},
+			{ContentID: 99, Hostname: "host1", DataDir: "/some/data/directory/99", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+			{ContentID: 100, Hostname: "host2", DataDir: "/some/data/directory/100", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
 		})
 
 		target := hub.MustCreateCluster(t, []utils.SegConfig{
-			{ContentID: 99, Hostname: "host1", DataDir: "/some/data/directory_upgrade/99", Role: utils.PrimaryRole},
-			{ContentID: 100, Hostname: "host2", DataDir: "/some/data/directory_upgrade/100", Role: utils.PrimaryRole},
+			{ContentID: 99, Hostname: "host1", DataDir: "/some/data/directory_upgrade/99", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+			{ContentID: 100, Hostname: "host2", DataDir: "/some/data/directory_upgrade/100", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
 		})
 
 		config := &hub.Config{

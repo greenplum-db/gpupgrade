@@ -45,10 +45,10 @@ func TestUpdateGpSegmentConfiguration(t *testing.T) {
 	})
 
 	target, err := utils.NewCluster([]utils.SegConfig{
-		{ContentID: -1, Port: 456, Role: "p", DataDir: "/some/target_upgrade/datadir-1"},
-		{ContentID: 0, Port: 456, Role: "p", DataDir: "/some/target_upgrade/datadir0"},
-		{ContentID: 1, Port: 456, Role: "p", DataDir: "/some/target_upgrade/datadir1"},
-		{ContentID: 2, Port: 456, Role: "p", DataDir: "/some/target_upgrade/datadir2"},
+		{ContentID: -1, Port: 456, Role: "p", PreferredRole: "p", DataDir: "/some/target_upgrade/datadir-1"},
+		{ContentID: 0, Port: 456, Role: "p", PreferredRole: "p", DataDir: "/some/target_upgrade/datadir0"},
+		{ContentID: 1, Port: 456, Role: "p", PreferredRole: "p", DataDir: "/some/target_upgrade/datadir1"},
+		{ContentID: 2, Port: 456, Role: "p", PreferredRole: "p", DataDir: "/some/target_upgrade/datadir2"},
 	})
 
 	if err != nil {
