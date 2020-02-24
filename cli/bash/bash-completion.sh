@@ -289,9 +289,9 @@ _gpupgrade_config()
     noun_aliases=()
 }
 
-_gpupgrade_execute()
+_gpupgrade_execute_help()
 {
-    last_command="gpupgrade_execute"
+    last_command="gpupgrade_execute_help"
     commands=()
 
     flags=()
@@ -300,9 +300,47 @@ _gpupgrade_execute()
     flags_with_completion=()
     flags_completion=()
 
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_gpupgrade_execute()
+{
+    last_command="gpupgrade_execute"
+    commands=()
+    commands+=("help")
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--?")
+    flags+=("-?")
+    local_nonpersistent_flags+=("--?")
     flags+=("--verbose")
     flags+=("-v")
     local_nonpersistent_flags+=("--verbose")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_gpupgrade_finalize_help()
+{
+    last_command="gpupgrade_finalize_help"
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -313,6 +351,7 @@ _gpupgrade_finalize()
 {
     last_command="gpupgrade_finalize"
     commands=()
+    commands+=("help")
 
     flags=()
     two_word_flags=()
@@ -320,9 +359,46 @@ _gpupgrade_finalize()
     flags_with_completion=()
     flags_completion=()
 
+    flags+=("--?")
+    flags+=("-?")
+    local_nonpersistent_flags+=("--?")
     flags+=("--verbose")
     flags+=("-v")
     local_nonpersistent_flags+=("--verbose")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_gpupgrade_help()
+{
+    last_command="gpupgrade_help"
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_gpupgrade_initialize_help()
+{
+    last_command="gpupgrade_initialize_help"
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -333,6 +409,7 @@ _gpupgrade_initialize()
 {
     last_command="gpupgrade_initialize"
     commands=()
+    commands+=("help")
 
     flags=()
     two_word_flags=()
@@ -340,15 +417,24 @@ _gpupgrade_initialize()
     flags_with_completion=()
     flags_completion=()
 
+    flags+=("--?")
+    flags+=("-?")
+    local_nonpersistent_flags+=("--?")
     flags+=("--disk-free-ratio=")
+    local_nonpersistent_flags+=("--disk-free-ratio=")
     flags+=("--link")
+    local_nonpersistent_flags+=("--link")
     flags+=("--new-bindir=")
+    local_nonpersistent_flags+=("--new-bindir=")
     flags+=("--old-bindir=")
+    local_nonpersistent_flags+=("--old-bindir=")
     flags+=("--old-port=")
+    local_nonpersistent_flags+=("--old-port=")
     flags+=("--ports=")
     local_nonpersistent_flags+=("--ports=")
     flags+=("--verbose")
     flags+=("-v")
+    local_nonpersistent_flags+=("--verbose")
 
     must_have_one_flag=()
     must_have_one_flag+=("--new-bindir=")
@@ -416,6 +502,7 @@ _gpupgrade()
     commands+=("config")
     commands+=("execute")
     commands+=("finalize")
+    commands+=("help")
     commands+=("initialize")
     commands+=("kill-services")
     commands+=("restart-services")
@@ -427,6 +514,9 @@ _gpupgrade()
     flags_with_completion=()
     flags_completion=()
 
+    flags+=("--?")
+    flags+=("-?")
+    local_nonpersistent_flags+=("--?")
 
     must_have_one_flag=()
     must_have_one_noun=()

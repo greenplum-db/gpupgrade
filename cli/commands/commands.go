@@ -66,7 +66,7 @@ func BuildRootCommand() *cobra.Command {
 	subConfigShow := createConfigShowSubcommand()
 	config.AddCommand(subConfigSet, subConfigShow)
 
-	return root
+	return addHelpToCommand(root, GlobalHelp)
 }
 
 // connTimeout retrieves the GPUPGRADE_CONNECTION_TIMEOUT environment variable,
@@ -245,10 +245,7 @@ func initialize() *cobra.Command {
 	subInit := &cobra.Command{
 		Use:   "initialize",
 		Short: "prepare the system for upgrade",
-		Long: `
-Runs through pre-upgrade checks and prepares the old and new clusters for upgrade.
-This step can be reverted.
-`,
+		Long:  InitializeHelp,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if diskFreeRatio < 0.0 || diskFreeRatio > 1.0 {
 				// Match Cobra's option-error format.
@@ -325,20 +322,20 @@ If you would like to return the cluster to its original state, run
 		},
 	}
 
-	subInit.PersistentFlags().StringVar(&sourceBinDir, "old-bindir", "", "install directory for old gpdb version")
-	subInit.MarkPersistentFlagRequired("old-bindir")
-	subInit.PersistentFlags().StringVar(&targetBinDir, "new-bindir", "", "install directory for new gpdb version")
-	subInit.MarkPersistentFlagRequired("new-bindir")
-	subInit.PersistentFlags().IntVar(&sourcePort, "old-port", 0, "master port for old gpdb cluster")
-	subInit.MarkPersistentFlagRequired("old-port")
-	subInit.PersistentFlags().BoolVar(&stopBeforeClusterCreation, "stop-before-cluster-creation", false, "only run up to pre-init")
-	subInit.PersistentFlags().MarkHidden("stop-before-cluster-creation")
-	subInit.PersistentFlags().Float64Var(&diskFreeRatio, "disk-free-ratio", 0.60, "percentage of disk space that must be available (from 0.0 - 1.0)")
-	subInit.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "print the output stream from all substeps")
+	subInit.Flags().StringVar(&sourceBinDir, "old-bindir", "", "install directory for old gpdb version")
+	subInit.MarkFlagRequired("old-bindir")
+	subInit.Flags().StringVar(&targetBinDir, "new-bindir", "", "install directory for new gpdb version")
+	subInit.MarkFlagRequired("new-bindir")
+	subInit.Flags().IntVar(&sourcePort, "old-port", 0, "master port for old gpdb cluster")
+	subInit.MarkFlagRequired("old-port")
+	subInit.Flags().BoolVar(&stopBeforeClusterCreation, "stop-before-cluster-creation", false, "only run up to pre-init")
+	subInit.Flags().MarkHidden("stop-before-cluster-creation")
+	subInit.Flags().Float64Var(&diskFreeRatio, "disk-free-ratio", 0.60, "percentage of disk space that must be available (from 0.0 - 1.0)")
+	subInit.Flags().BoolVarP(&verbose, "verbose", "v", false, "print the output stream from all substeps")
 	subInit.Flags().StringVar(&ports, "ports", "", "set of ports to use when initializing the new cluster")
-	subInit.PersistentFlags().BoolVar(&linkMode, "link", false, "performs upgrade in link mode")
+	subInit.Flags().BoolVar(&linkMode, "link", false, "performs upgrade in link mode")
 
-	return subInit
+	return addHelpToCommand(subInit, InitializeHelp)
 }
 
 func execute() *cobra.Command {
@@ -347,10 +344,7 @@ func execute() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "execute",
 		Short: "executes the upgrade",
-		Long: `
-Upgrades the master and primary segments over to the new cluster.
-This step can be reverted.
-`,
+		Long:  ExecuteHelp,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
 
@@ -361,7 +355,7 @@ This step can be reverted.
 
 	cmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print the output stream from all substeps")
 
-	return cmd
+	return addHelpToCommand(cmd, ExecuteHelp)
 }
 
 func finalize() *cobra.Command {
@@ -370,10 +364,7 @@ func finalize() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "finalize",
 		Short: "finalizes the cluster after upgrade execution",
-		Long: `
-Updates the port of the new cluster.
-This step can not be reverted.
-`,
+		Long:  FinalizeHelp,
 		Run: func(cmd *cobra.Command, args []string) {
 			client := connectToHub()
 			err := commanders.Finalize(client, verbose)
@@ -386,7 +377,7 @@ This step can not be reverted.
 
 	cmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print the output stream from all substeps")
 
-	return cmd
+	return addHelpToCommand(cmd, FinalizeHelp)
 }
 
 func parsePorts(val string) ([]uint32, error) {
@@ -498,4 +489,163 @@ var killServices = &cobra.Command{
 
 		return nil
 	},
+}
+
+const (
+	InitializeHelp = `
+Runs through pre-upgrade checks and prepares the cluster for upgrade.
+
+Initialize will carry out the following sub-steps:
+ - Create directories
+ - Generate upgrade configuration
+ - Start gpupgrade hub process
+ - Check source cluster configuration
+ - Start gpupgrade agent processes
+ - Check disk space
+ - Generate target cluster configuration
+ - Create target cluster
+ - Stop target cluster
+ - Back up target master
+ - Run pg_upgrade checks
+
+Usage: gpupgrade initialize <flags> 
+
+Required Flags:
+
+  --source-bindir         the path to the binary directory for the source Greenplum installation
+
+  --target-bindir         the path to the binary directory for the target Greenplum installation
+
+  --source-master-port    the master port for the source Greenplum installation
+
+Optional Flags:
+
+  -h, --help              displays help output for initialize
+
+      --link              an alternative mode that directly upgrades the primary segments
+
+      --temp-port-range   the set of ports to use when initializing the target cluster
+
+  -v, --verbose           outputs detailed logs for initialize
+`
+	ExecuteHelp = `
+Upgrades the master and primary segments to the target Greenplum version.
+
+Execute will carry out the following sub-steps:
+ - Stop source cluster
+ - Upgrade master
+ - Copy master catalog to primary segments
+ - Upgrade primary segments
+ - Start target cluster
+
+Usage: gpupgrade execute
+
+Optional Flags:
+
+  -h, --help      displays help output for execute
+
+  -v, --verbose   outputs detailed logs for execute
+`
+	FinalizeHelp = `
+Upgrades the standby master and mirror segments to the target Greenplum version.
+
+Finalize will carry out the following sub-steps:
+- Upgrade standby master
+- Upgrade mirror segments
+- Stop target cluster
+- Start target master
+- Update target master port
+- Stop target master
+- Update target master postgresql.conf
+- Start target cluster
+
+Usage: gpupgrade finalize
+
+Optional Flags:
+
+  -h, --help      displays help output for finalize
+
+  -v, --verbose   outputs detailed logs for finalize
+`
+	GlobalHelp = `
+gpupgrade enables users to do an in-place cluster upgrade to the next major version.
+The default mode is copy, which creates a copy of the primary segments and performs the upgrade on the copies.
+
+Usage: gpupgrade [command] <flags> 
+
+Required Commands: gpupgrade is a three-step process
+
+  1. initialize   runs through pre-upgrade checks and prepares the cluster for upgrade
+
+                  Usage: gpupgrade initialize <flags>
+
+                  Required Flags:
+                    --source-bindir        the path to the binary directory for the source Greenplum installation
+                    --target-bindir        the path to the binary directory for the target Greenplum installation
+                    --source-master-port   the master port for the source Greenplum installation
+
+                  Optional Flags:
+                    --link                 an alternative mode that directly upgrades the primary segments
+                    --temp-port-range      the set of ports to use when initializing the target cluster
+
+  2. execute      upgrades the master and primary segments to the target Greenplum version
+
+  3. finalize     upgrades the standby master and mirror segments to the target Greenplum version
+
+Optional Flags:
+
+  -h, --help      displays help output for gpupgrade
+
+  -v, --verbose   outputs detailed logs for gpupgrade
+
+  -V, --version   displays the version of the current gpupgrade utility
+
+Use "gpupgrade [command] --help" for more information about a command.
+`
+)
+
+// Cobra has multiple ways to handle help text, so we want to force all of them to use the same help text
+func addHelpToCommand(cmd *cobra.Command, help string) *cobra.Command {
+	// Add a "-?" flag, which Cobra does not provide by default
+	var savedPreRunE func(cmd *cobra.Command, args []string) error
+	var savedPreRun func(cmd *cobra.Command, args []string)
+	if cmd.PreRunE != nil {
+		savedPreRunE = cmd.PreRunE
+	} else if cmd.PreRun != nil {
+		savedPreRun = cmd.PreRun
+	}
+
+	var questionHelp bool
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		if questionHelp {
+			fmt.Print(help)
+			os.Exit(0)
+		}
+		if savedPreRunE != nil {
+			return savedPreRunE(cmd, args)
+		} else if savedPreRun != nil {
+			savedPreRun(cmd, args)
+		}
+		return nil
+	}
+	cmd.Flags().BoolVarP(&questionHelp, "?", "?", false, "displays help output")
+
+	// Override the built-in "help" subcommand
+	cmd.AddCommand(&cobra.Command{
+		Use:   "help",
+		Short: "",
+		Long:  "",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			fmt.Printf(help)
+			return nil
+		},
+	})
+	cmd.SetUsageTemplate(help)
+
+	// Override the built-in "-h" and "--help" flags
+	cmd.SetHelpFunc(func(cmd *cobra.Command, strs []string) {
+		fmt.Printf(help)
+	})
+
+	return cmd
 }
