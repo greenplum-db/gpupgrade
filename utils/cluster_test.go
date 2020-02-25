@@ -11,13 +11,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/greenplum-db/gp-common-go-libs/dbconn"
-	"github.com/greenplum-db/gpupgrade/testutils"
-	"github.com/greenplum-db/gpupgrade/utils"
-
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
+	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"golang.org/x/xerrors"
+
+	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 func TestCluster(t *testing.T) {
@@ -29,7 +29,6 @@ func TestCluster(t *testing.T) {
 	}
 	for content, seg := range primaries {
 		seg.Role = utils.PrimaryRole
-		seg.PreferredRole = utils.PrimaryRole
 		primaries[content] = seg
 	}
 
@@ -41,7 +40,6 @@ func TestCluster(t *testing.T) {
 	}
 	for content, seg := range mirrors {
 		seg.Role = utils.MirrorRole
-		seg.PreferredRole = utils.MirrorRole
 		mirrors[content] = seg
 	}
 
@@ -141,24 +139,18 @@ func TestCluster(t *testing.T) {
 		{"bad role", []utils.SegConfig{
 			{Role: "x"},
 		}},
-		{"mirror switched role to primary", []utils.SegConfig{
-			{Role: "p", PreferredRole: "m"},
-		}},
-		{"primary switched role to mirror", []utils.SegConfig{
-			{Role: "m", PreferredRole: "p"},
-		}},
 		{"mirror without primary", []utils.SegConfig{
-			{ContentID: 0, Role: "p", PreferredRole: "p"},
-			{ContentID: 1, Role: "m", PreferredRole: "m"},
+			{ContentID: 0, Role: "p"},
+			{ContentID: 1, Role: "m"},
 		}},
 		{"duplicated primary contents", []utils.SegConfig{
-			{ContentID: 0, Role: "p", PreferredRole: "p"},
-			{ContentID: 0, Role: "p", PreferredRole: "p"},
+			{ContentID: 0, Role: "p"},
+			{ContentID: 0, Role: "p"},
 		}},
 		{"duplicated mirror contents", []utils.SegConfig{
-			{ContentID: 0, Role: "p", PreferredRole: "p"},
-			{ContentID: 0, Role: "m", PreferredRole: "m"},
-			{ContentID: 0, Role: "m", PreferredRole: "m"},
+			{ContentID: 0, Role: "p"},
+			{ContentID: 0, Role: "m"},
+			{ContentID: 0, Role: "m"},
 		}},
 	}
 

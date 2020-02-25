@@ -46,7 +46,7 @@ func TestCheckDiskSpace(t *testing.T) {
 
 	t.Run("reports no failures with enough space", func(t *testing.T) {
 		c = MustCreateCluster(t, []utils.SegConfig{
-			{ContentID: -1, Hostname: "mdw", DataDir: "/data/master", Role: "p", PreferredRole: "p"},
+			{ContentID: -1, Hostname: "mdw", DataDir: "/data/master", Role: "p"},
 		})
 		req = &idl.CheckDiskSpaceRequest{Ratio: 0.25}
 		// leave agents empty
@@ -56,7 +56,7 @@ func TestCheckDiskSpace(t *testing.T) {
 
 	t.Run("reports disk failures for the master host", func(t *testing.T) {
 		c = MustCreateCluster(t, []utils.SegConfig{
-			{ContentID: -1, Hostname: "mdw", DataDir: "/data/master", Role: "p", PreferredRole: "p"},
+			{ContentID: -1, Hostname: "mdw", DataDir: "/data/master", Role: "p"},
 		})
 		req = &idl.CheckDiskSpaceRequest{Ratio: 0.75}
 		// leave agents empty
@@ -74,10 +74,10 @@ func TestCheckDiskSpace(t *testing.T) {
 		defer ctrl.Finish()
 
 		c = MustCreateCluster(t, []utils.SegConfig{
-			{ContentID: -1, Hostname: "mdw", DataDir: "/data/master", Role: "p", PreferredRole: "p"},
-			{ContentID: 0, Hostname: "sdw1", DataDir: "/data/primary", Role: "p", PreferredRole: "p"},
-			{ContentID: 1, Hostname: "sdw2", DataDir: "/data/primary", Role: "p", PreferredRole: "p"},
-			{ContentID: 2, Hostname: "sdw2", DataDir: "/data/primary2", Role: "p", PreferredRole: "p"},
+			{ContentID: -1, Hostname: "mdw", DataDir: "/data/master", Role: "p"},
+			{ContentID: 0, Hostname: "sdw1", DataDir: "/data/primary", Role: "p"},
+			{ContentID: 1, Hostname: "sdw2", DataDir: "/data/primary", Role: "p"},
+			{ContentID: 2, Hostname: "sdw2", DataDir: "/data/primary2", Role: "p"},
 		})
 		req = &idl.CheckDiskSpaceRequest{Ratio: 0.25}
 
@@ -124,8 +124,8 @@ func TestCheckDiskSpace(t *testing.T) {
 		defer ctrl.Finish()
 
 		c = MustCreateCluster(t, []utils.SegConfig{
-			{ContentID: -1, Hostname: "mdw", DataDir: "/data/master", Role: "p", PreferredRole: "p"},
-			{ContentID: 0, Hostname: "sdw1", DataDir: "/data/primary", Role: "p", PreferredRole: "p"},
+			{ContentID: -1, Hostname: "mdw", DataDir: "/data/master", Role: "p"},
+			{ContentID: 0, Hostname: "sdw1", DataDir: "/data/primary", Role: "p"},
 		})
 		d.err = errors.New("master disk check is broken")
 		// we don't care what req is for this case

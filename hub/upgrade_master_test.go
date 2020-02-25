@@ -86,7 +86,7 @@ func init() {
 
 func TestUpgradeMaster(t *testing.T) {
 	source := MustCreateCluster(t, []utils.SegConfig{
-		{ContentID: -1, Port: 5432, DataDir: "/data/old", DbID: 1, Role: "p", PreferredRole: "p"},
+		{ContentID: -1, Port: 5432, DataDir: "/data/old", DbID: 1, Role: "p"},
 	})
 	source.BinDir = "/old/bin"
 
@@ -113,7 +113,7 @@ func TestUpgradeMaster(t *testing.T) {
 	// tests for full end-to-end verification.
 
 	target := MustCreateCluster(t, []utils.SegConfig{
-		{ContentID: -1, Port: 5433, DataDir: "/data/new", DbID: 2, Role: "p", PreferredRole: "p"},
+		{ContentID: -1, Port: 5433, DataDir: "/data/new", DbID: 2, Role: "p"},
 	})
 	target.BinDir = "/new/bin"
 

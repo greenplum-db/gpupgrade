@@ -16,9 +16,9 @@ import (
 // When changing this implementation, make sure you change MockCluster() to
 // match!
 func MockSegmentConfiguration() *sqlmock.Rows {
-	rows := sqlmock.NewRows([]string{"dbid", "contentid", "port", "hostname", "datadir", "role", "preferredrole"})
-	rows.AddRow(1, -1, 15432, "mdw", "/data/master/gpseg-1", "p", "p")
-	rows.AddRow(2, 0, 25432, "sdw1", "/data/primary/gpseg0", "p", "p")
+	rows := sqlmock.NewRows([]string{"dbid", "contentid", "port", "hostname", "datadir", "role"})
+	rows.AddRow(1, -1, 15432, "mdw", "/data/master/gpseg-1", "p")
+	rows.AddRow(2, 0, 25432, "sdw1", "/data/primary/gpseg0", "p")
 
 	return rows
 }
@@ -29,8 +29,8 @@ func MockSegmentConfiguration() *sqlmock.Rows {
 // MockSegmentConfiguration() to match!
 func MockCluster() *utils.Cluster {
 	c, err := utils.NewCluster([]utils.SegConfig{
-		{DbID: 1, ContentID: -1, Port: 15432, Hostname: "mdw", DataDir: "/data/master/gpseg-1", Role: "p", PreferredRole: "p"},
-		{DbID: 2, ContentID: 0, Port: 25432, Hostname: "sdw1", DataDir: "/data/primary/gpseg0", Role: "p", PreferredRole: "p"},
+		{DbID: 1, ContentID: -1, Port: 15432, Hostname: "mdw", DataDir: "/data/master/gpseg-1", Role: "p"},
+		{DbID: 2, ContentID: 0, Port: 25432, Hostname: "sdw1", DataDir: "/data/primary/gpseg0", Role: "p"},
 	})
 
 	if err != nil {

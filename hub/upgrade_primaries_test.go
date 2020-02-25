@@ -18,15 +18,15 @@ import (
 
 func TestUpgradePrimaries(t *testing.T) {
 	source := hub.MustCreateCluster(t, []utils.SegConfig{
-		{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
-		{ContentID: 1, DbID: 3, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+		{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: utils.PrimaryRole},
+		{ContentID: 1, DbID: 3, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: utils.PrimaryRole},
 	})
 	source.BinDir = "/usr/local/greenplum-db"
 	source.Version = dbconn.NewVersion("5.0.0")
 
 	target := hub.MustCreateCluster(t, []utils.SegConfig{
-		{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1_upgrade/seg1", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
-		{ContentID: 1, DbID: 3, Hostname: "sdw2", DataDir: "/data/dbfast2_upgrade/seg2", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+		{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1_upgrade/seg1", Role: utils.PrimaryRole},
+		{ContentID: 1, DbID: 3, Hostname: "sdw2", DataDir: "/data/dbfast2_upgrade/seg2", Role: utils.PrimaryRole},
 	})
 	target.BinDir = "/usr/local/greenplum-db-new"
 	target.Version = dbconn.NewVersion("6.0.0")
@@ -168,13 +168,13 @@ func TestUpgradePrimaries(t *testing.T) {
 func TestGetDataDirPairs(t *testing.T) {
 	t.Run("errors if source and target clusters have different number of segments", func(t *testing.T) {
 		source := hub.MustCreateCluster(t, []utils.SegConfig{
-			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
-			{ContentID: 0, DbID: 2, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
-			{ContentID: 1, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: utils.PrimaryRole},
+			{ContentID: 0, DbID: 2, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: utils.PrimaryRole},
+			{ContentID: 1, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: utils.PrimaryRole},
 		})
 
 		target := hub.MustCreateCluster(t, []utils.SegConfig{
-			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: utils.PrimaryRole},
 		})
 
 		conf := &hub.Config{source, target, hub.InitializeConfig{}, 0, port, useLinkMode}
@@ -188,15 +188,15 @@ func TestGetDataDirPairs(t *testing.T) {
 
 	t.Run("errors if source and target clusters have different content ids", func(t *testing.T) {
 		source := hub.MustCreateCluster(t, []utils.SegConfig{
-			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
-			{ContentID: 0, DbID: 2, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
-			{ContentID: 1, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: utils.PrimaryRole},
+			{ContentID: 0, DbID: 2, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: utils.PrimaryRole},
+			{ContentID: 1, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: utils.PrimaryRole},
 		})
 
 		target := hub.MustCreateCluster(t, []utils.SegConfig{
-			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
-			{ContentID: 0, DbID: 2, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
-			{ContentID: 2, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: utils.PrimaryRole},
+			{ContentID: 0, DbID: 2, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: utils.PrimaryRole},
+			{ContentID: 2, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: utils.PrimaryRole},
 		})
 
 		conf := &hub.Config{source, target, hub.InitializeConfig{}, 0, port, useLinkMode}
@@ -210,15 +210,15 @@ func TestGetDataDirPairs(t *testing.T) {
 
 	t.Run("errors if source and target cluster hostnames differ", func(t *testing.T) {
 		source := hub.MustCreateCluster(t, []utils.SegConfig{
-			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
-			{ContentID: 0, DbID: 2, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
-			{ContentID: 1, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: utils.PrimaryRole},
+			{ContentID: 0, DbID: 2, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: utils.PrimaryRole},
+			{ContentID: 1, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: utils.PrimaryRole},
 		})
 
 		target := hub.MustCreateCluster(t, []utils.SegConfig{
-			{ContentID: -1, DbID: 1, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
-			{ContentID: 0, DbID: 2, Hostname: "localhost", DataDir: "/data/dbfast1/seg1", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
-			{ContentID: 1, DbID: 3, Hostname: "localhost", DataDir: "/data/dbfast2/seg2", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+			{ContentID: -1, DbID: 1, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: utils.PrimaryRole},
+			{ContentID: 0, DbID: 2, Hostname: "localhost", DataDir: "/data/dbfast1/seg1", Role: utils.PrimaryRole},
+			{ContentID: 1, DbID: 3, Hostname: "localhost", DataDir: "/data/dbfast2/seg2", Role: utils.PrimaryRole},
 		})
 
 		conf := &hub.Config{source, target, hub.InitializeConfig{}, 0, port, useLinkMode}

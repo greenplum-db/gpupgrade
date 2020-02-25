@@ -213,6 +213,18 @@ func TestUILoop(t *testing.T) {
 	})
 }
 
+func TestFormatStatus(t *testing.T) {
+	t.Run("it formats all possible types", func(t *testing.T) {
+		ignoreUnknownStep := 1
+		numberOfSubsteps := len(idl.Substep_name) - ignoreUnknownStep
+
+		if numberOfSubsteps != len(commanders.SubstepDescriptions) {
+			t.Errorf("got %q, expected FormatStatus to be able to format all %d statuses %q. Formatted only %d",
+				commanders.SubstepDescriptions, len(idl.Substep_name), idl.Substep_name, len(commanders.SubstepDescriptions))
+		}
+	})
+}
+
 func TestSubstep(t *testing.T) {
 	d := bufferStandardDescriptors(t)
 	defer d.Close()

@@ -8,21 +8,21 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/greenplum-db/gpupgrade/hub"
-	"github.com/greenplum-db/gpupgrade/utils"
-
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gp-common-go-libs/gplog"
+
+	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 type receiver interface {
 	Recv() (*idl.Message, error)
 }
 
-var lines = map[idl.Substep]string{
+var SubstepDescriptions = map[idl.Substep]string{
 	idl.Substep_CONFIG:                                            "Retrieving source cluster configuration...",
 	idl.Substep_START_AGENTS:                                      "Starting gpupgrade agent processes...",
 	idl.Substep_CREATE_TARGET_CONFIG:                              "Generating target cluster configuration...",
@@ -95,7 +95,7 @@ func Execute(client idl.CliToHubClient, verbose bool) error {
 	if err != nil {
 		return xerrors.Errorf("Execute: %w", err)
 	}
-	
+
 	path := filepath.Join(utils.GetStateDir(), hub.ConfigFileName)
 	conf := &hub.Config{}
 	err = hub.LoadConfig(conf, path)
@@ -211,7 +211,7 @@ func UILoop(stream receiver, verbose bool) error {
 // FormatStatus panics if it doesn't have a string representation for a given
 // protobuf code.
 func FormatStatus(status *idl.SubstepStatus) string {
-	line, ok := lines[status.Step]
+	line, ok := SubstepDescriptions[status.Step]
 	if !ok {
 		panic(fmt.Sprintf("unexpected step %#v", status.Step))
 	}

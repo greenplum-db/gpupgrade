@@ -73,10 +73,10 @@ func TestRenameMasterDataDir(t *testing.T) {
 
 func TestRenameSegmentDataDirs(t *testing.T) {
 	c := hub.MustCreateCluster(t, []utils.SegConfig{
-		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
-		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
-		{ContentID: 2, DbID: 4, Port: 25434, Hostname: "sdw1", DataDir: "/data/dbfast1/seg3", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
-		{ContentID: 3, DbID: 5, Port: 25435, Hostname: "sdw2", DataDir: "/data/dbfast2/seg4", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: utils.PrimaryRole},
+		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: utils.PrimaryRole},
+		{ContentID: 2, DbID: 4, Port: 25434, Hostname: "sdw1", DataDir: "/data/dbfast1/seg3", Role: utils.PrimaryRole},
+		{ContentID: 3, DbID: 5, Port: 25435, Hostname: "sdw2", DataDir: "/data/dbfast2/seg4", Role: utils.PrimaryRole},
 	})
 
 	testhelper.SetupTestLogger() // initialize gplog
@@ -210,7 +210,7 @@ func TestRenameSegmentDataDirs(t *testing.T) {
 		defer ctrl.Finish()
 
 		c := hub.MustCreateCluster(t, []utils.SegConfig{
-			{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+			{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: utils.PrimaryRole},
 		})
 
 		agentConns := []*hub.Connection{

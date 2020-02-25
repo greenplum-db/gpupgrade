@@ -40,11 +40,11 @@ func finishMock(mock sqlmock.Sqlmock, t *testing.T) {
 
 func TestUpdateCatalog(t *testing.T) {
 	src, err := utils.NewCluster([]utils.SegConfig{
-		{ContentID: -1, Port: 123, Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
-		{ContentID: -1, Port: 789, Role: utils.MirrorRole, PreferredRole: utils.MirrorRole},
-		{ContentID: 0, Port: 234, Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
-		{ContentID: 1, Port: 345, Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
-		{ContentID: 2, Port: 456, Role: utils.PrimaryRole, PreferredRole: utils.PrimaryRole},
+		{ContentID: -1, Port: 123, Role: utils.PrimaryRole},
+		{ContentID: -1, Port: 789, Role: utils.MirrorRole},
+		{ContentID: 0, Port: 234, Role: utils.PrimaryRole},
+		{ContentID: 1, Port: 345, Role: utils.PrimaryRole},
+		{ContentID: 2, Port: 456, Role: utils.PrimaryRole},
 	})
 
 	if err != nil {

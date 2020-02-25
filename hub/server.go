@@ -353,9 +353,9 @@ func (s *Server) closeAgentConns() {
 }
 
 type InitializeConfig struct {
-	Standby    utils.SegConfig
-	Master	   utils.SegConfig
-	Primaries  []utils.SegConfig
+	Standby   utils.SegConfig
+	Master    utils.SegConfig
+	Primaries []utils.SegConfig
 }
 
 // Config contains all the information that will be persisted to/loaded from
