@@ -18,7 +18,7 @@ const executeMasterBackupName = "upgraded-master.bak"
 func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_ExecuteServer) (err error) {
 	upgradedMasterBackupDir := filepath.Join(s.StateDir, executeMasterBackupName)
 
-	st, err := BeginStep(s.StateDir, "execute", stream)
+	st, err := step.Begin(s.StateDir, "execute", stream)
 	if err != nil {
 		return err
 	}

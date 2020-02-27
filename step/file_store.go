@@ -11,6 +11,11 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 )
 
+type Store interface {
+	Read(idl.Substep) (idl.Status, error)
+	Write(idl.Substep, idl.Status) error
+}
+
 // FileStore implements step.Store by providing persistent storage on disk.
 type FileStore struct {
 	path string

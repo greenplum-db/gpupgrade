@@ -2,7 +2,9 @@ package step
 
 import (
 	"fmt"
-	"io"
+	"os"
+	"path/filepath"
+	"strings"
 
 	multierror "github.com/hashicorp/go-multierror"
 	"golang.org/x/xerrors"
@@ -18,21 +20,6 @@ type Step struct {
 	err     error
 }
 
-type Store interface {
-	Read(idl.Substep) (idl.Status, error)
-	Write(idl.Substep, idl.Status) error
-}
-
-type OutStreams interface {
-	Stdout() io.Writer
-	Stderr() io.Writer
-}
-
-type OutStreamsCloser interface {
-	OutStreams
-	Close() error
-}
-
 func New(name string, sender idl.MessageSender, store Store, streams OutStreamsCloser) *Step {
 	return &Step{
 		name:    name,
@@ -40,6 +27,57 @@ func New(name string, sender idl.MessageSender, store Store, streams OutStreamsC
 		store:   store,
 		streams: streams,
 	}
+}
+
+func Begin(stateDir string, name string, sender idl.MessageSender) (*Step, error) {
+	path := filepath.Join(stateDir, fmt.Sprintf("%s.log", name))
+	log, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
+	if err != nil {
+		return nil, xerrors.Errorf(`step "%s": %w`, name, err)
+	}
+
+	_, err = fmt.Fprintf(log, "\n%s in progress.\n", strings.Title(name))
+	if err != nil {
+		log.Close()
+		return nil, xerrors.Errorf(`logging step "%s": %w`, name, err)
+	}
+
+	statusPath, err := GetStatusFile(stateDir)
+	if err != nil {
+		return nil, xerrors.Errorf("step %q: %w", name, err)
+	}
+
+	streams := newMultiplexedStream(sender, log)
+
+	return New(name, sender, NewFileStore(statusPath), streams), nil
+}
+
+// Returns path to status file, and if one does not exist it creates an empty
+// JSON file.
+func GetStatusFile(stateDir string) (path string, err error) {
+	path = filepath.Join(stateDir, "status.json")
+
+	f, err := os.OpenFile(path, os.O_EXCL|os.O_CREATE|os.O_WRONLY, 0600)
+	if os.IsExist(err) {
+		return path, nil
+	}
+	if err != nil {
+		return "", err
+	}
+
+	defer func() {
+		if cErr := f.Close(); cErr != nil {
+			err = multierror.Append(err, cErr).ErrorOrNil()
+		}
+	}()
+
+	// MarshallJSON requires a well-formed JSON file
+	_, err = f.WriteString("{}")
+	if err != nil {
+		return "", err
+	}
+
+	return path, nil
 }
 
 func (s *Step) Finish() error {

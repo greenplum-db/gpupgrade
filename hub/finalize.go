@@ -11,7 +11,7 @@ import (
 )
 
 func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeServer) (err error) {
-	st, err := BeginStep(s.StateDir, "finalize", stream)
+	st, err := step.Begin(s.StateDir, "finalize", stream)
 	if err != nil {
 		return err
 	}

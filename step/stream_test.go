@@ -1,20 +1,17 @@
-package hub
+package step
 
 import (
 	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
+	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"golang.org/x/xerrors"
-
-	. "github.com/onsi/gomega"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
@@ -124,60 +121,11 @@ func TestMultiplexedStream(t *testing.T) {
 	})
 }
 
-func TestStatusFile(t *testing.T) {
-	stateDir, err := ioutil.TempDir("", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(stateDir); err != nil {
-			t.Errorf("removing temp directory: %v", err)
-		}
-	}()
+// failingWriter is an io.Writer for which all calls to Write() return an error.
+type failingWriter struct {
+	err error
+}
 
-	path := filepath.Join(stateDir, "status.json")
-
-	t.Run("creates status file if it does not exist", func(t *testing.T) {
-		_, err := os.Open(path)
-		if !os.IsNotExist(err) {
-			t.Errorf("returned error %#v want ErrNotExist", err)
-		}
-
-		statusFile, err := getStatusFile(stateDir)
-		if err != nil {
-			t.Errorf("unexpected error %v", err)
-		}
-
-		actual, err := ioutil.ReadFile(statusFile)
-		if err != nil {
-			t.Fatalf("ReadFile(%q) returned error %#v", statusFile, err)
-		}
-
-		expected := "{}"
-		if string(actual) != expected {
-			t.Errorf("read %v want %v", string(actual), expected)
-		}
-	})
-
-	t.Run("does not create status file if it already exists", func(t *testing.T) {
-		expected := "1234"
-		err := ioutil.WriteFile(path, []byte(expected), 0600)
-		if err != nil {
-			t.Fatalf("unexpected error %v", err)
-		}
-
-		statusFile, err := getStatusFile(stateDir)
-		if err != nil {
-			t.Errorf("unexpected error %v", err)
-		}
-
-		actual, err := ioutil.ReadFile(statusFile)
-		if err != nil {
-			t.Errorf("ReadFile(%q) returned error %#v", statusFile, err)
-		}
-
-		if string(actual) != expected {
-			t.Errorf("read %v want %v", string(actual), expected)
-		}
-	})
+func (f *failingWriter) Write(_ []byte) (int, error) {
+	return 0, f.err
 }
