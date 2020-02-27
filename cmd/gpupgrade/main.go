@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"runtime/debug"
 
@@ -16,8 +15,6 @@ import (
 func main() {
 	setUpLogging()
 
-	confirmValidCommand()
-
 	root := commands.BuildRootCommand()
 	root.SilenceErrors = true // we'll print these ourselves
 
@@ -26,12 +23,6 @@ func main() {
 		// Use v to print the stack trace of an object errors.
 		fmt.Printf("\n%+v\n", err)
 		os.Exit(1)
-	}
-}
-
-func confirmValidCommand() {
-	if len(os.Args[1:]) < 1 {
-		log.Fatal("Please specify one command of: check, config, initialize, prepare, status, upgrade, or version")
 	}
 }
 

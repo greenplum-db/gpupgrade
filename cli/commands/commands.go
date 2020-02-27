@@ -499,7 +499,7 @@ Initialize will carry out the following sub-steps:
  - Create directories
  - Generate upgrade configuration
  - Start gpupgrade hub process
- - Check source cluster configuration
+ - Retrieve source cluster configuration
  - Start gpupgrade agent processes
  - Check disk space
  - Generate target cluster configuration
@@ -508,7 +508,7 @@ Initialize will carry out the following sub-steps:
  - Back up target master
  - Run pg_upgrade checks
 
-Usage: gpupgrade initialize <flags> 
+Usage: gpupgrade initialize <flags>
 
 Required Flags:
 

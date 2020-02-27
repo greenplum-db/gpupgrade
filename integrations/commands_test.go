@@ -1,7 +1,6 @@
 package integrations_test
 
 import (
-	"bytes"
 	"fmt"
 	"os/exec"
 
@@ -18,16 +17,31 @@ var _ = Describe("test gpupgrade help messages", func() {
 		"execute":    commands.ExecuteHelp,
 		"finalize":   commands.FinalizeHelp,
 	}
-	flagList := []string{"-?", "-h", "--help", "help"}
 
+	flagList := []string{"-?", "-h", "--help", "help"}
 	for command, help := range helpMap {
 		for _, flag := range flagList {
-			It(fmt.Sprintf("testing command %s with flag %s", command, flag), func() {
+			command := command
+			flag := flag
+			help := help
+
+			It(fmt.Sprintf("testing command %q with flag %q", command, flag), func() {
 				cmd := exec.Command("gpupgrade", command, flag)
+				if command == "" {
+					cmd = exec.Command("gpupgrade", flag)
+				}
 				output, err := cmd.Output()
 				Expect(err).ToNot(HaveOccurred())
-				Expect(bytes.Compare(output, []byte(help))).To(BeZero())
+				Expect(string(output)).To(Equal(help))
 			})
 		}
 	}
+
+	It("testing command gpupgrade with no arguments", func() {
+		cmd := exec.Command("gpupgrade")
+		output, err := cmd.Output()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(string(output)).To(Equal(commands.GlobalHelp))
+	})
+
 })
