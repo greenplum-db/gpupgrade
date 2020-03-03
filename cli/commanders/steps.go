@@ -18,13 +18,13 @@ type receiver interface {
 }
 
 var lines = map[idl.Substep]string{
-	idl.Substep_CONFIG:                                            "Retrieving configs...",
-	idl.Substep_START_AGENTS:                                      "Starting agents...",
-	idl.Substep_CREATE_TARGET_CONFIG:                              "Generating new cluster configuration...",
+	idl.Substep_CONFIG:                                            "Retrieving source cluster configuration...",
+	idl.Substep_START_AGENTS:                                      "Starting gpupgrade agent processes...",
+	idl.Substep_CREATE_TARGET_CONFIG:                              "Generating target cluster configuration...",
 	idl.Substep_SHUTDOWN_SOURCE_CLUSTER:                           "Stopping old cluster...",
-	idl.Substep_INIT_TARGET_CLUSTER:                               "Creating new cluster...",
-	idl.Substep_SHUTDOWN_TARGET_CLUSTER:                           "Stopping new cluster...",
-	idl.Substep_BACKUP_TARGET_MASTER:                              "Backing up new master...",
+	idl.Substep_INIT_TARGET_CLUSTER:                               "Creating target cluster...",
+	idl.Substep_SHUTDOWN_TARGET_CLUSTER:                           "Stopping target cluster...",
+	idl.Substep_BACKUP_TARGET_MASTER:                              "Backing up target master...",
 	idl.Substep_CHECK_UPGRADE:                                     "Running pg_upgrade checks...",
 	idl.Substep_UPGRADE_MASTER:                                    "Upgrading master...",
 	idl.Substep_COPY_MASTER:                                       "Copying master to segments...",

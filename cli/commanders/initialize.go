@@ -20,7 +20,7 @@ var execCommandHubCount = exec.Command
 // we create the state directory in the cli to ensure that at most one gpupgrade is occurring
 // at the same time.
 func CreateStateDir() (err error) {
-	s := Substep("Creating state directory...")
+	s := Substep("Creating directories...")
 	defer s.Finish(&err)
 
 	stateDir := utils.GetStateDir()
@@ -38,7 +38,7 @@ func CreateStateDir() (err error) {
 }
 
 func CreateInitialClusterConfigs() (err error) {
-	s := Substep("Creating initial cluster config files...")
+	s := Substep("Generating upgrade configuration...")
 	defer s.Finish(&err)
 
 	// if empty json configuration file exists, skip recreating it
@@ -69,7 +69,7 @@ func CreateInitialClusterConfigs() (err error) {
 }
 
 func StartHub() (err error) {
-	s := Substep("Starting hub...")
+	s := Substep("Starting gpupgrade hub process...")
 	defer s.Finish(&err)
 
 	running, err := IsHubRunning()

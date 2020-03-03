@@ -265,7 +265,7 @@ func initialize() *cobra.Command {
 			cmd.SilenceUsage = true
 
 			fmt.Println()
-			fmt.Println("Initialization in progress.")
+			fmt.Println("Initialize in progress.")
 			fmt.Println()
 
 			err = commanders.CreateStateDir()
