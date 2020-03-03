@@ -312,12 +312,14 @@ func initialize() *cobra.Command {
 			}
 
 			fmt.Println(`
-Run "gpupgrade execute" on the command line to proceed with the upgrade.
+Initialize completed successfully.
 
-After upgrading, you will need to finalize.
+NEXT ACTIONS
+------------
+Run "gpupgrade execute" to proceed with the upgrade.
 
-If you would like to return the cluster to its original state, run
-"gpupgrade revert" on the command line.`)
+After executing, you will need to finalize.`)
+
 			return nil
 		},
 	}
