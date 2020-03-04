@@ -5,6 +5,11 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"strconv"
+
+	"github.com/greenplum-db/gpupgrade/hub"
+	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/pkg/errors"
@@ -21,15 +26,15 @@ var lines = map[idl.Substep]string{
 	idl.Substep_CONFIG:                                            "Retrieving source cluster configuration...",
 	idl.Substep_START_AGENTS:                                      "Starting gpupgrade agent processes...",
 	idl.Substep_CREATE_TARGET_CONFIG:                              "Generating target cluster configuration...",
-	idl.Substep_SHUTDOWN_SOURCE_CLUSTER:                           "Stopping old cluster...",
+	idl.Substep_SHUTDOWN_SOURCE_CLUSTER:                           "Stopping source cluster...",
 	idl.Substep_INIT_TARGET_CLUSTER:                               "Creating target cluster...",
 	idl.Substep_SHUTDOWN_TARGET_CLUSTER:                           "Stopping target cluster...",
 	idl.Substep_BACKUP_TARGET_MASTER:                              "Backing up target master...",
 	idl.Substep_CHECK_UPGRADE:                                     "Running pg_upgrade checks...",
 	idl.Substep_UPGRADE_MASTER:                                    "Upgrading master...",
-	idl.Substep_COPY_MASTER:                                       "Copying master to segments...",
-	idl.Substep_UPGRADE_PRIMARIES:                                 "Upgrading segments...",
-	idl.Substep_START_TARGET_CLUSTER:                              "Starting new cluster...",
+	idl.Substep_COPY_MASTER:                                       "Copying master catalog to primary segments...",
+	idl.Substep_UPGRADE_PRIMARIES:                                 "Upgrading primary segments...",
+	idl.Substep_START_TARGET_CLUSTER:                              "Starting target cluster...",
 	idl.Substep_FINALIZE_UPGRADE_STANDBY:                          "Upgrading standby...",
 	idl.Substep_FINALIZE_SHUTDOWN_TARGET_CLUSTER:                  "Stopping new cluster",
 	idl.Substep_FINALIZE_UPDATE_TARGET_CATALOG_AND_CLUSTER_CONFIG: "Updating new master catalog...",
@@ -90,19 +95,29 @@ func Execute(client idl.CliToHubClient, verbose bool) error {
 	if err != nil {
 		return xerrors.Errorf("Execute: %w", err)
 	}
+	
+	path := filepath.Join(utils.GetStateDir(), hub.ConfigFileName)
+	conf := &hub.Config{}
+	err = hub.LoadConfig(conf, path)
+	if err != nil {
+		return err
+	}
 
-	fmt.Println(`
-You may now run queries against the new database and perform any other
-validation desired prior to finalizing your upgrade.
+	message := fmt.Sprintf(`
+Execute completed successfully.
 
-WARNING: If any queries modify the database during this time, this will affect
-your revert time.
+The target cluster is now running. The PGPORT is %s and the MASTER_DATA_DIRECTORY is %s.
 
-If you are satisfied with the state of the cluster, run "gpupgrade finalize" on
-the command line to finish the upgrade.
+You may now run queries against the target database and perform any other validation desired prior to finalizing your upgrade.
 
-If you would like to return the cluster to its original state, run
-"gpupgrade revert" on the command line.`)
+WARNING: If any queries modify the target database during this time, it will be inconsistent with the source database.
+
+NEXT ACTIONS
+------------
+If you are satisfied with the state of the cluster, run "gpupgrade finalize" to proceed with the upgrade.
+`, strconv.Itoa(conf.Target.MasterPort()), conf.Target.MasterDataDir())
+
+	fmt.Println(message)
 
 	return nil
 }
