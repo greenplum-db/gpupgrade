@@ -20,7 +20,7 @@ setup() {
     gpupgrade initialize \
         --old-bindir="${GPHOME}/bin" \
         --new-bindir="${GPHOME}/bin" \
-        --old-port="${PGPORT}"\
+        --source-master-port="${PGPORT}"\
         --stop-before-cluster-creation \
         --disk-free-ratio 0 3>&-
 
@@ -162,7 +162,7 @@ outputContains() {
             $opts \
             --old-bindir="$GPHOME"/bin \
             --new-bindir="$GPHOME"/bin \
-            --old-port="${PGPORT}" \
+            --source-master-port="${PGPORT}" \
             --stop-before-cluster-creation \
             --verbose 3>&-
 
@@ -209,7 +209,7 @@ wait_for_port_change() {
     run gpupgrade initialize \
         --old-bindir="$GPHOME/bin" \
         --new-bindir="$GPHOME/bin" \
-        --old-port="${PGPORT}" \
+        --source-master-port="${PGPORT}" \
         --disk-free-ratio 0 \
         --stop-before-cluster-creation \
         --verbose 3>&-
@@ -220,7 +220,7 @@ wait_for_port_change() {
     run gpupgrade initialize \
         --old-bindir="$GPHOME/bin" \
         --new-bindir="$GPHOME/bin" \
-        --old-port="${PGPORT}" \
+        --source-master-port="${PGPORT}" \
         --disk-free-ratio 0 \
         --stop-before-cluster-creation \
         --verbose 3>&-
@@ -231,7 +231,7 @@ wait_for_port_change() {
     gpupgrade initialize \
         --old-bindir="$GPHOME/bin" \
         --new-bindir="$GPHOME/bin" \
-        --old-port="${PGPORT}" \
+        --source-master-port="${PGPORT}" \
         --disk-free-ratio 0 \
         --verbose 3>&-
 
@@ -244,7 +244,7 @@ wait_for_port_change() {
     run gpupgrade initialize \
         --old-bindir="$GPHOME/bin" \
         --new-bindir="$GPHOME/bin" \
-        --old-port="${PGPORT}" \
+        --source-master-port="${PGPORT}" \
         --disk-free-ratio 0 \
         --verbose 3>&-
 
@@ -269,7 +269,7 @@ wait_for_port_change() {
     gpupgrade initialize \
         --old-bindir="$GPHOME/bin" \
         --new-bindir="$GPHOME/bin" \
-        --old-port="${PGPORT}"\
+        --source-master-port="${PGPORT}"\
         --disk-free-ratio 0 \
         --verbose 3>&-
 
@@ -282,7 +282,7 @@ wait_for_port_change() {
     gpupgrade initialize \
         --old-bindir="$GPHOME/bin" \
         --new-bindir="$GPHOME/bin" \
-        --old-port="${PGPORT}"\
+        --source-master-port="${PGPORT}"\
         --disk-free-ratio 0 \
         --verbose 3>&-
 }

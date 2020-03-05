@@ -98,7 +98,7 @@ time ssh mdw bash <<EOF
     gpupgrade initialize \
               --new-bindir ${GPHOME_NEW}/bin \
               --old-bindir ${GPHOME_OLD}/bin \
-              --old-port 5432
+              --source-master-port 5432
 
     gpupgrade execute
     gpupgrade finalize

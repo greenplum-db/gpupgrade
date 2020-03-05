@@ -93,7 +93,7 @@ reset_master_and_primary_pg_control_files() {
     gpupgrade initialize \
         --old-bindir="$GPHOME/bin" \
         --new-bindir="$GPHOME/bin" \
-        --old-port="${PGPORT}" \
+        --source-master-port="${PGPORT}" \
         --link \
         --disk-free-ratio 0 \
         --verbose
@@ -115,7 +115,7 @@ reset_master_and_primary_pg_control_files() {
     gpupgrade initialize \
         --old-bindir="$GPHOME/bin" \
         --new-bindir="$GPHOME/bin" \
-        --old-port="${PGPORT}" \
+        --source-master-port="${PGPORT}" \
         --link \
         --disk-free-ratio 0 \
         --verbose
@@ -150,7 +150,7 @@ reset_master_and_primary_pg_control_files() {
     gpupgrade initialize \
         --old-bindir="$GPHOME/bin" \
         --new-bindir="$GPHOME/bin" \
-        --old-port="${PGPORT}"\
+        --source-master-port="${PGPORT}"\
         --disk-free-ratio 0 \
         --verbose 3>&-
 

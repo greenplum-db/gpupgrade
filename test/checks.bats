@@ -81,7 +81,7 @@ are_equivalent_within_tolerance() {
         --disk-free-ratio=1.0 \
         --old-bindir="$PWD" \
         --new-bindir="$PWD" \
-        --old-port="${PGPORT}" \
+        --source-master-port="${PGPORT}" \
         --stop-before-cluster-creation 3>&-
 
     [ "$status" -eq 1 ]

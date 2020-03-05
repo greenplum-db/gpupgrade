@@ -50,7 +50,7 @@ teardown() {
     gpupgrade initialize \
         --old-bindir "$GPHOME/bin" \
         --new-bindir "$GPHOME/bin" \
-        --old-port "$PGPORT" \
+        --source-master-port "$PGPORT" \
         --disk-free-ratio=0 \
         --verbose 3>&- || status=$?
     [ "$status" -eq 1 ]
@@ -71,7 +71,7 @@ teardown() {
     gpupgrade initialize \
         --old-bindir "$GPHOME/bin" \
         --new-bindir "$GPHOME/bin" \
-        --old-port "$PGPORT" \
+        --source-master-port "$PGPORT" \
         --disk-free-ratio=0 3>&-
 
     NEW_CLUSTER="$(gpupgrade config show --new-datadir)"
@@ -111,7 +111,7 @@ count_primary_gp_dbids() {
         --verbose \
         --old-bindir "$GPHOME/bin" \
         --new-bindir "$GPHOME/bin" \
-        --old-port "$PGPORT" \
+        --source-master-port "$PGPORT" \
         --disk-free-ratio=0 3>&-
     NEW_CLUSTER="$(gpupgrade config show --new-datadir)"
 

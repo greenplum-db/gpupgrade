@@ -26,7 +26,7 @@ teardown() {
     gpupgrade initialize \
               --old-bindir "$GPHOME"/bin \
               --new-bindir "$GPHOME_NEW"/bin \
-              --old-port $PGPORT \
+              --source-master-port $PGPORT \
               --disk-free-ratio=0 \
               3>&-
 

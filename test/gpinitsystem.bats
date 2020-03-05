@@ -63,7 +63,7 @@ expected_datadir() {
         --verbose \
         --old-bindir "$GPHOME/bin" \
         --new-bindir "$GPHOME/bin" \
-        --old-port "$PGPORT" \
+        --source-master-port "$PGPORT" \
         --disk-free-ratio 0 3>&-
 
     # Make sure we clean up during teardown().
@@ -111,11 +111,11 @@ expected_datadir() {
     local newport=15432
 
     gpupgrade initialize \
-        --ports $expected_ports,$standby_port,$mirror_ports \
+        --temp-port-range $expected_ports,$standby_port,$mirror_ports \
         --verbose \
         --old-bindir "$GPHOME/bin" \
         --new-bindir "$GPHOME/bin" \
-        --old-port "$PGPORT" \
+        --source-master-port "$PGPORT" \
         --disk-free-ratio 0 3>&-
 
     # Make sure we clean up during teardown().
