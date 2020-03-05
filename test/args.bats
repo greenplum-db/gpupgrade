@@ -5,7 +5,7 @@ load helpers
 @test "gpupgrade subcommands fail when passed insufficient arguments" {
     run gpupgrade initialize
     [ "$status" -eq 1 ]
-    if ! [[ "$output" = *'Required flag(s) "new-bindir", "old-bindir", "source-master-port" have/has not been set'* ]]; then
+    if ! [[ "$output" = *'Required flag(s) "source-bindir", "source-master-port", "target-bindir" have/has not been set'* ]]; then
         fail "actual: $output"
     fi
 

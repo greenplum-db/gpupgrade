@@ -18,8 +18,8 @@ setup() {
 
     gpupgrade kill-services
     gpupgrade initialize \
-        --old-bindir="${GPHOME}/bin" \
-        --new-bindir="${GPHOME}/bin" \
+        --source-bindir="${GPHOME}/bin" \
+        --target-bindir="${GPHOME}/bin" \
         --source-master-port="${PGPORT}"\
         --stop-before-cluster-creation \
         --disk-free-ratio 0 3>&-
@@ -125,7 +125,7 @@ outputContains() {
     gpupgrade kill-services
 
     commands=(
-        'config set --old-bindir /dummy'
+        'config set --source-bindir /dummy'
         'config show'
         'execute'
         'finalize'
@@ -160,8 +160,8 @@ outputContains() {
     for opts in "${option_list[@]}"; do
         run gpupgrade initialize \
             $opts \
-            --old-bindir="$GPHOME"/bin \
-            --new-bindir="$GPHOME"/bin \
+            --source-bindir="$GPHOME"/bin \
+            --target-bindir="$GPHOME"/bin \
             --source-master-port="${PGPORT}" \
             --stop-before-cluster-creation \
             --verbose 3>&-
@@ -207,8 +207,8 @@ wait_for_port_change() {
     wait_for_port_change $AGENT_PORT 0
 
     run gpupgrade initialize \
-        --old-bindir="$GPHOME/bin" \
-        --new-bindir="$GPHOME/bin" \
+        --source-bindir="$GPHOME/bin" \
+        --target-bindir="$GPHOME/bin" \
         --source-master-port="${PGPORT}" \
         --disk-free-ratio 0 \
         --stop-before-cluster-creation \
@@ -218,8 +218,8 @@ wait_for_port_change() {
     release_held_port
 
     run gpupgrade initialize \
-        --old-bindir="$GPHOME/bin" \
-        --new-bindir="$GPHOME/bin" \
+        --source-bindir="$GPHOME/bin" \
+        --target-bindir="$GPHOME/bin" \
         --source-master-port="${PGPORT}" \
         --disk-free-ratio 0 \
         --stop-before-cluster-creation \
@@ -229,8 +229,8 @@ wait_for_port_change() {
 
 @test "the check_upgrade substep always runs" {
     gpupgrade initialize \
-        --old-bindir="$GPHOME/bin" \
-        --new-bindir="$GPHOME/bin" \
+        --source-bindir="$GPHOME/bin" \
+        --target-bindir="$GPHOME/bin" \
         --source-master-port="${PGPORT}" \
         --disk-free-ratio 0 \
         --verbose 3>&-
@@ -242,8 +242,8 @@ wait_for_port_change() {
     TEARDOWN_FUNCTIONS+=( teardown_check_upgrade_failure )
 
     run gpupgrade initialize \
-        --old-bindir="$GPHOME/bin" \
-        --new-bindir="$GPHOME/bin" \
+        --source-bindir="$GPHOME/bin" \
+        --target-bindir="$GPHOME/bin" \
         --source-master-port="${PGPORT}" \
         --disk-free-ratio 0 \
         --verbose 3>&-
@@ -267,8 +267,8 @@ wait_for_port_change() {
     # Force a target cluster to be created (setup's initialize stops before that
     # happens).
     gpupgrade initialize \
-        --old-bindir="$GPHOME/bin" \
-        --new-bindir="$GPHOME/bin" \
+        --source-bindir="$GPHOME/bin" \
+        --target-bindir="$GPHOME/bin" \
         --source-master-port="${PGPORT}"\
         --disk-free-ratio 0 \
         --verbose 3>&-
@@ -280,8 +280,8 @@ wait_for_port_change() {
     sed -i.bak -e 's/"COMPLETE"/"FAILED"/g' "$GPUPGRADE_HOME/status.json"
 
     gpupgrade initialize \
-        --old-bindir="$GPHOME/bin" \
-        --new-bindir="$GPHOME/bin" \
+        --source-bindir="$GPHOME/bin" \
+        --target-bindir="$GPHOME/bin" \
         --source-master-port="${PGPORT}"\
         --disk-free-ratio 0 \
         --verbose 3>&-

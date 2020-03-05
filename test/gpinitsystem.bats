@@ -61,8 +61,8 @@ expected_datadir() {
 
     gpupgrade initialize \
         --verbose \
-        --old-bindir "$GPHOME/bin" \
-        --new-bindir "$GPHOME/bin" \
+        --source-bindir "$GPHOME/bin" \
+        --target-bindir "$GPHOME/bin" \
         --source-master-port "$PGPORT" \
         --disk-free-ratio 0 3>&-
 
@@ -113,8 +113,8 @@ expected_datadir() {
     gpupgrade initialize \
         --temp-port-range $expected_ports,$standby_port,$mirror_ports \
         --verbose \
-        --old-bindir "$GPHOME/bin" \
-        --new-bindir "$GPHOME/bin" \
+        --source-bindir "$GPHOME/bin" \
+        --target-bindir "$GPHOME/bin" \
         --source-master-port "$PGPORT" \
         --disk-free-ratio 0 3>&-
 

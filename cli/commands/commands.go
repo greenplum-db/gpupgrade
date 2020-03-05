@@ -176,8 +176,8 @@ func createConfigSetSubcommand() *cobra.Command {
 		},
 	}
 
-	subSet.Flags().String("old-bindir", "", "install directory for old gpdb version")
-	subSet.Flags().String("new-bindir", "", "install directory for new gpdb version")
+	subSet.Flags().String("source-bindir", "", "install directory for old gpdb version")
+	subSet.Flags().String("target-bindir", "", "install directory for new gpdb version")
 
 	return subSet
 }
@@ -226,8 +226,8 @@ func createConfigShowSubcommand() *cobra.Command {
 		},
 	}
 
-	subShow.Flags().Bool("old-bindir", false, "show install directory for old gpdb version")
-	subShow.Flags().Bool("new-bindir", false, "show install directory for new gpdb version")
+	subShow.Flags().Bool("source-bindir", false, "show install directory for source gpdb version")
+	subShow.Flags().Bool("target-bindir", false, "show install directory for target gpdb version")
 	subShow.Flags().Bool("new-datadir", false, "show temporary data directory for new gpdb cluster")
 
 	return subShow
@@ -340,10 +340,10 @@ After executing, you will need to finalize.`)
 		},
 	}
 
-	subInit.Flags().StringVar(&sourceBinDir, "old-bindir", "", "install directory for old gpdb version")
-	subInit.MarkFlagRequired("old-bindir")
-	subInit.Flags().StringVar(&targetBinDir, "new-bindir", "", "install directory for new gpdb version")
-	subInit.MarkFlagRequired("new-bindir")
+	subInit.Flags().StringVar(&sourceBinDir, "source-bindir", "", "install directory for source gpdb version")
+	subInit.MarkFlagRequired("source-bindir")
+	subInit.Flags().StringVar(&targetBinDir, "target-bindir", "", "install directory for target gpdb version")
+	subInit.MarkFlagRequired("target-bindir")
 	subInit.Flags().IntVar(&sourcePort, "source-master-port", 0, "master port for old gpdb cluster")
 	subInit.MarkFlagRequired("source-master-port")
 	subInit.Flags().BoolVar(&stopBeforeClusterCreation, "stop-before-cluster-creation", false, "only run up to pre-init")

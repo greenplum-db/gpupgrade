@@ -48,8 +48,8 @@ teardown() {
     # that output, so manually store the status and ignore the expected failure.
     local status=0
     gpupgrade initialize \
-        --old-bindir "$GPHOME/bin" \
-        --new-bindir "$GPHOME/bin" \
+        --source-bindir "$GPHOME/bin" \
+        --target-bindir "$GPHOME/bin" \
         --source-master-port "$PGPORT" \
         --disk-free-ratio=0 \
         --verbose 3>&- || status=$?
@@ -69,8 +69,8 @@ teardown() {
     skip_if_no_gpdb
 
     gpupgrade initialize \
-        --old-bindir "$GPHOME/bin" \
-        --new-bindir "$GPHOME/bin" \
+        --source-bindir "$GPHOME/bin" \
+        --target-bindir "$GPHOME/bin" \
         --source-master-port "$PGPORT" \
         --disk-free-ratio=0 3>&-
 
@@ -109,8 +109,8 @@ count_primary_gp_dbids() {
 
     gpupgrade initialize \
         --verbose \
-        --old-bindir "$GPHOME/bin" \
-        --new-bindir "$GPHOME/bin" \
+        --source-bindir "$GPHOME/bin" \
+        --target-bindir "$GPHOME/bin" \
         --source-master-port "$PGPORT" \
         --disk-free-ratio=0 3>&-
     NEW_CLUSTER="$(gpupgrade config show --new-datadir)"

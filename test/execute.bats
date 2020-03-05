@@ -91,8 +91,8 @@ reset_master_and_primary_pg_control_files() {
     ensure_hardlinks_for_relfilenode_on_master_and_segments 'test_linking' 1
 
     gpupgrade initialize \
-        --old-bindir="$GPHOME/bin" \
-        --new-bindir="$GPHOME/bin" \
+        --source-bindir="$GPHOME/bin" \
+        --target-bindir="$GPHOME/bin" \
         --source-master-port="${PGPORT}" \
         --link \
         --disk-free-ratio 0 \
@@ -113,8 +113,8 @@ reset_master_and_primary_pg_control_files() {
     delete_target_datadirs "${MASTER_DATA_DIRECTORY}"
 
     gpupgrade initialize \
-        --old-bindir="$GPHOME/bin" \
-        --new-bindir="$GPHOME/bin" \
+        --source-bindir="$GPHOME/bin" \
+        --target-bindir="$GPHOME/bin" \
         --source-master-port="${PGPORT}" \
         --link \
         --disk-free-ratio 0 \
@@ -148,8 +148,8 @@ reset_master_and_primary_pg_control_files() {
 # depending on what makes the most sense at that time.
 @test "all substeps can be re-run after completion" {
     gpupgrade initialize \
-        --old-bindir="$GPHOME/bin" \
-        --new-bindir="$GPHOME/bin" \
+        --source-bindir="$GPHOME/bin" \
+        --target-bindir="$GPHOME/bin" \
         --source-master-port="${PGPORT}"\
         --disk-free-ratio 0 \
         --verbose 3>&-

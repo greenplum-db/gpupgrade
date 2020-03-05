@@ -39,8 +39,8 @@ teardown() {
     local old_config=$(get_segment_configuration)
 
     gpupgrade initialize \
-        --old-bindir="$GPHOME/bin" \
-        --new-bindir="$GPHOME/bin" \
+        --source-bindir="$GPHOME/bin" \
+        --target-bindir="$GPHOME/bin" \
         --source-master-port="${PGPORT}" \
         --disk-free-ratio 0 \
         --verbose 3>&-

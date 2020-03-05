@@ -96,8 +96,8 @@ time ssh mdw bash <<EOF
     set -eux -o pipefail
 
     gpupgrade initialize \
-              --new-bindir ${GPHOME_NEW}/bin \
-              --old-bindir ${GPHOME_OLD}/bin \
+              --target-bindir ${GPHOME_NEW}/bin \
+              --source-bindir ${GPHOME_OLD}/bin \
               --source-master-port 5432
 
     gpupgrade execute

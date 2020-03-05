@@ -79,8 +79,8 @@ are_equivalent_within_tolerance() {
 
     run gpupgrade initialize \
         --disk-free-ratio=1.0 \
-        --old-bindir="$PWD" \
-        --new-bindir="$PWD" \
+        --source-bindir="$PWD" \
+        --target-bindir="$PWD" \
         --source-master-port="${PGPORT}" \
         --stop-before-cluster-creation 3>&-
 

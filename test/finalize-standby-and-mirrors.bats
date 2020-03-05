@@ -35,8 +35,8 @@ teardown() {
 @test "finalize brings up the standby and mirrors for the new cluster" {
     local source_mirrors_count=$(number_of_mirrors)
     gpupgrade initialize \
-        --old-bindir="$GPHOME/bin" \
-        --new-bindir="$GPHOME/bin" \
+        --source-bindir="$GPHOME/bin" \
+        --target-bindir="$GPHOME/bin" \
         --source-master-port="${PGPORT}" \
         --disk-free-ratio 0 \
         --verbose 3>&-

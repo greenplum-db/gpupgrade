@@ -14,9 +14,9 @@ const ConfigFileName = "config.json"
 
 func (s *Server) SetConfig(ctx context.Context, in *idl.SetConfigRequest) (*idl.SetConfigReply, error) {
 	switch in.Name {
-	case "old-bindir":
+	case "source-bindir":
 		s.Source.BinDir = in.Value
-	case "new-bindir":
+	case "target-bindir":
 		s.Target.BinDir = in.Value
 	default:
 		return nil, status.Errorf(codes.NotFound, "%s is not a valid configuration key", in.Name)
@@ -34,11 +34,11 @@ func (s *Server) GetConfig(ctx context.Context, in *idl.GetConfigRequest) (*idl.
 	resp := &idl.GetConfigReply{}
 
 	switch in.Name {
-	case "old-bindir":
+	case "source-bindir":
 		resp.Value = s.Source.BinDir
-	case "new-bindir":
+	case "target-bindir":
 		resp.Value = s.Target.BinDir
-	case "new-datadir":
+	case "target-datadir":
 		resp.Value = s.Target.MasterDataDir()
 	default:
 		return nil, status.Errorf(codes.NotFound, "%s is not a valid configuration key", in.Name)

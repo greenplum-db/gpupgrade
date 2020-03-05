@@ -24,8 +24,8 @@ teardown() {
 
 @test "gpugrade can make it as far as we currently know..." {
     gpupgrade initialize \
-              --old-bindir "$GPHOME"/bin \
-              --new-bindir "$GPHOME_NEW"/bin \
+              --source-bindir "$GPHOME"/bin \
+              --target-bindir "$GPHOME_NEW"/bin \
               --source-master-port $PGPORT \
               --disk-free-ratio=0 \
               3>&-
