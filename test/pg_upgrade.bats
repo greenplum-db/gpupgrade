@@ -55,7 +55,7 @@ teardown() {
         --verbose 3>&- || status=$?
     [ "$status" -eq 1 ]
 
-    NEW_CLUSTER="$(gpupgrade config show --new-datadir)"
+    NEW_CLUSTER="$(gpupgrade config show --target-datadir)"
 
     grep "Checking for indexes on partitioned tables                  fatal" "$GPUPGRADE_HOME"/initialize.log
 
@@ -74,7 +74,7 @@ teardown() {
         --source-master-port "$PGPORT" \
         --disk-free-ratio=0 3>&-
 
-    NEW_CLUSTER="$(gpupgrade config show --new-datadir)"
+    NEW_CLUSTER="$(gpupgrade config show --target-datadir)"
 
     grep "Clusters are compatible" "$GPUPGRADE_HOME"/initialize.log
 
@@ -113,7 +113,7 @@ count_primary_gp_dbids() {
         --target-bindir "$GPHOME/bin" \
         --source-master-port "$PGPORT" \
         --disk-free-ratio=0 3>&-
-    NEW_CLUSTER="$(gpupgrade config show --new-datadir)"
+    NEW_CLUSTER="$(gpupgrade config show --target-datadir)"
 
     gpupgrade execute --verbose
 

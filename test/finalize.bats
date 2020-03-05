@@ -75,7 +75,7 @@ teardown() {
     local new_config=$(get_segment_configuration)
     [ "$old_config" = "$new_config" ] || fail "actual config: $new_config, wanted $old_config"
 
-    local new_datadir=$(gpupgrade config show --new-datadir)
+    local new_datadir=$(gpupgrade config show --target-datadir)
     # TODO: Query gp_stat_replication to check if the standby is in sync. Since
     # this is a more accurate representation if the standby is running and
     # in sync, since gpstate might simply check if the process is running.

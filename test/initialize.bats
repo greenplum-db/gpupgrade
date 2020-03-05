@@ -41,7 +41,7 @@ teardown() {
 }
 
 set_target_cluster_var_for_teardown() {
-    TARGET_CLUSTER="$(gpupgrade config show --new-datadir)"
+    TARGET_CLUSTER="$(gpupgrade config show --target-datadir)"
 }
 
 teardown_target_cluster() {

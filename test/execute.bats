@@ -98,7 +98,7 @@ reset_master_and_primary_pg_control_files() {
         --disk-free-ratio 0 \
         --verbose
 
-    NEW_CLUSTER="$(gpupgrade config show --new-datadir)"
+    NEW_CLUSTER="$(gpupgrade config show --target-datadir)"
 
     gpupgrade execute --verbose
     TEARDOWN_FUNCTIONS+=( reset_master_and_primary_pg_control_files )
@@ -120,7 +120,7 @@ reset_master_and_primary_pg_control_files() {
         --disk-free-ratio 0 \
         --verbose
 
-    local datadir="$(gpupgrade config show --new-datadir)"
+    local datadir="$(gpupgrade config show --target-datadir)"
     NEW_CLUSTER="${datadir}"
 
     # Initialize creates a backup of the target master data dir, during execute
@@ -154,7 +154,7 @@ reset_master_and_primary_pg_control_files() {
         --disk-free-ratio 0 \
         --verbose 3>&-
 
-    NEW_CLUSTER="$(gpupgrade config show --new-datadir)"
+    NEW_CLUSTER="$(gpupgrade config show --target-datadir)"
 
     gpupgrade execute --verbose 3>&-
 

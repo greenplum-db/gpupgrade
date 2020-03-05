@@ -33,7 +33,7 @@ teardown() {
 # is an implementation detail. If you want the actual location of the new master
 # data directory after an initialization, you can just ask the hub with
 #
-#    gpupgrade config show --new-datadir
+#    gpupgrade config show --target-datadir
 #
 expected_datadir() {
     local base="$(basename $1)"
@@ -67,7 +67,7 @@ expected_datadir() {
         --disk-free-ratio 0 3>&-
 
     # Make sure we clean up during teardown().
-    local newmasterdir="$(gpupgrade config show --new-datadir)"
+    local newmasterdir="$(gpupgrade config show --target-datadir)"
     NEW_CLUSTER="${newmasterdir}"
 
     # Sanity check the newly created master's location.
@@ -119,7 +119,7 @@ expected_datadir() {
         --disk-free-ratio 0 3>&-
 
     # Make sure we clean up during teardown().
-    local newmasterdir="$(gpupgrade config show --new-datadir)"
+    local newmasterdir="$(gpupgrade config show --target-datadir)"
     NEW_CLUSTER="${newmasterdir}"
 
     PGPORT=$newport gpstart -a -d "$newmasterdir"
