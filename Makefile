@@ -40,8 +40,10 @@ format:
 
 # check runs all tests against the locally built gpupgrade binaries. Use -k to
 # continue after failures.
-check: check-ginkgo check-bats
+check: check-code-style check-ginkgo check-bats
 check-ginkgo check-bats: export PATH := $(CURDIR):$(PATH)
+check-code-style:
+	bats -t scripts/enforce-code-style.bats
 
 GINKGO_ARGS := -keepGoing -randomizeSuites -randomizeAllSpecs
 check-ginkgo:

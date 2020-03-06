@@ -18,7 +18,7 @@ func RunPreChecks(client idl.CliToHubClient, ratio float64) error {
 	//TODO: when do we check this?  It requires the source cluster to be up.
 	//err := CheckVersion(client)
 	//if err != nil {
-	//	return errors.Wrap(err, "checking version compatibility")
+	//    return err
 	//}
 
 	return CheckDiskSpace(client, ratio)
@@ -30,7 +30,7 @@ func CheckVersion(client idl.CliToHubClient) (err error) {
 
 	resp, err := client.CheckVersion(context.Background(), &idl.CheckVersionRequest{})
 	if err != nil {
-		return errors.Wrap(err, "gRPC call to hub failed")
+		return xerrors.Errorf("gRPC call to hub failed: %w", err)
 	}
 	if !resp.IsVersionCompatible {
 		return errors.New("Version Compatibility Check Failed")

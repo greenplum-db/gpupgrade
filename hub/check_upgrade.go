@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/pkg/errors"
+	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/step"
 )
@@ -60,13 +60,13 @@ func (s *Server) CheckUpgrade(stream step.OutStreams) error {
 
 		conns, connsErr := agentProvider.GetAgents(s)
 		if connsErr != nil {
-			checkErrs <- errors.Wrap(connsErr, "failed to connect to gpupgrade agents")
+			checkErrs <- xerrors.Errorf("failed to connect to gpupgrade agents: %w", connsErr)
 			return
 		}
 
 		dataDirPairMap, dataDirPairsErr := s.GetDataDirPairs()
 		if dataDirPairsErr != nil {
-			checkErrs <- errors.Wrap(dataDirPairsErr, "failed to get old and new primary data directories")
+			checkErrs <- xerrors.Errorf("failed to get old and new primary data directories: %w", dataDirPairsErr)
 			return
 		}
 

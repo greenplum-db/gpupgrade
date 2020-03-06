@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -64,13 +63,13 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 		agentConns, err := s.AgentConns()
 
 		if err != nil {
-			return errors.Wrap(err, "failed to connect to gpupgrade agent")
+			return xerrors.Errorf("failed to connect to gpupgrade agent: %w", err)
 		}
 
 		dataDirPair, err := s.GetDataDirPairs()
 
 		if err != nil {
-			return errors.Wrap(err, "failed to get old and new primary data directories")
+			return xerrors.Errorf("failed to get old and new primary data directories: %w", err)
 		}
 
 		return UpgradePrimaries(UpgradePrimaryArgs{

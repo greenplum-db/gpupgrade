@@ -8,6 +8,7 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
+	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -44,7 +45,7 @@ func UpgradePrimaries(args UpgradePrimaryArgs) error {
 			})
 
 			if err != nil {
-				agentErrs <- errors.Wrapf(err, "failed to upgrade primary segment on host %s", conn.Hostname)
+				agentErrs <- xerrors.Errorf("failed to upgrade primary segment on host %s: %w", conn.Hostname, err)
 			}
 		}(conn)
 	}

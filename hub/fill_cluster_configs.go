@@ -7,6 +7,7 @@ import (
 	"sort"
 
 	"github.com/pkg/errors"
+	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/db"
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -25,7 +26,7 @@ func (s *Server) FillClusterConfigsSubStep(config *Config, conn *sql.DB, _ step.
 	dbconn := db.NewDBConn("localhost", int(request.SourcePort), "template1")
 	source, err := utils.ClusterFromDB(dbconn, request.SourceBinDir)
 	if err != nil {
-		return errors.Wrap(err, "could not retrieve source configuration")
+		return xerrors.Errorf("could not retrieve source configuration: %w", err)
 	}
 
 	config.Source = source

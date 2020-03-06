@@ -1,7 +1,7 @@
 package agent
 
 import (
-	"github.com/pkg/errors"
+	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/upgrade"
@@ -11,7 +11,7 @@ func upgradeSegment(segment Segment, request *idl.UpgradePrimariesRequest, host 
 	err := restoreBackup(request, segment)
 
 	if err != nil {
-		return errors.Wrapf(err, "failed to restore master data directory backup on host %s for content id %d: %s",
+		return xerrors.Errorf("failed to restore master data directory backup on host %s for content id %d: %w",
 			host, segment.Content, err)
 	}
 
@@ -22,7 +22,7 @@ func upgradeSegment(segment Segment, request *idl.UpgradePrimariesRequest, host 
 		if request.CheckOnly {
 			failedAction = "check"
 		}
-		return errors.Wrapf(err, "failed to %s primary on host %s with content %d", failedAction, host, segment.Content)
+		return xerrors.Errorf("failed to %s primary on host %s with content %d: %w", failedAction, host, segment.Content, err)
 	}
 
 	return nil

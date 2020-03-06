@@ -87,7 +87,7 @@ func (s *Server) MakeDaemon() {
 func (s *Server) Start() error {
 	lis, err := net.Listen("tcp", ":"+strconv.Itoa(s.Port))
 	if err != nil {
-		return errors.Wrap(err, "failed to listen")
+		return xerrors.Errorf("failed to listen: %w", err)
 	}
 
 	// Set up an interceptor function to log any panics we get from request
@@ -118,7 +118,7 @@ func (s *Server) Start() error {
 
 	err = server.Serve(lis)
 	if err != nil {
-		err = errors.Wrap(err, "failed to serve")
+		err = xerrors.Errorf("failed to serve: %w", err)
 	}
 
 	// inform Stop() that is it is OK to stop now
