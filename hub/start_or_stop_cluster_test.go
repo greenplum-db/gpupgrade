@@ -79,7 +79,7 @@ func TestStartOrStopCluster(t *testing.T) {
 					"&& /source/bindir/gpstop -a -d basedir/seg-1"}))
 			})
 
-		err := StopCluster(DevNull, source, true)
+		err := StopCluster(DevNull, source)
 		g.Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -92,7 +92,7 @@ func TestStartOrStopCluster(t *testing.T) {
 				skippedStopClusterCommand = false
 			})
 
-		err := StopCluster(DevNull, source, true)
+		err := StopCluster(DevNull, source)
 		g.Expect(err).To(HaveOccurred())
 		g.Expect(skippedStopClusterCommand).To(Equal(true))
 	})
@@ -105,7 +105,7 @@ func TestStartOrStopCluster(t *testing.T) {
 					"&& /source/bindir/gpstart  -a -d basedir/seg-1"}))
 			})
 
-		err := StartCluster(DevNull, source, true)
+		err := StartCluster(DevNull, source)
 		g.Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -117,7 +117,7 @@ func TestStartOrStopCluster(t *testing.T) {
 					"&& /source/bindir/gpstart -m -a -d basedir/seg-1"}))
 			})
 
-		err := StartMasterOnly(DevNull, source, true)
+		err := StartMasterOnly(DevNull, source)
 		g.Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -135,7 +135,7 @@ func TestStartOrStopCluster(t *testing.T) {
 					"&& /source/bindir/gpstop -m -a -d basedir/seg-1"}))
 			})
 
-		err := StopMasterOnly(DevNull, source, true)
+		err := StopMasterOnly(DevNull, source)
 		g.Expect(err).ToNot(HaveOccurred())
 	})
 }

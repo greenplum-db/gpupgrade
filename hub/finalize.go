@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/pkg/errors"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 
@@ -47,7 +48,13 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 	}
 
 	st.Run(idl.Substep_FINALIZE_SHUTDOWN_TARGET_CLUSTER, func(streams step.OutStreams) error {
-		return StopCluster(streams, s.Target, false)
+		err := StopCluster(streams, s.Target)
+
+		if err != nil {
+			return errors.Wrap(err, fmt.Sprintf("failed to stop target cluster"))
+		}
+
+		return nil
 	})
 
 	st.Run(idl.Substep_FINALIZE_UPDATE_TARGET_CATALOG_AND_CLUSTER_CONFIG, func(streams step.OutStreams) error {
@@ -63,7 +70,13 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 	})
 
 	st.Run(idl.Substep_FINALIZE_START_TARGET_CLUSTER, func(streams step.OutStreams) error {
-		return StartCluster(streams, s.Target, false)
+		err := StartCluster(streams, s.Target)
+
+		if err != nil {
+			return errors.Wrap(err, fmt.Sprintf("failed to start target cluster"))
+		}
+
+		return nil
 	})
 
 	return st.Err()

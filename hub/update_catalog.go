@@ -17,9 +17,9 @@ import (
 // TODO: When in copy mode should we update the catalog and in-memory object of
 //  the source cluster?
 func (s *Server) UpdateCatalogAndClusterConfig(streams step.OutStreams) (err error) {
-	err = StartMasterOnly(streams, s.Target, false)
+	err = StartMasterOnly(streams, s.Target)
 	if err != nil {
-		return xerrors.Errorf("starting new master: %w", err)
+		return errors.Wrap(err, fmt.Sprintf("failed to start target master"))
 	}
 
 	err = WithinDbConnection(s.Target.MasterPort(), func(conn *sql.DB) error {
@@ -37,9 +37,9 @@ func (s *Server) UpdateCatalogAndClusterConfig(streams step.OutStreams) (err err
 	segs := map[int]utils.SegConfig{-1: master}
 	oldTarget := &utils.Cluster{Primaries: segs, BinDir: s.Target.BinDir}
 
-	err = StopMasterOnly(streams, oldTarget, false)
+	err = StopMasterOnly(streams, oldTarget)
 	if err != nil {
-		return xerrors.Errorf("stopping new master: %w", err)
+		return errors.Wrap(err, fmt.Sprintf("failed to stop target master"))
 	}
 
 	return nil
