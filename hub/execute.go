@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/pkg/errors"
+	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/hashicorp/go-multierror"
@@ -37,7 +38,7 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 		err := StopCluster(streams, s.Source)
 
 		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("failed to stop source cluster"))
+			return xerrors.Errorf("failed to stop source cluster: %w", err)
 		}
 
 		return nil
@@ -87,7 +88,7 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 		err := StartCluster(streams, s.Target)
 
 		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("failed to start target cluster"))
+			return xerrors.Errorf("failed to start target cluster: %w", err)
 		}
 
 		return nil

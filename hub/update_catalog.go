@@ -19,7 +19,7 @@ import (
 func (s *Server) UpdateCatalogAndClusterConfig(streams step.OutStreams) (err error) {
 	err = StartMasterOnly(streams, s.Target)
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("failed to start target master"))
+		return xerrors.Errorf("failed to start target master: %w", err)
 	}
 
 	err = WithinDbConnection(s.Target.MasterPort(), func(conn *sql.DB) error {
@@ -39,7 +39,7 @@ func (s *Server) UpdateCatalogAndClusterConfig(streams step.OutStreams) (err err
 
 	err = StopMasterOnly(streams, oldTarget)
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("failed to stop target master"))
+		return xerrors.Errorf("failed to stop target master: %w", err)
 	}
 
 	return nil

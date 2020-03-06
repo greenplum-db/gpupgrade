@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/pkg/errors"
+	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 
@@ -83,7 +83,7 @@ func (s *Server) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest,
 		err := StopCluster(stream, s.Target)
 
 		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("failed to stop target cluster"))
+			return xerrors.Errorf("failed to stop target cluster: %w", err)
 		}
 
 		return nil
