@@ -49,11 +49,25 @@ import (
 )
 
 func BuildRootCommand() *cobra.Command {
-
 	// TODO: if called without a subcommand, the cli prints a help message with timestamp.  Remove the timestamp.
-	root := &cobra.Command{Use: "gpupgrade"}
+	var shouldPrintVersion bool
 
-	root.AddCommand(config, version)
+	root := &cobra.Command{
+		Use: "gpupgrade",
+		Run: func(cmd *cobra.Command, args []string) {
+			if shouldPrintVersion {
+				printVersion()
+				return
+			}
+
+			fmt.Print(GlobalHelp)
+		},
+	}
+
+	root.Flags().BoolVarP(&shouldPrintVersion, "version", "V", false, "prints version")
+
+	root.AddCommand(config)
+	root.AddCommand(version())
 	root.AddCommand(initialize())
 	root.AddCommand(execute())
 	root.AddCommand(finalize())
@@ -220,13 +234,15 @@ func createConfigShowSubcommand() *cobra.Command {
 }
 
 //////////////////////////////////////// VERSION
-var version = &cobra.Command{
-	Use:   "version",
-	Short: "Version of gpupgrade",
-	Long:  `Version of gpupgrade`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println(VersionString("gpupgrade"))
-	},
+func version() *cobra.Command {
+	return &cobra.Command{
+		Use:   "version",
+		Short: "Version of gpupgrade",
+		Long:  `Version of gpupgrade`,
+		Run: func(cmd *cobra.Command, args []string) {
+			printVersion()
+		},
+	}
 }
 
 //
