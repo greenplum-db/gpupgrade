@@ -24,10 +24,8 @@ func IsPostmasterRunning(stream step.OutStreams, cluster *utils.Cluster) error {
 }
 
 func StartCluster(stream step.OutStreams, cluster *utils.Cluster) error {
-	return runStartStopCmd(stream,
-		fmt.Sprintf("source %[1]s/../greenplum_path.sh && %[1]s/gpstart -a -d %[2]s",
-			cluster.BinDir,
-			cluster.MasterDataDir()))
+	return runStartStopCmd(stream, cluster,
+		fmt.Sprintf("gpstart -a -d %[1]s", cluster.MasterDataDir()))
 }
 
 func StopCluster(stream step.OutStreams, cluster *utils.Cluster) error {
@@ -41,17 +39,13 @@ func StopCluster(stream step.OutStreams, cluster *utils.Cluster) error {
 		return err
 	}
 
-	return runStartStopCmd(stream,
-		fmt.Sprintf("source %[1]s/../greenplum_path.sh && %[1]s/gpstop -a -d %[2]s",
-			cluster.BinDir,
-			cluster.MasterDataDir()))
+	return runStartStopCmd(stream, cluster,
+		fmt.Sprintf("gpstop -a -d %[1]s", cluster.MasterDataDir()))
 }
 
 func StartMasterOnly(stream step.OutStreams, cluster *utils.Cluster) error {
-	return runStartStopCmd(stream,
-		fmt.Sprintf("source %[1]s/../greenplum_path.sh && %[1]s/gpstart -m -a -d %[2]s",
-			cluster.BinDir,
-			cluster.MasterDataDir()))
+	return runStartStopCmd(stream, cluster,
+		fmt.Sprintf("gpstart -m -a -d %[1]s", cluster.MasterDataDir()))
 }
 
 func StopMasterOnly(stream step.OutStreams, cluster *utils.Cluster) error {
@@ -65,14 +59,16 @@ func StopMasterOnly(stream step.OutStreams, cluster *utils.Cluster) error {
 		return err
 	}
 
-	return runStartStopCmd(stream,
-		fmt.Sprintf("source %[1]s/../greenplum_path.sh && %[1]s/gpstop -m -a -d %[2]s",
-			cluster.BinDir,
-			cluster.MasterDataDir()))
+	return runStartStopCmd(stream, cluster,
+		fmt.Sprintf("gpstop -m -a -d %[1]s", cluster.MasterDataDir()))
 }
 
-func runStartStopCmd(stream step.OutStreams, command string) error {
-	cmd := startStopCmd("bash", "-c", command)
+func runStartStopCmd(stream step.OutStreams, cluster *utils.Cluster, command string) error {
+	commandWithEnv := fmt.Sprintf("source %[1]s/../greenplum_path.sh && %[1]s/%[2]s",
+		cluster.BinDir,
+		command)
+
+	cmd := startStopCmd("bash", "-c", commandWithEnv)
 	cmd.Stdout = stream.Stdout()
 	cmd.Stderr = stream.Stderr()
 	return cmd.Run()

@@ -102,7 +102,7 @@ func TestStartOrStopCluster(t *testing.T) {
 			func(path string, args ...string) {
 				g.Expect(path).To(Equal("bash"))
 				g.Expect(args).To(Equal([]string{"-c", "source /source/bindir/../greenplum_path.sh " +
-					"&& /source/bindir/gpstart  -a -d basedir/seg-1"}))
+					"&& /source/bindir/gpstart -a -d basedir/seg-1"}))
 			})
 
 		err := StartCluster(DevNull, source)
