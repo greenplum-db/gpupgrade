@@ -25,10 +25,8 @@ func IsPostmasterRunning(stream step.OutStreams, cluster *utils.Cluster) error {
 
 func StartCluster(stream step.OutStreams, cluster *utils.Cluster) error {
 	return runStartStopCmd(stream,
-		fmt.Sprintf("source %[1]s/../greenplum_path.sh && %[1]s/%[2]s %[3]s -a -d %[4]s",
+		fmt.Sprintf("source %[1]s/../greenplum_path.sh && %[1]s/gpstart -a -d %[2]s",
 			cluster.BinDir,
-			"gpstart",
-			"",
 			cluster.MasterDataDir()))
 }
 
@@ -44,18 +42,15 @@ func StopCluster(stream step.OutStreams, cluster *utils.Cluster) error {
 	}
 
 	return runStartStopCmd(stream,
-		fmt.Sprintf("source %[1]s/../greenplum_path.sh && %[1]s/%[2]s -a -d %[3]s",
+		fmt.Sprintf("source %[1]s/../greenplum_path.sh && %[1]s/gpstop -a -d %[2]s",
 			cluster.BinDir,
-			"gpstop",
 			cluster.MasterDataDir()))
 }
 
 func StartMasterOnly(stream step.OutStreams, cluster *utils.Cluster) error {
 	return runStartStopCmd(stream,
-		fmt.Sprintf("source %[1]s/../greenplum_path.sh && %[1]s/%[2]s %[3]s -a -d %[4]s",
+		fmt.Sprintf("source %[1]s/../greenplum_path.sh && %[1]s/gpstart -m -a -d %[2]s",
 			cluster.BinDir,
-			"gpstart",
-			"-m",
 			cluster.MasterDataDir()))
 }
 
@@ -71,10 +66,8 @@ func StopMasterOnly(stream step.OutStreams, cluster *utils.Cluster) error {
 	}
 
 	return runStartStopCmd(stream,
-		fmt.Sprintf("source %[1]s/../greenplum_path.sh && %[1]s/%[2]s %[3]s -a -d %[4]s",
+		fmt.Sprintf("source %[1]s/../greenplum_path.sh && %[1]s/gpstop -m -a -d %[2]s",
 			cluster.BinDir,
-			"gpstop",
-			"-m",
 			cluster.MasterDataDir()))
 }
 
