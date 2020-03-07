@@ -1,73 +1,100 @@
 package agent_test
 
 import (
-	"io/ioutil"
 	"os"
+	"path"
+	"testing"
+	"time"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
+	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/agent"
 	"github.com/greenplum-db/gpupgrade/testutils"
-	"github.com/greenplum-db/gpupgrade/utils"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Server", func() {
-	var (
-		dir       string
-		agentConf agent.Config
-		exists    func() bool
-	)
+func TestServerStart(t *testing.T) {
+	testhelper.SetupTestLogger()
 
-	BeforeEach(func() {
-		testhelper.SetupTestLogger()
-		dir, err := ioutil.TempDir("", "")
-		Expect(err).ToNot(HaveOccurred())
+	t.Run("successfully starts and creates state directory if it does not exist", func(t *testing.T) {
+		tempDir := getTempDir(t)
+		defer os.RemoveAll(tempDir)
+		stateDir := path.Join(tempDir, ".gpupgrade")
 
-		agentPort, err := testutils.GetOpenPort()
-		Expect(err).ToNot(HaveOccurred())
+		server := agent.NewServer(agent.Config{
+			Port:     getOpenPort(t),
+			StateDir: stateDir,
+		})
 
-		agentConf = agent.Config{
-			Port:     agentPort,
-			StateDir: dir,
+		if pathExists(stateDir) {
+			t.Fatal("expected stateDir to not exist")
 		}
-
-		exists = func() bool {
-			_, err := os.Stat(dir)
-			if os.IsNotExist(err) {
-				return false
-			}
-			return true
-		}
-	})
-
-	AfterEach(func() {
-		utils.System = utils.InitializeSystemFunctions()
-	})
-
-	It("starts if stateDir already exists", func() {
-		server := agent.NewServer(agentConf)
 
 		go server.Start()
 		defer server.Stop()
 
-		Eventually(exists).Should(BeTrue())
-		os.RemoveAll(dir)
+		exists, err := doesPathEventuallyExist(stateDir)
+		if err != nil {
+			t.Fatalf("unexpected error: %#v", err)
+		}
+		if !exists {
+			t.Error("expected stateDir to be created")
+		}
 	})
 
-	It("creates stateDir if none exists", func() {
-		err := os.RemoveAll(dir)
-		Expect(err).ToNot(HaveOccurred())
-		_, err = os.Stat(dir)
-		Expect(os.IsNotExist(err)).To(BeTrue())
+	t.Run("successfully starts if state directory already exists", func(t *testing.T) {
+		stateDir := getTempDir(t)
+		defer os.RemoveAll(stateDir)
 
-		server := agent.NewServer(agentConf)
+		server := agent.NewServer(agent.Config{
+			Port:     getOpenPort(t),
+			StateDir: stateDir,
+		})
+
+		if !pathExists(stateDir) {
+			t.Fatal("expected stateDir to exist")
+		}
+
 		go server.Start()
 		defer server.Stop()
 
-		Eventually(exists).Should(BeTrue())
-		os.RemoveAll(dir)
+		if !pathExists(stateDir) {
+			t.Error("expected stateDir to exist")
+		}
 	})
-})
+}
+
+func getOpenPort(t *testing.T) int {
+	port, err := testutils.GetOpenPort()
+	if err != nil {
+		t.Fatalf("getting open port: %+v", err)
+	}
+
+	return port
+}
+
+func doesPathEventuallyExist(path string) (bool, error) {
+	startTime := time.Now()
+	timeout := 3 * time.Second
+
+	for {
+		exists := pathExists(path)
+		if exists {
+			return true, nil
+		}
+
+		if time.Since(startTime) > timeout {
+			return false, xerrors.Errorf("timeout exceeded")
+		}
+
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+func pathExists(path string) bool {
+	_, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
