@@ -1,6 +1,7 @@
 #!/usr/bin/env bats
 
 load helpers
+load finalize_checks
 
 setup() {
     skip_if_no_gpdb
@@ -18,7 +19,10 @@ teardown() {
         return
     fi
 
-    teardown_new_cluster
+    if [ -n "$NEW_CLUSTER" ]; then
+        delete_finalized_cluster $NEW_CLUSTER
+    fi
+
     gpupgrade kill-services
 
     # reload old path and start
@@ -48,6 +52,8 @@ teardown() {
     gpupgrade execute --verbose
     gpupgrade finalize --verbose
 
+    NEW_CLUSTER="$MASTER_DATA_DIRECTORY"
+
     for datadir in "${datadirs[@]}"; do
         # ensure the source cluster has been archived
         local source_datadir=$(dirname ${datadir})"_old/$(basename ${datadir})"
@@ -75,22 +81,20 @@ teardown() {
     local new_config=$(get_segment_configuration)
     [ "$old_config" = "$new_config" ] || fail "actual config: $new_config, wanted $old_config"
 
+    # TODO: Query gp_stat_replication to check if the standby is in sync.
+    #   That is a more accurate representation if the standby is running and
+    #   in sync, since gpstate might simply check if the process is running.
     local new_datadir=$(gpupgrade config show --target-datadir)
-    # TODO: Query gp_stat_replication to check if the standby is in sync. Since
-    # this is a more accurate representation if the standby is running and
-    # in sync, since gpstate might simply check if the process is running.
     local actual_standby_status=$(gpstate -d "${new_datadir}")
     local standby_status_line=$(get_standby_status "$actual_standby_status")
     [[ $standby_status_line == *"Standby host passive"* ]] || fail "expected standby to be up and in passive mode, got **** ${actual_standby_status} ****"
+
+    check_mirror_validity "${GPHOME}" "$(hostname)" "${PGPORT}"
 }
 
 setup_state_dir() {
     STATE_DIR=$(mktemp -d /tmp/gpupgrade.XXXXXX)
     export GPUPGRADE_HOME="${STATE_DIR}/gpupgrade"
-}
-
-teardown_new_cluster() {
-    delete_finalized_cluster $MASTER_DATA_DIRECTORY
 }
 
 # Writes the pieces of gp_segment_configuration that we need to ensure remain

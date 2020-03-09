@@ -1,6 +1,8 @@
 #!/bin/bash
 
 set -eux -o pipefail
+dirpath=$(dirname "${0}")
+source "${dirpath}/../../test/finalize_checks.bash"
 
 dump_sql() {
     local port=$1
@@ -52,6 +54,9 @@ rpm_gphome() {
 # MAIN
 #
 
+# This port is selected by our CI pipeline
+MASTER_PORT=5432
+
 # We'll need this to transfer our built binaries over to the cluster hosts.
 ./ccp_src/scripts/setup_ssh_to_cluster.sh
 
@@ -89,7 +94,7 @@ time ssh mdw bash <<EOF
 EOF
 
 # Dump the old cluster for later comparison.
-dump_sql 5432 /tmp/old.sql
+dump_sql $MASTER_PORT /tmp/old.sql
 
 # Now do the upgrade.
 time ssh mdw bash <<EOF
@@ -98,17 +103,25 @@ time ssh mdw bash <<EOF
     gpupgrade initialize \
               --target-bindir ${GPHOME_NEW}/bin \
               --source-bindir ${GPHOME_OLD}/bin \
-              --source-master-port 5432
+              --source-master-port $MASTER_PORT
 
     gpupgrade execute
     gpupgrade finalize
 EOF
 
+# TODO: how do we know the cluster upgraded?  5 to 6 is a version check; 6 to 6 ?????
+#   currently, it's sleight of hand...old is on port $MASTER_PORT then new is!!!!
+#   perhaps use the controldata("pg_controldata $MASTER_DATA_DIR") system identifier?
+
 # Dump the new cluster and compare.
-dump_sql 5432 /tmp/new.sql
+dump_sql $MASTER_PORT /tmp/new.sql
 if ! compare_dumps /tmp/old.sql /tmp/new.sql; then
     echo 'error: before and after dumps differ'
     exit 1
 fi
+
+# Test that mirrors actually work
+echo 'Doing failover tests of mirrors...'
+check_mirror_validity "${GPHOME_NEW}" mdw $MASTER_PORT
 
 echo 'Upgrade successful.'
