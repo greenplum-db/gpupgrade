@@ -34,8 +34,8 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 		}
 	}()
 
-	st.Run(idl.Substep_SHUTDOWN_SOURCE_CLUSTER, func(streams step.OutStreams) error {
-		err := StopCluster(streams, s.Source)
+	st.Run(idl.Substep_SHUTDOWN_SOURCE_CLUSTER, func() error {
+		err := StopCluster(st.Streams(), s.Source)
 
 		if err != nil {
 			return xerrors.Errorf("failed to stop source cluster: %w", err)
@@ -44,23 +44,23 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 		return nil
 	})
 
-	st.Run(idl.Substep_UPGRADE_MASTER, func(streams step.OutStreams) error {
+	st.Run(idl.Substep_UPGRADE_MASTER, func() error {
 		stateDir := s.StateDir
 		return UpgradeMaster(UpgradeMasterArgs{
 			Source:      s.Source,
 			Target:      s.Target,
 			StateDir:    stateDir,
-			Stream:      streams,
+			Stream:      st.Streams(),
 			CheckOnly:   false,
 			UseLinkMode: s.UseLinkMode,
 		})
 	})
 
-	st.Run(idl.Substep_COPY_MASTER, func(streams step.OutStreams) error {
-		return s.CopyMasterDataDir(streams, upgradedMasterBackupDir)
+	st.Run(idl.Substep_COPY_MASTER, func() error {
+		return s.CopyMasterDataDir(st.Streams(), upgradedMasterBackupDir)
 	})
 
-	st.Run(idl.Substep_UPGRADE_PRIMARIES, func(_ step.OutStreams) error {
+	st.Run(idl.Substep_UPGRADE_PRIMARIES, func() error {
 		agentConns, err := s.AgentConns()
 
 		if err != nil {
@@ -84,8 +84,8 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 		})
 	})
 
-	st.Run(idl.Substep_START_TARGET_CLUSTER, func(streams step.OutStreams) error {
-		err := StartCluster(streams, s.Target)
+	st.Run(idl.Substep_START_TARGET_CLUSTER, func() error {
+		err := StartCluster(st.Streams(), s.Target)
 
 		if err != nil {
 			return xerrors.Errorf("failed to start target cluster: %w", err)

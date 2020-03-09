@@ -29,12 +29,12 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 	}()
 
 	if s.Source.HasStandby() {
-		st.Run(idl.Substep_FINALIZE_UPGRADE_STANDBY, func(streams step.OutStreams) error {
+		st.Run(idl.Substep_FINALIZE_UPGRADE_STANDBY, func() error {
 			greenplumRunner := &greenplumRunner{
 				masterPort:          s.Target.MasterPort(),
 				masterDataDirectory: s.Target.MasterDataDir(),
 				binDir:              s.Target.BinDir,
-				streams:             streams,
+				streams:             st.Streams(),
 			}
 
 			// TODO: Persist the standby to config.json and update the
@@ -47,8 +47,8 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 		})
 	}
 
-	st.Run(idl.Substep_FINALIZE_SHUTDOWN_TARGET_CLUSTER, func(streams step.OutStreams) error {
-		err := StopCluster(streams, s.Target)
+	st.Run(idl.Substep_FINALIZE_SHUTDOWN_TARGET_CLUSTER, func() error {
+		err := StopCluster(st.Streams(), s.Target)
 
 		if err != nil {
 			return xerrors.Errorf("failed to stop target cluster: %w", err)
@@ -57,20 +57,20 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 		return nil
 	})
 
-	st.Run(idl.Substep_FINALIZE_UPDATE_TARGET_CATALOG_AND_CLUSTER_CONFIG, func(streams step.OutStreams) error {
-		return s.UpdateCatalogAndClusterConfig(streams)
+	st.Run(idl.Substep_FINALIZE_UPDATE_TARGET_CATALOG_AND_CLUSTER_CONFIG, func() error {
+		return s.UpdateCatalogAndClusterConfig(st.Streams())
 	})
 
-	st.Run(idl.Substep_FINALIZE_RENAME_DATA_DIRECTORIES, func(_ step.OutStreams) error {
+	st.Run(idl.Substep_FINALIZE_RENAME_DATA_DIRECTORIES, func() error {
 		return s.RenameDataDirectories()
 	})
 
-	st.Run(idl.Substep_FINALIZE_UPDATE_TARGET_CONF_FILES, func(_ step.OutStreams) error {
+	st.Run(idl.Substep_FINALIZE_UPDATE_TARGET_CONF_FILES, func() error {
 		return s.UpdateConfFiles()
 	})
 
-	st.Run(idl.Substep_FINALIZE_START_TARGET_CLUSTER, func(streams step.OutStreams) error {
-		err := StartCluster(streams, s.Target)
+	st.Run(idl.Substep_FINALIZE_START_TARGET_CLUSTER, func() error {
+		err := StartCluster(st.Streams(), s.Target)
 
 		if err != nil {
 			return xerrors.Errorf("failed to start target cluster: %w", err)

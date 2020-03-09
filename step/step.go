@@ -92,15 +92,15 @@ func (s *Step) Err() error {
 	return s.err
 }
 
-func (s *Step) AlwaysRun(substep idl.Substep, f func(OutStreams) error) {
+func (s *Step) AlwaysRun(substep idl.Substep, f func() error) {
 	s.run(substep, f, true)
 }
 
-func (s *Step) Run(substep idl.Substep, f func(OutStreams) error) {
+func (s *Step) Run(substep idl.Substep, f func() error) {
 	s.run(substep, f, false)
 }
 
-func (s *Step) run(substep idl.Substep, f func(OutStreams) error, alwaysRun bool) {
+func (s *Step) run(substep idl.Substep, f func() error, alwaysRun bool) {
 	var err error
 	defer func() {
 		if err != nil {
@@ -141,7 +141,7 @@ func (s *Step) run(substep idl.Substep, f func(OutStreams) error, alwaysRun bool
 		return
 	}
 
-	err = f(s.streams)
+	err = f()
 	if err != nil {
 		if werr := s.write(substep, idl.Status_FAILED); werr != nil {
 			err = multierror.Append(err, werr).ErrorOrNil()
@@ -171,4 +171,8 @@ func (s *Step) sendStatus(substep idl.Substep, status idl.Status) {
 			Status: status,
 		}},
 	})
+}
+
+func (s *Step) Streams() OutStreams {
+	return s.streams
 }

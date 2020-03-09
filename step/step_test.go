@@ -36,7 +36,7 @@ func TestStepRun(t *testing.T) {
 		s := step.New("Initialize", server, &TestStore{}, DevNull)
 
 		var called bool
-		s.Run(idl.Substep_CONFIG, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_CONFIG, func() error {
 			called = true
 			return nil
 		})
@@ -66,7 +66,7 @@ func TestStepRun(t *testing.T) {
 		s := step.New("Initialize", server, store, DevNull)
 
 		var status idl.Status
-		s.Run(idl.Substep_CONFIG, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_CONFIG, func() error {
 			// save off status to verify that it is running
 			status = store.Status
 			return nil
@@ -103,7 +103,7 @@ func TestStepRun(t *testing.T) {
 		s := step.New("Initialize", server, store, DevNull)
 
 		var called bool
-		s.AlwaysRun(idl.Substep_CHECK_UPGRADE, func(streams step.OutStreams) error {
+		s.AlwaysRun(idl.Substep_CHECK_UPGRADE, func() error {
 			called = true
 			return nil
 		})
@@ -132,7 +132,7 @@ func TestStepRun(t *testing.T) {
 		s := step.New("Initialize", server, &TestStore{}, DevNull)
 
 		var called bool
-		s.Run(idl.Substep_CONFIG, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_CONFIG, func() error {
 			called = true
 			return errors.New("oops")
 		})
@@ -152,7 +152,7 @@ func TestStepRun(t *testing.T) {
 		s := step.New("Initialize", server, failingStore, DevNull)
 
 		var called bool
-		s.Run(idl.Substep_CHECK_UPGRADE, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_CHECK_UPGRADE, func() error {
 			called = true
 			return nil
 		})
@@ -181,7 +181,7 @@ func TestStepRun(t *testing.T) {
 		s := step.New("Initialize", server, store, DevNull)
 
 		var called bool
-		s.Run(idl.Substep_CHECK_UPGRADE, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_CHECK_UPGRADE, func() error {
 			called = true
 			return nil
 		})
@@ -201,12 +201,12 @@ func TestStepRun(t *testing.T) {
 		s := step.New("Initialize", server, &TestStore{}, DevNull)
 
 		expected := errors.New("oops")
-		s.Run(idl.Substep_CONFIG, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_CONFIG, func() error {
 			return expected
 		})
 
 		var called bool
-		s.Run(idl.Substep_START_AGENTS, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_START_AGENTS, func() error {
 			called = true
 			return nil
 		})
@@ -231,7 +231,7 @@ func TestStepRun(t *testing.T) {
 		s := step.New("Initialize", server, store, DevNull)
 
 		var called bool
-		s.Run(idl.Substep_CONFIG, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_CONFIG, func() error {
 			called = true
 			return nil
 		})

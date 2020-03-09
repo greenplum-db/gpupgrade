@@ -33,7 +33,7 @@ func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initi
 		}
 	}()
 
-	st.Run(idl.Substep_CONFIG, func(stream step.OutStreams) error {
+	st.Run(idl.Substep_CONFIG, func() error {
 		conn, err := sql.Open("pgx", fmt.Sprintf(connectionString, in.SourcePort))
 		if err != nil {
 			return err
@@ -44,10 +44,10 @@ func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initi
 			}
 		}()
 
-		return s.FillClusterConfigsSubStep(s.Config, conn, stream, in, s.SaveConfig)
+		return s.FillClusterConfigsSubStep(s.Config, conn, st.Streams(), in, s.SaveConfig)
 	})
 
-	st.Run(idl.Substep_START_AGENTS, func(_ step.OutStreams) error {
+	st.Run(idl.Substep_START_AGENTS, func() error {
 		_, err := RestartAgents(context.Background(), nil, s.Source.GetHostnames(), s.AgentPort, s.StateDir)
 		return err
 	})
@@ -71,16 +71,16 @@ func (s *Server) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest,
 		}
 	}()
 
-	st.Run(idl.Substep_CREATE_TARGET_CONFIG, func(_ step.OutStreams) error {
+	st.Run(idl.Substep_CREATE_TARGET_CONFIG, func() error {
 		return s.GenerateInitsystemConfig()
 	})
 
-	st.Run(idl.Substep_INIT_TARGET_CLUSTER, func(stream step.OutStreams) error {
-		return s.CreateTargetCluster(stream)
+	st.Run(idl.Substep_INIT_TARGET_CLUSTER, func() error {
+		return s.CreateTargetCluster(st.Streams())
 	})
 
-	st.Run(idl.Substep_SHUTDOWN_TARGET_CLUSTER, func(stream step.OutStreams) error {
-		err := StopCluster(stream, s.Target)
+	st.Run(idl.Substep_SHUTDOWN_TARGET_CLUSTER, func() error {
+		err := StopCluster(st.Streams(), s.Target)
 
 		if err != nil {
 			return xerrors.Errorf("failed to stop target cluster: %w", err)
@@ -89,14 +89,14 @@ func (s *Server) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest,
 		return nil
 	})
 
-	st.Run(idl.Substep_BACKUP_TARGET_MASTER, func(stream step.OutStreams) error {
+	st.Run(idl.Substep_BACKUP_TARGET_MASTER, func() error {
 		sourceDir := s.Target.MasterDataDir()
 		targetDir := filepath.Join(s.StateDir, originalMasterBackupName)
-		return RsyncMasterDataDir(stream, sourceDir, targetDir)
+		return RsyncMasterDataDir(st.Streams(), sourceDir, targetDir)
 	})
 
-	st.AlwaysRun(idl.Substep_CHECK_UPGRADE, func(stream step.OutStreams) error {
-		return s.CheckUpgrade(stream)
+	st.AlwaysRun(idl.Substep_CHECK_UPGRADE, func() error {
+		return s.CheckUpgrade(st.Streams())
 	})
 
 	return st.Err()
