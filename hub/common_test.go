@@ -65,3 +65,11 @@ func MustCreateCluster(t *testing.T, segs []utils.SegConfig) *utils.Cluster {
 
 	return cluster
 }
+
+func SetReplaceStringWithinFile(newFunc func(string, string, string) error) {
+	replaceStringWithinFileFunc = newFunc
+}
+
+func ResetReplaceStringWithinFile() {
+	replaceStringWithinFileFunc = replaceStringWithinFile
+}
