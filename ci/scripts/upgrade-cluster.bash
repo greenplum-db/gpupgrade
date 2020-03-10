@@ -79,7 +79,7 @@ for host in "${hosts[@]}"; do
     ssh centos@$host "sudo mv /tmp/gpupgrade /usr/local/bin"
 done
 
-echo 'Loading SQL dump into old cluster...'
+echo 'Loading SQL dump into source cluster...'
 time ssh mdw bash <<EOF
     set -eux -o pipefail
 

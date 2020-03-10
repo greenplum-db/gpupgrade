@@ -63,7 +63,7 @@ func UpgradePrimaries(args UpgradePrimaryArgs) error {
 
 // ErrInvalidCluster is returned by GetDataDirPairs if the source and target
 // clusters content id's clusters do not match.
-var ErrInvalidCluster = errors.New("Old and new clusters do not match")
+var ErrInvalidCluster = errors.New("Source and target clusters do not match")
 
 func (s *Server) GetDataDirPairs() (map[string][]*idl.DataDirPair, error) {
 	dataDirPairMap := make(map[string][]*idl.DataDirPair)
@@ -71,13 +71,13 @@ func (s *Server) GetDataDirPairs() (map[string][]*idl.DataDirPair, error) {
 	sourceContents := s.Source.ContentIDs
 	targetContents := s.Target.ContentIDs
 	if len(sourceContents) != len(targetContents) {
-		return nil, newInvalidClusterError("Old cluster has %d segments, and new cluster has %d segments.", len(sourceContents), len(targetContents))
+		return nil, newInvalidClusterError("Source cluster has %d segments, and target cluster has %d segments.", len(sourceContents), len(targetContents))
 	}
 	sort.Ints(sourceContents)
 	sort.Ints(targetContents)
 	for i := range sourceContents {
 		if sourceContents[i] != targetContents[i] {
-			return nil, newInvalidClusterError("Old cluster with content %d, does not match new cluster with content %d.", sourceContents[i], targetContents[i])
+			return nil, newInvalidClusterError("Source cluster with content %d, does not match target cluster with content %d.", sourceContents[i], targetContents[i])
 		}
 	}
 
@@ -119,7 +119,7 @@ func newInvalidClusterError(format string, a ...interface{}) *InvalidClusterErro
 }
 
 func (i *InvalidClusterError) Error() string {
-	return fmt.Sprintf("Old and new clusters do not match: %s", i.msg)
+	return fmt.Sprintf("Source and target clusters do not match: %s", i.msg)
 }
 
 func (i *InvalidClusterError) Is(err error) bool {

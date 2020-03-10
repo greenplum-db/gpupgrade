@@ -66,7 +66,7 @@ func (s *Server) CheckUpgrade(stream step.OutStreams) error {
 
 		dataDirPairMap, dataDirPairsErr := s.GetDataDirPairs()
 		if dataDirPairsErr != nil {
-			checkErrs <- errors.Wrap(dataDirPairsErr, "failed to get old and new primary data directories")
+			checkErrs <- errors.Wrap(dataDirPairsErr, "failed to get source and target primary data directories")
 			return
 		}
 

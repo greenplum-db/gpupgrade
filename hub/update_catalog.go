@@ -55,7 +55,7 @@ func WithinDbConnection(masterPort int, operation func(connection *sql.DB) error
 	defer func() {
 		closeErr := connection.Close()
 		if closeErr != nil {
-			closeErr = xerrors.Errorf("closing connection to new master: %w", closeErr)
+			closeErr = xerrors.Errorf("closing connection to target master: %w", closeErr)
 			err = multierror.Append(err, closeErr)
 		}
 	}()

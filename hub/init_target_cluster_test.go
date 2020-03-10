@@ -125,7 +125,7 @@ func TestWriteSegmentArray(t *testing.T) {
 		})
 	})
 
-	t.Run("errors when old cluster contains no master segment", func(t *testing.T) {
+	t.Run("errors when source cluster contains no master segment", func(t *testing.T) {
 		_, err := WriteSegmentArray([]string{}, InitializeConfig{})
 
 		if err == nil {

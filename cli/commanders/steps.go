@@ -36,12 +36,12 @@ var SubstepDescriptions = map[idl.Substep]string{
 	idl.Substep_START_TARGET_CLUSTER:                              "Starting target cluster...",
 	idl.Substep_FINALIZE_UPGRADE_STANDBY:                          "Upgrading standby...",
 	idl.Substep_FINALIZE_UPGRADE_MIRRORS:                          "Upgrading mirrors...",
-	idl.Substep_FINALIZE_SHUTDOWN_TARGET_CLUSTER:                  "Stopping new cluster...",
-	idl.Substep_FINALIZE_UPDATE_TARGET_CATALOG_AND_CLUSTER_CONFIG: "Updating new master catalog...",
+	idl.Substep_FINALIZE_SHUTDOWN_TARGET_CLUSTER:                  "Stopping target cluster...",
+	idl.Substep_FINALIZE_UPDATE_TARGET_CATALOG_AND_CLUSTER_CONFIG: "Updating target master catalog...",
 	idl.Substep_FINALIZE_RENAME_DATA_DIRECTORIES:                  "Renaming data directories...",
-	idl.Substep_FINALIZE_UPDATE_TARGET_CONF_FILES:                 "Updating new master postgreql.conf and gpperfmon.conf files...",
+	idl.Substep_FINALIZE_UPDATE_TARGET_CONF_FILES:                 "Updating target master postgreql.conf and gpperfmon.conf files...",
 	idl.Substep_FINALIZE_UPDATE_RECOVERY_CONFS:                    "Updating recovery.conf files on mirrors...",
-	idl.Substep_FINALIZE_START_TARGET_CLUSTER:                     "Starting new cluster...",
+	idl.Substep_FINALIZE_START_TARGET_CLUSTER:                     "Starting target cluster...",
 }
 
 var indicators = map[idl.Status]string{

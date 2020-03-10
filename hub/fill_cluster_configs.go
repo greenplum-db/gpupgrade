@@ -14,7 +14,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
-// create old/new clusters, write to disk and re-read from disk to make sure it is "durable"
+// create source/target clusters, write to disk and re-read from disk to make sure it is "durable"
 func (s *Server) FillClusterConfigsSubStep(config *Config, conn *sql.DB, _ step.OutStreams, request *idl.InitializeRequest, saveConfig func() error) error {
 	if err := CheckSourceClusterConfiguration(conn); err != nil {
 		return err

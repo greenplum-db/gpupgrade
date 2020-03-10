@@ -70,7 +70,7 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 		dataDirPair, err := s.GetDataDirPairs()
 
 		if err != nil {
-			return errors.Wrap(err, "failed to get old and new primary data directories")
+			return errors.Wrap(err, "failed to get source and target primary data directories")
 		}
 
 		return UpgradePrimaries(UpgradePrimaryArgs{

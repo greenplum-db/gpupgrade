@@ -142,7 +142,7 @@ func upgradeDataDir(path string) string {
 func WriteSegmentArray(config []string, targetInitializeConfig InitializeConfig) ([]string, error) {
 	//Partition segments by host in order to correctly assign ports.
 	if targetInitializeConfig.Master == (utils.SegConfig{}) {
-		return nil, errors.New("old cluster contains no master segment")
+		return nil, errors.New("source cluster contains no master segment")
 	}
 
 	master := targetInitializeConfig.Master

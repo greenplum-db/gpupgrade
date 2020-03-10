@@ -18,19 +18,19 @@ const UpgradeSuffix = "_upgrade"
 
 func (s *Server) RenameDataDirectories() error {
 	if err := RenameMasterDataDir(s.Source.MasterDataDir(), true); err != nil {
-		return xerrors.Errorf("renaming old cluster master data directory: %w", err)
+		return xerrors.Errorf("renaming source cluster master data directory: %w", err)
 	}
 
 	if err := RenameSegmentDataDirs(s.agentConns, s.Source, OldSuffix, false); err != nil {
-		return xerrors.Errorf("renaming old cluster segment data directories: %w", err)
+		return xerrors.Errorf("renaming source cluster segment data directories: %w", err)
 	}
 
 	if err := RenameMasterDataDir(s.Target.MasterDataDir(), false); err != nil {
-		return xerrors.Errorf("renaming new cluster master data directory: %w", err)
+		return xerrors.Errorf("renaming target cluster master data directory: %w", err)
 	}
 
 	if err := RenameSegmentDataDirs(s.agentConns, s.Target, UpgradeSuffix, true); err != nil {
-		return xerrors.Errorf("renaming new cluster segment data directories: %w", err)
+		return xerrors.Errorf("renaming target cluster segment data directories: %w", err)
 	}
 
 	return nil

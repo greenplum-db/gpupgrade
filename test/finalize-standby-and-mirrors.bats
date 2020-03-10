@@ -32,7 +32,7 @@ teardown() {
     gpstart -a
 }
 
-@test "finalize brings up the standby and mirrors for the new cluster" {
+@test "finalize brings up the standby and mirrors for the target cluster" {
     local source_mirrors_count=$(number_of_mirrors)
     gpupgrade initialize \
         --source-bindir="$GPHOME/bin" \

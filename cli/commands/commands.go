@@ -176,8 +176,8 @@ func createConfigSetSubcommand() *cobra.Command {
 		},
 	}
 
-	subSet.Flags().String("source-bindir", "", "install directory for old gpdb version")
-	subSet.Flags().String("target-bindir", "", "install directory for new gpdb version")
+	subSet.Flags().String("source-bindir", "", "install directory for source gpdb version")
+	subSet.Flags().String("target-bindir", "", "install directory for target gpdb version")
 
 	return subSet
 }
@@ -344,13 +344,13 @@ After executing, you will need to finalize.`)
 	subInit.MarkFlagRequired("source-bindir")
 	subInit.Flags().StringVar(&targetBinDir, "target-bindir", "", "install directory for target gpdb version")
 	subInit.MarkFlagRequired("target-bindir")
-	subInit.Flags().IntVar(&sourcePort, "source-master-port", 0, "master port for old gpdb cluster")
+	subInit.Flags().IntVar(&sourcePort, "source-master-port", 0, "master port for source gpdb cluster")
 	subInit.MarkFlagRequired("source-master-port")
 	subInit.Flags().BoolVar(&stopBeforeClusterCreation, "stop-before-cluster-creation", false, "only run up to pre-init")
 	subInit.Flags().MarkHidden("stop-before-cluster-creation")
 	subInit.Flags().Float64Var(&diskFreeRatio, "disk-free-ratio", 0.60, "percentage of disk space that must be available (from 0.0 - 1.0)")
 	subInit.Flags().BoolVarP(&verbose, "verbose", "v", false, "print the output stream from all substeps")
-	subInit.Flags().StringVar(&ports, "temp-port-range", "", "set of ports to use when initializing the new cluster")
+	subInit.Flags().StringVar(&ports, "temp-port-range", "", "set of ports to use when initializing the target cluster")
 	subInit.Flags().BoolVar(&linkMode, "link", false, "performs upgrade in link mode")
 
 	return addHelpToCommand(subInit, InitializeHelp)
