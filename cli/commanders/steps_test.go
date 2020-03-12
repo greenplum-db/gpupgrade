@@ -4,6 +4,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"reflect"
 	"sync"
 	"testing"
 
@@ -56,7 +57,7 @@ func TestUILoop(t *testing.T) {
 		d := bufferStandardDescriptors(t)
 		defer d.Close()
 
-		err := commanders.UILoop(&msgs, true)
+		_, err := commanders.UILoop(&msgs, true)
 		if err != nil {
 			t.Errorf("UILoop() returned %#v", err)
 		}
@@ -77,7 +78,7 @@ func TestUILoop(t *testing.T) {
 	t.Run("returns an error when a non io.EOF error is encountered", func(t *testing.T) {
 		expected := xerrors.New("bengie")
 
-		err := commanders.UILoop(&errStream{expected}, true)
+		_, err := commanders.UILoop(&errStream{expected}, true)
 		if err != expected {
 			t.Errorf("returned %#v want %#v", err, expected)
 		}
@@ -111,7 +112,7 @@ func TestUILoop(t *testing.T) {
 		d := bufferStandardDescriptors(t)
 		defer d.Close()
 
-		err := commanders.UILoop(&msgs, true)
+		_, err := commanders.UILoop(&msgs, true)
 		if err != nil {
 			t.Errorf("UILoop() returned %#v", err)
 		}
@@ -160,7 +161,7 @@ func TestUILoop(t *testing.T) {
 		d := bufferStandardDescriptors(t)
 		defer d.Close()
 
-		err := commanders.UILoop(&msgs, false)
+		_, err := commanders.UILoop(&msgs, false)
 		if err != nil {
 			t.Errorf("UILoop() returned %#v", err)
 		}
@@ -174,6 +175,40 @@ func TestUILoop(t *testing.T) {
 		actual := string(actualOut)
 		if actual != expected {
 			t.Errorf("output %#v want %#v", actual, expected)
+		}
+	})
+
+	t.Run("returns a map of strings that are processed in the stream", func(t *testing.T) {
+		firstMap := make(map[string]string)
+		firstMap["a"] = "b"
+		firstMap["e"] = "f"
+
+		secondMap := make(map[string]string)
+		secondMap["a"] = "c"
+		secondMap["g"] = "5432"
+
+		msgs := msgStream{
+			{Contents: &idl.Message_Response{
+				Response: &idl.Response{Data: firstMap},
+			}},
+			{Contents: &idl.Message_Response{
+				Response: &idl.Response{Data: secondMap},
+			}},
+		}
+
+		actual, err := commanders.UILoop(&msgs, false)
+
+		if err != nil {
+			t.Errorf("got unexpected err %+v", err)
+		}
+
+		expected := make(map[string]string)
+		expected["a"] = "c"
+		expected["e"] = "f"
+		expected["g"] = "5432"
+
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("got map %#v want %#v", actual, expected)
 		}
 	})
 

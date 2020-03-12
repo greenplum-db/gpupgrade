@@ -105,7 +105,17 @@ message Message {
   oneof contents {
     Chunk chunk = 1;
     SubstepStatus status = 2;
+    Response response = 3;
   }
+}
+
+enum ResponseKey {
+    target_port = 0;
+    target_master_data_directory = 1;
+}
+
+message Response {
+  map<string,string> data = 1;
 }
 
 message SetConfigRequest {

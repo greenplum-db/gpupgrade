@@ -3,6 +3,7 @@ package hub
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/hashicorp/go-multierror"
@@ -100,6 +101,20 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 
 		return nil
 	})
+
+	data := make(map[string]string)
+	data[idl.ResponseKey_target_port.String()] = strconv.Itoa(s.Target.MasterPort())
+	data[idl.ResponseKey_target_master_data_directory.String()] = s.Target.MasterDataDir()
+
+	err = stream.Send(&idl.Message{
+		Contents: &idl.Message_Response{
+			Response: &idl.Response{Data: data},
+		},
+	})
+
+	if err != nil {
+		return err
+	}
 
 	return st.Err()
 }
