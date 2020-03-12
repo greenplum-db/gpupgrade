@@ -33,13 +33,11 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 		masterPort:          s.Target.MasterPort(),
 		masterDataDirectory: s.Target.MasterDataDir(),
 		binDir:              s.Target.BinDir,
+		streams:             st.Streams(),
 	}
 
 	if s.Source.HasStandby() {
 		st.Run(idl.Substep_FINALIZE_UPGRADE_STANDBY, func(streams step.OutStreams) error {
-			// XXX this probably indicates a bad abstraction
-			targetRunner.streams = streams
-
 			// TODO: Persist the standby to config.json and update the
 			//  source & target clusters.
 			// todo: replace StandbyConfig with SegInfo and pass the TargetInitializeConfig.Standby directly in
@@ -54,9 +52,6 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 
 	if s.Source.HasMirrors() {
 		st.Run(idl.Substep_FINALIZE_UPGRADE_MIRRORS, func(streams step.OutStreams) error {
-			// XXX this probably indicates a bad abstraction
-			targetRunner.streams = streams
-
 			return UpgradeMirrors(s.StateDir, s.Target.MasterPort(), &s.TargetInitializeConfig, targetRunner)
 		})
 	}

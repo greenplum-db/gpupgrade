@@ -172,3 +172,7 @@ func (s *Step) sendStatus(substep idl.Substep, status idl.Status) {
 		}},
 	})
 }
+
+func (s *Step) Streams() OutStreams {
+	return s.streams
+}
