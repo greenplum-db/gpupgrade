@@ -34,12 +34,12 @@ var SubstepDescriptions = map[idl.Substep]string{
 	idl.Substep_COPY_MASTER:                                       "Copying master catalog to primary segments...",
 	idl.Substep_UPGRADE_PRIMARIES:                                 "Upgrading primary segments...",
 	idl.Substep_START_TARGET_CLUSTER:                              "Starting target cluster...",
-	idl.Substep_FINALIZE_UPGRADE_STANDBY:                          "Upgrading standby...",
-	idl.Substep_FINALIZE_UPGRADE_MIRRORS:                          "Upgrading mirrors...",
+	idl.Substep_FINALIZE_UPGRADE_STANDBY:                          "Upgrading standby master...",
+	idl.Substep_FINALIZE_UPGRADE_MIRRORS:                          "Upgrading mirrors segments...",
 	idl.Substep_FINALIZE_SHUTDOWN_TARGET_CLUSTER:                  "Stopping target cluster...",
 	idl.Substep_FINALIZE_UPDATE_TARGET_CATALOG_AND_CLUSTER_CONFIG: "Updating target master catalog...",
 	idl.Substep_FINALIZE_RENAME_DATA_DIRECTORIES:                  "Renaming data directories...",
-	idl.Substep_FINALIZE_UPDATE_TARGET_CONF_FILES:                 "Updating target master postgreql.conf and gpperfmon.conf files...",
+	idl.Substep_FINALIZE_UPDATE_TARGET_CONF_FILES:                 "Updating target master configuration files...",
 	idl.Substep_FINALIZE_UPDATE_RECOVERY_CONFS:                    "Updating recovery.conf files on mirrors...",
 	idl.Substep_FINALIZE_START_TARGET_CLUSTER:                     "Starting target cluster...",
 }
@@ -139,9 +139,10 @@ func Finalize(client idl.CliToHubClient, verbose bool) error {
 		return xerrors.Errorf("Finalize: %w", err)
 	}
 
-	// TODO version number
-	fmt.Println(`
-The cluster is now upgraded and is ready to be used.`)
+	fmt.Println("")
+	fmt.Println("Finalize completed successfully.")
+	fmt.Println("")
+	fmt.Println("The cluster is now upgraded and is ready to be used.")
 
 	return nil
 }
