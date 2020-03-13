@@ -48,6 +48,36 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 )
 
+// These are ordered lists of the substeps in each step, to allow iteration over SubstepDescriptions when generating help text
+var (
+	initializeSubsteps = []idl.Substep{
+		idl.Substep_CONFIG,
+		idl.Substep_START_AGENTS,
+		idl.Substep_CREATE_TARGET_CONFIG,
+		idl.Substep_SHUTDOWN_SOURCE_CLUSTER,
+		idl.Substep_INIT_TARGET_CLUSTER,
+		idl.Substep_SHUTDOWN_TARGET_CLUSTER,
+		idl.Substep_BACKUP_TARGET_MASTER,
+		idl.Substep_CHECK_UPGRADE,
+	}
+	executeSubsteps = []idl.Substep{
+		idl.Substep_UPGRADE_MASTER,
+		idl.Substep_COPY_MASTER,
+		idl.Substep_UPGRADE_PRIMARIES,
+		idl.Substep_START_TARGET_CLUSTER,
+	}
+	finalizeSubsteps = []idl.Substep{
+		idl.Substep_FINALIZE_UPGRADE_STANDBY,
+		idl.Substep_FINALIZE_UPGRADE_MIRRORS,
+		idl.Substep_FINALIZE_SHUTDOWN_TARGET_CLUSTER,
+		idl.Substep_FINALIZE_UPDATE_TARGET_CATALOG_AND_CLUSTER_CONFIG,
+		idl.Substep_FINALIZE_RENAME_DATA_DIRECTORIES,
+		idl.Substep_FINALIZE_UPDATE_TARGET_CONF_FILES,
+		idl.Substep_FINALIZE_UPDATE_RECOVERY_CONFS,
+		idl.Substep_FINALIZE_START_TARGET_CLUSTER,
+	}
+)
+
 func BuildRootCommand() *cobra.Command {
 	// TODO: if called without a subcommand, the cli prints a help message with timestamp.  Remove the timestamp.
 	var shouldPrintVersion bool
@@ -258,10 +288,11 @@ func initialize() *cobra.Command {
 	var ports string
 	var linkMode bool
 
+	initializeHelp := generateHelpString(InitializeHelp, initializeSubsteps)
 	subInit := &cobra.Command{
 		Use:   "initialize",
 		Short: "prepare the system for upgrade",
-		Long:  InitializeHelp,
+		Long:  initializeHelp,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if diskFreeRatio < 0.0 || diskFreeRatio > 1.0 {
 				// Match Cobra's option-error format.
@@ -353,16 +384,17 @@ After executing, you will need to finalize.`)
 	subInit.Flags().StringVar(&ports, "temp-port-range", "", "set of ports to use when initializing the target cluster")
 	subInit.Flags().BoolVar(&linkMode, "link", false, "performs upgrade in link mode")
 
-	return addHelpToCommand(subInit, InitializeHelp)
+	return addHelpToCommand(subInit, initializeHelp)
 }
 
 func execute() *cobra.Command {
 	var verbose bool
 
+	executeHelp := generateHelpString(ExecuteHelp, executeSubsteps)
 	cmd := &cobra.Command{
 		Use:   "execute",
 		Short: "executes the upgrade",
-		Long:  ExecuteHelp,
+		Long:  executeHelp,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
 
@@ -373,16 +405,17 @@ func execute() *cobra.Command {
 
 	cmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print the output stream from all substeps")
 
-	return addHelpToCommand(cmd, ExecuteHelp)
+	return addHelpToCommand(cmd, executeHelp)
 }
 
 func finalize() *cobra.Command {
 	var verbose bool
 
+	finalizeHelp := generateHelpString(FinalizeHelp, finalizeSubsteps)
 	cmd := &cobra.Command{
 		Use:   "finalize",
 		Short: "finalizes the cluster after upgrade execution",
-		Long:  FinalizeHelp,
+		Long:  finalizeHelp,
 		Run: func(cmd *cobra.Command, args []string) {
 			client := connectToHub()
 			err := commanders.Finalize(client, verbose)
@@ -395,7 +428,7 @@ func finalize() *cobra.Command {
 
 	cmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print the output stream from all substeps")
 
-	return addHelpToCommand(cmd, FinalizeHelp)
+	return addHelpToCommand(cmd, finalizeHelp)
 }
 
 func parsePorts(val string) ([]uint32, error) {
@@ -514,17 +547,7 @@ const (
 Runs through pre-upgrade checks and prepares the cluster for upgrade.
 
 Initialize will carry out the following sub-steps:
- - Create directories
- - Generate upgrade configuration
- - Start gpupgrade hub process
- - Retrieve source cluster configuration
- - Start gpupgrade agent processes
- - Check disk space
- - Generate target cluster configuration
- - Create target cluster
- - Stop target cluster
- - Back up target master
- - Run pg_upgrade checks
+%s
 
 Usage: gpupgrade initialize <flags>
 
@@ -550,11 +573,7 @@ Optional Flags:
 Upgrades the master and primary segments to the target Greenplum version.
 
 Execute will carry out the following sub-steps:
- - Stop source cluster
- - Upgrade master
- - Copy master catalog to primary segments
- - Upgrade primary segments
- - Start target cluster
+%s
 
 Usage: gpupgrade execute
 
@@ -568,14 +587,7 @@ Optional Flags:
 Upgrades the standby master and mirror segments to the target Greenplum version.
 
 Finalize will carry out the following sub-steps:
-- Upgrade standby master
-- Upgrade mirror segments
-- Stop target cluster
-- Start target master
-- Update target master port
-- Stop target master
-- Update target master postgresql.conf
-- Start target cluster
+%s
 
 Usage: gpupgrade finalize
 
@@ -621,6 +633,15 @@ Optional Flags:
 Use "gpupgrade [command] --help" for more information about a command.
 `
 )
+
+func generateHelpString(baseString string, commandList []idl.Substep) string {
+	var formattedList string
+	for _, substep := range commandList {
+		formattedList += fmt.Sprintf(" - %s\n", commanders.SubstepDescriptions[substep].HelpText)
+	}
+	return fmt.Sprintf(baseString, formattedList)
+
+}
 
 // Cobra has multiple ways to handle help text, so we want to force all of them to use the same help text
 func addHelpToCommand(cmd *cobra.Command, help string) *cobra.Command {

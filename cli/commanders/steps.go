@@ -18,27 +18,32 @@ type receiver interface {
 	Recv() (*idl.Message, error)
 }
 
-var SubstepDescriptions = map[idl.Substep]string{
-	idl.Substep_CONFIG:                                            "Retrieving source cluster configuration...",
-	idl.Substep_START_AGENTS:                                      "Starting gpupgrade agent processes...",
-	idl.Substep_CREATE_TARGET_CONFIG:                              "Generating target cluster configuration...",
-	idl.Substep_SHUTDOWN_SOURCE_CLUSTER:                           "Stopping source cluster...",
-	idl.Substep_INIT_TARGET_CLUSTER:                               "Creating target cluster...",
-	idl.Substep_SHUTDOWN_TARGET_CLUSTER:                           "Stopping target cluster...",
-	idl.Substep_BACKUP_TARGET_MASTER:                              "Backing up target master...",
-	idl.Substep_CHECK_UPGRADE:                                     "Running pg_upgrade checks...",
-	idl.Substep_UPGRADE_MASTER:                                    "Upgrading master...",
-	idl.Substep_COPY_MASTER:                                       "Copying master catalog to primary segments...",
-	idl.Substep_UPGRADE_PRIMARIES:                                 "Upgrading primary segments...",
-	idl.Substep_START_TARGET_CLUSTER:                              "Starting target cluster...",
-	idl.Substep_FINALIZE_UPGRADE_STANDBY:                          "Upgrading standby master...",
-	idl.Substep_FINALIZE_UPGRADE_MIRRORS:                          "Upgrading mirrors segments...",
-	idl.Substep_FINALIZE_SHUTDOWN_TARGET_CLUSTER:                  "Stopping target cluster...",
-	idl.Substep_FINALIZE_UPDATE_TARGET_CATALOG_AND_CLUSTER_CONFIG: "Updating target master catalog...",
-	idl.Substep_FINALIZE_RENAME_DATA_DIRECTORIES:                  "Renaming data directories...",
-	idl.Substep_FINALIZE_UPDATE_TARGET_CONF_FILES:                 "Updating target master configuration files...",
-	idl.Substep_FINALIZE_UPDATE_RECOVERY_CONFS:                    "Updating recovery.conf files on mirrors...",
-	idl.Substep_FINALIZE_START_TARGET_CLUSTER:                     "Starting target cluster...",
+type substepText struct {
+	HelpText   string
+	OutputText string
+}
+
+var SubstepDescriptions = map[idl.Substep]substepText{
+	idl.Substep_CONFIG:                                            substepText{"Retrieving source cluster configuration...", "Retrieve source cluster configuration"},
+	idl.Substep_START_AGENTS:                                      substepText{"Starting gpupgrade agent processes...", "Start gpupgrade agent processes"},
+	idl.Substep_CREATE_TARGET_CONFIG:                              substepText{"Generating target cluster configuration...", "Generate target cluster configuration"},
+	idl.Substep_SHUTDOWN_SOURCE_CLUSTER:                           substepText{"Stopping source cluster...", "Stop source cluster"},
+	idl.Substep_INIT_TARGET_CLUSTER:                               substepText{"Creating target cluster...", "Create target cluster"},
+	idl.Substep_SHUTDOWN_TARGET_CLUSTER:                           substepText{"Stopping target cluster...", "Stop target cluster"},
+	idl.Substep_BACKUP_TARGET_MASTER:                              substepText{"Backing up target master...", "Back up target master"},
+	idl.Substep_CHECK_UPGRADE:                                     substepText{"Running pg_upgrade checks...", "Run pg_upgrade checks"},
+	idl.Substep_UPGRADE_MASTER:                                    substepText{"Upgrading master...", "Upgrade master"},
+	idl.Substep_COPY_MASTER:                                       substepText{"Copying master catalog to primary segments...", "Copy master catalog to primary segments"},
+	idl.Substep_UPGRADE_PRIMARIES:                                 substepText{"Upgrading primary segments...", "Upgrade primary segments"},
+	idl.Substep_START_TARGET_CLUSTER:                              substepText{"Starting target cluster...", "Start target cluster"},
+	idl.Substep_FINALIZE_UPGRADE_STANDBY:                          substepText{"Upgrading standby master...", "Upgrade standby master"},
+	idl.Substep_FINALIZE_UPGRADE_MIRRORS:                          substepText{"Upgrading mirrors segments...", "Upgrade mirrors segments"},
+	idl.Substep_FINALIZE_SHUTDOWN_TARGET_CLUSTER:                  substepText{"Stopping target cluster...", "Stop target cluster"},
+	idl.Substep_FINALIZE_UPDATE_TARGET_CATALOG_AND_CLUSTER_CONFIG: substepText{"Updating target master catalog...", "Update target master catalog"},
+	idl.Substep_FINALIZE_RENAME_DATA_DIRECTORIES:                  substepText{"Renaming data directories...", "Rename data directories"},
+	idl.Substep_FINALIZE_UPDATE_TARGET_CONF_FILES:                 substepText{"Updating target master configuration files...", "Update target master configuration files"},
+	idl.Substep_FINALIZE_UPDATE_RECOVERY_CONFS:                    substepText{"Updating recovery.conf files on mirrors...", "Update recovery.conf files on mirrors"},
+	idl.Substep_FINALIZE_START_TARGET_CLUSTER:                     substepText{"Starting target cluster...", "Start target cluster"},
 }
 
 var indicators = map[idl.Status]string{
@@ -246,7 +251,7 @@ func FormatStatus(status *idl.SubstepStatus) string {
 		panic(fmt.Sprintf("unexpected step %#v", status.Step))
 	}
 
-	return Format(line, status.Status)
+	return Format(line.OutputText, status.Status)
 }
 
 // Format is also exported for ease of testing (see FormatStatus). Use Substep
