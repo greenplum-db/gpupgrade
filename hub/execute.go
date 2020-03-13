@@ -92,8 +92,12 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 		}
 
 		return nil
-
 	})
+
+	message := MakeTargetClusterMessage(s.Target)
+	if err = stream.Send(message); err != nil {
+		return err
+	}
 
 	return st.Err()
 }

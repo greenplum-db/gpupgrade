@@ -5,17 +5,13 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
-	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 type receiver interface {
@@ -93,16 +89,15 @@ func Execute(client idl.CliToHubClient, verbose bool) error {
 		return err
 	}
 
-	_, err = UILoop(stream, verbose)
+	dataMap, err := UILoop(stream, verbose)
 	if err != nil {
 		return xerrors.Errorf("Execute: %w", err)
 	}
 
-	path := filepath.Join(utils.GetStateDir(), hub.ConfigFileName)
-	conf := &hub.Config{}
-	err = hub.LoadConfig(conf, path)
+	port, datadir, err := extractTargetClusterInfo(dataMap)
+
 	if err != nil {
-		return err
+		return xerrors.Errorf("Execute: %w", err)
 	}
 
 	message := fmt.Sprintf(`
@@ -117,7 +112,7 @@ WARNING: If any queries modify the target database during this time, it will be 
 NEXT ACTIONS
 ------------
 If you are satisfied with the state of the cluster, run "gpupgrade finalize" to proceed with the upgrade.
-`, strconv.Itoa(conf.Target.MasterPort()), conf.Target.MasterDataDir())
+`, port, datadir)
 
 	fmt.Println(message)
 
@@ -140,6 +135,21 @@ func Finalize(client idl.CliToHubClient, verbose bool) error {
 		return xerrors.Errorf("Finalize: %w", err)
 	}
 
+	port, datadir, err := extractTargetClusterInfo(dataMap)
+
+	if err != nil {
+		return xerrors.Errorf("Finalize: %w", err)
+	}
+
+	fmt.Println("")
+	fmt.Println("Finalize completed successfully.")
+	fmt.Println("")
+	fmt.Printf("The target cluster is now upgraded and is ready to be used. The PGPORT is %s and the MASTER_DATA_DIRECTORY is %s.\n", port, datadir)
+
+	return nil
+}
+
+func extractTargetClusterInfo(dataMap map[string]string) (string, string, error) {
 	port, portOk := dataMap[idl.ResponseKey_target_port.String()]
 	var missingKeys []string
 	if !portOk {
@@ -152,15 +162,10 @@ func Finalize(client idl.CliToHubClient, verbose bool) error {
 	}
 
 	if len(missingKeys) > 0 {
-		return xerrors.Errorf("did not receive the expected configuration values: %s", strings.Join(missingKeys, ", "))
+		return "", "", xerrors.Errorf("did not receive the expected configuration values: %s", strings.Join(missingKeys, ", "))
 	}
 
-	fmt.Println("")
-	fmt.Println("Finalize completed successfully.")
-	fmt.Println("")
-	fmt.Printf("The target cluster is now upgraded and is ready to be used. The PGPORT is %s and the MASTER_DATA_DIRECTORY is %s.\n", port, datadir)
-
-	return nil
+	return port, datadir, nil
 }
 
 func UILoop(stream receiver, verbose bool) (map[string]string, error) {
