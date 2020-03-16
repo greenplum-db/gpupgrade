@@ -263,6 +263,16 @@ func initialize() *cobra.Command {
 		Short: "prepare the system for upgrade",
 		Long:  InitializeHelp,
 		RunE: func(cmd *cobra.Command, args []string) error {
+
+			// if diskFreeRatio is not explicitly set, use defaults
+			if !cmd.Flag("disk-free-ratio").Changed {
+				if linkMode {
+					diskFreeRatio = 0.2
+				} else {
+					diskFreeRatio = 0.6
+				}
+			}
+
 			if diskFreeRatio < 0.0 || diskFreeRatio > 1.0 {
 				// Match Cobra's option-error format.
 				return fmt.Errorf(
@@ -538,13 +548,15 @@ Required Flags:
 
 Optional Flags:
 
-  -h, --help              displays help output for initialize
+      --disk-space-ratio   ratio of free space needed in order to run upgrade, range from 0.0 to 1.0
 
-      --link              an alternative mode that directly upgrades the primary segments
+  -h, --help               displays help output for initialize
 
-      --temp-port-range   the set of ports to use when initializing the target cluster
+      --link               an alternative mode that directly upgrades the primary segments
 
-  -v, --verbose           outputs detailed logs for initialize
+      --temp-port-range    the set of ports to use when initializing the target cluster
+
+  -v, --verbose            outputs detailed logs for initialize
 `
 	ExecuteHelp = `
 Upgrades the master and primary segments to the target Greenplum version.
@@ -612,11 +624,13 @@ Required Commands: gpupgrade is a three-step process
 
 Optional Flags:
 
-  -h, --help      displays help output for gpupgrade
+  --disk-space-ratio   ratio of free space needed in order to run upgrade, range from 0.0 to 1.0
 
-  -v, --verbose   outputs detailed logs for gpupgrade
+  -h, --help           displays help output for gpupgrade
 
-  -V, --version   displays the version of the current gpupgrade utility
+  -v, --verbose        outputs detailed logs for gpupgrade
+
+  -V, --version        displays the version of the current gpupgrade utility
 
 Use "gpupgrade [command] --help" for more information about a command.
 `
