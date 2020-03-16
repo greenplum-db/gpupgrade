@@ -11,11 +11,12 @@ import (
 )
 
 var _ = Describe("test gpupgrade help messages", func() {
+
 	helpMap := map[string]string{
 		"":           commands.GlobalHelp,
-		"initialize": commands.InitializeHelp,
-		"execute":    commands.ExecuteHelp,
-		"finalize":   commands.FinalizeHelp,
+		"initialize": commands.GenerateHelpString(commands.InitializeHelp, commands.InitializeSubsteps),
+		"execute":    commands.GenerateHelpString(commands.ExecuteHelp, commands.ExecuteSubsteps),
+		"finalize":   commands.GenerateHelpString(commands.FinalizeHelp, commands.FinalizeSubsteps),
 	}
 
 	flagList := []string{"-?", "-h", "--help", "help"}

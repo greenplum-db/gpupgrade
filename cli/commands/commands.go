@@ -50,7 +50,7 @@ import (
 
 // These are ordered lists of the substeps in each step, to allow iteration over SubstepDescriptions when generating help text
 var (
-	initializeSubsteps = []idl.Substep{
+	InitializeSubsteps = []idl.Substep{
 		idl.Substep_CONFIG,
 		idl.Substep_START_AGENTS,
 		idl.Substep_CREATE_TARGET_CONFIG,
@@ -60,13 +60,13 @@ var (
 		idl.Substep_BACKUP_TARGET_MASTER,
 		idl.Substep_CHECK_UPGRADE,
 	}
-	executeSubsteps = []idl.Substep{
+	ExecuteSubsteps = []idl.Substep{
 		idl.Substep_UPGRADE_MASTER,
 		idl.Substep_COPY_MASTER,
 		idl.Substep_UPGRADE_PRIMARIES,
 		idl.Substep_START_TARGET_CLUSTER,
 	}
-	finalizeSubsteps = []idl.Substep{
+	FinalizeSubsteps = []idl.Substep{
 		idl.Substep_FINALIZE_UPGRADE_STANDBY,
 		idl.Substep_FINALIZE_UPGRADE_MIRRORS,
 		idl.Substep_FINALIZE_SHUTDOWN_TARGET_CLUSTER,
@@ -288,7 +288,7 @@ func initialize() *cobra.Command {
 	var ports string
 	var linkMode bool
 
-	initializeHelp := generateHelpString(InitializeHelp, initializeSubsteps)
+	initializeHelp := GenerateHelpString(InitializeHelp, InitializeSubsteps)
 	subInit := &cobra.Command{
 		Use:   "initialize",
 		Short: "prepare the system for upgrade",
@@ -390,7 +390,7 @@ After executing, you will need to finalize.`)
 func execute() *cobra.Command {
 	var verbose bool
 
-	executeHelp := generateHelpString(ExecuteHelp, executeSubsteps)
+	executeHelp := GenerateHelpString(ExecuteHelp, ExecuteSubsteps)
 	cmd := &cobra.Command{
 		Use:   "execute",
 		Short: "executes the upgrade",
@@ -411,7 +411,7 @@ func execute() *cobra.Command {
 func finalize() *cobra.Command {
 	var verbose bool
 
-	finalizeHelp := generateHelpString(FinalizeHelp, finalizeSubsteps)
+	finalizeHelp := GenerateHelpString(FinalizeHelp, FinalizeSubsteps)
 	cmd := &cobra.Command{
 		Use:   "finalize",
 		Short: "finalizes the cluster after upgrade execution",
@@ -634,7 +634,7 @@ Use "gpupgrade [command] --help" for more information about a command.
 `
 )
 
-func generateHelpString(baseString string, commandList []idl.Substep) string {
+func GenerateHelpString(baseString string, commandList []idl.Substep) string {
 	var formattedList string
 	for _, substep := range commandList {
 		formattedList += fmt.Sprintf(" - %s\n", commanders.SubstepDescriptions[substep].HelpText)
