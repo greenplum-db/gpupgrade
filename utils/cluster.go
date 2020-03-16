@@ -2,12 +2,18 @@ package utils
 
 import (
 	"fmt"
+	"os/exec"
 
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
+
+	"github.com/greenplum-db/gpupgrade/step"
 )
+
+var isPostmasterRunningCmd = exec.Command
+var startStopCmd = exec.Command
 
 type Cluster struct {
 	// ContentIDs contains the list of all primary content IDs, in the same
@@ -243,29 +249,87 @@ func NewCluster(segConfigs []SegConfig) (*Cluster, error) {
 	return &cluster, nil
 }
 
-func (cluster *Cluster) GetContentList() []int {
-	return cluster.ContentIDs
+func (c *Cluster) GetContentList() []int {
+	return c.ContentIDs
 }
 
-func (cluster *Cluster) GetDbidForContent(contentID int) int {
-	return cluster.Primaries[contentID].DbID
+func (c *Cluster) GetDbidForContent(contentID int) int {
+	return c.Primaries[contentID].DbID
 }
 
-func (cluster *Cluster) GetPortForContent(contentID int) int {
-	return cluster.Primaries[contentID].Port
+func (c *Cluster) GetPortForContent(contentID int) int {
+	return c.Primaries[contentID].Port
 }
 
-func (cluster *Cluster) GetHostForContent(contentID int) string {
-	return cluster.Primaries[contentID].Hostname
+func (c *Cluster) GetHostForContent(contentID int) string {
+	return c.Primaries[contentID].Hostname
 }
 
-func (cluster *Cluster) GetDirForContent(contentID int) string {
-	return cluster.Primaries[contentID].DataDir
+func (c *Cluster) GetDirForContent(contentID int) string {
+	return c.Primaries[contentID].DataDir
+}
+
+func (c *Cluster) Start(stream step.OutStreams) error {
+	return runStartStopCmd(stream, c.BinDir, fmt.Sprintf("gpstart -a -d %[1]s", c.MasterDataDir()))
+}
+
+func (c *Cluster) Stop(stream step.OutStreams) error {
+	// TODO: why can't we call isPostmasterRunning for the !stop case?  If we do, we get this on the pipeline:
+	// Usage: pgrep [-flvx] [-d DELIM] [-n|-o] [-P PPIDLIST] [-g PGRPLIST] [-s SIDLIST]
+	// [-u EUIDLIST] [-U UIDLIST] [-G GIDLIST] [-t TERMLIST] [PATTERN]
+	//  pgrep: pidfile not valid
+	// TODO: should we actually return an error if we try to gpstop an already stopped cluster?
+	err := isPostmasterRunning(stream, c.MasterDataDir())
+	if err != nil {
+		return err
+	}
+
+	return runStartStopCmd(stream, c.BinDir, fmt.Sprintf("gpstop -a -d %[1]s", c.MasterDataDir()))
+}
+
+func (c *Cluster) StartMasterOnly(stream step.OutStreams) error {
+	return runStartStopCmd(stream, c.BinDir, fmt.Sprintf("gpstart -m -a -d %[1]s", c.MasterDataDir()))
+}
+
+func (c *Cluster) StopMasterOnly(stream step.OutStreams) error {
+	// TODO: why can't we call isPostmasterRunning for the !stop case?  If we do, we get this on the pipeline:
+	// Usage: pgrep [-flvx] [-d DELIM] [-n|-o] [-P PPIDLIST] [-g PGRPLIST] [-s SIDLIST]
+	// [-u EUIDLIST] [-U UIDLIST] [-G GIDLIST] [-t TERMLIST] [PATTERN]
+	//  pgrep: pidfile not valid
+	// TODO: should we actually return an error if we try to gpstop an already stopped cluster?
+	err := isPostmasterRunning(stream, c.MasterDataDir())
+	if err != nil {
+		return err
+	}
+
+	return runStartStopCmd(stream, c.BinDir, fmt.Sprintf("gpstop -m -a -d %[1]s", c.MasterDataDir()))
+}
+
+func runStartStopCmd(stream step.OutStreams, binDir, command string) error {
+	commandWithEnv := fmt.Sprintf("source %[1]s/../greenplum_path.sh && %[1]s/%[2]s",
+		binDir,
+		command)
+
+	cmd := startStopCmd("bash", "-c", commandWithEnv)
+	cmd.Stdout = stream.Stdout()
+	cmd.Stderr = stream.Stderr()
+	return cmd.Run()
 }
 
 /*
  * Helper functions
  */
+func isPostmasterRunning(stream step.OutStreams, masterDataDir string) error {
+	cmd := isPostmasterRunningCmd("bash", "-c",
+		fmt.Sprintf("pgrep -F %s/postmaster.pid",
+			masterDataDir,
+		))
+
+	cmd.Stdout = stream.Stdout()
+	cmd.Stderr = stream.Stderr()
+
+	return cmd.Run()
+}
 
 func GetSegmentConfiguration(connection *dbconn.DBConn) ([]SegConfig, error) {
 	query := ""

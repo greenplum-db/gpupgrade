@@ -1,15 +1,20 @@
-package hub
+package utils
 
 import (
+	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"testing"
 
-	"github.com/greenplum-db/gpupgrade/testutils/exectest"
-	"github.com/greenplum-db/gpupgrade/utils"
-
 	. "github.com/onsi/gomega"
+
+	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 )
+
+func TestMain(m *testing.M) {
+	os.Exit(exectest.Run(m))
+}
 
 func StartClusterCmd()        {}
 func StopClusterCmd()         {}
@@ -28,16 +33,45 @@ func init() {
 	)
 }
 
+// TODO: Consolidate with the same function in common_test.go in the
+//  hub package. This is tricky due to cycle imports and other issues.
+// MustCreateCluster creates a utils.Cluster and calls t.Fatalf() if there is
+// any error.
+func MustCreateCluster(t *testing.T, segs []SegConfig) *Cluster {
+	t.Helper()
+
+	cluster, err := NewCluster(segs)
+	if err != nil {
+		t.Fatalf("%+v", err)
+	}
+
+	return cluster
+}
+
+// TODO: Consolidate with the same function in common_test.go in the hub package.
+// DevNull implements OutStreams by just discarding all writes.
+var DevNull = devNull{}
+
+type devNull struct{}
+
+func (_ devNull) Stdout() io.Writer {
+	return ioutil.Discard
+}
+
+func (_ devNull) Stderr() io.Writer {
+	return ioutil.Discard
+}
+
 func TestStartOrStopCluster(t *testing.T) {
 	g := NewGomegaWithT(t)
 
-	source := MustCreateCluster(t, []utils.SegConfig{
+	source := MustCreateCluster(t, []SegConfig{
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "basedir/seg-1", Role: "p"},
 	})
 	source.BinDir = "/source/bindir"
 
-	utils.System.RemoveAll = func(s string) error { return nil }
-	utils.System.MkdirAll = func(s string, perm os.FileMode) error { return nil }
+	System.RemoveAll = func(s string) error { return nil }
+	System.MkdirAll = func(s string, perm os.FileMode) error { return nil }
 
 	startStopCmd = nil
 	isPostmasterRunningCmd = nil
@@ -54,14 +88,14 @@ func TestStartOrStopCluster(t *testing.T) {
 				g.Expect(args).To(Equal([]string{"-c", "pgrep -F basedir/seg-1/postmaster.pid"}))
 			})
 
-		err := IsPostmasterRunning(DevNull, source)
+		err := isPostmasterRunning(DevNull, source.MasterDataDir())
 		g.Expect(err).ToNot(HaveOccurred())
 	})
 
 	t.Run("isPostmasterRunning fails", func(t *testing.T) {
 		isPostmasterRunningCmd = exectest.NewCommand(IsPostmasterRunningCmd_Errors)
 
-		err := IsPostmasterRunning(DevNull, source)
+		err := isPostmasterRunning(DevNull, source.MasterDataDir())
 		g.Expect(err).To(HaveOccurred())
 	})
 
@@ -79,7 +113,7 @@ func TestStartOrStopCluster(t *testing.T) {
 					"&& /source/bindir/gpstop -a -d basedir/seg-1"}))
 			})
 
-		err := StopCluster(DevNull, source)
+		err := source.Stop(DevNull)
 		g.Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -92,7 +126,7 @@ func TestStartOrStopCluster(t *testing.T) {
 				skippedStopClusterCommand = false
 			})
 
-		err := StopCluster(DevNull, source)
+		err := source.Stop(DevNull)
 		g.Expect(err).To(HaveOccurred())
 		g.Expect(skippedStopClusterCommand).To(Equal(true))
 	})
@@ -105,7 +139,7 @@ func TestStartOrStopCluster(t *testing.T) {
 					"&& /source/bindir/gpstart -a -d basedir/seg-1"}))
 			})
 
-		err := StartCluster(DevNull, source)
+		err := source.Start(DevNull)
 		g.Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -117,7 +151,7 @@ func TestStartOrStopCluster(t *testing.T) {
 					"&& /source/bindir/gpstart -m -a -d basedir/seg-1"}))
 			})
 
-		err := StartMasterOnly(DevNull, source)
+		err := source.StartMasterOnly(DevNull)
 		g.Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -135,7 +169,7 @@ func TestStartOrStopCluster(t *testing.T) {
 					"&& /source/bindir/gpstop -m -a -d basedir/seg-1"}))
 			})
 
-		err := StopMasterOnly(DevNull, source)
+		err := source.StopMasterOnly(DevNull)
 		g.Expect(err).ToNot(HaveOccurred())
 	})
 }

@@ -29,7 +29,7 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 	}()
 
 	st.Run(idl.Substep_FINALIZE_SHUTDOWN_TARGET_CLUSTER, func(streams step.OutStreams) error {
-		err := StopCluster(streams, s.Target)
+		err := s.Target.Stop(streams)
 
 		if err != nil {
 			return xerrors.Errorf("failed to stop target cluster: %w", err)
@@ -51,7 +51,7 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 	})
 
 	st.Run(idl.Substep_FINALIZE_START_TARGET_CLUSTER, func(streams step.OutStreams) error {
-		err := StartCluster(streams, s.Target)
+		err := s.Target.Start(streams)
 
 		if err != nil {
 			return xerrors.Errorf("failed to start target cluster: %w", err)
