@@ -2,63 +2,68 @@ package db
 
 import (
 	"os"
-
-	"github.com/greenplum-db/gpupgrade/utils"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"testing"
 )
 
-var _ = Describe("db connector", func() {
-	Describe("NewDBConn", func() {
-		Context("Database connection receives its constructor parameters", func() {
-			It("gets the DBName from dbname argument, Port from masterPort, and Host from masterHost", func() {
-				dbConnector := NewDBConn("localHost", 5432, "testdb")
-				Expect(dbConnector.DBName).To(Equal("testdb"))
-				Expect(dbConnector.Host).To(Equal("localHost"))
-				Expect(dbConnector.Port).To(Equal(5432))
-			})
-		})
-		Context("when dbname param is empty, but PGDATABASE env var set", func() {
-			It("gets the DBName from PGDATABASE", func() {
-				oldPgDatabase := os.Getenv("PGDATABASE")
-				os.Setenv("PGDATABASE", "testdb")
-				defer os.Setenv("PGDATABASE", oldPgDatabase)
+func TestNewDBConn(t *testing.T) {
+	t.Run("uses environment variable when database parameter is empty", func(t *testing.T) {
+		expected := "testdb"
+		resetEnv := setEnv(t, "PGDATABASE", expected)
+		defer resetEnv()
 
-				dbConnector := NewDBConn("localHost", 5432, "testdb")
-				Expect(dbConnector.DBName).To(Equal("testdb"))
-			})
-		})
-		Context("when dbname param empty and PGDATABASE env var empty", func() {
-			It("has an empty database name", func() {
-				oldPgDatabase := os.Getenv("PGDATABASE")
-				os.Setenv("PGDATABASE", "")
-				defer os.Setenv("PGDATABASE", oldPgDatabase)
-
-				dbConnector := NewDBConn("localHost", 5432, "")
-				Expect(dbConnector.DBName).To(Equal(""))
-			})
-		})
-		Context("when Host parameter is empty, but PGHOST is set", func() {
-			It("uses PGHOST value", func() {
-				old := os.Getenv("PGHOST")
-				os.Setenv("PGHOST", "foo")
-				defer os.Setenv("PGHOST", old)
-
-				dbConnector := NewDBConn("", 5432, "testdb")
-				Expect(dbConnector.Host).To(Equal("foo"))
-			})
-		})
-		Context("when Host parameter is empty and PGHOST is empty", func() {
-			It("uses localHost", func() {
-				old := os.Getenv("PGHOST")
-				os.Setenv("PGHOST", "")
-				defer os.Setenv("PGHOST", old)
-
-				dbConnector := NewDBConn("", 5432, "")
-				currentHost, _ := utils.GetHost()
-				Expect(dbConnector.Host).To(Equal(currentHost))
-			})
-		})
+		conn := NewDBConn("localHost", 5432, "")
+		if conn.DBName != expected {
+			t.Errorf("got database %q want %q", conn.DBName, expected)
+		}
 	})
-})
+
+	t.Run("uses database parameter when both parameter and environment variable are set", func(t *testing.T) {
+		resetEnv := setEnv(t, "PGDATABASE", "testdb")
+		defer resetEnv()
+
+		expected := "template1"
+		conn := NewDBConn("localHost", 5432, expected)
+		if conn.DBName != expected {
+			t.Errorf("got database %q want %q", conn.DBName, expected)
+		}
+	})
+
+	t.Run("uses environment variable when host parameter is empty", func(t *testing.T) {
+		expected := "mdw"
+		resetEnv := setEnv(t, "PGHOST", expected)
+		defer resetEnv()
+
+		conn := NewDBConn("", 5432, "template1")
+		if conn.Host != expected {
+			t.Errorf("got host %q want %q", conn.DBName, expected)
+		}
+	})
+
+	t.Run("uses host parameter when both parameter and environment variable are set", func(t *testing.T) {
+		resetEnv := setEnv(t, "PGHOST", "mdw")
+		defer resetEnv()
+
+		expected := "localhost"
+		conn := NewDBConn(expected, 5432, "template1")
+		if conn.Host != expected {
+			t.Errorf("got host %q want %q", conn.DBName, expected)
+		}
+	})
+
+}
+
+func setEnv(t *testing.T, envar, value string) func() {
+	old := os.Getenv(envar)
+
+	err := os.Setenv(envar, value)
+	if err != nil {
+		t.Fatalf("setting %s environment variable to %s", envar, value)
+	}
+
+	return func() {
+		err := os.Setenv(envar, old)
+		if err != nil {
+			t.Fatalf("setting %s environment variable to %s", envar, old)
+		}
+	}
+}
