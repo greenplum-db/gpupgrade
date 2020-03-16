@@ -1,26 +1,29 @@
 package commands_test
 
 import (
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"testing"
 
 	"github.com/greenplum-db/gpupgrade/cli/commands"
 )
 
-var _ = Describe("Version", func() {
-	Describe("VersionString", func() {
-		Context("when global var UpgradeVersion is the empty string", func() {
-			It("returns the default version", func() {
-				commands.UpgradeVersion = ""
-				Expect(commands.VersionString("myname")).To(Equal("myname unknown version"))
-			})
-		})
+func TestVersionString(t *testing.T) {
+	t.Run("returns unknown version when version is not set", func(t *testing.T) {
+		commands.UpgradeVersion = ""
 
-		Context("when global var UpgradeVersion is set to something", func() {
-			It("returns what it's set to", func() {
-				commands.UpgradeVersion = "Something"
-				Expect(commands.VersionString("gpupgrade")).To(Equal("gpupgrade version Something"))
-			})
-		})
+		actual := commands.VersionString("gpupgrade")
+		expected := "gpupgrade unknown version"
+		if actual != expected {
+			t.Errorf("got version %q want %q", actual, expected)
+		}
 	})
-})
+
+	t.Run("returns version", func(t *testing.T) {
+		commands.UpgradeVersion = "1.2.3"
+
+		actual := commands.VersionString("gpupgrade")
+		expected := "gpupgrade version 1.2.3"
+		if actual != expected {
+			t.Errorf("got version %q want %q", actual, expected)
+		}
+	})
+}
