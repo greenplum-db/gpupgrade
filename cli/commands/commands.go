@@ -51,16 +51,20 @@ import (
 // These are ordered lists of the substeps in each step, to allow iteration over SubstepDescriptions when generating help text
 var (
 	InitializeSubsteps = []idl.Substep{
-		idl.Substep_CONFIG,
+		idl.Substep_CREATING_DIRECTORIES,
+		idl.Substep_GENERATING_CONFIG,
+		idl.Substep_START_HUB,
+		idl.Substep_RETRIEVE_SOURCE_CONFIG,
 		idl.Substep_START_AGENTS,
+		idl.Substep_CHECK_DISK_SPACE,
 		idl.Substep_CREATE_TARGET_CONFIG,
-		idl.Substep_SHUTDOWN_SOURCE_CLUSTER,
 		idl.Substep_INIT_TARGET_CLUSTER,
 		idl.Substep_SHUTDOWN_TARGET_CLUSTER,
 		idl.Substep_BACKUP_TARGET_MASTER,
 		idl.Substep_CHECK_UPGRADE,
 	}
 	ExecuteSubsteps = []idl.Substep{
+		idl.Substep_SHUTDOWN_SOURCE_CLUSTER,
 		idl.Substep_UPGRADE_MASTER,
 		idl.Substep_COPY_MASTER,
 		idl.Substep_UPGRADE_PRIMARIES,

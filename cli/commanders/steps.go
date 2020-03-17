@@ -19,30 +19,34 @@ type receiver interface {
 }
 
 type substepText struct {
-	HelpText   string
 	OutputText string
+	HelpText   string
 }
 
 var SubstepDescriptions = map[idl.Substep]substepText{
-	idl.Substep_CONFIG:                                            substepText{"Retrieving source cluster configuration...", "Retrieve source cluster configuration"},
+	idl.Substep_CREATING_DIRECTORIES:                              substepText{"Creating directories...", "Create directories"},
+	idl.Substep_GENERATING_CONFIG:                                 substepText{"Generating upgrade configuration...", "Generate upgrade configuration"},
+	idl.Substep_START_HUB:                                         substepText{"Starting gpupgrade hub process...", "Start gpupgrade hub process"},
+	idl.Substep_RETRIEVE_SOURCE_CONFIG:                            substepText{"Retrieving source cluster configuration...", "Retrieve source cluster configuration"},
 	idl.Substep_START_AGENTS:                                      substepText{"Starting gpupgrade agent processes...", "Start gpupgrade agent processes"},
+	idl.Substep_CHECK_DISK_SPACE:                                  substepText{"Checking disk space...", "Check disk space"},
 	idl.Substep_CREATE_TARGET_CONFIG:                              substepText{"Generating target cluster configuration...", "Generate target cluster configuration"},
-	idl.Substep_SHUTDOWN_SOURCE_CLUSTER:                           substepText{"Stopping source cluster...", "Stop source cluster"},
 	idl.Substep_INIT_TARGET_CLUSTER:                               substepText{"Creating target cluster...", "Create target cluster"},
 	idl.Substep_SHUTDOWN_TARGET_CLUSTER:                           substepText{"Stopping target cluster...", "Stop target cluster"},
 	idl.Substep_BACKUP_TARGET_MASTER:                              substepText{"Backing up target master...", "Back up target master"},
 	idl.Substep_CHECK_UPGRADE:                                     substepText{"Running pg_upgrade checks...", "Run pg_upgrade checks"},
+	idl.Substep_SHUTDOWN_SOURCE_CLUSTER:                           substepText{"Stopping source cluster...", "Stop source cluster"},
 	idl.Substep_UPGRADE_MASTER:                                    substepText{"Upgrading master...", "Upgrade master"},
 	idl.Substep_COPY_MASTER:                                       substepText{"Copying master catalog to primary segments...", "Copy master catalog to primary segments"},
 	idl.Substep_UPGRADE_PRIMARIES:                                 substepText{"Upgrading primary segments...", "Upgrade primary segments"},
 	idl.Substep_START_TARGET_CLUSTER:                              substepText{"Starting target cluster...", "Start target cluster"},
-	idl.Substep_FINALIZE_UPGRADE_STANDBY:                          substepText{"Upgrading standby master...", "Upgrade standby master"},
-	idl.Substep_FINALIZE_UPGRADE_MIRRORS:                          substepText{"Upgrading mirrors segments...", "Upgrade mirrors segments"},
 	idl.Substep_FINALIZE_SHUTDOWN_TARGET_CLUSTER:                  substepText{"Stopping target cluster...", "Stop target cluster"},
 	idl.Substep_FINALIZE_UPDATE_TARGET_CATALOG_AND_CLUSTER_CONFIG: substepText{"Updating target master catalog...", "Update target master catalog"},
 	idl.Substep_FINALIZE_RENAME_DATA_DIRECTORIES:                  substepText{"Renaming data directories...", "Rename data directories"},
 	idl.Substep_FINALIZE_UPDATE_TARGET_CONF_FILES:                 substepText{"Updating target master configuration files...", "Update target master configuration files"},
 	idl.Substep_FINALIZE_START_TARGET_CLUSTER:                     substepText{"Starting target cluster...", "Start target cluster"},
+	idl.Substep_FINALIZE_UPGRADE_STANDBY:                          substepText{"Upgrading standby master...", "Upgrade standby master"},
+	idl.Substep_FINALIZE_UPGRADE_MIRRORS:                          substepText{"Upgrading mirror segments...", "Upgrade mirror segments"},
 }
 
 var indicators = map[idl.Status]string{
@@ -201,7 +205,7 @@ func UILoop(stream receiver, verbose bool) (map[string]string, error) {
 			// current step. (This behavior is switched off in verbose mode,
 			// because it interferes with the output stream.)
 			if !verbose {
-				if lastStep == idl.Substep_UNKNOWN_STEP {
+				if lastStep == idl.Substep_UNKNOWN_SUBSTEP {
 					// This is the first call, so we don't need to "terminate"
 					// the previous line at all.
 				} else if x.Status.Step == lastStep {
@@ -264,16 +268,13 @@ func Format(description string, status idl.Status) string {
 	return fmt.Sprintf("%-67s%-13s", description, indicator)
 }
 
-type substep struct {
-	description string
-}
-
 // Substep prints out an "in progress" marker for the given substep description,
 // and returns a struct that can be .Finish()d (in a defer statement) to print
 // the final complete/failed state.
-func Substep(description string) *substep {
-	fmt.Printf("%s\r", Format(description, idl.Status_RUNNING))
-	return &substep{description}
+func Substep(step idl.Substep) *substepText {
+	substepText := SubstepDescriptions[step]
+	fmt.Printf("%s\r", Format(substepText.OutputText, idl.Status_RUNNING))
+	return &substepText
 }
 
 // Finish prints out the final status of the substep; either COMPLETE or FAILED
@@ -287,11 +288,11 @@ func Substep(description string) *substep {
 //        ...
 //    }
 //
-func (s *substep) Finish(err *error) {
+func (s *substepText) Finish(err *error) {
 	status := idl.Status_COMPLETE
 	if *err != nil {
 		status = idl.Status_FAILED
 	}
 
-	fmt.Printf("%s\n", Format(s.description, status))
+	fmt.Printf("%s\n", Format(s.OutputText, status))
 }

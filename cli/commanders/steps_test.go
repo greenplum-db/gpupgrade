@@ -219,7 +219,7 @@ func TestUILoop(t *testing.T) {
 		}{{
 			"bad step",
 			&idl.Message{Contents: &idl.Message_Status{&idl.SubstepStatus{
-				Step:   idl.Substep_UNKNOWN_STEP,
+				Step:   idl.Substep_UNKNOWN_SUBSTEP,
 				Status: idl.Status_COMPLETE,
 			}}},
 		}, {
@@ -264,14 +264,12 @@ func TestSubstep(t *testing.T) {
 	d := bufferStandardDescriptors(t)
 	defer d.Close()
 
-	description := "my description"
-
 	var err error
-	s := commanders.Substep(description)
+	s := commanders.Substep(idl.Substep_CREATING_DIRECTORIES)
 	s.Finish(&err)
 
 	err = xerrors.New("error")
-	s = commanders.Substep(description)
+	s = commanders.Substep(idl.Substep_GENERATING_CONFIG)
 	s.Finish(&err)
 
 	stdout, stderr := d.Collect()
@@ -280,10 +278,10 @@ func TestSubstep(t *testing.T) {
 		t.Errorf("unexpected stderr %#v", string(stderr))
 	}
 
-	expected := commanders.Format(description, idl.Status_RUNNING) + "\r"
-	expected += commanders.Format(description, idl.Status_COMPLETE) + "\n"
-	expected += commanders.Format(description, idl.Status_RUNNING) + "\r"
-	expected += commanders.Format(description, idl.Status_FAILED) + "\n"
+	expected := commanders.Format(commanders.SubstepDescriptions[idl.Substep_CREATING_DIRECTORIES].OutputText, idl.Status_RUNNING) + "\r"
+	expected += commanders.Format(commanders.SubstepDescriptions[idl.Substep_CREATING_DIRECTORIES].OutputText, idl.Status_COMPLETE) + "\n"
+	expected += commanders.Format(commanders.SubstepDescriptions[idl.Substep_GENERATING_CONFIG].OutputText, idl.Status_RUNNING) + "\r"
+	expected += commanders.Format(commanders.SubstepDescriptions[idl.Substep_GENERATING_CONFIG].OutputText, idl.Status_FAILED) + "\n"
 
 	actual := string(stdout)
 	if actual != expected {
