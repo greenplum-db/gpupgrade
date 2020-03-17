@@ -42,6 +42,11 @@ teardown() {
     # target cluster ends up with the source cluster's original layout
     local old_config=$(get_segment_configuration)
 
+    # set this variable before we upgrade to make sure our decision to run below
+    # is based on the source cluster before upgrade perhaps changes our cluster.
+    local no_mirrors
+    no_mirrors=$(contents_without_mirror "${GPHOME}" "$(hostname)" "${PGPORT}")
+
     gpupgrade initialize \
         --source-bindir="$GPHOME/bin" \
         --target-bindir="$GPHOME/bin" \
@@ -81,6 +86,15 @@ teardown() {
     local new_config=$(get_segment_configuration)
     [ "$old_config" = "$new_config" ] || fail "actual config: $new_config, wanted $old_config"
 
+    #
+    # The tests below depend on the source cluster having a standby and a full set of mirrors
+    #
+
+    if [ -n "$no_mirrors" ]; then
+        echo "skipping rest of this test since these content ids does not have a standby: ${no_mirrors}"
+        return 0
+    fi
+
     # TODO: Query gp_stat_replication to check if the standby is in sync.
     #   That is a more accurate representation if the standby is running and
     #   in sync, since gpstate might simply check if the process is running.
@@ -89,7 +103,7 @@ teardown() {
     local standby_status_line=$(get_standby_status "$actual_standby_status")
     [[ $standby_status_line == *"Standby host passive"* ]] || fail "expected standby to be up and in passive mode, got **** ${actual_standby_status} ****"
 
-    check_mirror_validity "${GPHOME}" "$(hostname)" "${PGPORT}"
+    validate_mirrors_and_standby "${GPHOME}" "$(hostname)" "${PGPORT}"
 }
 
 setup_state_dir() {

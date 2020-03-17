@@ -1,23 +1,30 @@
-# This file provides a single high-level function check_mirror_validity()
-# that takes a cluster with mirrors "through its paces" to thoroughly test
-# the cluster's mirrors.  See the documentation of check_mirror_validity()
-# for details.
+# This file provides a single high-level function validate_mirrors_and_standby()
+# that takes a cluster with mirrors and a standby "through its paces" to
+# thoroughly test those mirrors and stadnby.
 
-check_mirrors() {
-    _check_segments_are_synchronized
-    _check_mirror_replication_connections
+check_mirrors_and_standby() {
+    local master_host=$1
+    local master_port=$2
+
+    _check_synchronized_cluster "${master_host}" "${master_port}"
+    _check_replication_connections "${master_host}" "${master_port}"
 }
 
-_check_segments_are_synchronized() {
+_check_synchronized_cluster() {
+    local master_host=$1
+    local master_port=$2
+
     for i in {1..10}; do
-        local unsynced=$(ssh -n "${MASTER_HOST}" "
+        local synced
+        synced=$(ssh -n "$master_host" "
             source ${GPHOME_NEW}/greenplum_path.sh
-            psql -p $MASTER_PORT -At -d postgres << EOF
+            psql -p $master_port -At -d postgres << EOF
                 SELECT gp_request_fts_probe_scan();
-                SELECT count(*) FROM gp_segment_configuration WHERE content <> -1 AND mode = 'n';
+                SELECT EVERY(state='streaming' AND state IS NOT NULL)
+                FROM gp_stat_replication;
 EOF
         " | tail -1)
-        if [ "$unsynced" = "0" ]; then
+        if [ "$synced" = "t" ]; then
             return 0
         fi
         sleep 5
@@ -27,15 +34,19 @@ EOF
     return 1
 }
 
-_check_mirror_replication_connections() {
-    local rows=$(ssh -n "${MASTER_HOST}" "
+_check_replication_connections() {
+    local host=$1
+    local port=$2
+
+    local rows
+    rows=$(ssh -n "${host}" "
         source ${GPHOME_NEW}/greenplum_path.sh
-        psql -p $MASTER_PORT -d postgres -AtF$'\t' -c \"
+        psql -p $port -d postgres -AtF$'\t' -c \"
             SELECT primaries.address, primaries.port, mirrors.hostname
             FROM gp_segment_configuration AS primaries
             JOIN gp_segment_configuration AS mirrors
             ON primaries.content = mirrors.content
-            WHERE primaries.role = 'p' AND mirrors.role = 'm' AND primaries.content != -1;
+            WHERE primaries.role = 'p' AND mirrors.role = 'm';
         \"
     ")
 
@@ -49,27 +60,10 @@ _check_mirror_replication_connections() {
     done
 }
 
-kill_primaries() {
-    local primaries
-    primaries=$(ssh -n "${MASTER_HOST}" "
-        source ${GPHOME_NEW}/greenplum_path.sh
-        psql -AtF$'\t' -p $MASTER_PORT -d postgres -c \"
-            SELECT hostname, port, datadir FROM gp_segment_configuration
-            WHERE content <> -1 AND role = 'p'
-        \"
-    ") || return $?
-
-    echo "${primaries}" | while read -r host port dir; do
-        ssh -n "${host}" "
-            source ${GPHOME_NEW}/greenplum_path.sh
-            pg_ctl stop -p $port -m immediate -D $dir -w
-        "
-    done
-}
-
 wait_can_start_transactions() {
     local host=$1
     local port=$2
+
     for i in {1..10}; do
         ssh -n "${host}" "
             source ${GPHOME_NEW}/greenplum_path.sh
@@ -88,26 +82,54 @@ EOF
     return 1
 }
 
+kill_contents() {
+    local filter="content $1"
+    local host=$2
+    local port=$3
+
+    local contents
+    contents=$(ssh -n "$host" "
+        source ${GPHOME_NEW}/greenplum_path.sh
+        psql -AtF$'\t' -p $port -d postgres -c \"
+            SELECT hostname, port, datadir FROM gp_segment_configuration
+            WHERE $filter AND role = 'p'
+        \"
+    ") || return $?
+
+    echo "${contents}" | while read -r host port dir; do
+        ssh -n "${host}" "
+            source ${GPHOME_NEW}/greenplum_path.sh
+            pg_ctl stop -p $port -m immediate -D $dir -w
+        "
+    done
+}
+
 # After creating the new table, this function outputs its distribution to stdout.
 create_table_with_name() {
     local table_name=$1
     local size=$2
-    ssh -n "${MASTER_HOST}" "
+    local host=$3
+    local port=$4
+
+    ssh -n "${host}" "
         source ${GPHOME_NEW}/greenplum_path.sh
         # -q suppresses all output from this command
-        psql -q -p $MASTER_PORT -d postgres <<EOF
+        psql -v ON_ERROR_STOP=1 -q -p $port -d postgres <<EOF
             CREATE TABLE ${table_name} (a int) DISTRIBUTED BY (a);
-            INSERT INTO ${table_name} SELECT * FROM generate_series(0,${size});
+            INSERT INTO ${table_name} SELECT * FROM generate_series(1,${size});
 EOF
-    "
-    _get_data_distribution $table_name
+    " || return $?
+    _get_data_distribution $host $port $table_name
 }
 
 _get_data_distribution() {
-    local table_name=$1
-    ssh -n "${MASTER_HOST}" "
+    local host=$1
+    local port=$2
+    local table_name=$3
+
+    ssh -n "${host}" "
         source ${GPHOME_NEW}/greenplum_path.sh
-        psql -t -A -p $MASTER_PORT -d postgres -c \"
+        psql -v ON_ERROR_STOP=1 -t -A -p $port -d postgres -c \"
             SELECT gp_segment_id,count(*) FROM ${table_name}
             GROUP BY gp_segment_id ORDER BY gp_segment_id;
         \"
@@ -117,73 +139,167 @@ _get_data_distribution() {
 check_data_matches() {
     local table_name=$1
     local expected=$2
+    local host=$3
+    local port=$4
 
-    local actual=$(_get_data_distribution $table_name)
+    local actual
+    actual=$(_get_data_distribution $host $port $table_name)
     if [ "${actual}" != "${expected}" ]; then
         echo "Checking table ${table_name} - got: ${actual} want: ${expected}"
         return 1
     fi
 }
 
-# Check the validity of the upgraded mirrors - failover to them and then recover, similar to cross-subnet testing
-# |  step  |   mdw       | smdw         | sdw-primaries | sdw-mirrors |
-# |    1   |   master    |   standby    |    primary    |  mirror     |
-# |    2   |   master    |   standby    |      -        |  mirror     |
-# |    3   |   master    |   standby    |      -        |  primary    |
-# |    4   |   master    |   standby    |   mirror      |  primary    |
-# |    5   |   master    |   standby    |   primary     |  mirror     |
-check_mirror_validity() {
-    GPHOME_NEW=$1
-    MASTER_HOST=$2
-    MASTER_PORT=$3
+contents_without_mirror() {
+    local gphome=$1
+    local host=$2
+    local port=$3
 
-    local master_data_dir=$(ssh -n "${MASTER_HOST}" "
+    ssh -n "$host" "
+        source ${gphome}/greenplum_path.sh
+        psql -p $port -At -d postgres -c \"
+            SELECT content
+            FROM gp_segment_configuration
+            GROUP BY content
+            HAVING COUNT(*)!=2;
+        \"
+    "
+}
+
+# |     step                        | mdw     | smdw    | sdw-p   | sdw-m   |
+# |---------------------------------|---------|---------|---------|---------|
+# | 1:  initial                     | master  | standby | primary | mirror  |
+# | 2a: failover stop               | -       | standby |   -     | mirror  |
+# | 2b: failover promote            | -       | master  |   -     | primary |
+# | 3:  restore mirrors and standby | standby | master  | mirror  | primary |
+# | 4a: rebalance mirrors           | standby | master  | primary | mirror  |
+# | 4b: rebalance standby           | standby |     -   | primary | mirror  |
+# | 4c: rebalance standby           | master  |     -   | primary | mirror  |
+# | 4d: rebalance standby           | master  | standby | primary | mirror  |
+#
+# For rebalancing the standby, we followed these instructions:
+# https://gpdb.docs.pivotal.io/6-4/admin_guide/highavail/topics/g-restoring-master-mirroring-after-a-recovery.html#topic17
+#
+# NOTE: when in a given step of this test, keep in mind that the master
+#  switches back and forth between the mdw host("MASTER") and the smdw host("standby").
+
+validate_mirrors_and_standby() {
+    GPHOME_NEW=$1
+    local MASTER_HOST=$2
+    local MASTER_PORT=$3
+
+    local noMirrors
+    noMirrors=$(contents_without_mirror "$GPHOME_NEW" "$MASTER_HOST" "$MASTER_PORT")
+    if [ -n "$noMirrors" ]; then
+        echo "This test only works on full clusters but these content ids do not have mirrors: ${noMirrors}"
+        exit 1
+    fi
+
+    local master_data_dir
+    master_data_dir=$(ssh -n "${MASTER_HOST}" "
         source ${GPHOME_NEW}/greenplum_path.sh
-        psql -p $MASTER_PORT -t -A -d postgres -c \"
+        psql -p $MASTER_PORT -At -d postgres -c \"
             SELECT datadir FROM gp_segment_configuration
             WHERE content = -1 AND role = 'p'
         \"
     ")
 
-    # step 1
-    wait_can_start_transactions $MASTER_HOST $MASTER_PORT
-    check_mirrors
-
-    local on_upgraded_master_expected=$(create_table_with_name on_upgraded_master 50)
-
-    # step 2
-    kill_primaries
-
-    # step 3
-    wait_can_start_transactions $MASTER_HOST $MASTER_PORT
-
-    check_data_matches on_upgraded_master "${on_upgraded_master_expected}"
-    local on_promoted_mirrors_expected=$(create_table_with_name on_promoted_mirrors 60)
-
-    # step 4
-    ssh -n "${MASTER_HOST}" "
+    local standby_info
+    standby_info=$(ssh -n "${MASTER_HOST}" "
         source ${GPHOME_NEW}/greenplum_path.sh
-        export MASTER_DATA_DIRECTORY=${master_data_dir}
-        export PGPORT=$MASTER_PORT
+        psql -p $MASTER_PORT -AtF$'\t' -d postgres -c \"
+            SELECT hostname, port, datadir FROM gp_segment_configuration
+            WHERE content = -1 AND role = 'm'
+        \"
+    ")
+    read -r standby_host standby_port standby_data_dir <<<"${standby_info}"
+
+    # step 1: initial
+    wait_can_start_transactions "${MASTER_HOST}" "${MASTER_PORT}"
+    check_mirrors_and_standby "${MASTER_HOST}" "${MASTER_PORT}"
+
+    local data_on_upgraded_cluster
+    data_on_upgraded_cluster=$(create_table_with_name on_upgraded_cluster 50 "${MASTER_HOST}" "${MASTER_PORT}")
+
+    # step 2a: failover stop...
+    kill_contents ">=-1" "${MASTER_HOST}" "${MASTER_PORT}"
+
+    # step 2b: failover promote...
+    ssh -n "${standby_host}" "
+        source ${GPHOME_NEW}/greenplum_path.sh
+        export PGPORT=$standby_port
+        gpactivatestandby -a -d $standby_data_dir
+    "
+    wait_can_start_transactions "${standby_host}" "${standby_port}"
+
+    check_data_matches on_upgraded_cluster "${data_on_upgraded_cluster}" "${standby_host}" "${standby_port}"
+    local data_on_promoted_cluster
+    data_on_promoted_cluster=$(create_table_with_name on_promoted_cluster 60 "${standby_host}" "${standby_port}")
+
+    # step 3:  restore mirrors and standby
+    ssh -n "${standby_host}" "
+        source ${GPHOME_NEW}/greenplum_path.sh
+        export MASTER_DATA_DIRECTORY=${standby_data_dir}
+        export PGPORT=$standby_port
         gprecoverseg -a       # TODO..why is PGPORT not actually needed here?
     "
-    check_mirrors
+    wait_can_start_transactions $standby_host "${standby_port}"  #TODO: is this necessary?
 
-    check_data_matches on_upgraded_master "${on_upgraded_master_expected}"
-    check_data_matches on_promoted_mirrors "${on_promoted_mirrors_expected}"
-    local on_recovered_cluster_expected=$(create_table_with_name on_recovered_cluster 70)
+    # sanity check both the demo cluster and CI cluster cases
+    if [[ $master_data_dir != *qddir/demoDataDir* && $master_data_dir != */data/gpdata/master/gpseg-1* ]]; then
+        echo "cowardly refusing to delete $master_data_dir which does not look like a demo or CI master data dir"
+        exit 1
+    fi
+    ssh -n "${MASTER_HOST}" "rm -r ${master_data_dir}"
 
-    # step 5
-    ssh -n "${MASTER_HOST}" "
+    ssh -n "${standby_host}" "
         source ${GPHOME_NEW}/greenplum_path.sh
-        export MASTER_DATA_DIRECTORY=${master_data_dir}
-        export PGPORT=$MASTER_PORT
+        export PGPORT=$standby_port; gpinitstandby -a -s $MASTER_HOST -P $MASTER_PORT -S $master_data_dir
+    "
+    check_mirrors_and_standby "${standby_host}" "${standby_port}"
+
+    check_data_matches on_upgraded_cluster "${data_on_upgraded_cluster}" "${standby_host}" "${standby_port}"
+    check_data_matches on_promoted_cluster "${data_on_promoted_cluster}" "${standby_host}" "${standby_port}"
+    local data_on_unbalanced_cluster
+    data_on_unbalanced_cluster=$(create_table_with_name  on_unbalanced_cluster 70 "${standby_host}" "${standby_port}")
+
+    # 4a: rebalance mirrors
+    ssh -n "${standby_host}" "
+        source ${GPHOME_NEW}/greenplum_path.sh
+        export MASTER_DATA_DIRECTORY=${standby_data_dir}
+        export PGPORT=$standby_port
         gprecoverseg -ra
     "
-    check_mirrors
+    check_mirrors_and_standby "${standby_host}" "${standby_port}"
 
-    check_data_matches on_upgraded_master "${on_upgraded_master_expected}"
-    check_data_matches on_promoted_mirrors "${on_promoted_mirrors_expected}"
-    check_data_matches on_recovered_cluster "${on_recovered_cluster_expected}"
+    # 4b: rebalance standby
+    kill_contents "=-1" "${standby_host}" "${standby_port}"
+
+    # 4c: rebalance standby
+    ssh -n "${MASTER_HOST}" "
+        source ${GPHOME_NEW}/greenplum_path.sh
+        export PGPORT=$MASTER_PORT
+        gpactivatestandby -a -d $master_data_dir
+    "
+
+    # 4d: rebalance standby
+
+    # sanity check both the demo cluster and CI cluster cases
+    if [[ $standby_data_dir != *standby* && $standby_data_dir != */data/gpdata/master/gpseg-1* ]]; then
+        echo "cowardly refusing to delete $standby_data_dir which does not look like a demo or CI standby data dir"
+        exit 1
+    fi
+    ssh -n "${standby_host}" "rm -r $standby_data_dir"
+
+    ssh -n "${MASTER_HOST}" "
+        source ${GPHOME_NEW}/greenplum_path.sh
+        export PGPORT=$MASTER_PORT; gpinitstandby -a -s $standby_host -P $standby_port -S $standby_data_dir
+    "
+    check_mirrors_and_standby "${MASTER_HOST}" "${MASTER_PORT}"
+
+    check_data_matches on_upgraded_cluster "${data_on_upgraded_cluster}" "${MASTER_HOST}" "${MASTER_PORT}"
+    check_data_matches on_promoted_cluster "${data_on_promoted_cluster}" "${MASTER_HOST}" "${MASTER_PORT}"
+    check_data_matches on_unbalanced_cluster "${data_on_unbalanced_cluster}" "${MASTER_HOST}" "${MASTER_PORT}"
 }
+
 
