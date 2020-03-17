@@ -3,14 +3,12 @@ package integrations_test
 import (
 	"fmt"
 	"os/exec"
+	"testing"
 
 	"github.com/greenplum-db/gpupgrade/cli/commands"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("test gpupgrade help messages", func() {
+func TestHelpCommands(t *testing.T) {
 	helpMap := map[string]string{
 		"":           commands.GlobalHelp,
 		"initialize": commands.InitializeHelp,
@@ -25,23 +23,32 @@ var _ = Describe("test gpupgrade help messages", func() {
 			flag := flag
 			help := help
 
-			It(fmt.Sprintf("testing command %q with flag %q", command, flag), func() {
+			t.Run(fmt.Sprintf("testing command %q with flag %q", command, flag), func(t *testing.T) {
 				cmd := exec.Command("gpupgrade", command, flag)
 				if command == "" {
 					cmd = exec.Command("gpupgrade", flag)
 				}
 				output, err := cmd.Output()
-				Expect(err).ToNot(HaveOccurred())
-				Expect(string(output)).To(Equal(help))
+				if err != nil {
+					t.Errorf("unexpected err: %#v", err)
+				}
+
+				if string(output) != help {
+					t.Errorf("got help output %q want %q", string(output), help)
+				}
 			})
 		}
 	}
 
-	It("testing command gpupgrade with no arguments", func() {
+	t.Run("shows global help when no arguments are passed", func(t *testing.T) {
 		cmd := exec.Command("gpupgrade")
 		output, err := cmd.Output()
-		Expect(err).ToNot(HaveOccurred())
-		Expect(string(output)).To(Equal(commands.GlobalHelp))
-	})
+		if err != nil {
+			t.Errorf("unexpected err: %#v", err)
+		}
 
-})
+		if string(output) != commands.GlobalHelp {
+			t.Errorf("got help output %q want %q", string(output), commands.GlobalHelp)
+		}
+	})
+}
