@@ -154,7 +154,7 @@ func (s *Server) StopAgents() error {
 	for _, conn := range s.agentConns {
 		wg.Add(1)
 
-		go func() {
+		go func(conn *Connection) {
 			defer wg.Done()
 
 			_, err := conn.AgentClient.StopAgent(context.Background(), &idl.StopAgentRequest{})
@@ -169,7 +169,7 @@ func (s *Server) StopAgents() error {
 			if errStatus.Code() != codes.Unavailable || errStatus.Message() != "transport is closing" {
 				errs <- xerrors.Errorf("failed to stop agent on host %s : %w", conn.Hostname, err)
 			}
-		}()
+		}(conn)
 	}
 
 	wg.Wait()
