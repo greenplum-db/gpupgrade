@@ -54,13 +54,13 @@ var (
 		idl.Substep_CONFIG,
 		idl.Substep_START_AGENTS,
 		idl.Substep_CREATE_TARGET_CONFIG,
-		idl.Substep_SHUTDOWN_SOURCE_CLUSTER,
 		idl.Substep_INIT_TARGET_CLUSTER,
 		idl.Substep_SHUTDOWN_TARGET_CLUSTER,
 		idl.Substep_BACKUP_TARGET_MASTER,
 		idl.Substep_CHECK_UPGRADE,
 	}
 	ExecuteSubsteps = []idl.Substep{
+		idl.Substep_SHUTDOWN_SOURCE_CLUSTER,
 		idl.Substep_UPGRADE_MASTER,
 		idl.Substep_COPY_MASTER,
 		idl.Substep_UPGRADE_PRIMARIES,
