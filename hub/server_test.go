@@ -17,7 +17,6 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
-	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/mock_agent"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -25,16 +24,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
-
-// msgStream is a mock server stream for InitializeStep().
-type msgStream struct {
-	LastStatus idl.Status
-}
-
-func (m *msgStream) Send(msg *idl.Message) error {
-	m.LastStatus = msg.GetStatus().Status
-	return nil
-}
 
 var _ = Describe("Hub", func() {
 	var (

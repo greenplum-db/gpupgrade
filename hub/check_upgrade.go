@@ -24,16 +24,6 @@ func (upgradeChecker) UpgradePrimaries(args UpgradePrimaryArgs) error {
 	return UpgradePrimaries(args)
 }
 
-type AgentConnProvider interface {
-	GetAgents(s *Server) ([]*Connection, error)
-}
-
-type agentConnProvider struct{}
-
-func (agentConnProvider) GetAgents(s *Server) ([]*Connection, error) {
-	return s.AgentConns()
-}
-
 var upgrader UpgradeChecker = upgradeChecker{}
 
 func (s *Server) CheckUpgrade(stream step.OutStreams, conns []*Connection) error {

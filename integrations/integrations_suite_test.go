@@ -30,8 +30,7 @@ var (
 )
 
 const (
-	cliToHubPort   = 7527
-	hubToAgentPort = 6416
+	cliToHubPort = 7527
 )
 
 var _ = BeforeSuite(func() {
@@ -96,23 +95,6 @@ func killHub() {
 	}
 
 	Expect(checkPortIsAvailable(cliToHubPort)).To(BeTrue())
-}
-
-// killAll finds all running gpupupgrade processes and kills them.
-// XXX this is ridiculously heavy-handed
-func killAll() {
-	pkillCmd := exec.Command("pkill", "-9", "^gpupgrade_")
-	err := pkillCmd.Run()
-
-	// pkill returns exit code 1 if no processes were matched, which is fine.
-	if err != nil {
-		Expect(err).To(MatchError("exit status 1"))
-	} else {
-		Expect(err).ToNot(HaveOccurred())
-	}
-
-	Expect(checkPortIsAvailable(cliToHubPort)).To(BeTrue())
-	Expect(checkPortIsAvailable(hubToAgentPort)).To(BeTrue())
 }
 
 func checkPortIsAvailable(port int) bool {
