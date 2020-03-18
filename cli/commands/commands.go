@@ -574,7 +574,7 @@ Required Flags:
 
 Optional Flags:
 
-      --disk-space-ratio   ratio of free space needed in order to run upgrade, range from 0.0 to 1.0
+      --disk-free-ratio    ratio of free space needed in order to run upgrade, range from 0.0 to 1.0
 
   -h, --help               displays help output for initialize
 
@@ -639,7 +639,7 @@ Required Commands: gpupgrade is a three-step process
 
 Optional Flags:
 
-  --disk-space-ratio   ratio of free space needed in order to run upgrade, range from 0.0 to 1.0
+  --disk-free-ratio    ratio of free space needed in order to run upgrade, range from 0.0 to 1.0
 
   -h, --help           displays help output for gpupgrade
 
