@@ -11,12 +11,12 @@ import (
 
 const (
 	Primary Role = "p"
-	Mirror       = "m"
+	Mirror  Role = "m"
 )
 
 const (
 	Up   Status = "u"
-	Down        = "d"
+	Down Status = "d"
 )
 
 type DBID int
