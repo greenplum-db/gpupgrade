@@ -30,8 +30,7 @@ var (
 )
 
 const (
-	cliToHubPort   = 7527
-	hubToAgentPort = 6416
+	cliToHubPort = 7527
 )
 
 var _ = BeforeSuite(func() {
