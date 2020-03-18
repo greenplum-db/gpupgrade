@@ -33,7 +33,6 @@ var (
 	client      *mock_idl.MockAgentClient
 	port        int
 	dir         string
-	hubConf     *hub.Config
 	source      *greenplum.Cluster
 	target      *greenplum.Cluster
 	testHub     *hub.Server
