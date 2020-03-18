@@ -242,7 +242,11 @@ func TestUILoop(t *testing.T) {
 				}()
 
 				msgs := &msgStream{c.msg}
-				commanders.UILoop(msgs, false)
+				_, err := commanders.UILoop(msgs, false)
+
+				if err != nil {
+					t.Fatalf("got an error, expected panic: %q", err)
+				}
 			})
 		}
 	})
