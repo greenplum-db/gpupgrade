@@ -46,7 +46,7 @@ func NewMockAgentServer() (*MockAgentServer, hub.Dialer, int) {
 	idl.RegisterAgentServer(mockServer.grpcServer, mockServer)
 
 	go func() {
-		mockServer.grpcServer.Serve(lis)
+		_ = mockServer.grpcServer.Serve(lis)
 	}()
 
 	// Target this running server during dial.

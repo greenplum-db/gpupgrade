@@ -19,7 +19,10 @@ func TestUpgradeStandby(t *testing.T) {
 		}
 
 		runner := newSpyRunner()
-		hub.UpgradeStandby(runner, config)
+		err := hub.UpgradeStandby(runner, config)
+		if err != nil {
+			t.Errorf("unexpected error: %+v", err)
+		}
 
 		if runner.TimesRunWasCalledWith("gpinitstandby") != 2 {
 			t.Errorf("got %v calls to config.Run, wanted %v calls",

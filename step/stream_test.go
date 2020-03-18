@@ -61,8 +61,14 @@ func TestMultiplexedStream(t *testing.T) {
 
 		// Write 10 bytes to each stream.
 		for i := 0; i < 10; i++ {
-			stream.Stdout().Write([]byte{'O'})
-			stream.Stderr().Write([]byte{'E'})
+			_, err := stream.Stdout().Write([]byte{'O'})
+			if err != nil {
+				t.Errorf("writing stdout: %#v", err)
+			}
+			_, err = stream.Stderr().Write([]byte{'E'})
+			if err != nil {
+				t.Errorf("writing stderr: %#v", err)
+			}
 		}
 
 		expected := "OEOEOEOEOEOEOEOEOEOE"
@@ -89,8 +95,11 @@ func TestMultiplexedStream(t *testing.T) {
 
 		// Write 10 bytes to each stream.
 		for i := 0; i < 10; i++ {
-			stream.Stdout().Write([]byte{'O'})
-			stream.Stderr().Write([]byte{'E'})
+			_, err := stream.Stdout().Write([]byte{'O'})
+			g.Expect(err).To(BeNil())
+
+			_, err = stream.Stderr().Write([]byte{'E'})
+			g.Expect(err).To(BeNil())
 		}
 
 		// The Writer should not have been affected in any way.
