@@ -321,6 +321,10 @@ func TestUpgradeMirrors(t *testing.T) {
 		defer testutils.FinishMock(mock, t)
 
 		_, writePipe, err := os.Pipe()
+		if err != nil {
+			t.Fatalf("couldn't create pipe: %v", err)
+		}
+
 		utils.System.Create = func(name string) (*os.File, error) {
 			return writePipe, nil
 		}
