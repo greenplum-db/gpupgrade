@@ -42,8 +42,8 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 		return s.UpdateCatalogAndClusterConfig(streams)
 	})
 
-	st.Run(idl.Substep_FINALIZE_RENAME_DATA_DIRECTORIES, func(_ step.OutStreams) error {
-		return s.RenameDataDirectories()
+	st.Run(idl.Substep_FINALIZE_UPDATE_DATA_DIRECTORIES, func(_ step.OutStreams) error {
+		return s.UpdateDataDirectories()
 	})
 
 	st.Run(idl.Substep_FINALIZE_UPDATE_TARGET_CONF_FILES, func(streams step.OutStreams) error {

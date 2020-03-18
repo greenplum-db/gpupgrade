@@ -20,6 +20,7 @@ type MockAgentServer struct {
 
 	UpgradeConvertPrimarySegmentsRequest *idl.UpgradePrimariesRequest
 	CreateSegmentDataDirRequest          *idl.CreateSegmentDataDirRequest
+	DeleteDirectoriesRequest             *idl.DeleteDirectoriesRequest
 
 	Err chan error
 }
@@ -98,6 +99,11 @@ func (m *MockAgentServer) CreateSegmentDataDirectories(ctx context.Context, in *
 func (m *MockAgentServer) RenameDirectories(context.Context, *idl.RenameDirectoriesRequest) (*idl.RenameDirectoriesReply, error) {
 	m.increaseCalls()
 	return &idl.RenameDirectoriesReply{}, nil
+}
+
+func (m *MockAgentServer) DeleteDirectories(context.Context, *idl.DeleteDirectoriesRequest) (*idl.DeleteDirectoriesReply, error) {
+	m.increaseCalls()
+	return &idl.DeleteDirectoriesReply{}, nil
 }
 
 func (m *MockAgentServer) StopAgent(ctx context.Context, in *idl.StopAgentRequest) (*idl.StopAgentReply, error) {

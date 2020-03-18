@@ -10,6 +10,7 @@ service Agent {
   rpc CreateSegmentDataDirectories (CreateSegmentDataDirRequest) returns (CreateSegmentDataDirReply) {}
   rpc RenameDirectories (RenameDirectoriesRequest) returns (RenameDirectoriesReply) {}
   rpc StopAgent (StopAgentRequest) returns (StopAgentReply) {}
+  rpc DeleteDirectories (DeleteDirectoriesRequest) returns (DeleteDirectoriesReply) {}
 }
 
 message UpgradePrimariesRequest {
@@ -37,7 +38,12 @@ message CreateSegmentDataDirRequest {
     repeated string datadirs = 1;
 }
 
+message DeleteDirectoriesRequest {
+  repeated string datadirs = 1;
+}
 message CreateSegmentDataDirReply {}
+
+message DeleteDirectoriesReply {}
 
 message RenamePair {
   string Src = 1;

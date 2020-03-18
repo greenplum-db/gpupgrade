@@ -17,15 +17,20 @@ import (
 const OldSuffix = "_old"
 const UpgradeSuffix = "_upgrade"
 
-func (s *Server) RenameDataDirectories() error {
+func (s *Server) UpdateDataDirectories() error {
 	if err := RenameMasterDataDir(s.Source.MasterDataDir(), true); err != nil {
 		return xerrors.Errorf("renaming source cluster master data directory: %w", err)
 	}
 
-	// Include mirror and standby directories in the _old archiving.
-	// TODO: in --link mode, shouldn't we be _removing_ the mirror and standby
-	// directories?
-	if err := RenameSegmentDataDirs(s.agentConns, s.Source, "", OldSuffix, false); err != nil {
+	// in --link mode, remove the mirror and standby data directories
+	if s.Config.UseLinkMode {
+		if err := DeleteMirrorAndStandbyDirectories(s.agentConns, s.Source); err != nil {
+			return xerrors.Errorf("removing source cluster standby and mirror segment data directories: %w", err)
+		}
+	}
+
+	if err := RenameSegmentDataDirs(s.agentConns, s.Source, "", OldSuffix,
+		s.Config.UseLinkMode /* rename primaries only*/); err != nil {
 		return xerrors.Errorf("renaming source cluster segment data directories: %w", err)
 	}
 
