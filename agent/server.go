@@ -102,7 +102,11 @@ func (s *Server) Stop() {
 }
 
 func createIfNotExists(dir string) {
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		os.Mkdir(dir, 0777)
+	if _, err := os.Stat(dir); !os.IsNotExist(err) {
+		return
+	}
+
+	if err := os.Mkdir(dir, 0777); err != nil {
+		gplog.Fatal(err, "failed to create state directory %q", dir)
 	}
 }
