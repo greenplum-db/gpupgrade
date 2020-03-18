@@ -59,7 +59,7 @@ func checkDiskSpace(ctx context.Context, cluster *greenplum.Cluster, agents []*C
 
 			segments := cluster.SelectSegments(excludingMaster)
 			if len(segments) == 0 {
-				errs <- greenplum.UnknownHostError{agent.Hostname}
+				errs <- greenplum.UnknownHostError{Hostname: agent.Hostname}
 				return
 			}
 
