@@ -5,9 +5,9 @@
 package mock_idl
 
 import (
-	context "context"
 	gomock "github.com/golang/mock/gomock"
 	idl "github.com/greenplum-db/gpupgrade/idl"
+	context "golang.org/x/net/context"
 	grpc "google.golang.org/grpc"
 	reflect "reflect"
 )

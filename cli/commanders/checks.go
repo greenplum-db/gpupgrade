@@ -7,36 +7,14 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils/disk"
 )
 
-func RunPreChecks(client idl.CliToHubClient, ratio float64) error {
-	//TODO: when do we check this?  It requires the source cluster to be up.
-	//err := CheckVersion(client)
-	//if err != nil {
-	//	return errors.Wrap(err, "checking version compatibility")
-	//}
-
+func RunChecks(client idl.CliToHubClient, ratio float64) error {
 	return CheckDiskSpace(client, ratio)
-}
-
-func CheckVersion(client idl.CliToHubClient) (err error) {
-	s := Substep("Checking version compatibility...")
-	defer s.Finish(&err)
-
-	resp, err := client.CheckVersion(context.Background(), &idl.CheckVersionRequest{})
-	if err != nil {
-		return errors.Wrap(err, "gRPC call to hub failed")
-	}
-	if !resp.IsVersionCompatible {
-		return errors.New("Version Compatibility Check Failed")
-	}
-
-	return nil
 }
 
 type DiskSpaceError struct {

@@ -24,10 +24,6 @@ func (m *MockHubClient) Execute(ctx context.Context, in *idl.ExecuteRequest, opt
 	return nil, nil
 }
 
-func (m *MockHubClient) CheckVersion(ctx context.Context, in *idl.CheckVersionRequest, opts ...grpc.CallOption) (*idl.CheckVersionReply, error) {
-	return nil, nil
-}
-
 func (m *MockHubClient) CheckDiskSpace(ctx context.Context, in *idl.CheckDiskSpaceRequest, opts ...grpc.CallOption) (*idl.CheckDiskSpaceReply, error) {
 	return nil, nil
 }

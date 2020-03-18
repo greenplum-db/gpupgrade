@@ -353,7 +353,7 @@ func initialize() *cobra.Command {
 				return errors.Wrap(err, "initializing hub")
 			}
 
-			err = commanders.RunPreChecks(client, diskFreeRatio)
+			err = commanders.RunChecks(client, diskFreeRatio)
 			if err != nil {
 				return err
 			}

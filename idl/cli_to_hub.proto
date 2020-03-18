@@ -3,7 +3,6 @@ syntax = "proto3";
 package idl;
 
 service CliToHub {
-    rpc CheckVersion (CheckVersionRequest) returns (CheckVersionReply) {}
     rpc CheckDiskSpace (CheckDiskSpaceRequest) returns (CheckDiskSpaceReply) {}
     rpc Initialize(InitializeRequest) returns (stream Message) {}
     rpc InitializeCreateCluster(InitializeCreateClusterRequest) returns (stream Message) {}
@@ -67,12 +66,6 @@ enum Status {
     RUNNING = 1;
     COMPLETE = 2;
     FAILED = 3;
-}
-
-message CheckVersionRequest {}
-
-message CheckVersionReply {
-    bool IsVersionCompatible = 1;
 }
 
 message CheckDiskSpaceRequest {

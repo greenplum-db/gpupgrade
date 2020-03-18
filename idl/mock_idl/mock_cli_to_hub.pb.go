@@ -56,26 +56,6 @@ func (mr *MockCliToHubClientMockRecorder) CheckDiskSpace(arg0, arg1 interface{},
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckDiskSpace", reflect.TypeOf((*MockCliToHubClient)(nil).CheckDiskSpace), varargs...)
 }
 
-// CheckVersion mocks base method
-func (m *MockCliToHubClient) CheckVersion(arg0 context.Context, arg1 *idl.CheckVersionRequest, arg2 ...grpc.CallOption) (*idl.CheckVersionReply, error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{arg0, arg1}
-	for _, a := range arg2 {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "CheckVersion", varargs...)
-	ret0, _ := ret[0].(*idl.CheckVersionReply)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CheckVersion indicates an expected call of CheckVersion
-func (mr *MockCliToHubClientMockRecorder) CheckVersion(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckVersion", reflect.TypeOf((*MockCliToHubClient)(nil).CheckVersion), varargs...)
-}
-
 // Execute mocks base method
 func (m *MockCliToHubClient) Execute(arg0 context.Context, arg1 *idl.ExecuteRequest, arg2 ...grpc.CallOption) (idl.CliToHub_ExecuteClient, error) {
 	m.ctrl.T.Helper()
@@ -272,21 +252,6 @@ func (m *MockCliToHubServer) CheckDiskSpace(arg0 context.Context, arg1 *idl.Chec
 func (mr *MockCliToHubServerMockRecorder) CheckDiskSpace(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckDiskSpace", reflect.TypeOf((*MockCliToHubServer)(nil).CheckDiskSpace), arg0, arg1)
-}
-
-// CheckVersion mocks base method
-func (m *MockCliToHubServer) CheckVersion(arg0 context.Context, arg1 *idl.CheckVersionRequest) (*idl.CheckVersionReply, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckVersion", arg0, arg1)
-	ret0, _ := ret[0].(*idl.CheckVersionReply)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CheckVersion indicates an expected call of CheckVersion
-func (mr *MockCliToHubServerMockRecorder) CheckVersion(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckVersion", reflect.TypeOf((*MockCliToHubServer)(nil).CheckVersion), arg0, arg1)
 }
 
 // Execute mocks base method
