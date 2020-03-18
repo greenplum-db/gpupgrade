@@ -1,7 +1,6 @@
 package hub
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"testing"
@@ -69,46 +68,46 @@ func TestMasterIsCheckedLinkModeTrue(t *testing.T) {
 
 func UpgradeMasterMock(result UpgradeMasterArgs, expected *Server) error {
 	if !reflect.DeepEqual(result.Source, expected.Source) {
-		return errors.New(fmt.Sprintf("got %#v, expected %#v", result.Source, expected.Source))
+		return fmt.Errorf("got %#v, expected %#v", result.Source, expected.Source)
 	}
 	if !reflect.DeepEqual(result.Target, expected.Target) {
-		return errors.New(fmt.Sprintf("got %#v, expected %#v", result.Target, expected.Target))
+		return fmt.Errorf("got %#v, expected %#v", result.Target, expected.Target)
 	}
 	if result.StateDir != expected.StateDir {
-		return errors.New(fmt.Sprintf("got %#v expected %#v", result.StateDir, expected.StateDir))
+		return fmt.Errorf("got %#v expected %#v", result.StateDir, expected.StateDir)
 	}
 	// does not seem worth testing stream right now
 	if result.CheckOnly != true {
-		return errors.New(fmt.Sprintf("got %#v expected %#v", result.CheckOnly, true))
+		return fmt.Errorf("got %#v expected %#v", result.CheckOnly, true)
 	}
 	if result.UseLinkMode != expected.UseLinkMode {
-		return errors.New(fmt.Sprintf("got %#v expected %#v", result.UseLinkMode, expected.UseLinkMode))
+		return fmt.Errorf("got %#v expected %#v", result.UseLinkMode, expected.UseLinkMode)
 	}
 	return nil
 }
 
 func UpgradePrimariesMock(result UpgradePrimaryArgs, expected *Server) error {
 	if result.CheckOnly != true {
-		return errors.New(fmt.Sprintf("got %#v expected %#v", result.CheckOnly, true))
+		return fmt.Errorf("got %#v expected %#v", result.CheckOnly, true)
 	}
 	if result.MasterBackupDir != "" {
-		return errors.New(fmt.Sprintf("got %#v expected %#v", result.MasterBackupDir, ""))
+		return fmt.Errorf("got %#v expected %#v", result.MasterBackupDir, "")
 	}
 	if !reflect.DeepEqual(result.AgentConns, connections) {
-		return errors.New(fmt.Sprintf("got %#v expected %#v", result.AgentConns, connections))
+		return fmt.Errorf("got %#v expected %#v", result.AgentConns, connections)
 	}
 	expectedDataDirs, _ := expected.GetDataDirPairs()
 	if !reflect.DeepEqual(result.DataDirPairMap, expectedDataDirs) {
-		return errors.New(fmt.Sprintf("got %#v expected %#v", result.DataDirPairMap, expectedDataDirs))
+		return fmt.Errorf("got %#v expected %#v", result.DataDirPairMap, expectedDataDirs)
 	}
 	if !reflect.DeepEqual(result.Source, expected.Source) {
-		return errors.New(fmt.Sprintf("got %#v, expected %#v", result.Source, expected.Source))
+		return fmt.Errorf("got %#v, expected %#v", result.Source, expected.Source)
 	}
 	if !reflect.DeepEqual(result.Target, expected.Target) {
-		return errors.New(fmt.Sprintf("got %#v, expected %#v", result.Target, expected.Target))
+		return fmt.Errorf("got %#v, expected %#v", result.Target, expected.Target)
 	}
 	if result.UseLinkMode != expected.UseLinkMode {
-		return errors.New(fmt.Sprintf("got %#v expected %#v", result.UseLinkMode, expected.UseLinkMode))
+		return fmt.Errorf("got %#v expected %#v", result.UseLinkMode, expected.UseLinkMode)
 	}
 	return nil
 }

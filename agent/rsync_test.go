@@ -56,7 +56,7 @@ func TestRsync(t *testing.T) {
 
 		targetContents, _ := ioutil.ReadFile(filepath.Join(targetDir, "/hi"))
 
-		if bytes.Compare(targetContents, []byte("hi")) != 0 {
+		if !bytes.Equal(targetContents, []byte("hi")) {
 			t.Errorf("target directory file 'hi' contained %v, wanted %v",
 				targetContents,
 				"hi")

@@ -98,7 +98,7 @@ func (c *Cluster) HasMirrors() bool {
 
 // XXX This does not provide mirror hostnames yet.
 func (c *Cluster) GetHostnames() []string {
-	hostnameMap := make(map[string]bool, 0)
+	hostnameMap := make(map[string]bool)
 	for _, seg := range c.Primaries {
 		hostnameMap[seg.Hostname] = true
 	}
@@ -110,7 +110,7 @@ func (c *Cluster) GetHostnames() []string {
 }
 
 func (c *Cluster) PrimaryHostnames() []string {
-	hostnames := make(map[string]bool, 0)
+	hostnames := make(map[string]bool)
 	for _, seg := range c.Primaries {
 		// Ignore the master.
 		if seg.ContentID >= 0 {

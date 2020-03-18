@@ -22,11 +22,9 @@ func TestID(t *testing.T) {
 	t.Run("String gives a base64 representation of the ID", func(t *testing.T) {
 		var id upgrade.ID
 
-		actual := fmt.Sprintf("%s", id)
 		expected := "AAAAAAAAAAA" // all zeroes in base64. 8 bytes decoded -> 11 bytes encoded
-
-		if actual != expected {
-			t.Errorf("String() returned %q, want %q", actual, expected)
+		if id.String() != expected {
+			t.Errorf("String() returned %q, want %q", id.String(), expected)
 		}
 	})
 }
