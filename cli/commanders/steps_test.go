@@ -332,13 +332,14 @@ func bufferStandardDescriptors(t *testing.T) *descriptors {
 	os.Stdout, os.Stderr = d.stdout, d.stderr
 
 	// Each stream must be read separately to avoid deadlock.
+	errChan := make(chan error, 2)
 	d.wg.Add(2)
 	go func() {
 		defer d.wg.Done()
 
 		d.outBytes, err = ioutil.ReadAll(rOut)
 		if err != nil {
-			d.t.Fatalf("reading from stdout pipe: %+v", err)
+			errChan <- xerrors.Errorf("reading from stdout pipe: %w", err)
 		}
 	}()
 	go func() {
@@ -346,9 +347,14 @@ func bufferStandardDescriptors(t *testing.T) *descriptors {
 
 		d.errBytes, err = ioutil.ReadAll(rErr)
 		if err != nil {
-			d.t.Fatalf("reading from stderr pipe: %+v", err)
+			errChan <- xerrors.Errorf("reading from stderr pipe: %w", err)
 		}
 	}()
+
+	close(errChan)
+	for err := range errChan {
+		d.t.Fatal(err)
+	}
 
 	return d
 }

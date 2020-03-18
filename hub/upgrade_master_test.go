@@ -44,7 +44,7 @@ func StreamingMain() {
 func BlindlyWritingMain() {
 	// Ignore SIGPIPE. Note that the obvious signal.Ignore(syscall.SIGPIPE)
 	// doesn't work as expected; see https://github.com/golang/go/issues/32386.
-	signal.Notify(make(chan os.Signal), syscall.SIGPIPE)
+	signal.Notify(make(chan os.Signal, 1), syscall.SIGPIPE)
 
 	fmt.Println("blah blah blah blah")
 	fmt.Println("blah blah blah blah")

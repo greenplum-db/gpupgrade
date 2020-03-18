@@ -216,7 +216,7 @@ func UILoop(stream receiver, verbose bool) (map[string]string, error) {
 			}
 			lastStep = x.Status.Step
 
-			fmt.Printf(FormatStatus(x.Status))
+			fmt.Print(FormatStatus(x.Status))
 			if verbose {
 				fmt.Println()
 			}

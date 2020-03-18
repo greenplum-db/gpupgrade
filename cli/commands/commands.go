@@ -695,7 +695,7 @@ func addHelpToCommand(cmd *cobra.Command, help string) *cobra.Command {
 		Short: "",
 		Long:  "",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Printf(help)
+			fmt.Print(help)
 			return nil
 		},
 	})
@@ -703,7 +703,7 @@ func addHelpToCommand(cmd *cobra.Command, help string) *cobra.Command {
 
 	// Override the built-in "-h" and "--help" flags
 	cmd.SetHelpFunc(func(cmd *cobra.Command, strs []string) {
-		fmt.Printf(help)
+		fmt.Print(help)
 	})
 
 	return cmd

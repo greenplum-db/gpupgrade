@@ -107,10 +107,9 @@ nextline:
 		log.Fatalf("scanning stdin: %+v", scanner.Err())
 	}
 
-	// Flush and empty our buffer.
+	// Flush our buffer.
 	if len(buf) > 0 {
 		write(out, buf...)
-		buf = buf[:0]
 	}
 }
 
