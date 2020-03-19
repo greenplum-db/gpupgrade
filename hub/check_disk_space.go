@@ -8,8 +8,8 @@ import (
 	multierror "github.com/hashicorp/go-multierror"
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/disk"
 )
 
@@ -25,7 +25,7 @@ func (s *Server) CheckDiskSpace(ctx context.Context, in *idl.CheckDiskSpaceReque
 	return reply, err
 }
 
-func checkDiskSpace(ctx context.Context, cluster *utils.Cluster, agents []*Connection, d disk.Disk, in *idl.CheckDiskSpaceRequest) (disk.SpaceFailures, error) {
+func checkDiskSpace(ctx context.Context, cluster *greenplum.Cluster, agents []*Connection, d disk.Disk, in *idl.CheckDiskSpaceRequest) (disk.SpaceFailures, error) {
 	var wg sync.WaitGroup
 	errs := make(chan error, len(agents)+1)
 	failures := make(chan disk.SpaceFailures, len(agents)+1)
@@ -50,7 +50,7 @@ func checkDiskSpace(ctx context.Context, cluster *utils.Cluster, agents []*Conne
 		wg.Add(1)
 
 		// We want to check disk space for the standby, primaries, and mirrors.
-		excludingMaster := func(seg *utils.SegConfig) bool {
+		excludingMaster := func(seg *greenplum.SegConfig) bool {
 			return seg.Hostname == agent.Hostname &&
 				!(seg.ContentID == -1 && seg.Role == "p")
 		}
@@ -60,7 +60,7 @@ func checkDiskSpace(ctx context.Context, cluster *utils.Cluster, agents []*Conne
 
 			segments := cluster.SelectSegments(excludingMaster)
 			if len(segments) == 0 {
-				errs <- utils.UnknownHostError{agent.Hostname}
+				errs <- greenplum.UnknownHostError{agent.Hostname}
 				return
 			}
 

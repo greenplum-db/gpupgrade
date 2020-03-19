@@ -1,4 +1,4 @@
-package utils
+package greenplum
 
 import (
 	"io"
@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 func TestMain(m *testing.M) {
@@ -70,8 +71,8 @@ func TestStartOrStopCluster(t *testing.T) {
 	})
 	source.BinDir = "/source/bindir"
 
-	System.RemoveAll = func(s string) error { return nil }
-	System.MkdirAll = func(s string, perm os.FileMode) error { return nil }
+	utils.System.RemoveAll = func(s string) error { return nil }
+	utils.System.MkdirAll = func(s string, perm os.FileMode) error { return nil }
 
 	startStopCmd = nil
 	isPostmasterRunningCmd = nil

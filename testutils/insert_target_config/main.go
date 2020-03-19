@@ -16,8 +16,8 @@ import (
 
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 
+	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
-	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 func main() {
@@ -44,7 +44,7 @@ func main() {
 
 	// populate the contents of target cluster to config
 	conn := dbconn.NewDBConnFromEnvironment("postgres")
-	config.Target, err = utils.ClusterFromDB(conn, binDir)
+	config.Target, err = greenplum.ClusterFromDB(conn, binDir)
 	config.TargetInitializeConfig, err = hub.AssignDatadirsAndPorts(config.Source, []int{})
 	if err != nil {
 		log.Fatal(err)

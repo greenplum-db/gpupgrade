@@ -9,9 +9,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/greenplum-db/gpupgrade/db"
+	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
-	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 // create source/target clusters, write to disk and re-read from disk to make sure it is "durable"
@@ -23,13 +23,13 @@ func (s *Server) FillClusterConfigsSubStep(config *Config, conn *sql.DB, _ step.
 	// XXX ugly; we should just use the conn we're passed, but our DbConn
 	// concept (which isn't really used) gets in the way
 	dbconn := db.NewDBConn("localhost", int(request.SourcePort), "template1")
-	source, err := utils.ClusterFromDB(dbconn, request.SourceBinDir)
+	source, err := greenplum.ClusterFromDB(dbconn, request.SourceBinDir)
 	if err != nil {
 		return errors.Wrap(err, "could not retrieve source configuration")
 	}
 
 	config.Source = source
-	config.Target = &utils.Cluster{BinDir: request.TargetBinDir}
+	config.Target = &greenplum.Cluster{BinDir: request.TargetBinDir}
 	config.UseLinkMode = request.UseLinkMode
 
 	var ports []int
@@ -49,7 +49,7 @@ func (s *Server) FillClusterConfigsSubStep(config *Config, conn *sql.DB, _ step.
 	return nil
 }
 
-func AssignDatadirsAndPorts(source *utils.Cluster, ports []int) (InitializeConfig, error) {
+func AssignDatadirsAndPorts(source *greenplum.Cluster, ports []int) (InitializeConfig, error) {
 	if len(ports) == 0 {
 		port := 50432
 		numberOfSegments := len(source.Mirrors) + len(source.Primaries) + 2 // +2 for master/standby
@@ -69,7 +69,7 @@ func AssignDatadirsAndPorts(source *utils.Cluster, ports []int) (InitializeConfi
 }
 
 // can return an error if we run out of ports to use
-func assignDatadirsAndCustomPorts(source *utils.Cluster, ports []int) (InitializeConfig, error) {
+func assignDatadirsAndCustomPorts(source *greenplum.Cluster, ports []int) (InitializeConfig, error) {
 	targetInitializeConfig := InitializeConfig{}
 
 	nextPortIndex := 0

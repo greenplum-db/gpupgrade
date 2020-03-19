@@ -15,6 +15,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/db"
+	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -63,7 +64,7 @@ func (s *Server) CreateTargetCluster(stream step.OutStreams) error {
 	conn := db.NewDBConn("localhost", s.TargetInitializeConfig.Master.Port, "template1")
 	defer conn.Close()
 
-	s.Target, err = utils.ClusterFromDB(conn, s.Target.BinDir)
+	s.Target, err = greenplum.ClusterFromDB(conn, s.Target.BinDir)
 	if err != nil {
 		return errors.Wrap(err, "could not retrieve target configuration")
 	}
@@ -141,7 +142,7 @@ func upgradeDataDir(path string) string {
 
 func WriteSegmentArray(config []string, targetInitializeConfig InitializeConfig) ([]string, error) {
 	//Partition segments by host in order to correctly assign ports.
-	if targetInitializeConfig.Master == (utils.SegConfig{}) {
+	if targetInitializeConfig.Master == (greenplum.SegConfig{}) {
 		return nil, errors.New("source cluster contains no master segment")
 	}
 
@@ -173,7 +174,7 @@ func WriteSegmentArray(config []string, targetInitializeConfig InitializeConfig)
 	return config, nil
 }
 
-func CreateAllDataDirectories(agentConns []*Connection, source *utils.Cluster) error {
+func CreateAllDataDirectories(agentConns []*Connection, source *greenplum.Cluster) error {
 	targetDataDir := path.Dir(source.MasterDataDir()) + "_upgrade"
 	err := utils.CreateDataDirectory(targetDataDir)
 	if err != nil {
@@ -187,7 +188,7 @@ func CreateAllDataDirectories(agentConns []*Connection, source *utils.Cluster) e
 	return nil
 }
 
-func RunInitsystemForTargetCluster(stream step.OutStreams, target *utils.Cluster, gpinitsystemFilepath string) error {
+func RunInitsystemForTargetCluster(stream step.OutStreams, target *greenplum.Cluster, gpinitsystemFilepath string) error {
 	gphome := filepath.Dir(path.Clean(target.BinDir)) //works around https://github.com/golang/go/issues/4837 in go10.4
 
 	args := "-a -I " + gpinitsystemFilepath
@@ -229,7 +230,7 @@ func GetMasterSegPrefix(datadir string) (string, error) {
 	return segPrefix, nil
 }
 
-func CreateSegmentDataDirectories(agentConns []*Connection, cluster *utils.Cluster) error {
+func CreateSegmentDataDirectories(agentConns []*Connection, cluster *greenplum.Cluster) error {
 	wg := sync.WaitGroup{}
 	errChan := make(chan error, len(agentConns))
 
@@ -237,9 +238,9 @@ func CreateSegmentDataDirectories(agentConns []*Connection, cluster *utils.Clust
 		conn := conn
 
 		// Selects all primaries belonging to this agent's host.
-		primaries := func(seg *utils.SegConfig) bool {
+		primaries := func(seg *greenplum.SegConfig) bool {
 			return seg.Hostname == conn.Hostname &&
-				(seg.Role == utils.PrimaryRole && seg.ContentID != -1)
+				(seg.Role == greenplum.PrimaryRole && seg.ContentID != -1)
 		}
 
 		wg.Add(1)

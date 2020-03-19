@@ -12,6 +12,7 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 
+	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -33,8 +34,8 @@ var (
 	port        int
 	dir         string
 	hubConf     *hub.Config
-	source      *utils.Cluster
-	target      *utils.Cluster
+	source      *greenplum.Cluster
+	target      *greenplum.Cluster
 	testHub     *hub.Server
 	useLinkMode bool
 )

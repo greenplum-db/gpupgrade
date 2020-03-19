@@ -7,9 +7,9 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
-	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeServer) (err error) {
@@ -100,7 +100,7 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 			// TODO: once the temporary mirror upgrade is fixed, switch to using
 			// the TargetInitializeConfig's temporary assignments, and move this
 			// upgrade step back to before the target shutdown.
-			mirrors := func(seg *utils.SegConfig) bool {
+			mirrors := func(seg *greenplum.SegConfig) bool {
 				return seg.Role == "m" && seg.ContentID != -1
 			}
 

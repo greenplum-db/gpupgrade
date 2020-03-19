@@ -12,10 +12,9 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"golang.org/x/xerrors"
 
-	"github.com/greenplum-db/gpupgrade/testutils"
-	"github.com/greenplum-db/gpupgrade/utils"
-
+	"github.com/greenplum-db/gpupgrade/greenplum"
 	. "github.com/greenplum-db/gpupgrade/hub"
+	"github.com/greenplum-db/gpupgrade/testutils"
 )
 
 // Sentinel error values to make error case testing easier.
@@ -25,15 +24,15 @@ var (
 )
 
 func TestUpdateCatalog(t *testing.T) {
-	src, err := utils.NewCluster([]utils.SegConfig{
-		{ContentID: -1, Port: 123, Role: utils.PrimaryRole},
-		{ContentID: -1, Port: 789, Role: utils.MirrorRole},
-		{ContentID: 0, Port: 234, Role: utils.PrimaryRole},
-		{ContentID: 0, Port: 111, Role: utils.MirrorRole},
-		{ContentID: 1, Port: 345, Role: utils.PrimaryRole},
-		{ContentID: 1, Port: 222, Role: utils.MirrorRole},
-		{ContentID: 2, Port: 456, Role: utils.PrimaryRole},
-		{ContentID: 2, Port: 333, Role: utils.MirrorRole},
+	src, err := greenplum.NewCluster([]greenplum.SegConfig{
+		{ContentID: -1, Port: 123, Role: greenplum.PrimaryRole},
+		{ContentID: -1, Port: 789, Role: greenplum.MirrorRole},
+		{ContentID: 0, Port: 234, Role: greenplum.PrimaryRole},
+		{ContentID: 0, Port: 111, Role: greenplum.MirrorRole},
+		{ContentID: 1, Port: 345, Role: greenplum.PrimaryRole},
+		{ContentID: 1, Port: 222, Role: greenplum.MirrorRole},
+		{ContentID: 2, Port: 456, Role: greenplum.PrimaryRole},
+		{ContentID: 2, Port: 333, Role: greenplum.MirrorRole},
 	})
 
 	if err != nil {
@@ -80,7 +79,7 @@ func TestUpdateCatalog(t *testing.T) {
 		t.Fatalf("creating %s: %+v", config, err)
 	}
 
-	conf := &Config{src, &utils.Cluster{}, InitializeConfig{}, 0, port, useLinkMode}
+	conf := &Config{src, &greenplum.Cluster{}, InitializeConfig{}, 0, port, useLinkMode}
 	server := New(conf, nil, tempDir)
 
 	t.Run("updates ports for every segment", func(t *testing.T) {
@@ -323,7 +322,7 @@ func expect(expected error) func(*testing.T, error) {
 
 // expectCatalogUpdate is here so we don't have to copy-paste the expected UPDATE
 // statement everywhere.
-func expectCatalogUpdate(mock sqlmock.Sqlmock, seg utils.SegConfig) *sqlmock.ExpectedExec {
+func expectCatalogUpdate(mock sqlmock.Sqlmock, seg greenplum.SegConfig) *sqlmock.ExpectedExec {
 	return mock.ExpectExec(
 		"UPDATE gp_segment_configuration SET port = (.+), datadir = (.+) WHERE content = (.+) AND role = (.+)",
 	).WithArgs(seg.Port, seg.DataDir, seg.ContentID, seg.Role)

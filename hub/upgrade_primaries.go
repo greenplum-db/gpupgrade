@@ -9,8 +9,8 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 
+	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 type UpgradePrimaryArgs struct {
@@ -18,8 +18,8 @@ type UpgradePrimaryArgs struct {
 	MasterBackupDir string
 	AgentConns      []*Connection
 	DataDirPairMap  map[string][]*idl.DataDirPair
-	Source          *utils.Cluster
-	Target          *utils.Cluster
+	Source          *greenplum.Cluster
+	Target          *greenplum.Cluster
 	UseLinkMode     bool
 }
 

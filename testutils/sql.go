@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/greenplum-db/gpupgrade/utils"
-
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
+
+	"github.com/greenplum-db/gpupgrade/greenplum"
 )
 
 // finishMock is a defer function to make the sqlmock API a little bit more like
@@ -43,8 +43,8 @@ func MockSegmentConfiguration() *sqlmock.Rows {
 //
 // When changing this implementation, make sure you change
 // MockSegmentConfiguration() to match!
-func MockCluster() *utils.Cluster {
-	c, err := utils.NewCluster([]utils.SegConfig{
+func MockCluster() *greenplum.Cluster {
+	c, err := greenplum.NewCluster([]greenplum.SegConfig{
 		{DbID: 1, ContentID: -1, Port: 15432, Hostname: "mdw", DataDir: "/data/master/gpseg-1", Role: "p"},
 		{DbID: 2, ContentID: 0, Port: 25432, Hostname: "sdw1", DataDir: "/data/primary/gpseg0", Role: "p"},
 	})

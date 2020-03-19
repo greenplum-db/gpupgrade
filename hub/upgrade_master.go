@@ -7,6 +7,7 @@ import (
 
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -19,8 +20,8 @@ var execCommandRsync = exec.Command
 const originalMasterBackupName = "master.bak"
 
 type UpgradeMasterArgs struct {
-	Source      *utils.Cluster
-	Target      *utils.Cluster
+	Source      *greenplum.Cluster
+	Target      *greenplum.Cluster
 	StateDir    string
 	Stream      step.OutStreams
 	CheckOnly   bool
@@ -64,7 +65,7 @@ func UpgradeMaster(args UpgradeMasterArgs) error {
 	return upgrade.Run(pair, options...)
 }
 
-func masterSegmentFromCluster(cluster *utils.Cluster) *upgrade.Segment {
+func masterSegmentFromCluster(cluster *greenplum.Cluster) *upgrade.Segment {
 	return &upgrade.Segment{
 		BinDir:  cluster.BinDir,
 		DataDir: cluster.MasterDataDir(),

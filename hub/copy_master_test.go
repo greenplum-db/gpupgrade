@@ -10,11 +10,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/greenplum-db/gpupgrade/utils"
-
 	multierror "github.com/hashicorp/go-multierror"
 	"golang.org/x/xerrors"
 	"google.golang.org/grpc"
+
+	"github.com/greenplum-db/gpupgrade/greenplum"
 
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 )
@@ -39,14 +39,14 @@ func init() {
 }
 
 func TestCopyMaster(t *testing.T) {
-	sourceCluster := MustCreateCluster(t, []utils.SegConfig{
+	sourceCluster := MustCreateCluster(t, []greenplum.SegConfig{
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: "p"},
 		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: "/data/dbfast1/seg1", Role: "p"},
 		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: "p"},
 	})
 	sourceCluster.BinDir = "/source/bindir"
 
-	targetCluster := MustCreateCluster(t, []utils.SegConfig{
+	targetCluster := MustCreateCluster(t, []greenplum.SegConfig{
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: "p"},
 		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: "/data/dbfast1/seg1", Role: "p"},
 		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: "p"},
@@ -112,7 +112,7 @@ func TestCopyMaster(t *testing.T) {
 
 	t.Run("copies the master data directory only once per host", func(t *testing.T) {
 		// Create a one-host cluster.
-		oneHostTargetCluster := MustCreateCluster(t, []utils.SegConfig{
+		oneHostTargetCluster := MustCreateCluster(t, []greenplum.SegConfig{
 			{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: "p"},
 			{ContentID: 0, DbID: 2, Port: 25432, Hostname: "localhost", DataDir: "/data/dbfast1/seg1", Role: "p"},
 			{ContentID: 1, DbID: 3, Port: 25433, Hostname: "localhost", DataDir: "/data/dbfast2/seg2", Role: "p"},

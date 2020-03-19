@@ -16,6 +16,7 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
@@ -109,8 +110,8 @@ func TestWriteSegmentArray(t *testing.T) {
 
 	t.Run("renders the config file as expected", func(t *testing.T) {
 		config := InitializeConfig{
-			Master: utils.SegConfig{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir_upgrade/seg-1", Role: "p", Port: 15433},
-			Primaries: []utils.SegConfig{
+			Master: greenplum.SegConfig{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir_upgrade/seg-1", Role: "p", Port: 15433},
+			Primaries: []greenplum.SegConfig{
 				{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1_upgrade/seg1", Role: "p", Port: 15434},
 				{ContentID: 1, DbID: 3, Hostname: "sdw2", DataDir: "/data/dbfast2_upgrade/seg2", Role: "p", Port: 15434},
 			},
@@ -140,7 +141,7 @@ func TestCreateSegmentDataDirectories(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	c := MustCreateCluster(t, []utils.SegConfig{
+	c := MustCreateCluster(t, []greenplum.SegConfig{
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: "p"},
 		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: "/data/dbfast1/seg1", Role: "p"},
 		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: "p"},
@@ -182,12 +183,12 @@ func TestCreateSegmentDataDirectories(t *testing.T) {
 }
 
 func TestRunInitsystemForTargetCluster(t *testing.T) {
-	cluster6X := &utils.Cluster{
+	cluster6X := &greenplum.Cluster{
 		BinDir:  "/target/bin",
 		Version: dbconn.NewVersion("6.0.0"),
 	}
 
-	cluster7X := &utils.Cluster{
+	cluster7X := &greenplum.Cluster{
 		BinDir:  "/target/bin",
 		Version: dbconn.NewVersion("7.0.0"),
 	}

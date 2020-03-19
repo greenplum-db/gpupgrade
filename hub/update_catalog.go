@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -34,8 +35,8 @@ func (s *Server) UpdateCatalogAndClusterConfig(streams step.OutStreams) (err err
 	// data directories which have yet to be reflected on disk in a later substep.
 	master := s.Target.Primaries[-1]
 	master.DataDir = upgradeDataDir(master.DataDir)
-	segs := map[int]utils.SegConfig{-1: master}
-	oldTarget := &utils.Cluster{Primaries: segs, BinDir: s.Target.BinDir}
+	segs := map[int]greenplum.SegConfig{-1: master}
+	oldTarget := &greenplum.Cluster{Primaries: segs, BinDir: s.Target.BinDir}
 
 	err = oldTarget.StopMasterOnly(streams)
 	if err != nil {
@@ -92,7 +93,7 @@ func (c ContentMismatchError) Is(err error) bool {
 //
 // There's nothing magic about the map signatures here; the maps' value types
 // are ignored completely.
-func contentsMatch(src map[int]utils.SegConfig, dst map[int]bool) bool {
+func contentsMatch(src map[int]greenplum.SegConfig, dst map[int]bool) bool {
 	for content := range src {
 		if _, ok := dst[content]; !ok {
 			return false
@@ -109,7 +110,7 @@ func contentsMatch(src map[int]utils.SegConfig, dst map[int]bool) bool {
 }
 
 // TODO: add standby/mirrors check here too
-func sanityCheckContentIDs(tx *sql.Tx, src *utils.Cluster) error {
+func sanityCheckContentIDs(tx *sql.Tx, src *greenplum.Cluster) error {
 	rows, err := tx.Query("SELECT content FROM gp_segment_configuration")
 	if err != nil {
 		return xerrors.Errorf("querying segment configuration: %w", err)
@@ -209,7 +210,7 @@ func (s *Server) UpdateGpSegmentConfiguration(db *sql.DB) (err error) {
 	return nil
 }
 
-func updateConfiguration(tx *sql.Tx, seg utils.SegConfig) error {
+func updateConfiguration(tx *sql.Tx, seg greenplum.SegConfig) error {
 	res, err := tx.Exec("UPDATE gp_segment_configuration SET port = $1, datadir = $2 WHERE content = $3 AND role = $4",
 		seg.Port, seg.DataDir, seg.ContentID, seg.Role)
 	if err != nil {

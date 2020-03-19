@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 
+	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -40,8 +41,8 @@ var _ = Describe("Hub", func() {
 		agentA         *mock_agent.MockAgentServer
 		cliToHubPort   int
 		hubToAgentPort int
-		source         *utils.Cluster
-		target         *utils.Cluster
+		source         *greenplum.Cluster
+		target         *greenplum.Cluster
 		conf           *hub.Config
 		err            error
 		mockDialer     hub.Dialer
@@ -51,7 +52,7 @@ var _ = Describe("Hub", func() {
 	BeforeEach(func() {
 		agentA, mockDialer, hubToAgentPort = mock_agent.NewMockAgentServer()
 		source, target = testutils.CreateMultinodeSampleClusterPair("/tmp")
-		source.Mirrors = map[int]utils.SegConfig{
+		source.Mirrors = map[int]greenplum.SegConfig{
 			-1: {ContentID: -1, DbID: 1, Port: 15433, Hostname: "standby-host", DataDir: "/seg-1"},
 			0:  {ContentID: 0, DbID: 2, Port: 25434, Hostname: "mirror-host1", DataDir: "/seg1"},
 			1:  {ContentID: 1, DbID: 3, Port: 25435, Hostname: "mirror-host2", DataDir: "/seg2"},
@@ -284,11 +285,11 @@ func TestHubSaveConfig(t *testing.T) {
 func TestAgentHosts(t *testing.T) {
 	cases := []struct {
 		name     string
-		cluster  *utils.Cluster
+		cluster  *greenplum.Cluster
 		expected []string // must be in alphabetical order
 	}{{
 		"master excluded",
-		hub.MustCreateCluster(t, []utils.SegConfig{
+		hub.MustCreateCluster(t, []greenplum.SegConfig{
 			{ContentID: -1, Hostname: "mdw", Role: "p"},
 			{ContentID: 0, Hostname: "sdw1", Role: "p"},
 			{ContentID: 1, Hostname: "sdw1", Role: "p"},
@@ -296,14 +297,14 @@ func TestAgentHosts(t *testing.T) {
 		[]string{"sdw1"},
 	}, {
 		"master included if another segment is with it",
-		hub.MustCreateCluster(t, []utils.SegConfig{
+		hub.MustCreateCluster(t, []greenplum.SegConfig{
 			{ContentID: -1, Hostname: "mdw", Role: "p"},
 			{ContentID: 0, Hostname: "mdw", Role: "p"},
 		}),
 		[]string{"mdw"},
 	}, {
 		"mirror and standby hosts are handled",
-		hub.MustCreateCluster(t, []utils.SegConfig{
+		hub.MustCreateCluster(t, []greenplum.SegConfig{
 			{ContentID: -1, Hostname: "mdw", Role: "p"},
 			{ContentID: -1, Hostname: "smdw", Role: "m"},
 			{ContentID: 0, Hostname: "sdw1", Role: "p"},

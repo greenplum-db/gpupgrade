@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
@@ -61,7 +62,7 @@ func RenameMasterDataDir(masterDataDir string, isSource bool) error {
 // e.g. for source /data/dbfast1/demoDataDir0 becomes datadirs/dbfast1_old/demoDataDir0
 // e.g. for target /data/dbfast1_upgrade/demoDataDir0 becomes datadirs/dbfast1/demoDataDir0
 func RenameSegmentDataDirs(agentConns []*Connection,
-	cluster *utils.Cluster,
+	cluster *greenplum.Cluster,
 	oldSuffix, newSuffix string,
 	primariesOnly bool) error {
 
@@ -71,7 +72,7 @@ func RenameSegmentDataDirs(agentConns []*Connection,
 	for _, conn := range agentConns {
 		conn := conn
 
-		selector := func(seg *utils.SegConfig) bool {
+		selector := func(seg *greenplum.SegConfig) bool {
 			if seg.Hostname != conn.Hostname || seg.IsMaster() {
 				return false
 			}

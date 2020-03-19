@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
@@ -30,7 +31,7 @@ func (g *greenplumStub) Run(utilityName string, arguments ...string) error {
 
 func TestWriteGpAddmirrorsConfig(t *testing.T) {
 	t.Run("streams the gpaddmirrors config file format", func(t *testing.T) {
-		mirrors := []utils.SegConfig{
+		mirrors := []greenplum.SegConfig{
 			{
 				DbID:      3,
 				ContentID: 0,
@@ -68,7 +69,7 @@ func TestWriteGpAddmirrorsConfig(t *testing.T) {
 	})
 
 	t.Run("returns errors from provided write stream", func(t *testing.T) {
-		mirrors := []utils.SegConfig{
+		mirrors := []greenplum.SegConfig{
 			{DbID: 3, ContentID: 0, Port: 234, Hostname: "localhost", DataDir: "/data/mirrors/seg0", Role: "m"},
 		}
 
@@ -167,7 +168,7 @@ func TestDoUpgrade(t *testing.T) {
 			return writePipe, nil
 		}
 
-		mirrors := []utils.SegConfig{
+		mirrors := []greenplum.SegConfig{
 			{
 				DbID:      3,
 				ContentID: 0,
@@ -246,7 +247,7 @@ func TestDoUpgrade(t *testing.T) {
 			return nil, expectedError
 		}
 
-		err = doUpgrade(db, "", []utils.SegConfig{}, &greenplumStub{})
+		err = doUpgrade(db, "", []greenplum.SegConfig{}, &greenplumStub{})
 		if !xerrors.Is(err, expectedError) {
 			t.Errorf("returned error %#v want %#v", err, expectedError)
 		}
@@ -259,7 +260,7 @@ func TestDoUpgrade(t *testing.T) {
 		}
 
 		// We need at least one config entry to cause something to be written.
-		mirrors := []utils.SegConfig{
+		mirrors := []greenplum.SegConfig{
 			{DbID: 3, ContentID: 0, Port: 234, Hostname: "localhost", DataDir: "/data/mirrors/seg0", Role: "m"},
 		}
 
@@ -298,7 +299,7 @@ func TestDoUpgrade(t *testing.T) {
 			return expected
 		}}
 
-		err = doUpgrade(db, "/state/dir", []utils.SegConfig{}, stub)
+		err = doUpgrade(db, "/state/dir", []greenplum.SegConfig{}, stub)
 		if !xerrors.Is(err, expected) {
 			t.Errorf("returned error %#v want %#v", err, expected)
 		}
@@ -336,7 +337,7 @@ func TestUpgradeMirrors(t *testing.T) {
 			return db, nil
 		}
 
-		err = UpgradeMirrors("", 123, []utils.SegConfig{}, stub)
+		err = UpgradeMirrors("", 123, []greenplum.SegConfig{}, stub)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -348,7 +349,7 @@ func TestUpgradeMirrors(t *testing.T) {
 			return nil, expected
 		}
 
-		err := UpgradeMirrors("", 123, []utils.SegConfig{}, stub)
+		err := UpgradeMirrors("", 123, []greenplum.SegConfig{}, stub)
 		if !xerrors.Is(err, expected) {
 			t.Errorf("got: %#v want: %#v", err, expected)
 		}

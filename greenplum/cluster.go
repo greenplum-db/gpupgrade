@@ -1,11 +1,10 @@
-package utils
+package greenplum
 
 import (
 	"fmt"
 	"os/exec"
 
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
@@ -34,20 +33,6 @@ type Cluster struct {
 	Version dbconn.GPDBVersion
 }
 
-type SegConfig struct {
-	DbID      int
-	ContentID int
-	Port      int
-	Hostname  string
-	DataDir   string
-	Role      string
-}
-
-const (
-	PrimaryRole = "p"
-	MirrorRole  = "m"
-)
-
 // ClusterFromDB will create a Cluster by querying the passed DBConn for
 // information. You must pass the cluster's binary directory, since it cannot be
 // divined from the database.
@@ -72,14 +57,6 @@ func ClusterFromDB(conn *dbconn.DBConn, binDir string) (*Cluster, error) {
 	c.BinDir = binDir
 
 	return c, nil
-}
-
-func (s *SegConfig) IsMaster() bool {
-	return s.ContentID == -1 && s.Role == "p"
-}
-
-func (s *SegConfig) IsStandby() bool {
-	return s.ContentID == -1 && s.Role == "m"
 }
 
 func (c *Cluster) MasterDataDir() string {
@@ -249,6 +226,29 @@ func NewCluster(segConfigs []SegConfig) (*Cluster, error) {
 	return &cluster, nil
 }
 
+// InvalidSegmentsError is the backing error type for ErrInvalidSegments. It
+// contains the offending configuration object.
+type InvalidSegmentsError struct {
+	Segment SegConfig
+
+	msg string
+}
+
+func newInvalidSegmentsError(seg SegConfig, format string, a ...interface{}) *InvalidSegmentsError {
+	return &InvalidSegmentsError{
+		Segment: seg,
+		msg:     fmt.Sprintf(format, a...),
+	}
+}
+
+func (i *InvalidSegmentsError) Error() string {
+	return fmt.Sprintf("invalid segment configuration (%+v): %s", i.Segment, i.msg)
+}
+
+func (i *InvalidSegmentsError) Is(err error) bool {
+	return err == ErrInvalidSegments
+}
+
 func (c *Cluster) GetContentList() []int {
 	return c.ContentIDs
 }
@@ -329,70 +329,4 @@ func isPostmasterRunning(stream step.OutStreams, masterDataDir string) error {
 	cmd.Stderr = stream.Stderr()
 
 	return cmd.Run()
-}
-
-func GetSegmentConfiguration(connection *dbconn.DBConn) ([]SegConfig, error) {
-	query := ""
-	if connection.Version.Before("6") {
-		query = `
-SELECT
-	s.dbid,
-	s.content as contentid,
-	s.port,
-	s.hostname,
-	e.fselocation as datadir,
-	s.role
-FROM gp_segment_configuration s
-JOIN pg_filespace_entry e ON s.dbid = e.fsedbid
-JOIN pg_filespace f ON e.fsefsoid = f.oid
-WHERE f.fsname = 'pg_system'
-ORDER BY s.content;`
-	} else {
-		query = `
-SELECT
-	dbid,
-	content as contentid,
-	port,
-	hostname,
-	datadir,
-	role
-FROM gp_segment_configuration
-ORDER BY content;`
-	}
-
-	results := make([]SegConfig, 0)
-	err := connection.Select(&results, query)
-	if err != nil {
-		return nil, err
-	}
-	return results, nil
-}
-
-func MustGetSegmentConfiguration(connection *dbconn.DBConn) []SegConfig {
-	segConfigs, err := GetSegmentConfiguration(connection)
-	gplog.FatalOnError(err)
-	return segConfigs
-}
-
-// InvalidSegmentsError is the backing error type for ErrInvalidSegments. It
-// contains the offending configuration object.
-type InvalidSegmentsError struct {
-	Segment SegConfig
-
-	msg string
-}
-
-func newInvalidSegmentsError(seg SegConfig, format string, a ...interface{}) *InvalidSegmentsError {
-	return &InvalidSegmentsError{
-		Segment: seg,
-		msg:     fmt.Sprintf(format, a...),
-	}
-}
-
-func (i *InvalidSegmentsError) Error() string {
-	return fmt.Sprintf("invalid segment configuration (%+v): %s", i.Segment, i.msg)
-}
-
-func (i *InvalidSegmentsError) Is(err error) bool {
-	return err == ErrInvalidSegments
 }

@@ -5,15 +5,15 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/testutils"
-	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 func TestConfig(t *testing.T) {
 	// "stream" refers to the io.Writer/Reader interfaces.
 	t.Run("saves itself to the provided stream", func(t *testing.T) {
 		source, target := testutils.CreateMultinodeSampleClusterPair("/tmp")
-		targetInitializeConfig := InitializeConfig{Master: utils.SegConfig{Hostname: "mdw"}}
+		targetInitializeConfig := InitializeConfig{Master: greenplum.SegConfig{Hostname: "mdw"}}
 		original := &Config{source, target, targetInitializeConfig, 12345, 54321, false}
 
 		buf := new(bytes.Buffer)

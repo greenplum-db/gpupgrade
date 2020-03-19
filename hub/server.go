@@ -23,6 +23,7 @@ import (
 	"google.golang.org/grpc/reflection"
 	grpcStatus "google.golang.org/grpc/status"
 
+	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/daemon"
@@ -353,17 +354,17 @@ func (s *Server) closeAgentConns() {
 }
 
 type InitializeConfig struct {
-	Standby   utils.SegConfig
-	Master    utils.SegConfig
-	Primaries []utils.SegConfig
-	Mirrors   []utils.SegConfig
+	Standby   greenplum.SegConfig
+	Master    greenplum.SegConfig
+	Primaries []greenplum.SegConfig
+	Mirrors   []greenplum.SegConfig
 }
 
 // Config contains all the information that will be persisted to/loaded from
 // from disk during calls to Save() and Load().
 type Config struct {
-	Source *utils.Cluster
-	Target *utils.Cluster
+	Source *greenplum.Cluster
+	Target *greenplum.Cluster
 
 	// TargetInitializeConfig contains all the info needed to initialize the
 	// target cluster's master, standby, primaries and mirrors.
@@ -426,10 +427,10 @@ func LoadConfig(conf *Config, path string) error {
 	return nil
 }
 
-func AgentHosts(c *utils.Cluster) []string {
+func AgentHosts(c *greenplum.Cluster) []string {
 	uniqueHosts := make(map[string]bool)
 
-	excludingMaster := func(seg *utils.SegConfig) bool {
+	excludingMaster := func(seg *greenplum.SegConfig) bool {
 		return !(seg.ContentID == -1 && seg.Role == "p")
 	}
 
@@ -444,7 +445,7 @@ func AgentHosts(c *utils.Cluster) []string {
 	return hosts
 }
 
-func MakeTargetClusterMessage(target *utils.Cluster) *idl.Message {
+func MakeTargetClusterMessage(target *greenplum.Cluster) *idl.Message {
 	data := make(map[string]string)
 	data[idl.ResponseKey_target_port.String()] = strconv.Itoa(target.MasterPort())
 	data[idl.ResponseKey_target_master_data_directory.String()] = target.MasterDataDir()

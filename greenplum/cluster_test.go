@@ -1,4 +1,4 @@
-package utils_test
+package greenplum_test
 
 import (
 	"database/sql/driver"
@@ -16,30 +16,30 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/testutils"
-	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 func TestCluster(t *testing.T) {
-	primaries := map[int]utils.SegConfig{
+	primaries := map[int]greenplum.SegConfig{
 		-1: {DbID: 1, ContentID: -1, Port: 5432, Hostname: "localhost", DataDir: "/data/gpseg-1"},
 		0:  {DbID: 2, ContentID: 0, Port: 20000, Hostname: "localhost", DataDir: "/data/gpseg0"},
 		2:  {DbID: 4, ContentID: 2, Port: 20002, Hostname: "localhost", DataDir: "/data/gpseg2"},
 		3:  {DbID: 5, ContentID: 3, Port: 20003, Hostname: "remotehost2", DataDir: "/data/gpseg3"},
 	}
 	for content, seg := range primaries {
-		seg.Role = utils.PrimaryRole
+		seg.Role = greenplum.PrimaryRole
 		primaries[content] = seg
 	}
 
-	mirrors := map[int]utils.SegConfig{
+	mirrors := map[int]greenplum.SegConfig{
 		-1: {DbID: 8, ContentID: -1, Port: 5433, Hostname: "localhost", DataDir: "/mirror/gpseg-1"},
 		0:  {DbID: 3, ContentID: 0, Port: 20001, Hostname: "localhost", DataDir: "/mirror/gpseg0"},
 		2:  {DbID: 6, ContentID: 2, Port: 20004, Hostname: "localhost", DataDir: "/mirror/gpseg2"},
 		3:  {DbID: 7, ContentID: 3, Port: 20005, Hostname: "remotehost2", DataDir: "/mirror/gpseg3"},
 	}
 	for content, seg := range mirrors {
-		seg.Role = utils.MirrorRole
+		seg.Role = greenplum.MirrorRole
 		mirrors[content] = seg
 	}
 
@@ -48,27 +48,27 @@ func TestCluster(t *testing.T) {
 
 	cases := []struct {
 		name      string
-		primaries []utils.SegConfig
-		mirrors   []utils.SegConfig
+		primaries []greenplum.SegConfig
+		mirrors   []greenplum.SegConfig
 	}{
-		{"mirrorless single-host, single-segment", []utils.SegConfig{master, primaries[0]}, nil},
-		{"mirrorless single-host, multi-segment", []utils.SegConfig{master, primaries[0], primaries[2]}, nil},
-		{"mirrorless multi-host, multi-segment", []utils.SegConfig{master, primaries[0], primaries[3]}, nil},
+		{"mirrorless single-host, single-segment", []greenplum.SegConfig{master, primaries[0]}, nil},
+		{"mirrorless single-host, multi-segment", []greenplum.SegConfig{master, primaries[0], primaries[2]}, nil},
+		{"mirrorless multi-host, multi-segment", []greenplum.SegConfig{master, primaries[0], primaries[3]}, nil},
 		{"single-host, single-segment",
-			[]utils.SegConfig{master, primaries[0]},
-			[]utils.SegConfig{mirrors[0]},
+			[]greenplum.SegConfig{master, primaries[0]},
+			[]greenplum.SegConfig{mirrors[0]},
 		},
 		{"single-host, multi-segment",
-			[]utils.SegConfig{master, primaries[0], primaries[2]},
-			[]utils.SegConfig{mirrors[0], mirrors[2]},
+			[]greenplum.SegConfig{master, primaries[0], primaries[2]},
+			[]greenplum.SegConfig{mirrors[0], mirrors[2]},
 		},
 		{"multi-host, multi-segment",
-			[]utils.SegConfig{master, primaries[0], primaries[3]},
-			[]utils.SegConfig{mirrors[0], mirrors[3]},
+			[]greenplum.SegConfig{master, primaries[0], primaries[3]},
+			[]greenplum.SegConfig{mirrors[0], mirrors[3]},
 		},
 		{"multi-host, multi-segment with standby",
-			[]utils.SegConfig{master, primaries[0], primaries[3]},
-			[]utils.SegConfig{standby, mirrors[0], mirrors[3]},
+			[]greenplum.SegConfig{master, primaries[0], primaries[3]},
+			[]greenplum.SegConfig{standby, mirrors[0], mirrors[3]},
 		},
 	}
 
@@ -76,7 +76,7 @@ func TestCluster(t *testing.T) {
 		t.Run(fmt.Sprintf("%s cluster", c.name), func(t *testing.T) {
 			segments := append(c.primaries, c.mirrors...)
 
-			actualCluster, err := utils.NewCluster(segments)
+			actualCluster, err := greenplum.NewCluster(segments)
 			if err != nil {
 				t.Fatalf("returned error %+v", err)
 			}
@@ -134,20 +134,20 @@ func TestCluster(t *testing.T) {
 
 	errCases := []struct {
 		name     string
-		segments []utils.SegConfig
+		segments []greenplum.SegConfig
 	}{
-		{"bad role", []utils.SegConfig{
+		{"bad role", []greenplum.SegConfig{
 			{Role: "x"},
 		}},
-		{"mirror without primary", []utils.SegConfig{
+		{"mirror without primary", []greenplum.SegConfig{
 			{ContentID: 0, Role: "p"},
 			{ContentID: 1, Role: "m"},
 		}},
-		{"duplicated primary contents", []utils.SegConfig{
+		{"duplicated primary contents", []greenplum.SegConfig{
 			{ContentID: 0, Role: "p"},
 			{ContentID: 0, Role: "p"},
 		}},
-		{"duplicated mirror contents", []utils.SegConfig{
+		{"duplicated mirror contents", []greenplum.SegConfig{
 			{ContentID: 0, Role: "p"},
 			{ContentID: 0, Role: "m"},
 			{ContentID: 0, Role: "m"},
@@ -156,10 +156,10 @@ func TestCluster(t *testing.T) {
 
 	for _, c := range errCases {
 		t.Run(fmt.Sprintf("doesn't allow %s", c.name), func(t *testing.T) {
-			_, err := utils.NewCluster(c.segments)
+			_, err := greenplum.NewCluster(c.segments)
 
-			if !xerrors.Is(err, utils.ErrInvalidSegments) {
-				t.Errorf("returned error %#v, want %#v", err, utils.ErrInvalidSegments)
+			if !xerrors.Is(err, greenplum.ErrInvalidSegments) {
+				t.Errorf("returned error %#v, want %#v", err, greenplum.ErrInvalidSegments)
 			}
 		})
 	}
@@ -171,13 +171,13 @@ func TestGetSegmentConfiguration(t *testing.T) {
 	cases := []struct {
 		name     string
 		rows     [][]driver.Value
-		expected []utils.SegConfig
+		expected []greenplum.SegConfig
 	}{{
 		"single-host, single-segment",
 		[][]driver.Value{
 			{"0", "localhost", "/data/gpseg0"},
 		},
-		[]utils.SegConfig{
+		[]greenplum.SegConfig{
 			{ContentID: 0, Hostname: "localhost", DataDir: "/data/gpseg0"},
 		},
 	}, {
@@ -186,7 +186,7 @@ func TestGetSegmentConfiguration(t *testing.T) {
 			{"0", "localhost", "/data/gpseg0"},
 			{"1", "localhost", "/data/gpseg1"},
 		},
-		[]utils.SegConfig{
+		[]greenplum.SegConfig{
 			{ContentID: 0, Hostname: "localhost", DataDir: "/data/gpseg0"},
 			{ContentID: 1, Hostname: "localhost", DataDir: "/data/gpseg1"},
 		},
@@ -197,7 +197,7 @@ func TestGetSegmentConfiguration(t *testing.T) {
 			{"1", "localhost", "/data/gpseg1"},
 			{"2", "remotehost", "/data/gpseg2"},
 		},
-		[]utils.SegConfig{
+		[]greenplum.SegConfig{
 			{ContentID: 0, Hostname: "localhost", DataDir: "/data/gpseg0"},
 			{ContentID: 1, Hostname: "localhost", DataDir: "/data/gpseg1"},
 			{ContentID: 2, Hostname: "remotehost", DataDir: "/data/gpseg2"},
@@ -220,7 +220,7 @@ func TestGetSegmentConfiguration(t *testing.T) {
 				}
 			}()
 
-			results, err := utils.GetSegmentConfiguration(connection)
+			results, err := greenplum.GetSegmentConfiguration(connection)
 			if err != nil {
 				t.Errorf("returned error %+v", err)
 			}
@@ -275,7 +275,7 @@ func TestClusterFromDB(t *testing.T) {
 		conn := dbconn.NewDBConnFromEnvironment("testdb")
 		conn.Driver = testhelper.TestDriver{ErrToReturn: connErr}
 
-		actualCluster, err := utils.ClusterFromDB(conn, "")
+		actualCluster, err := greenplum.ClusterFromDB(conn, "")
 
 		if err == nil {
 			t.Errorf("Expected an error, but got nil")
@@ -295,7 +295,7 @@ func TestClusterFromDB(t *testing.T) {
 		queryErr := errors.New("failed to get segment configuration")
 		mock.ExpectQuery("SELECT .* FROM gp_segment_configuration").WillReturnError(queryErr)
 
-		actualCluster, err := utils.ClusterFromDB(conn, "")
+		actualCluster, err := greenplum.ClusterFromDB(conn, "")
 
 		if err == nil {
 			t.Errorf("Expected an error, but got nil")
@@ -316,7 +316,7 @@ func TestClusterFromDB(t *testing.T) {
 
 		binDir := "/usr/local/gpdb/bin"
 
-		actualCluster, err := utils.ClusterFromDB(conn, binDir)
+		actualCluster, err := greenplum.ClusterFromDB(conn, binDir)
 		if err != nil {
 			t.Errorf("got unexpected error: %+v", err)
 		}
@@ -332,19 +332,19 @@ func TestClusterFromDB(t *testing.T) {
 }
 
 func TestSelectSegments(t *testing.T) {
-	segs := []utils.SegConfig{
+	segs := []greenplum.SegConfig{
 		{ContentID: 1, Role: "p"},
 		{ContentID: 2, Role: "p"},
 		{ContentID: 3, Role: "p"},
 		{ContentID: 3, Role: "m"},
 	}
-	cluster, err := utils.NewCluster(segs)
+	cluster, err := greenplum.NewCluster(segs)
 	if err != nil {
 		t.Fatalf("creating test cluster: %+v", err)
 	}
 
 	// Ensure all segments are visited correctly.
-	selectAll := func(_ *utils.SegConfig) bool { return true }
+	selectAll := func(_ *greenplum.SegConfig) bool { return true }
 	results := cluster.SelectSegments(selectAll)
 
 	if !reflect.DeepEqual(results, segs) {
@@ -352,10 +352,10 @@ func TestSelectSegments(t *testing.T) {
 	}
 
 	// Test a simple selector.
-	moreThanOne := func(c *utils.SegConfig) bool { return c.ContentID > 1 }
+	moreThanOne := func(c *greenplum.SegConfig) bool { return c.ContentID > 1 }
 	results = cluster.SelectSegments(moreThanOne)
 
-	expected := []utils.SegConfig{segs[1], segs[2], segs[3]}
+	expected := []greenplum.SegConfig{segs[1], segs[2], segs[3]}
 	if !reflect.DeepEqual(results, expected) {
 		t.Errorf("SelectSegments(ContentID > 1) = %+v, want %+v", results, expected)
 	}
