@@ -11,13 +11,12 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 // TODO: When in copy mode should we update the catalog and in-memory object of
 //  the source cluster?
-func (s *Server) UpdateCatalogAndClusterConfig(streams step.OutStreams) (err error) {
+func (s *Server) UpdateCatalogAndClusterConfig(streams utils.OutStreams) (err error) {
 	err = s.Target.StartMasterOnly(streams)
 	if err != nil {
 		return xerrors.Errorf("failed to start target master: %w", err)

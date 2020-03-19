@@ -9,16 +9,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 )
 
-type OutStreams interface {
-	Stdout() io.Writer
-	Stderr() io.Writer
-}
-
-type OutStreamsCloser interface {
-	OutStreams
-	Close() error
-}
-
 // multiplexedStream provides an implementation of OutStreams that safely
 // serializes any simultaneous writes to an underlying messageSender. A fallback
 // io.Writer (in case the gRPC stream closes) also receives any output that is

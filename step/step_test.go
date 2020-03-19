@@ -14,6 +14,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 func TestStepRun(t *testing.T) {
@@ -36,7 +37,7 @@ func TestStepRun(t *testing.T) {
 		s := step.New("Initialize", server, &TestStore{}, DevNull)
 
 		var called bool
-		s.Run(idl.Substep_GENERATING_CONFIG, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_GENERATING_CONFIG, func(streams utils.OutStreams) error {
 			called = true
 			return nil
 		})
@@ -66,7 +67,7 @@ func TestStepRun(t *testing.T) {
 		s := step.New("Initialize", server, store, DevNull)
 
 		var status idl.Status
-		s.Run(idl.Substep_GENERATING_CONFIG, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_GENERATING_CONFIG, func(streams utils.OutStreams) error {
 			// save off status to verify that it is running
 			status = store.Status
 			return nil
@@ -103,7 +104,7 @@ func TestStepRun(t *testing.T) {
 		s := step.New("Initialize", server, store, DevNull)
 
 		var called bool
-		s.AlwaysRun(idl.Substep_CHECK_UPGRADE, func(streams step.OutStreams) error {
+		s.AlwaysRun(idl.Substep_CHECK_UPGRADE, func(streams utils.OutStreams) error {
 			called = true
 			return nil
 		})
@@ -132,7 +133,7 @@ func TestStepRun(t *testing.T) {
 		s := step.New("Initialize", server, &TestStore{}, DevNull)
 
 		var called bool
-		s.Run(idl.Substep_GENERATING_CONFIG, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_GENERATING_CONFIG, func(streams utils.OutStreams) error {
 			called = true
 			return errors.New("oops")
 		})
@@ -152,7 +153,7 @@ func TestStepRun(t *testing.T) {
 		s := step.New("Initialize", server, failingStore, DevNull)
 
 		var called bool
-		s.Run(idl.Substep_CHECK_UPGRADE, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_CHECK_UPGRADE, func(streams utils.OutStreams) error {
 			called = true
 			return nil
 		})
@@ -181,7 +182,7 @@ func TestStepRun(t *testing.T) {
 		s := step.New("Initialize", server, store, DevNull)
 
 		var called bool
-		s.Run(idl.Substep_CHECK_UPGRADE, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_CHECK_UPGRADE, func(streams utils.OutStreams) error {
 			called = true
 			return nil
 		})
@@ -201,12 +202,12 @@ func TestStepRun(t *testing.T) {
 		s := step.New("Initialize", server, &TestStore{}, DevNull)
 
 		expected := errors.New("oops")
-		s.Run(idl.Substep_GENERATING_CONFIG, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_GENERATING_CONFIG, func(streams utils.OutStreams) error {
 			return expected
 		})
 
 		var called bool
-		s.Run(idl.Substep_START_AGENTS, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_START_AGENTS, func(streams utils.OutStreams) error {
 			called = true
 			return nil
 		})
@@ -231,7 +232,7 @@ func TestStepRun(t *testing.T) {
 		s := step.New("Initialize", server, store, DevNull)
 
 		var called bool
-		s.Run(idl.Substep_GENERATING_CONFIG, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_GENERATING_CONFIG, func(streams utils.OutStreams) error {
 			called = true
 			return nil
 		})
@@ -345,7 +346,7 @@ func (t *TestStore) Write(substep idl.Substep, status idl.Status) (err error) {
 	return t.WriteErr
 }
 
-// DevNull implements step.OutStreamsCloser as a no-op. It also tracks calls to
+// DevNull implements utils.OutStreamsCloser as a no-op. It also tracks calls to
 // Close().
 var DevNull = &devNull{}
 

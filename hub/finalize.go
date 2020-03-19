@@ -10,6 +10,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeServer) (err error) {
@@ -28,7 +29,7 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 		}
 	}()
 
-	st.Run(idl.Substep_FINALIZE_SHUTDOWN_TARGET_CLUSTER, func(streams step.OutStreams) error {
+	st.Run(idl.Substep_FINALIZE_SHUTDOWN_TARGET_CLUSTER, func(streams utils.OutStreams) error {
 		err := s.Target.Stop(streams)
 
 		if err != nil {
@@ -38,15 +39,15 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 		return nil
 	})
 
-	st.Run(idl.Substep_FINALIZE_UPDATE_TARGET_CATALOG_AND_CLUSTER_CONFIG, func(streams step.OutStreams) error {
+	st.Run(idl.Substep_FINALIZE_UPDATE_TARGET_CATALOG_AND_CLUSTER_CONFIG, func(streams utils.OutStreams) error {
 		return s.UpdateCatalogAndClusterConfig(streams)
 	})
 
-	st.Run(idl.Substep_FINALIZE_RENAME_DATA_DIRECTORIES, func(_ step.OutStreams) error {
+	st.Run(idl.Substep_FINALIZE_RENAME_DATA_DIRECTORIES, func(_ utils.OutStreams) error {
 		return s.RenameDataDirectories()
 	})
 
-	st.Run(idl.Substep_FINALIZE_UPDATE_TARGET_CONF_FILES, func(streams step.OutStreams) error {
+	st.Run(idl.Substep_FINALIZE_UPDATE_TARGET_CONF_FILES, func(streams utils.OutStreams) error {
 		return UpdateConfFiles(streams,
 			s.Target.MasterDataDir(),
 			s.TargetInitializeConfig.Master.Port,
@@ -54,7 +55,7 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 		)
 	})
 
-	st.Run(idl.Substep_FINALIZE_START_TARGET_CLUSTER, func(streams step.OutStreams) error {
+	st.Run(idl.Substep_FINALIZE_START_TARGET_CLUSTER, func(streams utils.OutStreams) error {
 		err := s.Target.Start(streams)
 
 		if err != nil {
@@ -74,7 +75,7 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 	// todo: we don't currently have a way to output nothing to the UI when there is no standby.
 	// If we did, this check would actually be in `UpgradeStandby`
 	if s.Source.HasStandby() {
-		st.Run(idl.Substep_FINALIZE_UPGRADE_STANDBY, func(streams step.OutStreams) error {
+		st.Run(idl.Substep_FINALIZE_UPGRADE_STANDBY, func(streams utils.OutStreams) error {
 			// XXX this probably indicates a bad abstraction
 			targetRunner.streams = streams
 
@@ -93,7 +94,7 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 	// todo: we don't currently have a way to output nothing to the UI when there are no mirrors.
 	// If we did, this check would actually be in `UpgradeMirrors`
 	if s.Source.HasMirrors() {
-		st.Run(idl.Substep_FINALIZE_UPGRADE_MIRRORS, func(streams step.OutStreams) error {
+		st.Run(idl.Substep_FINALIZE_UPGRADE_MIRRORS, func(streams utils.OutStreams) error {
 			// XXX this probably indicates a bad abstraction
 			targetRunner.streams = streams
 

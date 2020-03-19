@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
-func UpdateConfFiles(streams step.OutStreams, masterDataDir string, oldPort, newPort int) error {
+func UpdateConfFiles(streams utils.OutStreams, masterDataDir string, oldPort, newPort int) error {
 	if err := UpdateGpperfmonConf(streams, masterDataDir); err != nil {
 		return err
 	}
@@ -19,7 +19,7 @@ func UpdateConfFiles(streams step.OutStreams, masterDataDir string, oldPort, new
 	return nil
 }
 
-func UpdateGpperfmonConf(streams step.OutStreams, masterDataDir string) error {
+func UpdateGpperfmonConf(streams utils.OutStreams, masterDataDir string) error {
 	logDir := filepath.Join(masterDataDir, "gpperfmon", "logs")
 
 	pattern := `^log_location = .*$`
@@ -37,7 +37,7 @@ func UpdateGpperfmonConf(streams step.OutStreams, masterDataDir string) error {
 	return cmd.Run()
 }
 
-func UpdatePostgresqlConf(streams step.OutStreams, dataDir string, oldPort, newPort int) error {
+func UpdatePostgresqlConf(streams utils.OutStreams, dataDir string, oldPort, newPort int) error {
 	// NOTE: any additions of forward slashes (/) here require an update to the
 	// sed script below
 	pattern := fmt.Sprintf(`(^port[ \t]*=[ \t]*)%d([^0-9]|$)`, oldPort)

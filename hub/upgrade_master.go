@@ -8,7 +8,6 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
-	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
@@ -23,7 +22,7 @@ type UpgradeMasterArgs struct {
 	Source      *greenplum.Cluster
 	Target      *greenplum.Cluster
 	StateDir    string
-	Stream      step.OutStreams
+	Stream      utils.OutStreams
 	CheckOnly   bool
 	UseLinkMode bool
 }
@@ -74,7 +73,7 @@ func masterSegmentFromCluster(cluster *greenplum.Cluster) *upgrade.Segment {
 	}
 }
 
-func RsyncMasterDataDir(stream step.OutStreams, sourceDir, targetDir string) error {
+func RsyncMasterDataDir(stream utils.OutStreams, sourceDir, targetDir string) error {
 	sourceDirRsync := filepath.Clean(sourceDir) + string(os.PathSeparator)
 	cmd := execCommandRsync("rsync", "--archive", "--delete", "--exclude=pg_log/*", sourceDirRsync, targetDir)
 

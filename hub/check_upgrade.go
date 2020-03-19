@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 
-	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 type UpgradeChecker interface {
@@ -37,7 +37,7 @@ func (agentConnProvider) GetAgents(s *Server) ([]*Connection, error) {
 var upgrader UpgradeChecker = upgradeChecker{}
 var agentProvider AgentConnProvider = agentConnProvider{}
 
-func (s *Server) CheckUpgrade(stream step.OutStreams) error {
+func (s *Server) CheckUpgrade(stream utils.OutStreams) error {
 	var wg sync.WaitGroup
 	checkErrs := make(chan error, 2)
 

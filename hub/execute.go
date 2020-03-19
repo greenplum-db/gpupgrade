@@ -12,6 +12,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 const executeMasterBackupName = "upgraded-master.bak"
@@ -34,7 +35,7 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 		}
 	}()
 
-	st.Run(idl.Substep_SHUTDOWN_SOURCE_CLUSTER, func(streams step.OutStreams) error {
+	st.Run(idl.Substep_SHUTDOWN_SOURCE_CLUSTER, func(streams utils.OutStreams) error {
 		err := s.Source.Stop(streams)
 
 		if err != nil {
@@ -44,7 +45,7 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 		return nil
 	})
 
-	st.Run(idl.Substep_UPGRADE_MASTER, func(streams step.OutStreams) error {
+	st.Run(idl.Substep_UPGRADE_MASTER, func(streams utils.OutStreams) error {
 		stateDir := s.StateDir
 		return UpgradeMaster(UpgradeMasterArgs{
 			Source:      s.Source,
@@ -56,11 +57,11 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 		})
 	})
 
-	st.Run(idl.Substep_COPY_MASTER, func(streams step.OutStreams) error {
+	st.Run(idl.Substep_COPY_MASTER, func(streams utils.OutStreams) error {
 		return s.CopyMasterDataDir(streams, upgradedMasterBackupDir)
 	})
 
-	st.Run(idl.Substep_UPGRADE_PRIMARIES, func(_ step.OutStreams) error {
+	st.Run(idl.Substep_UPGRADE_PRIMARIES, func(_ utils.OutStreams) error {
 		agentConns, err := s.AgentConns()
 
 		if err != nil {
@@ -84,7 +85,7 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 		})
 	})
 
-	st.Run(idl.Substep_START_TARGET_CLUSTER, func(streams step.OutStreams) error {
+	st.Run(idl.Substep_START_TARGET_CLUSTER, func(streams utils.OutStreams) error {
 		err := s.Target.Start(streams)
 
 		if err != nil {

@@ -8,7 +8,7 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/kballard/go-shellquote"
 
-	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 type GreenplumRunner interface {
@@ -39,5 +39,5 @@ type greenplumRunner struct {
 	masterDataDirectory string
 	masterPort          int
 
-	streams step.OutStreams
+	streams utils.OutStreams
 }

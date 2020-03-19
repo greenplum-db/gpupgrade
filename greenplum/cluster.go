@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
-	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 var isPostmasterRunningCmd = exec.Command
@@ -269,11 +269,11 @@ func (c *Cluster) GetDirForContent(contentID int) string {
 	return c.Primaries[contentID].DataDir
 }
 
-func (c *Cluster) Start(stream step.OutStreams) error {
+func (c *Cluster) Start(stream utils.OutStreams) error {
 	return runStartStopCmd(stream, c.BinDir, fmt.Sprintf("gpstart -a -d %[1]s", c.MasterDataDir()))
 }
 
-func (c *Cluster) Stop(stream step.OutStreams) error {
+func (c *Cluster) Stop(stream utils.OutStreams) error {
 	// TODO: why can't we call isPostmasterRunning for the !stop case?  If we do, we get this on the pipeline:
 	// Usage: pgrep [-flvx] [-d DELIM] [-n|-o] [-P PPIDLIST] [-g PGRPLIST] [-s SIDLIST]
 	// [-u EUIDLIST] [-U UIDLIST] [-G GIDLIST] [-t TERMLIST] [PATTERN]
@@ -287,11 +287,11 @@ func (c *Cluster) Stop(stream step.OutStreams) error {
 	return runStartStopCmd(stream, c.BinDir, fmt.Sprintf("gpstop -a -d %[1]s", c.MasterDataDir()))
 }
 
-func (c *Cluster) StartMasterOnly(stream step.OutStreams) error {
+func (c *Cluster) StartMasterOnly(stream utils.OutStreams) error {
 	return runStartStopCmd(stream, c.BinDir, fmt.Sprintf("gpstart -m -a -d %[1]s", c.MasterDataDir()))
 }
 
-func (c *Cluster) StopMasterOnly(stream step.OutStreams) error {
+func (c *Cluster) StopMasterOnly(stream utils.OutStreams) error {
 	// TODO: why can't we call isPostmasterRunning for the !stop case?  If we do, we get this on the pipeline:
 	// Usage: pgrep [-flvx] [-d DELIM] [-n|-o] [-P PPIDLIST] [-g PGRPLIST] [-s SIDLIST]
 	// [-u EUIDLIST] [-U UIDLIST] [-G GIDLIST] [-t TERMLIST] [PATTERN]
@@ -305,7 +305,7 @@ func (c *Cluster) StopMasterOnly(stream step.OutStreams) error {
 	return runStartStopCmd(stream, c.BinDir, fmt.Sprintf("gpstop -m -a -d %[1]s", c.MasterDataDir()))
 }
 
-func runStartStopCmd(stream step.OutStreams, binDir, command string) error {
+func runStartStopCmd(stream utils.OutStreams, binDir, command string) error {
 	commandWithEnv := fmt.Sprintf("source %[1]s/../greenplum_path.sh && %[1]s/%[2]s",
 		binDir,
 		command)
@@ -319,7 +319,7 @@ func runStartStopCmd(stream step.OutStreams, binDir, command string) error {
 /*
  * Helper functions
  */
-func isPostmasterRunning(stream step.OutStreams, masterDataDir string) error {
+func isPostmasterRunning(stream utils.OutStreams, masterDataDir string) error {
 	cmd := isPostmasterRunningCmd("bash", "-c",
 		fmt.Sprintf("pgrep -F %s/postmaster.pid",
 			masterDataDir,

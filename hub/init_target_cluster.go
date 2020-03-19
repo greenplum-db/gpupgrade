@@ -17,7 +17,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/db"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
@@ -55,7 +54,7 @@ func (s *Server) writeConf(sourceDBConn *dbconn.DBConn) error {
 	return WriteInitsystemFile(gpinitsystemConfig, s.initsystemConfPath())
 }
 
-func (s *Server) CreateTargetCluster(stream step.OutStreams) error {
+func (s *Server) CreateTargetCluster(stream utils.OutStreams) error {
 	err := s.InitTargetCluster(stream)
 	if err != nil {
 		return err
@@ -76,7 +75,7 @@ func (s *Server) CreateTargetCluster(stream step.OutStreams) error {
 	return nil
 }
 
-func (s *Server) InitTargetCluster(stream step.OutStreams) error {
+func (s *Server) InitTargetCluster(stream utils.OutStreams) error {
 	agentConns, err := s.AgentConns()
 	if err != nil {
 		return errors.Wrap(err, "Could not get/create agents")
@@ -188,7 +187,7 @@ func CreateAllDataDirectories(agentConns []*Connection, source *greenplum.Cluste
 	return nil
 }
 
-func RunInitsystemForTargetCluster(stream step.OutStreams, target *greenplum.Cluster, gpinitsystemFilepath string) error {
+func RunInitsystemForTargetCluster(stream utils.OutStreams, target *greenplum.Cluster, gpinitsystemFilepath string) error {
 	gphome := filepath.Dir(path.Clean(target.BinDir)) //works around https://github.com/golang/go/issues/4837 in go10.4
 
 	args := "-a -I " + gpinitsystemFilepath

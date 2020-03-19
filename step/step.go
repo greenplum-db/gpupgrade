@@ -10,17 +10,18 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 type Step struct {
 	name    string
-	sender  idl.MessageSender // sends substep status messages
-	store   Store             // persistent substep status storage
-	streams OutStreamsCloser  // writes substep stdout/err
+	sender  idl.MessageSender      // sends substep status messages
+	store   Store                  // persistent substep status storage
+	streams utils.OutStreamsCloser // writes substep stdout/err
 	err     error
 }
 
-func New(name string, sender idl.MessageSender, store Store, streams OutStreamsCloser) *Step {
+func New(name string, sender idl.MessageSender, store Store, streams utils.OutStreamsCloser) *Step {
 	return &Step{
 		name:    name,
 		sender:  sender,
@@ -92,15 +93,15 @@ func (s *Step) Err() error {
 	return s.err
 }
 
-func (s *Step) AlwaysRun(substep idl.Substep, f func(OutStreams) error) {
+func (s *Step) AlwaysRun(substep idl.Substep, f func(utils.OutStreams) error) {
 	s.run(substep, f, true)
 }
 
-func (s *Step) Run(substep idl.Substep, f func(OutStreams) error) {
+func (s *Step) Run(substep idl.Substep, f func(utils.OutStreams) error) {
 	s.run(substep, f, false)
 }
 
-func (s *Step) run(substep idl.Substep, f func(OutStreams) error, alwaysRun bool) {
+func (s *Step) run(substep idl.Substep, f func(utils.OutStreams) error, alwaysRun bool) {
 	var err error
 	defer func() {
 		if err != nil {

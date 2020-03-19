@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/greenplum-db/gpupgrade/step"
-
 	"github.com/hashicorp/go-multierror"
 	"golang.org/x/xerrors"
+
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 type Result struct {
@@ -19,7 +19,7 @@ type Result struct {
 	err    error
 }
 
-func (s *Server) CopyMasterDataDir(streams step.OutStreams, destinationDir string) error {
+func (s *Server) CopyMasterDataDir(streams utils.OutStreams, destinationDir string) error {
 	// Make sure sourceDir ends with a trailing slash so that rsync will
 	// transfer the directory contents and not the directory itself.
 	sourceDir := filepath.Clean(s.Target.MasterDataDir()) + string(filepath.Separator)
