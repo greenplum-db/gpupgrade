@@ -93,52 +93,63 @@ func (s *Step) Err() error {
 }
 
 func (s *Step) AlwaysRun(substep idl.Substep, f func(OutStreams) error) {
-	s.run(substep, f, true)
+	err := s.run(substep, f, true)
+
+	if err != nil {
+		s.err = xerrors.Errorf(`substep "%s": %w`, s.name, err)
+	}
 }
 
 func (s *Step) Run(substep idl.Substep, f func(OutStreams) error) {
-	s.run(substep, f, false)
+	err := s.run(substep, f, false)
+
+	if err != nil {
+		s.err = xerrors.Errorf(`substep "%s": %w`, s.name, err)
+	}
 }
 
-func (s *Step) run(substep idl.Substep, f func(OutStreams) error, alwaysRun bool) {
+func (s *Step) SendResponse(action func(sender idl.MessageSender) error) {
+	err := action(s.sender)
+
+	if err != nil {
+		s.err = xerrors.Errorf(`substep "%s": %w`, s.name, err)
+	}
+}
+
+func (s *Step) run(substep idl.Substep, f func(OutStreams) error, alwaysRun bool) error {
 	var err error
-	defer func() {
-		if err != nil {
-			s.err = xerrors.Errorf(`substep "%s": %w`, s.name, err)
-		}
-	}()
 
 	if s.err != nil {
-		return
+		return s.err
 	}
 
 	status, err := s.store.Read(substep)
 	if err != nil {
-		return
+		return err
 	}
 
 	if status == idl.Status_RUNNING {
 		// TODO: Finalize error wording and recommended action
 		err = fmt.Errorf("Found previous substep %s was running. Manual intervention needed to cleanup. Please contact support.", substep)
 		s.sendStatus(substep, idl.Status_FAILED)
-		return
+		return err
 	}
 
 	// Only re-run substeps that are failed or pending. Do not skip substeps that must always be run.
 	if status == idl.Status_COMPLETE && !alwaysRun {
 		// Only send the status back to the UI; don't re-persist to the store
 		s.sendStatus(substep, idl.Status_COMPLETE)
-		return
+		return err
 	}
 
 	_, err = fmt.Fprintf(s.streams.Stdout(), "\nStarting %s...\n\n", substep)
 	if err != nil {
-		return
+		return err
 	}
 
 	err = s.write(substep, idl.Status_RUNNING)
 	if err != nil {
-		return
+		return err
 	}
 
 	err = f(s.streams)
@@ -146,10 +157,10 @@ func (s *Step) run(substep idl.Substep, f func(OutStreams) error, alwaysRun bool
 		if werr := s.write(substep, idl.Status_FAILED); werr != nil {
 			err = multierror.Append(err, werr).ErrorOrNil()
 		}
-		return
+		return err
 	}
 
-	err = s.write(substep, idl.Status_COMPLETE)
+	return s.write(substep, idl.Status_COMPLETE)
 }
 
 func (s *Step) write(substep idl.Substep, status idl.Status) error {

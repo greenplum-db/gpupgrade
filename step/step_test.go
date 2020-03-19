@@ -331,6 +331,40 @@ func TestStatusFile(t *testing.T) {
 	})
 }
 
+func TestStep_SendResponse(t *testing.T) {
+	t.Run("it sends a message to the sender", func(t *testing.T) {
+		// Setup the mock controller
+		ctrl := gomock.NewController(t)
+		ctrl.Finish()
+
+		// Setup assertions on the MessageSender
+		sender := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
+		sender.EXPECT().Send(gomock.Any()).Times(1)
+
+		// Setup step
+		step := step.New("some step", sender, &TestStore{}, DevNull)
+
+		// Attept to send a response to the client
+		step.SendResponse(func(sender idl.MessageSender) error {
+			return sender.Send(&idl.Message{
+				Contents: &idl.Message_Chunk{},
+			})
+		})
+	})
+
+	t.Run("it tracks errors with the step", func(t *testing.T) {
+		step := step.New("some step", nil, &TestStore{}, DevNull)
+
+		step.SendResponse(func(sender idl.MessageSender) error {
+			return errors.New("just an error")
+		})
+
+		if step.Err() == nil {
+			t.Errorf("got no error, expected SendResponse to set an error")
+		}
+	})
+}
+
 type TestStore struct {
 	Status   idl.Status
 	WriteErr error

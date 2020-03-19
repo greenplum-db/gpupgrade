@@ -109,10 +109,11 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 		})
 	}
 
-	message := MakeTargetClusterMessage(s.Target)
-	if err = stream.Send(message); err != nil {
-		return err
-	}
+	st.SendResponse(func(sender idl.MessageSender) error {
+		return sender.Send(
+			MakeTargetClusterMessage(s.Target),
+		)
+	})
 
 	return st.Err()
 }
