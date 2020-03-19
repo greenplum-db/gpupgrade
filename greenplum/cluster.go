@@ -2,15 +2,11 @@ package greenplum
 
 import (
 	"fmt"
-	"os/exec"
 
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 )
-
-var isPostmasterRunningCmd = exec.Command
-var startStopCmd = exec.Command
 
 type Cluster struct {
 	// ContentIDs contains the list of all primary content IDs, in the same
@@ -267,64 +263,25 @@ func (c *Cluster) GetDirForContent(contentID int) string {
 	return c.Primaries[contentID].DataDir
 }
 
+//
+// Cluster Manager facade
+//
 func (c *Cluster) Start(stream OutStreams) error {
-	return runStartStopCmd(stream, c.BinDir, fmt.Sprintf("gpstart -a -d %[1]s", c.MasterDataDir()))
+	cm := newGpUtilities(c, stream)
+	return cm.start()
 }
 
 func (c *Cluster) Stop(stream OutStreams) error {
-	// TODO: why can't we call isPostmasterRunning for the !stop case?  If we do, we get this on the pipeline:
-	// Usage: pgrep [-flvx] [-d DELIM] [-n|-o] [-P PPIDLIST] [-g PGRPLIST] [-s SIDLIST]
-	// [-u EUIDLIST] [-U UIDLIST] [-G GIDLIST] [-t TERMLIST] [PATTERN]
-	//  pgrep: pidfile not valid
-	// TODO: should we actually return an error if we try to gpstop an already stopped cluster?
-	err := isPostmasterRunning(stream, c.MasterDataDir())
-	if err != nil {
-		return err
-	}
-
-	return runStartStopCmd(stream, c.BinDir, fmt.Sprintf("gpstop -a -d %[1]s", c.MasterDataDir()))
+	cm := newGpUtilities(c, stream)
+	return cm.stop()
 }
 
 func (c *Cluster) StartMasterOnly(stream OutStreams) error {
-	return runStartStopCmd(stream, c.BinDir, fmt.Sprintf("gpstart -m -a -d %[1]s", c.MasterDataDir()))
+	cm := newGpUtilities(c, stream)
+	return cm.startMasterOnly()
 }
 
 func (c *Cluster) StopMasterOnly(stream OutStreams) error {
-	// TODO: why can't we call isPostmasterRunning for the !stop case?  If we do, we get this on the pipeline:
-	// Usage: pgrep [-flvx] [-d DELIM] [-n|-o] [-P PPIDLIST] [-g PGRPLIST] [-s SIDLIST]
-	// [-u EUIDLIST] [-U UIDLIST] [-G GIDLIST] [-t TERMLIST] [PATTERN]
-	//  pgrep: pidfile not valid
-	// TODO: should we actually return an error if we try to gpstop an already stopped cluster?
-	err := isPostmasterRunning(stream, c.MasterDataDir())
-	if err != nil {
-		return err
-	}
-
-	return runStartStopCmd(stream, c.BinDir, fmt.Sprintf("gpstop -m -a -d %[1]s", c.MasterDataDir()))
-}
-
-func runStartStopCmd(stream OutStreams, binDir, command string) error {
-	commandWithEnv := fmt.Sprintf("source %[1]s/../greenplum_path.sh && %[1]s/%[2]s",
-		binDir,
-		command)
-
-	cmd := startStopCmd("bash", "-c", commandWithEnv)
-	cmd.Stdout = stream.Stdout()
-	cmd.Stderr = stream.Stderr()
-	return cmd.Run()
-}
-
-/*
- * Helper functions
- */
-func isPostmasterRunning(stream OutStreams, masterDataDir string) error {
-	cmd := isPostmasterRunningCmd("bash", "-c",
-		fmt.Sprintf("pgrep -F %s/postmaster.pid",
-			masterDataDir,
-		))
-
-	cmd.Stdout = stream.Stdout()
-	cmd.Stderr = stream.Stderr()
-
-	return cmd.Run()
+	cm := newGpUtilities(c, stream)
+	return cm.stopMasterOnly()
 }

@@ -89,14 +89,16 @@ func TestStartOrStopCluster(t *testing.T) {
 				g.Expect(args).To(Equal([]string{"-c", "pgrep -F basedir/seg-1/postmaster.pid"}))
 			})
 
-		err := isPostmasterRunning(DevNull, source.MasterDataDir())
+		cm := newGpUtilities(source, DevNull)
+
+		err := cm.isPostmasterRunning()
 		g.Expect(err).ToNot(HaveOccurred())
 	})
 
 	t.Run("isPostmasterRunning fails", func(t *testing.T) {
 		isPostmasterRunningCmd = exectest.NewCommand(IsPostmasterRunningCmd_Errors)
 
-		err := isPostmasterRunning(DevNull, source.MasterDataDir())
+		err := newGpUtilities(source, DevNull).isPostmasterRunning()
 		g.Expect(err).To(HaveOccurred())
 	})
 
