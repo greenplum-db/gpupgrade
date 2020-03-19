@@ -2,14 +2,18 @@ package hub
 
 import (
 	"fmt"
+	"io"
 	"os/exec"
 	"path/filepath"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/kballard/go-shellquote"
-
-	"github.com/greenplum-db/gpupgrade/step"
 )
+
+type OutStreams interface {
+	Stdout() io.Writer
+	Stderr() io.Writer
+}
 
 type GreenplumRunner interface {
 	Run(utilityName string, arguments ...string) error
@@ -39,5 +43,5 @@ type greenplumRunner struct {
 	masterDataDirectory string
 	masterPort          int
 
-	streams step.OutStreams
+	streams OutStreams
 }
