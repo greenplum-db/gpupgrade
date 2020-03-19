@@ -1,4 +1,4 @@
-package hub
+package greenplum
 
 import (
 	"fmt"
@@ -11,11 +11,20 @@ import (
 	"github.com/greenplum-db/gpupgrade/step"
 )
 
-type GreenplumRunner interface {
+type Runner interface {
 	Run(utilityName string, arguments ...string) error
 }
 
-func (e *greenplumRunner) Run(utilityName string, arguments ...string) error {
+func NewRunner(c *Cluster, streams step.OutStreams) Runner {
+	return &runner{
+		masterPort:          c.MasterPort(),
+		masterDataDirectory: c.MasterDataDir(),
+		binDir:              c.BinDir,
+		streams:             streams,
+	}
+}
+
+func (e *runner) Run(utilityName string, arguments ...string) error {
 	path := filepath.Join(e.binDir, utilityName)
 
 	arguments = append([]string{path}, arguments...)
@@ -34,7 +43,7 @@ func (e *greenplumRunner) Run(utilityName string, arguments ...string) error {
 	return command.Run()
 }
 
-type greenplumRunner struct {
+type runner struct {
 	binDir              string
 	masterDataDirectory string
 	masterPort          int

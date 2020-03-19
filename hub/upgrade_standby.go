@@ -5,6 +5,8 @@ import (
 	"strconv"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
+
+	"github.com/greenplum-db/gpupgrade/greenplum"
 )
 
 type StandbyConfig struct {
@@ -20,7 +22,7 @@ type StandbyConfig struct {
 // In the happy-path, we expect this to fail as there should not be an existing
 // standby for the cluster.
 //
-func UpgradeStandby(r GreenplumRunner, standbyConfig StandbyConfig) error {
+func UpgradeStandby(r greenplum.Runner, standbyConfig StandbyConfig) error {
 	gplog.Info(fmt.Sprintf("removing any existing standby master on target cluster"))
 
 	err := r.Run("gpinitstandby", "-r", "-a")

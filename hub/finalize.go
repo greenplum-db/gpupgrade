@@ -64,25 +64,15 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 		return nil
 	})
 
-	// This runner runs all commands against the target cluster.
-	targetRunner := &greenplumRunner{
-		masterPort:          s.Target.MasterPort(),
-		masterDataDirectory: s.Target.MasterDataDir(),
-		binDir:              s.Target.BinDir,
-	}
-
 	// todo: we don't currently have a way to output nothing to the UI when there is no standby.
 	// If we did, this check would actually be in `UpgradeStandby`
 	if s.Source.HasStandby() {
 		st.Run(idl.Substep_FINALIZE_UPGRADE_STANDBY, func(streams step.OutStreams) error {
-			// XXX this probably indicates a bad abstraction
-			targetRunner.streams = streams
-
 			// TODO: once the temporary standby upgrade is fixed, switch to
 			// using the TargetInitializeConfig's temporary assignments, and
 			// move this upgrade step back to before the target shutdown.
 			standby := s.Source.Mirrors[-1]
-			return UpgradeStandby(targetRunner, StandbyConfig{
+			return UpgradeStandby(greenplum.NewRunner(s.Target, streams), StandbyConfig{
 				Port:          standby.Port,
 				Hostname:      standby.Hostname,
 				DataDirectory: standby.DataDir,
@@ -94,9 +84,6 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 	// If we did, this check would actually be in `UpgradeMirrors`
 	if s.Source.HasMirrors() {
 		st.Run(idl.Substep_FINALIZE_UPGRADE_MIRRORS, func(streams step.OutStreams) error {
-			// XXX this probably indicates a bad abstraction
-			targetRunner.streams = streams
-
 			// TODO: once the temporary mirror upgrade is fixed, switch to using
 			// the TargetInitializeConfig's temporary assignments, and move this
 			// upgrade step back to before the target shutdown.
@@ -105,7 +92,7 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 			}
 
 			return UpgradeMirrors(s.StateDir, s.Target.MasterPort(),
-				s.Source.SelectSegments(mirrors), targetRunner)
+				s.Source.SelectSegments(mirrors), greenplum.NewRunner(s.Target, streams))
 		})
 	}
 

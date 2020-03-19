@@ -26,7 +26,7 @@ func writeGpAddmirrorsConfig(mirrors []greenplum.SegConfig, out io.Writer) error
 	return nil
 }
 
-func runAddMirrors(r GreenplumRunner, filepath string) error {
+func runAddMirrors(r greenplum.Runner, filepath string) error {
 	return r.Run("gpaddmirrors",
 		"-a",
 		"-i", filepath,
@@ -86,7 +86,7 @@ func waitForFTS(db *sql.DB, timeout time.Duration) error {
 	}
 }
 
-func UpgradeMirrors(stateDir string, masterPort int, mirrors []greenplum.SegConfig, targetRunner GreenplumRunner) (err error) {
+func UpgradeMirrors(stateDir string, masterPort int, mirrors []greenplum.SegConfig, targetRunner greenplum.Runner) (err error) {
 	connURI := fmt.Sprintf("postgresql://localhost:%d/template1?gp_session_role=utility&search_path=", masterPort)
 	db, err := utils.System.SqlOpen("pgx", connURI)
 	if err != nil {
@@ -98,7 +98,7 @@ func UpgradeMirrors(stateDir string, masterPort int, mirrors []greenplum.SegConf
 	return doUpgrade(db, stateDir, mirrors, targetRunner)
 }
 
-func doUpgrade(db *sql.DB, stateDir string, mirrors []greenplum.SegConfig, targetRunner GreenplumRunner) (err error) {
+func doUpgrade(db *sql.DB, stateDir string, mirrors []greenplum.SegConfig, targetRunner greenplum.Runner) (err error) {
 	path := filepath.Join(stateDir, "add_mirrors_config")
 	// calling Close() on a file twice results in an error
 	// only call Close() in the defer if we haven't yet tried to close it.

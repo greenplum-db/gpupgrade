@@ -123,7 +123,7 @@ func TestRunAddMirrors(t *testing.T) {
 		}
 
 		if !runCalled {
-			t.Errorf("GreenplumRunner.Run() was not called")
+			t.Errorf("Runner.Run() was not called")
 		}
 	})
 
@@ -237,7 +237,7 @@ func TestDoUpgrade(t *testing.T) {
 		}
 
 		if !runCalled {
-			t.Errorf("GreenplumRunner.Run() was not called")
+			t.Errorf("Runner.Run() was not called")
 		}
 	})
 
