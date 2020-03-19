@@ -17,7 +17,7 @@ func TestServerStart(t *testing.T) {
 	testhelper.SetupTestLogger()
 
 	t.Run("successfully starts and creates state directory if it does not exist", func(t *testing.T) {
-		tempDir := getTempDir(t)
+		tempDir := testutils.GetTempDir(t, "")
 		defer os.RemoveAll(tempDir)
 		stateDir := path.Join(tempDir, ".gpupgrade")
 
@@ -43,7 +43,7 @@ func TestServerStart(t *testing.T) {
 	})
 
 	t.Run("successfully starts if state directory already exists", func(t *testing.T) {
-		stateDir := getTempDir(t)
+		stateDir := testutils.GetTempDir(t, ".gpupgrade")
 		defer os.RemoveAll(stateDir)
 
 		server := agent.NewServer(agent.Config{

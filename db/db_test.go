@@ -1,14 +1,15 @@
 package db
 
 import (
-	"os"
 	"testing"
+
+	"github.com/greenplum-db/gpupgrade/testutils"
 )
 
 func TestNewDBConn(t *testing.T) {
 	t.Run("uses environment variable when database parameter is empty", func(t *testing.T) {
 		expected := "testdb"
-		resetEnv := setEnv(t, "PGDATABASE", expected)
+		resetEnv := testutils.SetEnv(t, "PGDATABASE", expected)
 		defer resetEnv()
 
 		conn := NewDBConn("localHost", 5432, "")
@@ -18,7 +19,7 @@ func TestNewDBConn(t *testing.T) {
 	})
 
 	t.Run("uses database parameter when both parameter and environment variable are set", func(t *testing.T) {
-		resetEnv := setEnv(t, "PGDATABASE", "testdb")
+		resetEnv := testutils.SetEnv(t, "PGDATABASE", "testdb")
 		defer resetEnv()
 
 		expected := "template1"
@@ -30,7 +31,7 @@ func TestNewDBConn(t *testing.T) {
 
 	t.Run("uses environment variable when host parameter is empty", func(t *testing.T) {
 		expected := "mdw"
-		resetEnv := setEnv(t, "PGHOST", expected)
+		resetEnv := testutils.SetEnv(t, "PGHOST", expected)
 		defer resetEnv()
 
 		conn := NewDBConn("", 5432, "template1")
@@ -40,7 +41,7 @@ func TestNewDBConn(t *testing.T) {
 	})
 
 	t.Run("uses host parameter when both parameter and environment variable are set", func(t *testing.T) {
-		resetEnv := setEnv(t, "PGHOST", "mdw")
+		resetEnv := testutils.SetEnv(t, "PGHOST", "mdw")
 		defer resetEnv()
 
 		expected := "localhost"
@@ -50,20 +51,4 @@ func TestNewDBConn(t *testing.T) {
 		}
 	})
 
-}
-
-func setEnv(t *testing.T, envar, value string) func() {
-	old := os.Getenv(envar)
-
-	err := os.Setenv(envar, value)
-	if err != nil {
-		t.Fatalf("setting %s environment variable to %s", envar, value)
-	}
-
-	return func() {
-		err := os.Setenv(envar, old)
-		if err != nil {
-			t.Fatalf("setting %s environment variable to %s", envar, old)
-		}
-	}
 }

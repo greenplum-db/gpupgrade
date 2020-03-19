@@ -1,7 +1,10 @@
 package testutils
 
 import (
+	"io/ioutil"
 	"net"
+	"os"
+	"testing"
 
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 
@@ -48,4 +51,42 @@ func GetOpenPort() (int, error) {
 	defer l.Close()
 
 	return l.Addr().(*net.TCPAddr).Port, nil
+}
+
+func GetTempDir(t *testing.T, prefix string) string {
+	t.Helper()
+
+	dir, err := ioutil.TempDir("", prefix+"-")
+	if err != nil {
+		t.Fatalf("creating temporary directory: %+v", err)
+	}
+
+	return dir
+}
+
+func MustRemoveAll(t *testing.T, dir string) {
+	t.Helper()
+
+	err := os.RemoveAll(dir)
+	if err != nil {
+		t.Fatalf("removing temp dir %q: %#v", dir, err)
+	}
+}
+
+func SetEnv(t *testing.T, envar, value string) func() {
+	t.Helper()
+
+	old := os.Getenv(envar)
+
+	err := os.Setenv(envar, value)
+	if err != nil {
+		t.Fatalf("setting %s environment variable to %s", envar, value)
+	}
+
+	return func() {
+		err := os.Setenv(envar, old)
+		if err != nil {
+			t.Fatalf("setting %s environment variable to %s", envar, old)
+		}
+	}
 }

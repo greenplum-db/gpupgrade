@@ -12,16 +12,8 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/agent"
+	"github.com/greenplum-db/gpupgrade/testutils"
 )
-
-func getTempDir(t *testing.T) string {
-	sourceDir, err := ioutil.TempDir("", "rsync-source")
-	if err != nil {
-		t.Fatalf("creating temporary directory: %+v", err)
-	}
-
-	return sourceDir
-}
 
 func writeToFile(filepath string, contents []byte, t *testing.T) {
 	err := ioutil.WriteFile(filepath, contents, 0644)
@@ -42,11 +34,11 @@ func TestRsync(t *testing.T) {
 	defer func() { agent.SetRsyncCommand(nil) }()
 
 	t.Run("it copies data from a source directory to a target directory", func(t *testing.T) {
-		sourceDir := getTempDir(t)
-		defer os.RemoveAll(sourceDir)
+		sourceDir := testutils.GetTempDir(t, "rsync-source")
+		defer testutils.MustRemoveAll(t, sourceDir)
 
-		targetDir := getTempDir(t)
-		defer os.RemoveAll(targetDir)
+		targetDir := testutils.GetTempDir(t, "rsync-target")
+		defer testutils.MustRemoveAll(t, targetDir)
 
 		writeToFile(filepath.Join(sourceDir, "hi"), []byte("hi"), t)
 
@@ -64,11 +56,11 @@ func TestRsync(t *testing.T) {
 	})
 
 	t.Run("it removes files that existed in the target directory before the sync", func(t *testing.T) {
-		sourceDir := getTempDir(t)
-		defer os.RemoveAll(sourceDir)
+		sourceDir := testutils.GetTempDir(t, "rsync-source")
+		defer testutils.MustRemoveAll(t, sourceDir)
 
-		targetDir := getTempDir(t)
-		defer os.RemoveAll(targetDir)
+		targetDir := testutils.GetTempDir(t, "rsync-target")
+		defer testutils.MustRemoveAll(t, targetDir)
 
 		writeToFile(filepath.Join(targetDir, "target-file-that-should-get-removed"), []byte("goodbye"), t)
 
@@ -84,11 +76,11 @@ func TestRsync(t *testing.T) {
 	})
 
 	t.Run("it does not copy files from the source directory when in the exclusion list", func(t *testing.T) {
-		sourceDir := getTempDir(t)
-		defer os.RemoveAll(sourceDir)
+		sourceDir := testutils.GetTempDir(t, "rsync-source")
+		defer testutils.MustRemoveAll(t, sourceDir)
 
-		targetDir := getTempDir(t)
-		defer os.RemoveAll(targetDir)
+		targetDir := testutils.GetTempDir(t, "rsync-target")
+		defer testutils.MustRemoveAll(t, targetDir)
 
 		writeToFile(filepath.Join(sourceDir, "source-file-that-should-get-excluded"), []byte("goodbye"), t)
 
@@ -105,11 +97,11 @@ func TestRsync(t *testing.T) {
 	})
 
 	t.Run("it preserves files in the target directory when in the exclusion list", func(t *testing.T) {
-		sourceDir := getTempDir(t)
-		defer os.RemoveAll(sourceDir)
+		sourceDir := testutils.GetTempDir(t, "rsync-source")
+		defer testutils.MustRemoveAll(t, sourceDir)
 
-		targetDir := getTempDir(t)
-		defer os.RemoveAll(targetDir)
+		targetDir := testutils.GetTempDir(t, "rsync-target")
+		defer testutils.MustRemoveAll(t, targetDir)
 
 		writeToFile(filepath.Join(sourceDir, "source-file-that-should-get-copied"), []byte("new file"), t)
 		writeToFile(filepath.Join(targetDir, "target-file-that-should-get-ignored"), []byte("i'm still here"), t)
@@ -140,11 +132,11 @@ func TestRsync(t *testing.T) {
 	})
 
 	t.Run("it bubbles up exec.ExitError errors as rsync errors", func(t *testing.T) {
-		sourceDir := getTempDir(t)
-		defer os.RemoveAll(sourceDir)
+		sourceDir := testutils.GetTempDir(t, "rsync-source")
+		defer testutils.MustRemoveAll(t, sourceDir)
 
 		targetDir := "/tmp/some/invalid/target/dir"
-		defer os.RemoveAll(targetDir)
+		defer testutils.MustRemoveAll(t, targetDir)
 
 		writeToFile(filepath.Join(sourceDir, "some-file"), []byte("hi"), t)
 
@@ -166,11 +158,11 @@ func TestRsync(t *testing.T) {
 		originalPath := destroyPath()
 		defer restorePath(originalPath)
 
-		sourceDir := getTempDir(t)
-		defer os.RemoveAll(sourceDir)
+		sourceDir := testutils.GetTempDir(t, "rsync-source")
+		defer testutils.MustRemoveAll(t, sourceDir)
 
 		targetDir := "/tmp/some/invalid/target/dir"
-		defer os.RemoveAll(targetDir)
+		defer testutils.MustRemoveAll(t, targetDir)
 
 		writeToFile(filepath.Join(sourceDir, "some-file"), []byte("hi"), t)
 
