@@ -10,6 +10,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/hub/agent"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
@@ -18,6 +19,10 @@ const OldSuffix = "_old"
 const UpgradeSuffix = "_upgrade"
 
 func (s *Server) UpdateDataDirectories() error {
+	agentConnections, err := s.AgentConns()
+	if err != nil {
+		return err
+	}
 	if err := RenameMasterDataDir(s.Source.MasterDataDir(), true); err != nil {
 		return xerrors.Errorf("renaming source cluster master data directory: %w", err)
 	}
@@ -29,7 +34,7 @@ func (s *Server) UpdateDataDirectories() error {
 		}
 	}
 
-	if err := RenameSegmentDataDirs(s.agentConns, s.Source, "", OldSuffix,
+	if err := RenameSegmentDataDirs(agentConnections, s.Source, "", OldSuffix,
 		s.Config.UseLinkMode /* rename primaries only*/); err != nil {
 		return xerrors.Errorf("renaming source cluster segment data directories: %w", err)
 	}
@@ -40,7 +45,7 @@ func (s *Server) UpdateDataDirectories() error {
 
 	// Do not include mirrors and standby when moving _upgrade directories,
 	// since they don't exist yet.
-	if err := RenameSegmentDataDirs(s.agentConns, s.Target, UpgradeSuffix, "", true); err != nil {
+	if err := RenameSegmentDataDirs(agentConnections, s.Target, UpgradeSuffix, "", true); err != nil {
 		return xerrors.Errorf("renaming target cluster segment data directories: %w", err)
 	}
 
@@ -66,7 +71,7 @@ func RenameMasterDataDir(masterDataDir string, isSource bool) error {
 
 // e.g. for source /data/dbfast1/demoDataDir0 becomes datadirs/dbfast1_old/demoDataDir0
 // e.g. for target /data/dbfast1_upgrade/demoDataDir0 becomes datadirs/dbfast1/demoDataDir0
-func RenameSegmentDataDirs(agentConns []*Connection,
+func RenameSegmentDataDirs(agentConns []*agent.Connection,
 	cluster *greenplum.Cluster,
 	oldSuffix, newSuffix string,
 	primariesOnly bool) error {

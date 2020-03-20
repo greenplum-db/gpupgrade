@@ -17,6 +17,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/hub/agent"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
@@ -170,7 +171,7 @@ func TestCreateSegmentDataDirectories(t *testing.T) {
 	// should not receive any connections as it contains only mirrors
 	mirrorClient := mock_idl.NewMockAgentClient(ctrl)
 
-	agentConns := []*Connection{
+	agentConns := []*agent.Connection{
 		{nil, client, "host1", nil},
 		{nil, failedClient, "host2", nil},
 		{nil, mirrorClient, "host3", nil},

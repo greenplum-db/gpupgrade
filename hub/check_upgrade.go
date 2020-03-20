@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 
+	"github.com/greenplum-db/gpupgrade/hub/agent"
 	"github.com/greenplum-db/gpupgrade/step"
 )
 
@@ -25,12 +26,12 @@ func (upgradeChecker) UpgradePrimaries(args UpgradePrimaryArgs) error {
 }
 
 type AgentConnProvider interface {
-	GetAgents(s *Server) ([]*Connection, error)
+	GetAgents(s *Server) ([]*agent.Connection, error)
 }
 
 type agentConnProvider struct{}
 
-func (agentConnProvider) GetAgents(s *Server) ([]*Connection, error) {
+func (agentConnProvider) GetAgents(s *Server) ([]*agent.Connection, error) {
 	return s.AgentConns()
 }
 

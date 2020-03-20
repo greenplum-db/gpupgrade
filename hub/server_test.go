@@ -17,6 +17,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
+	"github.com/greenplum-db/gpupgrade/hub/agent"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/mock_agent"
@@ -45,7 +46,7 @@ var _ = Describe("Hub", func() {
 		target         *greenplum.Cluster
 		conf           *hub.Config
 		err            error
-		mockDialer     hub.Dialer
+		mockDialer     agent.Dialer
 		useLinkMode    bool
 	)
 
@@ -166,7 +167,7 @@ var _ = Describe("Hub", func() {
 		Expect(newConns).To(ConsistOf(savedConns))
 	})
 
-	// XXX This test takes 1.5 seconds because of EnsureConnsAreReady(...)
+	// XXX This test takes 1.5 seconds because of EnsureConnectionsAreReady(...)
 	It("returns an error if any connections have non-ready states", func() {
 		h := hub.New(conf, mockDialer, "")
 
@@ -317,7 +318,7 @@ func TestAgentHosts(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			actual := hub.AgentHosts(c.cluster)
+			actual := hub.SegmentHosts(c.cluster)
 			sort.Strings(actual) // order not guaranteed
 
 			if !reflect.DeepEqual(actual, c.expected) {

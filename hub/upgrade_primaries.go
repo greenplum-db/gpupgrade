@@ -10,13 +10,14 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/hub/agent"
 	"github.com/greenplum-db/gpupgrade/idl"
 )
 
 type UpgradePrimaryArgs struct {
 	CheckOnly       bool
 	MasterBackupDir string
-	AgentConns      []*Connection
+	AgentConns      []*agent.Connection
 	DataDirPairMap  map[string][]*idl.DataDirPair
 	Source          *greenplum.Cluster
 	Target          *greenplum.Cluster
@@ -30,7 +31,7 @@ func UpgradePrimaries(args UpgradePrimaryArgs) error {
 	for _, conn := range args.AgentConns {
 		wg.Add(1)
 
-		go func(conn *Connection) {
+		go func(conn *agent.Connection) {
 			defer wg.Done()
 
 			_, err := conn.AgentClient.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{

@@ -14,6 +14,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
+	"github.com/greenplum-db/gpupgrade/hub/agent"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
@@ -29,7 +30,7 @@ var (
 	dbConnector *dbconn.DBConn
 	mock        sqlmock.Sqlmock
 	mockAgent   *mock_agent.MockAgentServer
-	dialer      hub.Dialer
+	dialer      agent.Dialer
 	client      *mock_idl.MockAgentClient
 	port        int
 	dir         string

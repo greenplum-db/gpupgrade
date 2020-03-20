@@ -12,6 +12,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
+	"github.com/greenplum-db/gpupgrade/hub/agent"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
 )
@@ -86,7 +87,7 @@ func TestUpgradePrimaries(t *testing.T) {
 			},
 		).Return(&idl.UpgradePrimariesReply{}, nil)
 
-		agentConns := []*hub.Connection{
+		agentConns := []*agent.Connection{
 			{nil, client1, "sdw1", nil},
 			{nil, client2, "sdw2", nil},
 		}
@@ -138,7 +139,7 @@ func TestUpgradePrimaries(t *testing.T) {
 			},
 		).Return(&idl.UpgradePrimariesReply{}, expected)
 
-		agentConns := []*hub.Connection{
+		agentConns := []*agent.Connection{
 			{nil, client1, "sdw1", nil},
 			{nil, failedClient, "sdw2", nil},
 		}

@@ -16,6 +16,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/db"
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/hub/agent"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -174,7 +175,7 @@ func WriteSegmentArray(config []string, targetInitializeConfig InitializeConfig)
 	return config, nil
 }
 
-func CreateAllDataDirectories(agentConns []*Connection, source *greenplum.Cluster) error {
+func CreateAllDataDirectories(agentConns []*agent.Connection, source *greenplum.Cluster) error {
 	targetDataDir := path.Dir(source.MasterDataDir()) + "_upgrade"
 	err := utils.CreateDataDirectory(targetDataDir)
 	if err != nil {
@@ -230,7 +231,7 @@ func GetMasterSegPrefix(datadir string) (string, error) {
 	return segPrefix, nil
 }
 
-func CreateSegmentDataDirectories(agentConns []*Connection, cluster *greenplum.Cluster) error {
+func CreateSegmentDataDirectories(agentConns []*agent.Connection, cluster *greenplum.Cluster) error {
 	wg := sync.WaitGroup{}
 	errChan := make(chan error, len(agentConns))
 
@@ -243,7 +244,7 @@ func CreateSegmentDataDirectories(agentConns []*Connection, cluster *greenplum.C
 		}
 
 		wg.Add(1)
-		go func(c *Connection) {
+		go func(c *agent.Connection) {
 			defer wg.Done()
 
 			segments := cluster.SelectSegments(primaries)

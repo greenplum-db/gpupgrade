@@ -11,6 +11,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
+	"github.com/greenplum-db/gpupgrade/hub/agent"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -117,7 +118,7 @@ func TestRenameSegmentDataDirs(t *testing.T) {
 		client3 := mock_idl.NewMockAgentClient(ctrl)
 		// NOTE: we expect no call to the standby
 
-		agentConns := []*hub.Connection{
+		agentConns := []*agent.Connection{
 			{nil, client1, "sdw1", nil},
 			{nil, client2, "sdw2", nil},
 			{nil, client3, "standby", nil},
@@ -172,7 +173,7 @@ func TestRenameSegmentDataDirs(t *testing.T) {
 			},
 		).Return(&idl.RenameDirectoriesReply{}, nil)
 
-		agentConns := []*hub.Connection{
+		agentConns := []*agent.Connection{
 			{nil, client1, "sdw1", nil},
 			{nil, client2, "sdw2", nil},
 			{nil, client3, "standby", nil},
@@ -201,7 +202,7 @@ func TestRenameSegmentDataDirs(t *testing.T) {
 			gomock.Any(),
 		).Return(nil, expected)
 
-		agentConns := []*hub.Connection{
+		agentConns := []*agent.Connection{
 			{nil, client, "sdw1", nil},
 			{nil, failedClient, "sdw2", nil},
 		}

@@ -16,6 +16,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/hub/agent"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
 	"github.com/greenplum-db/gpupgrade/utils/disk"
@@ -24,7 +25,7 @@ import (
 func TestCheckDiskSpace(t *testing.T) {
 	var d halfFullDisk
 	var c *greenplum.Cluster
-	var agents []*Connection
+	var agents []*agent.Connection
 	var req *idl.CheckDiskSpaceRequest
 	ctx := context.Background()
 
@@ -130,7 +131,7 @@ func TestCheckDiskSpace(t *testing.T) {
 				Failed: disk.SpaceFailures{"/": usage},
 			}, nil)
 
-		agents = []*Connection{
+		agents = []*agent.Connection{
 			{Hostname: "smdw", AgentClient: smdw},
 			{Hostname: "sdw1", AgentClient: sdw1},
 			{Hostname: "sdw2", AgentClient: sdw2},
@@ -169,7 +170,7 @@ func TestCheckDiskSpace(t *testing.T) {
 		// The other agent doesn't have any segments, so we expect no calls.
 		sdw2 := mock_idl.NewMockAgentClient(ctrl)
 
-		agents = []*Connection{
+		agents = []*agent.Connection{
 			{Hostname: "sdw1", AgentClient: sdw1},
 			{Hostname: "sdw2", AgentClient: sdw2}, // invalid hostname
 		}

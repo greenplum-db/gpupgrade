@@ -2,8 +2,6 @@ package hub
 
 import (
 	"database/sql"
-	"os"
-	"path/filepath"
 	"sort"
 
 	"github.com/pkg/errors"
@@ -168,13 +166,4 @@ func sanitize(ports []int) []int {
 	}
 
 	return dedupe
-}
-
-func getAgentPath() (string, error) {
-	hubPath, err := os.Executable()
-	if err != nil {
-		return "", err
-	}
-
-	return filepath.Join(filepath.Dir(hubPath), "gpupgrade"), nil
 }

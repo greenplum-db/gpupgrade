@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/hub/agent"
 )
 
 type upgraderMock struct {
@@ -24,14 +25,18 @@ func (u upgraderMock) UpgradePrimaries(args UpgradePrimaryArgs) error {
 }
 
 type agentConnSourceMock struct {
-	conns []*Connection
+	conns []*agent.Connection
 }
 
-func (a agentConnSourceMock) GetAgents(s *Server) ([]*Connection, error) {
+func (a agentConnSourceMock) GetAgents(s *Server) ([]*agent.Connection, error) {
 	return a.conns, nil
 }
 
-var agentsSource = agentConnSourceMock{[]*Connection{&Connection{Conn: nil, Hostname: "bengie"}}}
+var agentsSource = agentConnSourceMock{
+	[]*agent.Connection{
+		{Conn: nil, Hostname: "bengie"},
+	},
+}
 
 func setUpgrader(updated UpgradeChecker) {
 	upgrader = updated

@@ -9,6 +9,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/hub/agent"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils/disk"
 )
@@ -25,7 +26,7 @@ func (s *Server) CheckDiskSpace(ctx context.Context, in *idl.CheckDiskSpaceReque
 	return reply, err
 }
 
-func checkDiskSpace(ctx context.Context, cluster *greenplum.Cluster, agents []*Connection, d disk.Disk, in *idl.CheckDiskSpaceRequest) (disk.SpaceFailures, error) {
+func checkDiskSpace(ctx context.Context, cluster *greenplum.Cluster, agents []*agent.Connection, d disk.Disk, in *idl.CheckDiskSpaceRequest) (disk.SpaceFailures, error) {
 	var wg sync.WaitGroup
 	errs := make(chan error, len(agents)+1)
 	failures := make(chan disk.SpaceFailures, len(agents)+1)
