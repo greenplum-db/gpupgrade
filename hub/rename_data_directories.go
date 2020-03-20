@@ -73,7 +73,7 @@ func RenameSegmentDataDirs(agentConns []*Connection,
 		conn := conn
 
 		selector := func(seg *greenplum.SegConfig) bool {
-			if seg.Hostname != conn.Hostname || seg.IsMaster() {
+			if !seg.IsOnHost(conn.Hostname) || seg.IsMaster() {
 				return false
 			}
 

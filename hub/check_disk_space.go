@@ -51,8 +51,7 @@ func checkDiskSpace(ctx context.Context, cluster *greenplum.Cluster, agents []*C
 
 		// We want to check disk space for the standby, primaries, and mirrors.
 		excludingMaster := func(seg *greenplum.SegConfig) bool {
-			return seg.Hostname == agent.Hostname &&
-				!seg.IsMaster()
+			return seg.IsOnHost(agent.Hostname) && !seg.IsMaster()
 		}
 
 		go func() {

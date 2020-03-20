@@ -239,7 +239,7 @@ func CreateSegmentDataDirectories(agentConns []*Connection, cluster *greenplum.C
 
 		// Selects all primaries belonging to this agent's host.
 		primaries := func(seg *greenplum.SegConfig) bool {
-			return seg.Hostname == conn.Hostname && seg.IsPrimary()
+			return seg.IsOnHost(conn.Hostname) && seg.IsPrimary()
 		}
 
 		wg.Add(1)

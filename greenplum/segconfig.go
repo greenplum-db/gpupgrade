@@ -35,6 +35,10 @@ func (s *SegConfig) IsMirror() bool {
 	return s.ContentID != -1 && s.Role == MirrorRole
 }
 
+func (s *SegConfig) IsOnHost(hostname string) bool {
+	return s.Hostname == hostname
+}
+
 func GetSegmentConfiguration(connection *dbconn.DBConn) ([]SegConfig, error) {
 	query := ""
 	if connection.Version.Before("6") {
