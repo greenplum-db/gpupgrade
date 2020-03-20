@@ -308,7 +308,7 @@ func (s *Server) AgentConns() ([]*Connection, error) {
 			host+":"+strconv.Itoa(s.AgentPort),
 			grpc.WithInsecure(), grpc.WithBlock())
 		if err != nil {
-			err = errors.Errorf("grpcDialer failed: %s", err.Error())
+			err = xerrors.Errorf("grpcDialer failed: %w", err)
 			gplog.Error(err.Error())
 			cancelFunc()
 			return nil, err

@@ -6,10 +6,12 @@ import (
 	"os"
 	"reflect"
 	"sort"
-	"strconv"
+	"strings"
 	"testing"
+	"time"
 
-	multierror "github.com/hashicorp/go-multierror"
+	"github.com/greenplum-db/gp-common-go-libs/testhelper"
+	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 	"google.golang.org/grpc"
@@ -20,176 +22,317 @@ import (
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/mock_agent"
 	"github.com/greenplum-db/gpupgrade/utils"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Hub", func() {
-	var (
-		agentA         *mock_agent.MockAgentServer
-		cliToHubPort   int
-		hubToAgentPort int
-		source         *greenplum.Cluster
-		target         *greenplum.Cluster
-		conf           *hub.Config
-		err            error
-		mockDialer     hub.Dialer
-		useLinkMode    bool
-	)
+const timeout = 1 * time.Second
 
-	BeforeEach(func() {
-		agentA, mockDialer, hubToAgentPort = mock_agent.NewMockAgentServer()
-		source, target = testutils.CreateMultinodeSampleClusterPair("/tmp")
-		source.Mirrors = map[int]greenplum.SegConfig{
-			-1: {ContentID: -1, DbID: 1, Port: 15433, Hostname: "standby-host", DataDir: "/seg-1"},
-			0:  {ContentID: 0, DbID: 2, Port: 25434, Hostname: "mirror-host1", DataDir: "/seg1"},
-			1:  {ContentID: 1, DbID: 3, Port: 25435, Hostname: "mirror-host2", DataDir: "/seg2"},
-		}
-		useLinkMode = false
-		conf = &hub.Config{source, target, hub.InitializeConfig{}, cliToHubPort, hubToAgentPort, useLinkMode, 0}
+func TestHubStart(t *testing.T) {
+	source := hub.MustCreateCluster(t, []greenplum.SegConfig{
+		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: "p"},
+		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: "/data/dbfast1/seg1", Role: "p"},
+		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: "p"},
 	})
 
-	AfterEach(func() {
-		utils.System = utils.InitializeSystemFunctions()
-		agentA.Stop()
+	target := hub.MustCreateCluster(t, []greenplum.SegConfig{
+		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: "p"},
+		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: "/data/dbfast1/seg1", Role: "p"},
+		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: "p"},
 	})
 
-	It("will return from Start() with an error if Stop() is called first", func() {
-		h := hub.New(conf, mockDialer, "")
+	conf := &hub.Config{
+		Source:                 source,
+		Target:                 target,
+		TargetInitializeConfig: hub.InitializeConfig{},
+		Port:                   getOpenPort(t),
+		AgentPort:              getOpenPort(t),
+		UseLinkMode:            false,
+		UpgradeID:              0,
+	}
 
+	t.Run("start correctly errors if stop is called first", func(t *testing.T) {
+		h := hub.New(conf, grpc.DialContext, "")
 		h.Stop(true)
+
+		errChan := make(chan error, 1)
 		go func() {
-			err = h.Start()
+			errChan <- h.Start()
 		}()
-		//Using Eventually ensures the test will not stall forever if this test fails.
-		Eventually(func() error { return err }).Should(Equal(hub.ErrHubStopped))
+
+		select {
+		case err := <-errChan:
+			if !xerrors.Is(err, hub.ErrHubStopped) {
+				t.Errorf("got error %#v want %#v", err, hub.ErrHubStopped)
+			}
+		case <-time.After(timeout): // use timeout to prevent test from hanging
+			t.Error("timeout exceeded")
+		}
 	})
 
-	It("will return an error from Start() if it cannot listen on a port", func() {
-		// Steal a port, and then try to start the hub on the same port.
-		listener, err := net.Listen("tcp", ":0")
-		Expect(err).NotTo(HaveOccurred())
-		defer listener.Close()
+	t.Run("start returns an error when port is in use", func(t *testing.T) {
+		portInUse, closeListener := mustListen(t)
+		defer closeListener()
 
-		_, portString, err := net.SplitHostPort(listener.Addr().String())
-		Expect(err).NotTo(HaveOccurred())
+		conf.Port = portInUse
+		h := hub.New(conf, grpc.DialContext, "")
 
-		conf.Port, err = strconv.Atoi(portString)
-		Expect(err).NotTo(HaveOccurred())
-
-		h := hub.New(conf, mockDialer, "")
-
+		errChan := make(chan error, 1)
 		go func() {
-			err = h.Start()
+			errChan <- h.Start()
 		}()
-		//Using Eventually ensures the test will not stall forever if this test fails.
-		Eventually(func() error { return err }).Should(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("failed to listen"))
+
+		select {
+		case err := <-errChan:
+			expected := "failed to listen"
+			if err != nil && !strings.Contains(err.Error(), expected) {
+				t.Errorf("got error %#v want %#v", err, expected)
+			}
+		case <-time.After(timeout): // use timeout to prevent test from hanging
+			t.Error("timeout exceeded")
+		}
 	})
 
 	// This is inherently testing a race. It will give false successes instead
 	// of false failures, so DO NOT ignore transient failures in this test!
-	It("will return from Start() if Stop is called concurrently", func() {
-		h := hub.New(conf, mockDialer, "")
-		done := make(chan bool, 1)
+	t.Run("will return from Start() if Stop is called concurrently", func(t *testing.T) {
+		h := hub.New(conf, grpc.DialContext, "")
+
+		readyChan := make(chan bool, 1)
+		go func() {
+			_ = h.Start()
+			readyChan <- true
+		}()
+
+		h.Stop(true)
+
+		select {
+		case isReady := <-readyChan:
+			if !isReady {
+				t.Errorf("expected start to return after calling stop")
+			}
+		case <-time.After(timeout): // use timeout to prevent test from hanging
+			t.Error("timeout exceeded")
+		}
+	})
+}
+
+// getTcpListener returns a net.Listener and a function to close the listener
+// for use in a defer.
+func getTcpListener(t *testing.T) (net.Listener, func()) {
+	t.Helper()
+
+	listener, err := net.Listen("tcp", ":0")
+	if err != nil {
+		t.Errorf("unexpected error: %#v", err)
+	}
+
+	closeListener := func() {
+		err := listener.Close()
+		if err != nil {
+			t.Fatalf("closing listener %#v", err)
+		}
+	}
+
+	return listener, closeListener
+}
+
+func getOpenPort(t *testing.T) int {
+	t.Helper()
+
+	listener, closeListener := getTcpListener(t)
+	defer closeListener()
+
+	return listener.Addr().(*net.TCPAddr).Port
+}
+
+func mustListen(t *testing.T) (int, func()) {
+	t.Helper()
+
+	listener, closeListener := getTcpListener(t)
+	port := listener.Addr().(*net.TCPAddr).Port
+
+	return port, closeListener
+}
+
+// TODO: These tests would be faster and more testable if we pass in a gRPC
+//  dialer to AgentConns similar to how we test RestartAgents. Thus, we would be
+//  able to use bufconn.Listen when creating a gRPC dialer. But since there
+//  are many callers to AgentConns that is not an easy change.
+func TestAgentConns(t *testing.T) {
+	source := hub.MustCreateCluster(t, []greenplum.SegConfig{
+		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: "p"},
+		{ContentID: -1, DbID: 2, Port: 15432, Hostname: "standby", DataDir: "/data/qddir/seg-1", Role: "m"},
+		{ContentID: 0, DbID: 3, Port: 25432, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: "p"},
+		{ContentID: 0, DbID: 4, Port: 25432, Hostname: "sdw1-mirror", DataDir: "/data/dbfast_mirror1/seg1", Role: "m"},
+		{ContentID: 1, DbID: 5, Port: 25433, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: "p"},
+		{ContentID: 1, DbID: 6, Port: 25433, Hostname: "sdw2-mirror", DataDir: "/data/dbfast_mirror2/seg2", Role: "m"},
+	})
+
+	target := hub.MustCreateCluster(t, []greenplum.SegConfig{
+		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "standby", DataDir: "/data/qddir/seg-1", Role: "p"},
+		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "sdw1-mirror", DataDir: "/data/dbfast1/seg1", Role: "p"},
+		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "sdw2-mirror", DataDir: "/data/dbfast2/seg2", Role: "p"},
+	})
+
+	agentServer, dialer, agentPort := mock_agent.NewMockAgentServer()
+	defer agentServer.Stop()
+
+	conf := &hub.Config{
+		Source:                 source,
+		Target:                 target,
+		TargetInitializeConfig: hub.InitializeConfig{},
+		Port:                   getOpenPort(t),
+		AgentPort:              agentPort,
+		UseLinkMode:            false,
+		UpgradeID:              0,
+	}
+
+	testhelper.SetupTestLogger()
+
+	t.Run("closes open connections when shutting down", func(t *testing.T) {
+		h := hub.New(conf, dialer, "")
 
 		go func() {
-			// This test is being ported to go-style testing so do a nolint for now.
-			h.Start() //nolint
-			done <- true
+			_ = h.Start()
 		}()
+
+		// creating connections
+		agentConns, err := h.AgentConns()
+		if err != nil {
+			t.Errorf("unexpected error: %#v", err)
+		}
+
+		ensureAgentConnsReachState(t, agentConns, connectivity.Ready)
+
+		// closing connections
 		h.Stop(true)
+		if err != nil {
+			t.Errorf("unexpected error: %#v", err)
+		}
 
-		Eventually(done).Should(Receive())
+		ensureAgentConnsReachState(t, agentConns, connectivity.Shutdown)
 	})
 
-	It("closes open connections when shutting down", func() {
-		h := hub.New(conf, mockDialer, "")
-		// This test is being ported to go-style testing so do a nolint for now.
-		go h.Start() //nolint
+	t.Run("retrieves the agent connections for the source cluster hosts excluding the master", func(t *testing.T) {
+		h := hub.New(conf, dialer, "")
 
-		By("creating connections")
-		conns, err := h.AgentConns()
-		Expect(err).ToNot(HaveOccurred())
+		go func() {
+			_ = h.Start()
+		}()
 
-		for _, conn := range conns {
-			Eventually(func() connectivity.State { return conn.Conn.GetState() }).Should(Equal(connectivity.Ready))
+		agentConns, err := h.AgentConns()
+		if err != nil {
+			t.Errorf("unexpected error: %#v", err)
 		}
 
-		By("closing the connections")
-		h.Stop(true)
-		Expect(err).ToNot(HaveOccurred())
+		ensureAgentConnsReachState(t, agentConns, connectivity.Ready)
 
-		for _, conn := range conns {
-			Eventually(func() connectivity.State { return conn.Conn.GetState() }).Should(Equal(connectivity.Shutdown))
+		var hosts []string
+		for _, conn := range agentConns {
+			hosts = append(hosts, conn.Hostname)
+		}
+		sort.Strings(hosts)
+
+		expected := []string{"sdw1", "sdw1-mirror", "sdw2", "sdw2-mirror", "standby"}
+		if !reflect.DeepEqual(hosts, expected) {
+			t.Errorf("got %v want %v", hosts, expected)
 		}
 	})
 
-	It("retrieves the agent connections for the hosts of non-master segments", func() {
-		h := hub.New(conf, mockDialer, "")
-
-		conns, err := h.AgentConns()
-		Expect(err).ToNot(HaveOccurred())
-
-		for _, conn := range conns {
-			Eventually(func() connectivity.State { return conn.Conn.GetState() }).Should(Equal(connectivity.Ready))
-		}
-
-		var allHosts []string
-		for _, conn := range conns {
-			allHosts = append(allHosts, conn.Hostname)
-		}
-		Expect(allHosts).To(ConsistOf([]string{
-			"host1", "host2", "standby-host", "mirror-host1", "mirror-host2",
-		}))
-	})
-
-	It("saves grpc connections for future calls", func() {
-		h := hub.New(conf, mockDialer, "")
+	t.Run("saves grpc connections for future calls", func(t *testing.T) {
+		h := hub.New(conf, dialer, "")
 
 		newConns, err := h.AgentConns()
-		Expect(err).ToNot(HaveOccurred())
+		if err != nil {
+			t.Fatalf("unexpected error: %#v", err)
+		}
 
 		savedConns, err := h.AgentConns()
-		Expect(err).ToNot(HaveOccurred())
+		if err != nil {
+			t.Fatalf("unexpected error: %#v", err)
+		}
 
-		Expect(newConns).To(ConsistOf(savedConns))
+		if !reflect.DeepEqual(newConns, savedConns) {
+			t.Errorf("got %v want %v", newConns, savedConns)
+		}
 	})
 
 	// XXX This test takes 1.5 seconds because of EnsureConnsAreReady(...)
-	It("returns an error if any connections have non-ready states", func() {
-		h := hub.New(conf, mockDialer, "")
+	t.Run("returns an error if any connections have non-ready states", func(t *testing.T) {
+		h := hub.New(conf, dialer, "")
 
-		conns, err := h.AgentConns()
-		Expect(err).ToNot(HaveOccurred())
-
-		agentA.Stop()
-
-		for _, conn := range conns {
-			Eventually(func() connectivity.State { return conn.Conn.GetState() }).Should(Equal(connectivity.TransientFailure))
+		agentConns, err := h.AgentConns()
+		if err != nil {
+			t.Errorf("unexpected error: %#v", err)
 		}
 
+		agentServer.Stop()
+
+		ensureAgentConnsReachState(t, agentConns, connectivity.TransientFailure)
+
 		_, err = h.AgentConns()
-		Expect(err).To(HaveOccurred())
+		expected := "the connections to the following hosts were not ready"
+		if err != nil && !strings.Contains(err.Error(), expected) {
+			t.Errorf("got error %#v want %#v", err, expected)
+		}
 	})
 
-	It("returns an error if any connections have non-ready states when first dialing", func() {
+	t.Run("returns an error if any connections have non-ready states when first dialing", func(t *testing.T) {
+		expected := errors.New("ahh!")
 		errDialer := func(ctx context.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
-			return nil, errors.New("grpc dialer error")
+			return nil, expected
 		}
 
 		h := hub.New(conf, errDialer, "")
 
 		_, err := h.AgentConns()
-		Expect(err).To(HaveOccurred())
+		if !xerrors.Is(err, expected) {
+			t.Errorf("returned error %#v want %#v", err, expected)
+		}
 	})
-})
+}
+
+func ensureAgentConnsReachState(t *testing.T, agentConns []*hub.Connection, state connectivity.State) {
+	t.Helper()
+
+	for _, conn := range agentConns {
+		isReached, err := doesStateEventuallyReach(conn.Conn, state)
+		if err != nil {
+			t.Fatalf("unexpected error: %#v", err)
+		}
+		if !isReached {
+			t.Error("expected connectivity state to be reached")
+		}
+	}
+}
+
+func doesStateEventuallyReach(conn *grpc.ClientConn, state connectivity.State) (bool, error) {
+	startTime := time.Now()
+	timeout := 3 * time.Second
+
+	for {
+		if conn.GetState() == state {
+			return true, nil
+		}
+
+		if time.Since(startTime) > timeout {
+			return false, xerrors.Errorf("timeout exceeded")
+		}
+
+		time.Sleep(10 * time.Millisecond)
+	}
+}
 
 func TestHubSaveConfig(t *testing.T) {
 	source, target := testutils.CreateMultinodeSampleClusterPair("/tmp")
-	useLinkMode := false
-	conf := &hub.Config{source, target, hub.InitializeConfig{}, 12345, 54321, useLinkMode, 0}
+	conf := &hub.Config{
+		Source:                 source,
+		Target:                 target,
+		TargetInitializeConfig: hub.InitializeConfig{},
+		Port:                   12345,
+		AgentPort:              54321,
+		UseLinkMode:            false,
+		UpgradeID:              0,
+	}
 
 	h := hub.New(conf, nil, "")
 
