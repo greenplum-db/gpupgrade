@@ -88,7 +88,7 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 			// the TargetInitializeConfig's temporary assignments, and move this
 			// upgrade step back to before the target shutdown.
 			mirrors := func(seg *greenplum.SegConfig) bool {
-				return seg.Role == "m" && seg.ContentID != -1
+				return seg.IsMirror()
 			}
 
 			return UpgradeMirrors(s.StateDir, s.Target.MasterPort(),

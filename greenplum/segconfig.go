@@ -20,11 +20,19 @@ const (
 )
 
 func (s *SegConfig) IsMaster() bool {
-	return s.ContentID == -1 && s.Role == "p"
+	return s.ContentID == -1 && s.Role == PrimaryRole
 }
 
 func (s *SegConfig) IsStandby() bool {
-	return s.ContentID == -1 && s.Role == "m"
+	return s.ContentID == -1 && s.Role == MirrorRole
+}
+
+func (s *SegConfig) IsPrimary() bool {
+	return s.ContentID != -1 && s.Role == PrimaryRole
+}
+
+func (s *SegConfig) IsMirror() bool {
+	return s.ContentID != -1 && s.Role == MirrorRole
 }
 
 func GetSegmentConfiguration(connection *dbconn.DBConn) ([]SegConfig, error) {

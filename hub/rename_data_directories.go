@@ -78,7 +78,7 @@ func RenameSegmentDataDirs(agentConns []*Connection,
 			}
 
 			if primariesOnly {
-				return seg.Role == "p"
+				return seg.IsPrimary()
 			}
 
 			// Otherwise include mirrors and standby. (Master's excluded above.)

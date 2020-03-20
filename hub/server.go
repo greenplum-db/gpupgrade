@@ -431,7 +431,7 @@ func AgentHosts(c *greenplum.Cluster) []string {
 	uniqueHosts := make(map[string]bool)
 
 	excludingMaster := func(seg *greenplum.SegConfig) bool {
-		return !(seg.ContentID == -1 && seg.Role == "p")
+		return !seg.IsMaster()
 	}
 
 	for _, seg := range c.SelectSegments(excludingMaster) {
