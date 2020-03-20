@@ -17,6 +17,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
+	"github.com/greenplum-db/gpupgrade/hub/state"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/mock_agent"
@@ -43,7 +44,7 @@ var _ = Describe("Hub", func() {
 		hubToAgentPort int
 		source         *greenplum.Cluster
 		target         *greenplum.Cluster
-		conf           *hub.Config
+		conf           *state.Config
 		err            error
 		mockDialer     hub.Dialer
 		useLinkMode    bool
@@ -58,7 +59,7 @@ var _ = Describe("Hub", func() {
 			1:  {ContentID: 1, DbID: 3, Port: 25435, Hostname: "mirror-host2", DataDir: "/seg2"},
 		}
 		useLinkMode = false
-		conf = &hub.Config{source, target, hub.InitializeConfig{}, cliToHubPort, hubToAgentPort, useLinkMode}
+		conf = &state.Config{source, target, state.InitializeConfig{}, cliToHubPort, hubToAgentPort, useLinkMode}
 	})
 
 	AfterEach(func() {
@@ -198,7 +199,7 @@ var _ = Describe("Hub", func() {
 func TestHubSaveConfig(t *testing.T) {
 	source, target := testutils.CreateMultinodeSampleClusterPair("/tmp")
 	useLinkMode := false
-	conf := &hub.Config{source, target, hub.InitializeConfig{}, 12345, 54321, useLinkMode}
+	conf := &state.Config{source, target, state.InitializeConfig{}, 12345, 54321, useLinkMode}
 
 	h := hub.New(conf, nil, "")
 
@@ -222,13 +223,13 @@ func TestHubSaveConfig(t *testing.T) {
 		}()
 
 		// Write the hub's configuration to the pipe.
-		if err := h.SaveConfig(); err != nil {
-			t.Errorf("SaveConfig() returned error %+v", err)
+		if err := state.Save(h.StateDir, h.Config); err != nil {
+			t.Errorf("Save() returned error %+v", err)
 		}
 
 		// Reload the configuration from the read side of the pipe and ensure the
 		// contents are the same.
-		actual := new(hub.Config)
+		actual := new(state.Config)
 		if err := actual.Load(read); err != nil {
 			t.Errorf("loading configuration results: %+v", err)
 		}
@@ -248,7 +249,7 @@ func TestHubSaveConfig(t *testing.T) {
 			utils.System = utils.InitializeSystemFunctions()
 		}()
 
-		err := h.SaveConfig()
+		err := state.Save(h.StateDir, h.Config)
 		if !xerrors.Is(err, expected) {
 			t.Errorf("returned %#v, want %#v", err, expected)
 		}
@@ -264,7 +265,7 @@ func TestHubSaveConfig(t *testing.T) {
 			utils.System = utils.InitializeSystemFunctions()
 		}()
 
-		err := h.SaveConfig()
+		err := state.Save(h.StateDir, h.Config)
 
 		// multierror.Error that contains os.ErrInvalid is not itself an instance
 		// of os.ErrInvalid, so unpack it to check existence of os.ErrInvalid

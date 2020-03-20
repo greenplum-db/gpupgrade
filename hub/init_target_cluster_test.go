@@ -17,6 +17,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/hub/state"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
@@ -83,7 +84,7 @@ func TestGetCheckpointSegmentsAndEncoding(t *testing.T) {
 }
 
 func TestWriteSegmentArray(t *testing.T) {
-	test := func(t *testing.T, initializeConfig InitializeConfig, expected []string) {
+	test := func(t *testing.T, initializeConfig state.InitializeConfig, expected []string) {
 		t.Helper()
 
 		actual, err := WriteSegmentArray([]string{}, initializeConfig)
@@ -109,7 +110,7 @@ func TestWriteSegmentArray(t *testing.T) {
 	}
 
 	t.Run("renders the config file as expected", func(t *testing.T) {
-		config := InitializeConfig{
+		config := state.InitializeConfig{
 			Master: greenplum.SegConfig{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir_upgrade/seg-1", Role: "p", Port: 15433},
 			Primaries: []greenplum.SegConfig{
 				{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1_upgrade/seg1", Role: "p", Port: 15434},
@@ -127,7 +128,7 @@ func TestWriteSegmentArray(t *testing.T) {
 	})
 
 	t.Run("errors when source cluster contains no master segment", func(t *testing.T) {
-		_, err := WriteSegmentArray([]string{}, InitializeConfig{})
+		_, err := WriteSegmentArray([]string{}, state.InitializeConfig{})
 
 		if err == nil {
 			t.Errorf("expected error got nil")

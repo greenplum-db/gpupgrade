@@ -10,12 +10,14 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/db"
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/hub/state"
+	configPackage "github.com/greenplum-db/gpupgrade/hub/state"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 )
 
 // create source/target clusters, write to disk and re-read from disk to make sure it is "durable"
-func (s *Server) FillClusterConfigsSubStep(config *Config, conn *sql.DB, _ step.OutStreams, request *idl.InitializeRequest, saveConfig func() error) error {
+func (s *Server) FillClusterConfigsSubStep(config *configPackage.Config, conn *sql.DB, _ step.OutStreams, request *idl.InitializeRequest) error {
 	if err := CheckSourceClusterConfiguration(conn); err != nil {
 		return err
 	}
@@ -42,14 +44,14 @@ func (s *Server) FillClusterConfigsSubStep(config *Config, conn *sql.DB, _ step.
 		return err
 	}
 
-	if err := saveConfig(); err != nil {
+	if err := configPackage.Save(s.StateDir, s.Config); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func AssignDatadirsAndPorts(source *greenplum.Cluster, ports []int) (InitializeConfig, error) {
+func AssignDatadirsAndPorts(source *greenplum.Cluster, ports []int) (state.InitializeConfig, error) {
 	if len(ports) == 0 {
 		port := 50432
 		numberOfSegments := len(source.Mirrors) + len(source.Primaries) + 2 // +2 for master/standby
@@ -69,15 +71,15 @@ func AssignDatadirsAndPorts(source *greenplum.Cluster, ports []int) (InitializeC
 }
 
 // can return an error if we run out of ports to use
-func assignDatadirsAndCustomPorts(source *greenplum.Cluster, ports []int) (InitializeConfig, error) {
-	targetInitializeConfig := InitializeConfig{}
+func assignDatadirsAndCustomPorts(source *greenplum.Cluster, ports []int) (state.InitializeConfig, error) {
+	targetInitializeConfig := state.InitializeConfig{}
 
 	nextPortIndex := 0
 
 	if master, ok := source.Primaries[-1]; ok {
 		// Reserve a port for the master.
 		if nextPortIndex > len(ports)-1 {
-			return InitializeConfig{}, errors.New("not enough ports")
+			return state.InitializeConfig{}, errors.New("not enough ports")
 		}
 		master.Port = ports[nextPortIndex]
 		master.DataDir = upgradeDataDir(master.DataDir)
@@ -88,7 +90,7 @@ func assignDatadirsAndCustomPorts(source *greenplum.Cluster, ports []int) (Initi
 	if standby, ok := source.Mirrors[-1]; ok {
 		// Reserve a port for the standby.
 		if nextPortIndex > len(ports)-1 {
-			return InitializeConfig{}, errors.New("not enough ports")
+			return state.InitializeConfig{}, errors.New("not enough ports")
 		}
 		standby.Port = ports[nextPortIndex]
 		standby.DataDir = standby.DataDir + "_upgrade"
@@ -108,13 +110,13 @@ func assignDatadirsAndCustomPorts(source *greenplum.Cluster, ports []int) (Initi
 
 		if portIndex, ok := portIndexByHost[segment.Hostname]; ok {
 			if portIndex > len(ports)-1 {
-				return InitializeConfig{}, errors.New("not enough ports")
+				return state.InitializeConfig{}, errors.New("not enough ports")
 			}
 			segment.Port = ports[portIndex]
 			portIndexByHost[segment.Hostname]++
 		} else {
 			if nextPortIndex > len(ports)-1 {
-				return InitializeConfig{}, errors.New("not enough ports")
+				return state.InitializeConfig{}, errors.New("not enough ports")
 			}
 			segment.Port = ports[nextPortIndex]
 			portIndexByHost[segment.Hostname] = nextPortIndex + 1
@@ -133,13 +135,13 @@ func assignDatadirsAndCustomPorts(source *greenplum.Cluster, ports []int) (Initi
 		if segment, ok := source.Mirrors[content]; ok {
 			if portIndex, ok := portIndexByHost[segment.Hostname]; ok {
 				if portIndex > len(ports)-1 {
-					return InitializeConfig{}, errors.New("not enough ports")
+					return state.InitializeConfig{}, errors.New("not enough ports")
 				}
 				segment.Port = ports[portIndex]
 				portIndexByHost[segment.Hostname]++
 			} else {
 				if nextPortIndex > len(ports)-1 {
-					return InitializeConfig{}, errors.New("not enough ports")
+					return state.InitializeConfig{}, errors.New("not enough ports")
 				}
 				segment.Port = ports[nextPortIndex]
 				portIndexByHost[segment.Hostname] = nextPortIndex + 1

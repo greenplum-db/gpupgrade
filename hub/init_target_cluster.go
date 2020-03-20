@@ -16,6 +16,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/db"
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/hub/state"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -69,7 +70,7 @@ func (s *Server) CreateTargetCluster(stream step.OutStreams) error {
 		return errors.Wrap(err, "could not retrieve target configuration")
 	}
 
-	if err := s.SaveConfig(); err != nil {
+	if err := state.Save(s.StateDir, s.Config); err != nil {
 		return err
 	}
 
@@ -140,7 +141,7 @@ func upgradeDataDir(path string) string {
 	return filepath.Join(parent, filepath.Base(path))
 }
 
-func WriteSegmentArray(config []string, targetInitializeConfig InitializeConfig) ([]string, error) {
+func WriteSegmentArray(config []string, targetInitializeConfig state.InitializeConfig) ([]string, error) {
 	//Partition segments by host in order to correctly assign ports.
 	if targetInitializeConfig.Master == (greenplum.SegConfig{}) {
 		return nil, errors.New("source cluster contains no master segment")

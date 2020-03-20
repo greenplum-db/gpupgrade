@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	cluster2 "github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/hub/state"
 )
 
 func TestAssignPorts(t *testing.T) {
@@ -14,7 +15,7 @@ func TestAssignPorts(t *testing.T) {
 
 		cluster  *cluster2.Cluster
 		ports    []int
-		expected InitializeConfig
+		expected state.InitializeConfig
 	}{{
 		name: "sorts and deduplicates provided port range",
 		cluster: MustCreateCluster(t, []cluster2.SegConfig{
@@ -23,7 +24,7 @@ func TestAssignPorts(t *testing.T) {
 			{ContentID: 1, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: "p"},
 		}),
 		ports: []int{10, 9, 10, 9, 10, 8},
-		expected: InitializeConfig{
+		expected: state.InitializeConfig{
 			Master: cluster2.SegConfig{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir_upgrade/seg-1", Role: "p", Port: 8},
 			Primaries: []cluster2.SegConfig{
 				{ContentID: 0, DbID: 2, Hostname: "mdw", DataDir: "/data/dbfast1_upgrade/seg1", Role: "p", Port: 9},
@@ -38,7 +39,7 @@ func TestAssignPorts(t *testing.T) {
 			{ContentID: 2, DbID: 4, Hostname: "sdw1", DataDir: "/data/dbfast3/seg3", Role: "p"},
 		}),
 		ports: []int{},
-		expected: InitializeConfig{
+		expected: state.InitializeConfig{
 			Master: cluster2.SegConfig{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir_upgrade/seg-1", Role: "p", Port: 50432},
 			Primaries: []cluster2.SegConfig{
 				{ContentID: 0, DbID: 2, Hostname: "mdw", DataDir: "/data/dbfast1_upgrade/seg1", Role: "p", Port: 50433},
@@ -54,7 +55,7 @@ func TestAssignPorts(t *testing.T) {
 			{ContentID: 2, DbID: 4, Hostname: "sdw1", DataDir: "/data/dbfast3/seg3", Role: "p"},
 		}),
 		ports: []int{},
-		expected: InitializeConfig{
+		expected: state.InitializeConfig{
 			Master: cluster2.SegConfig{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir_upgrade/seg-1", Role: "p", Port: 50432},
 			Primaries: []cluster2.SegConfig{
 				{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1_upgrade/seg1", Role: "p", Port: 50433},
@@ -71,7 +72,7 @@ func TestAssignPorts(t *testing.T) {
 			{ContentID: 1, DbID: 5, Hostname: "sdw1", DataDir: "/data/dbfast_mirror2/seg2", Role: "m"},
 		}),
 		ports: []int{},
-		expected: InitializeConfig{
+		expected: state.InitializeConfig{
 			Master: cluster2.SegConfig{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir_upgrade/seg-1", Role: "p", Port: 50432},
 			Primaries: []cluster2.SegConfig{
 				{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1_upgrade/seg1", Role: "p", Port: 50433},
@@ -90,7 +91,7 @@ func TestAssignPorts(t *testing.T) {
 			{ContentID: 0, DbID: 3, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: "p"},
 		}),
 		ports: []int{},
-		expected: InitializeConfig{
+		expected: state.InitializeConfig{
 			Master:    cluster2.SegConfig{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir_upgrade/seg-1", Role: "p", Port: 50432},
 			Standby:   cluster2.SegConfig{ContentID: -1, DbID: 2, Hostname: "smdw", DataDir: "/data/standby_upgrade", Role: "m", Port: 50433},
 			Primaries: []cluster2.SegConfig{{ContentID: 0, DbID: 3, Hostname: "sdw1", DataDir: "/data/dbfast1_upgrade/seg1", Role: "p", Port: 50434}},
@@ -103,7 +104,7 @@ func TestAssignPorts(t *testing.T) {
 			{ContentID: 0, DbID: 3, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: "p"},
 		}),
 		ports: []int{},
-		expected: InitializeConfig{
+		expected: state.InitializeConfig{
 			Master:    cluster2.SegConfig{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir_upgrade/seg-1", Role: "p", Port: 50432},
 			Standby:   cluster2.SegConfig{ContentID: -1, DbID: 2, Hostname: "mdw", DataDir: "/data/standby_upgrade", Role: "m", Port: 50433},
 			Primaries: []cluster2.SegConfig{{ContentID: 0, DbID: 3, Hostname: "sdw1", DataDir: "/data/dbfast1_upgrade/seg1", Role: "p", Port: 50434}},
@@ -116,7 +117,7 @@ func TestAssignPorts(t *testing.T) {
 			{ContentID: 0, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: "p"},
 		}),
 		ports: []int{},
-		expected: InitializeConfig{
+		expected: state.InitializeConfig{
 			Master:    cluster2.SegConfig{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir_upgrade/seg-1", Role: "p", Port: 50432},
 			Standby:   cluster2.SegConfig{ContentID: -1, DbID: 2, Hostname: "mdw", DataDir: "/data/standby_upgrade", Role: "m", Port: 50433},
 			Primaries: []cluster2.SegConfig{{ContentID: 0, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast1_upgrade/seg1", Role: "p", Port: 50434}},
@@ -129,7 +130,7 @@ func TestAssignPorts(t *testing.T) {
 			{ContentID: 0, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: "p"},
 		}),
 		ports: []int{1, 2, 3},
-		expected: InitializeConfig{
+		expected: state.InitializeConfig{
 			Master:    cluster2.SegConfig{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir_upgrade/seg-1", Role: "p", Port: 1},
 			Standby:   cluster2.SegConfig{ContentID: -1, DbID: 2, Hostname: "mdw", DataDir: "/data/standby_upgrade", Role: "m", Port: 2},
 			Primaries: []cluster2.SegConfig{{ContentID: 0, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast1_upgrade/seg1", Role: "p", Port: 3}},
@@ -147,7 +148,7 @@ func TestAssignPorts(t *testing.T) {
 			{ContentID: 2, DbID: 8, Hostname: "sdw1", DataDir: "/data/dbfast_mirror3/seg3", Role: "m"},
 		}),
 		ports: []int{1, 2, 3, 4, 5},
-		expected: InitializeConfig{
+		expected: state.InitializeConfig{
 			Master:  cluster2.SegConfig{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir_upgrade/seg-1", Role: "p", Port: 1},
 			Standby: cluster2.SegConfig{ContentID: -1, DbID: 2, Hostname: "mdw", DataDir: "/data/standby_upgrade", Role: "m", Port: 2},
 			Primaries: []cluster2.SegConfig{

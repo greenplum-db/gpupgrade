@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -14,6 +13,8 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	. "github.com/greenplum-db/gpupgrade/hub"
+	"github.com/greenplum-db/gpupgrade/hub/state"
+	configPackage "github.com/greenplum-db/gpupgrade/hub/state"
 	"github.com/greenplum-db/gpupgrade/testutils"
 )
 
@@ -57,7 +58,7 @@ func TestUpdateCatalog(t *testing.T) {
 		t.Fatalf("failed to set GPUPGRADE_HOME %#v", err)
 	}
 
-	config := filepath.Join(tempDir, ConfigFileName)
+	config := state.GetConfigFilepath(tempDir)
 	data := `{
 	"Source": {
 		"BinDir": "/usr/local/gpdb5/bin",
@@ -79,7 +80,7 @@ func TestUpdateCatalog(t *testing.T) {
 		t.Fatalf("creating %s: %+v", config, err)
 	}
 
-	conf := &Config{src, &greenplum.Cluster{}, InitializeConfig{}, 0, port, useLinkMode}
+	conf := &configPackage.Config{src, &greenplum.Cluster{}, configPackage.InitializeConfig{}, 0, port, useLinkMode}
 	server := New(conf, nil, tempDir)
 
 	t.Run("updates ports for every segment", func(t *testing.T) {

@@ -18,6 +18,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
+	"github.com/greenplum-db/gpupgrade/hub/state"
 )
 
 func main() {
@@ -35,7 +36,7 @@ func main() {
 
 	defer file.Close()
 
-	var config hub.Config
+	var config state.Config
 	// load the contents of the file to config
 	err = config.Load(file)
 	if err != nil {

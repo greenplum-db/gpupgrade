@@ -2,12 +2,9 @@ package hub
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -24,8 +21,8 @@ import (
 	grpcStatus "google.golang.org/grpc/status"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/hub/state"
 	"github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/daemon"
 	"github.com/greenplum-db/gpupgrade/utils/log"
 )
@@ -38,7 +35,7 @@ var ErrHubStopped = errors.New("hub is stopped")
 type Dialer func(ctx context.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error)
 
 type Server struct {
-	*Config
+	*state.Config
 
 	StateDir string
 
@@ -68,7 +65,7 @@ type Connection struct {
 	CancelContext func()
 }
 
-func New(conf *Config, grpcDialer Dialer, stateDir string) *Server {
+func New(conf *state.Config, grpcDialer Dialer, stateDir string) *Server {
 	h := &Server{
 		Config:     conf,
 		StateDir:   stateDir,
@@ -351,80 +348,6 @@ func (s *Server) closeAgentConns() {
 		}
 		conn.Conn.WaitForStateChange(context.Background(), currState)
 	}
-}
-
-type InitializeConfig struct {
-	Standby   greenplum.SegConfig
-	Master    greenplum.SegConfig
-	Primaries []greenplum.SegConfig
-	Mirrors   []greenplum.SegConfig
-}
-
-// Config contains all the information that will be persisted to/loaded from
-// from disk during calls to Save() and Load().
-type Config struct {
-	Source *greenplum.Cluster
-	Target *greenplum.Cluster
-
-	// TargetInitializeConfig contains all the info needed to initialize the
-	// target cluster's master, standby, primaries and mirrors.
-	TargetInitializeConfig InitializeConfig
-
-	Port        int
-	AgentPort   int
-	UseLinkMode bool
-}
-
-func (c *Config) Load(r io.Reader) error {
-	dec := json.NewDecoder(r)
-	return dec.Decode(c)
-}
-
-func (c *Config) Save(w io.Writer) error {
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "  ")
-	return enc.Encode(c)
-}
-
-// SaveConfig persists the hub's configuration to disk.
-func (s *Server) SaveConfig() (err error) {
-	// TODO: Switch to an atomic implementation like renameio. Consider what
-	// happens if Config.Save() panics: we'll have truncated the file
-	// on disk and the hub will be unable to recover. For now, since we normally
-	// only save the configuration during initialize and any configuration
-	// errors could be fixed by reinitializing, the risk seems small.
-	file, err := utils.System.Create(filepath.Join(s.StateDir, ConfigFileName))
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if cerr := file.Close(); cerr != nil {
-			cerr = xerrors.Errorf("closing hub configuration: %w", cerr)
-			err = multierror.Append(err, cerr).ErrorOrNil()
-		}
-	}()
-
-	err = s.Config.Save(file)
-	if err != nil {
-		return xerrors.Errorf("saving hub configuration: %w", err)
-	}
-
-	return nil
-}
-
-func LoadConfig(conf *Config, path string) error {
-	file, err := os.Open(path)
-	if err != nil {
-		return xerrors.Errorf("opening configuration file: %w", err)
-	}
-	defer file.Close()
-
-	err = conf.Load(file)
-	if err != nil {
-		return xerrors.Errorf("reading configuration file: %w", err)
-	}
-
-	return nil
 }
 
 func AgentHosts(c *greenplum.Cluster) []string {

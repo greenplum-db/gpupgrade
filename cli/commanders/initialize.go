@@ -4,11 +4,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 
+	"github.com/greenplum-db/gpupgrade/hub/state"
 	"github.com/greenplum-db/gpupgrade/idl"
-
-	"github.com/greenplum-db/gpupgrade/hub"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 
@@ -28,11 +26,11 @@ func CreateStateDir() (err error) {
 	stateDir := utils.GetStateDir()
 	err = os.Mkdir(stateDir, 0700)
 	if os.IsExist(err) {
-		gplog.Debug("State directory %s already present...skipping", stateDir)
+		gplog.Debug("Config directory %s already present...skipping", stateDir)
 		return nil
 	}
 	if err != nil {
-		gplog.Debug("State directory %s could not be created.", stateDir)
+		gplog.Debug("Config directory %s could not be created.", stateDir)
 		return err
 	}
 
@@ -43,30 +41,12 @@ func CreateInitialClusterConfigs() (err error) {
 	s := Substep(idl.Substep_GENERATING_CONFIG)
 	defer s.Finish(&err)
 
-	// if empty json configuration file exists, skip recreating it
-	filename := filepath.Join(utils.GetStateDir(), hub.ConfigFileName)
-	_, err = os.Stat(filename)
+	err = state.CreateConfigFile()
 
-	// if the file exists, there will be no error or if there is an error it might
-	// also indicate that the file exists, in either case don't overwrite the file
-	if err == nil || os.IsExist(err) {
-		gplog.Debug("Initial cluster configuration file %s already present...skipping", filename)
-		return nil
-	}
-
-	// if the err is anything other than file does not exist, error out
-	if !os.IsNotExist(err) {
-		gplog.Debug("Check to find presence of initial cluster configuration file %s failed", filename)
-		return err
-	}
-
-	file, err := os.Create(filename)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
 
-	fmt.Fprintf(file, "{}") // the hub will fill this in during initialization
 	return nil
 }
 

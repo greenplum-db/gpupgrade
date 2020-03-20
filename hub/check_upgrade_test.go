@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/hub/state"
 )
 
 type upgraderMock struct {
@@ -65,7 +66,7 @@ func TestMasterIsCheckedLinkModeTrue(t *testing.T) {
 
 	for _, linkMode := range []bool{true, false} {
 		t.Run(fmt.Sprintf("check upgrade correctly passes useLinkMode is %v", linkMode), func(t *testing.T) {
-			conf := &Config{
+			conf := &state.Config{
 				Source:      sourceCluster,
 				Target:      targetCluster,
 				UseLinkMode: linkMode,

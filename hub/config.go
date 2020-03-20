@@ -1,6 +1,7 @@
 package hub
 
 import (
+	"github.com/greenplum-db/gpupgrade/hub/state"
 	"github.com/greenplum-db/gpupgrade/idl"
 
 	"google.golang.org/grpc/codes"
@@ -9,8 +10,6 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/net/context"
 )
-
-const ConfigFileName = "config.json"
 
 func (s *Server) SetConfig(ctx context.Context, in *idl.SetConfigRequest) (*idl.SetConfigReply, error) {
 	switch in.Name {
@@ -22,7 +21,7 @@ func (s *Server) SetConfig(ctx context.Context, in *idl.SetConfigRequest) (*idl.
 		return nil, status.Errorf(codes.NotFound, "%s is not a valid configuration key", in.Name)
 	}
 
-	if err := s.SaveConfig(); err != nil {
+	if err := state.Save(s.StateDir, s.Config); err != nil {
 		return &idl.SetConfigReply{}, err
 	}
 

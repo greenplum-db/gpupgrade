@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/hub/state"
 	"github.com/greenplum-db/gpupgrade/testutils"
 )
 
@@ -13,8 +14,8 @@ func TestConfig(t *testing.T) {
 	// "stream" refers to the io.Writer/Reader interfaces.
 	t.Run("saves itself to the provided stream", func(t *testing.T) {
 		source, target := testutils.CreateMultinodeSampleClusterPair("/tmp")
-		targetInitializeConfig := InitializeConfig{Master: greenplum.SegConfig{Hostname: "mdw"}}
-		original := &Config{source, target, targetInitializeConfig, 12345, 54321, false}
+		targetInitializeConfig := state.InitializeConfig{Master: greenplum.SegConfig{Hostname: "mdw"}}
+		original := &state.Config{source, target, targetInitializeConfig, 12345, 54321, false}
 
 		buf := new(bytes.Buffer)
 		err := original.Save(buf)
@@ -26,7 +27,7 @@ func TestConfig(t *testing.T) {
 		// consumed by Load()).
 		contents := buf.String()
 
-		duplicate := new(Config)
+		duplicate := new(state.Config)
 		err = duplicate.Load(buf)
 		if err != nil {
 			t.Errorf("Load() returned error %+v", err)

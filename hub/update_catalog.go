@@ -3,13 +3,13 @@ package hub
 import (
 	"database/sql"
 	"fmt"
-	"path/filepath"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/hub/state"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -174,9 +174,9 @@ func (s *Server) UpdateGpSegmentConfiguration(db *sql.DB) (err error) {
 			// After successfully changing the catalog, update the source and
 			// target cluster objects to match the catalog and persist to
 			// disk.
-			origConf := &Config{}
-			path := filepath.Join(utils.GetStateDir(), ConfigFileName)
-			err = LoadConfig(origConf, path)
+			origConf := &state.Config{}
+			path := state.GetConfigFilepath(utils.GetStateDir())
+			err = state.LoadConfig(origConf, path)
 			if err != nil {
 				err = xerrors.Errorf("loading config: %w", err)
 				return
@@ -188,7 +188,7 @@ func (s *Server) UpdateGpSegmentConfiguration(db *sql.DB) (err error) {
 			s.Target.BinDir = origConf.Target.BinDir
 			s.Target.Version = origConf.Target.Version
 
-			err = s.SaveConfig()
+			err = state.Save(s.StateDir, s.Config)
 		}
 	}()
 

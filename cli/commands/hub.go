@@ -3,7 +3,6 @@ package commands
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"runtime/debug"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -11,6 +10,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/greenplum-db/gpupgrade/hub"
+	state "github.com/greenplum-db/gpupgrade/hub/state"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/daemon"
 	"github.com/greenplum-db/gpupgrade/utils/log"
@@ -48,14 +48,14 @@ func Hub() *cobra.Command {
 			//
 			// they're not defined in the configuration (as happens
 			// pre-initialize), we still need good defaults.
-			conf := &hub.Config{
+			conf := &state.Config{
 				Port:        7527,
 				AgentPort:   6416,
 				UseLinkMode: false,
 			}
 
-			path := filepath.Join(stateDir, hub.ConfigFileName)
-			err = hub.LoadConfig(conf, path)
+			path := state.GetConfigFilepath(stateDir)
+			err = state.LoadConfig(conf, path)
 			if err != nil {
 				return err
 			}

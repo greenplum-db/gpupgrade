@@ -12,6 +12,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
+	"github.com/greenplum-db/gpupgrade/hub/state"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
 )
@@ -177,7 +178,7 @@ func TestGetDataDirPairs(t *testing.T) {
 			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
 		})
 
-		conf := &hub.Config{source, target, hub.InitializeConfig{}, 0, port, useLinkMode}
+		conf := &state.Config{source, target, state.InitializeConfig{}, 0, port, useLinkMode}
 		server := hub.New(conf, nil, "")
 
 		_, err := server.GetDataDirPairs()
@@ -199,7 +200,7 @@ func TestGetDataDirPairs(t *testing.T) {
 			{ContentID: 2, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 		})
 
-		conf := &hub.Config{source, target, hub.InitializeConfig{}, 0, port, useLinkMode}
+		conf := &state.Config{source, target, state.InitializeConfig{}, 0, port, useLinkMode}
 		server := hub.New(conf, nil, "")
 
 		_, err := server.GetDataDirPairs()
@@ -221,7 +222,7 @@ func TestGetDataDirPairs(t *testing.T) {
 			{ContentID: 1, DbID: 3, Hostname: "localhost", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 		})
 
-		conf := &hub.Config{source, target, hub.InitializeConfig{}, 0, port, useLinkMode}
+		conf := &state.Config{source, target, state.InitializeConfig{}, 0, port, useLinkMode}
 		server := hub.New(conf, nil, "")
 
 		_, err := server.GetDataDirPairs()

@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/hub/state"
 
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 )
@@ -53,7 +54,7 @@ func TestCopyMaster(t *testing.T) {
 	})
 	targetCluster.BinDir = "/target/bindir"
 
-	conf := &Config{
+	conf := &state.Config{
 		Source:      sourceCluster,
 		Target:      targetCluster,
 		UseLinkMode: false,

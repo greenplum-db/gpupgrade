@@ -14,6 +14,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
+	"github.com/greenplum-db/gpupgrade/hub/state"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
@@ -33,7 +34,7 @@ var (
 	client      *mock_idl.MockAgentClient
 	port        int
 	dir         string
-	hubConf     *hub.Config
+	hubConf     *state.Config
 	source      *greenplum.Cluster
 	target      *greenplum.Cluster
 	testHub     *hub.Server
@@ -62,7 +63,7 @@ var _ = BeforeEach(func() {
 	mockAgent, dialer, port = mock_agent.NewMockAgentServer()
 	client = mock_idl.NewMockAgentClient(ctrl)
 	useLinkMode = false
-	conf := &hub.Config{source, target, hub.InitializeConfig{}, 0, port, useLinkMode}
+	conf := &state.Config{source, target, state.InitializeConfig{}, 0, port, useLinkMode}
 	testHub = hub.New(conf, dialer, dir)
 })
 
