@@ -151,7 +151,7 @@ func (s *Server) Stop(closeAgentConns bool) {
 
 func (s *Server) RestartAgents(ctx context.Context, in *idl.RestartAgentsRequest) (*idl.RestartAgentsReply, error) {
 	restartedHosts, err := s.agentClient.RestartAllAgents(ctx,
-		SegmentHosts(s.Source),
+		AgentHosts(s.Source),
 		s.AgentPort,
 		s.StateDir)
 
@@ -167,7 +167,7 @@ func (s *Server) AgentConns() ([]*agent.Connection, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	err := s.agentClient.Connect(SegmentHosts(s.Source), s.AgentPort)
+	err := s.agentClient.Connect(AgentHosts(s.Source), s.AgentPort)
 
 	if err != nil {
 		return nil, err
@@ -250,7 +250,10 @@ func LoadConfig(conf *Config, path string) error {
 	return nil
 }
 
-func SegmentHosts(c *greenplum.Cluster) []string {
+//
+// Returns all of the hostnames where agents should run
+//
+func AgentHosts(c *greenplum.Cluster) []string {
 	uniqueHosts := make(map[string]bool)
 
 	excludingMaster := func(seg *greenplum.SegConfig) bool {

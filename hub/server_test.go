@@ -318,7 +318,7 @@ func TestAgentHosts(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			actual := hub.SegmentHosts(c.cluster)
+			actual := hub.AgentHosts(c.cluster)
 			sort.Strings(actual) // order not guaranteed
 
 			if !reflect.DeepEqual(actual, c.expected) {
