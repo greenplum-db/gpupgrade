@@ -60,6 +60,18 @@ func (c *Client) Connections() []*Connection {
 	return c.connections
 }
 
+func (c *Client) CloseConnections() {
+	for _, conn := range c.connections {
+		defer conn.CancelContext()
+		currState := conn.Conn.GetState()
+		err := conn.Conn.Close()
+		if err != nil {
+			gplog.Info(fmt.Sprintf("Error closing hub to agent connection. host: %s, err: %s", conn.Hostname, err.Error()))
+		}
+		conn.Conn.WaitForStateChange(context.Background(), currState)
+	}
+}
+
 func (c *Client) StopAllAgents() error {
 	var wg sync.WaitGroup
 	errs := make(chan error, len(c.connections))
@@ -94,18 +106,6 @@ func (c *Client) StopAllAgents() error {
 	}
 
 	return multiErr.ErrorOrNil()
-}
-
-func (c *Client) CloseConnections() {
-	for _, conn := range c.connections {
-		defer conn.CancelContext()
-		currState := conn.Conn.GetState()
-		err := conn.Conn.Close()
-		if err != nil {
-			gplog.Info(fmt.Sprintf("Error closing hub to agent connection. host: %s, err: %s", conn.Hostname, err.Error()))
-		}
-		conn.Conn.WaitForStateChange(context.Background(), currState)
-	}
 }
 
 func (c *Client) RestartAllAgents(ctx context.Context,
