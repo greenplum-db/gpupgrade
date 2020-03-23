@@ -11,13 +11,12 @@ import (
 	"github.com/greenplum-db/gpupgrade/db"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub/state"
-	configPackage "github.com/greenplum-db/gpupgrade/hub/state"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 )
 
 // create source/target clusters, write to disk and re-read from disk to make sure it is "durable"
-func (s *Server) FillClusterConfigsSubStep(config *configPackage.Config, conn *sql.DB, _ step.OutStreams, request *idl.InitializeRequest) error {
+func (s *Server) FillClusterConfigsSubStep(config *state.Config, conn *sql.DB, _ step.OutStreams, request *idl.InitializeRequest) error {
 	if err := CheckSourceClusterConfiguration(conn); err != nil {
 		return err
 	}

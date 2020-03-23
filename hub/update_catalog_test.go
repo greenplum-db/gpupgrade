@@ -14,7 +14,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	. "github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/hub/state"
-	configPackage "github.com/greenplum-db/gpupgrade/hub/state"
 	"github.com/greenplum-db/gpupgrade/testutils"
 )
 
@@ -80,7 +79,7 @@ func TestUpdateCatalog(t *testing.T) {
 		t.Fatalf("creating %s: %+v", config, err)
 	}
 
-	conf := &configPackage.Config{src, &greenplum.Cluster{}, configPackage.InitializeConfig{}, 0, port, useLinkMode}
+	conf := &state.Config{src, &greenplum.Cluster{}, state.InitializeConfig{}, 0, port, useLinkMode}
 	server := New(conf, nil, tempDir)
 
 	t.Run("updates ports for every segment", func(t *testing.T) {
