@@ -48,9 +48,14 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 )
 
-// These are ordered lists of the substeps in each step, to allow iteration over SubstepDescriptions when generating help text
 var (
-	InitializeSubsteps = []idl.Substep{
+	InitializeHelp string
+	ExecuteHelp    string
+	FinalizeHelp   string
+)
+
+func init() {
+	InitializeHelp = GenerateHelpString(initializeHelp, []idl.Substep{
 		idl.Substep_CREATING_DIRECTORIES,
 		idl.Substep_GENERATING_CONFIG,
 		idl.Substep_START_HUB,
@@ -62,15 +67,15 @@ var (
 		idl.Substep_SHUTDOWN_TARGET_CLUSTER,
 		idl.Substep_BACKUP_TARGET_MASTER,
 		idl.Substep_CHECK_UPGRADE,
-	}
-	ExecuteSubsteps = []idl.Substep{
+	})
+	ExecuteHelp = GenerateHelpString(executeHelp, []idl.Substep{
 		idl.Substep_SHUTDOWN_SOURCE_CLUSTER,
 		idl.Substep_UPGRADE_MASTER,
 		idl.Substep_COPY_MASTER,
 		idl.Substep_UPGRADE_PRIMARIES,
 		idl.Substep_START_TARGET_CLUSTER,
-	}
-	FinalizeSubsteps = []idl.Substep{
+	})
+	FinalizeHelp = GenerateHelpString(finalizeHelp, []idl.Substep{
 		idl.Substep_FINALIZE_SHUTDOWN_TARGET_CLUSTER,
 		idl.Substep_FINALIZE_UPDATE_TARGET_CATALOG_AND_CLUSTER_CONFIG,
 		idl.Substep_FINALIZE_UPDATE_DATA_DIRECTORIES,
@@ -78,8 +83,8 @@ var (
 		idl.Substep_FINALIZE_START_TARGET_CLUSTER,
 		idl.Substep_FINALIZE_UPGRADE_STANDBY,
 		idl.Substep_FINALIZE_UPGRADE_MIRRORS,
-	}
-)
+	})
+}
 
 func BuildRootCommand() *cobra.Command {
 	// TODO: if called without a subcommand, the cli prints a help message with timestamp.  Remove the timestamp.
@@ -291,11 +296,10 @@ func initialize() *cobra.Command {
 	var ports string
 	var linkMode bool
 
-	initializeHelp := GenerateHelpString(InitializeHelp, InitializeSubsteps)
 	subInit := &cobra.Command{
 		Use:   "initialize",
 		Short: "prepare the system for upgrade",
-		Long:  initializeHelp,
+		Long:  InitializeHelp,
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			// if diskFreeRatio is not explicitly set, use defaults
@@ -397,17 +401,16 @@ After executing, you will need to finalize.`)
 	subInit.Flags().StringVar(&ports, "temp-port-range", "", "set of ports to use when initializing the target cluster")
 	subInit.Flags().BoolVar(&linkMode, "link", false, "performs upgrade in link mode")
 
-	return addHelpToCommand(subInit, initializeHelp)
+	return addHelpToCommand(subInit, InitializeHelp)
 }
 
 func execute() *cobra.Command {
 	var verbose bool
 
-	executeHelp := GenerateHelpString(ExecuteHelp, ExecuteSubsteps)
 	cmd := &cobra.Command{
 		Use:   "execute",
 		Short: "executes the upgrade",
-		Long:  executeHelp,
+		Long:  ExecuteHelp,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
 
@@ -418,17 +421,16 @@ func execute() *cobra.Command {
 
 	cmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print the output stream from all substeps")
 
-	return addHelpToCommand(cmd, executeHelp)
+	return addHelpToCommand(cmd, ExecuteHelp)
 }
 
 func finalize() *cobra.Command {
 	var verbose bool
 
-	finalizeHelp := GenerateHelpString(FinalizeHelp, FinalizeSubsteps)
 	cmd := &cobra.Command{
 		Use:   "finalize",
 		Short: "finalizes the cluster after upgrade execution",
-		Long:  finalizeHelp,
+		Long:  FinalizeHelp,
 		Run: func(cmd *cobra.Command, args []string) {
 			client := connectToHub()
 			err := commanders.Finalize(client, verbose)
@@ -441,7 +443,7 @@ func finalize() *cobra.Command {
 
 	cmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print the output stream from all substeps")
 
-	return addHelpToCommand(cmd, finalizeHelp)
+	return addHelpToCommand(cmd, FinalizeHelp)
 }
 
 func parsePorts(val string) ([]uint32, error) {
@@ -556,7 +558,7 @@ var killServices = &cobra.Command{
 }
 
 const (
-	InitializeHelp = `
+	initializeHelp = `
 Runs through pre-upgrade checks and prepares the cluster for upgrade.
 
 Initialize will carry out the following sub-steps:
@@ -584,7 +586,7 @@ Optional Flags:
 
   -v, --verbose            outputs detailed logs for initialize
 `
-	ExecuteHelp = `
+	executeHelp = `
 Upgrades the master and primary segments to the target Greenplum version.
 
 Execute will carry out the following sub-steps:
@@ -598,7 +600,7 @@ Optional Flags:
 
   -v, --verbose   outputs detailed logs for execute
 `
-	FinalizeHelp = `
+	finalizeHelp = `
 Upgrades the standby master and mirror segments to the target Greenplum version.
 
 Finalize will carry out the following sub-steps:
