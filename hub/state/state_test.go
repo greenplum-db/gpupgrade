@@ -50,13 +50,13 @@ func TestSaveConfig(t *testing.T) {
 
 		// Write the hub's configuration to the pipe.
 		if err := state.Save(); err != nil {
-			t.Errorf("Save() returned error %+v", err)
+			t.Errorf("save() returned error %+v", err)
 		}
 
 		// Reload the configuration from the read side of the pipe and ensure the
 		// contents are the same.
 		actual := new(Config)
-		if err := actual.Load(read); err != nil {
+		if err := actual.load(read); err != nil {
 			t.Errorf("loading configuration results: %+v", err)
 		}
 

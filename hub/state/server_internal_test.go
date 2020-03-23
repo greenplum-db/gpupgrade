@@ -17,17 +17,17 @@ func TestConfig(t *testing.T) {
 		original := &Config{source, target, targetInitializeConfig, 12345, 54321, false}
 
 		buf := new(bytes.Buffer)
-		err := original.Save(buf)
+		err := original.save(buf)
 		if err != nil {
-			t.Errorf("Save() returned error %+v", err)
+			t.Errorf("save() returned error %+v", err)
 		}
 
-		// Save the buffer contents for later debugging (otherwise they'll be
+		// save the buffer contents for later debugging (otherwise they'll be
 		// consumed by Load()).
 		contents := buf.String()
 
 		duplicate := new(Config)
-		err = duplicate.Load(buf)
+		err = duplicate.load(buf)
 		if err != nil {
 			t.Errorf("Load() returned error %+v", err)
 		}

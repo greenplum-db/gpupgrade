@@ -36,13 +36,13 @@ func GetConfigFilepath(stateDir string) string {
 }
 
 // Config contains all the information that will be persisted to/loaded from
-// from disk during calls to Save() and Load().
-func (c *Config) Load(r io.Reader) error {
+// from disk during calls to save() and Load().
+func (c *Config) load(r io.Reader) error {
 	dec := json.NewDecoder(r)
 	return dec.Decode(c)
 }
 
-func (c *Config) Save(w io.Writer) error {
+func (c *Config) save(w io.Writer) error {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
 	return enc.Encode(c)

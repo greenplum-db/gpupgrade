@@ -16,7 +16,7 @@ type State struct {
 
 func (s *State) Save() (err error) {
 	// TODO: Switch to an atomic implementation like renameio. Consider what
-	// happens if config.Save() panics: we'll have truncated the file
+	// happens if config.save() panics: we'll have truncated the file
 	// on disk and the hub will be unable to recover. For now, since we normally
 	// only save the configuration during initialize and any configuration
 	// errors could be fixed by reinitializing, the risk seems small.
@@ -31,7 +31,7 @@ func (s *State) Save() (err error) {
 		}
 	}()
 
-	err = s.Config.Save(file)
+	err = s.Config.save(file)
 	if err != nil {
 		return xerrors.Errorf("saving hub configuration: %w", err)
 	}
@@ -48,7 +48,7 @@ func (s *State) Load() error {
 
 	defer file.Close()
 
-	err = s.Config.Load(file)
+	err = s.Config.load(file)
 
 	if err != nil {
 		return xerrors.Errorf("reading configuration file: %w", err)
