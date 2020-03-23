@@ -41,7 +41,8 @@ func CreateInitialClusterConfigs() (err error) {
 	s := Substep(idl.Substep_GENERATING_CONFIG)
 	defer s.Finish(&err)
 
-	err = state.CreateConfigFile()
+	st := state.NewState(utils.GetStateDir())
+	err = st.CreateConfigFile()
 
 	if err != nil {
 		return err

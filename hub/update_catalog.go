@@ -9,10 +9,8 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
-	"github.com/greenplum-db/gpupgrade/hub/state"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
-	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 // TODO: When in copy mode should we update the catalog and in-memory object of
@@ -174,21 +172,8 @@ func (s *Server) UpdateGpSegmentConfiguration(db *sql.DB) (err error) {
 			// After successfully changing the catalog, update the source and
 			// target cluster objects to match the catalog and persist to
 			// disk.
-			origConf := &state.Config{}
-			path := state.GetConfigFilepath(utils.GetStateDir())
-			err = state.LoadConfig(origConf, path)
-			if err != nil {
-				err = xerrors.Errorf("loading config: %w", err)
-				return
-			}
 
-			// TODO: this is out of sync now, as the standby/mirrors are added later.
-			//   replace with one without standby/mirrors
-			s.Target = origConf.Source
-			s.Target.BinDir = origConf.Target.BinDir
-			s.Target.Version = origConf.Target.Version
-
-			err = s.State.Save()
+			s.State.Load()
 		}
 	}()
 

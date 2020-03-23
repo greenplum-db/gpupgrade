@@ -54,8 +54,11 @@ func Hub() *cobra.Command {
 				UseLinkMode: false,
 			}
 
-			path := state.GetConfigFilepath(stateDir)
-			err = state.LoadConfig(conf, path)
+			s := state.State{
+				StateDir: stateDir,
+				Config:   conf,
+			}
+			err = s.Load()
 			if err != nil {
 				return err
 			}
