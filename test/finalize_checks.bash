@@ -18,7 +18,7 @@ _check_synchronized_cluster() {
         local synced
         synced=$(ssh -n "$master_host" "
             source ${GPHOME_NEW}/greenplum_path.sh
-            psql -p $master_port -At -d postgres << EOF
+            psql -X -p $master_port -At -d postgres << EOF
                 SELECT gp_request_fts_probe_scan();
                 SELECT EVERY(state='streaming' AND state IS NOT NULL)
                 FROM gp_stat_replication;
@@ -41,7 +41,7 @@ _check_replication_connections() {
     local rows
     rows=$(ssh -n "${host}" "
         source ${GPHOME_NEW}/greenplum_path.sh
-        psql -p $port -d postgres -AtF$'\t' -c \"
+        psql -X -p $port -d postgres -AtF$'\t' -c \"
             SELECT primaries.address, primaries.port, mirrors.hostname
             FROM gp_segment_configuration AS primaries
             JOIN gp_segment_configuration AS mirrors
@@ -67,7 +67,7 @@ wait_can_start_transactions() {
     for i in {1..10}; do
         ssh -n "${host}" "
             source ${GPHOME_NEW}/greenplum_path.sh
-            psql -p $port -At -d postgres << EOF
+            psql -X -p $port -At -d postgres << EOF
                 SELECT gp_request_fts_probe_scan();
                 BEGIN; CREATE TEMP TABLE temp_test(a int) DISTRIBUTED RANDOMLY; COMMIT;
 EOF
@@ -90,7 +90,7 @@ kill_contents() {
     local contents
     contents=$(ssh -n "$host" "
         source ${GPHOME_NEW}/greenplum_path.sh
-        psql -AtF$'\t' -p $port -d postgres -c \"
+        psql -X -AtF$'\t' -p $port -d postgres -c \"
             SELECT hostname, port, datadir FROM gp_segment_configuration
             WHERE $filter AND role = 'p'
         \"
@@ -114,7 +114,7 @@ create_table_with_name() {
     ssh -n "${host}" "
         source ${GPHOME_NEW}/greenplum_path.sh
         # -q suppresses all output from this command
-        psql -v ON_ERROR_STOP=1 -q -p $port -d postgres <<EOF
+        psql -X -v ON_ERROR_STOP=1 -q -p $port -d postgres <<EOF
             CREATE TABLE ${table_name} (a int) DISTRIBUTED BY (a);
             INSERT INTO ${table_name} SELECT * FROM generate_series(1,${size});
 EOF
@@ -157,7 +157,7 @@ contents_without_mirror() {
 
     ssh -n "$host" "
         source ${gphome}/greenplum_path.sh
-        psql -p $port -At -d postgres -c \"
+        psql -X -p $port -At -d postgres -c \"
             SELECT content
             FROM gp_segment_configuration
             GROUP BY content
@@ -198,7 +198,7 @@ validate_mirrors_and_standby() {
     local master_data_dir
     master_data_dir=$(ssh -n "${MASTER_HOST}" "
         source ${GPHOME_NEW}/greenplum_path.sh
-        psql -p $MASTER_PORT -At -d postgres -c \"
+        psql -X -p $MASTER_PORT -At -d postgres -c \"
             SELECT datadir FROM gp_segment_configuration
             WHERE content = -1 AND role = 'p'
         \"
@@ -207,7 +207,7 @@ validate_mirrors_and_standby() {
     local standby_info
     standby_info=$(ssh -n "${MASTER_HOST}" "
         source ${GPHOME_NEW}/greenplum_path.sh
-        psql -p $MASTER_PORT -AtF$'\t' -d postgres -c \"
+        psql -X -p $MASTER_PORT -AtF$'\t' -d postgres -c \"
             SELECT hostname, port, datadir FROM gp_segment_configuration
             WHERE content = -1 AND role = 'm'
         \"

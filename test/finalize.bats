@@ -6,7 +6,7 @@ load finalize_checks
 setup() {
     skip_if_no_gpdb
 
-    PSQL="$GPHOME/bin/psql --no-align --tuples-only postgres"
+    PSQL="$GPHOME/bin/psql -X --no-align --tuples-only postgres"
 
     setup_state_dir
 
