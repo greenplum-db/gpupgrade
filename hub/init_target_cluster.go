@@ -148,7 +148,7 @@ func WriteSegmentArray(config []string, targetInitializeConfig InitializeConfig)
 
 	master := targetInitializeConfig.Master
 	config = append(config,
-		fmt.Sprintf("QD_PRIMARY_ARRAY=%s~%d~%s~%d~%d~0",
+		fmt.Sprintf("QD_PRIMARY_ARRAY=%s~%d~%s~%d~%d",
 			master.Hostname,
 			master.Port,
 			master.DataDir,
@@ -160,7 +160,7 @@ func WriteSegmentArray(config []string, targetInitializeConfig InitializeConfig)
 	config = append(config, "declare -a PRIMARY_ARRAY=(")
 	for _, segment := range targetInitializeConfig.Primaries {
 		config = append(config,
-			fmt.Sprintf("\t%s~%d~%s~%d~%d~0",
+			fmt.Sprintf("\t%s~%d~%s~%d~%d",
 				segment.Hostname,
 				segment.Port,
 				segment.DataDir,
