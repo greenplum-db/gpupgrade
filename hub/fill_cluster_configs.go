@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"sort"
 
+	"github.com/greenplum-db/gpupgrade/upgrade"
+
 	"github.com/pkg/errors"
 
 	"github.com/greenplum-db/gpupgrade/db"
@@ -15,7 +17,10 @@ import (
 )
 
 // create source/target clusters, write to disk and re-read from disk to make sure it is "durable"
-func (s *Server) FillClusterConfigsSubStep(config *Config, conn *sql.DB, _ step.OutStreams, request *idl.InitializeRequest, saveConfig func() error) error {
+func FillClusterConfigsSubStep(config *Config, conn *sql.DB, _ step.OutStreams, request *idl.InitializeRequest, saveConfig func() error) error {
+	// Assign a new universal upgrade identifier.
+	config.UpgradeID = upgrade.NewID()
+
 	if err := CheckSourceClusterConfiguration(conn); err != nil {
 		return err
 	}
@@ -37,7 +42,7 @@ func (s *Server) FillClusterConfigsSubStep(config *Config, conn *sql.DB, _ step.
 		ports = append(ports, int(p))
 	}
 
-	s.TargetInitializeConfig, err = AssignDatadirsAndPorts(s.Source, ports)
+	config.TargetInitializeConfig, err = AssignDatadirsAndPorts(config.Source, ports, config.UpgradeID)
 	if err != nil {
 		return err
 	}
@@ -49,7 +54,7 @@ func (s *Server) FillClusterConfigsSubStep(config *Config, conn *sql.DB, _ step.
 	return nil
 }
 
-func AssignDatadirsAndPorts(source *greenplum.Cluster, ports []int) (InitializeConfig, error) {
+func AssignDatadirsAndPorts(source *greenplum.Cluster, ports []int, upgradeID upgrade.ID) (InitializeConfig, error) {
 	if len(ports) == 0 {
 		port := 50432
 		numberOfSegments := len(source.Mirrors) + len(source.Primaries) + 2 // +2 for master/standby
@@ -65,11 +70,11 @@ func AssignDatadirsAndPorts(source *greenplum.Cluster, ports []int) (InitializeC
 		ports = sanitize(ports)
 	}
 
-	return assignDatadirsAndCustomPorts(source, ports)
+	return assignDatadirsAndCustomPorts(source, ports, upgradeID)
 }
 
 // can return an error if we run out of ports to use
-func assignDatadirsAndCustomPorts(source *greenplum.Cluster, ports []int) (InitializeConfig, error) {
+func assignDatadirsAndCustomPorts(source *greenplum.Cluster, ports []int, upgradeID upgrade.ID) (InitializeConfig, error) {
 	targetInitializeConfig := InitializeConfig{}
 
 	nextPortIndex := 0
@@ -80,7 +85,7 @@ func assignDatadirsAndCustomPorts(source *greenplum.Cluster, ports []int) (Initi
 			return InitializeConfig{}, errors.New("not enough ports")
 		}
 		master.Port = ports[nextPortIndex]
-		master.DataDir = upgradeDataDir(master.DataDir)
+		master.DataDir = upgradeDataDirMaster(master.DataDir, upgradeID)
 		targetInitializeConfig.Master = master
 		nextPortIndex++
 	}
@@ -91,7 +96,7 @@ func assignDatadirsAndCustomPorts(source *greenplum.Cluster, ports []int) (Initi
 			return InitializeConfig{}, errors.New("not enough ports")
 		}
 		standby.Port = ports[nextPortIndex]
-		standby.DataDir = standby.DataDir + "_upgrade"
+		standby.DataDir = upgradeDataDir(standby.DataDir, upgradeID)
 		targetInitializeConfig.Standby = standby
 		nextPortIndex++
 	}
@@ -119,7 +124,7 @@ func assignDatadirsAndCustomPorts(source *greenplum.Cluster, ports []int) (Initi
 			segment.Port = ports[nextPortIndex]
 			portIndexByHost[segment.Hostname] = nextPortIndex + 1
 		}
-		segment.DataDir = upgradeDataDir(segment.DataDir)
+		segment.DataDir = upgradeDataDir(segment.DataDir, upgradeID)
 
 		targetInitializeConfig.Primaries = append(targetInitializeConfig.Primaries, segment)
 	}
@@ -144,7 +149,7 @@ func assignDatadirsAndCustomPorts(source *greenplum.Cluster, ports []int) (Initi
 				segment.Port = ports[nextPortIndex]
 				portIndexByHost[segment.Hostname] = nextPortIndex + 1
 			}
-			segment.DataDir = upgradeDataDir(segment.DataDir)
+			segment.DataDir = upgradeDataDir(segment.DataDir, upgradeID)
 
 			targetInitializeConfig.Mirrors = append(targetInitializeConfig.Mirrors, segment)
 		}

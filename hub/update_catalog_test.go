@@ -79,7 +79,7 @@ func TestUpdateCatalog(t *testing.T) {
 		t.Fatalf("creating %s: %+v", config, err)
 	}
 
-	conf := &Config{src, &greenplum.Cluster{}, InitializeConfig{}, 0, port, useLinkMode}
+	conf := &Config{src, &greenplum.Cluster{}, InitializeConfig{}, 0, port, useLinkMode, 0}
 	server := New(conf, nil, tempDir)
 
 	t.Run("updates ports for every segment", func(t *testing.T) {

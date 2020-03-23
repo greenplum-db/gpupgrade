@@ -25,6 +25,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/daemon"
 	"github.com/greenplum-db/gpupgrade/utils/log"
@@ -373,6 +374,7 @@ type Config struct {
 	Port        int
 	AgentPort   int
 	UseLinkMode bool
+	UpgradeID   upgrade.ID
 }
 
 func (c *Config) Load(r io.Reader) error {

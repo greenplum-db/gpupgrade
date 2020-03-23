@@ -14,7 +14,7 @@ func TestConfig(t *testing.T) {
 	t.Run("saves itself to the provided stream", func(t *testing.T) {
 		source, target := testutils.CreateMultinodeSampleClusterPair("/tmp")
 		targetInitializeConfig := InitializeConfig{Master: greenplum.SegConfig{Hostname: "mdw"}}
-		original := &Config{source, target, targetInitializeConfig, 12345, 54321, false}
+		original := &Config{source, target, targetInitializeConfig, 12345, 54321, false, 12345}
 
 		buf := new(bytes.Buffer)
 		err := original.Save(buf)

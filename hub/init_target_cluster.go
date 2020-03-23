@@ -6,19 +6,17 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"sync"
+
+	"github.com/greenplum-db/gpupgrade/upgrade"
 
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/pkg/errors"
-	"golang.org/x/net/context"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/db"
 	"github.com/greenplum-db/gpupgrade/greenplum"
-	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
-	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 func (s *Server) GenerateInitsystemConfig() error {
@@ -37,7 +35,7 @@ func (s *Server) writeConf(sourceDBConn *dbconn.DBConn) error {
 	}
 	defer sourceDBConn.Close()
 
-	gpinitsystemConfig, err := CreateInitialInitsystemConfig(s.Source.MasterDataDir())
+	gpinitsystemConfig, err := CreateInitialInitsystemConfig(s.Source.MasterDataDir(), s.Config.UpgradeID)
 	if err != nil {
 		return err
 	}
@@ -77,16 +75,6 @@ func (s *Server) CreateTargetCluster(stream step.OutStreams) error {
 }
 
 func (s *Server) InitTargetCluster(stream step.OutStreams) error {
-	agentConns, err := s.AgentConns()
-	if err != nil {
-		return errors.Wrap(err, "Could not get/create agents")
-	}
-
-	err = CreateAllDataDirectories(agentConns, s.Source)
-	if err != nil {
-		return err
-	}
-
 	return RunInitsystemForTargetCluster(stream, s.Target, s.initsystemConfPath())
 }
 
@@ -105,10 +93,10 @@ func GetCheckpointSegmentsAndEncoding(gpinitsystemConfig []string, dbConnector *
 	return gpinitsystemConfig, nil
 }
 
-func CreateInitialInitsystemConfig(sourceMasterDataDir string) ([]string, error) {
+func CreateInitialInitsystemConfig(sourceMasterDataDir string, upgradeID upgrade.ID) ([]string, error) {
 	gpinitsystemConfig := []string{`ARRAY_NAME="gp_upgrade cluster"`}
 
-	segPrefix, err := GetMasterSegPrefix(sourceMasterDataDir)
+	segPrefix, err := GetMasterSegPrefix(sourceMasterDataDir, upgradeID)
 	if err != nil {
 		return gpinitsystemConfig, errors.Wrap(err, "Could not get master segment prefix")
 	}
@@ -130,14 +118,23 @@ func WriteInitsystemFile(gpinitsystemConfig []string, gpinitsystemFilepath strin
 	return nil
 }
 
-func upgradeDataDir(path string) string {
+func upgradeDataDir(path string, upgradeID upgrade.ID) string {
 	// e.g.
 	//   /data/primary/seg1
 	// becomes
-	//   /data/primary_upgrade/seg1
+	//   /data/primary/seg1_456HJLN426
 	path = filepath.Clean(path)
-	parent := fmt.Sprintf("%s_upgrade", filepath.Dir(path))
-	return filepath.Join(parent, filepath.Base(path))
+	return fmt.Sprintf("%s_%s", path, upgradeID)
+}
+
+//TODO: combine this with the above function
+func upgradeDataDirMaster(path string, upgradeID upgrade.ID) string {
+	// e.g.
+	//   /data/primary/seg1
+	// becomes
+	//   /data/primary/seg1_456HJLN426
+	path = filepath.Clean(path)
+	return fmt.Sprintf("%s_%s-1", path, upgradeID)
 }
 
 func WriteSegmentArray(config []string, targetInitializeConfig InitializeConfig) ([]string, error) {
@@ -174,20 +171,6 @@ func WriteSegmentArray(config []string, targetInitializeConfig InitializeConfig)
 	return config, nil
 }
 
-func CreateAllDataDirectories(agentConns []*Connection, source *greenplum.Cluster) error {
-	targetDataDir := path.Dir(source.MasterDataDir()) + "_upgrade"
-	err := utils.CreateDataDirectory(targetDataDir)
-	if err != nil {
-		return err
-	}
-	err = CreateSegmentDataDirectories(agentConns, source)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func RunInitsystemForTargetCluster(stream step.OutStreams, target *greenplum.Cluster, gpinitsystemFilepath string) error {
 	gphome := filepath.Dir(path.Clean(target.BinDir)) //works around https://github.com/golang/go/issues/4837 in go10.4
 
@@ -215,69 +198,6 @@ func RunInitsystemForTargetCluster(stream step.OutStreams, target *greenplum.Clu
 	return nil
 }
 
-func GetMasterSegPrefix(datadir string) (string, error) {
-	const masterContentID = "-1"
-
-	base := path.Base(datadir)
-	if !strings.HasSuffix(base, masterContentID) {
-		return "", fmt.Errorf("path requires a master content identifier: '%s'", datadir)
-	}
-
-	segPrefix := strings.TrimSuffix(base, masterContentID)
-	if segPrefix == "" {
-		return "", fmt.Errorf("path has no segment prefix: '%s'", datadir)
-	}
-	return segPrefix, nil
-}
-
-func CreateSegmentDataDirectories(agentConns []*Connection, cluster *greenplum.Cluster) error {
-	wg := sync.WaitGroup{}
-	errChan := make(chan error, len(agentConns))
-
-	for _, conn := range agentConns {
-		conn := conn
-
-		// Selects all primaries belonging to this agent's host.
-		primaries := func(seg *greenplum.SegConfig) bool {
-			return seg.IsOnHost(conn.Hostname) && seg.IsPrimary()
-		}
-
-		wg.Add(1)
-		go func(c *Connection) {
-			defer wg.Done()
-
-			segments := cluster.SelectSegments(primaries)
-			if len(segments) == 0 {
-				// This can happen if a host contains only a standby and/or
-				// mirrors.
-				return
-			}
-
-			req := new(idl.CreateSegmentDataDirRequest)
-			for _, seg := range segments {
-				// gpinitsystem needs the *parent* directories of the new
-				// segment data directories to exist.
-				datadir := filepath.Dir(upgradeDataDir(seg.DataDir))
-				req.Datadirs = append(req.Datadirs, datadir)
-			}
-
-			_, err := c.AgentClient.CreateSegmentDataDirectories(context.Background(), req)
-			if err != nil {
-				gplog.Error("Error creating segment data directories on host %s: %s",
-					c.Hostname, err.Error())
-				errChan <- err
-			}
-		}(conn)
-	}
-
-	wg.Wait()
-	close(errChan)
-
-	// TODO: Use a multierror to differentiate errors between hosts.
-	for err := range errChan {
-		if err != nil {
-			return xerrors.Errorf("segment data directories: %w", err)
-		}
-	}
-	return nil
+func GetMasterSegPrefix(datadir string, upgradeID upgrade.ID) (string, error) {
+	return fmt.Sprintf("%s_%s", path.Base(datadir), upgradeID), nil
 }

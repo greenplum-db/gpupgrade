@@ -58,7 +58,7 @@ var _ = Describe("Hub", func() {
 			1:  {ContentID: 1, DbID: 3, Port: 25435, Hostname: "mirror-host2", DataDir: "/seg2"},
 		}
 		useLinkMode = false
-		conf = &hub.Config{source, target, hub.InitializeConfig{}, cliToHubPort, hubToAgentPort, useLinkMode}
+		conf = &hub.Config{source, target, hub.InitializeConfig{}, cliToHubPort, hubToAgentPort, useLinkMode, 0}
 	})
 
 	AfterEach(func() {
@@ -198,7 +198,7 @@ var _ = Describe("Hub", func() {
 func TestHubSaveConfig(t *testing.T) {
 	source, target := testutils.CreateMultinodeSampleClusterPair("/tmp")
 	useLinkMode := false
-	conf := &hub.Config{source, target, hub.InitializeConfig{}, 12345, 54321, useLinkMode}
+	conf := &hub.Config{source, target, hub.InitializeConfig{}, 12345, 54321, useLinkMode, 0}
 
 	h := hub.New(conf, nil, "")
 

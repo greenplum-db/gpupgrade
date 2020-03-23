@@ -43,7 +43,7 @@ func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initi
 			}
 		}()
 
-		return s.FillClusterConfigsSubStep(s.Config, conn, stream, in, s.SaveConfig)
+		return FillClusterConfigsSubStep(s.Config, conn, stream, in, s.SaveConfig)
 	})
 
 	st.Run(idl.Substep_START_AGENTS, func(_ step.OutStreams) error {

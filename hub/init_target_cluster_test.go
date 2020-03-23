@@ -2,7 +2,6 @@ package hub
 
 import (
 	"database/sql/driver"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -11,14 +10,11 @@ import (
 	"testing"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
-	"github.com/golang/mock/gomock"
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
-	"github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
@@ -45,14 +41,14 @@ func TestCreateInitialInitsystemConfig(t *testing.T) {
 			return "mdw", nil
 		}
 
-		actualConfig, err := CreateInitialInitsystemConfig("/data/qddir/seg-1")
+		actualConfig, err := CreateInitialInitsystemConfig("/data/qddir/seg-1", 0)
 		if err != nil {
 			t.Fatalf("got %#v, want nil", err)
 		}
 
 		expectedConfig := []string{
 			`ARRAY_NAME="gp_upgrade cluster"`,
-			"SEG_PREFIX=seg",
+			"SEG_PREFIX=seg-1_AAAAAAAAAAA",
 			"TRUSTED_SHELL=ssh",
 		}
 		if !reflect.DeepEqual(actualConfig, expectedConfig) {
@@ -133,53 +129,6 @@ func TestWriteSegmentArray(t *testing.T) {
 			t.Errorf("expected error got nil")
 		}
 	})
-}
-
-func TestCreateSegmentDataDirectories(t *testing.T) {
-	testhelper.SetupTestLogger() // initialize gplog
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	c := MustCreateCluster(t, []greenplum.SegConfig{
-		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: "p"},
-		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: "/data/dbfast1/seg1", Role: "p"},
-		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: "p"},
-		{ContentID: -1, DbID: 4, Port: 15433, Hostname: "host3", DataDir: "/data/qddir/seg-1", Role: "m"},
-		{ContentID: 0, DbID: 5, Port: 35432, Hostname: "host3", DataDir: "/data/dbfast1/seg1", Role: "m"},
-		{ContentID: 1, DbID: 6, Port: 35433, Hostname: "host3", DataDir: "/data/dbfast2/seg2", Role: "m"},
-	})
-
-	client := mock_idl.NewMockAgentClient(ctrl)
-	client.EXPECT().CreateSegmentDataDirectories(
-		gomock.Any(),
-		&idl.CreateSegmentDataDirRequest{
-			Datadirs: []string{"/data/dbfast1_upgrade"},
-		},
-	).Return(&idl.CreateSegmentDataDirReply{}, nil)
-
-	expected := errors.New("permission denied")
-	failedClient := mock_idl.NewMockAgentClient(ctrl)
-	failedClient.EXPECT().CreateSegmentDataDirectories(
-		gomock.Any(),
-		&idl.CreateSegmentDataDirRequest{
-			Datadirs: []string{"/data/dbfast2_upgrade"},
-		},
-	).Return(nil, expected)
-
-	// should not receive any connections as it contains only mirrors
-	mirrorClient := mock_idl.NewMockAgentClient(ctrl)
-
-	agentConns := []*Connection{
-		{nil, client, "host1", nil},
-		{nil, failedClient, "host2", nil},
-		{nil, mirrorClient, "host3", nil},
-	}
-
-	err := CreateSegmentDataDirectories(agentConns, c)
-	if !xerrors.Is(err, expected) {
-		t.Errorf("got %#v, want %#v", err, expected)
-	}
 }
 
 func TestRunInitsystemForTargetCluster(t *testing.T) {
@@ -304,35 +253,24 @@ func TestGetMasterSegPrefix(t *testing.T) {
 		}
 
 		for _, c := range cases {
-			actual, err := GetMasterSegPrefix(c.MasterDataDir)
+			actual, err := GetMasterSegPrefix(c.MasterDataDir, 0)
 			if err != nil {
 				t.Fatalf("got %#v, want nil", err)
 			}
 
-			expected := "gpseg"
+			expected := "gpseg-1_AAAAAAAAAAA"
 			if actual != expected {
 				t.Errorf("got %q, want %q", actual, expected)
 			}
 		}
 	})
+}
 
-	t.Run("returns errors when given", func(t *testing.T) {
-		cases := []struct {
-			desc          string
-			MasterDataDir string
-		}{
-			{"the empty string", ""},
-			{"a path without a content identifier", "/opt/myseg"},
-			{"a path with a segment content identifier", "/opt/myseg2"},
-			{"a path that is only a content identifier", "-1"},
-			{"a path that ends in only a content identifier", "///-1"},
-		}
-
-		for _, c := range cases {
-			_, err := GetMasterSegPrefix(c.MasterDataDir)
-			if err == nil {
-				t.Fatalf("got nil, want err")
-			}
-		}
-	})
+// TODO: expand on this test
+func TestUpgradeDataDir(t *testing.T) {
+	result := upgradeDataDir("foo", 0)
+	expected := "foo_AAAAAAAAAAA"
+	if result != expected {
+		t.Errorf("got: %s expected: %s", result, expected)
+	}
 }

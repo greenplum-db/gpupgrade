@@ -34,7 +34,9 @@ func (s *Server) UpdateCatalogAndClusterConfig(streams step.OutStreams) (err err
 	// UpdateCatalogAndClusterConfig mutates the target cluster with the new
 	// data directories which have yet to be reflected on disk in a later substep.
 	master := s.Target.Primaries[-1]
-	master.DataDir = upgradeDataDir(master.DataDir)
+
+	//TODO: fix this!...it should use the config's upgradeID
+	master.DataDir = upgradeDataDir(master.DataDir, 0)
 	segs := map[int]greenplum.SegConfig{-1: master}
 	oldTarget := &greenplum.Cluster{Primaries: segs, BinDir: s.Target.BinDir}
 
