@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/pkg/errors"
@@ -13,6 +14,8 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/idl"
 )
+
+const dialTimeout = 3 * time.Second
 
 type Connection struct {
 	// TODO: make these members package private
@@ -23,7 +26,7 @@ type Connection struct {
 }
 
 func newConnection(host string, port int, dialer Dialer) (*Connection, error) {
-	ctx, cancelFunc := context.WithTimeout(context.Background(), DialTimeout)
+	ctx, cancelFunc := context.WithTimeout(context.Background(), dialTimeout)
 
 	conn, err := dialer(ctx,
 		host+":"+strconv.Itoa(port),
