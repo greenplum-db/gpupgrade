@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/hashicorp/go-multierror"
 	"golang.org/x/xerrors"
@@ -30,6 +31,13 @@ type Config struct {
 	Port        int
 	AgentPort   int
 	UseLinkMode bool
+}
+
+const ConfigFileName = "config.json"
+
+// TODO: make private to package
+func GetConfigFilepath(stateDir string) string {
+	return filepath.Join(stateDir, ConfigFileName)
 }
 
 // Config contains all the information that will be persisted to/loaded from
