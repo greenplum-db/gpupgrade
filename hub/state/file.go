@@ -10,6 +10,8 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
+const ConfigFileName = "config.json"
+
 func GetConfigFilepath(stateDir string) string {
 	return filepath.Join(stateDir, ConfigFileName)
 }

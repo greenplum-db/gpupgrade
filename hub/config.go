@@ -1,7 +1,6 @@
 package hub
 
 import (
-	"github.com/greenplum-db/gpupgrade/hub/state"
 	"github.com/greenplum-db/gpupgrade/idl"
 
 	"google.golang.org/grpc/codes"
@@ -21,7 +20,7 @@ func (s *Server) SetConfig(ctx context.Context, in *idl.SetConfigRequest) (*idl.
 		return nil, status.Errorf(codes.NotFound, "%s is not a valid configuration key", in.Name)
 	}
 
-	if err := state.Save(s.StateDir, s.Config); err != nil {
+	if err := s.State.Save(); err != nil {
 		return &idl.SetConfigReply{}, err
 	}
 

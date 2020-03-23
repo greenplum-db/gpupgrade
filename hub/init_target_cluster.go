@@ -70,7 +70,7 @@ func (s *Server) CreateTargetCluster(stream step.OutStreams) error {
 		return errors.Wrap(err, "could not retrieve target configuration")
 	}
 
-	if err := state.Save(s.StateDir, s.Config); err != nil {
+	if err := s.State.Save(); err != nil {
 		return err
 	}
 

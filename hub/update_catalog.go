@@ -188,7 +188,7 @@ func (s *Server) UpdateGpSegmentConfiguration(db *sql.DB) (err error) {
 			s.Target.BinDir = origConf.Target.BinDir
 			s.Target.Version = origConf.Target.Version
 
-			err = state.Save(s.StateDir, s.Config)
+			err = s.State.Save()
 		}
 	}()
 

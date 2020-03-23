@@ -36,6 +36,7 @@ type Cluster struct {
 // divined from the database.
 func ClusterFromDB(conn *dbconn.DBConn, binDir string) (*Cluster, error) {
 	err := conn.Connect(1)
+
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't connect to cluster")
 	}

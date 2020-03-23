@@ -35,9 +35,7 @@ var ErrHubStopped = errors.New("hub is stopped")
 type Dialer func(ctx context.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error)
 
 type Server struct {
-	*state.Config
-
-	StateDir string
+	*state.State
 
 	agentConns []*Connection
 	grpcDialer Dialer
@@ -67,8 +65,10 @@ type Connection struct {
 
 func New(conf *state.Config, grpcDialer Dialer, stateDir string) *Server {
 	h := &Server{
-		Config:     conf,
-		StateDir:   stateDir,
+		State: &state.State{
+			Config:   conf,
+			StateDir: stateDir,
+		},
 		stopped:    make(chan struct{}, 1),
 		grpcDialer: grpcDialer,
 	}

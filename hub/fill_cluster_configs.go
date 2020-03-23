@@ -44,7 +44,7 @@ func (s *Server) FillClusterConfigsSubStep(config *configPackage.Config, conn *s
 		return err
 	}
 
-	if err := configPackage.Save(s.StateDir, s.Config); err != nil {
+	if err := s.State.Save(); err != nil {
 		return err
 	}
 

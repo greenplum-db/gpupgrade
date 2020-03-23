@@ -223,7 +223,7 @@ func TestHubSaveConfig(t *testing.T) {
 		}()
 
 		// Write the hub's configuration to the pipe.
-		if err := state.Save(h.StateDir, h.Config); err != nil {
+		if err := h.State.Save(); err != nil {
 			t.Errorf("Save() returned error %+v", err)
 		}
 
@@ -249,7 +249,7 @@ func TestHubSaveConfig(t *testing.T) {
 			utils.System = utils.InitializeSystemFunctions()
 		}()
 
-		err := state.Save(h.StateDir, h.Config)
+		err := h.State.Save()
 		if !xerrors.Is(err, expected) {
 			t.Errorf("returned %#v, want %#v", err, expected)
 		}
@@ -265,7 +265,7 @@ func TestHubSaveConfig(t *testing.T) {
 			utils.System = utils.InitializeSystemFunctions()
 		}()
 
-		err := state.Save(h.StateDir, h.Config)
+		err := h.State.Save()
 
 		// multierror.Error that contains os.ErrInvalid is not itself an instance
 		// of os.ErrInvalid, so unpack it to check existence of os.ErrInvalid
