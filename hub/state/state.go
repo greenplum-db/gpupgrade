@@ -14,7 +14,7 @@ type State struct {
 	*Config
 }
 
-func (s *State) Save() error {
+func (s *State) Save() (err error) {
 	// TODO: Switch to an atomic implementation like renameio. Consider what
 	// happens if config.Save() panics: we'll have truncated the file
 	// on disk and the hub will be unable to recover. For now, since we normally

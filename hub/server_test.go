@@ -3,15 +3,12 @@ package hub_test
 import (
 	"context"
 	"net"
-	"os"
 	"reflect"
 	"sort"
 	"strconv"
 	"testing"
 
-	multierror "github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
-	"golang.org/x/xerrors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 
@@ -195,93 +192,6 @@ var _ = Describe("Hub", func() {
 		Expect(err).To(HaveOccurred())
 	})
 })
-
-func TestHubSaveConfig(t *testing.T) {
-	source, target := testutils.CreateMultinodeSampleClusterPair("/tmp")
-	useLinkMode := false
-	conf := &state.Config{source, target, state.InitializeConfig{}, 12345, 54321, useLinkMode}
-
-	h := hub.New(conf, nil, "")
-
-	t.Run("saves configuration contents to disk", func(t *testing.T) {
-		// Set up utils.System.Create to return the write side of a pipe. We can
-		// read from the other side to confirm what was saved to "disk".
-		read, write, err := os.Pipe()
-		if err != nil {
-			t.Fatalf("creating pipe: %+v", err)
-		}
-		defer func() {
-			read.Close()
-			write.Close()
-		}()
-
-		utils.System.Create = func(path string) (*os.File, error) {
-			return write, nil
-		}
-		defer func() {
-			utils.System = utils.InitializeSystemFunctions()
-		}()
-
-		// Write the hub's configuration to the pipe.
-		if err := h.State.Save(); err != nil {
-			t.Errorf("Save() returned error %+v", err)
-		}
-
-		// Reload the configuration from the read side of the pipe and ensure the
-		// contents are the same.
-		actual := new(state.Config)
-		if err := actual.Load(read); err != nil {
-			t.Errorf("loading configuration results: %+v", err)
-		}
-
-		if !reflect.DeepEqual(h.Config, actual) {
-			t.Errorf("wrote config %#v, want %#v", actual, h.Config)
-		}
-	})
-
-	t.Run("bubbles up file creation errors", func(t *testing.T) {
-		expected := errors.New("can't create")
-
-		utils.System.Create = func(path string) (*os.File, error) {
-			return nil, expected
-		}
-		defer func() {
-			utils.System = utils.InitializeSystemFunctions()
-		}()
-
-		err := h.State.Save()
-		if !xerrors.Is(err, expected) {
-			t.Errorf("returned %#v, want %#v", err, expected)
-		}
-	})
-
-	t.Run("bubbles up file manipulation errors", func(t *testing.T) {
-		// A nil file will fail to write and close, so we can make sure things
-		// are handled correctly.
-		utils.System.Create = func(path string) (*os.File, error) {
-			return nil, nil
-		}
-		defer func() {
-			utils.System = utils.InitializeSystemFunctions()
-		}()
-
-		err := h.State.Save()
-
-		// multierror.Error that contains os.ErrInvalid is not itself an instance
-		// of os.ErrInvalid, so unpack it to check existence of os.ErrInvalid
-		var merr *multierror.Error
-		if !xerrors.As(err, &merr) {
-			t.Fatalf("returned %#v, want error type %T", err, merr)
-		}
-
-		for _, err := range merr.Errors {
-			// For nil Files, operations return os.ErrInvalid.
-			if !xerrors.Is(err, os.ErrInvalid) {
-				t.Errorf("returned error %#v, want %#v", err, os.ErrInvalid)
-			}
-		}
-	})
-}
 
 func TestAgentHosts(t *testing.T) {
 	cases := []struct {
