@@ -2,10 +2,8 @@ package agent_test
 
 import (
 	"log"
-	"net"
 	"os"
 	"os/exec"
-	"strings"
 	"testing"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
@@ -57,56 +55,16 @@ func TestRestartAgent(t *testing.T) {
 	hubAgent.SetExecCommand(exectest.NewCommand(gpupgrade_agent))
 	defer hubAgent.ResetExecCommand()
 
-	t.Run("does not start running agents", func(t *testing.T) {
-		dialer := func(ctx context.Context, address string) (net.Conn, error) {
-			return listener.Dial()
-		}
-
-		restartedHosts, err := hubAgent.RestartAllAgents(ctx, dialer, hostnames, port, stateDir)
-		if err != nil {
-			t.Errorf("returned %#v", err)
-		}
-		if len(restartedHosts) != 0 {
-			t.Errorf("restarted hosts %v", restartedHosts)
-		}
-	})
-
-	t.Run("only restarts down agents", func(t *testing.T) {
-		expectedHost := "host1"
-
-		dialer := func(ctx context.Context, address string) (net.Conn, error) {
-			if strings.HasPrefix(address, expectedHost) { //fail connection attempts to expectedHost
-				return nil, immediateFailure{}
-			}
-
-			return listener.Dial()
-		}
-
-		restartedHosts, err := hubAgent.RestartAllAgents(ctx, dialer, hostnames, port, stateDir)
-
-		if err != nil {
-			t.Errorf("returned %#v", err)
-		}
-
-		if len(restartedHosts) != 1 {
-			t.Errorf("expected one host to be restarted, got %d", len(restartedHosts))
-		}
-
-		if restartedHosts[0] != expectedHost {
-			t.Errorf("expected restarted host %s got: %v", expectedHost, restartedHosts)
-		}
-	})
+	TestDialer := func(ctx context.Context, target string, opts ...grpc.DialOption) (conn *grpc.ClientConn, err error) {
+		return nil, nil
+	}
 
 	t.Run("returns an error when gpupgrade agent fails", func(t *testing.T) {
 		hubAgent.SetExecCommand(exectest.NewCommand(gpupgrade_agent_Errors))
 
-		// we fail all connections here so that RestartAgents will run the
-		//  (error producing) gpupgrade_agent_Errors
-		dialer := func(ctx context.Context, address string) (net.Conn, error) {
-			return nil, immediateFailure{}
-		}
+		client := hubAgent.NewClient(TestDialer)
 
-		restartedHosts, err := hubAgent.RestartAllAgents(ctx, dialer, hostnames, port, stateDir)
+		restartedHosts, err := client.RestartAllAgents(ctx, hostnames, port, stateDir)
 		if err == nil {
 			t.Errorf("expected restart agents to fail")
 		}

@@ -3,7 +3,6 @@ package agent
 import (
 	"context"
 	"fmt"
-	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -35,9 +34,9 @@ func NewClient(dialer Dialer) *Client {
 	}
 }
 
-func (m *Client) Connect(hostnames []string, port int) error {
-	if m.connections != nil {
-		if err := m.ensureConnectionsAreReady(); err != nil {
+func (c *Client) Connect(hostnames []string, port int) error {
+	if c.connections != nil {
+		if err := c.ensureConnectionsAreReady(); err != nil {
 			gplog.Error("ensureConnsAreReady failed: %s", err)
 			return err
 		}
@@ -46,26 +45,26 @@ func (m *Client) Connect(hostnames []string, port int) error {
 	}
 
 	for _, host := range hostnames {
-		connection, err := newConnection(host, port, m.grpcDialer)
+		connection, err := newConnection(host, port, c.grpcDialer)
 		if err != nil {
 			return err
 		}
 
-		m.connections = append(m.connections, connection)
+		c.connections = append(c.connections, connection)
 	}
 
 	return nil
 }
 
-func (m *Client) Connections() []*Connection {
-	return m.connections
+func (c *Client) Connections() []*Connection {
+	return c.connections
 }
 
-func (m *Client) StopAllAgents() error {
+func (c *Client) StopAllAgents() error {
 	var wg sync.WaitGroup
-	errs := make(chan error, len(m.connections))
+	errs := make(chan error, len(c.connections))
 
-	for _, conn := range m.connections {
+	for _, conn := range c.connections {
 		wg.Add(1)
 
 		go func() {
@@ -97,8 +96,8 @@ func (m *Client) StopAllAgents() error {
 	return multiErr.ErrorOrNil()
 }
 
-func (m *Client) CloseConnections() {
-	for _, conn := range m.connections {
+func (c *Client) CloseConnections() {
+	for _, conn := range c.connections {
 		defer conn.CancelContext()
 		currState := conn.Conn.GetState()
 		err := conn.Conn.Close()
@@ -109,9 +108,7 @@ func (m *Client) CloseConnections() {
 	}
 }
 
-// TODO: make this a method on HubToAgentClient
-func RestartAllAgents(ctx context.Context,
-	dialer func(context.Context, string) (net.Conn, error),
+func (c *Client) RestartAllAgents(ctx context.Context,
 	hostnames []string,
 	port int,
 	stateDir string) ([]string, error) {
@@ -131,9 +128,6 @@ func RestartAllAgents(ctx context.Context,
 				grpc.WithBlock(),
 				grpc.WithInsecure(),
 				grpc.FailOnNonTempDialError(true),
-			}
-			if dialer != nil {
-				opts = append(opts, grpc.WithContextDialer(dialer))
 			}
 			conn, err := grpc.DialContext(timeoutCtx, address, opts...)
 			cancelFunc()

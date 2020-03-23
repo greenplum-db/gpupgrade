@@ -47,10 +47,10 @@ func newConnection(host string, port int, dialer Dialer) (*Connection, error) {
 	}, nil
 }
 
-func (m *Client) ensureConnectionsAreReady() error {
+func (c *Client) ensureConnectionsAreReady() error {
 	notReadyHostnames := []string{}
 
-	for _, conn := range m.connections {
+	for _, conn := range c.connections {
 		if conn.Conn.GetState() != connectivity.Ready {
 			notReadyHostnames = append(notReadyHostnames, conn.Hostname)
 		}

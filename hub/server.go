@@ -150,8 +150,7 @@ func (s *Server) Stop(closeAgentConns bool) {
 }
 
 func (s *Server) RestartAgents(ctx context.Context, in *idl.RestartAgentsRequest) (*idl.RestartAgentsReply, error) {
-	restartedHosts, err := agent.RestartAllAgents(ctx,
-		nil,
+	restartedHosts, err := s.agentClient.RestartAllAgents(ctx,
 		SegmentHosts(s.Source),
 		s.AgentPort,
 		s.StateDir)
