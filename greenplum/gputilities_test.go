@@ -131,17 +131,16 @@ func TestStartOrStopCluster(t *testing.T) {
 	t.Run("stop cluster detects that cluster is already shutdown", func(t *testing.T) {
 		pgrepCmd = exectest.NewCommand(PgrepCmd_Errors)
 
-		var skippedStopClusterCommand = true
-		startStopCmd = exectest.NewCommandWithVerifier(PgrepCmd,
-			func(path string, args ...string) {
-				skippedStopClusterCommand = false
-			})
-
-		gpUtilities := newGpStop(source, spyrunner.New(), pgrepCommand)
+		runner := spyrunner.New()
+		gpUtilities := newGpStop(source, runner, pgrepCommand)
 		err := gpUtilities.Stop()
 
+		if runner.TimesRunWasCalledWith("gpstop") != 0 {
+			t.Errorf("got %v calls to gpstop, expected zero",
+				runner.TimesRunWasCalledWith("gpstop"))
+		}
+
 		g.Expect(err).To(HaveOccurred())
-		g.Expect(skippedStopClusterCommand).To(Equal(true))
 	})
 
 	t.Run("start cluster successfully starts up cluster", func(t *testing.T) {
