@@ -18,7 +18,7 @@ import (
 // TODO: When in copy mode should we update the catalog and in-memory object of
 //  the source cluster?
 func (s *Server) UpdateCatalogAndClusterConfig(streams step.OutStreams) (err error) {
-	err = s.Target.StartMasterOnly(streams)
+	err = s.Target.GpStart(streams).StartMasterOnly()
 	if err != nil {
 		return xerrors.Errorf("failed to start target master: %w", err)
 	}
@@ -38,7 +38,7 @@ func (s *Server) UpdateCatalogAndClusterConfig(streams step.OutStreams) (err err
 	segs := map[int]greenplum.SegConfig{-1: master}
 	oldTarget := &greenplum.Cluster{Primaries: segs, BinDir: s.Target.BinDir}
 
-	err = oldTarget.StopMasterOnly(streams)
+	err = oldTarget.GpStop(streams).StopMasterOnly()
 	if err != nil {
 		return xerrors.Errorf("failed to stop target master: %w", err)
 	}

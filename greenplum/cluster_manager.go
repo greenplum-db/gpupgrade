@@ -32,11 +32,11 @@ func newGpStop(cluster *Cluster, runner Runner, pgrepCommand *pgrepCommand) *gpS
 	}
 }
 
-func (m *gpStart) start() error {
+func (m *gpStart) Start() error {
 	return m.runner.Run("gpstart", "-a", "-d", m.cluster.MasterDataDir())
 }
 
-func (m *gpStop) stopMasterOnly() error {
+func (m *gpStop) StopMasterOnly() error {
 	// TODO: why can't we call isPostmasterRunning for the !stop case?  If we do, we get this on the pipeline:
 	// Usage: pgrep [-flvx] [-d DELIM] [-n|-o] [-P PPIDLIST] [-g PGRPLIST] [-s SIDLIST]
 	// [-u EUIDLIST] [-U UIDLIST] [-G GIDLIST] [-t TERMLIST] [PATTERN]
@@ -51,11 +51,11 @@ func (m *gpStop) stopMasterOnly() error {
 	return m.runner.Run("gpstop", "-m", "-a", "-d", m.cluster.MasterDataDir())
 }
 
-func (m *gpStart) startMasterOnly() error {
+func (m *gpStart) StartMasterOnly() error {
 	return m.runner.Run("gpstart", "-m", "-a", "-d", m.cluster.MasterDataDir())
 }
 
-func (m *gpStop) stop() error {
+func (m *gpStop) Stop() error {
 	// TODO: why can't we call isPostmasterRunning for the !stop case?  If we do, we get this on the pipeline:
 	// Usage: pgrep [-flvx] [-d DELIM] [-n|-o] [-P PPIDLIST] [-g PGRPLIST] [-s SIDLIST]
 	// [-u EUIDLIST] [-U UIDLIST] [-G GIDLIST] [-t TERMLIST] [PATTERN]

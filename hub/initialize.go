@@ -79,7 +79,7 @@ func (s *Server) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest,
 	})
 
 	st.Run(idl.Substep_SHUTDOWN_TARGET_CLUSTER, func(stream step.OutStreams) error {
-		err := s.Target.Stop(stream)
+		err := s.Target.GpStop(stream).Stop()
 
 		if err != nil {
 			return xerrors.Errorf("failed to stop target cluster: %w", err)

@@ -268,24 +268,8 @@ func (c *Cluster) MasterPidFile() string {
 }
 
 //
-// Cluster Manager facade
+// Cluster utilities facade
 //
-func (c *Cluster) Start(stream OutStreams) error {
-	return c.GpStart(stream).start()
-}
-
-func (c *Cluster) Stop(stream OutStreams) error {
-	return c.GpStop(stream).stop()
-}
-
-func (c *Cluster) StartMasterOnly(stream OutStreams) error {
-	return c.GpStart(stream).startMasterOnly()
-}
-
-func (c *Cluster) StopMasterOnly(stream OutStreams) error {
-	return c.GpStop(stream).stopMasterOnly()
-}
-
 func (c *Cluster) GpStart(stream OutStreams) *gpStart {
 	return newGpStart(
 		c,
