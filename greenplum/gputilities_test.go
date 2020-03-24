@@ -108,7 +108,7 @@ func TestStartOrStopCluster(t *testing.T) {
 
 		runner := spyrunner.New()
 
-		gpUtilities := newGpUtilities(source, runner, pgrepCommand)
+		gpUtilities := newGpStop(source, runner, pgrepCommand)
 		err := gpUtilities.stop()
 
 		if err != nil {
@@ -137,7 +137,7 @@ func TestStartOrStopCluster(t *testing.T) {
 				skippedStopClusterCommand = false
 			})
 
-		gpUtilities := newGpUtilities(source, spyrunner.New(), pgrepCommand)
+		gpUtilities := newGpStop(source, spyrunner.New(), pgrepCommand)
 		err := gpUtilities.stop()
 
 		g.Expect(err).To(HaveOccurred())
@@ -147,13 +147,9 @@ func TestStartOrStopCluster(t *testing.T) {
 	t.Run("start cluster successfully starts up cluster", func(t *testing.T) {
 		runner := spyrunner.New()
 
-		gpUtility := gpUtilities{
-			cluster:      source,
-			runner:       runner,
-			pgrepCommand: pgrepCommand,
-		}
+		gpStart := newGpStart(source, runner)
+		err := gpStart.start()
 
-		err := gpUtility.start()
 		if err != nil {
 			t.Fatalf("unexpected error while running gpstart: %v", err)
 		}
@@ -174,13 +170,9 @@ func TestStartOrStopCluster(t *testing.T) {
 	t.Run("start master successfully starts up master only", func(t *testing.T) {
 		runner := spyrunner.New()
 
-		gpUtility := gpUtilities{
-			cluster:      source,
-			runner:       runner,
-			pgrepCommand: pgrepCommand,
-		}
+		gpStart := newGpStart(source, runner)
 
-		err := gpUtility.startMasterOnly()
+		err := gpStart.startMasterOnly()
 		if err != nil {
 			t.Fatalf("unexpected error while running gpstart: %v", err)
 		}
@@ -207,7 +199,7 @@ func TestStartOrStopCluster(t *testing.T) {
 
 		runner := spyrunner.New()
 
-		gpUtilities := newGpUtilities(source, runner, pgrepCommand)
+		gpUtilities := newGpStop(source, runner, pgrepCommand)
 		err := gpUtilities.stopMasterOnly()
 
 		if err != nil {
