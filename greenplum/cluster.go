@@ -263,6 +263,10 @@ func (c *Cluster) GetDirForContent(contentID int) string {
 	return c.Primaries[contentID].DataDir
 }
 
+func (c *Cluster) MasterPidFile() string {
+	return fmt.Sprintf("%s/postmaster.pid", c.MasterDataDir())
+}
+
 //
 // Cluster Manager facade
 //

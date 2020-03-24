@@ -17,10 +17,10 @@ func TestMain(m *testing.M) {
 	os.Exit(exectest.Run(m))
 }
 
-func StartClusterCmd()        {}
-func StopClusterCmd()         {}
-func IsPostmasterRunningCmd() {}
-func IsPostmasterRunningCmd_Errors() {
+func StartClusterCmd() {}
+func StopClusterCmd()  {}
+func PgrepCmd()        {}
+func PgrepCmd_Errors() {
 	os.Stderr.WriteString("exit status 2")
 	os.Exit(2)
 }
@@ -29,8 +29,8 @@ func init() {
 	exectest.RegisterMains(
 		StartClusterCmd,
 		StopClusterCmd,
-		IsPostmasterRunningCmd,
-		IsPostmasterRunningCmd_Errors,
+		PgrepCmd,
+		PgrepCmd_Errors,
 	)
 }
 
@@ -75,35 +75,35 @@ func TestStartOrStopCluster(t *testing.T) {
 	utils.System.MkdirAll = func(s string, perm os.FileMode) error { return nil }
 
 	startStopCmd = nil
-	isPostmasterRunningCmd = nil
+	pgrepCmd = nil
 
 	defer func() {
 		startStopCmd = exec.Command
-		isPostmasterRunningCmd = exec.Command
+		pgrepCmd = exec.Command
 	}()
 
 	t.Run("isPostmasterRunning succeeds", func(t *testing.T) {
-		isPostmasterRunningCmd = exectest.NewCommandWithVerifier(IsPostmasterRunningCmd,
+		pgrepCmd = exectest.NewCommandWithVerifier(PgrepCmd,
 			func(path string, args ...string) {
 				g.Expect(path).To(Equal("bash"))
 				g.Expect(args).To(Equal([]string{"-c", "pgrep -F basedir/seg-1/postmaster.pid"}))
 			})
 
-		cm := newGpUtilities(source, DevNull)
-
-		err := cm.isPostmasterRunning()
+		command := pgrepCommand{streams: DevNull}
+		err := command.isRunning(source.MasterPidFile())
 		g.Expect(err).ToNot(HaveOccurred())
 	})
 
 	t.Run("isPostmasterRunning fails", func(t *testing.T) {
-		isPostmasterRunningCmd = exectest.NewCommand(IsPostmasterRunningCmd_Errors)
+		pgrepCmd = exectest.NewCommand(PgrepCmd_Errors)
 
-		err := newGpUtilities(source, DevNull).isPostmasterRunning()
+		command := pgrepCommand{streams: DevNull}
+		err := command.isRunning(source.MasterPidFile())
 		g.Expect(err).To(HaveOccurred())
 	})
 
 	t.Run("stop cluster successfully shuts down cluster", func(t *testing.T) {
-		isPostmasterRunningCmd = exectest.NewCommandWithVerifier(IsPostmasterRunningCmd,
+		pgrepCmd = exectest.NewCommandWithVerifier(PgrepCmd,
 			func(path string, args ...string) {
 				g.Expect(path).To(Equal("bash"))
 				g.Expect(args).To(Equal([]string{"-c", "pgrep -F basedir/seg-1/postmaster.pid"}))
@@ -121,10 +121,10 @@ func TestStartOrStopCluster(t *testing.T) {
 	})
 
 	t.Run("stop cluster detects that cluster is already shutdown", func(t *testing.T) {
-		isPostmasterRunningCmd = exectest.NewCommand(IsPostmasterRunningCmd_Errors)
+		pgrepCmd = exectest.NewCommand(PgrepCmd_Errors)
 
 		var skippedStopClusterCommand = true
-		startStopCmd = exectest.NewCommandWithVerifier(IsPostmasterRunningCmd,
+		startStopCmd = exectest.NewCommandWithVerifier(PgrepCmd,
 			func(path string, args ...string) {
 				skippedStopClusterCommand = false
 			})
@@ -159,7 +159,7 @@ func TestStartOrStopCluster(t *testing.T) {
 	})
 
 	t.Run("stop master successfully shuts down master only", func(t *testing.T) {
-		isPostmasterRunningCmd = exectest.NewCommandWithVerifier(IsPostmasterRunningCmd,
+		pgrepCmd = exectest.NewCommandWithVerifier(PgrepCmd,
 			func(path string, args ...string) {
 				g.Expect(path).To(Equal("bash"))
 				g.Expect(args).To(Equal([]string{"-c", "pgrep -F basedir/seg-1/postmaster.pid"}))
