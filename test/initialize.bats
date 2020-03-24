@@ -285,4 +285,10 @@ wait_for_port_change() {
         --source-master-port="${PGPORT}"\
         --disk-free-ratio 0 \
         --verbose 3>&-
+
+    # When the administrator runs revert
+    gpupgrade revert
+
+    # Then the gpupgrade directory should no longer exist
+    [ ! -d "${GPUPGRADE_HOME}" ]
 }

@@ -113,6 +113,7 @@ func BuildRootCommand() *cobra.Command {
 	root.AddCommand(killServices)
 	root.AddCommand(Agent())
 	root.AddCommand(Hub())
+	root.AddCommand(Revert())
 
 	subConfigSet := createConfigSetSubcommand()
 	subConfigShow := createConfigShowSubcommand()
