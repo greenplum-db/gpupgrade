@@ -2,7 +2,8 @@ package hub
 
 import (
 	"context"
-	"path/filepath"
+	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -15,10 +16,9 @@ import (
 )
 
 const OldSuffix = "_old"
-const UpgradeSuffix = "_upgrade"
 
 func (s *Server) UpdateDataDirectories() error {
-	if err := RenameMasterDataDir(s.Source.MasterDataDir(), true); err != nil {
+	if err := RenameMasterDataDir(s.Source.MasterDataDir(), "", true); err != nil {
 		return xerrors.Errorf("renaming source cluster master data directory: %w", err)
 	}
 
@@ -29,47 +29,51 @@ func (s *Server) UpdateDataDirectories() error {
 		}
 	}
 
-	if err := RenameSegmentDataDirs(s.agentConns, s.Source, "", OldSuffix,
-		s.Config.UseLinkMode /* rename primaries only*/); err != nil {
+	if err := RenameSegmentDataDirs(s.agentConns, s.Source, nil, OldSuffix, s.Config.UseLinkMode); err != nil {
 		return xerrors.Errorf("renaming source cluster segment data directories: %w", err)
 	}
 
-	if err := RenameMasterDataDir(s.Target.MasterDataDir(), false); err != nil {
+	if err := RenameMasterDataDir(s.Target.MasterDataDir(), s.TargetInitializeConfig.Master.DataDir, false); err != nil {
 		return xerrors.Errorf("renaming target cluster master data directory: %w", err)
 	}
 
 	// Do not include mirrors and standby when moving _upgrade directories,
 	// since they don't exist yet.
-	if err := RenameSegmentDataDirs(s.agentConns, s.Target, UpgradeSuffix, "", true); err != nil {
+	var targetSegs []greenplum.SegConfig
+	targetSegs = append(targetSegs, s.TargetInitializeConfig.Master)
+	targetSegs = append(targetSegs, s.TargetInitializeConfig.Primaries...)
+	origTarget, err := greenplum.NewCluster(targetSegs)
+	if err != nil {
+		return xerrors.Errorf("forming old target cluster failed: %w, err")
+	}
+	if err = RenameSegmentDataDirs(s.agentConns, origTarget, s.Target, "", true); err != nil {
 		return xerrors.Errorf("renaming target cluster segment data directories: %w", err)
 	}
 
 	return nil
 }
 
-// e.g. for source /data/qddir/demoDataDir-1 becomes /data/qddir_old/demoDataDir-1
-// e.g. for target /data/qddir_upgrade/demoDataDir-1 becomes /data/qddir/demoDataDir-1
-func RenameMasterDataDir(masterDataDir string, isSource bool) error {
-	destination := "new"
-	src := filepath.Dir(masterDataDir) + UpgradeSuffix
-	dst := filepath.Dir(masterDataDir)
+// e.g. for source /data/qddir/demoDataDir-1 becomes /data/qddir/demoDataDir-1_old
+// e.g. for target /data/qddir/demoDataDir-1_123GNHFD3 becomes /data/qddir/demoDataDir-1
+// TODO: rework this interface
+func RenameMasterDataDir(masterDataDir string, targetMasterDataDir string, isSource bool) error {
+	dstTag := "target"
+	src := targetMasterDataDir
+	dst := masterDataDir
 	if isSource {
-		destination = "old"
-		src = filepath.Dir(masterDataDir)
-		dst = filepath.Dir(masterDataDir) + OldSuffix
+		dstTag = "source"
+		src = masterDataDir
+		dst = masterDataDir + OldSuffix
 	}
 	if err := utils.System.Rename(src, dst); err != nil {
-		return xerrors.Errorf("renaming %s cluster master data directory from: '%s' to: '%s': %w", destination, src, dst, err)
+		return xerrors.Errorf("renaming %s cluster master data directory from: '%s' to: '%s': %w", dstTag, src, dst, err)
 	}
 	return nil
 }
 
-// e.g. for source /data/dbfast1/demoDataDir0 becomes datadirs/dbfast1_old/demoDataDir0
-// e.g. for target /data/dbfast1_upgrade/demoDataDir0 becomes datadirs/dbfast1/demoDataDir0
-func RenameSegmentDataDirs(agentConns []*Connection,
-	cluster *greenplum.Cluster,
-	oldSuffix, newSuffix string,
-	primariesOnly bool) error {
+// e.g. for source /data/dbfast1/demoDataDir0 becomes datadirs/dbfast1/demoDataDir0_old
+// e.g. for target /data/dbfast1/demoDataDir0_123ABC becomes datadirs/dbfast1/demoDataDir0
+func RenameSegmentDataDirs(agentConns []*Connection, srcCluster, dstCluster *greenplum.Cluster, newSuffix string, primariesOnly bool) error {
 
 	wg := sync.WaitGroup{}
 	errs := make(chan error, len(agentConns))
@@ -90,47 +94,47 @@ func RenameSegmentDataDirs(agentConns []*Connection,
 			return true
 		}
 
-		segments := cluster.SelectSegments(selector)
+		segments := srcCluster.SelectSegments(selector)
 		if len(segments) == 0 {
 			// we can have mirror-only and standby-only hosts, which we don't
 			// care about here (they are added later)
 			continue
+		}
+		var dstSegments []greenplum.SegConfig
+		if dstCluster != nil {
+			dstSegments = dstCluster.SelectSegments(selector)
+			if len(segments) != len(dstSegments) {
+				err := errors.New(fmt.Sprintf("src and dst cluster mismatch: src: %v dst: %v", segments, dstSegments))
+				gplog.Error(fmt.Sprintf("%v", err))
+				errs <- err
+				continue
+			}
 		}
 
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 
-			// When there are multiple segments under a parent data directory
-			// only call rename once on the parent directory.
-			// For example, /data/primary/gpseg1 and /data/primary/gpseg2
-			// only call rename once for /data/primary.
-			// NOTE: we keep the iteration stable for testing purposes; hence
-			// the combined map+slice approach.
-			alreadyDone := make(map[string]bool)
-			var parentDirs []string
-
-			for _, seg := range segments {
-				// For most segments, we want to rename the parent.
-				dir := filepath.Dir(seg.DataDir)
-				if seg.IsStandby() {
-					// Standby follows different naming rules; we rename its
-					// data directory directly.
-					dir = seg.DataDir
-				}
-
-				if alreadyDone[dir] {
-					continue
-				}
-
-				parentDirs = append(parentDirs, dir)
-				alreadyDone[dir] = true
-			}
-
 			req := new(idl.RenameDirectoriesRequest)
-			for _, dir := range parentDirs {
-				src := dir + oldSuffix
-				dst := dir + newSuffix
+			for _, seg := range segments {
+				src := seg.DataDir
+				dst := seg.DataDir + newSuffix
+				if dstCluster != nil {
+					found := false
+					for _, dseg := range dstSegments {
+						if dseg.ContentID == seg.ContentID && dseg.DbID == seg.DbID {
+							dst = dseg.DataDir
+							found = true
+							break
+						}
+					}
+					if !found {
+						err := errors.New(fmt.Sprintf("no matching dstSeg for seg %v", seg))
+						gplog.Error(fmt.Sprintf("%v", err))
+						errs <- err
+						return
+					}
+				}
 
 				req.Pairs = append(req.Pairs, &idl.RenamePair{Src: src, Dst: dst})
 			}

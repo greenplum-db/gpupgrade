@@ -4,9 +4,10 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/hashicorp/go-multierror"
+
 	"github.com/golang/mock/gomock"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-	"github.com/hashicorp/go-multierror"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
@@ -19,12 +20,12 @@ import (
 func TestRenameMasterDataDir(t *testing.T) {
 	t.Run("renames source master data dir", func(t *testing.T) {
 		utils.System.Rename = func(src, dst string) error {
-			expectedSrc := "/data/qddir"
+			expectedSrc := "/data/qddir/demoDataDir-1"
 			if src != expectedSrc {
 				t.Errorf("got %q want %q", src, expectedSrc)
 			}
 
-			expectedDst := "/data/qddir_old"
+			expectedDst := "/data/qddir/demoDataDir-1_old"
 			if dst != expectedDst {
 				t.Errorf("got %q want %q", dst, expectedDst)
 			}
@@ -32,7 +33,7 @@ func TestRenameMasterDataDir(t *testing.T) {
 			return nil
 		}
 
-		err := hub.RenameMasterDataDir("/data/qddir/demoDataDir-1", true)
+		err := hub.RenameMasterDataDir("/data/qddir/demoDataDir-1", "", true)
 		if err != nil {
 			t.Errorf("unexpected error got %#v", err)
 		}
@@ -40,12 +41,12 @@ func TestRenameMasterDataDir(t *testing.T) {
 
 	t.Run("renames target master data dir", func(t *testing.T) {
 		utils.System.Rename = func(src, dst string) error {
-			expectedSrc := "/data/qddir_upgrade"
+			expectedSrc := "/data/qddir/demoDataDir-1-123XYZ"
 			if src != expectedSrc {
 				t.Errorf("got %q want %q", src, expectedSrc)
 			}
 
-			expectedDst := "/data/qddir"
+			expectedDst := "/data/qddir/demoDataDir-1"
 			if dst != expectedDst {
 				t.Errorf("got %q want %q", dst, expectedDst)
 			}
@@ -53,7 +54,7 @@ func TestRenameMasterDataDir(t *testing.T) {
 			return nil
 		}
 
-		err := hub.RenameMasterDataDir("/data/qddir/demoDataDir-1", false)
+		err := hub.RenameMasterDataDir("/data/qddir/demoDataDir-1", "/data/qddir/demoDataDir-1-123XYZ", false)
 		if err != nil {
 			t.Errorf("unexpected error got %#v", err)
 		}
@@ -65,7 +66,7 @@ func TestRenameMasterDataDir(t *testing.T) {
 			return expected
 		}
 
-		err := hub.RenameMasterDataDir("/data/qddir/demoDataDir-1", true)
+		err := hub.RenameMasterDataDir("/data/qddir/demoDataDir-1", "", true)
 		if !xerrors.Is(err, expected) {
 			t.Errorf("got %#v want %#v", err, expected)
 		}
@@ -73,8 +74,20 @@ func TestRenameMasterDataDir(t *testing.T) {
 }
 
 func TestRenameSegmentDataDirs(t *testing.T) {
-	c := hub.MustCreateCluster(t, []greenplum.SegConfig{
-		{ContentID: -1, DbID: 0, Port: 25431, Hostname: "sdw1", DataDir: "/data/qddir", Role: greenplum.PrimaryRole},
+	srcCluster := hub.MustCreateCluster(t, []greenplum.SegConfig{
+		{ContentID: -1, DbID: 0, Port: 25431, Hostname: "sdw1", DataDir: "/data/qddir/seg-1_123ABC-1", Role: greenplum.PrimaryRole},
+		{ContentID: -1, DbID: 1, Port: 25431, Hostname: "standby", DataDir: "/data/standby_123ABC", Role: greenplum.MirrorRole},
+		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1_123ABC", Role: greenplum.PrimaryRole},
+		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2_123ABC", Role: greenplum.PrimaryRole},
+		{ContentID: 2, DbID: 4, Port: 25434, Hostname: "sdw1", DataDir: "/data/dbfast1/seg3_123ABC", Role: greenplum.PrimaryRole},
+		{ContentID: 3, DbID: 5, Port: 25435, Hostname: "sdw2", DataDir: "/data/dbfast2/seg4_123ABC", Role: greenplum.PrimaryRole},
+		{ContentID: 0, DbID: 6, Port: 35432, Hostname: "sdw1", DataDir: "/data/dbfast_mirror1/seg1_123ABC", Role: greenplum.MirrorRole},
+		{ContentID: 1, DbID: 7, Port: 35433, Hostname: "sdw2", DataDir: "/data/dbfast_mirror2/seg2_123ABC", Role: greenplum.MirrorRole},
+		{ContentID: 2, DbID: 8, Port: 35434, Hostname: "sdw1", DataDir: "/data/dbfast_mirror1/seg3_123ABC", Role: greenplum.MirrorRole},
+		{ContentID: 3, DbID: 9, Port: 35435, Hostname: "sdw2", DataDir: "/data/dbfast_mirror2/seg4_123ABC", Role: greenplum.MirrorRole},
+	})
+	dstCluster := hub.MustCreateCluster(t, []greenplum.SegConfig{
+		{ContentID: -1, DbID: 0, Port: 25431, Hostname: "sdw1", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
 		{ContentID: -1, DbID: 1, Port: 25431, Hostname: "standby", DataDir: "/data/standby", Role: greenplum.MirrorRole},
 		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
 		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
@@ -88,7 +101,7 @@ func TestRenameSegmentDataDirs(t *testing.T) {
 
 	testhelper.SetupTestLogger() // initialize gplog
 
-	t.Run("removes suffix from directory excluding mirrors/standby", func(t *testing.T) {
+	t.Run("transforms target cluster to source cluster excluding mirrors/standby", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -97,8 +110,11 @@ func TestRenameSegmentDataDirs(t *testing.T) {
 			gomock.Any(),
 			&idl.RenameDirectoriesRequest{
 				Pairs: []*idl.RenamePair{{
-					Src: "/data/dbfast1_upgrade",
-					Dst: "/data/dbfast1",
+					Src: "/data/dbfast1/seg1_123ABC",
+					Dst: "/data/dbfast1/seg1",
+				}, {
+					Src: "/data/dbfast1/seg3_123ABC",
+					Dst: "/data/dbfast1/seg3",
 				}},
 			},
 		).Return(&idl.RenameDirectoriesReply{}, nil)
@@ -108,8 +124,11 @@ func TestRenameSegmentDataDirs(t *testing.T) {
 			gomock.Any(),
 			&idl.RenameDirectoriesRequest{
 				Pairs: []*idl.RenamePair{{
-					Src: "/data/dbfast2_upgrade",
-					Dst: "/data/dbfast2",
+					Src: "/data/dbfast2/seg2_123ABC",
+					Dst: "/data/dbfast2/seg2",
+				}, {
+					Src: "/data/dbfast2/seg4_123ABC",
+					Dst: "/data/dbfast2/seg4",
 				}},
 			},
 		).Return(&idl.RenameDirectoriesReply{}, nil)
@@ -123,13 +142,13 @@ func TestRenameSegmentDataDirs(t *testing.T) {
 			{nil, client3, "standby", nil},
 		}
 
-		err := hub.RenameSegmentDataDirs(agentConns, c, hub.UpgradeSuffix, "", true)
+		err := hub.RenameSegmentDataDirs(agentConns, srcCluster, dstCluster, "", true)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
 	})
 
-	t.Run("adds suffix to directory including mirrors/standby", func(t *testing.T) {
+	t.Run("transforms source Cluster to archive directory including mirrors/standby", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -138,11 +157,17 @@ func TestRenameSegmentDataDirs(t *testing.T) {
 			gomock.Any(),
 			&idl.RenameDirectoriesRequest{
 				Pairs: []*idl.RenamePair{{
-					Src: "/data/dbfast1",
-					Dst: "/data/dbfast1_old",
+					Src: "/data/dbfast1/seg1",
+					Dst: "/data/dbfast1/seg1_old",
 				}, {
-					Src: "/data/dbfast_mirror1",
-					Dst: "/data/dbfast_mirror1_old",
+					Src: "/data/dbfast_mirror1/seg1",
+					Dst: "/data/dbfast_mirror1/seg1_old",
+				}, {
+					Src: "/data/dbfast1/seg3",
+					Dst: "/data/dbfast1/seg3_old",
+				}, {
+					Src: "/data/dbfast_mirror1/seg3",
+					Dst: "/data/dbfast_mirror1/seg3_old",
 				}},
 			},
 		).Return(&idl.RenameDirectoriesReply{}, nil)
@@ -152,11 +177,17 @@ func TestRenameSegmentDataDirs(t *testing.T) {
 			gomock.Any(),
 			&idl.RenameDirectoriesRequest{
 				Pairs: []*idl.RenamePair{{
-					Src: "/data/dbfast2",
-					Dst: "/data/dbfast2_old",
+					Src: "/data/dbfast2/seg2",
+					Dst: "/data/dbfast2/seg2_old",
 				}, {
-					Src: "/data/dbfast_mirror2",
-					Dst: "/data/dbfast_mirror2_old",
+					Src: "/data/dbfast_mirror2/seg2",
+					Dst: "/data/dbfast_mirror2/seg2_old",
+				}, {
+					Src: "/data/dbfast2/seg4",
+					Dst: "/data/dbfast2/seg4_old",
+				}, {
+					Src: "/data/dbfast_mirror2/seg4",
+					Dst: "/data/dbfast_mirror2/seg4_old",
 				}},
 			},
 		).Return(&idl.RenameDirectoriesReply{}, nil)
@@ -178,7 +209,7 @@ func TestRenameSegmentDataDirs(t *testing.T) {
 			{nil, client3, "standby", nil},
 		}
 
-		err := hub.RenameSegmentDataDirs(agentConns, c, "", hub.OldSuffix, false)
+		err := hub.RenameSegmentDataDirs(agentConns, dstCluster, nil, hub.OldSuffix, false)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -206,7 +237,7 @@ func TestRenameSegmentDataDirs(t *testing.T) {
 			{nil, failedClient, "sdw2", nil},
 		}
 
-		err := hub.RenameSegmentDataDirs(agentConns, c, hub.UpgradeSuffix, "", true)
+		err := hub.RenameSegmentDataDirs(agentConns, dstCluster, nil, hub.OldSuffix, true)
 
 		var multiErr *multierror.Error
 		if !xerrors.As(err, &multiErr) {
