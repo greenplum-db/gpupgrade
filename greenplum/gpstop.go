@@ -1,27 +1,9 @@
 package greenplum
 
-import (
-	"os/exec"
-)
-
-type gpStart struct {
-	cluster *Cluster
-	runner  Runner
-}
-
 type gpStop struct {
 	cluster      *Cluster
 	runner       Runner
 	pgrepCommand *pgrepCommand
-}
-
-var startStopCmd = exec.Command
-
-func newGpStart(cluster *Cluster, runner Runner) *gpStart {
-	return &gpStart{
-		cluster: cluster,
-		runner:  runner,
-	}
 }
 
 func newGpStop(cluster *Cluster, runner Runner, pgrepCommand *pgrepCommand) *gpStop {
@@ -30,10 +12,6 @@ func newGpStop(cluster *Cluster, runner Runner, pgrepCommand *pgrepCommand) *gpS
 		runner:       runner,
 		pgrepCommand: pgrepCommand,
 	}
-}
-
-func (m *gpStart) Start() error {
-	return m.runner.Run("gpstart", "-a", "-d", m.cluster.MasterDataDir())
 }
 
 func (m *gpStop) StopMasterOnly() error {
@@ -49,10 +27,6 @@ func (m *gpStop) StopMasterOnly() error {
 	}
 
 	return m.runner.Run("gpstop", "-m", "-a", "-d", m.cluster.MasterDataDir())
-}
-
-func (m *gpStart) StartMasterOnly() error {
-	return m.runner.Run("gpstart", "-m", "-a", "-d", m.cluster.MasterDataDir())
 }
 
 func (m *gpStop) Stop() error {
