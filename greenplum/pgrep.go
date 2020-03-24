@@ -11,6 +11,10 @@ type pgrepCommand struct {
 
 var pgrepCmd = exec.Command
 
+func newPgrepCommand(stream OutStreams) *pgrepCommand {
+	return &pgrepCommand{streams: stream}
+}
+
 func (m *pgrepCommand) isRunning(pidFile string) error {
 	cmd := pgrepCmd("bash", "-c", fmt.Sprintf("pgrep -F %s", pidFile))
 

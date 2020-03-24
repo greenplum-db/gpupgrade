@@ -281,6 +281,6 @@ func (c *Cluster) GpStop(stream OutStreams) *gpStop {
 	return newGpStop(
 		c,
 		NewRunner(c, stream),
-		&pgrepCommand{streams: stream},
+		newPgrepCommand(stream),
 	)
 }
