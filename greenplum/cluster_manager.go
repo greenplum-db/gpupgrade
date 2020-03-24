@@ -1,32 +1,27 @@
 package greenplum
 
 import (
-	"fmt"
 	"os/exec"
 )
 
 type gpUtilities struct {
 	cluster      *Cluster
-	streams      OutStreams
+	runner       Runner
 	pgrepCommand *pgrepCommand
 }
 
 var startStopCmd = exec.Command
 
-func newGpUtilities(cluster *Cluster, streams OutStreams) *gpUtilities {
+func newGpUtilities(cluster *Cluster, runner Runner, pgrepCommand *pgrepCommand) *gpUtilities {
 	return &gpUtilities{
-		cluster: cluster,
-		streams: streams,
-		pgrepCommand: &pgrepCommand{
-			streams: streams,
-		},
+		cluster:      cluster,
+		runner:       runner,
+		pgrepCommand: pgrepCommand,
 	}
 }
 
 func (m *gpUtilities) start() error {
-	return m.runStartStopCmd(
-		fmt.Sprintf("gpstart -a -d %[1]s", m.cluster.MasterDataDir()),
-	)
+	return m.runner.Run("gpstart", "-a", "-d", m.cluster.MasterDataDir())
 }
 
 func (m *gpUtilities) stopMasterOnly() error {
@@ -41,13 +36,11 @@ func (m *gpUtilities) stopMasterOnly() error {
 		return err
 	}
 
-	return m.runStartStopCmd(
-		fmt.Sprintf("gpstop -m -a -d %[1]s", m.cluster.MasterDataDir()))
+	return m.runner.Run("gpstop", "-m", "-a", "-d", m.cluster.MasterDataDir())
 }
 
 func (m *gpUtilities) startMasterOnly() error {
-	return m.runStartStopCmd(
-		fmt.Sprintf("gpstart -m -a -d %[1]s", m.cluster.MasterDataDir()))
+	return m.runner.Run("gpstart", "-m", "-a", "-d", m.cluster.MasterDataDir())
 }
 
 func (m *gpUtilities) stop() error {
@@ -62,20 +55,5 @@ func (m *gpUtilities) stop() error {
 		return err
 	}
 
-	return m.runStartStopCmd(
-		fmt.Sprintf("gpstop -a -d %[1]s", m.cluster.MasterDataDir()))
-}
-
-/*
- * Helper functions
- */
-func (m *gpUtilities) runStartStopCmd(command string) error {
-	commandWithEnv := fmt.Sprintf("source %[1]s/../greenplum_path.sh && %[1]s/%[2]s",
-		m.cluster.BinDir,
-		command)
-
-	cmd := startStopCmd("bash", "-c", commandWithEnv)
-	cmd.Stdout = m.streams.Stdout()
-	cmd.Stderr = m.streams.Stderr()
-	return cmd.Run()
+	return m.runner.Run("gpstop", "-a", "-d", m.cluster.MasterDataDir())
 }

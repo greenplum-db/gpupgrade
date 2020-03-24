@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
+	"github.com/greenplum-db/gpupgrade/testutils/spyrunner"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
@@ -17,9 +18,7 @@ func TestMain(m *testing.M) {
 	os.Exit(exectest.Run(m))
 }
 
-func StartClusterCmd() {}
-func StopClusterCmd()  {}
-func PgrepCmd()        {}
+func PgrepCmd() {}
 func PgrepCmd_Errors() {
 	os.Stderr.WriteString("exit status 2")
 	os.Exit(2)
@@ -27,8 +26,6 @@ func PgrepCmd_Errors() {
 
 func init() {
 	exectest.RegisterMains(
-		StartClusterCmd,
-		StopClusterCmd,
 		PgrepCmd,
 		PgrepCmd_Errors,
 	)
@@ -74,11 +71,9 @@ func TestStartOrStopCluster(t *testing.T) {
 	utils.System.RemoveAll = func(s string) error { return nil }
 	utils.System.MkdirAll = func(s string, perm os.FileMode) error { return nil }
 
-	startStopCmd = nil
 	pgrepCmd = nil
 
 	defer func() {
-		startStopCmd = exec.Command
 		pgrepCmd = exec.Command
 	}()
 
@@ -102,6 +97,8 @@ func TestStartOrStopCluster(t *testing.T) {
 		g.Expect(err).To(HaveOccurred())
 	})
 
+	pgrepCommand := &pgrepCommand{streams: DevNull}
+
 	t.Run("stop cluster successfully shuts down cluster", func(t *testing.T) {
 		pgrepCmd = exectest.NewCommandWithVerifier(PgrepCmd,
 			func(path string, args ...string) {
@@ -109,15 +106,26 @@ func TestStartOrStopCluster(t *testing.T) {
 				g.Expect(args).To(Equal([]string{"-c", "pgrep -F basedir/seg-1/postmaster.pid"}))
 			})
 
-		startStopCmd = exectest.NewCommandWithVerifier(StopClusterCmd,
-			func(path string, args ...string) {
-				g.Expect(path).To(Equal("bash"))
-				g.Expect(args).To(Equal([]string{"-c", "source /source/bindir/../greenplum_path.sh " +
-					"&& /source/bindir/gpstop -a -d basedir/seg-1"}))
-			})
+		runner := spyrunner.New()
 
-		err := source.Stop(DevNull)
-		g.Expect(err).ToNot(HaveOccurred())
+		gpUtilities := newGpUtilities(source, runner, pgrepCommand)
+		err := gpUtilities.stop()
+
+		if err != nil {
+			t.Fatalf("unexpected error while running gpstop: %v", err)
+		}
+
+		gpstopCall := runner.Call("gpstop", 1)
+
+		if gpstopCall == nil {
+			t.Fatalf("got no calls to gpstop, expected one call")
+		}
+
+		for _, arg := range []string{"-a", "-d", "basedir/seg-1"} {
+			if !gpstopCall.ArgumentsInclude(arg) {
+				t.Errorf("got no argument %v to gpstop, expected %v", arg, arg)
+			}
+		}
 	})
 
 	t.Run("stop cluster detects that cluster is already shutdown", func(t *testing.T) {
@@ -129,33 +137,65 @@ func TestStartOrStopCluster(t *testing.T) {
 				skippedStopClusterCommand = false
 			})
 
-		err := source.Stop(DevNull)
+		gpUtilities := newGpUtilities(source, spyrunner.New(), pgrepCommand)
+		err := gpUtilities.stop()
+
 		g.Expect(err).To(HaveOccurred())
 		g.Expect(skippedStopClusterCommand).To(Equal(true))
 	})
 
 	t.Run("start cluster successfully starts up cluster", func(t *testing.T) {
-		startStopCmd = exectest.NewCommandWithVerifier(StartClusterCmd,
-			func(path string, args ...string) {
-				g.Expect(path).To(Equal("bash"))
-				g.Expect(args).To(Equal([]string{"-c", "source /source/bindir/../greenplum_path.sh " +
-					"&& /source/bindir/gpstart -a -d basedir/seg-1"}))
-			})
+		runner := spyrunner.New()
 
-		err := source.Start(DevNull)
-		g.Expect(err).ToNot(HaveOccurred())
+		gpUtility := gpUtilities{
+			cluster:      source,
+			runner:       runner,
+			pgrepCommand: pgrepCommand,
+		}
+
+		err := gpUtility.start()
+		if err != nil {
+			t.Fatalf("unexpected error while running gpstart: %v", err)
+		}
+
+		gpstartCall := runner.Call("gpstart", 1)
+
+		if gpstartCall == nil {
+			t.Fatalf("got no calls to gpstop, expected one call")
+		}
+
+		for _, arg := range []string{"-a", "-d", "basedir/seg-1"} {
+			if !gpstartCall.ArgumentsInclude(arg) {
+				t.Errorf("got no argument %v to gpstop, expected %v", arg, arg)
+			}
+		}
 	})
 
 	t.Run("start master successfully starts up master only", func(t *testing.T) {
-		startStopCmd = exectest.NewCommandWithVerifier(StartClusterCmd,
-			func(path string, args ...string) {
-				g.Expect(path).To(Equal("bash"))
-				g.Expect(args).To(Equal([]string{"-c", "source /source/bindir/../greenplum_path.sh " +
-					"&& /source/bindir/gpstart -m -a -d basedir/seg-1"}))
-			})
+		runner := spyrunner.New()
 
-		err := source.StartMasterOnly(DevNull)
-		g.Expect(err).ToNot(HaveOccurred())
+		gpUtility := gpUtilities{
+			cluster:      source,
+			runner:       runner,
+			pgrepCommand: pgrepCommand,
+		}
+
+		err := gpUtility.startMasterOnly()
+		if err != nil {
+			t.Fatalf("unexpected error while running gpstart: %v", err)
+		}
+
+		gpstartCall := runner.Call("gpstart", 1)
+
+		if gpstartCall == nil {
+			t.Fatalf("got no calls to gpstop, expected one call")
+		}
+
+		for _, arg := range []string{"-m", "-a", "-d", "basedir/seg-1"} {
+			if !gpstartCall.ArgumentsInclude(arg) {
+				t.Errorf("got no argument %v to gpstop, expected %v", arg, arg)
+			}
+		}
 	})
 
 	t.Run("stop master successfully shuts down master only", func(t *testing.T) {
@@ -165,14 +205,25 @@ func TestStartOrStopCluster(t *testing.T) {
 				g.Expect(args).To(Equal([]string{"-c", "pgrep -F basedir/seg-1/postmaster.pid"}))
 			})
 
-		startStopCmd = exectest.NewCommandWithVerifier(StopClusterCmd,
-			func(path string, args ...string) {
-				g.Expect(path).To(Equal("bash"))
-				g.Expect(args).To(Equal([]string{"-c", "source /source/bindir/../greenplum_path.sh " +
-					"&& /source/bindir/gpstop -m -a -d basedir/seg-1"}))
-			})
+		runner := spyrunner.New()
 
-		err := source.StopMasterOnly(DevNull)
-		g.Expect(err).ToNot(HaveOccurred())
+		gpUtilities := newGpUtilities(source, runner, pgrepCommand)
+		err := gpUtilities.stopMasterOnly()
+
+		if err != nil {
+			t.Fatalf("unexpected error while running gpstop: %v", err)
+		}
+
+		gpstopCall := runner.Call("gpstop", 1)
+
+		if gpstopCall == nil {
+			t.Fatalf("got no calls to gpstop, expected one call")
+		}
+
+		for _, arg := range []string{"-m", "-a", "-d", "basedir/seg-1"} {
+			if !gpstopCall.ArgumentsInclude(arg) {
+				t.Errorf("got no argument %v to gpstop, expected %v", arg, arg)
+			}
+		}
 	})
 }
