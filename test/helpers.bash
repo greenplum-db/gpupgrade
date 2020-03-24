@@ -37,7 +37,8 @@ delete_cluster() {
     local masterdir="$1"
 
     # Sanity check.
-    if [[ $masterdir != *_upgrade/demoDataDir* ]]; then
+    # TODO: this dir has a upgradeID in it...how to check that it's an upgraded cluster?
+    if [[ $masterdir != *qddir/demoDataDir-1_* ]]; then
         abort "cowardly refusing to delete $masterdir which does not look like an upgraded demo data directory"
     fi
 
@@ -60,7 +61,7 @@ delete_finalized_cluster() {
     local masterdir="$1"
 
     # Sanity check.
-    local old_qddir_path=$(dirname $masterdir)"_old/demoDataDir-1"
+    local old_qddir_path=$(dirname $masterdir)"/demoDataDir-1_old"
     if [[ ! -d "$old_qddir_path" ]]; then
         abort "cowardly refusing to delete $masterdir which does not look like an upgraded demo data directory. expected old directory of
             $old_qddir_path"
@@ -88,7 +89,8 @@ delete_finalized_cluster() {
 delete_target_datadirs() {
     local masterdir="$1"
     local datadir=$(dirname $(dirname "$masterdir"))
-    rm -rf "${datadir}"/*_upgrade
+    # TODO: how do we identify upgraded datadirs now?
+    #rm -rf "${datadir}"/*_upgrade
 }
 
 # require_gnu_stat tries to find a GNU stat program. If one is found, it will be
