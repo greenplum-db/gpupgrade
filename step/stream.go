@@ -93,7 +93,7 @@ func (w *streamWriter) Write(p []byte) (int, error) {
 		}
 
 		err = w.stream.Send(&idl.Message{
-			Contents: &idl.Message_Chunk{chunk},
+			Contents: &idl.Message_Chunk{Chunk: chunk},
 		})
 
 		if err != nil {

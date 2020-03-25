@@ -31,8 +31,8 @@ func upgradeSegment(segment Segment, request *idl.UpgradePrimariesRequest, host 
 func performUpgrade(segment Segment, request *idl.UpgradePrimariesRequest) error {
 	dbid := int(segment.DBID)
 	segmentPair := upgrade.SegmentPair{
-		Source: &upgrade.Segment{request.SourceBinDir, segment.SourceDataDir, dbid, int(segment.SourcePort)},
-		Target: &upgrade.Segment{request.TargetBinDir, segment.TargetDataDir, dbid, int(segment.TargetPort)},
+		Source: &upgrade.Segment{BinDir: request.SourceBinDir, DataDir: segment.SourceDataDir, DBID: dbid, Port: int(segment.SourcePort)},
+		Target: &upgrade.Segment{BinDir: request.TargetBinDir, DataDir: segment.TargetDataDir, DBID: dbid, Port: int(segment.TargetPort)},
 	}
 
 	options := []upgrade.Option{

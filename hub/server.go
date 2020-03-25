@@ -153,8 +153,9 @@ func (s *Server) StopAgents() error {
 	errs := make(chan error, len(s.agentConns))
 
 	for _, conn := range s.agentConns {
-		wg.Add(1)
+		conn := conn
 
+		wg.Add(1)
 		go func() {
 			defer wg.Done()
 

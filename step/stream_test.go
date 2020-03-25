@@ -32,12 +32,12 @@ func TestMultiplexedStream(t *testing.T) {
 
 		mockStream := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 		mockStream.EXPECT().
-			Send(&idl.Message{Contents: &idl.Message_Chunk{&idl.Chunk{
+			Send(&idl.Message{Contents: &idl.Message_Chunk{Chunk: &idl.Chunk{
 				Buffer: []byte(expectedStdout),
 				Type:   idl.Chunk_STDOUT,
 			}}})
 		mockStream.EXPECT().
-			Send(&idl.Message{Contents: &idl.Message_Chunk{&idl.Chunk{
+			Send(&idl.Message{Contents: &idl.Message_Chunk{Chunk: &idl.Chunk{
 				Buffer: []byte(expectedStderr),
 				Type:   idl.Chunk_STDERR,
 			}}})

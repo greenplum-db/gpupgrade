@@ -23,12 +23,12 @@ func TestStepRun(t *testing.T) {
 
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 		server.EXPECT().
-			Send(&idl.Message{Contents: &idl.Message_Status{&idl.SubstepStatus{
+			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
 				Step:   idl.Substep_GENERATING_CONFIG,
 				Status: idl.Status_RUNNING,
 			}}})
 		server.EXPECT().
-			Send(&idl.Message{Contents: &idl.Message_Status{&idl.SubstepStatus{
+			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
 				Step:   idl.Substep_GENERATING_CONFIG,
 				Status: idl.Status_COMPLETE,
 			}}})
@@ -52,12 +52,12 @@ func TestStepRun(t *testing.T) {
 
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 		server.EXPECT().
-			Send(&idl.Message{Contents: &idl.Message_Status{&idl.SubstepStatus{
+			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
 				Step:   idl.Substep_GENERATING_CONFIG,
 				Status: idl.Status_RUNNING,
 			}}})
 		server.EXPECT().
-			Send(&idl.Message{Contents: &idl.Message_Status{&idl.SubstepStatus{
+			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
 				Step:   idl.Substep_GENERATING_CONFIG,
 				Status: idl.Status_COMPLETE,
 			}}})
@@ -89,12 +89,12 @@ func TestStepRun(t *testing.T) {
 
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 		server.EXPECT().
-			Send(&idl.Message{Contents: &idl.Message_Status{&idl.SubstepStatus{
+			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
 				Step:   idl.Substep_CHECK_UPGRADE,
 				Status: idl.Status_RUNNING,
 			}}})
 		server.EXPECT().
-			Send(&idl.Message{Contents: &idl.Message_Status{&idl.SubstepStatus{
+			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
 				Step:   idl.Substep_CHECK_UPGRADE,
 				Status: idl.Status_COMPLETE,
 			}}})
@@ -119,12 +119,12 @@ func TestStepRun(t *testing.T) {
 
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 		server.EXPECT().
-			Send(&idl.Message{Contents: &idl.Message_Status{&idl.SubstepStatus{
+			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
 				Step:   idl.Substep_GENERATING_CONFIG,
 				Status: idl.Status_RUNNING,
 			}}})
 		server.EXPECT().
-			Send(&idl.Message{Contents: &idl.Message_Status{&idl.SubstepStatus{
+			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
 				Step:   idl.Substep_GENERATING_CONFIG,
 				Status: idl.Status_FAILED,
 			}}})
@@ -172,7 +172,7 @@ func TestStepRun(t *testing.T) {
 
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 		server.EXPECT().
-			Send(&idl.Message{Contents: &idl.Message_Status{&idl.SubstepStatus{
+			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
 				Step:   idl.Substep_CHECK_UPGRADE,
 				Status: idl.Status_COMPLETE,
 			}}})

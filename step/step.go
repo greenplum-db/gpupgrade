@@ -166,7 +166,7 @@ func (s *Step) sendStatus(substep idl.Substep, status idl.Status) {
 	// A stream is not guaranteed to remain connected during execution, so
 	// errors are explicitly ignored.
 	_ = s.sender.Send(&idl.Message{
-		Contents: &idl.Message_Status{&idl.SubstepStatus{
+		Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
 			Step:   substep,
 			Status: status,
 		}},
