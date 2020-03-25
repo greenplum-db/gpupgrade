@@ -74,8 +74,8 @@ type streamWriter struct {
 }
 
 func (w *streamWriter) Write(p []byte) (int, error) {
-	w.mutex.Lock()
-	defer w.mutex.Unlock()
+	w.multiplexedStream.mutex.Lock()
+	defer w.multiplexedStream.mutex.Unlock()
 
 	n, err := w.writer.Write(p)
 	if err != nil {
