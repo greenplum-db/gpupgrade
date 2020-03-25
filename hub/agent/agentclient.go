@@ -63,12 +63,12 @@ func (c *Client) Connections() []*Connection {
 func (c *Client) CloseConnections() {
 	for _, conn := range c.connections {
 		defer conn.CancelContext()
-		currState := conn.Conn.GetState()
-		err := conn.Conn.Close()
+		currState := conn.conn.GetState()
+		err := conn.conn.Close()
 		if err != nil {
 			gplog.Info(fmt.Sprintf("Error closing hub to agent connection. host: %s, err: %s", conn.Hostname, err.Error()))
 		}
-		conn.Conn.WaitForStateChange(context.Background(), currState)
+		conn.conn.WaitForStateChange(context.Background(), currState)
 	}
 }
 

@@ -34,7 +34,7 @@ func (a agentConnSourceMock) GetAgents(s *Server) ([]*agent.Connection, error) {
 
 var agentsSource = agentConnSourceMock{
 	[]*agent.Connection{
-		{Conn: nil, Hostname: "bengie"},
+		{Hostname: "bengie"},
 	},
 }
 

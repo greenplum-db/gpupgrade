@@ -172,9 +172,9 @@ func TestCreateSegmentDataDirectories(t *testing.T) {
 	mirrorClient := mock_idl.NewMockAgentClient(ctrl)
 
 	agentConns := []*agent.Connection{
-		{nil, client, "host1", nil},
-		{nil, failedClient, "host2", nil},
-		{nil, mirrorClient, "host3", nil},
+		{AgentClient: client, Hostname: "host1"},
+		{AgentClient: failedClient, Hostname: "host2"},
+		{AgentClient: mirrorClient, Hostname: "host3"},
 	}
 
 	err := CreateSegmentDataDirectories(agentConns, c)

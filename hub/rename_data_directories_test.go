@@ -119,9 +119,9 @@ func TestRenameSegmentDataDirs(t *testing.T) {
 		// NOTE: we expect no call to the standby
 
 		agentConns := []*agent.Connection{
-			{nil, client1, "sdw1", nil},
-			{nil, client2, "sdw2", nil},
-			{nil, client3, "standby", nil},
+			{AgentClient: client1, Hostname: "sdw1"},
+			{AgentClient: client2, Hostname: "sdw2"},
+			{AgentClient: client3, Hostname: "standby"},
 		}
 
 		err := hub.RenameSegmentDataDirs(agentConns, c, hub.UpgradeSuffix, "", true)
@@ -174,9 +174,9 @@ func TestRenameSegmentDataDirs(t *testing.T) {
 		).Return(&idl.RenameDirectoriesReply{}, nil)
 
 		agentConns := []*agent.Connection{
-			{nil, client1, "sdw1", nil},
-			{nil, client2, "sdw2", nil},
-			{nil, client3, "standby", nil},
+			{AgentClient: client1, Hostname: "sdw1"},
+			{AgentClient: client2, Hostname: "sdw2"},
+			{AgentClient: client3, Hostname: "standby"},
 		}
 
 		err := hub.RenameSegmentDataDirs(agentConns, c, "", hub.OldSuffix, false)
@@ -203,8 +203,8 @@ func TestRenameSegmentDataDirs(t *testing.T) {
 		).Return(nil, expected)
 
 		agentConns := []*agent.Connection{
-			{nil, client, "sdw1", nil},
-			{nil, failedClient, "sdw2", nil},
+			{AgentClient: client, Hostname: "sdw1"},
+			{AgentClient: failedClient, Hostname: "sdw2"},
 		}
 
 		err := hub.RenameSegmentDataDirs(agentConns, c, hub.UpgradeSuffix, "", true)

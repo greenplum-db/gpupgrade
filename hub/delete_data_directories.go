@@ -8,10 +8,11 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/hub/agent"
 	"github.com/greenplum-db/gpupgrade/idl"
 )
 
-func DeleteMirrorAndStandbyDirectories(agentConns []*Connection, cluster *greenplum.Cluster) error {
+func DeleteMirrorAndStandbyDirectories(agentConns []*agent.Connection, cluster *greenplum.Cluster) error {
 	wg := sync.WaitGroup{}
 	errChan := make(chan error, len(agentConns))
 
@@ -30,7 +31,7 @@ func DeleteMirrorAndStandbyDirectories(agentConns []*Connection, cluster *greenp
 		}
 
 		wg.Add(1)
-		go func(c *Connection) {
+		go func(c *agent.Connection) {
 			defer wg.Done()
 
 			req := new(idl.DeleteDirectoriesRequest)

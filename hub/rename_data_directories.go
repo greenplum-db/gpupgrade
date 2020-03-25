@@ -29,7 +29,7 @@ func (s *Server) UpdateDataDirectories() error {
 
 	// in --link mode, remove the mirror and standby data directories
 	if s.Config.UseLinkMode {
-		if err := DeleteMirrorAndStandbyDirectories(s.agentConns, s.Source); err != nil {
+		if err := DeleteMirrorAndStandbyDirectories(agentConnections, s.Source); err != nil {
 			return xerrors.Errorf("removing source cluster standby and mirror segment data directories: %w", err)
 		}
 	}

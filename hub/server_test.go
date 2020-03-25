@@ -124,7 +124,7 @@ var _ = Describe("Hub", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		for _, conn := range conns {
-			Eventually(func() connectivity.State { return conn.Conn.GetState() }).Should(Equal(connectivity.Ready))
+			Eventually(func() connectivity.State { return conn.State() }).Should(Equal(connectivity.Ready))
 		}
 
 		By("closing the connections")
@@ -132,7 +132,7 @@ var _ = Describe("Hub", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		for _, conn := range conns {
-			Eventually(func() connectivity.State { return conn.Conn.GetState() }).Should(Equal(connectivity.Shutdown))
+			Eventually(func() connectivity.State { return conn.State() }).Should(Equal(connectivity.Shutdown))
 		}
 	})
 
@@ -143,7 +143,7 @@ var _ = Describe("Hub", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		for _, conn := range conns {
-			Eventually(func() connectivity.State { return conn.Conn.GetState() }).Should(Equal(connectivity.Ready))
+			Eventually(func() connectivity.State { return conn.State() }).Should(Equal(connectivity.Ready))
 		}
 
 		var allHosts []string
@@ -177,7 +177,7 @@ var _ = Describe("Hub", func() {
 		agentA.Stop()
 
 		for _, conn := range conns {
-			Eventually(func() connectivity.State { return conn.Conn.GetState() }).Should(Equal(connectivity.TransientFailure))
+			Eventually(func() connectivity.State { return conn.State() }).Should(Equal(connectivity.TransientFailure))
 		}
 
 		_, err = h.AgentConns()

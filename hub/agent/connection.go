@@ -19,10 +19,14 @@ const dialTimeout = 3 * time.Second
 
 type Connection struct {
 	// TODO: make these members package private
-	Conn          *grpc.ClientConn
+	conn          *grpc.ClientConn
 	AgentClient   idl.AgentClient
 	Hostname      string
 	CancelContext func()
+}
+
+func (c *Connection) State() connectivity.State {
+	return c.conn.GetState()
 }
 
 func newConnection(host string, port int, dialer Dialer) (*Connection, error) {
@@ -40,7 +44,7 @@ func newConnection(host string, port int, dialer Dialer) (*Connection, error) {
 	}
 
 	return &Connection{
-		Conn:          conn,
+		conn:          conn,
 		AgentClient:   idl.NewAgentClient(conn),
 		Hostname:      host,
 		CancelContext: cancelFunc,
@@ -51,7 +55,7 @@ func (c *Client) ensureConnectionsAreReady() error {
 	notReadyHostnames := []string{}
 
 	for _, conn := range c.connections {
-		if conn.Conn.GetState() != connectivity.Ready {
+		if conn.conn.GetState() != connectivity.Ready {
 			notReadyHostnames = append(notReadyHostnames, conn.Hostname)
 		}
 	}

@@ -11,9 +11,9 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
+	"github.com/greenplum-db/gpupgrade/hub/agent"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
-
 )
 
 func TestDeleteSegmentDataDirs(t *testing.T) {
@@ -57,11 +57,11 @@ func TestDeleteSegmentDataDirs(t *testing.T) {
 		masterClient := mock_idl.NewMockAgentClient(ctrl)
 		// NOTE: we expect no call to the master
 
-		agentConns := []*hub.Connection{
-			{nil, sdw1Client, "sdw1", nil},
-			{nil, sdw2Client, "sdw2", nil},
-			{nil, standbyClient, "standby", nil},
-			{nil, masterClient, "master", nil},
+		agentConns := []*agent.Connection{
+			{AgentClient: sdw1Client, Hostname: "sdw1"},
+			{AgentClient: sdw2Client, Hostname: "sdw2"},
+			{AgentClient: standbyClient, Hostname: "standby"},
+			{AgentClient: masterClient, Hostname: "master"},
 		}
 
 		err := hub.DeleteMirrorAndStandbyDirectories(agentConns, c)
@@ -87,9 +87,9 @@ func TestDeleteSegmentDataDirs(t *testing.T) {
 			gomock.Any(),
 		).Return(nil, expected)
 
-		agentConns := []*hub.Connection{
-			{nil, sdw1Client, "sdw1", nil},
-			{nil, sdw2ClientFailed, "sdw2", nil},
+		agentConns := []*agent.Connection{
+			{AgentClient: sdw1Client, Hostname: "sdw1"},
+			{AgentClient: sdw2ClientFailed, Hostname: "sdw2"},
 		}
 
 		err := hub.DeleteMirrorAndStandbyDirectories(agentConns, c)
