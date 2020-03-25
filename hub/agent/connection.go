@@ -22,7 +22,7 @@ type Connection struct {
 	conn          *grpc.ClientConn
 	AgentClient   idl.AgentClient
 	Hostname      string
-	CancelContext func()
+	cancelContext func()
 }
 
 func (c *Connection) State() connectivity.State {
@@ -47,7 +47,7 @@ func newConnection(host string, port int, dialer Dialer) (*Connection, error) {
 		conn:          conn,
 		AgentClient:   idl.NewAgentClient(conn),
 		Hostname:      host,
-		CancelContext: cancelFunc,
+		cancelContext: cancelFunc,
 	}, nil
 }
 

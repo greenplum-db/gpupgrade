@@ -62,7 +62,7 @@ func (c *Client) Connections() []*Connection {
 
 func (c *Client) CloseConnections() {
 	for _, conn := range c.connections {
-		defer conn.CancelContext()
+		defer conn.cancelContext()
 		currState := conn.conn.GetState()
 		err := conn.conn.Close()
 		if err != nil {
