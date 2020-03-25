@@ -54,7 +54,9 @@ func RenameSourceMasterDataDir(masterDataDir string) error {
 	dst := filepath.Dir(masterDataDir) + OldSuffix
 
 	if err := utils.System.Rename(src, dst); err != nil {
-		return xerrors.Errorf("renaming source cluster master data directory from: '%s' to: '%s': %w", src, dst, err)
+		return xerrors.Errorf(
+			"renaming source cluster master data directory from: '%s' to: '%s': %w",
+			src, dst, err)
 	}
 
 	return nil
@@ -65,8 +67,11 @@ func RenameTargetMasterDataDir(masterDataDir string) error {
 	dst := filepath.Dir(masterDataDir)
 
 	if err := utils.System.Rename(src, dst); err != nil {
-		return xerrors.Errorf("renaming target cluster master data directory from: '%s' to: '%s': %w", src, dst, err)
+		return xerrors.Errorf(
+			"renaming target cluster master data directory from: '%s' to: '%s': %w",
+			src, dst, err)
 	}
+
 	return nil
 }
 
