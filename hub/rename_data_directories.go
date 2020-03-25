@@ -18,7 +18,7 @@ const OldSuffix = "_old"
 const UpgradeSuffix = "_upgrade"
 
 func (s *Server) UpdateDataDirectories() error {
-	if err := RenameMasterDataDir(s.Source.MasterDataDir(), true); err != nil {
+	if err := RenameSourceMasterDataDir(s.Source.MasterDataDir()); err != nil {
 		return xerrors.Errorf("renaming source cluster master data directory: %w", err)
 	}
 
@@ -34,7 +34,7 @@ func (s *Server) UpdateDataDirectories() error {
 		return xerrors.Errorf("renaming source cluster segment data directories: %w", err)
 	}
 
-	if err := RenameMasterDataDir(s.Target.MasterDataDir(), false); err != nil {
+	if err := RenameTargetMasterDataDir(s.Target.MasterDataDir()); err != nil {
 		return xerrors.Errorf("renaming target cluster master data directory: %w", err)
 	}
 
@@ -49,17 +49,23 @@ func (s *Server) UpdateDataDirectories() error {
 
 // e.g. for source /data/qddir/demoDataDir-1 becomes /data/qddir_old/demoDataDir-1
 // e.g. for target /data/qddir_upgrade/demoDataDir-1 becomes /data/qddir/demoDataDir-1
-func RenameMasterDataDir(masterDataDir string, isSource bool) error {
-	destination := "new"
+func RenameSourceMasterDataDir(masterDataDir string) error {
+	src := filepath.Dir(masterDataDir)
+	dst := filepath.Dir(masterDataDir) + OldSuffix
+
+	if err := utils.System.Rename(src, dst); err != nil {
+		return xerrors.Errorf("renaming source cluster master data directory from: '%s' to: '%s': %w", src, dst, err)
+	}
+
+	return nil
+}
+
+func RenameTargetMasterDataDir(masterDataDir string) error {
 	src := filepath.Dir(masterDataDir) + UpgradeSuffix
 	dst := filepath.Dir(masterDataDir)
-	if isSource {
-		destination = "old"
-		src = filepath.Dir(masterDataDir)
-		dst = filepath.Dir(masterDataDir) + OldSuffix
-	}
+
 	if err := utils.System.Rename(src, dst); err != nil {
-		return xerrors.Errorf("renaming %s cluster master data directory from: '%s' to: '%s': %w", destination, src, dst, err)
+		return xerrors.Errorf("renaming target cluster master data directory from: '%s' to: '%s': %w", src, dst, err)
 	}
 	return nil
 }

@@ -32,7 +32,7 @@ func TestRenameMasterDataDir(t *testing.T) {
 			return nil
 		}
 
-		err := hub.RenameMasterDataDir("/data/qddir/demoDataDir-1", true)
+		err := hub.RenameSourceMasterDataDir("/data/qddir/demoDataDir-1")
 		if err != nil {
 			t.Errorf("unexpected error got %#v", err)
 		}
@@ -53,7 +53,7 @@ func TestRenameMasterDataDir(t *testing.T) {
 			return nil
 		}
 
-		err := hub.RenameMasterDataDir("/data/qddir/demoDataDir-1", false)
+		err := hub.RenameTargetMasterDataDir("/data/qddir/demoDataDir-1")
 		if err != nil {
 			t.Errorf("unexpected error got %#v", err)
 		}
@@ -65,7 +65,7 @@ func TestRenameMasterDataDir(t *testing.T) {
 			return expected
 		}
 
-		err := hub.RenameMasterDataDir("/data/qddir/demoDataDir-1", true)
+		err := hub.RenameSourceMasterDataDir("/data/qddir/demoDataDir-1")
 		if !xerrors.Is(err, expected) {
 			t.Errorf("got %#v want %#v", err, expected)
 		}
