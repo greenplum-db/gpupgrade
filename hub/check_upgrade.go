@@ -35,9 +35,8 @@ func (agentConnProvider) GetAgents(s *Server) ([]*Connection, error) {
 }
 
 var upgrader UpgradeChecker = upgradeChecker{}
-var agentProvider AgentConnProvider = agentConnProvider{}
 
-func (s *Server) CheckUpgrade(stream step.OutStreams) error {
+func (s *Server) CheckUpgrade(stream step.OutStreams, conns []*Connection) error {
 	var wg sync.WaitGroup
 	checkErrs := make(chan error, 2)
 
@@ -57,12 +56,6 @@ func (s *Server) CheckUpgrade(stream step.OutStreams) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-
-		conns, connsErr := agentProvider.GetAgents(s)
-		if connsErr != nil {
-			checkErrs <- errors.Wrap(connsErr, "failed to connect to gpupgrade agents")
-			return
-		}
 
 		dataDirPairMap, dataDirPairsErr := s.GetDataDirPairs()
 		if dataDirPairsErr != nil {

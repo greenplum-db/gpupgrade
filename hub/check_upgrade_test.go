@@ -23,15 +23,7 @@ func (u upgraderMock) UpgradePrimaries(args UpgradePrimaryArgs) error {
 	return UpgradePrimariesMock(args, u.s)
 }
 
-type agentConnSourceMock struct {
-	conns []*Connection
-}
-
-func (a agentConnSourceMock) GetAgents(s *Server) ([]*Connection, error) {
-	return a.conns, nil
-}
-
-var agentsSource = agentConnSourceMock{[]*Connection{&Connection{Conn: nil, Hostname: "bengie"}}}
+var connections = []*Connection{{Conn: nil, Hostname: "bengie"}}
 
 func setUpgrader(updated UpgradeChecker) {
 	upgrader = updated
@@ -40,17 +32,7 @@ func resetUpgrader() {
 	upgrader = upgradeChecker{}
 }
 
-func setAgentProvider(agents AgentConnProvider) {
-	agentProvider = agents
-}
-func resetAgentProvider() {
-	agentProvider = agentConnProvider{}
-}
-
 func TestMasterIsCheckedLinkModeTrue(t *testing.T) {
-	setAgentProvider(agentsSource)
-	defer resetAgentProvider()
-
 	sourceCluster := MustCreateCluster(t, []greenplum.SegConfig{
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: "p"},
 		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: "/data/dbfast1/seg1", Role: "p"},
@@ -76,7 +58,8 @@ func TestMasterIsCheckedLinkModeTrue(t *testing.T) {
 			setUpgrader(testUpgraderMock)
 			defer resetUpgrader()
 
-			err := s.CheckUpgrade(nil)
+			err := s.CheckUpgrade(nil, connections)
+
 			if err != nil {
 				t.Errorf("got error: %+v", err) // yes, '%+v'; '%#v' prints opaque multierror
 			}
@@ -111,8 +94,8 @@ func UpgradePrimariesMock(result UpgradePrimaryArgs, expected *Server) error {
 	if result.MasterBackupDir != "" {
 		return errors.New(fmt.Sprintf("got %#v expected %#v", result.MasterBackupDir, ""))
 	}
-	if !reflect.DeepEqual(result.AgentConns, agentsSource.conns) {
-		return errors.New(fmt.Sprintf("got %#v expected %#v", result.AgentConns, agentsSource.conns))
+	if !reflect.DeepEqual(result.AgentConns, connections) {
+		return errors.New(fmt.Sprintf("got %#v expected %#v", result.AgentConns, connections))
 	}
 	expectedDataDirs, _ := expected.GetDataDirPairs()
 	if !reflect.DeepEqual(result.DataDirPairMap, expectedDataDirs) {

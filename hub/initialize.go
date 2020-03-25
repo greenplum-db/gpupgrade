@@ -95,7 +95,13 @@ func (s *Server) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest,
 	})
 
 	st.AlwaysRun(idl.Substep_CHECK_UPGRADE, func(stream step.OutStreams) error {
-		return s.CheckUpgrade(stream)
+		conns, err := s.AgentConns()
+
+		if err != nil {
+			return err
+		}
+
+		return s.CheckUpgrade(stream, conns)
 	})
 
 	return st.Err()
