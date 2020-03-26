@@ -34,6 +34,8 @@ func (s *Server) GetConfig(ctx context.Context, in *idl.GetConfigRequest) (*idl.
 	resp := &idl.GetConfigReply{}
 
 	switch in.Name {
+	case "id":
+		resp.Value = s.UpgradeID.String()
 	case "source-bindir":
 		resp.Value = s.Source.BinDir
 	case "target-bindir":

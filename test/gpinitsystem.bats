@@ -36,14 +36,18 @@ teardown() {
 #    gpupgrade config show --target-datadir
 #
 expected_datadir() {
-    local base="$(basename $1)"
-    local dir="$(dirname $1)_upgrade"
+    local oldDataDir=$1
+    local parentDir=$(dirname "${oldDataDir}")
+    local baseDir=$(basename "${oldDataDir}")
+    local suffix="${baseDir#demoDataDir}"
+
+    local upgradeID
+    upgradeID=$(gpupgrade config show --id)
 
     # Sanity check.
-    [ -n "$base" ]
-    [ -n "$dir" ]
+    [ -n "$parentDir" ]
 
-    echo "$dir/$base"
+    echo "${parentDir}/demoDataDir.${upgradeID}.${suffix}"
 }
 
 @test "initialize runs gpinitsystem based on the source cluster" {

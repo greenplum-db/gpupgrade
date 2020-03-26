@@ -2,7 +2,6 @@ package hub
 
 import (
 	"context"
-	"path/filepath"
 	"sync"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -14,62 +13,100 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
-const OldSuffix = "_old"
-const UpgradeSuffix = "_upgrade"
+type RenameMap = map[string][]*idl.RenamePair
+
+const oldSuffix = "_old"
 
 func (s *Server) UpdateDataDirectories() error {
-	if err := RenameMasterDataDir(s.Source.MasterDataDir(), true); err != nil {
-		return xerrors.Errorf("renaming source cluster master data directory: %w", err)
+	return UpdateDataDirectories(s.Config, s.agentConns)
+}
+
+func UpdateDataDirectories(conf *Config, agentConns []*Connection) error {
+	if err := RenameDataDirs(conf.Source.MasterDataDir(), conf.TargetInitializeConfig.Master.DataDir); err != nil {
+		return xerrors.Errorf("renaming master data directories: %w", err)
 	}
 
-	// in --link mode, remove the mirror and standby data directories
-	if s.Config.UseLinkMode {
-		if err := DeleteMirrorAndStandbyDirectories(s.agentConns, s.Source); err != nil {
+	// in --link mode, remove the source mirror and standby data directories; otherwise we create a second copy
+	//  of them for the target cluster. That might take too much disk space.
+	if conf.UseLinkMode {
+		if err := DeleteMirrorAndStandbyDirectories(agentConns, conf.Source); err != nil {
 			return xerrors.Errorf("removing source cluster standby and mirror segment data directories: %w", err)
 		}
 	}
 
-	if err := RenameSegmentDataDirs(s.agentConns, s.Source, "", OldSuffix,
-		s.Config.UseLinkMode /* rename primaries only*/); err != nil {
+	renameMap := getSourceRenameMap(conf.Source, conf.UseLinkMode)
+	if err := RenameSegmentDataDirs(agentConns, renameMap); err != nil {
 		return xerrors.Errorf("renaming source cluster segment data directories: %w", err)
 	}
 
-	if err := RenameMasterDataDir(s.Target.MasterDataDir(), false); err != nil {
-		return xerrors.Errorf("renaming target cluster master data directory: %w", err)
-	}
-
-	// Do not include mirrors and standby when moving _upgrade directories,
-	// since they don't exist yet.
-	if err := RenameSegmentDataDirs(s.agentConns, s.Target, UpgradeSuffix, "", true); err != nil {
+	renameMap = getTargetRenameMap(conf.TargetInitializeConfig, conf.Source)
+	if err := RenameSegmentDataDirs(agentConns, renameMap); err != nil {
 		return xerrors.Errorf("renaming target cluster segment data directories: %w", err)
 	}
 
 	return nil
 }
 
-// e.g. for source /data/qddir/demoDataDir-1 becomes /data/qddir_old/demoDataDir-1
-// e.g. for target /data/qddir_upgrade/demoDataDir-1 becomes /data/qddir/demoDataDir-1
-func RenameMasterDataDir(masterDataDir string, isSource bool) error {
-	destination := "new"
-	src := filepath.Dir(masterDataDir) + UpgradeSuffix
-	dst := filepath.Dir(masterDataDir)
-	if isSource {
-		destination = "old"
-		src = filepath.Dir(masterDataDir)
-		dst = filepath.Dir(masterDataDir) + OldSuffix
+func getSourceRenameMap(source *greenplum.Cluster, primariesOnly bool) RenameMap {
+	m := make(RenameMap)
+
+	for _, content := range source.ContentIDs {
+		seg := source.Primaries[content]
+		if !seg.IsMaster() {
+			m[seg.Hostname] = append(m[seg.Hostname], &idl.RenamePair{
+				Src: seg.DataDir,
+				Dst: seg.DataDir + oldSuffix,
+			})
+		}
+
+		seg, ok := source.Mirrors[content]
+		if !primariesOnly && ok {
+			m[seg.Hostname] = append(m[seg.Hostname], &idl.RenamePair{
+				Src: seg.DataDir,
+				Dst: seg.DataDir + oldSuffix,
+			})
+		}
 	}
-	if err := utils.System.Rename(src, dst); err != nil {
-		return xerrors.Errorf("renaming %s cluster master data directory from: '%s' to: '%s': %w", destination, src, dst, err)
+
+	return m
+}
+
+// getTargetRenameMap returns a rename map in which all primary target data directories
+// are renamed to their corresponding source directories.
+func getTargetRenameMap(target InitializeConfig, source *greenplum.Cluster) RenameMap {
+	m := make(RenameMap)
+
+	// Do not include mirrors and stand by when moving _upgrade directories,
+	// since they don't exist yet.  Master is renamed in a separate function.
+	for _, targetSeg := range target.Primaries {
+		content := targetSeg.ContentID
+		sourceSeg := source.Primaries[content]
+
+		host := targetSeg.Hostname
+		m[host] = append(m[host], &idl.RenamePair{
+			Src: targetSeg.DataDir,
+			Dst: sourceSeg.DataDir,
+		})
+	}
+
+	return m
+}
+
+// e.g.  source /data/qddir/demoDataDir-1 becomes /data/qddir/demoDataDir-1_old
+// and   target /data/qddir/demoDataDir-1_123GNHFD3 becomes /data/qddir/demoDataDir-1
+func RenameDataDirs(source, target string) error {
+	if err := utils.System.Rename(source, source+oldSuffix); err != nil {
+		return xerrors.Errorf("renaming source: %w", err)
+	}
+	if err := utils.System.Rename(target, source); err != nil {
+		return xerrors.Errorf("renaming target: %w", err)
 	}
 	return nil
 }
 
-// e.g. for source /data/dbfast1/demoDataDir0 becomes datadirs/dbfast1_old/demoDataDir0
-// e.g. for target /data/dbfast1_upgrade/demoDataDir0 becomes datadirs/dbfast1/demoDataDir0
-func RenameSegmentDataDirs(agentConns []*Connection,
-	cluster *greenplum.Cluster,
-	oldSuffix, newSuffix string,
-	primariesOnly bool) error {
+// e.g. for source /data/dbfast1/demoDataDir0 becomes datadirs/dbfast1/demoDataDir0_old
+// e.g. for target /data/dbfast1/demoDataDir0_123ABC becomes datadirs/dbfast1/demoDataDir0
+func RenameSegmentDataDirs(agentConns []*Connection, renames RenameMap) error {
 
 	wg := sync.WaitGroup{}
 	errs := make(chan error, len(agentConns))
@@ -77,23 +114,7 @@ func RenameSegmentDataDirs(agentConns []*Connection,
 	for _, conn := range agentConns {
 		conn := conn
 
-		selector := func(seg *greenplum.SegConfig) bool {
-			if !seg.IsOnHost(conn.Hostname) || seg.IsMaster() {
-				return false
-			}
-
-			if primariesOnly {
-				return seg.IsPrimary()
-			}
-
-			// Otherwise include mirrors and standby. (Master's excluded above.)
-			return true
-		}
-
-		segments := cluster.SelectSegments(selector)
-		if len(segments) == 0 {
-			// we can have mirror-only and standby-only hosts, which we don't
-			// care about here (they are added later)
+		if len(renames[conn.Hostname]) == 0 {
 			continue
 		}
 
@@ -101,40 +122,7 @@ func RenameSegmentDataDirs(agentConns []*Connection,
 		go func() {
 			defer wg.Done()
 
-			// When there are multiple segments under a parent data directory
-			// only call rename once on the parent directory.
-			// For example, /data/primary/gpseg1 and /data/primary/gpseg2
-			// only call rename once for /data/primary.
-			// NOTE: we keep the iteration stable for testing purposes; hence
-			// the combined map+slice approach.
-			alreadyDone := make(map[string]bool)
-			var parentDirs []string
-
-			for _, seg := range segments {
-				// For most segments, we want to rename the parent.
-				dir := filepath.Dir(seg.DataDir)
-				if seg.IsStandby() {
-					// Standby follows different naming rules; we rename its
-					// data directory directly.
-					dir = seg.DataDir
-				}
-
-				if alreadyDone[dir] {
-					continue
-				}
-
-				parentDirs = append(parentDirs, dir)
-				alreadyDone[dir] = true
-			}
-
-			req := new(idl.RenameDirectoriesRequest)
-			for _, dir := range parentDirs {
-				src := dir + oldSuffix
-				dst := dir + newSuffix
-
-				req.Pairs = append(req.Pairs, &idl.RenamePair{Src: src, Dst: dst})
-			}
-
+			req := &idl.RenameDirectoriesRequest{Pairs: renames[conn.Hostname]}
 			_, err := conn.AgentClient.RenameDirectories(context.Background(), req)
 			if err != nil {
 				gplog.Error("renaming segment data directories on host %s: %s", conn.Hostname, err.Error())

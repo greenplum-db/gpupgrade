@@ -7,6 +7,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/upgrade"
 )
 
 func TestConfig(t *testing.T) {
@@ -14,7 +15,20 @@ func TestConfig(t *testing.T) {
 	t.Run("saves itself to the provided stream", func(t *testing.T) {
 		source, target := testutils.CreateMultinodeSampleClusterPair("/tmp")
 		targetInitializeConfig := InitializeConfig{Master: greenplum.SegConfig{Hostname: "mdw"}}
-		original := &Config{source, target, targetInitializeConfig, 12345, 54321, false}
+
+		// NOTE: we explicitly do not name the struct members here, to ensure
+		// that the test fails to compile if you add new members to Config but
+		// forget to add them to this test. Be kind and document those that are
+		// not clear with comments.
+		original := &Config{
+			source,
+			target,
+			targetInitializeConfig,
+			12345,           // Port
+			54321,           // AgentPort
+			false,           // UseLinkMode
+			upgrade.NewID(), // UpgradeID
+		}
 
 		buf := new(bytes.Buffer)
 		err := original.Save(buf)

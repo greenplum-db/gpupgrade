@@ -12,10 +12,14 @@ import (
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/upgrade"
 )
 
 // create source/target clusters, write to disk and re-read from disk to make sure it is "durable"
-func (s *Server) FillClusterConfigsSubStep(config *Config, conn *sql.DB, _ step.OutStreams, request *idl.InitializeRequest, saveConfig func() error) error {
+func FillClusterConfigsSubStep(config *Config, conn *sql.DB, _ step.OutStreams, request *idl.InitializeRequest, saveConfig func() error) error {
+	// Assign a new universal upgrade identifier.
+	config.UpgradeID = upgrade.NewID()
+
 	if err := CheckSourceClusterConfiguration(conn); err != nil {
 		return err
 	}
@@ -37,7 +41,7 @@ func (s *Server) FillClusterConfigsSubStep(config *Config, conn *sql.DB, _ step.
 		ports = append(ports, int(p))
 	}
 
-	s.TargetInitializeConfig, err = AssignDatadirsAndPorts(s.Source, ports)
+	config.TargetInitializeConfig, err = AssignDatadirsAndPorts(config.Source, ports, config.UpgradeID)
 	if err != nil {
 		return err
 	}
@@ -49,7 +53,7 @@ func (s *Server) FillClusterConfigsSubStep(config *Config, conn *sql.DB, _ step.
 	return nil
 }
 
-func AssignDatadirsAndPorts(source *greenplum.Cluster, ports []int) (InitializeConfig, error) {
+func AssignDatadirsAndPorts(source *greenplum.Cluster, ports []int, upgradeID upgrade.ID) (InitializeConfig, error) {
 	if len(ports) == 0 {
 		port := 50432
 		numberOfSegments := len(source.Mirrors) + len(source.Primaries) + 2 // +2 for master/standby
@@ -65,22 +69,33 @@ func AssignDatadirsAndPorts(source *greenplum.Cluster, ports []int) (InitializeC
 		ports = sanitize(ports)
 	}
 
-	return assignDatadirsAndCustomPorts(source, ports)
+	return assignDatadirsAndCustomPorts(source, ports, upgradeID)
 }
 
 // can return an error if we run out of ports to use
-func assignDatadirsAndCustomPorts(source *greenplum.Cluster, ports []int) (InitializeConfig, error) {
+func assignDatadirsAndCustomPorts(source *greenplum.Cluster, ports []int, upgradeID upgrade.ID) (InitializeConfig, error) {
 	targetInitializeConfig := InitializeConfig{}
 
+	var segPrefix string
 	nextPortIndex := 0
 
+	// XXX we can't handle a masterless cluster elsewhere in the code; we may
+	// want to remove the "ok" check here and force NewCluster to error out
 	if master, ok := source.Primaries[-1]; ok {
 		// Reserve a port for the master.
 		if nextPortIndex > len(ports)-1 {
 			return InitializeConfig{}, errors.New("not enough ports")
 		}
+
+		// Save the segment prefix for later.
+		var err error
+		segPrefix, err = GetMasterSegPrefix(master.DataDir)
+		if err != nil {
+			return InitializeConfig{}, err
+		}
+
 		master.Port = ports[nextPortIndex]
-		master.DataDir = upgradeDataDir(master.DataDir)
+		master.DataDir = upgrade.TempDataDir(master.DataDir, segPrefix, upgradeID)
 		targetInitializeConfig.Master = master
 		nextPortIndex++
 	}
@@ -91,7 +106,7 @@ func assignDatadirsAndCustomPorts(source *greenplum.Cluster, ports []int) (Initi
 			return InitializeConfig{}, errors.New("not enough ports")
 		}
 		standby.Port = ports[nextPortIndex]
-		standby.DataDir = standby.DataDir + "_upgrade"
+		standby.DataDir = upgrade.TempDataDir(standby.DataDir, segPrefix, upgradeID)
 		targetInitializeConfig.Standby = standby
 		nextPortIndex++
 	}
@@ -119,7 +134,7 @@ func assignDatadirsAndCustomPorts(source *greenplum.Cluster, ports []int) (Initi
 			segment.Port = ports[nextPortIndex]
 			portIndexByHost[segment.Hostname] = nextPortIndex + 1
 		}
-		segment.DataDir = upgradeDataDir(segment.DataDir)
+		segment.DataDir = upgrade.TempDataDir(segment.DataDir, segPrefix, upgradeID)
 
 		targetInitializeConfig.Primaries = append(targetInitializeConfig.Primaries, segment)
 	}
@@ -144,7 +159,7 @@ func assignDatadirsAndCustomPorts(source *greenplum.Cluster, ports []int) (Initi
 				segment.Port = ports[nextPortIndex]
 				portIndexByHost[segment.Hostname] = nextPortIndex + 1
 			}
-			segment.DataDir = upgradeDataDir(segment.DataDir)
+			segment.DataDir = upgrade.TempDataDir(segment.DataDir, segPrefix, upgradeID)
 
 			targetInitializeConfig.Mirrors = append(targetInitializeConfig.Mirrors, segment)
 		}

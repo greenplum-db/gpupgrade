@@ -36,8 +36,10 @@ start_source_cluster() {
 delete_cluster() {
     local masterdir="$1"
 
+    # NOTE: the target master datadir now looks something like this: qddir/demoDataDir.k9KuElo8HT8.-1
+
     # Sanity check.
-    if [[ $masterdir != *_upgrade/demoDataDir* ]]; then
+    if [[ $masterdir != *qddir/demoDataDir*\.*\.-1* ]]; then
         abort "cowardly refusing to delete $masterdir which does not look like an upgraded demo data directory"
     fi
 
@@ -60,7 +62,7 @@ delete_finalized_cluster() {
     local masterdir="$1"
 
     # Sanity check.
-    local old_qddir_path=$(dirname $masterdir)"_old/demoDataDir-1"
+    local old_qddir_path=$(dirname $masterdir)"/demoDataDir-1_old"
     if [[ ! -d "$old_qddir_path" ]]; then
         abort "cowardly refusing to delete $masterdir which does not look like an upgraded demo data directory. expected old directory of
             $old_qddir_path"
@@ -80,15 +82,16 @@ delete_finalized_cluster() {
     for source_dir in $(find "${datadirs}" -name "*_old"); do
         local new_dirname=$(basename $source_dir _old)
         local new_basedir=$(dirname $source_dir)
-        rm -rf "$new_basedir/$new_dirname"
+        rm -rf "${new_basedir:?}/${new_dirname}"
         mv $source_dir "$new_basedir/$new_dirname"
     done
 }
 
 delete_target_datadirs() {
     local masterdir="$1"
-    local datadir=$(dirname $(dirname "$masterdir"))
-    rm -rf "${datadir}"/*_upgrade
+    local datadir=$(dirname "$(dirname "$masterdir")")
+
+    rm -rf "${datadir}"/*/demoDataDir.*.[0-9]
 }
 
 # require_gnu_stat tries to find a GNU stat program. If one is found, it will be

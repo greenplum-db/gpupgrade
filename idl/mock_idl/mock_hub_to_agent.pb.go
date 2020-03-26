@@ -5,9 +5,9 @@
 package mock_idl
 
 import (
+	context "context"
 	gomock "github.com/golang/mock/gomock"
 	idl "github.com/greenplum-db/gpupgrade/idl"
-	context "golang.org/x/net/context"
 	grpc "google.golang.org/grpc"
 	reflect "reflect"
 )
@@ -73,26 +73,6 @@ func (mr *MockAgentClientMockRecorder) UpgradePrimaries(ctx, in interface{}, opt
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpgradePrimaries", reflect.TypeOf((*MockAgentClient)(nil).UpgradePrimaries), varargs...)
-}
-
-// CreateSegmentDataDirectories mocks base method
-func (m *MockAgentClient) CreateSegmentDataDirectories(ctx context.Context, in *idl.CreateSegmentDataDirRequest, opts ...grpc.CallOption) (*idl.CreateSegmentDataDirReply, error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "CreateSegmentDataDirectories", varargs...)
-	ret0, _ := ret[0].(*idl.CreateSegmentDataDirReply)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateSegmentDataDirectories indicates an expected call of CreateSegmentDataDirectories
-func (mr *MockAgentClientMockRecorder) CreateSegmentDataDirectories(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSegmentDataDirectories", reflect.TypeOf((*MockAgentClient)(nil).CreateSegmentDataDirectories), varargs...)
 }
 
 // RenameDirectories mocks base method
@@ -206,21 +186,6 @@ func (m *MockAgentServer) UpgradePrimaries(arg0 context.Context, arg1 *idl.Upgra
 func (mr *MockAgentServerMockRecorder) UpgradePrimaries(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpgradePrimaries", reflect.TypeOf((*MockAgentServer)(nil).UpgradePrimaries), arg0, arg1)
-}
-
-// CreateSegmentDataDirectories mocks base method
-func (m *MockAgentServer) CreateSegmentDataDirectories(arg0 context.Context, arg1 *idl.CreateSegmentDataDirRequest) (*idl.CreateSegmentDataDirReply, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateSegmentDataDirectories", arg0, arg1)
-	ret0, _ := ret[0].(*idl.CreateSegmentDataDirReply)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateSegmentDataDirectories indicates an expected call of CreateSegmentDataDirectories
-func (mr *MockAgentServerMockRecorder) CreateSegmentDataDirectories(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSegmentDataDirectories", reflect.TypeOf((*MockAgentServer)(nil).CreateSegmentDataDirectories), arg0, arg1)
 }
 
 // RenameDirectories mocks base method

@@ -258,6 +258,8 @@ _gpupgrade_config_show()
     flags_with_completion=()
     flags_completion=()
 
+    flags+=("--id")
+    local_nonpersistent_flags+=("--id")
     flags+=("--source-bindir")
     local_nonpersistent_flags+=("--source-bindir")
     flags+=("--target-bindir")

@@ -19,7 +19,6 @@ type MockAgentServer struct {
 	mu         sync.Mutex
 
 	UpgradeConvertPrimarySegmentsRequest *idl.UpgradePrimariesRequest
-	CreateSegmentDataDirRequest          *idl.CreateSegmentDataDirRequest
 	DeleteDirectoriesRequest             *idl.DeleteDirectoriesRequest
 
 	Err chan error
@@ -79,21 +78,6 @@ func (m *MockAgentServer) UpgradePrimaries(ctx context.Context, in *idl.UpgradeP
 	}
 
 	return &idl.UpgradePrimariesReply{}, err
-}
-
-func (m *MockAgentServer) CreateSegmentDataDirectories(ctx context.Context, in *idl.CreateSegmentDataDirRequest) (*idl.CreateSegmentDataDirReply, error) {
-	m.increaseCalls()
-
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.CreateSegmentDataDirRequest = in
-
-	var err error
-	if len(m.Err) != 0 {
-		err = <-m.Err
-	}
-
-	return &idl.CreateSegmentDataDirReply{}, err
 }
 
 func (m *MockAgentServer) RenameDirectories(context.Context, *idl.RenameDirectoriesRequest) (*idl.RenameDirectoriesReply, error) {

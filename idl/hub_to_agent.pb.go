@@ -3,13 +3,14 @@
 
 package idl
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-
 import (
-	context "golang.org/x/net/context"
+	context "context"
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
+	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -21,7 +22,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type UpgradePrimariesRequest struct {
 	SourceBinDir         string         `protobuf:"bytes,1,opt,name=SourceBinDir,proto3" json:"SourceBinDir,omitempty"`
@@ -40,16 +41,17 @@ func (m *UpgradePrimariesRequest) Reset()         { *m = UpgradePrimariesRequest
 func (m *UpgradePrimariesRequest) String() string { return proto.CompactTextString(m) }
 func (*UpgradePrimariesRequest) ProtoMessage()    {}
 func (*UpgradePrimariesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_31f3857942f713e8, []int{0}
+	return fileDescriptor_9e73bb06acc917d8, []int{0}
 }
+
 func (m *UpgradePrimariesRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpgradePrimariesRequest.Unmarshal(m, b)
 }
 func (m *UpgradePrimariesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_UpgradePrimariesRequest.Marshal(b, m, deterministic)
 }
-func (dst *UpgradePrimariesRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UpgradePrimariesRequest.Merge(dst, src)
+func (m *UpgradePrimariesRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UpgradePrimariesRequest.Merge(m, src)
 }
 func (m *UpgradePrimariesRequest) XXX_Size() int {
 	return xxx_messageInfo_UpgradePrimariesRequest.Size(m)
@@ -125,16 +127,17 @@ func (m *DataDirPair) Reset()         { *m = DataDirPair{} }
 func (m *DataDirPair) String() string { return proto.CompactTextString(m) }
 func (*DataDirPair) ProtoMessage()    {}
 func (*DataDirPair) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_31f3857942f713e8, []int{1}
+	return fileDescriptor_9e73bb06acc917d8, []int{1}
 }
+
 func (m *DataDirPair) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DataDirPair.Unmarshal(m, b)
 }
 func (m *DataDirPair) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_DataDirPair.Marshal(b, m, deterministic)
 }
-func (dst *DataDirPair) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DataDirPair.Merge(dst, src)
+func (m *DataDirPair) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DataDirPair.Merge(m, src)
 }
 func (m *DataDirPair) XXX_Size() int {
 	return xxx_messageInfo_DataDirPair.Size(m)
@@ -197,16 +200,17 @@ func (m *UpgradePrimariesReply) Reset()         { *m = UpgradePrimariesReply{} }
 func (m *UpgradePrimariesReply) String() string { return proto.CompactTextString(m) }
 func (*UpgradePrimariesReply) ProtoMessage()    {}
 func (*UpgradePrimariesReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_31f3857942f713e8, []int{2}
+	return fileDescriptor_9e73bb06acc917d8, []int{2}
 }
+
 func (m *UpgradePrimariesReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpgradePrimariesReply.Unmarshal(m, b)
 }
 func (m *UpgradePrimariesReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_UpgradePrimariesReply.Marshal(b, m, deterministic)
 }
-func (dst *UpgradePrimariesReply) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UpgradePrimariesReply.Merge(dst, src)
+func (m *UpgradePrimariesReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UpgradePrimariesReply.Merge(m, src)
 }
 func (m *UpgradePrimariesReply) XXX_Size() int {
 	return xxx_messageInfo_UpgradePrimariesReply.Size(m)
@@ -216,44 +220,6 @@ func (m *UpgradePrimariesReply) XXX_DiscardUnknown() {
 }
 
 var xxx_messageInfo_UpgradePrimariesReply proto.InternalMessageInfo
-
-type CreateSegmentDataDirRequest struct {
-	Datadirs             []string `protobuf:"bytes,1,rep,name=datadirs,proto3" json:"datadirs,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *CreateSegmentDataDirRequest) Reset()         { *m = CreateSegmentDataDirRequest{} }
-func (m *CreateSegmentDataDirRequest) String() string { return proto.CompactTextString(m) }
-func (*CreateSegmentDataDirRequest) ProtoMessage()    {}
-func (*CreateSegmentDataDirRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_31f3857942f713e8, []int{3}
-}
-func (m *CreateSegmentDataDirRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_CreateSegmentDataDirRequest.Unmarshal(m, b)
-}
-func (m *CreateSegmentDataDirRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_CreateSegmentDataDirRequest.Marshal(b, m, deterministic)
-}
-func (dst *CreateSegmentDataDirRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CreateSegmentDataDirRequest.Merge(dst, src)
-}
-func (m *CreateSegmentDataDirRequest) XXX_Size() int {
-	return xxx_messageInfo_CreateSegmentDataDirRequest.Size(m)
-}
-func (m *CreateSegmentDataDirRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_CreateSegmentDataDirRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CreateSegmentDataDirRequest proto.InternalMessageInfo
-
-func (m *CreateSegmentDataDirRequest) GetDatadirs() []string {
-	if m != nil {
-		return m.Datadirs
-	}
-	return nil
-}
 
 type DeleteDirectoriesRequest struct {
 	Datadirs             []string `protobuf:"bytes,1,rep,name=datadirs,proto3" json:"datadirs,omitempty"`
@@ -266,16 +232,17 @@ func (m *DeleteDirectoriesRequest) Reset()         { *m = DeleteDirectoriesReque
 func (m *DeleteDirectoriesRequest) String() string { return proto.CompactTextString(m) }
 func (*DeleteDirectoriesRequest) ProtoMessage()    {}
 func (*DeleteDirectoriesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_31f3857942f713e8, []int{4}
+	return fileDescriptor_9e73bb06acc917d8, []int{3}
 }
+
 func (m *DeleteDirectoriesRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DeleteDirectoriesRequest.Unmarshal(m, b)
 }
 func (m *DeleteDirectoriesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_DeleteDirectoriesRequest.Marshal(b, m, deterministic)
 }
-func (dst *DeleteDirectoriesRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DeleteDirectoriesRequest.Merge(dst, src)
+func (m *DeleteDirectoriesRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeleteDirectoriesRequest.Merge(m, src)
 }
 func (m *DeleteDirectoriesRequest) XXX_Size() int {
 	return xxx_messageInfo_DeleteDirectoriesRequest.Size(m)
@@ -293,36 +260,6 @@ func (m *DeleteDirectoriesRequest) GetDatadirs() []string {
 	return nil
 }
 
-type CreateSegmentDataDirReply struct {
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *CreateSegmentDataDirReply) Reset()         { *m = CreateSegmentDataDirReply{} }
-func (m *CreateSegmentDataDirReply) String() string { return proto.CompactTextString(m) }
-func (*CreateSegmentDataDirReply) ProtoMessage()    {}
-func (*CreateSegmentDataDirReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_31f3857942f713e8, []int{5}
-}
-func (m *CreateSegmentDataDirReply) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_CreateSegmentDataDirReply.Unmarshal(m, b)
-}
-func (m *CreateSegmentDataDirReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_CreateSegmentDataDirReply.Marshal(b, m, deterministic)
-}
-func (dst *CreateSegmentDataDirReply) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CreateSegmentDataDirReply.Merge(dst, src)
-}
-func (m *CreateSegmentDataDirReply) XXX_Size() int {
-	return xxx_messageInfo_CreateSegmentDataDirReply.Size(m)
-}
-func (m *CreateSegmentDataDirReply) XXX_DiscardUnknown() {
-	xxx_messageInfo_CreateSegmentDataDirReply.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_CreateSegmentDataDirReply proto.InternalMessageInfo
-
 type DeleteDirectoriesReply struct {
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -333,16 +270,17 @@ func (m *DeleteDirectoriesReply) Reset()         { *m = DeleteDirectoriesReply{}
 func (m *DeleteDirectoriesReply) String() string { return proto.CompactTextString(m) }
 func (*DeleteDirectoriesReply) ProtoMessage()    {}
 func (*DeleteDirectoriesReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_31f3857942f713e8, []int{6}
+	return fileDescriptor_9e73bb06acc917d8, []int{4}
 }
+
 func (m *DeleteDirectoriesReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DeleteDirectoriesReply.Unmarshal(m, b)
 }
 func (m *DeleteDirectoriesReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_DeleteDirectoriesReply.Marshal(b, m, deterministic)
 }
-func (dst *DeleteDirectoriesReply) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DeleteDirectoriesReply.Merge(dst, src)
+func (m *DeleteDirectoriesReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeleteDirectoriesReply.Merge(m, src)
 }
 func (m *DeleteDirectoriesReply) XXX_Size() int {
 	return xxx_messageInfo_DeleteDirectoriesReply.Size(m)
@@ -365,16 +303,17 @@ func (m *RenamePair) Reset()         { *m = RenamePair{} }
 func (m *RenamePair) String() string { return proto.CompactTextString(m) }
 func (*RenamePair) ProtoMessage()    {}
 func (*RenamePair) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_31f3857942f713e8, []int{7}
+	return fileDescriptor_9e73bb06acc917d8, []int{5}
 }
+
 func (m *RenamePair) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RenamePair.Unmarshal(m, b)
 }
 func (m *RenamePair) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_RenamePair.Marshal(b, m, deterministic)
 }
-func (dst *RenamePair) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RenamePair.Merge(dst, src)
+func (m *RenamePair) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RenamePair.Merge(m, src)
 }
 func (m *RenamePair) XXX_Size() int {
 	return xxx_messageInfo_RenamePair.Size(m)
@@ -410,16 +349,17 @@ func (m *RenameDirectoriesRequest) Reset()         { *m = RenameDirectoriesReque
 func (m *RenameDirectoriesRequest) String() string { return proto.CompactTextString(m) }
 func (*RenameDirectoriesRequest) ProtoMessage()    {}
 func (*RenameDirectoriesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_31f3857942f713e8, []int{8}
+	return fileDescriptor_9e73bb06acc917d8, []int{6}
 }
+
 func (m *RenameDirectoriesRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RenameDirectoriesRequest.Unmarshal(m, b)
 }
 func (m *RenameDirectoriesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_RenameDirectoriesRequest.Marshal(b, m, deterministic)
 }
-func (dst *RenameDirectoriesRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RenameDirectoriesRequest.Merge(dst, src)
+func (m *RenameDirectoriesRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RenameDirectoriesRequest.Merge(m, src)
 }
 func (m *RenameDirectoriesRequest) XXX_Size() int {
 	return xxx_messageInfo_RenameDirectoriesRequest.Size(m)
@@ -447,16 +387,17 @@ func (m *RenameDirectoriesReply) Reset()         { *m = RenameDirectoriesReply{}
 func (m *RenameDirectoriesReply) String() string { return proto.CompactTextString(m) }
 func (*RenameDirectoriesReply) ProtoMessage()    {}
 func (*RenameDirectoriesReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_31f3857942f713e8, []int{9}
+	return fileDescriptor_9e73bb06acc917d8, []int{7}
 }
+
 func (m *RenameDirectoriesReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RenameDirectoriesReply.Unmarshal(m, b)
 }
 func (m *RenameDirectoriesReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_RenameDirectoriesReply.Marshal(b, m, deterministic)
 }
-func (dst *RenameDirectoriesReply) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RenameDirectoriesReply.Merge(dst, src)
+func (m *RenameDirectoriesReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RenameDirectoriesReply.Merge(m, src)
 }
 func (m *RenameDirectoriesReply) XXX_Size() int {
 	return xxx_messageInfo_RenameDirectoriesReply.Size(m)
@@ -477,16 +418,17 @@ func (m *StopAgentRequest) Reset()         { *m = StopAgentRequest{} }
 func (m *StopAgentRequest) String() string { return proto.CompactTextString(m) }
 func (*StopAgentRequest) ProtoMessage()    {}
 func (*StopAgentRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_31f3857942f713e8, []int{10}
+	return fileDescriptor_9e73bb06acc917d8, []int{8}
 }
+
 func (m *StopAgentRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StopAgentRequest.Unmarshal(m, b)
 }
 func (m *StopAgentRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_StopAgentRequest.Marshal(b, m, deterministic)
 }
-func (dst *StopAgentRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_StopAgentRequest.Merge(dst, src)
+func (m *StopAgentRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StopAgentRequest.Merge(m, src)
 }
 func (m *StopAgentRequest) XXX_Size() int {
 	return xxx_messageInfo_StopAgentRequest.Size(m)
@@ -507,16 +449,17 @@ func (m *StopAgentReply) Reset()         { *m = StopAgentReply{} }
 func (m *StopAgentReply) String() string { return proto.CompactTextString(m) }
 func (*StopAgentReply) ProtoMessage()    {}
 func (*StopAgentReply) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_31f3857942f713e8, []int{11}
+	return fileDescriptor_9e73bb06acc917d8, []int{9}
 }
+
 func (m *StopAgentReply) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StopAgentReply.Unmarshal(m, b)
 }
 func (m *StopAgentReply) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_StopAgentReply.Marshal(b, m, deterministic)
 }
-func (dst *StopAgentReply) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_StopAgentReply.Merge(dst, src)
+func (m *StopAgentReply) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StopAgentReply.Merge(m, src)
 }
 func (m *StopAgentReply) XXX_Size() int {
 	return xxx_messageInfo_StopAgentReply.Size(m)
@@ -539,16 +482,17 @@ func (m *CheckSegmentDiskSpaceRequest) Reset()         { *m = CheckSegmentDiskSp
 func (m *CheckSegmentDiskSpaceRequest) String() string { return proto.CompactTextString(m) }
 func (*CheckSegmentDiskSpaceRequest) ProtoMessage()    {}
 func (*CheckSegmentDiskSpaceRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_hub_to_agent_31f3857942f713e8, []int{12}
+	return fileDescriptor_9e73bb06acc917d8, []int{10}
 }
+
 func (m *CheckSegmentDiskSpaceRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CheckSegmentDiskSpaceRequest.Unmarshal(m, b)
 }
 func (m *CheckSegmentDiskSpaceRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CheckSegmentDiskSpaceRequest.Marshal(b, m, deterministic)
 }
-func (dst *CheckSegmentDiskSpaceRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CheckSegmentDiskSpaceRequest.Merge(dst, src)
+func (m *CheckSegmentDiskSpaceRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CheckSegmentDiskSpaceRequest.Merge(m, src)
 }
 func (m *CheckSegmentDiskSpaceRequest) XXX_Size() int {
 	return xxx_messageInfo_CheckSegmentDiskSpaceRequest.Size(m)
@@ -577,9 +521,7 @@ func init() {
 	proto.RegisterType((*UpgradePrimariesRequest)(nil), "idl.UpgradePrimariesRequest")
 	proto.RegisterType((*DataDirPair)(nil), "idl.DataDirPair")
 	proto.RegisterType((*UpgradePrimariesReply)(nil), "idl.UpgradePrimariesReply")
-	proto.RegisterType((*CreateSegmentDataDirRequest)(nil), "idl.CreateSegmentDataDirRequest")
 	proto.RegisterType((*DeleteDirectoriesRequest)(nil), "idl.DeleteDirectoriesRequest")
-	proto.RegisterType((*CreateSegmentDataDirReply)(nil), "idl.CreateSegmentDataDirReply")
 	proto.RegisterType((*DeleteDirectoriesReply)(nil), "idl.DeleteDirectoriesReply")
 	proto.RegisterType((*RenamePair)(nil), "idl.RenamePair")
 	proto.RegisterType((*RenameDirectoriesRequest)(nil), "idl.RenameDirectoriesRequest")
@@ -587,6 +529,48 @@ func init() {
 	proto.RegisterType((*StopAgentRequest)(nil), "idl.StopAgentRequest")
 	proto.RegisterType((*StopAgentReply)(nil), "idl.StopAgentReply")
 	proto.RegisterType((*CheckSegmentDiskSpaceRequest)(nil), "idl.CheckSegmentDiskSpaceRequest")
+}
+
+func init() { proto.RegisterFile("hub_to_agent.proto", fileDescriptor_9e73bb06acc917d8) }
+
+var fileDescriptor_9e73bb06acc917d8 = []byte{
+	// 570 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x54, 0xc1, 0x6e, 0xd3, 0x4c,
+	0x10, 0xae, 0xe3, 0xba, 0x6d, 0x26, 0xfd, 0x5b, 0xff, 0x8b, 0x4a, 0x2d, 0x13, 0x50, 0xb0, 0x40,
+	0xca, 0x29, 0x42, 0xa1, 0x42, 0xe2, 0xd8, 0xd4, 0x17, 0x24, 0x4a, 0xc3, 0x86, 0x72, 0xad, 0x36,
+	0xf6, 0x28, 0x59, 0xc5, 0xb1, 0xcd, 0x7a, 0x73, 0xe8, 0x23, 0xf0, 0x24, 0x3c, 0x0a, 0xaf, 0x85,
+	0x76, 0xd7, 0x49, 0xec, 0x24, 0xbe, 0xed, 0x7e, 0xf3, 0xcd, 0xf8, 0x9b, 0x6f, 0x66, 0x0d, 0x64,
+	0xbe, 0x9a, 0x3e, 0xc9, 0xec, 0x89, 0xcd, 0x30, 0x95, 0x83, 0x5c, 0x64, 0x32, 0x23, 0x36, 0x8f,
+	0x13, 0xdf, 0x8d, 0x12, 0xae, 0x02, 0xf3, 0xd5, 0xd4, 0xc0, 0xc1, 0x9f, 0x16, 0x5c, 0x3f, 0xe6,
+	0x33, 0xc1, 0x62, 0x1c, 0x0b, 0xbe, 0x64, 0x82, 0x63, 0x41, 0xf1, 0xd7, 0x0a, 0x0b, 0x49, 0x02,
+	0x38, 0x9f, 0x64, 0x2b, 0x11, 0xe1, 0x88, 0xa7, 0x21, 0x17, 0x9e, 0xd5, 0xb3, 0xfa, 0x6d, 0x5a,
+	0xc3, 0x14, 0xe7, 0x07, 0x13, 0x33, 0x94, 0x25, 0xa7, 0x65, 0x38, 0x55, 0x8c, 0xbc, 0x83, 0xff,
+	0xcc, 0xfd, 0x27, 0x8a, 0x82, 0x67, 0xa9, 0x67, 0x6b, 0x52, 0x1d, 0x24, 0x37, 0x70, 0x1e, 0x32,
+	0xc9, 0x42, 0x2e, 0xc6, 0x8c, 0x8b, 0xc2, 0x3b, 0xee, 0xd9, 0xfd, 0xce, 0xd0, 0x1d, 0xf0, 0x38,
+	0x19, 0x54, 0x02, 0xb4, 0xc6, 0x22, 0x5d, 0x68, 0xdf, 0xcd, 0x31, 0x5a, 0x3c, 0xa4, 0xc9, 0xb3,
+	0xe7, 0xf4, 0xac, 0xfe, 0x19, 0xdd, 0x02, 0xa4, 0x07, 0x9d, 0xc7, 0x02, 0xbf, 0xf2, 0x74, 0x71,
+	0x9f, 0xc5, 0xe8, 0x9d, 0xe8, 0x78, 0x15, 0x22, 0x7d, 0xb8, 0xbc, 0x67, 0x85, 0x44, 0x31, 0x62,
+	0xd1, 0x62, 0x95, 0xab, 0x16, 0x4e, 0xb5, 0xba, 0x5d, 0x38, 0xf8, 0x6b, 0x41, 0xa7, 0xf2, 0x69,
+	0xd5, 0x95, 0x71, 0xa2, 0x04, 0x4b, 0x7b, 0xea, 0xe0, 0xb6, 0xf7, 0x35, 0xab, 0x55, 0xed, 0x7d,
+	0xcd, 0x7a, 0x03, 0x60, 0xd2, 0xc6, 0x99, 0x90, 0xda, 0x1e, 0x87, 0x56, 0x10, 0x15, 0x37, 0x09,
+	0x3a, 0x7e, 0x6c, 0xe2, 0x5b, 0x84, 0x78, 0x70, 0x7a, 0x97, 0xa5, 0x12, 0x53, 0xa9, 0x3d, 0x70,
+	0xe8, 0xfa, 0x4a, 0x08, 0x1c, 0x87, 0xa3, 0x2f, 0xa1, 0x6e, 0xdd, 0xa1, 0xfa, 0x1c, 0x5c, 0xc3,
+	0xd5, 0xfe, 0xc8, 0xf3, 0xe4, 0x39, 0xf8, 0x04, 0x5e, 0x88, 0x09, 0x4a, 0x0c, 0xb9, 0xc0, 0x48,
+	0x66, 0xd5, 0x65, 0xf0, 0xe1, 0x2c, 0x66, 0x92, 0xc5, 0x6a, 0x34, 0x56, 0xcf, 0xee, 0xb7, 0xe9,
+	0xe6, 0x1e, 0x78, 0xf0, 0xf2, 0x40, 0x9e, 0xaa, 0xf8, 0x01, 0x80, 0x62, 0xca, 0x96, 0xa8, 0x2d,
+	0x73, 0xc1, 0x9e, 0x88, 0xa8, 0x34, 0x4a, 0x1d, 0x15, 0x12, 0x16, 0xb2, 0x34, 0x45, 0x1d, 0x83,
+	0x5b, 0xf0, 0x4c, 0xc6, 0x01, 0x0d, 0xef, 0xc1, 0x31, 0xbb, 0x61, 0xe9, 0xdd, 0xb8, 0xd4, 0xbb,
+	0xb1, 0xad, 0x4f, 0x4d, 0x54, 0xc9, 0x39, 0x50, 0x42, 0xc9, 0x21, 0xe0, 0x4e, 0x64, 0x96, 0xdf,
+	0xaa, 0x77, 0x51, 0x16, 0x0d, 0x5c, 0xb8, 0xa8, 0x60, 0x8a, 0x95, 0x43, 0x57, 0xaf, 0xd0, 0x04,
+	0x67, 0x4b, 0x4c, 0x65, 0xc8, 0x8b, 0xc5, 0x24, 0x67, 0x11, 0xae, 0x65, 0xdc, 0xc0, 0xa9, 0x30,
+	0x47, 0xdd, 0x4a, 0x67, 0xe8, 0x6b, 0x21, 0x3a, 0x67, 0x97, 0x4c, 0xd7, 0xd4, 0x9a, 0x81, 0xad,
+	0xba, 0x81, 0xc3, 0xdf, 0x36, 0x38, 0x5a, 0x00, 0x79, 0x80, 0x8b, 0x7a, 0x1d, 0xf2, 0x76, 0x5b,
+	0xbc, 0x41, 0x90, 0xef, 0x1d, 0xfc, 0xbe, 0x6a, 0xe5, 0x88, 0x7c, 0x03, 0x77, 0x77, 0xd8, 0xa4,
+	0xab, 0xf9, 0x0d, 0xcf, 0xde, 0xf7, 0x1b, 0xa2, 0xa6, 0xde, 0x77, 0xf8, 0x7f, 0xcf, 0x5c, 0xf2,
+	0xba, 0x32, 0x89, 0xfd, 0xb9, 0xf9, 0xaf, 0x9a, 0xc2, 0xa6, 0xe4, 0x67, 0x68, 0x6f, 0x26, 0x40,
+	0xae, 0x34, 0x77, 0x77, 0x4a, 0xfe, 0x8b, 0x5d, 0x78, 0xa3, 0x66, 0x6f, 0xf3, 0x4a, 0x35, 0x4d,
+	0x9b, 0x5c, 0xaa, 0x69, 0x58, 0xd8, 0xa3, 0xe9, 0x89, 0xfe, 0x31, 0x7e, 0xfc, 0x17, 0x00, 0x00,
+	0xff, 0xff, 0x48, 0x80, 0x06, 0xce, 0x45, 0x05, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -603,7 +587,6 @@ const _ = grpc.SupportPackageIsVersion4
 type AgentClient interface {
 	CheckDiskSpace(ctx context.Context, in *CheckSegmentDiskSpaceRequest, opts ...grpc.CallOption) (*CheckDiskSpaceReply, error)
 	UpgradePrimaries(ctx context.Context, in *UpgradePrimariesRequest, opts ...grpc.CallOption) (*UpgradePrimariesReply, error)
-	CreateSegmentDataDirectories(ctx context.Context, in *CreateSegmentDataDirRequest, opts ...grpc.CallOption) (*CreateSegmentDataDirReply, error)
 	RenameDirectories(ctx context.Context, in *RenameDirectoriesRequest, opts ...grpc.CallOption) (*RenameDirectoriesReply, error)
 	StopAgent(ctx context.Context, in *StopAgentRequest, opts ...grpc.CallOption) (*StopAgentReply, error)
 	DeleteDirectories(ctx context.Context, in *DeleteDirectoriesRequest, opts ...grpc.CallOption) (*DeleteDirectoriesReply, error)
@@ -629,15 +612,6 @@ func (c *agentClient) CheckDiskSpace(ctx context.Context, in *CheckSegmentDiskSp
 func (c *agentClient) UpgradePrimaries(ctx context.Context, in *UpgradePrimariesRequest, opts ...grpc.CallOption) (*UpgradePrimariesReply, error) {
 	out := new(UpgradePrimariesReply)
 	err := c.cc.Invoke(ctx, "/idl.Agent/UpgradePrimaries", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *agentClient) CreateSegmentDataDirectories(ctx context.Context, in *CreateSegmentDataDirRequest, opts ...grpc.CallOption) (*CreateSegmentDataDirReply, error) {
-	out := new(CreateSegmentDataDirReply)
-	err := c.cc.Invoke(ctx, "/idl.Agent/CreateSegmentDataDirectories", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -675,10 +649,29 @@ func (c *agentClient) DeleteDirectories(ctx context.Context, in *DeleteDirectori
 type AgentServer interface {
 	CheckDiskSpace(context.Context, *CheckSegmentDiskSpaceRequest) (*CheckDiskSpaceReply, error)
 	UpgradePrimaries(context.Context, *UpgradePrimariesRequest) (*UpgradePrimariesReply, error)
-	CreateSegmentDataDirectories(context.Context, *CreateSegmentDataDirRequest) (*CreateSegmentDataDirReply, error)
 	RenameDirectories(context.Context, *RenameDirectoriesRequest) (*RenameDirectoriesReply, error)
 	StopAgent(context.Context, *StopAgentRequest) (*StopAgentReply, error)
 	DeleteDirectories(context.Context, *DeleteDirectoriesRequest) (*DeleteDirectoriesReply, error)
+}
+
+// UnimplementedAgentServer can be embedded to have forward compatible implementations.
+type UnimplementedAgentServer struct {
+}
+
+func (*UnimplementedAgentServer) CheckDiskSpace(ctx context.Context, req *CheckSegmentDiskSpaceRequest) (*CheckDiskSpaceReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckDiskSpace not implemented")
+}
+func (*UnimplementedAgentServer) UpgradePrimaries(ctx context.Context, req *UpgradePrimariesRequest) (*UpgradePrimariesReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpgradePrimaries not implemented")
+}
+func (*UnimplementedAgentServer) RenameDirectories(ctx context.Context, req *RenameDirectoriesRequest) (*RenameDirectoriesReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RenameDirectories not implemented")
+}
+func (*UnimplementedAgentServer) StopAgent(ctx context.Context, req *StopAgentRequest) (*StopAgentReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StopAgent not implemented")
+}
+func (*UnimplementedAgentServer) DeleteDirectories(ctx context.Context, req *DeleteDirectoriesRequest) (*DeleteDirectoriesReply, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteDirectories not implemented")
 }
 
 func RegisterAgentServer(s *grpc.Server, srv AgentServer) {
@@ -717,24 +710,6 @@ func _Agent_UpgradePrimaries_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AgentServer).UpgradePrimaries(ctx, req.(*UpgradePrimariesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Agent_CreateSegmentDataDirectories_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateSegmentDataDirRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AgentServer).CreateSegmentDataDirectories(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/idl.Agent/CreateSegmentDataDirectories",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AgentServer).CreateSegmentDataDirectories(ctx, req.(*CreateSegmentDataDirRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -806,10 +781,6 @@ var _Agent_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Agent_UpgradePrimaries_Handler,
 		},
 		{
-			MethodName: "CreateSegmentDataDirectories",
-			Handler:    _Agent_CreateSegmentDataDirectories_Handler,
-		},
-		{
 			MethodName: "RenameDirectories",
 			Handler:    _Agent_RenameDirectories_Handler,
 		},
@@ -824,49 +795,4 @@ var _Agent_serviceDesc = grpc.ServiceDesc{
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "hub_to_agent.proto",
-}
-
-func init() { proto.RegisterFile("hub_to_agent.proto", fileDescriptor_hub_to_agent_31f3857942f713e8) }
-
-var fileDescriptor_hub_to_agent_31f3857942f713e8 = []byte{
-	// 610 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x54, 0xc1, 0x4e, 0xdb, 0x4c,
-	0x10, 0xc6, 0x31, 0x06, 0x32, 0xe1, 0x07, 0xff, 0x5b, 0x51, 0x5c, 0x93, 0x22, 0xd7, 0x6a, 0xa5,
-	0x9c, 0x50, 0x45, 0x51, 0x25, 0x8e, 0x80, 0x2f, 0x95, 0x4a, 0xa1, 0x4e, 0xe9, 0x15, 0x6d, 0xec,
-	0x51, 0x58, 0xc5, 0xb1, 0xdd, 0xf5, 0xe6, 0xc0, 0x13, 0xf5, 0x51, 0xfa, 0x34, 0x7d, 0x87, 0x6a,
-	0x77, 0xed, 0xc4, 0x4e, 0x6c, 0x6e, 0xeb, 0x6f, 0xbe, 0x99, 0xfd, 0x66, 0xe6, 0x5b, 0x03, 0x79,
-	0x5a, 0x4c, 0x1e, 0x45, 0xf6, 0x48, 0xa7, 0x98, 0x8a, 0xb3, 0x9c, 0x67, 0x22, 0x23, 0x26, 0x8b,
-	0x13, 0xd7, 0x8e, 0x12, 0x26, 0x03, 0x4f, 0x8b, 0x89, 0x86, 0xfd, 0xdf, 0x3d, 0x38, 0x7e, 0xc8,
-	0xa7, 0x9c, 0xc6, 0x78, 0xcf, 0xd9, 0x9c, 0x72, 0x86, 0x45, 0x88, 0xbf, 0x16, 0x58, 0x08, 0xe2,
-	0xc3, 0xfe, 0x38, 0x5b, 0xf0, 0x08, 0xaf, 0x59, 0x1a, 0x30, 0xee, 0x18, 0x9e, 0x31, 0xea, 0x87,
-	0x0d, 0x4c, 0x72, 0x7e, 0x50, 0x3e, 0x45, 0x51, 0x72, 0x7a, 0x9a, 0x53, 0xc7, 0xc8, 0x7b, 0xf8,
-	0x4f, 0x7f, 0xff, 0x44, 0x5e, 0xb0, 0x2c, 0x75, 0x4c, 0x45, 0x6a, 0x82, 0xe4, 0x02, 0xf6, 0x03,
-	0x2a, 0x68, 0xc0, 0xf8, 0x3d, 0x65, 0xbc, 0x70, 0xb6, 0x3d, 0x73, 0x34, 0x38, 0xb7, 0xcf, 0x58,
-	0x9c, 0x9c, 0xd5, 0x02, 0x61, 0x83, 0x45, 0x86, 0xd0, 0xbf, 0x79, 0xc2, 0x68, 0x76, 0x97, 0x26,
-	0xcf, 0x8e, 0xe5, 0x19, 0xa3, 0xbd, 0x70, 0x05, 0x10, 0x0f, 0x06, 0x0f, 0x05, 0x7e, 0x65, 0xe9,
-	0xec, 0x36, 0x8b, 0xd1, 0xd9, 0x51, 0xf1, 0x3a, 0x44, 0x46, 0x70, 0x78, 0x4b, 0x0b, 0x81, 0xfc,
-	0x9a, 0x46, 0xb3, 0x45, 0x2e, 0x5b, 0xd8, 0x55, 0xea, 0xd6, 0x61, 0xff, 0x8f, 0x01, 0x83, 0xda,
-	0xd5, 0xb2, 0x2b, 0x3d, 0x89, 0x12, 0x2c, 0xc7, 0xd3, 0x04, 0x57, 0xbd, 0x57, 0xac, 0x5e, 0xbd,
-	0xf7, 0x8a, 0x75, 0x0a, 0xa0, 0xd3, 0xee, 0x33, 0x2e, 0xd4, 0x78, 0xac, 0xb0, 0x86, 0xc8, 0xb8,
-	0x4e, 0x50, 0xf1, 0x6d, 0x1d, 0x5f, 0x21, 0xc4, 0x81, 0xdd, 0x9b, 0x2c, 0x15, 0x98, 0x0a, 0x35,
-	0x03, 0x2b, 0xac, 0x3e, 0x09, 0x81, 0xed, 0xe0, 0xfa, 0x4b, 0xa0, 0x5a, 0xb7, 0x42, 0x75, 0xf6,
-	0x8f, 0xe1, 0x68, 0x73, 0xe5, 0x79, 0xf2, 0xec, 0x5f, 0xc2, 0xc9, 0x0d, 0x47, 0x2a, 0x70, 0x8c,
-	0xd3, 0x39, 0xa6, 0x95, 0xbc, 0xca, 0x0f, 0x2e, 0xec, 0xc5, 0x54, 0xd0, 0x58, 0x6e, 0xc7, 0xf0,
-	0xcc, 0x51, 0x3f, 0x5c, 0x7e, 0xfb, 0x9f, 0xc1, 0x09, 0x30, 0x41, 0x81, 0x01, 0xe3, 0x18, 0x89,
-	0xac, 0xee, 0xa3, 0x97, 0xf2, 0x4e, 0xe0, 0x4d, 0xfb, 0x95, 0x52, 0x8f, 0x03, 0xaf, 0x5b, 0x8a,
-	0xca, 0xc8, 0x47, 0x80, 0x10, 0x53, 0x3a, 0x47, 0xb5, 0x0a, 0x1b, 0xcc, 0x31, 0x8f, 0xca, 0x05,
-	0xc8, 0xa3, 0x44, 0x82, 0x42, 0x94, 0xc3, 0x96, 0x47, 0xff, 0x0a, 0x1c, 0x9d, 0xd1, 0x22, 0xf0,
-	0x03, 0x58, 0xda, 0x73, 0x86, 0xf2, 0xdc, 0xa1, 0xf2, 0xdc, 0xaa, 0x7e, 0xa8, 0xa3, 0x52, 0x4e,
-	0x4b, 0x09, 0x29, 0x87, 0x80, 0x3d, 0x16, 0x59, 0x7e, 0x25, 0xdf, 0x5b, 0x59, 0xd4, 0xb7, 0xe1,
-	0xa0, 0x86, 0x49, 0x56, 0x0e, 0x43, 0x65, 0xcd, 0xaa, 0x55, 0x56, 0xcc, 0xc6, 0x39, 0x8d, 0xb0,
-	0x92, 0x71, 0x01, 0xbb, 0x5c, 0x1f, 0x55, 0x2b, 0x83, 0x73, 0x57, 0x09, 0x51, 0x39, 0xeb, 0xe4,
-	0xb0, 0xa2, 0x36, 0xa6, 0xdb, 0x6b, 0x4e, 0xf7, 0xfc, 0xaf, 0x09, 0x96, 0x12, 0x40, 0xee, 0xe0,
-	0xa0, 0x59, 0x87, 0xbc, 0x5b, 0x15, 0xef, 0x10, 0xe4, 0x3a, 0xad, 0xf7, 0xcb, 0x56, 0xb6, 0xc8,
-	0x37, 0xb0, 0xd7, 0x4d, 0x44, 0x86, 0x8a, 0xdf, 0xf1, 0x3b, 0x71, 0xdd, 0x8e, 0xa8, 0xae, 0x37,
-	0x81, 0x61, 0x9b, 0x11, 0xaa, 0x39, 0x13, 0x4f, 0x6b, 0xe9, 0xb6, 0xa7, 0x7b, 0xfa, 0x02, 0x43,
-	0xdf, 0xf1, 0x1d, 0xfe, 0xdf, 0x58, 0x20, 0x79, 0x5b, 0xdb, 0xf6, 0xa6, 0x37, 0xdc, 0x93, 0xae,
-	0xb0, 0x2e, 0x79, 0x09, 0xfd, 0xe5, 0x96, 0xc9, 0x91, 0xe2, 0xae, 0x3b, 0xc1, 0x7d, 0xb5, 0x0e,
-	0x2f, 0xd5, 0x6c, 0xb8, 0xbb, 0x54, 0xd3, 0xf5, 0x94, 0x4a, 0x35, 0x1d, 0x8f, 0x62, 0x6b, 0xb2,
-	0xa3, 0x7e, 0xea, 0x9f, 0xfe, 0x05, 0x00, 0x00, 0xff, 0xff, 0x82, 0x2f, 0x48, 0x08, 0x01, 0x06,
-	0x00, 0x00,
 }

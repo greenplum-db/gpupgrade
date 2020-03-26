@@ -61,16 +61,10 @@ upgrade_cluster() {
                source "${GPHOME}/greenplum_path.sh"
                gpstop -a
                for datadir in "${datadirs[@]}"; do
-                   parent_datadir="$(dirname ${datadir})"
-                   if [ "$(basename ${datadir})" == "standby" ]; then
-                       # Standby follows different naming rules
-                       parent_datadir="${datadir}"
-                   fi
-                   cp -r ${parent_datadir} ${parent_datadir}_backup
+                   cp -r ${datadir} ${datadir}_backup
                done
                gpstart -a
         fi
-
 
         gpupgrade initialize \
             --source-bindir="$GPHOME/bin" \
@@ -94,13 +88,8 @@ upgrade_cluster() {
             # in --link mode, finalize deletes the mirrors/standby data directories,
             # so they should be restored.
             for datadir in "${datadirs[@]}"; do
-                parent_datadir="$(dirname ${datadir})"
-                if [ "$(basename ${datadir})" == "standby" ]; then
-                    # Standby follows different naming rules
-                    parent_datadir="${datadir}"
-                fi
-                rm -rf ${parent_datadir}_old
-                cp -r ${parent_datadir}_backup ${parent_datadir}_old
+                rm -rf ${datadir}_old
+                mv ${datadir}_backup ${datadir}_old
             done
         else
             validate_data_directories "EXISTS" "${datadirs}"
@@ -182,7 +171,7 @@ validate_data_directories() {
         DATADIRS=("$@")
         for datadir in "${DATADIRS[@]}"; do
             # ensure the source cluster has been archived
-            local source_datadir=$(dirname ${datadir})"_old/$(basename ${datadir})"
+            local source_datadir="${datadir}_old"
             if [ "$(basename ${datadir})" == "standby" ]; then
                 # Standby follows different naming rules
                 source_datadir="${datadir}_old"

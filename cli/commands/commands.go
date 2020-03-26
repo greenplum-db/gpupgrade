@@ -264,6 +264,7 @@ func createConfigShowSubcommand() *cobra.Command {
 		},
 	}
 
+	subShow.Flags().Bool("id", false, "show upgrade identifier")
 	subShow.Flags().Bool("source-bindir", false, "show install directory for source gpdb version")
 	subShow.Flags().Bool("target-bindir", false, "show install directory for target gpdb version")
 	subShow.Flags().Bool("target-datadir", false, "show temporary data directory for target gpdb cluster")

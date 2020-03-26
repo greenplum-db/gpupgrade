@@ -79,7 +79,10 @@ func TestUpdateCatalog(t *testing.T) {
 		t.Fatalf("creating %s: %+v", config, err)
 	}
 
-	conf := &Config{src, &greenplum.Cluster{}, InitializeConfig{}, 0, port, useLinkMode}
+	conf := &Config{
+		Source:    src,
+		AgentPort: port, // XXX do we rely on the global MockAgentClient? if not, this can go away
+	}
 	server := New(conf, nil, tempDir)
 
 	t.Run("updates ports for every segment", func(t *testing.T) {

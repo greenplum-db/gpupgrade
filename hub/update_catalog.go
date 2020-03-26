@@ -12,6 +12,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
@@ -34,7 +35,14 @@ func (s *Server) UpdateCatalogAndClusterConfig(streams step.OutStreams) (err err
 	// UpdateCatalogAndClusterConfig mutates the target cluster with the new
 	// data directories which have yet to be reflected on disk in a later substep.
 	master := s.Target.Primaries[-1]
-	master.DataDir = upgradeDataDir(master.DataDir)
+
+	// XXX We should not have to do this. Put Target back the way it was.
+	segPrefix, err := GetMasterSegPrefix(master.DataDir)
+	if err != nil {
+		return err
+	}
+	master.DataDir = upgrade.TempDataDir(master.DataDir, segPrefix, s.Config.UpgradeID)
+
 	segs := map[int]greenplum.SegConfig{-1: master}
 	oldTarget := &greenplum.Cluster{Primaries: segs, BinDir: s.Target.BinDir}
 
