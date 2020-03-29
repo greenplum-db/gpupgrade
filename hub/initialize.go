@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"path/filepath"
 
+	fault_injector "github.com/greenplum-db/gpupgrade/utils/fault_injection"
+
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/hashicorp/go-multierror"
 	"golang.org/x/xerrors"
@@ -31,6 +33,10 @@ func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initi
 			gplog.Error(fmt.Sprintf("initialize: %s", err))
 		}
 	}()
+
+	if in.UseFaultInjector {
+		fault_injector.On()
+	}
 
 	st.Run(idl.Substep_GENERATING_CONFIG, func(stream step.OutStreams) error {
 		conn, err := sql.Open("pgx", fmt.Sprintf(connectionString, in.SourcePort))

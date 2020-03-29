@@ -220,6 +220,7 @@ func RestartAgents(ctx context.Context,
 	errs := make(chan error, len(hostnames))
 
 	for _, host := range hostnames {
+
 		wg.Add(1)
 		go func(host string) {
 			defer wg.Done()
@@ -252,6 +253,7 @@ func RestartAgents(ctx context.Context,
 				errs <- err
 				return
 			}
+
 			cmd := execCommand("ssh", host,
 				fmt.Sprintf("bash -c \"%s agent --daemonize --state-directory %s\"", agentPath, stateDir))
 			stdout, err := cmd.Output()

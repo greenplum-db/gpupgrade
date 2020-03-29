@@ -35,6 +35,8 @@ import (
 	"strings"
 	"time"
 
+	fault_injector "github.com/greenplum-db/gpupgrade/utils/fault_injection"
+
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -296,12 +298,17 @@ func initialize() *cobra.Command {
 	var verbose bool
 	var ports string
 	var linkMode bool
+	var faultInjector bool
 
 	subInit := &cobra.Command{
 		Use:   "initialize",
 		Short: "prepare the system for upgrade",
 		Long:  InitializeHelp,
 		RunE: func(cmd *cobra.Command, args []string) error {
+
+			if faultInjector {
+				fault_injector.On()
+			}
 
 			// if diskFreeRatio is not explicitly set, use defaults
 			if !cmd.Flag("disk-free-ratio").Changed {
@@ -351,11 +358,12 @@ func initialize() *cobra.Command {
 			client := connectToHub()
 
 			request := &idl.InitializeRequest{
-				SourceBinDir: sourceBinDir,
-				TargetBinDir: targetBinDir,
-				SourcePort:   int32(sourcePort),
-				UseLinkMode:  linkMode,
-				Ports:        ports,
+				SourceBinDir:     sourceBinDir,
+				TargetBinDir:     targetBinDir,
+				SourcePort:       int32(sourcePort),
+				UseLinkMode:      linkMode,
+				UseFaultInjector: fault_injector.IsOn(),
+				Ports:            ports,
 			}
 			err = commanders.Initialize(client, request, verbose)
 			if err != nil {
@@ -397,6 +405,8 @@ After executing, you will need to finalize.`)
 	subInit.MarkFlagRequired("source-master-port") //nolint
 	subInit.Flags().BoolVar(&stopBeforeClusterCreation, "stop-before-cluster-creation", false, "only run up to pre-init")
 	subInit.Flags().MarkHidden("stop-before-cluster-creation") //nolint
+	subInit.Flags().BoolVar(&faultInjector, "fault-injection", false, "enables fault injection")
+	subInit.Flags().MarkHidden("fault-injection") //nolint
 	subInit.Flags().Float64Var(&diskFreeRatio, "disk-free-ratio", 0.60, "percentage of disk space that must be available (from 0.0 - 1.0)")
 	subInit.Flags().BoolVarP(&verbose, "verbose", "v", false, "print the output stream from all substeps")
 	subInit.Flags().StringVar(&ports, "temp-port-range", "", "set of ports to use when initializing the target cluster")
