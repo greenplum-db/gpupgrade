@@ -12,6 +12,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
+	fault_injector "github.com/greenplum-db/gpupgrade/utils/fault_injection"
 )
 
 const connectionString = "postgresql://localhost:%d/template1?gp_session_role=utility&search_path="
@@ -31,6 +32,10 @@ func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initi
 			gplog.Error(fmt.Sprintf("initialize: %s", err))
 		}
 	}()
+
+	if in.UseFaultInjector {
+		fault_injector.On()
+	}
 
 	st.Run(idl.Substep_GENERATING_CONFIG, func(stream step.OutStreams) error {
 		conn, err := sql.Open("pgx", fmt.Sprintf(connectionString, in.SourcePort))

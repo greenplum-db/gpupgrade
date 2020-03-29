@@ -19,7 +19,8 @@ message InitializeRequest {
     string targetBinDir = 2;
     int32 sourcePort = 3;
     bool useLinkMode = 4;
-    repeated uint32 ports = 5;
+    bool useFaultInjector = 5;
+    repeated uint32 ports = 6;
 }
 message InitializeCreateClusterRequest {}
 message ExecuteRequest {}

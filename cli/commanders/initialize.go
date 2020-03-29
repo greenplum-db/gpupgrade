@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	fault_injector "github.com/greenplum-db/gpupgrade/utils/fault_injection"
+
 	"github.com/greenplum-db/gpupgrade/idl"
 
 	"github.com/greenplum-db/gpupgrade/hub"
@@ -95,6 +97,11 @@ func StartHub() (err error) {
 		return err
 	}
 	gplog.Debug("gpupgrade hub started successfully: %s", stdout)
+
+	if fault_injector.Insert("initialize_example", 1) {
+		gplog.Info("fault injector on!!!")
+	}
+
 	return nil
 }
 
