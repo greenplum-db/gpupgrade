@@ -232,6 +232,7 @@ wait_for_port_change() {
         --source-bindir="$GPHOME/bin" \
         --target-bindir="$GPHOME/bin" \
         --source-master-port="${PGPORT}" \
+        --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
         --verbose 3>&-
 
@@ -245,6 +246,7 @@ wait_for_port_change() {
         --source-bindir="$GPHOME/bin" \
         --target-bindir="$GPHOME/bin" \
         --source-master-port="${PGPORT}" \
+        --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
         --verbose 3>&-
 
@@ -270,6 +272,7 @@ wait_for_port_change() {
         --source-bindir="$GPHOME/bin" \
         --target-bindir="$GPHOME/bin" \
         --source-master-port="${PGPORT}"\
+        --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
         --verbose 3>&-
 
@@ -283,6 +286,7 @@ wait_for_port_change() {
         --source-bindir="$GPHOME/bin" \
         --target-bindir="$GPHOME/bin" \
         --source-master-port="${PGPORT}"\
+        --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
         --verbose 3>&-
 }

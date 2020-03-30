@@ -27,6 +27,7 @@ teardown() {
               --source-bindir "$GPHOME"/bin \
               --target-bindir "$GPHOME_NEW"/bin \
               --source-master-port $PGPORT \
+              --temp-port-range 6020-6040 \
               --disk-free-ratio=0 \
               3>&-
 

@@ -94,6 +94,7 @@ reset_master_and_primary_pg_control_files() {
         --source-bindir="$GPHOME/bin" \
         --target-bindir="$GPHOME/bin" \
         --source-master-port="${PGPORT}" \
+        --temp-port-range 6020-6040 \
         --link \
         --disk-free-ratio 0 \
         --verbose
@@ -103,7 +104,7 @@ reset_master_and_primary_pg_control_files() {
     gpupgrade execute --verbose
     TEARDOWN_FUNCTIONS+=( reset_master_and_primary_pg_control_files )
 
-    PGPORT=50432 ensure_hardlinks_for_relfilenode_on_master_and_segments 'test_linking' 2
+    PGPORT=6020 ensure_hardlinks_for_relfilenode_on_master_and_segments 'test_linking' 2
 }
 
 @test "gpupgrade execute step to upgrade master should always rsync the master data dir from backup" {
@@ -116,6 +117,7 @@ reset_master_and_primary_pg_control_files() {
         --source-bindir="$GPHOME/bin" \
         --target-bindir="$GPHOME/bin" \
         --source-master-port="${PGPORT}" \
+        --temp-port-range 6020-6040 \
         --link \
         --disk-free-ratio 0 \
         --verbose
@@ -151,6 +153,7 @@ reset_master_and_primary_pg_control_files() {
         --source-bindir="$GPHOME/bin" \
         --target-bindir="$GPHOME/bin" \
         --source-master-port="${PGPORT}"\
+        --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
         --verbose 3>&-
 

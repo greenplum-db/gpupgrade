@@ -57,13 +57,14 @@ expected_datadir() {
     done <<< "$output"
 
     local masterdir="${olddirs[$PGPORT]}"
-    local newport=50432
+    local newport=6020
 
     gpupgrade initialize \
         --verbose \
         --source-bindir "$GPHOME/bin" \
         --target-bindir "$GPHOME/bin" \
         --source-master-port "$PGPORT" \
+        --temp-port-range 6020-6040 \
         --disk-free-ratio 0 3>&-
 
     # Make sure we clean up during teardown().
@@ -91,7 +92,7 @@ expected_datadir() {
         local newdir="${newdirs[$newport]}"
         (( newport++ ))
 
-        if [ "$newport" = 50433 ]; then
+        if [ "$newport" = 6021 ]; then
             # This port should be reserved for the standby, which isn't created
             # during initialize. Skip it.
             (( newport++ ))
@@ -111,11 +112,11 @@ expected_datadir() {
     local newport=15432
 
     gpupgrade initialize \
-        --temp-port-range $expected_ports,$standby_port,$mirror_ports \
         --verbose \
         --source-bindir "$GPHOME/bin" \
         --target-bindir "$GPHOME/bin" \
         --source-master-port "$PGPORT" \
+        --temp-port-range $expected_ports,$standby_port,$mirror_ports \
         --disk-free-ratio 0 3>&-
 
     # Make sure we clean up during teardown().

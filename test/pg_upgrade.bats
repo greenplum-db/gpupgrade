@@ -51,6 +51,7 @@ teardown() {
         --source-bindir "$GPHOME/bin" \
         --target-bindir "$GPHOME/bin" \
         --source-master-port "$PGPORT" \
+        --temp-port-range 6020-6040 \
         --disk-free-ratio=0 \
         --verbose 3>&- || status=$?
     [ "$status" -eq 1 ]
@@ -72,6 +73,7 @@ teardown() {
         --source-bindir "$GPHOME/bin" \
         --target-bindir "$GPHOME/bin" \
         --source-master-port "$PGPORT" \
+        --temp-port-range 6020-6040 \
         --disk-free-ratio=0 3>&-
 
     NEW_CLUSTER="$(gpupgrade config show --target-datadir)"
@@ -112,12 +114,13 @@ count_primary_gp_dbids() {
         --source-bindir "$GPHOME/bin" \
         --target-bindir "$GPHOME/bin" \
         --source-master-port "$PGPORT" \
+        --temp-port-range 6020-6040 \
         --disk-free-ratio=0 3>&-
     NEW_CLUSTER="$(gpupgrade config show --target-datadir)"
 
     gpupgrade execute --verbose
 
-    local new_dbid_num=$(count_primary_gp_dbids 50432)
+    local new_dbid_num=$(count_primary_gp_dbids 6020)
 
     [ $old_dbid_num -eq $new_dbid_num ] || fail "expected $old_dbid_num distinct DBIDs; got $new_dbid_num"
 
