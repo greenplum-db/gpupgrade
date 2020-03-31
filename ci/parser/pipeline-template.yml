@@ -257,7 +257,10 @@ jobs:
     <<: *slack_alert
 
 {{range .UpgradeJobs}}
-- name: {{.Source}}-to-{{.Target}}{{- if .PrimariesOnly }}-primaries-only{{end}}{{- if .NoStandby }}-no-standby{{end}}
+- name: {{.Source}}-to-{{.Target}}
+        {{- if .UseLinkMode }}-link-mode{{end}}
+        {{- if .PrimariesOnly }}-primaries-only{{end}}
+        {{- if .NoStandby }}-no-standby{{end}}
   plan:
     - in_parallel:
         - get: gpupgrade_src
@@ -344,6 +347,9 @@ jobs:
         {{- if .PrimariesOnly}}
         MIRRORS: 0
         STANDBY: 0
+        {{- end}}
+        {{- if .UseLinkMode}}
+        USE_LINK_MODE: 1
         {{- end}}
   ensure:
     <<: *set_failed

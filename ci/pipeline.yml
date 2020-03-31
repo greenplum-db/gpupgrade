@@ -340,6 +340,91 @@ jobs:
   on_failure:
     <<: *slack_alert
 
+- name: 5-to-6.1.0-link-mode
+  plan:
+    - in_parallel:
+        - get: gpupgrade_src
+          trigger: true
+        - get: bin_gpdb_old
+          resource: bin_gpdb5_centos6
+          trigger: true
+        - get: bin_gpdb_new
+          resource: bin_gpdb6.1.0_centos6
+          trigger: true
+        - get: ccp_src
+        - get: sqldump
+          resource: dump_gpdb5_simple
+        - get: gp-upgrade-packaging
+    - in_parallel:
+      - task: transform_old
+        file: gp-upgrade-packaging/ci/concourse/package/task.yml
+        input_mapping:
+          bin-gpdb: bin_gpdb_old
+        output_mapping:
+          rpm-gpdb: rpm_gpdb_old
+      - task: transform_new
+        file: gp-upgrade-packaging/ci/concourse/package/task.yml
+        input_mapping:
+          bin-gpdb: bin_gpdb_new
+        output_mapping:
+          rpm-gpdb: rpm_gpdb_new
+    - put: terraform
+      params:
+        <<: *ccp_default_params
+        vars:
+          standby_master: true
+          instance_type: n1-standard-2
+          number_of_nodes: 4
+          PLATFORM: centos6
+    - task: gen_old_cluster
+      file: ccp_src/ci/tasks/gen_cluster.yml
+      params:
+        <<: *ccp_gen_cluster_default_params
+        PLATFORM: centos6
+        GPDB_RPM: true
+      input_mapping:
+        gpdb_rpm: rpm_gpdb_old
+    - task: gpinitsystem_old_cluster
+      file: ccp_src/ci/tasks/gpinitsystem.yml
+    - task: prepare_old_and_new_installations
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source:
+            repository: alpine
+            tag: latest
+        inputs:
+          - name: rpm_gpdb_new
+          - name: cluster_env_files
+        run:
+          path: sh
+          args:
+            - -exc
+            - |
+              apk add --no-progress openssh-client
+
+              cp -R cluster_env_files/.ssh /root/.ssh
+
+              # Install the new binary.
+              for host in $(cat cluster_env_files/hostfile_all); do
+                  scp rpm_gpdb_new/*.rpm "${host}:/tmp/bin_gpdb_new.rpm"
+                  ssh -ttn centos@"$host" sudo yum install -y /tmp/bin_gpdb_new.rpm
+              done
+    - task: upgrade_cluster
+      file: gpupgrade_src/ci/tasks/upgrade-cluster.yml
+      params:
+        FILTER_DIFF: 1
+        OLD_PACKAGE: greenplum-db-5
+        NEW_PACKAGE: greenplum-db-6
+        USE_LINK_MODE: 1
+  ensure:
+    <<: *set_failed
+  on_success:
+    <<: *ccp_destroy
+  on_failure:
+    <<: *slack_alert
+
 - name: 5-to-6.1.0-primaries-only
   plan:
     - in_parallel:

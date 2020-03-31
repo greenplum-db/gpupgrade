@@ -97,10 +97,16 @@ EOF
 dump_sql $MASTER_PORT /tmp/old.sql
 
 # Now do the upgrade.
+LINK_MODE=""
+if [ "${USE_LINK_MODE}" = "1" ]; then
+    LINK_MODE="--link"
+fi
+
 time ssh mdw bash <<EOF
     set -eux -o pipefail
 
     gpupgrade initialize \
+              $LINK_MODE \
               --target-bindir ${GPHOME_NEW}/bin \
               --source-bindir ${GPHOME_OLD}/bin \
               --source-master-port $MASTER_PORT

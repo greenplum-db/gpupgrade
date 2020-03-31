@@ -23,15 +23,16 @@ import (
 var sourceVersions = []string{"5"}
 var targetVersions = []string{"6.1.0"}
 
-type UpgradeJobs struct {
+type UpgradeJob struct {
 	Source, Target string
 	PrimariesOnly  bool
 	NoStandby      bool
+	UseLinkMode    bool
 }
 
 type Data struct {
 	SourceVersions, TargetVersions []string
-	UpgradeJobs                    []*UpgradeJobs
+	UpgradeJobs                    []*UpgradeJob
 	LastTargetVersion              string
 	PrimariesOnly                  []bool
 }
@@ -39,21 +40,26 @@ type Data struct {
 var data Data
 
 func init() {
-	var upgradeJobs []*UpgradeJobs
+	var upgradeJobs []*UpgradeJob
 	for _, sourceVersion := range sourceVersions {
 		for _, targetVersion := range targetVersions {
-			upgradeJobs = append(upgradeJobs, &UpgradeJobs{
-				Source:        sourceVersion,
-				Target:        targetVersion,
+			upgradeJobs = append(upgradeJobs, &UpgradeJob{
+				Source: sourceVersion,
+				Target: targetVersion,
 			})
-			upgradeJobs = append(upgradeJobs, &UpgradeJobs{
+			upgradeJobs = append(upgradeJobs, &UpgradeJob{
+				Source:      sourceVersion,
+				Target:      targetVersion,
+				UseLinkMode: true,
+			})
+			upgradeJobs = append(upgradeJobs, &UpgradeJob{
 				Source:        sourceVersion,
 				Target:        targetVersion,
 				PrimariesOnly: true,
 			})
-			upgradeJobs = append(upgradeJobs, &UpgradeJobs{
-				Source:        sourceVersion,
-				Target:        targetVersion,
+			upgradeJobs = append(upgradeJobs, &UpgradeJob{
+				Source:    sourceVersion,
+				Target:    targetVersion,
 				NoStandby: true,
 			})
 		}
