@@ -24,8 +24,8 @@ import (
 	"github.com/blang/semver"
 )
 
-var sourceVersions = []string{"6.1.0", "5"}
-var targetVersions = []string{"6.1.0"}
+var sourceVersions = []string{"6", "5"}
+var targetVersions = []string{"6"}
 
 type UpgradeJob struct {
 	Source, Target string
@@ -65,7 +65,7 @@ func init() {
 
 	for _, job := range special {
 		job.Source = "5"
-		job.Target = "6.1.0"
+		job.Target = "6"
 
 		upgradeJobs = append(upgradeJobs, job)
 	}
