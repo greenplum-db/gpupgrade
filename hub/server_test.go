@@ -95,7 +95,8 @@ var _ = Describe("Hub", func() {
 		done := make(chan bool, 1)
 
 		go func() {
-			h.Start()
+			// This test is being ported to go-style testing so do a nolint for now.
+			h.Start() //nolint
 			done <- true
 		}()
 		h.Stop(true)
@@ -105,7 +106,8 @@ var _ = Describe("Hub", func() {
 
 	It("closes open connections when shutting down", func() {
 		h := hub.New(conf, mockDialer, "")
-		go h.Start()
+		// This test is being ported to go-style testing so do a nolint for now.
+		go h.Start() //nolint
 
 		By("creating connections")
 		conns, err := h.AgentConns()

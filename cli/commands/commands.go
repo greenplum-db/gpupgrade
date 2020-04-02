@@ -390,13 +390,13 @@ After executing, you will need to finalize.`)
 	}
 
 	subInit.Flags().StringVar(&sourceBinDir, "source-bindir", "", "install directory for source gpdb version")
-	subInit.MarkFlagRequired("source-bindir")
+	subInit.MarkFlagRequired("source-bindir") //nolint
 	subInit.Flags().StringVar(&targetBinDir, "target-bindir", "", "install directory for target gpdb version")
-	subInit.MarkFlagRequired("target-bindir")
+	subInit.MarkFlagRequired("target-bindir") //nolint
 	subInit.Flags().IntVar(&sourcePort, "source-master-port", 0, "master port for source gpdb cluster")
-	subInit.MarkFlagRequired("source-master-port")
+	subInit.MarkFlagRequired("source-master-port") //nolint
 	subInit.Flags().BoolVar(&stopBeforeClusterCreation, "stop-before-cluster-creation", false, "only run up to pre-init")
-	subInit.Flags().MarkHidden("stop-before-cluster-creation")
+	subInit.Flags().MarkHidden("stop-before-cluster-creation") //nolint
 	subInit.Flags().Float64Var(&diskFreeRatio, "disk-free-ratio", 0.60, "percentage of disk space that must be available (from 0.0 - 1.0)")
 	subInit.Flags().BoolVarP(&verbose, "verbose", "v", false, "print the output stream from all substeps")
 	subInit.Flags().StringVar(&ports, "temp-port-range", "", "set of ports to use when initializing the target cluster")

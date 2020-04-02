@@ -164,7 +164,8 @@ var _ = Describe("waitForDaemon", func() {
 		errput := []byte("this is an error\n")
 
 		cmd := MockDaemonizableCommand{StdoutBuf: output, StderrBuf: errput}
-		waitForDaemon(&cmd, outbuf, errbuf, 0)
+		err := waitForDaemon(&cmd, outbuf, errbuf, 0)
+		Expect(err).NotTo(HaveOccurred())
 
 		Expect(outbuf.Bytes()).To(Equal(output))
 		Expect(errbuf.Bytes()).To(Equal(errput))

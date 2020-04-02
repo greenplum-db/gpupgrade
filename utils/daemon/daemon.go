@@ -340,7 +340,7 @@ func MakeDaemonizable(cmd *cobra.Command, shouldDaemonize *bool) {
 	var forkChild bool
 	cmd.Flags().BoolVar(&forkChild, "daemonize", false, "start hub in the background")
 	cmd.Flags().BoolVar(shouldDaemonize, "daemon", false, "disconnect standard streams (internal option; use --daemonize instead)")
-	cmd.Flags().MarkHidden("daemon")
+	cmd.Flags().MarkHidden("daemon") //nolint
 
 	// Don't destroy any prerun functions stored by the user. We'll call them
 	// after our prerun, if we don't daemonize.

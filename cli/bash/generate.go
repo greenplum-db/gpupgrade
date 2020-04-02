@@ -4,6 +4,7 @@
 package main
 
 import (
+	"log"
 	"os"
 
 	"github.com/greenplum-db/gpupgrade/cli/commands"
@@ -13,5 +14,8 @@ import (
 
 func main() {
 	root := commands.BuildRootCommand()
-	root.GenBashCompletionFile(os.Args[1])
+	err := root.GenBashCompletionFile(os.Args[1])
+	if err != nil {
+		log.Fatalf("generating bash-completion.sh: %+v", err)
+	}
 }
