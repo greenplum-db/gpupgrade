@@ -20,4 +20,4 @@ run:
     cd $GOPATH/src/github.com/greenplum-db/gpupgrade
     make depend # to pull in dependencies for analysis
 
-    golangci-lint run
+    make lint
