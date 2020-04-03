@@ -39,7 +39,7 @@ var _ = Describe("Hub", func() {
 	)
 
 	BeforeEach(func() {
-		agentA, mockDialer, hubToAgentPort = mock_agent.NewMockAgentServer()
+		agentA, mockDialer, hubToAgentPort = mock_agent.NewMockAgentServer() //nolint
 		source, target = testutils.CreateMultinodeSampleClusterPair("/tmp")
 		source.Mirrors = map[int]greenplum.SegConfig{
 			-1: {ContentID: -1, DbID: 1, Port: 15433, Hostname: "standby-host", DataDir: "/seg-1"},

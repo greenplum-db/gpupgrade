@@ -57,7 +57,7 @@ var _ = BeforeEach(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	source, target = testutils.CreateMultinodeSampleClusterPair(dir)
-	mockAgent, dialer, port = mock_agent.NewMockAgentServer()
+	mockAgent, dialer, port = mock_agent.NewMockAgentServer() //nolint
 	client = mock_idl.NewMockAgentClient(ctrl)
 
 	conf := &hub.Config{
