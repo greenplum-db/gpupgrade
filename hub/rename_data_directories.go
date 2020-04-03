@@ -6,10 +6,6 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/greenplum-db/gpupgrade/upgrade"
-
-	"github.com/greenplum-db/gpupgrade/utils"
-
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/hashicorp/go-multierror"
 	"golang.org/x/xerrors"
@@ -18,6 +14,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
+	fault_injector "github.com/greenplum-db/gpupgrade/utils/fault_injection"
 )
 
 type RenameMap = map[string][]*idl.RenameDataDirs
@@ -37,6 +34,10 @@ func UpdateDataDirectories(conf *Config, agentConns []*Connection) error {
 		return xerrors.Errorf("renaming master data directories: %w", err)
 	}
 
+	if fault_injector.Insert("UPGRADE_Update_Data_Directories_after_master", 1) {
+		return xerrors.Errorf("returning after renaming source master")
+	}
+
 	// in --link mode, remove the source mirror and standby data directories; otherwise we create a second copy
 	//  of them for the target cluster. That might take too much disk space.
 	if conf.UseLinkMode {
@@ -45,16 +46,24 @@ func UpdateDataDirectories(conf *Config, agentConns []*Connection) error {
 		}
 	}
 
+	if fault_injector.Insert("UpdateDataDirectories_after_master", 1) {
+		return xerrors.Errorf("UpdateDataDirectories_after_master...fault")
+	}
+
 	renameMap := getRenameMap(conf.Source, conf.TargetInitializeConfig, conf.UseLinkMode)
 	if err := RenameSegmentDataDirs(agentConns, renameMap, conf.UpgradeID); err != nil {
 		return xerrors.Errorf("renaming source cluster segment data directories: %w", err)
+	}
+
+	if fault_injector.Insert("UPGRADE_Update_Data_Directories_at_end", 1) {
+		return xerrors.Errorf("returning after renaming source master")
 	}
 
 	return nil
 }
 
 // getRenameMap() splices together the source and target clusters by combining the corresponding segment from
-//   each cluster.  It does so per-host in order to enable a single hub-agent command for renaming dataDirs.
+//   each cluster.  It does so per-host.
 // TODO: Do we want to sanity-check that the source and target clusters "match"?  At this point in finalize,
 //   this should be a reasonable assumption.
 func getRenameMap(source *greenplum.Cluster, target InitializeConfig, sourcePrimariesOnly bool) RenameMap {
@@ -137,6 +146,10 @@ func RenameDataDirs(source, target string, upgradeID upgrade.ID) error {
 		if !IsRenameErrorIdempotent(err) {
 			return xerrors.Errorf("renaming source: %w", err)
 		}
+	}
+
+	if fault_injector.Insert("UPGRADE_RenameDataDirs", 1) {
+		return xerrors.Errorf("returning after renaming source master...")
 	}
 
 	// target mirror/standby don't exist yet
