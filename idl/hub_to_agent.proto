@@ -7,7 +7,7 @@ import "cli_to_hub.proto";
 service Agent {
   rpc CheckDiskSpace (CheckSegmentDiskSpaceRequest) returns (CheckDiskSpaceReply) {}
   rpc UpgradePrimaries (UpgradePrimariesRequest) returns (UpgradePrimariesReply) {}
-  rpc RenameDirectories (RenameDirectoriesRequest) returns (RenameDirectoriesReply) {}
+  rpc RenameDataDirectories (RenameDataDirectoriesRequest) returns (RenameDataDirectoriesReply) {}
   rpc StopAgent (StopAgentRequest) returns (StopAgentReply) {}
   rpc DeleteDirectories (DeleteDirectoriesRequest) returns (DeleteDirectoriesReply) {}
 }
@@ -39,16 +39,19 @@ message DeleteDirectoriesRequest {
 
 message DeleteDirectoriesReply {}
 
-message RenamePair {
-  string Src = 1;
-  string Dst = 2;
+message RenameDataDirs {
+  string Source = 1;
+  string Target = 2;
 }
 
-message RenameDirectoriesRequest {
-  repeated RenamePair Pairs = 1;
+// TODO: the upgradeID is a per-upgrade feature, so we should instead
+//  somehow make it "global" throughout the agent.
+message RenameDataDirectoriesRequest {
+  repeated RenameDataDirs DataDirs = 1;
+  uint64 upgradeID = 2;
 }
 
-message RenameDirectoriesReply {}
+message RenameDataDirectoriesReply {}
 
 message StopAgentRequest {}
 message StopAgentReply {}

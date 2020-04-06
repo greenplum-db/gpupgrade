@@ -6,10 +6,10 @@ import (
 	"net"
 	"sync"
 
+	"google.golang.org/grpc"
+
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
-
-	"google.golang.org/grpc"
 )
 
 type MockAgentServer struct {
@@ -80,9 +80,9 @@ func (m *MockAgentServer) UpgradePrimaries(ctx context.Context, in *idl.UpgradeP
 	return &idl.UpgradePrimariesReply{}, err
 }
 
-func (m *MockAgentServer) RenameDirectories(context.Context, *idl.RenameDirectoriesRequest) (*idl.RenameDirectoriesReply, error) {
+func (m *MockAgentServer) RenameDataDirectories(context.Context, *idl.RenameDataDirectoriesRequest) (*idl.RenameDataDirectoriesReply, error) {
 	m.increaseCalls()
-	return &idl.RenameDirectoriesReply{}, nil
+	return &idl.RenameDataDirectoriesReply{}, nil
 }
 
 func (m *MockAgentServer) DeleteDirectories(context.Context, *idl.DeleteDirectoriesRequest) (*idl.DeleteDirectoriesReply, error) {
