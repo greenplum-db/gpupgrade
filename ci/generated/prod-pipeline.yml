@@ -31,6 +31,13 @@ resources:
     uri: https://github.com/greenplum-db/gpdb
     branch: 6X_STABLE
 
+- name: retail_demo_src
+  type: git
+  source:
+    uri: ((retail-demo-git-remote))
+    private_key: ((retail-demo-git-key))
+    branch: ((retail-demo-git-branch))
+
 
 - name: bin_gpdb5_centos6
   type: s3
@@ -733,6 +740,124 @@ jobs:
     <<: *ccp_destroy
   on_failure:
     <<: *slack_alert
+
+- name: 5-to-6-retail-demo
+  plan:
+    - in_parallel:
+        - get: bin_gpupgrade
+          trigger: true
+          passed: [ build ]
+        - get: gpupgrade_src
+          passed: [ build ]
+        - get: bin_gpdb_old
+          resource: bin_gpdb5_centos6
+          trigger: true
+        - get: bin_gpdb_new
+          resource: bin_gpdb6_centos6
+          trigger: true
+        - get: ccp_src
+        - get: retail_demo_src
+        - get: gp-upgrade-packaging
+    - in_parallel:
+      - task: transform_old
+        file: gp-upgrade-packaging/ci/concourse/package/task.yml
+        input_mapping:
+          bin-gpdb: bin_gpdb_old
+        output_mapping:
+          rpm-gpdb: rpm_gpdb_old
+      - task: transform_new
+        file: gp-upgrade-packaging/ci/concourse/package/task.yml
+        input_mapping:
+          bin-gpdb: bin_gpdb_new
+        output_mapping:
+          rpm-gpdb: rpm_gpdb_new
+    - put: terraform
+      params:
+        <<: *ccp_default_params
+        vars:
+          standby_master: true
+          instance_type: n1-standard-2
+          number_of_nodes: 4
+          PLATFORM: centos6
+    - task: gen_old_cluster
+      file: ccp_src/ci/tasks/gen_cluster.yml
+      params:
+        <<: *ccp_gen_cluster_default_params
+        PLATFORM: centos6
+        GPDB_RPM: true
+      input_mapping:
+        gpdb_rpm: rpm_gpdb_old
+    - task: gpinitsystem_old_cluster
+      file: ccp_src/ci/tasks/gpinitsystem.yml
+    - task: prepare_old_and_new_installations
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source:
+            repository: alpine
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: cluster_env_files
+          - name: rpm_gpdb_new
+        run:
+          path: gpupgrade_src/ci/scripts/prepare-old-and-new-installations.sh
+          args:
+            - greenplum-db-5
+            - greenplum-db-6
+    - task: load_retail_data
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source:
+            repository: pivotaldata/gpdb6-centos7-test
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: retail_demo_src
+          - name: ccp_src
+          - name: cluster_env_files
+        run:
+          path: gpupgrade_src/ci/scripts/load-retail-data.bash
+    - task: upgrade_cluster
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source:
+            repository: pivotaldata/centos-gpdb-dev
+            tag: "6-gcc6.2-llvm3.7"
+        inputs:
+        - name: terraform
+        - name: ccp_src
+        - name: cluster_env_files
+        - name: gpupgrade_src
+        - name: bin_gpupgrade
+        run:
+          path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
+      params:
+        FILTER_DIFF: 1
+    - task: validate_mirrors_and_standby
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source:
+            repository: pivotaldata/centos-gpdb-dev
+            tag: "6-gcc6.2-llvm3.7"
+        inputs:
+          - name: gpupgrade_src
+          - name: cluster_env_files
+        run:
+          path: gpupgrade_src/ci/scripts/validate-mirrors-and-standby.bash
+  ensure:
+    <<: *set_failed
+  on_success:
+    <<: *ccp_destroy
+  on_failure:
+    <<: *slack_alert
 - name: publish-release-candidate
   plan:
     - in_parallel:
@@ -747,6 +872,7 @@ jobs:
           - 5-to-6-link-mode
           - 5-to-6-primaries-only
           - 5-to-6-no-standby
+          - 5-to-6-retail-demo
       - get: bin_gpupgrade
         passed:
           - build
@@ -755,6 +881,7 @@ jobs:
           - 5-to-6-link-mode
           - 5-to-6-primaries-only
           - 5-to-6-no-standby
+          - 5-to-6-retail-demo
     - task: version-rc
       config:
         platform: linux
