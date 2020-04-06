@@ -48,3 +48,27 @@ func ExampleTempDataDir() {
 	// /data/standby.AAAAAAAAAAA
 	// /data/primary/seg.AAAAAAAAAAA.3
 }
+
+func TestArchiveDirectoryForSource(t *testing.T) {
+	var id upgrade.ID
+
+	cases := []struct {
+		datadir        string
+		expectedFormat string // %s will be replaced with id.String()
+	}{
+		{"/data/seg-1", "/data/seg-1.%s.old"},
+		{"/data/master/gpseg-1", "/data/master/gpseg-1.%s.old"},
+		{"/data/seg1", "/data/seg1.%s.old"},
+		{"/data/standby", "/data/standby.%s.old"},
+	}
+
+	for _, c := range cases {
+		actual := upgrade.ArchiveDirectoryForSource(c.datadir, id)
+		expected := fmt.Sprintf(c.expectedFormat, id)
+
+		if actual != expected {
+			t.Errorf("ArchiveDataDirectory(%q, id) = %q, want %q",
+				c.datadir, actual, expected)
+		}
+	}
+}

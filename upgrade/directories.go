@@ -56,3 +56,14 @@ func TempDataDir(datadir, segPrefix string, id ID) string {
 
 	return filepath.Join(dir, newBase)
 }
+
+// ArchiveDirectoryForSource returns the archive directory for a given source cluster
+//   data directory.
+func ArchiveDirectoryForSource(dataDir string, upgradeID ID) string {
+	dataDir = filepath.Clean(dataDir) // sanitize trailing slashes for Split
+	dir, base := filepath.Split(dataDir)
+
+	newBase := fmt.Sprintf("%s.%s.old", base, upgradeID)
+
+	return filepath.Join(dir, newBase)
+}
