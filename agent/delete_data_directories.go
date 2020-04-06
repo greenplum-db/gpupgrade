@@ -2,7 +2,7 @@ package agent
 
 import (
 	"context"
-	"path/filepath"
+	"fmt"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/hashicorp/go-multierror"
@@ -11,8 +11,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
-var postgresFiles = [...]string {"postgresql.conf", "PG_VERSION"}
-
 func (s *Server) DeleteDirectories(ctx context.Context, in *idl.DeleteDirectoriesRequest) (*idl.DeleteDirectoriesReply, error) {
 	gplog.Info("got a request to delete data directories from the hub")
 
@@ -20,18 +18,13 @@ func (s *Server) DeleteDirectories(ctx context.Context, in *idl.DeleteDirectorie
 
 	for _, segDataDir := range in.Datadirs {
 
-		var postgresFilesError *multierror.Error
-
-		for _, fileName := range postgresFiles {
-			filePath := filepath.Join(segDataDir, fileName)
-			_, err := utils.System.Stat(filePath)
-			if err != nil {
-				postgresFilesError = multierror.Append(postgresFilesError, err)
-			}
+		// to allow idempotence...if the segDataDir is gone, it has already been deleted
+		if !utils.DoesPathExist(segDataDir) {
+			continue
 		}
 
-		if postgresFilesError != nil {
-			mErr = multierror.Append(mErr, postgresFilesError.ErrorOrNil())
+		if !IsPostgres(segDataDir) {
+			mErr = multierror.Append(mErr, fmt.Errorf("could not delete non-postgres data dir: %s", segDataDir))
 			continue
 		}
 
