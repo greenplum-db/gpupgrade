@@ -66,6 +66,8 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 
 	// todo: we don't currently have a way to output nothing to the UI when there is no standby.
 	// If we did, this check would actually be in `UpgradeStandby`
+	// NOTE: the TARGET marker file is placed into this created standby as it copies all files
+	//   from the target's master as part of standby creation.
 	if s.Source.HasStandby() {
 		st.Run(idl.Substep_FINALIZE_UPGRADE_STANDBY, func(streams step.OutStreams) error {
 			// TODO: once the temporary standby upgrade is fixed, switch to
@@ -82,6 +84,8 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 
 	// todo: we don't currently have a way to output nothing to the UI when there are no mirrors.
 	// If we did, this check would actually be in `UpgradeMirrors`
+	// NOTE: the TARGET marker file is placed into these created mirrors as it copies all files
+	//   from the target's mirror from its corresponding as part of standby creation.
 	if s.Source.HasMirrors() {
 		st.Run(idl.Substep_FINALIZE_UPGRADE_MIRRORS, func(streams step.OutStreams) error {
 			// TODO: once the temporary mirror upgrade is fixed, switch to using

@@ -265,6 +265,9 @@ wait_for_port_change() {
 # This is a very simple way to flush out the most obvious idempotence bugs. It
 # replicates what would happen if every substep failed/crashed right after
 # completing its work but before completion was signalled back to the hub.
+# TODO: fix the approach of this test.  For a step with N substeps (1,2,3,...,N),
+#   we only support re-running substep k on failure if substeps (k+1,...,N) have not
+#   yet been run.
 @test "all substeps can be re-run after completion" {
     # Force a target cluster to be created (setup's initialize stops before that
     # happens).
