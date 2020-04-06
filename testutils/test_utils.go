@@ -1,12 +1,21 @@
 package testutils
 
 import (
+	"io/ioutil"
 	"net"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/greenplum-db/gpupgrade/upgrade"
+	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 )
+
+var UpgradeID = upgrade.ID(10) // "CgAAAAAAAAA" in base64
 
 // TODO remove in favor of MustCreateCluster
 func CreateMultinodeSampleCluster(baseDir string) *greenplum.Cluster {
@@ -48,4 +57,38 @@ func GetOpenPort() (int, error) {
 	defer l.Close()
 
 	return l.Addr().(*net.TCPAddr).Port, nil
+}
+
+func SetupDataDirs(t *testing.T) (source, target, tmpDir string) {
+
+	var err error
+	tmpDir, err = ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatalf("unexpected err: %v", err)
+	}
+
+	source = createDataDir(t, "source", tmpDir)
+	target = createDataDir(t, "target", tmpDir)
+
+	return source, target, tmpDir
+}
+
+func createDataDir(t *testing.T, name, tmpDir string) (source string) {
+
+	source = filepath.Join(tmpDir, name)
+
+	err := os.Mkdir(source, 0700)
+	if err != nil {
+		t.Errorf("unexpected err: %v", err)
+	}
+
+	for _, fileName := range utils.PostgresFiles {
+		filePath := filepath.Join(source, fileName)
+		err = os.Mkdir(filePath, 0700)
+		if err != nil {
+			t.Errorf("unexpected err: %v", err)
+		}
+	}
+
+	return source
 }
