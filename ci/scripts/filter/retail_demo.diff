@@ -1,0 +1,74 @@
+--- old.sql     2020-04-09 20:11:32.929942492 +0000
++++ new.sql.filtered    2020-04-09 20:14:53.415709417 +0000
+@@ -419,6 +420,7 @@
+ --
+
+ CREATE SEQUENCE public.query_progress
++    START WITH 1
+     INCREMENT BY 1
+     NO MINVALUE
+     NO MAXVALUE
+@@ -446,6 +448,7 @@
+ --
+
+ CREATE SEQUENCE retail_demo.categories_dim_category_id_seq
++    START WITH 1
+     INCREMENT BY 1
+     NO MINVALUE
+     NO MAXVALUE
+@@ -482,6 +485,7 @@
+ --
+
+ CREATE SEQUENCE retail_demo.city_state_zip_csz_id_seq
++    START WITH 1
+     INCREMENT BY 1
+     NO MINVALUE
+     NO MAXVALUE
+@@ -529,6 +533,7 @@
+ --
+
+ CREATE SEQUENCE retail_demo.customer_addresses_dim_customer_address_id_seq
++    START WITH 1
+     INCREMENT BY 1
+     NO MINVALUE
+     NO MAXVALUE
+@@ -566,6 +571,7 @@
+ --
+
+ CREATE SEQUENCE retail_demo.customers_dim_customer_id_seq
++    START WITH 1
+     INCREMENT BY 1
+     NO MINVALUE
+     NO MAXVALUE
+@@ -681,6 +687,7 @@
+ --
+
+ CREATE SEQUENCE retail_demo.products_dim_product_id_seq
++    START WITH 1
+     INCREMENT BY 1
+     NO MINVALUE
+     NO MAXVALUE
+@@ -763,6 +770,7 @@
+ --
+
+ CREATE SEQUENCE retail_demo.streets_street_id_seq
++    START WITH 1
+     INCREMENT BY 1
+     NO MINVALUE
+     NO MAXVALUE
+@@ -1292,6 +1300,7 @@
+ --
+
+ CREATE SEQUENCE retail_parts.order_lineitems_order_item_id_seq
++    START WITH 1
+     INCREMENT BY 1
+     NO MINVALUE
+     NO MAXVALUE
+@@ -2092,6 +2101,7 @@
+ --
+
+ CREATE SEQUENCE retail_parts.shipment_lineitems_shipment_item_id_seq
++    START WITH 1
+     INCREMENT BY 1
+     NO MINVALUE
+     NO MAXVALUE

@@ -839,6 +839,7 @@ jobs:
           path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
       params:
         FILTER_DIFF: 1
+        DIFF_FILE: retail_demo.diff
     - task: validate_mirrors_and_standby
       config:
         platform: linux

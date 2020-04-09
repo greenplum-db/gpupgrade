@@ -367,6 +367,9 @@ jobs:
         {{- if .UseLinkMode}}
         USE_LINK_MODE: 1
         {{- end}}
+        {{- if .RetailDemo}}
+        DIFF_FILE: retail_demo.diff
+        {{- end}}
     {{- if not .NoStandby -}}
     {{- if not .PrimariesOnly }}
     - task: validate_mirrors_and_standby

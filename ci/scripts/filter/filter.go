@@ -29,8 +29,18 @@ import (
 	"strings"
 )
 
+type replacer struct {
+	Regex       *regexp.Regexp
+	Replacement string
+}
+
+func (t *replacer) replace(line string) string {
+	return t.Regex.ReplaceAllString(line, t.Replacement)
+}
+
 var lineRegexes []*regexp.Regexp
 var blockRegexes []*regexp.Regexp
+var replacements []*replacer
 
 func init() {
 	// linePatterns remove exactly what is matched, on a line-by-line basis.
@@ -46,11 +56,22 @@ func init() {
 		"COMMENT ON DATABASE postgres IS",
 	}
 
+	// replacementPatterns is a map of regex substitutions.
+	replacementPatterns := map[string]string{
+		`WITH \(tablename='(.+)', appendonly='true', compresstype=(.+), orientation='column' \)`: `WITH (tablename='${1}', appendonly=true, compresstype=${2}, orientation=column )`,
+	}
+
 	for _, pattern := range linePatterns {
 		lineRegexes = append(lineRegexes, regexp.MustCompile(pattern))
 	}
 	for _, pattern := range blockPatterns {
 		blockRegexes = append(blockRegexes, regexp.MustCompile(pattern))
+	}
+	for regex, replacement := range replacementPatterns {
+		replacements = append(replacements, &replacer{
+			Regex:       regexp.MustCompile(regex),
+			Replacement: replacement,
+		})
 	}
 }
 
@@ -92,6 +113,10 @@ nextline:
 				buf = buf[:0]
 				continue nextline
 			}
+		}
+
+		for _, r := range replacements {
+			line = r.replace(line)
 		}
 
 		// We want to keep this line. Flush and empty our buffer first.

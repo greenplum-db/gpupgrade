@@ -31,7 +31,7 @@ compare_dumps() {
             ssh mdw "
                 /tmp/filter < '$new_dump' > '$new_dump.filtered'
                 patch -R '$new_dump.filtered'
-            " < ./ci/scripts/filter/acceptable_diff
+            " < ./ci/scripts/filter/${DIFF_FILE}
 
             new_dump="$new_dump.filtered"
         fi
@@ -49,6 +49,7 @@ compare_dumps() {
 # Global parameters (default to off)
 USE_LINK_MODE=${USE_LINK_MODE:-0}
 FILTER_DIFF=${FILTER_DIFF:-0}
+DIFF_FILE=${DIFF_FILE:-"acceptable_diff"}
 
 # This port is selected by our CI pipeline
 MASTER_PORT=5432

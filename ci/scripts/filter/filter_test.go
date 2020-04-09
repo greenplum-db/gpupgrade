@@ -114,4 +114,39 @@ RESET allow_system_table_mods;
 			t.Logf("expected (expanded): %s", expected)
 		}
 	})
+
+	t.Run("for retail demo data remove quotes for partition table rel options", func(t *testing.T) {
+		var in, out bytes.Buffer
+
+		in.WriteString(`
+START ('2005-12-01 00:00:00'::timestamp without time zone) END ('2006-01-01 00:00:00'::timestamp without time zone) EVERY ('1 mon'::interval) WITH (tablename='order_lineitems_1_prt_2', appendonly='true', compresstype=quicklz, orientation='column' )
+`)
+
+		expected := `
+START ('2005-12-01 00:00:00'::timestamp without time zone) END ('2006-01-01 00:00:00'::timestamp without time zone) EVERY ('1 mon'::interval) WITH (tablename='order_lineitems_1_prt_2', appendonly=true, compresstype=quicklz, orientation=column )
+`
+
+		main.Filter(&in, &out)
+
+		if out.String() != expected {
+			t.Errorf("wrote %q want %q", out.String(), expected)
+			t.Logf("actual (expanded): %s", out.String())
+			t.Logf("expected (expanded): %s", expected)
+		}
+	})
+
+	t.Run("for retail demo data do not remove quotes for regular table rel options", func(t *testing.T) {
+		var in, out bytes.Buffer
+
+		expected := "WITH (appendonly='true', compresstype=quicklz, orientation='column'\n"
+		in.WriteString(expected)
+
+		main.Filter(&in, &out)
+
+		if out.String() != expected {
+			t.Errorf("wrote %q want %q", out.String(), expected)
+			t.Logf("actual (expanded):   %s", out.String())
+			t.Logf("expected (expanded): %s", expected)
+		}
+	})
 }
