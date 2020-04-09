@@ -49,7 +49,7 @@ compare_dumps() {
 # Global parameters (default to off)
 USE_LINK_MODE=${USE_LINK_MODE:-0}
 FILTER_DIFF=${FILTER_DIFF:-0}
-DIFF_FILE=${DIFF_FILE:-"acceptable_diff"}
+DIFF_FILE=${DIFF_FILE:-"icw.diff"}
 
 # This port is selected by our CI pipeline
 MASTER_PORT=5432
