@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 GPUPGRADE_SOURCE_PATH=/vagrant
+VAGRANT_USER_HOME=/home/vagrant
 
 own_directories() {
     sudo chown -R vagrant /usr/local
@@ -89,8 +90,7 @@ install_greenplum() {
     pushd "$GPUPGRADE_SOURCE_PATH/multihost";
         sudo yum install greenplum-db-*.rpm --assumeyes
     popd
-
-    echo ". /usr/local/greenplum-db/greenplum_path.sh" >> $HOME/.bashrc
+    echo ". /usr/local/greenplum-db/greenplum_path.sh" >> $VAGRANT_USER_HOME/.bashrc
 
     modify_linux_configuration_for_greenplum
 }
@@ -102,11 +102,19 @@ generate_ssh_keys() {
 install_gpupgrade() {
     cd "$GPUPGRADE_SOURCE_PATH" || exit
 
-    echo 'export PATH=$PATH:/home/vagrant/go/bin' >> $HOME/.bashrc
+    echo 'export PATH=$PATH:/home/vagrant/go/bin' >> $VAGRANT_USER_HOME/.bashrc
 
-    source "$HOME/.bashrc"
+    source "$VAGRANT_USER_HOME/.bashrc"
 
     make install
+}
+
+# TODO: Instead of hardcoding hostnames to an ip, configure DNS to be able to resolve
+# the hostname
+add_hosts_entries() {
+    sudo echo "192.168.100.2 standby-agent.local" >> /etc/hosts
+    sudo echo "192.168.100.3 segment-agent.local" >> /etc/hosts
+    sudo echo "192.168.100.4 hub.local" >> /etc/hosts
 }
 
 install_dependencies() {
@@ -126,6 +134,7 @@ main() {
     install_dependencies
     generate_ssh_keys
     setup_dns
+    add_hosts_entries
 }
 
 main

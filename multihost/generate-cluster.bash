@@ -5,6 +5,7 @@
 
 GPUPGRADE_SOURCE_PATH=/vagrant
 
-COMMAND="cd $GPUPGRADE_SOURCE_PATH/multihost && gpinitsystem -a -c gpupgrade_cluster_config"
+STANDBY_OPTS="-s standby-agent.local"
+GP_INIT_SYSTEM="cd $GPUPGRADE_SOURCE_PATH/multihost && gpinitsystem -a -c gpupgrade_cluster_config ${STANDBY_OPTS}"
 
-vagrant ssh hub --command="$COMMAND"
+vagrant ssh hub --command="$GP_INIT_SYSTEM"

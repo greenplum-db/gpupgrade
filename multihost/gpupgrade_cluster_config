@@ -3,10 +3,9 @@
 #
 #
 # This is a modified demo cluster config file, designed to
-# stand up a multi-host cluster with a master on the hub host (6000),
-# three segments (6100, 6101, 6102), and three mirrors (6200, 6201, 6202)
-# on the agent host.
+# stand up a multi-host cluster.
 #
+# See `multihost/README.md` for more information.
 #
 
 

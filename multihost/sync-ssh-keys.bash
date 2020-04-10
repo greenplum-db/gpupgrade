@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Vagrant guest names
-hostnames=(hub agent)
+hostnames=(hub standby-agent segment-agent)
 
 # guest files
 public_key_path=/home/vagrant/.ssh/id_rsa.pub
@@ -43,6 +43,7 @@ for hostname in "${hostnames[@]}"; do
     echo "Uploading ssh config files for ${hostname}..."
     vagrant upload $authorized_keys_path $guest_authorized_keys_path "$hostname"
     vagrant upload $known_hosts_path $guest_known_hosts_path "$hostname"
+    vagrant ssh $hostname --command="sudo chown vagrant:vagrant -R /home/vagrant"
     echo "Done."
 done
 
