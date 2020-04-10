@@ -20,7 +20,7 @@ teardown() {
     fi
 
     if [ -n "$NEW_CLUSTER" ]; then
-        delete_finalized_cluster $NEW_CLUSTER
+        delete_finalized_cluster "$NEW_CLUSTER" "$NEW_CLUSTER_ID"
     fi
 
     gpupgrade kill-services
@@ -43,7 +43,6 @@ upgrade_cluster() {
         for datadir in "${datadirs[@]}"; do
             touch "$datadir/${marker_file}"
         done
-
 
         # grab the original configuration before starting so we can verify the
         # target cluster ends up with the source cluster's original layout
@@ -75,24 +74,30 @@ upgrade_cluster() {
             $LINK_MODE \
             --verbose 3>&-
 
+        run gpupgrade config show --id
+        [ "$status" -eq 0 ]
+        NEW_CLUSTER_ID="${output}"
+
         gpupgrade execute --verbose
         gpupgrade finalize --verbose
 
         NEW_CLUSTER="$MASTER_DATA_DIRECTORY"
 
         if [ "$LINK_MODE" == "--link" ]; then
-            validate_data_directories "EXISTS" "$primary_datadirs"
-            validate_data_directories "NOT_EXISTS" "$mirror_datadirs"
+            validate_data_directories "EXISTS" "${NEW_CLUSTER_ID}" "${primary_datadirs[@]}"
+            validate_data_directories "NOT_EXISTS" "${NEW_CLUSTER_ID}" "${mirror_datadirs[@]}"
 
-            # restore the data directories to _old extension to fit the teardown
+            # restore the data directories to archive extension to fit the teardown
             # in --link mode, finalize deletes the mirrors/standby data directories,
             # so they should be restored.
             for datadir in "${datadirs[@]}"; do
-                rm -rf ${datadir}_old
-                mv ${datadir}_backup ${datadir}_old
+                local archiveDir
+                archiveDir=$(archiveDataDir "${datadir}" "$NEW_CLUSTER_ID")
+                rm -rf "${archiveDir}"
+                mv "${datadir}_backup" "$archiveDir"
             done
         else
-            validate_data_directories "EXISTS" "${datadirs}"
+            validate_data_directories "EXISTS" "${NEW_CLUSTER_ID}" "${datadirs[@]}"
         fi
 
         # ensure gpperfmon configuration file has been modified to reflect new data dir location
@@ -122,7 +127,6 @@ upgrade_cluster() {
         [[ $standby_status_line == *"Standby host passive"* ]] || fail "expected standby to be up and in passive mode, got **** ${actual_standby_status} ****"
 
         validate_mirrors_and_standby "${GPHOME}" "$(hostname)" "${PGPORT}"
-
 }
 @test "gpupgrade finalize should swap the target data directories and ports with the source cluster" {
     upgrade_cluster
@@ -165,25 +169,27 @@ get_standby_status() {
     echo "$standby_status" | grep 'Standby master state'
 }
 
+# after the end of a succesful upgrade, we have:
+#   source dataDirs --> archive dataDirs
+#   target dataDirs --> (in location of original source dataDirs) "DATADIRS" below
+# This function deletes the target cluster and replaces the source dataDirs from their archive locations
 validate_data_directories() {
-        CHECK_EXISTS=$1
+        local CHECK_EXISTS=$1
+        local UPGRADE_ID=$2
+        shift
         shift
         DATADIRS=("$@")
         for datadir in "${DATADIRS[@]}"; do
             # ensure the source cluster has been archived
-            local source_datadir="${datadir}_old"
-            if [ "$(basename ${datadir})" == "standby" ]; then
-                # Standby follows different naming rules
-                source_datadir="${datadir}_old"
-            fi
+            local archive_datadir=$(archiveDataDir "${datadir}" "${UPGRADE_ID}")
 
             if [ "$CHECK_EXISTS" == "NOT_EXISTS" ] ; then
                 # ensure that <mirror_datadir>_old directory for mirrors or standby does not exists
-                [ ! -d "${source_datadir}/" ] || fail "expected source data directory ${source_datadir} to not exists"
+                [ ! -d "${archive_datadir}/" ] || fail "expected source data directory ${archive_datadir} to not exists"
             else
-                [ -d "${source_datadir}/" ] || fail "expected source data directory to be located at $source_datadir"
-                [ -f "${source_datadir}/${marker_file}" ] || fail "expected ${marker_file} marker file to be in source datadir: $source_datadir"
-                [ -f "${source_datadir}/postgresql.conf" ] || fail "expected postgresql.conf file to be in $source_datadir"
+                [ -d "${archive_datadir}/" ] || fail "expected source data directory to be located at $archive_datadir"
+                [ -f "${archive_datadir}/${marker_file}" ] || fail "expected ${marker_file} marker file to be in source datadir: $archive_datadir"
+                [ -f "${archive_datadir}/postgresql.conf" ] || fail "expected postgresql.conf file to be in $archive_datadir"
             fi
 
             # ensure the target cluster is located where the source used to be

@@ -58,14 +58,34 @@ delete_cluster() {
     delete_target_datadirs "${masterdir}"
 }
 
+# this is a bash version of the golang upgrade.ArchiveDirectoryForSource() function
+archiveDataDir() {
+    local dataDir="$1"
+    local upgradeID="$2"
+
+    local baseDir
+    baseDir=$(basename "$dataDir")
+    local dirPath
+    dirPath=$(dirname "$dataDir")
+
+    echo "${dirPath}/${baseDir}.${upgradeID}.old"
+
+}
+
+# after the end of a succesful upgrade, we have:
+#   source dataDirs --> archive dataDirs
+#   target dataDirs --> (in location of original source dataDirs)
+# This function deletes the target cluster and replaces the source dataDirs from their archive locations
 delete_finalized_cluster() {
     local masterdir="$1"
+    local upgradeID="$2"
 
     # Sanity check.
-    local old_qddir_path=$(dirname $masterdir)"/demoDataDir-1_old"
-    if [[ ! -d "$old_qddir_path" ]]; then
-        abort "cowardly refusing to delete $masterdir which does not look like an upgraded demo data directory. expected old directory of
-            $old_qddir_path"
+    local archive_qddir_path
+    archive_qddir_path=$(archiveDataDir "$masterdir" "$upgradeID")
+    if [[ ! -d "$archive_qddir_path" ]]; then
+        abort "cowardly refusing to delete ${masterdir} which does not look like an upgraded demo data directory. expected old directory of
+            $archive_qddir_path"
     fi
 
     # Look up the master port (fourth line of the postmaster PID file).
@@ -78,13 +98,25 @@ delete_finalized_cluster() {
     yes | PGPORT="$port" "$gpdeletesystem" -fd "$masterdir" || true
 
     # put source directories back into place
-    local datadirs=$(dirname "$(dirname "$masterdir")")
-    for source_dir in $(find "${datadirs}" -name "*_old"); do
-        local new_dirname=$(basename $source_dir _old)
-        local new_basedir=$(dirname $source_dir)
+    local datadirs
+    datadirs=$(dirname "$(dirname "$masterdir")")
+
+    local nonStandbyAchiveDirs
+    nonStandbyAchiveDirs=$(ls -d  ${datadirs}/*/*.${upgradeID}.old)
+    local standbyArchiveDir
+    standbyArchiveDir=$(ls -d ${datadirs}/standby.${upgradeID}.old)
+    local archiveDirs
+    archiveDirs=(${nonStandbyAchiveDirs[@]} "${standbyArchiveDir}")
+
+    for archiveDir in "${archiveDirs[@]}"; do
+        local new_dirname
+        new_dirname=$(basename "$archiveDir" ".${upgradeID}.old")
+        local new_basedir
+        new_basedir=$(dirname "$archiveDir")
         rm -rf "${new_basedir:?}/${new_dirname}"
-        mv $source_dir "$new_basedir/$new_dirname"
+        mv "${archiveDir}" "${new_basedir}/${new_dirname}"
     done
+
 }
 
 delete_target_datadirs() {
