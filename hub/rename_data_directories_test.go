@@ -17,62 +17,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
-func TestRenameDataDirs(t *testing.T) {
-	t.Run("renames both source and target", func(t *testing.T) {
-		numCalls := 0
-		utils.System.Rename = func(src, dst string) error {
-			if numCalls == 0 {
-
-				expectedSrc := "/data/qddir/demoDataDir-1"
-				if src != expectedSrc {
-					t.Errorf("got %q want %q", src, expectedSrc)
-				}
-
-				expectedDst := "/data/qddir/demoDataDir-1_old"
-				if dst != expectedDst {
-					t.Errorf("got %q want %q", dst, expectedDst)
-				}
-				numCalls++
-
-			} else if numCalls == 1 {
-
-				expectedSrc := "/data/qddir/demoDataDir-1_ABC123-1"
-				if src != expectedSrc {
-					t.Errorf("got %q want %q", src, expectedSrc)
-				}
-
-				expectedDst := "/data/qddir/demoDataDir-1"
-				if dst != expectedDst {
-					t.Errorf("got %q want %q", dst, expectedDst)
-				}
-				numCalls++
-
-			} else {
-				t.Errorf("called too many times: %d", numCalls)
-			}
-
-			return nil
-		}
-
-		err := hub.RenameDataDirs("/data/qddir/demoDataDir-1", "/data/qddir/demoDataDir-1_ABC123-1")
-		if err != nil {
-			t.Errorf("unexpected error got %#v", err)
-		}
-	})
-
-	t.Run("returns error when rename fails", func(t *testing.T) {
-		expected := errors.New("permission denied")
-		utils.System.Rename = func(src, dst string) error {
-			return expected
-		}
-
-		err := hub.RenameDataDirs("/data/qddir/demoDataDir-1", "/data/qddir/demoDataDir-1_ABC123-1")
-		if !xerrors.Is(err, expected) {
-			t.Errorf("got %#v want %#v", err, expected)
-		}
-	})
-}
-
 func TestRenameSegmentDataDirs(t *testing.T) {
 	testhelper.SetupTestLogger() // initialize gplog
 

@@ -10,19 +10,19 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/utils"
+	"github.com/greenplum-db/gpupgrade/upgrade"
 )
 
 type RenameMap = map[string][]*idl.RenamePair
-
-const oldSuffix = "_old"
 
 func (s *Server) UpdateDataDirectories() error {
 	return UpdateDataDirectories(s.Config, s.agentConns)
 }
 
 func UpdateDataDirectories(conf *Config, agentConns []*Connection) error {
-	if err := RenameDataDirs(conf.Source.MasterDataDir(), conf.TargetInitializeConfig.Master.DataDir); err != nil {
+	source := conf.Source.MasterDataDir()
+	target := conf.TargetInitializeConfig.Master.DataDir
+	if err := upgrade.RenameDataDirectory(source, source+upgrade.OldSuffix, target); err != nil {
 		return xerrors.Errorf("renaming master data directories: %w", err)
 	}
 
@@ -55,7 +55,7 @@ func getSourceRenameMap(source *greenplum.Cluster, primariesOnly bool) RenameMap
 		if !seg.IsMaster() {
 			m[seg.Hostname] = append(m[seg.Hostname], &idl.RenamePair{
 				Src: seg.DataDir,
-				Dst: seg.DataDir + oldSuffix,
+				Dst: seg.DataDir + upgrade.OldSuffix,
 			})
 		}
 
@@ -63,7 +63,7 @@ func getSourceRenameMap(source *greenplum.Cluster, primariesOnly bool) RenameMap
 		if !primariesOnly && ok {
 			m[seg.Hostname] = append(m[seg.Hostname], &idl.RenamePair{
 				Src: seg.DataDir,
-				Dst: seg.DataDir + oldSuffix,
+				Dst: seg.DataDir + upgrade.OldSuffix,
 			})
 		}
 	}
@@ -90,18 +90,6 @@ func getTargetRenameMap(target InitializeConfig, source *greenplum.Cluster) Rena
 	}
 
 	return m
-}
-
-// e.g.  source /data/qddir/demoDataDir-1 becomes /data/qddir/demoDataDir-1_old
-// and   target /data/qddir/demoDataDir-1_123GNHFD3 becomes /data/qddir/demoDataDir-1
-func RenameDataDirs(source, target string) error {
-	if err := utils.System.Rename(source, source+oldSuffix); err != nil {
-		return xerrors.Errorf("renaming source: %w", err)
-	}
-	if err := utils.System.Rename(target, source); err != nil {
-		return xerrors.Errorf("renaming target: %w", err)
-	}
-	return nil
 }
 
 // e.g. for source /data/dbfast1/demoDataDir0 becomes datadirs/dbfast1/demoDataDir0_old
