@@ -22,7 +22,7 @@ func (s *Server) UpdateDataDirectories() error {
 func UpdateDataDirectories(conf *Config, agentConns []*Connection) error {
 	source := conf.Source.MasterDataDir()
 	target := conf.TargetInitializeConfig.Master.DataDir
-	if err := upgrade.RenameDataDirectory(source, source+upgrade.OldSuffix, target); err != nil {
+	if err := upgrade.RenameDataDirectory(source, source+upgrade.OldSuffix, target, true); err != nil {
 		return xerrors.Errorf("renaming master data directories: %w", err)
 	}
 
@@ -34,36 +34,45 @@ func UpdateDataDirectories(conf *Config, agentConns []*Connection) error {
 		}
 	}
 
-	renameMap := getSourceRenameMap(conf.Source, conf.UseLinkMode)
+	renameMap := getRenameMap(conf.Source, conf.TargetInitializeConfig, conf.UseLinkMode)
 	if err := RenameSegmentDataDirs(agentConns, renameMap); err != nil {
-		return xerrors.Errorf("renaming source cluster segment data directories: %w", err)
-	}
-
-	renameMap = getTargetRenameMap(conf.TargetInitializeConfig, conf.Source)
-	if err := RenameSegmentDataDirs(agentConns, renameMap); err != nil {
-		return xerrors.Errorf("renaming target cluster segment data directories: %w", err)
+		return xerrors.Errorf("renaming segment data directories: %w", err)
 	}
 
 	return nil
 }
 
-func getSourceRenameMap(source *greenplum.Cluster, primariesOnly bool) RenameMap {
+// getRenameMap() returns a map of host to cluster data directories to be renamed.
+// This includes renaming source to archive, and target to source. In link mode
+// the mirrors have been deleted to save disk space, so exclude them from the map.
+// Since the upgraded mirrors will be added later to the correct directory there
+// is no need to rename target to source.
+func getRenameMap(source *greenplum.Cluster, target InitializeConfig, sourcePrimariesOnly bool) RenameMap {
 	m := make(RenameMap)
+	targetMap := make(map[int]string)
+
+	// Do not include mirrors and standby when moving target directories,
+	// since they don't exist yet.  Master is renamed in a separate function.
+	for _, targetSeg := range target.Primaries {
+		targetMap[targetSeg.ContentID] = targetSeg.DataDir
+	}
 
 	for _, content := range source.ContentIDs {
 		seg := source.Primaries[content]
 		if !seg.IsMaster() {
 			m[seg.Hostname] = append(m[seg.Hostname], &idl.RenamePair{
-				Src: seg.DataDir,
-				Dst: seg.DataDir + upgrade.OldSuffix,
+				Src:          seg.DataDir,
+				Archive:      seg.DataDir + upgrade.OldSuffix,
+				Dst:          targetMap[content],
+				RenameTarget: true,
 			})
 		}
 
 		seg, ok := source.Mirrors[content]
-		if !primariesOnly && ok {
+		if !sourcePrimariesOnly && ok {
 			m[seg.Hostname] = append(m[seg.Hostname], &idl.RenamePair{
-				Src: seg.DataDir,
-				Dst: seg.DataDir + upgrade.OldSuffix,
+				Src:     seg.DataDir,
+				Archive: seg.DataDir + upgrade.OldSuffix,
 			})
 		}
 	}
@@ -71,31 +80,9 @@ func getSourceRenameMap(source *greenplum.Cluster, primariesOnly bool) RenameMap
 	return m
 }
 
-// getTargetRenameMap returns a rename map in which all primary target data directories
-// are renamed to their corresponding source directories.
-func getTargetRenameMap(target InitializeConfig, source *greenplum.Cluster) RenameMap {
-	m := make(RenameMap)
-
-	// Do not include mirrors and stand by when moving _upgrade directories,
-	// since they don't exist yet.  Master is renamed in a separate function.
-	for _, targetSeg := range target.Primaries {
-		content := targetSeg.ContentID
-		sourceSeg := source.Primaries[content]
-
-		host := targetSeg.Hostname
-		m[host] = append(m[host], &idl.RenamePair{
-			Src: targetSeg.DataDir,
-			Dst: sourceSeg.DataDir,
-		})
-	}
-
-	return m
-}
-
-// e.g. for source /data/dbfast1/demoDataDir0 becomes datadirs/dbfast1/demoDataDir0_old
-// e.g. for target /data/dbfast1/demoDataDir0_123ABC becomes datadirs/dbfast1/demoDataDir0
+// e.g. for source /data/dbfast1/demoDataDir0 becomes /data/dbfast1/demoDataDir0_old
+// e.g. for target /data/dbfast1/demoDataDir0_123ABC becomes /data/dbfast1/demoDataDir0
 func RenameSegmentDataDirs(agentConns []*Connection, renames RenameMap) error {
-
 	wg := sync.WaitGroup{}
 	errs := make(chan error, len(agentConns))
 

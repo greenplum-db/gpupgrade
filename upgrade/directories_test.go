@@ -64,7 +64,7 @@ func TestRenameDataDirectory(t *testing.T) {
 		source, archive, target, cleanup := mustCreateDirs(t)
 		defer cleanup(t)
 
-		err := upgrade.RenameDataDirectory(source, archive, target)
+		err := upgrade.RenameDataDirectory(source, archive, target, true)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -92,7 +92,7 @@ func TestRenameDataDirectory(t *testing.T) {
 
 		verifyRename(t, source, archive, target)
 
-		err := upgrade.RenameDataDirectory(source, archive, target)
+		err := upgrade.RenameDataDirectory(source, archive, target, true)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -114,7 +114,7 @@ func TestRenameDataDirectory(t *testing.T) {
 			utils.System.Rename = os.Rename
 		}()
 
-		err := upgrade.RenameDataDirectory(source, archive, target)
+		err := upgrade.RenameDataDirectory(source, archive, target, true)
 		if !xerrors.Is(err, expected) {
 			t.Errorf("got %#v want %#v", err, expected)
 		}
@@ -135,9 +135,51 @@ func TestRenameDataDirectory(t *testing.T) {
 			utils.System.Rename = os.Rename
 		}()
 
-		err := upgrade.RenameDataDirectory(source, archive, target)
+		err := upgrade.RenameDataDirectory(source, archive, target, true)
 		if !xerrors.Is(err, expected) {
 			t.Errorf("got %#v want %#v", err, expected)
+		}
+	})
+
+	t.Run("only renames source to archive when renameTarget is false", func(t *testing.T) {
+		source := testutils.GetTempDir(t, "source-")
+		defer os.RemoveAll(source)
+
+		archive := source + upgrade.OldSuffix
+
+		calls := 0
+		utils.System.Rename = func(old, new string) error {
+			calls++
+
+			if old != source {
+				t.Errorf("got %q want %q", old, source)
+			}
+
+			if new != archive {
+				t.Errorf("got %q want %q", new, archive)
+			}
+
+			return os.Rename(old, new)
+		}
+		defer func() {
+			utils.System.Rename = os.Rename
+		}()
+
+		err := upgrade.RenameDataDirectory(source, archive, "", false)
+		if err != nil {
+			t.Errorf("unexpected error: %#v", err)
+		}
+
+		if calls != 1 {
+			t.Errorf("expected rename to be called once")
+		}
+
+		if upgrade.PathExists(source) {
+			t.Errorf("expected source %q to not exist", source)
+		}
+
+		if !upgrade.PathExists(archive) {
+			t.Errorf("expected archive %q to exist", archive)
 		}
 	})
 
@@ -145,14 +187,14 @@ func TestRenameDataDirectory(t *testing.T) {
 		source, archive, target, cleanup := mustCreateDirs(t)
 		defer cleanup(t)
 
-		err := upgrade.RenameDataDirectory(source, archive, target)
+		err := upgrade.RenameDataDirectory(source, archive, target, true)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
 
 		verifyRename(t, source, archive, target)
 
-		err = upgrade.RenameDataDirectory(source, archive, target)
+		err = upgrade.RenameDataDirectory(source, archive, target, true)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -172,7 +214,7 @@ func TestRenameDataDirectory(t *testing.T) {
 			return os.Rename(old, new)
 		}
 
-		err := upgrade.RenameDataDirectory(source, archive, target)
+		err := upgrade.RenameDataDirectory(source, archive, target, true)
 		if !xerrors.Is(err, expected) {
 			t.Errorf("got %#v want %#v", err, expected)
 		}
@@ -191,7 +233,7 @@ func TestRenameDataDirectory(t *testing.T) {
 
 		utils.System.Rename = os.Rename
 
-		err = upgrade.RenameDataDirectory(source, archive, target)
+		err = upgrade.RenameDataDirectory(source, archive, target, true)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -211,7 +253,7 @@ func TestRenameDataDirectory(t *testing.T) {
 			return os.Rename(old, new)
 		}
 
-		err := upgrade.RenameDataDirectory(source, archive, target)
+		err := upgrade.RenameDataDirectory(source, archive, target, true)
 		if !xerrors.Is(err, expected) {
 			t.Errorf("got %#v want %#v", err, expected)
 		}
@@ -230,7 +272,7 @@ func TestRenameDataDirectory(t *testing.T) {
 
 		utils.System.Rename = os.Rename
 
-		err = upgrade.RenameDataDirectory(source, archive, target)
+		err = upgrade.RenameDataDirectory(source, archive, target, true)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}

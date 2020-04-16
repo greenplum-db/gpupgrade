@@ -41,7 +41,9 @@ message DeleteDirectoriesReply {}
 
 message RenamePair {
   string Src = 1;
-  string Dst = 2;
+  string Archive = 2;
+  string Dst = 3;
+  bool RenameTarget = 4;
 }
 
 message RenameDirectoriesRequest {
