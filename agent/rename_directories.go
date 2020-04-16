@@ -16,8 +16,8 @@ func (s *Server) RenameDirectories(ctx context.Context, in *idl.RenameDirectorie
 	gplog.Info("agent received request to rename segment data directories")
 
 	var mErr *multierror.Error
-	for _, dir := range in.GetPairs() {
-		err := RenameDataDirectory(dir.Src, dir.Archive, dir.Dst, dir.RenameTarget)
+	for _, dir := range in.GetDirs() {
+		err := RenameDataDirectory(dir.Source, dir.Archive, dir.Target, dir.RenameTarget)
 		if err != nil {
 			mErr = multierror.Append(mErr, err)
 		}

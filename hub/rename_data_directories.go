@@ -13,7 +13,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/upgrade"
 )
 
-type RenameMap = map[string][]*idl.RenamePair
+type RenameMap = map[string][]*idl.RenameDirectories
 
 func (s *Server) UpdateDataDirectories() error {
 	return UpdateDataDirectories(s.Config, s.agentConns)
@@ -60,18 +60,18 @@ func getRenameMap(source *greenplum.Cluster, target InitializeConfig, sourcePrim
 	for _, content := range source.ContentIDs {
 		seg := source.Primaries[content]
 		if !seg.IsMaster() {
-			m[seg.Hostname] = append(m[seg.Hostname], &idl.RenamePair{
-				Src:          seg.DataDir,
+			m[seg.Hostname] = append(m[seg.Hostname], &idl.RenameDirectories{
+				Source:       seg.DataDir,
 				Archive:      seg.DataDir + upgrade.OldSuffix,
-				Dst:          targetMap[content],
+				Target:       targetMap[content],
 				RenameTarget: true,
 			})
 		}
 
 		seg, ok := source.Mirrors[content]
 		if !sourcePrimariesOnly && ok {
-			m[seg.Hostname] = append(m[seg.Hostname], &idl.RenamePair{
-				Src:     seg.DataDir,
+			m[seg.Hostname] = append(m[seg.Hostname], &idl.RenameDirectories{
+				Source:  seg.DataDir,
 				Archive: seg.DataDir + upgrade.OldSuffix,
 			})
 		}
@@ -97,7 +97,7 @@ func RenameSegmentDataDirs(agentConns []*Connection, renames RenameMap) error {
 		go func() {
 			defer wg.Done()
 
-			req := &idl.RenameDirectoriesRequest{Pairs: renames[conn.Hostname]}
+			req := &idl.RenameDirectoriesRequest{Dirs: renames[conn.Hostname]}
 			_, err := conn.AgentClient.RenameDirectories(context.Background(), req)
 			if err != nil {
 				gplog.Error("renaming segment data directories on host %s: %s", conn.Hostname, err.Error())

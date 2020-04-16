@@ -23,22 +23,22 @@ func TestRenameSegmentDataDirs(t *testing.T) {
 	m := hub.RenameMap{
 		"sdw1": {
 			{
-				Src: "/data/dbfast1/seg1_123ABC",
-				Dst: "/data/dbfast1/seg1",
+				Source: "/data/dbfast1/seg1_123ABC",
+				Target: "/data/dbfast1/seg1",
 			},
 			{
-				Src: "/data/dbfast1/seg3_123ABC",
-				Dst: "/data/dbfast1/seg3",
+				Source: "/data/dbfast1/seg3_123ABC",
+				Target: "/data/dbfast1/seg3",
 			},
 		},
 		"sdw2": {
 			{
-				Src: "/data/dbfast2/seg2_123ABC",
-				Dst: "/data/dbfast2/seg2",
+				Source: "/data/dbfast2/seg2_123ABC",
+				Target: "/data/dbfast2/seg2",
 			},
 			{
-				Src: "/data/dbfast2/seg4_123ABC",
-				Dst: "/data/dbfast2/seg4",
+				Source: "/data/dbfast2/seg4_123ABC",
+				Target: "/data/dbfast2/seg4",
 			},
 		},
 	}
@@ -51,12 +51,12 @@ func TestRenameSegmentDataDirs(t *testing.T) {
 		client1.EXPECT().RenameDirectories(
 			gomock.Any(),
 			&idl.RenameDirectoriesRequest{
-				Pairs: []*idl.RenamePair{{
-					Src: "/data/dbfast1/seg1_123ABC",
-					Dst: "/data/dbfast1/seg1",
+				Dirs: []*idl.RenameDirectories{{
+					Source: "/data/dbfast1/seg1_123ABC",
+					Target: "/data/dbfast1/seg1",
 				}, {
-					Src: "/data/dbfast1/seg3_123ABC",
-					Dst: "/data/dbfast1/seg3",
+					Source: "/data/dbfast1/seg3_123ABC",
+					Target: "/data/dbfast1/seg3",
 				}},
 			},
 		).Return(&idl.RenameDirectoriesReply{}, nil)
@@ -65,12 +65,12 @@ func TestRenameSegmentDataDirs(t *testing.T) {
 		client2.EXPECT().RenameDirectories(
 			gomock.Any(),
 			&idl.RenameDirectoriesRequest{
-				Pairs: []*idl.RenamePair{{
-					Src: "/data/dbfast2/seg2_123ABC",
-					Dst: "/data/dbfast2/seg2",
+				Dirs: []*idl.RenameDirectories{{
+					Source: "/data/dbfast2/seg2_123ABC",
+					Target: "/data/dbfast2/seg2",
 				}, {
-					Src: "/data/dbfast2/seg4_123ABC",
-					Dst: "/data/dbfast2/seg4",
+					Source: "/data/dbfast2/seg4_123ABC",
+					Target: "/data/dbfast2/seg4",
 				}},
 			},
 		).Return(&idl.RenameDirectoriesReply{}, nil)
@@ -189,46 +189,46 @@ func TestUpdateDataDirectories(t *testing.T) {
 		// the target's upgraded primaries should be moved back to the source
 		// locations.
 		sdw1 := mock_idl.NewMockAgentClient(ctrl)
-		expectRenames(sdw1, []*idl.RenamePair{{
-			Src:          "/data/dbfast1/seg1",
+		expectRenames(sdw1, []*idl.RenameDirectories{{
+			Source:       "/data/dbfast1/seg1",
 			Archive:      "/data/dbfast1/seg1_old",
-			Dst:          "/data/dbfast1/seg1_123ABC",
+			Target:       "/data/dbfast1/seg1_123ABC",
 			RenameTarget: true,
 		}, {
-			Src:     "/data/dbfast_mirror1/seg1",
+			Source:  "/data/dbfast_mirror1/seg1",
 			Archive: "/data/dbfast_mirror1/seg1_old",
 		}, {
-			Src:          "/data/dbfast1/seg3",
+			Source:       "/data/dbfast1/seg3",
 			Archive:      "/data/dbfast1/seg3_old",
-			Dst:          "/data/dbfast1/seg3_123ABC",
+			Target:       "/data/dbfast1/seg3_123ABC",
 			RenameTarget: true,
 		}, {
-			Src:     "/data/dbfast_mirror1/seg3",
+			Source:  "/data/dbfast_mirror1/seg3",
 			Archive: "/data/dbfast_mirror1/seg3_old",
 		}})
 
 		sdw2 := mock_idl.NewMockAgentClient(ctrl)
-		expectRenames(sdw2, []*idl.RenamePair{{
-			Src:          "/data/dbfast2/seg2",
+		expectRenames(sdw2, []*idl.RenameDirectories{{
+			Source:       "/data/dbfast2/seg2",
 			Archive:      "/data/dbfast2/seg2_old",
-			Dst:          "/data/dbfast2/seg2_123ABC",
+			Target:       "/data/dbfast2/seg2_123ABC",
 			RenameTarget: true,
 		}, {
-			Src:     "/data/dbfast_mirror2/seg2",
+			Source:  "/data/dbfast_mirror2/seg2",
 			Archive: "/data/dbfast_mirror2/seg2_old",
 		}, {
-			Src:          "/data/dbfast2/seg4",
+			Source:       "/data/dbfast2/seg4",
 			Archive:      "/data/dbfast2/seg4_old",
-			Dst:          "/data/dbfast2/seg4_123ABC",
+			Target:       "/data/dbfast2/seg4_123ABC",
 			RenameTarget: true,
 		}, {
-			Src:     "/data/dbfast_mirror2/seg4",
+			Source:  "/data/dbfast_mirror2/seg4",
 			Archive: "/data/dbfast_mirror2/seg4_old",
 		}})
 
 		standby := mock_idl.NewMockAgentClient(ctrl)
-		expectRenames(standby, []*idl.RenamePair{{
-			Src:     "/data/standby",
+		expectRenames(standby, []*idl.RenameDirectories{{
+			Source:  "/data/standby",
 			Archive: "/data/standby_old",
 		}})
 
@@ -257,15 +257,15 @@ func TestUpdateDataDirectories(t *testing.T) {
 			"/data/dbfast_mirror1/seg1",
 			"/data/dbfast_mirror1/seg3",
 		})
-		expectRenames(sdw1, []*idl.RenamePair{{
-			Src:          "/data/dbfast1/seg1",
+		expectRenames(sdw1, []*idl.RenameDirectories{{
+			Source:       "/data/dbfast1/seg1",
 			Archive:      "/data/dbfast1/seg1_old",
-			Dst:          "/data/dbfast1/seg1_123ABC",
+			Target:       "/data/dbfast1/seg1_123ABC",
 			RenameTarget: true,
 		}, {
-			Src:          "/data/dbfast1/seg3",
+			Source:       "/data/dbfast1/seg3",
 			Archive:      "/data/dbfast1/seg3_old",
-			Dst:          "/data/dbfast1/seg3_123ABC",
+			Target:       "/data/dbfast1/seg3_123ABC",
 			RenameTarget: true,
 		}})
 
@@ -274,15 +274,15 @@ func TestUpdateDataDirectories(t *testing.T) {
 			"/data/dbfast_mirror2/seg2",
 			"/data/dbfast_mirror2/seg4",
 		})
-		expectRenames(sdw2, []*idl.RenamePair{{
-			Src:          "/data/dbfast2/seg2",
+		expectRenames(sdw2, []*idl.RenameDirectories{{
+			Source:       "/data/dbfast2/seg2",
 			Archive:      "/data/dbfast2/seg2_old",
-			Dst:          "/data/dbfast2/seg2_123ABC",
+			Target:       "/data/dbfast2/seg2_123ABC",
 			RenameTarget: true,
 		}, {
-			Src:          "/data/dbfast2/seg4",
+			Source:       "/data/dbfast2/seg4",
 			Archive:      "/data/dbfast2/seg4_old",
-			Dst:          "/data/dbfast2/seg4_123ABC",
+			Target:       "/data/dbfast2/seg4_123ABC",
 			RenameTarget: true,
 		}})
 
@@ -306,10 +306,10 @@ func TestUpdateDataDirectories(t *testing.T) {
 
 // expectRenames is syntactic sugar for setting up an expectation on
 // AgentClient.RenameDirectories().
-func expectRenames(client *mock_idl.MockAgentClient, pairs []*idl.RenamePair) {
+func expectRenames(client *mock_idl.MockAgentClient, pairs []*idl.RenameDirectories) {
 	client.EXPECT().RenameDirectories(
 		gomock.Any(),
-		&idl.RenameDirectoriesRequest{Pairs: pairs},
+		&idl.RenameDirectoriesRequest{Dirs: pairs},
 	).Return(&idl.RenameDirectoriesReply{}, nil)
 }
 
