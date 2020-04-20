@@ -177,7 +177,7 @@ make set-pipeline FLY_TARGET=<CONCOURSE_INSTANCE> GIT_URI=https://github.com/<GI
 
 Note: When making pipeline changes, change only the template.yml and run
 `go generate ./ci` (this will automatically run as part of `make set-pipeline`).
-Then check in the prod-pipeline.yml file.
+Then check in the pipeline.yml file.
 
 If you want to use the defaults and have access to the continuous-integration
 secrets, there is a convenience recipe:

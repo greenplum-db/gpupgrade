@@ -154,7 +154,7 @@ set-pipeline:
 	#NOTE-- make sure your gpupgrade-git-remote uses an https style git"
 	#NOTE-- such as https://github.com/greenplum-db/gpupgrade.git"
 	fly -t $(FLY_TARGET) set-pipeline -p $(PIPELINE_NAME) \
-		-c ci/generated/prod-pipeline.yml \
+		-c ci/generated/pipeline.yml \
 		-l ~/workspace/gp-continuous-integration/secrets/gpupgrade.$(TARGET).yml \
 		-l ~/workspace/gp-continuous-integration/secrets/gpdb_common-ci-secrets.yml \
 		-l ~/workspace/gp-continuous-integration/secrets/gpdb_master-ci-secrets.prod.yml \
