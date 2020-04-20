@@ -1,3 +1,6 @@
+# Copyright (c) 2017-2020 VMware, Inc. or its affiliates
+# SPDX-License-Identifier: Apache-2.0
+
 # log() prints its arguments to the TAP stream. Newlines are supported (each
 # line will be correctly escaped in TAP).
 log() {

@@ -1,4 +1,7 @@
 #! /usr/bin/env bats
+#
+# Copyright (c) 2017-2020 VMware, Inc. or its affiliates
+# SPDX-License-Identifier: Apache-2.0
 
 # TODO: test also that we have a git version in the version string as well
 

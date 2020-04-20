@@ -1,3 +1,6 @@
+// Copyright (c) 2017-2020 VMware, Inc. or its affiliates
+// SPDX-License-Identifier: Apache-2.0
+
 /*
 	This command is used to parse a template file using the text/template package.
 	Given a list of source versions and target versions, it will render these

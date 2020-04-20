@@ -1,5 +1,8 @@
 #! /bin/sh
 #
+# Copyright (c) 2017-2020 VMware, Inc. or its affiliates
+# SPDX-License-Identifier: Apache-2.0
+#
 # Usage: $0 OLD_PACKAGE_NAME NEW_PACKAGE_NAME
 #
 # Performs pre-upgrade cluster fixups to prepare for upgrade. This includes the

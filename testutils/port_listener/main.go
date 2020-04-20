@@ -1,3 +1,6 @@
+// Copyright (c) 2017-2020 VMware, Inc. or its affiliates
+// SPDX-License-Identifier: Apache-2.0
+
 // The port_listener utility listens on the specified port even during gRPC
 // retries. One can inspect the ports in use on OS X with `netstat -an` rather
 // than `lsof -Pi`.
