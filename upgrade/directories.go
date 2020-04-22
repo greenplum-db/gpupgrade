@@ -76,7 +76,7 @@ func TempDataDir(datadir, segPrefix string, id ID) string {
 // renames source to archive, and target to source
 // e.g. for source /data/dbfast1/demoDataDir0 becomes /data/dbfast1/demoDataDir0_old
 // e.g. for target /data/dbfast1/demoDataDir.123ABC.0 becomes /data/dbfast1/demoDataDir0
-func RenameDataDirectory(source, archive, target string, renameTarget bool) error {
+func ArchiveSource(source, archive, target string, renameTarget bool) error {
 	if alreadyRenamed(archive, target) {
 		return nil
 	}

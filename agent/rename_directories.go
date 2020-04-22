@@ -13,14 +13,14 @@ import (
 	"github.com/greenplum-db/gpupgrade/upgrade"
 )
 
-var RenameDataDirectory = upgrade.RenameDataDirectory
+var ArchiveSource = upgrade.ArchiveSource
 
 func (s *Server) RenameDirectories(ctx context.Context, in *idl.RenameDirectoriesRequest) (*idl.RenameDirectoriesReply, error) {
 	gplog.Info("agent received request to rename segment data directories")
 
 	var mErr *multierror.Error
 	for _, dir := range in.GetDirs() {
-		err := RenameDataDirectory(dir.Source, dir.Archive, dir.Target, dir.RenameTarget)
+		err := ArchiveSource(dir.Source, dir.Archive, dir.Target, dir.RenameTarget)
 		if err != nil {
 			mErr = multierror.Append(mErr, err)
 		}

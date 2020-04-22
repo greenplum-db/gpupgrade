@@ -65,14 +65,14 @@ func ExampleTempDataDir() {
 	// /data/primary/seg.AAAAAAAAAAA.3
 }
 
-func TestRenameDataDirectory(t *testing.T) {
+func TestArchiveSource(t *testing.T) {
 	testhelper.SetupTestLogger()
 
 	t.Run("successfully renames source to archive, and target to source", func(t *testing.T) {
 		source, archive, target, cleanup := mustCreateDirs(t)
 		defer cleanup(t)
 
-		err := upgrade.RenameDataDirectory(source, archive, target, true)
+		err := upgrade.ArchiveSource(source, archive, target, true)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -100,7 +100,7 @@ func TestRenameDataDirectory(t *testing.T) {
 
 		verifyRename(t, source, archive, target)
 
-		err := upgrade.RenameDataDirectory(source, archive, target, true)
+		err := upgrade.ArchiveSource(source, archive, target, true)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -122,7 +122,7 @@ func TestRenameDataDirectory(t *testing.T) {
 			utils.System.Rename = os.Rename
 		}()
 
-		err := upgrade.RenameDataDirectory(source, archive, target, true)
+		err := upgrade.ArchiveSource(source, archive, target, true)
 		if !xerrors.Is(err, expected) {
 			t.Errorf("got %#v want %#v", err, expected)
 		}
@@ -143,7 +143,7 @@ func TestRenameDataDirectory(t *testing.T) {
 			utils.System.Rename = os.Rename
 		}()
 
-		err := upgrade.RenameDataDirectory(source, archive, target, true)
+		err := upgrade.ArchiveSource(source, archive, target, true)
 		if !xerrors.Is(err, expected) {
 			t.Errorf("got %#v want %#v", err, expected)
 		}
@@ -173,7 +173,7 @@ func TestRenameDataDirectory(t *testing.T) {
 			utils.System.Rename = os.Rename
 		}()
 
-		err := upgrade.RenameDataDirectory(source, archive, "", false)
+		err := upgrade.ArchiveSource(source, archive, "", false)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -195,14 +195,14 @@ func TestRenameDataDirectory(t *testing.T) {
 		source, archive, target, cleanup := mustCreateDirs(t)
 		defer cleanup(t)
 
-		err := upgrade.RenameDataDirectory(source, archive, target, true)
+		err := upgrade.ArchiveSource(source, archive, target, true)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
 
 		verifyRename(t, source, archive, target)
 
-		err = upgrade.RenameDataDirectory(source, archive, target, true)
+		err = upgrade.ArchiveSource(source, archive, target, true)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -222,7 +222,7 @@ func TestRenameDataDirectory(t *testing.T) {
 			return os.Rename(old, new)
 		}
 
-		err := upgrade.RenameDataDirectory(source, archive, target, true)
+		err := upgrade.ArchiveSource(source, archive, target, true)
 		if !xerrors.Is(err, expected) {
 			t.Errorf("got %#v want %#v", err, expected)
 		}
@@ -241,7 +241,7 @@ func TestRenameDataDirectory(t *testing.T) {
 
 		utils.System.Rename = os.Rename
 
-		err = upgrade.RenameDataDirectory(source, archive, target, true)
+		err = upgrade.ArchiveSource(source, archive, target, true)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -261,7 +261,7 @@ func TestRenameDataDirectory(t *testing.T) {
 			return os.Rename(old, new)
 		}
 
-		err := upgrade.RenameDataDirectory(source, archive, target, true)
+		err := upgrade.ArchiveSource(source, archive, target, true)
 		if !xerrors.Is(err, expected) {
 			t.Errorf("got %#v want %#v", err, expected)
 		}
@@ -280,7 +280,7 @@ func TestRenameDataDirectory(t *testing.T) {
 
 		utils.System.Rename = os.Rename
 
-		err = upgrade.RenameDataDirectory(source, archive, target, true)
+		err = upgrade.ArchiveSource(source, archive, target, true)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
