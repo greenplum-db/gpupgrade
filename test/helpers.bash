@@ -116,3 +116,32 @@ require_gnu_stat() {
 process_is_running() {
     ps -ef | grep -wGc "$1"
 }
+
+# Takes an original datadir and echoes the expected temporary datadir containing
+# the upgradeID.
+#
+# NOTE for devs: this is just for getting the expected data directories, which
+# is an implementation detail. If you want the actual location of the new master
+# data directory after an initialization, you can just ask the hub with
+#
+#    gpupgrade config show --target-datadir
+#
+expected_target_datadir() {
+    local dir=$1
+    local parentDir=$(dirname "${dir}")
+    local baseDir=$(basename "${dir}")
+    local suffix="${baseDir#demoDataDir}"
+
+    local upgradeID
+    upgradeID=$(gpupgrade config show --id)
+
+    # Sanity check.
+    [ -n "$parentDir" ]
+
+    if [ "${baseDir}" == "standby" ]; then
+        echo "${parentDir}/${baseDir}.${upgradeID}"
+        return
+    fi
+
+    echo "${parentDir}/demoDataDir.${upgradeID}.${suffix}"
+}

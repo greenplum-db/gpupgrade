@@ -30,29 +30,6 @@ teardown() {
     fi
 }
 
-# Takes an old datadir and echoes the expected new datadir path.
-#
-# NOTE for devs: this is just for getting the expected data directories, which
-# is an implementation detail. If you want the actual location of the new master
-# data directory after an initialization, you can just ask the hub with
-#
-#    gpupgrade config show --target-datadir
-#
-expected_datadir() {
-    local oldDataDir=$1
-    local parentDir=$(dirname "${oldDataDir}")
-    local baseDir=$(basename "${oldDataDir}")
-    local suffix="${baseDir#demoDataDir}"
-
-    local upgradeID
-    upgradeID=$(gpupgrade config show --id)
-
-    # Sanity check.
-    [ -n "$parentDir" ]
-
-    echo "${parentDir}/demoDataDir.${upgradeID}.${suffix}"
-}
-
 @test "initialize runs gpinitsystem based on the source cluster" {
     # Store the data directories for each source segment by port.
     run $PSQL -AtF$'\t' -p $PGPORT postgres -c "select port, datadir from gp_segment_configuration where role = 'p'"
@@ -79,7 +56,7 @@ expected_datadir() {
     NEW_CLUSTER="${newmasterdir}"
 
     # Sanity check the newly created master's location.
-    [ "$newmasterdir" = $(expected_datadir "$masterdir") ]
+    [ "$newmasterdir" = $(expected_target_datadir "$masterdir") ]
 
     PGPORT=$newport gpstart -a -d "$newmasterdir"
 
@@ -106,7 +83,7 @@ expected_datadir() {
         fi
 
         [ -n "$newdir" ] || fail "could not find upgraded segment on expected port $newport"
-        [ "$newdir" = $(expected_datadir "$olddir") ]
+        [ "$newdir" = $(expected_target_datadir "$olddir") ]
     done
 }
 
