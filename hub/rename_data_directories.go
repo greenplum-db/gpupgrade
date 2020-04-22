@@ -49,36 +49,31 @@ func UpdateDataDirectories(conf *Config, agentConns []*Connection) error {
 // This includes renaming source to archive, and target to source. In link mode
 // the mirrors have been deleted to save disk space, so exclude them from the map.
 // Since the upgraded mirrors will be added later to the correct directory there
-// is no need to rename target to source.
-func getRenameMap(source *greenplum.Cluster, target InitializeConfig, sourcePrimariesOnly bool) RenameMap {
+// is no need to rename target to source, so only archive the source directory.
+func getRenameMap(source *greenplum.Cluster, target InitializeConfig, onlyRenamePrimaries bool) RenameMap {
 	m := make(RenameMap)
-	targetMap := make(map[int]string)
 
-	// Do not include mirrors and standby when moving target directories,
-	// since they don't exist yet.  Master is renamed in a separate function.
-	for _, targetSeg := range target.Primaries {
-		targetMap[targetSeg.ContentID] = targetSeg.DataDir
+	for _, seg := range target.Primaries {
+		m[seg.Hostname] = append(m[seg.Hostname], &idl.RenameDirectories{
+			Source:       source.Primaries[seg.ContentID].DataDir,
+			Target:       seg.DataDir,
+			RenameTarget: true,
+		})
 	}
 
-	for _, content := range source.ContentIDs {
-		seg := source.Primaries[content]
-		if !seg.IsMaster() {
-			m[seg.Hostname] = append(m[seg.Hostname], &idl.RenameDirectories{
-				Source:       seg.DataDir,
-				Archive:      seg.DataDir + upgrade.OldSuffix,
-				Target:       targetMap[content],
-				RenameTarget: true,
-			})
-		}
+	// In link mode the mirrors have been deleted to save disk space, so exclude
+	// them from the map.
+	if onlyRenamePrimaries {
+		return m
+	}
 
-		seg, ok := source.Mirrors[content]
-		if !sourcePrimariesOnly && ok {
-			m[seg.Hostname] = append(m[seg.Hostname], &idl.RenameDirectories{
-				Source:       seg.DataDir,
-				Archive:      seg.DataDir + upgrade.OldSuffix,
-				RenameTarget: false,
-			})
-		}
+	targetMirrors := append(target.Mirrors, target.Standby)
+	for _, seg := range targetMirrors {
+		m[seg.Hostname] = append(m[seg.Hostname], &idl.RenameDirectories{
+			Source:       source.Mirrors[seg.ContentID].DataDir,
+			Target:       seg.DataDir,
+			RenameTarget: false,
+		})
 	}
 
 	return m

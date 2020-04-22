@@ -7,10 +7,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/hashicorp/go-multierror"
-
 	"github.com/golang/mock/gomock"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
+	"github.com/hashicorp/go-multierror"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
@@ -198,14 +197,14 @@ func TestUpdateDataDirectories(t *testing.T) {
 			Target:       "/data/dbfast1/seg1_123ABC",
 			RenameTarget: true,
 		}, {
-			Source:       "/data/dbfast_mirror1/seg1",
-			Archive:      "/data/dbfast_mirror1/seg1_old",
-			RenameTarget: false,
-		}, {
 			Source:       "/data/dbfast1/seg3",
 			Archive:      "/data/dbfast1/seg3_old",
 			Target:       "/data/dbfast1/seg3_123ABC",
 			RenameTarget: true,
+		}, {
+			Source:       "/data/dbfast_mirror1/seg1",
+			Archive:      "/data/dbfast_mirror1/seg1_old",
+			RenameTarget: false,
 		}, {
 			Source:       "/data/dbfast_mirror1/seg3",
 			Archive:      "/data/dbfast_mirror1/seg3_old",
@@ -219,14 +218,14 @@ func TestUpdateDataDirectories(t *testing.T) {
 			Target:       "/data/dbfast2/seg2_123ABC",
 			RenameTarget: true,
 		}, {
-			Source:       "/data/dbfast_mirror2/seg2",
-			Archive:      "/data/dbfast_mirror2/seg2_old",
-			RenameTarget: false,
-		}, {
 			Source:       "/data/dbfast2/seg4",
 			Archive:      "/data/dbfast2/seg4_old",
 			Target:       "/data/dbfast2/seg4_123ABC",
 			RenameTarget: true,
+		}, {
+			Source:       "/data/dbfast_mirror2/seg2",
+			Archive:      "/data/dbfast_mirror2/seg2_old",
+			RenameTarget: false,
 		}, {
 			Source:       "/data/dbfast_mirror2/seg4",
 			Archive:      "/data/dbfast_mirror2/seg4_old",
