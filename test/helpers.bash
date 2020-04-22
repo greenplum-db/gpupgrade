@@ -34,53 +34,40 @@ start_source_cluster() {
     "${GPHOME}"/bin/pg_isready -q || "${GPHOME}"/bin/gpstart -a
 }
 
-# Calls gpdeletesystem on the cluster pointed to by the given master data
-# directory.
+# delete_cluster takes an master data directory and calls gpdeletesystem, and
+# removes the associated data directories.
 delete_cluster() {
     local masterdir="$1"
 
-    # NOTE: the target master datadir now looks something like this: qddir/demoDataDir.k9KuElo8HT8.-1
+    # Perform a sanity check before deleting.
+    expected_suffix="*qddir/demoDataDir.*.-1"
+    [[ "$masterdir" == ${expected_suffix} ]] || \
+        abort "cowardly refusing to delete $masterdir which does not look like an upgraded demo data directory. Expected suffix ${expected_suffix}"
 
-    # Sanity check.
-    if [[ $masterdir != *qddir/demoDataDir*\.*\.-1* ]]; then
-        abort "cowardly refusing to delete $masterdir which does not look like an upgraded demo data directory"
-    fi
+    __gpdeletesystem "$masterdir"
 
-    # Look up the master port (fourth line of the postmaster PID file).
-    local port=$(awk 'NR == 4 { print $0 }' < "$masterdir/postmaster.pid")
-
-    local gpdeletesystem="$GPHOME"/bin/gpdeletesystem
-
-    # XXX gpdeletesystem returns 1 if there are warnings. There are always
-    # warnings. So we ignore the exit code...
-    yes | PGPORT="$port" "$gpdeletesystem" -fd "$masterdir" || true
-
-    # XXX The master datadir copy moves the datadirs to .old instead of
-    # removing them. This causes gpupgrade to fail when copying the master
-    # data directory to segments with "file exists".
-    delete_target_datadirs "${masterdir}"
+    # XXX: Since gpugprade archives instead of removing data directories,
+    # gpupgrade will fail when copying the master data directory to segments
+    # with "file exists". To prevent this remove the data directories.
+    delete_target_datadirs "$masterdir"
 }
 
+# delete_finalized_cluster takes an upgrade master data directory and deletes
+# the cluster. It also resets the finalized data directories to what they were
+# before upgrade by removing the upgraded data directories, and renaming the
+# archive directories to their original name (which is the same as their
+# upgraded name).
 delete_finalized_cluster() {
     local masterdir="$1"
 
-    # Sanity check.
+    # Perform a sanity check before deleting.
+    local archive_masterdir=$(archive_dir "$masterdir")
+    [ -d "$archive_masterdir" ] || abort "cowardly refusing to delete $masterdir. Expected $archive_masterdir to exist."
+
+    __gpdeletesystem "$masterdir"
+
     local id=$(gpupgrade config show --id)
-    local old_qddir_path=$(dirname $masterdir)"/demoDataDir.${id}.-1.old"
-    if [[ ! -d "$old_qddir_path" ]]; then
-        abort "cowardly refusing to delete $masterdir. Expected $old_qddir_path to exist."
-    fi
 
-    # Look up the master port (fourth line of the postmaster PID file).
-    local port=$(awk 'NR == 4 { print $0 }' < "$masterdir/postmaster.pid")
-
-    local gpdeletesystem="$GPHOME"/bin/gpdeletesystem
-
-    # XXX gpdeletesystem returns 1 if there are warnings. There are always
-    # warnings. So we ignore the exit code...
-    yes | PGPORT="$port" "$gpdeletesystem" -fd "$masterdir" || true
-
-    # put source directories back into place
     local datadirs=$(dirname "$(dirname "$masterdir")")
     for archive in $(find "${datadirs}" -name "*${id}*.old"); do
         # The following sed matches archived data directories and returns the
@@ -91,6 +78,21 @@ delete_finalized_cluster() {
         rm -rf "${original}"
         mv "$archive" "$original"
     done
+}
+
+# Calls gpdeletesystem on the cluster pointed to by the given master data
+# directory.
+__gpdeletesystem() {
+    local masterdir="$1"
+
+    # Look up the master port (fourth line of the postmaster PID file).
+    local port=$(awk 'NR == 4 { print $0 }' < "$masterdir/postmaster.pid")
+
+    local gpdeletesystem="$GPHOME"/bin/gpdeletesystem
+
+    # XXX gpdeletesystem returns 1 if there are warnings. There are always
+    # warnings. So we ignore the exit code...
+    yes | PGPORT="$port" "$gpdeletesystem" -fd "$masterdir" || true
 }
 
 delete_target_datadirs() {
