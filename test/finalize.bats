@@ -87,12 +87,13 @@ upgrade_cluster() {
             validate_data_directories "EXISTS" "$primary_datadirs"
             validate_data_directories "NOT_EXISTS" "$mirror_datadirs"
 
-            # restore the data directories to _old extension to fit the teardown
-            # in --link mode, finalize deletes the mirrors/standby data directories,
-            # so they should be restored.
+            # restore the data directories to their archived versions to fit the
+            # teardown in --link mode, finalize deletes the mirrors/standby data
+            # directories, so they should be restored.
             for datadir in "${datadirs[@]}"; do
-                rm -rf ${datadir}_old
-                mv ${datadir}_backup ${datadir}_old
+                local archive=$(archive_dir "$datadir")
+                rm -rf ${archive}
+                mv ${datadir}_backup ${archive}
             done
         else
             validate_data_directories "EXISTS" "${datadirs}"
@@ -173,12 +174,7 @@ validate_data_directories() {
         shift
         DATADIRS=("$@")
         for datadir in "${DATADIRS[@]}"; do
-            # ensure the source cluster has been archived
-            local source_datadir="${datadir}_old"
-            if [ "$(basename ${datadir})" == "standby" ]; then
-                # Standby follows different naming rules
-                source_datadir="${datadir}_old"
-            fi
+            local source_datadir=$(archive_dir "$datadir")
 
             if [ "$CHECK_EXISTS" == "NOT_EXISTS" ] ; then
                 # ensure that <mirror_datadir>_old directory for mirrors or standby does not exists

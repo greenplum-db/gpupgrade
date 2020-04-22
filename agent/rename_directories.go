@@ -20,7 +20,7 @@ func (s *Server) RenameDirectories(ctx context.Context, in *idl.RenameDirectorie
 
 	var mErr *multierror.Error
 	for _, dir := range in.GetDirs() {
-		err := ArchiveSource(dir.Source, dir.Archive, dir.Target, dir.RenameTarget)
+		err := ArchiveSource(dir.GetSource(), dir.GetTarget(), dir.GetRenameTarget())
 		if err != nil {
 			mErr = multierror.Append(mErr, err)
 		}

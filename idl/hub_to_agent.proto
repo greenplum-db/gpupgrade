@@ -47,9 +47,8 @@ message DeleteStateDirectoryReply {}
 
 message RenameDirectories {
   string Source = 1;
-  string Archive = 2;
-  string Target = 3;
-  bool RenameTarget = 4;
+  string Target = 2;
+  bool RenameTarget = 3;
 }
 
 message RenameDirectoriesRequest {

@@ -6,17 +6,15 @@ package upgrade_test
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"syscall"
 	"testing"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-	"golang.org/x/xerrors"
-
-	"io/ioutil"
-	"path/filepath"
-
 	"github.com/hashicorp/go-multierror"
+	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/upgrade"
@@ -69,25 +67,27 @@ func TestArchiveSource(t *testing.T) {
 	testhelper.SetupTestLogger()
 
 	t.Run("successfully renames source to archive, and target to source", func(t *testing.T) {
-		source, archive, target, cleanup := mustCreateDirs(t)
+		source, target, cleanup := mustCreateDirs(t)
 		defer cleanup(t)
 
-		err := upgrade.ArchiveSource(source, archive, target, true)
+		err := upgrade.ArchiveSource(source, target, true)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
 
-		verifyRename(t, source, archive, target)
+		verifyRename(t, source, target)
 	})
 
 	t.Run("returns early if already renamed", func(t *testing.T) {
-		source := testutils.GetTempDir(t, "source")
-		defer os.RemoveAll(source)
+		source, target, cleanup := mustCreateDirs(t)
+		defer cleanup(t)
 
-		archive := testutils.GetTempDir(t, "archive")
-		defer os.RemoveAll(archive)
-
-		target := ""
+		// To return early create archive directory
+		archive := target + upgrade.OldSuffix
+		err := os.Rename(target, archive)
+		if err != nil {
+			t.Errorf("unexpected error: %#v", err)
+		}
 
 		called := false
 		utils.System.Rename = func(old, new string) error {
@@ -98,9 +98,9 @@ func TestArchiveSource(t *testing.T) {
 			utils.System.Rename = os.Rename
 		}()
 
-		verifyRename(t, source, archive, target)
+		verifyRename(t, source, target)
 
-		err := upgrade.ArchiveSource(source, archive, target, true)
+		err = upgrade.ArchiveSource(source, target, true)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -111,7 +111,7 @@ func TestArchiveSource(t *testing.T) {
 	})
 
 	t.Run("bubbles up errors", func(t *testing.T) {
-		source, archive, target, cleanup := mustCreateDirs(t)
+		source, target, cleanup := mustCreateDirs(t)
 		defer cleanup(t)
 
 		expected := errors.New("permission denied")
@@ -122,14 +122,14 @@ func TestArchiveSource(t *testing.T) {
 			utils.System.Rename = os.Rename
 		}()
 
-		err := upgrade.ArchiveSource(source, archive, target, true)
+		err := upgrade.ArchiveSource(source, target, true)
 		if !xerrors.Is(err, expected) {
 			t.Errorf("got %#v want %#v", err, expected)
 		}
 	})
 
 	t.Run("it returns other LinkErrors when renaming the source fails for errors other than ENOENT", func(t *testing.T) {
-		source, archive, target, cleanup := mustCreateDirs(t)
+		source, target, cleanup := mustCreateDirs(t)
 		defer cleanup(t)
 
 		expected := &os.LinkError{Err: syscall.EEXIST}
@@ -143,17 +143,17 @@ func TestArchiveSource(t *testing.T) {
 			utils.System.Rename = os.Rename
 		}()
 
-		err := upgrade.ArchiveSource(source, archive, target, true)
+		err := upgrade.ArchiveSource(source, target, true)
 		if !xerrors.Is(err, expected) {
 			t.Errorf("got %#v want %#v", err, expected)
 		}
 	})
 
 	t.Run("only renames source to archive when renameTarget is false", func(t *testing.T) {
-		source := testutils.GetTempDir(t, "source-")
-		defer os.RemoveAll(source)
+		source, target, cleanup := mustCreateDirs(t)
+		defer cleanup(t)
 
-		archive := source + upgrade.OldSuffix
+		archive := target + upgrade.OldSuffix
 
 		calls := 0
 		utils.System.Rename = func(old, new string) error {
@@ -173,7 +173,7 @@ func TestArchiveSource(t *testing.T) {
 			utils.System.Rename = os.Rename
 		}()
 
-		err := upgrade.ArchiveSource(source, archive, "", false)
+		err := upgrade.ArchiveSource(source, target, false)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -192,26 +192,26 @@ func TestArchiveSource(t *testing.T) {
 	})
 
 	t.Run("when renaming succeeds then a re-run succeeds", func(t *testing.T) {
-		source, archive, target, cleanup := mustCreateDirs(t)
+		source, target, cleanup := mustCreateDirs(t)
 		defer cleanup(t)
 
-		err := upgrade.ArchiveSource(source, archive, target, true)
+		err := upgrade.ArchiveSource(source, target, true)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
 
-		verifyRename(t, source, archive, target)
+		verifyRename(t, source, target)
 
-		err = upgrade.ArchiveSource(source, archive, target, true)
+		err = upgrade.ArchiveSource(source, target, true)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
 
-		verifyRename(t, source, archive, target)
+		verifyRename(t, source, target)
 	})
 
 	t.Run("when renaming the source fails then a re-run succeeds", func(t *testing.T) {
-		source, archive, target, cleanup := mustCreateDirs(t)
+		source, target, cleanup := mustCreateDirs(t)
 		defer cleanup(t)
 
 		expected := errors.New("permission denied")
@@ -222,7 +222,7 @@ func TestArchiveSource(t *testing.T) {
 			return os.Rename(old, new)
 		}
 
-		err := upgrade.ArchiveSource(source, archive, target, true)
+		err := upgrade.ArchiveSource(source, target, true)
 		if !xerrors.Is(err, expected) {
 			t.Errorf("got %#v want %#v", err, expected)
 		}
@@ -231,6 +231,7 @@ func TestArchiveSource(t *testing.T) {
 			t.Errorf("expected source %q to exist", source)
 		}
 
+		archive := target + upgrade.OldSuffix
 		if upgrade.PathExists(archive) {
 			t.Errorf("expected archive %q to not exist", archive)
 		}
@@ -241,16 +242,16 @@ func TestArchiveSource(t *testing.T) {
 
 		utils.System.Rename = os.Rename
 
-		err = upgrade.ArchiveSource(source, archive, target, true)
+		err = upgrade.ArchiveSource(source, target, true)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
 
-		verifyRename(t, source, archive, target)
+		verifyRename(t, source, target)
 	})
 
 	t.Run("when renaming the target fails then a re-run succeeds", func(t *testing.T) {
-		source, archive, target, cleanup := mustCreateDirs(t)
+		source, target, cleanup := mustCreateDirs(t)
 		defer cleanup(t)
 
 		expected := errors.New("permission denied")
@@ -261,7 +262,7 @@ func TestArchiveSource(t *testing.T) {
 			return os.Rename(old, new)
 		}
 
-		err := upgrade.ArchiveSource(source, archive, target, true)
+		err := upgrade.ArchiveSource(source, target, true)
 		if !xerrors.Is(err, expected) {
 			t.Errorf("got %#v want %#v", err, expected)
 		}
@@ -270,6 +271,7 @@ func TestArchiveSource(t *testing.T) {
 			t.Errorf("expected source %q to not exist", source)
 		}
 
+		archive := target + upgrade.OldSuffix
 		if !upgrade.PathExists(archive) {
 			t.Errorf("expected archive %q to exist", archive)
 		}
@@ -280,28 +282,24 @@ func TestArchiveSource(t *testing.T) {
 
 		utils.System.Rename = os.Rename
 
-		err = upgrade.ArchiveSource(source, archive, target, true)
+		err = upgrade.ArchiveSource(source, target, true)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
 
-		verifyRename(t, source, archive, target)
+		verifyRename(t, source, target)
 	})
 }
 
-func mustCreateDirs(t *testing.T) (string, string, string, func(*testing.T)) {
+func mustCreateDirs(t *testing.T) (string, string, func(*testing.T)) {
 	t.Helper()
 
 	source := testutils.GetTempDir(t, "source")
-	archive := source + upgrade.OldSuffix
 	target := testutils.GetTempDir(t, "target")
 
-	return source, archive, target, func(t *testing.T) {
+	return source, target, func(t *testing.T) {
 		if err := os.RemoveAll(source); err != nil {
 			t.Errorf("removing source directory: %v", err)
-		}
-		if err := os.RemoveAll(archive); err != nil {
-			t.Errorf("removing archive directory: %v", err)
 		}
 		if err := os.RemoveAll(target); err != nil {
 			t.Errorf("removing target directory: %v", err)
@@ -309,13 +307,14 @@ func mustCreateDirs(t *testing.T) (string, string, string, func(*testing.T)) {
 	}
 }
 
-func verifyRename(t *testing.T, source, archive, target string) {
+func verifyRename(t *testing.T, source, target string) {
 	t.Helper()
 
 	if !upgrade.PathExists(source) {
 		t.Errorf("expected source %q to exist", source)
 	}
 
+	archive := target + upgrade.OldSuffix
 	if !upgrade.PathExists(archive) {
 		t.Errorf("expected archive %q to exist", archive)
 	}

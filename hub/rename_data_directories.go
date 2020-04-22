@@ -25,7 +25,7 @@ func (s *Server) UpdateDataDirectories() error {
 func UpdateDataDirectories(conf *Config, agentConns []*Connection) error {
 	source := conf.Source.MasterDataDir()
 	target := conf.TargetInitializeConfig.Master.DataDir
-	if err := upgrade.ArchiveSource(source, source+upgrade.OldSuffix, target, true); err != nil {
+	if err := upgrade.ArchiveSource(source, target, true); err != nil {
 		return xerrors.Errorf("renaming master data directories: %w", err)
 	}
 

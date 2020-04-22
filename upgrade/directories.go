@@ -10,14 +10,13 @@ import (
 	"syscall"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
-	"golang.org/x/xerrors"
-
 	"github.com/hashicorp/go-multierror"
+	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
-const OldSuffix = "_old"
+const OldSuffix = ".old"
 
 var PostgresFiles = []string{"postgresql.conf", "PG_VERSION"}
 var StateDirectoryFiles = []string{"config.json", "status.json"}
@@ -73,10 +72,18 @@ func TempDataDir(datadir, segPrefix string, id ID) string {
 	return filepath.Join(dir, newBase)
 }
 
-// renames source to archive, and target to source
-// e.g. for source /data/dbfast1/demoDataDir0 becomes /data/dbfast1/demoDataDir0_old
-// e.g. for target /data/dbfast1/demoDataDir.123ABC.0 becomes /data/dbfast1/demoDataDir0
-func ArchiveSource(source, archive, target string, renameTarget bool) error {
+// ArchiveSourceAndRenameTarget archives the source directory, and renames
+// source to target. For example:
+//   source '/data/dbfast1/demoDataDir0' becomes archive '/data/dbfast1/demoDataDir.123ABC.0.old'
+//   target '/data/dbfast1/demoDataDir.123ABC.0' becomes source '/data/dbfast1/demoDataDir0'
+// When renameTarget is false just the source directory is archived. This is
+// useful in link mode when the mirrors have been deleted to save disk space and
+// will upgraded later to their correct location. Thus, renameTarget is false in
+// link mode when there is only the source directory to archive.
+func ArchiveSource(source, target string, renameTarget bool) error {
+	// Instead of manipulating the source to create the archive we append the
+	// old suffix to the target to achieve the same result.
+	archive := target + OldSuffix
 	if alreadyRenamed(archive, target) {
 		return nil
 	}
@@ -90,6 +97,8 @@ func ArchiveSource(source, archive, target string, renameTarget bool) error {
 		gplog.Debug("Renaming '%q' to '%q'. Source directory does not exist. It was already renamed from a previous re-run.", source, archive)
 	}
 
+	// In link mode mirrors have been deleted to save disk space, so there is
+	// no target to rename. Only archiving the source is needed.
 	if !renameTarget {
 		return nil
 	}

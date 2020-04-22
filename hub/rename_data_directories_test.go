@@ -193,49 +193,45 @@ func TestUpdateDataDirectories(t *testing.T) {
 		sdw1 := mock_idl.NewMockAgentClient(ctrl)
 		expectRenames(sdw1, []*idl.RenameDirectories{{
 			Source:       "/data/dbfast1/seg1",
-			Archive:      "/data/dbfast1/seg1_old",
 			Target:       "/data/dbfast1/seg1_123ABC",
 			RenameTarget: true,
 		}, {
 			Source:       "/data/dbfast1/seg3",
-			Archive:      "/data/dbfast1/seg3_old",
 			Target:       "/data/dbfast1/seg3_123ABC",
 			RenameTarget: true,
 		}, {
 			Source:       "/data/dbfast_mirror1/seg1",
-			Archive:      "/data/dbfast_mirror1/seg1_old",
+			Target:       "/data/dbfast_mirror1/seg1_123ABC",
 			RenameTarget: false,
 		}, {
 			Source:       "/data/dbfast_mirror1/seg3",
-			Archive:      "/data/dbfast_mirror1/seg3_old",
+			Target:       "/data/dbfast_mirror1/seg3_123ABC",
 			RenameTarget: false,
 		}})
 
 		sdw2 := mock_idl.NewMockAgentClient(ctrl)
 		expectRenames(sdw2, []*idl.RenameDirectories{{
 			Source:       "/data/dbfast2/seg2",
-			Archive:      "/data/dbfast2/seg2_old",
 			Target:       "/data/dbfast2/seg2_123ABC",
 			RenameTarget: true,
 		}, {
 			Source:       "/data/dbfast2/seg4",
-			Archive:      "/data/dbfast2/seg4_old",
 			Target:       "/data/dbfast2/seg4_123ABC",
 			RenameTarget: true,
 		}, {
 			Source:       "/data/dbfast_mirror2/seg2",
-			Archive:      "/data/dbfast_mirror2/seg2_old",
+			Target:       "/data/dbfast_mirror2/seg2_123ABC",
 			RenameTarget: false,
 		}, {
 			Source:       "/data/dbfast_mirror2/seg4",
-			Archive:      "/data/dbfast_mirror2/seg4_old",
+			Target:       "/data/dbfast_mirror2/seg4_123ABC",
 			RenameTarget: false,
 		}})
 
 		standby := mock_idl.NewMockAgentClient(ctrl)
 		expectRenames(standby, []*idl.RenameDirectories{{
 			Source:       "/data/standby",
-			Archive:      "/data/standby_old",
+			Target:       "/data/standby_123ABC",
 			RenameTarget: false,
 		}})
 
@@ -266,12 +262,10 @@ func TestUpdateDataDirectories(t *testing.T) {
 		})
 		expectRenames(sdw1, []*idl.RenameDirectories{{
 			Source:       "/data/dbfast1/seg1",
-			Archive:      "/data/dbfast1/seg1_old",
 			Target:       "/data/dbfast1/seg1_123ABC",
 			RenameTarget: true,
 		}, {
 			Source:       "/data/dbfast1/seg3",
-			Archive:      "/data/dbfast1/seg3_old",
 			Target:       "/data/dbfast1/seg3_123ABC",
 			RenameTarget: true,
 		}})
@@ -283,12 +277,10 @@ func TestUpdateDataDirectories(t *testing.T) {
 		})
 		expectRenames(sdw2, []*idl.RenameDirectories{{
 			Source:       "/data/dbfast2/seg2",
-			Archive:      "/data/dbfast2/seg2_old",
 			Target:       "/data/dbfast2/seg2_123ABC",
 			RenameTarget: true,
 		}, {
 			Source:       "/data/dbfast2/seg4",
-			Archive:      "/data/dbfast2/seg4_old",
 			Target:       "/data/dbfast2/seg4_123ABC",
 			RenameTarget: true,
 		}})

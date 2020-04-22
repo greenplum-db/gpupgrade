@@ -65,10 +65,10 @@ delete_finalized_cluster() {
     local masterdir="$1"
 
     # Sanity check.
-    local old_qddir_path=$(dirname $masterdir)"/demoDataDir-1_old"
+    local id=$(gpupgrade config show --id)
+    local old_qddir_path=$(dirname $masterdir)"/demoDataDir.${id}.-1.old"
     if [[ ! -d "$old_qddir_path" ]]; then
-        abort "cowardly refusing to delete $masterdir which does not look like an upgraded demo data directory. expected old directory of
-            $old_qddir_path"
+        abort "cowardly refusing to delete $masterdir. Expected $old_qddir_path to exist."
     fi
 
     # Look up the master port (fourth line of the postmaster PID file).
@@ -82,11 +82,14 @@ delete_finalized_cluster() {
 
     # put source directories back into place
     local datadirs=$(dirname "$(dirname "$masterdir")")
-    for source_dir in $(find "${datadirs}" -name "*_old"); do
-        local new_dirname=$(basename $source_dir _old)
-        local new_basedir=$(dirname $source_dir)
-        rm -rf "${new_basedir:?}/${new_dirname}"
-        mv $source_dir "$new_basedir/$new_dirname"
+    for archive in $(find "${datadirs}" -name "*${id}*.old"); do
+        # The following sed matches archived data directories and returns the
+        # path of the original directory. For example,
+        #   /dbfast_mirror2/demoDataDir.BY6l9U0LfX8.1.old -> /dbfast_mirror2/demoDataDir1
+        #   /datadirs/standby.BY6l9U0LfX8.old -> /datadirs/standby
+        local original=$(sed -E 's/\.'"${id}"'(\.([-0-9]+))?\.old/\2/' <<< "$archive")
+        rm -rf "${original}"
+        mv "$archive" "$original"
     done
 }
 
@@ -144,4 +147,11 @@ expected_target_datadir() {
     fi
 
     echo "${parentDir}/demoDataDir.${upgradeID}.${suffix}"
+}
+
+# archive_dir echoes the expected archive directory given an original data
+# directory.
+archive_dir() {
+    local dir=$1
+    echo "$(expected_target_datadir "$dir")".old
 }
