@@ -21,7 +21,6 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"text/template"
 
 	"github.com/blang/semver"
@@ -29,6 +28,7 @@ import (
 
 var sourceVersions = []string{"6", "5"}
 var targetVersions = []string{"6"}
+var centosVersions = []string{"6", "7"}
 
 type UpgradeJob struct {
 	Source, Target string
@@ -36,9 +36,17 @@ type UpgradeJob struct {
 	NoStandby      bool
 	UseLinkMode    bool
 	RetailDemo     bool
+	CentosVersion  string
 }
 
 func (j *UpgradeJob) Name() string {
+	return fmt.Sprintf("%s-centos-%s", j.BaseName(), j.CentosVersion)
+}
+
+// BaseName returns the pipeline job name without the operating system.
+// This is used as a tag in Concourse's serial group to limit similar jobs
+// between operating systems from running at once to avoid overloading Concourse.
+func (j *UpgradeJob) BaseName() string {
 	var suffix string
 
 	switch {
@@ -55,12 +63,15 @@ func (j *UpgradeJob) Name() string {
 	return fmt.Sprintf("%s-to-%s%s", j.Source, j.Target, suffix)
 }
 
+type Version struct {
+	CentosVersion string
+	GPVersion     string
+}
+
 type Data struct {
-	SourceVersions, TargetVersions []string
-	AllVersions                    []string // combination of Source/Target
-	UpgradeJobs                    []*UpgradeJob
-	LastTargetVersion              string
-	PrimariesOnly                  []bool
+	UpgradeJobs       []*UpgradeJob
+	LastTargetVersion string
+	Versions          []*Version
 }
 
 var data Data
@@ -69,59 +80,54 @@ func init() {
 	var upgradeJobs []*UpgradeJob
 	for _, sourceVersion := range sourceVersions {
 		for _, targetVersion := range targetVersions {
-			upgradeJobs = append(upgradeJobs, &UpgradeJob{
-				Source: sourceVersion,
-				Target: targetVersion,
+			for _, centosVersion := range centosVersions {
+				// todo: Add the 6-to-6 on centos6 job back in when fixed.
+				if sourceVersion == "6" && targetVersion == "6" && centosVersion == "6" {
+					continue
+				}
+				upgradeJobs = append(upgradeJobs, &UpgradeJob{
+					Source:        sourceVersion,
+					Target:        targetVersion,
+					CentosVersion: centosVersion,
+				})
+			}
+		}
+	}
+
+	var versions []*Version
+	for _, sourceVersion := range sourceVersions {
+		for _, centosVersion := range centosVersions {
+			versions = append(versions, &Version{
+				CentosVersion: centosVersion,
+				GPVersion:     sourceVersion,
 			})
 		}
 	}
 
-	// Special cases for 5->6. (These are special-cased to avoid exploding the
-	// test matrix too much.)
-	special := []*UpgradeJob{
-		{UseLinkMode: true},
-		{PrimariesOnly: true},
-		{NoStandby: true},
-		{RetailDemo: true},
-	}
-
-	for _, job := range special {
-		job.Source = "5"
-		job.Target = "6"
-
-		upgradeJobs = append(upgradeJobs, job)
-	}
-
-	// Duplicate version data here in order to simplify template logic
-	data = Data{
-		SourceVersions:    sourceVersions,
-		TargetVersions:    targetVersions,
-		AllVersions:       deduplicate(sourceVersions, targetVersions),
-		UpgradeJobs:       upgradeJobs,
-		LastTargetVersion: targetVersions[len(targetVersions)-1],
-	}
-}
-
-// deduplicate combines, sorts, and deduplicates two string slices.
-func deduplicate(a, b []string) []string {
-	var all []string
-
-	all = append(all, a...)
-	all = append(all, b...)
-	sort.Strings(all)
-
-	// Deduplicate by compacting runs of identical strings.
-	cur := 0
-	for next := 1; next < len(all); next++ {
-		if all[cur] == all[next] {
-			continue
+	for _, centosVersion := range centosVersions {
+		// Special cases for 5->6. (These are special-cased to avoid exploding the
+		// test matrix too much.)
+		special := []*UpgradeJob{
+			{UseLinkMode: true},
+			{PrimariesOnly: true},
+			{NoStandby: true},
+			{RetailDemo: true},
 		}
 
-		cur++
-		all[cur] = all[next]
+		for _, job := range special {
+			job.Source = "5"
+			job.Target = "6"
+			job.CentosVersion = centosVersion
+
+			upgradeJobs = append(upgradeJobs, job)
+		}
 	}
 
-	return all[:cur+1]
+	data = Data{
+		UpgradeJobs:       upgradeJobs,
+		LastTargetVersion: targetVersions[len(targetVersions)-1],
+		Versions:          versions,
+	}
 }
 
 func main() {

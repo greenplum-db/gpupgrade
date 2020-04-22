@@ -40,14 +40,14 @@ resources:
     private_key: ((retail-demo-git-key))
     branch: ((retail-demo-git-branch))
 
-{{range .AllVersions}}
-- name: rpm_gpdb{{.}}_centos7
+{{range .Versions}}
+- name: rpm_gpdb{{.GPVersion}}_centos{{.CentosVersion}}
   type: gcs
   source:
     bucket: ((cm-artifacts-bucket))
     json_key: ((cm-gcs-service-account-key))
     {{- /* note that . can be a full X.y.z, or just a partial X or X.y */}}
-    regexp: greenplum-db-{{ majorVersion . }}/greenplum-db-({{escapeVersion .}}.*)-rhel7-x86_64.rpm
+    regexp: greenplum-db-{{ majorVersion .GPVersion }}/greenplum-db-({{escapeVersion .GPVersion}}.*)-rhel{{.CentosVersion}}-x86_64.rpm
 {{end}}
 
 {{/* CentOS 6 is still used for the install-tests job. */ -}}
@@ -236,6 +236,10 @@ jobs:
 
 {{range .UpgradeJobs}}
 - name: {{ .Name }}
+  serial_groups: [{{ .BaseName }}]
+  # Specifying serial groups so that only one platform runs at a time. For
+  # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
+  # will prevent concourse from becoming overloaded.
   plan:
     - in_parallel:
         - get: bin_gpupgrade
@@ -244,11 +248,11 @@ jobs:
         - get: gpupgrade_src
           passed: [ build ]
         - get: rpm_gpdb_old
-          resource: rpm_gpdb{{.Source}}_centos7
+          resource: rpm_gpdb{{.Source}}_centos{{.CentosVersion}}
           trigger: true
         {{- if ne .Source .Target }}
         - get: rpm_gpdb_new
-          resource: rpm_gpdb{{.Target}}_centos7
+          resource: rpm_gpdb{{.Target}}_centos{{.CentosVersion}}
           trigger: true
         {{- end }}
         - get: ccp_src
@@ -275,12 +279,15 @@ jobs:
           {{- end}}
           instance_type: n1-standard-2
           number_of_nodes: 4
-          PLATFORM: centos7
+          PLATFORM: centos{{.CentosVersion}}
+          # Decrease the reap time from the default of 8 hours now that there are
+          # both centos6 and centos7 jobs in order to not overload concourse.
+          ccp_reap_minutes: 180
     - task: gen_old_cluster
       file: ccp_src/ci/tasks/gen_cluster.yml
       params:
         <<: *ccp_gen_cluster_default_params
-        PLATFORM: centos7
+        PLATFORM: centos{{.CentosVersion}}
         GPDB_RPM: true
       input_mapping:
         gpdb_rpm: rpm_gpdb_old
