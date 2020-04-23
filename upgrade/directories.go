@@ -4,14 +4,13 @@
 package upgrade
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
-	"syscall"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/hashicorp/go-multierror"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/utils"
 )
@@ -88,12 +87,11 @@ func ArchiveSource(source, target string, renameTarget bool) error {
 		return nil
 	}
 
-	err := utils.System.Rename(source, archive)
-	if err != nil {
-		if !xerrors.Is(err, syscall.ENOENT) {
+	if PathExists(source) {
+		if err := renameDataDirectory(source, archive); err != nil {
 			return err
 		}
-
+	} else {
 		gplog.Debug("Renaming '%q' to '%q'. Source directory does not exist. It was already renamed from a previous re-run.", source, archive)
 	}
 
@@ -103,12 +101,53 @@ func ArchiveSource(source, target string, renameTarget bool) error {
 		return nil
 	}
 
-	err = utils.System.Rename(target, source)
-	if err != nil {
+	if err := renameDataDirectory(target, source); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func renameDataDirectory(src, dst string) error {
+	if err := verifyDataDirectory(src); err != nil {
+		return err
+	}
+
+	if err := utils.System.Rename(src, dst); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ErrInvalidDataDirectory is returned when a data directory does not look like
+// a postgres data directory, and is returned by ArchiveAndSwapDirectories.
+var ErrInvalidDataDirectory = errors.New("invalid data directory")
+
+// InvalidDataDirectoryError is the backing error type for
+// ErrInvalidDataDirectory.
+type InvalidDataDirectoryError struct {
+	path string
+	file string
+}
+
+func (i *InvalidDataDirectoryError) Error() string {
+	return fmt.Sprintf("%q does not look like a postgres directory. Failed to find %q", i.path, i.file)
+}
+
+func (i *InvalidDataDirectoryError) Is(err error) bool {
+	return err == ErrInvalidDataDirectory
+}
+
+func verifyDataDirectory(path string) error {
+	var mErr multierror.Error
+	for _, f := range PostgresFiles {
+		if !PathExists(filepath.Join(path, f)) {
+			mErr = *multierror.Append(&mErr, &InvalidDataDirectoryError{path, f})
+		}
+	}
+
+	return mErr.ErrorOrNil()
 }
 
 func alreadyRenamed(archive, target string) bool {

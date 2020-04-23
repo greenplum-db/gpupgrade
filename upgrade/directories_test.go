@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"syscall"
 	"testing"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
@@ -67,7 +66,7 @@ func TestArchiveSource(t *testing.T) {
 	testhelper.SetupTestLogger()
 
 	t.Run("successfully renames source to archive, and target to source", func(t *testing.T) {
-		source, target, cleanup := mustCreateDirs(t)
+		source, target, cleanup := mustCreateDataDirs(t)
 		defer cleanup(t)
 
 		err := upgrade.ArchiveSource(source, target, true)
@@ -79,7 +78,7 @@ func TestArchiveSource(t *testing.T) {
 	})
 
 	t.Run("returns early if already renamed", func(t *testing.T) {
-		source, target, cleanup := mustCreateDirs(t)
+		source, target, cleanup := mustCreateDataDirs(t)
 		defer cleanup(t)
 
 		// To return early create archive directory
@@ -111,7 +110,7 @@ func TestArchiveSource(t *testing.T) {
 	})
 
 	t.Run("bubbles up errors", func(t *testing.T) {
-		source, target, cleanup := mustCreateDirs(t)
+		source, target, cleanup := mustCreateDataDirs(t)
 		defer cleanup(t)
 
 		expected := errors.New("permission denied")
@@ -128,29 +127,29 @@ func TestArchiveSource(t *testing.T) {
 		}
 	})
 
-	t.Run("it returns other LinkErrors when renaming the source fails for errors other than ENOENT", func(t *testing.T) {
-		source, target, cleanup := mustCreateDirs(t)
-		defer cleanup(t)
+	t.Run("errors when renaming a directory that is not like postgres", func(t *testing.T) {
+		source := testutils.GetTempDir(t, "source")
+		defer testutils.MustRemoveAll(t, source)
 
-		expected := &os.LinkError{Err: syscall.EEXIST}
-		utils.System.Rename = func(old, new string) error {
-			if old == source {
-				return expected
-			}
-			return os.Rename(old, new)
-		}
-		defer func() {
-			utils.System.Rename = os.Rename
-		}()
+		target := testutils.GetTempDir(t, "target")
+		defer testutils.MustRemoveAll(t, target)
 
 		err := upgrade.ArchiveSource(source, target, true)
-		if !xerrors.Is(err, expected) {
-			t.Errorf("got %#v want %#v", err, expected)
+		var merr *multierror.Error
+		if !xerrors.As(err, &merr) {
+			t.Fatalf("returned %#v want error type %T", err, merr)
+		}
+
+		for _, err := range merr.Errors {
+			expected := upgrade.ErrInvalidDataDirectory
+			if !xerrors.Is(err, expected) {
+				t.Errorf("returned error %#v want %#v", err, expected)
+			}
 		}
 	})
 
 	t.Run("only renames source to archive when renameTarget is false", func(t *testing.T) {
-		source, target, cleanup := mustCreateDirs(t)
+		source, target, cleanup := mustCreateDataDirs(t)
 		defer cleanup(t)
 
 		archive := target + upgrade.OldSuffix
@@ -192,7 +191,7 @@ func TestArchiveSource(t *testing.T) {
 	})
 
 	t.Run("when renaming succeeds then a re-run succeeds", func(t *testing.T) {
-		source, target, cleanup := mustCreateDirs(t)
+		source, target, cleanup := mustCreateDataDirs(t)
 		defer cleanup(t)
 
 		err := upgrade.ArchiveSource(source, target, true)
@@ -211,7 +210,7 @@ func TestArchiveSource(t *testing.T) {
 	})
 
 	t.Run("when renaming the source fails then a re-run succeeds", func(t *testing.T) {
-		source, target, cleanup := mustCreateDirs(t)
+		source, target, cleanup := mustCreateDataDirs(t)
 		defer cleanup(t)
 
 		expected := errors.New("permission denied")
@@ -251,7 +250,7 @@ func TestArchiveSource(t *testing.T) {
 	})
 
 	t.Run("when renaming the target fails then a re-run succeeds", func(t *testing.T) {
-		source, target, cleanup := mustCreateDirs(t)
+		source, target, cleanup := mustCreateDataDirs(t)
 		defer cleanup(t)
 
 		expected := errors.New("permission denied")
@@ -291,11 +290,21 @@ func TestArchiveSource(t *testing.T) {
 	})
 }
 
-func mustCreateDirs(t *testing.T) (string, string, func(*testing.T)) {
+func mustCreateDataDirs(t *testing.T) (string, string, func(*testing.T)) {
 	t.Helper()
 
 	source := testutils.GetTempDir(t, "source")
 	target := testutils.GetTempDir(t, "target")
+
+	for _, dir := range []string{source, target} {
+		for _, f := range upgrade.PostgresFiles {
+			path := filepath.Join(dir, f)
+			err := ioutil.WriteFile(path, []byte(""), 0600)
+			if err != nil {
+				t.Fatalf("failed creating postgres file %q: %+v", path, err)
+			}
+		}
+	}
 
 	return source, target, func(t *testing.T) {
 		if err := os.RemoveAll(source); err != nil {

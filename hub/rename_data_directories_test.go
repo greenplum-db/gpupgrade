@@ -16,7 +16,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
-	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 func TestRenameSegmentDataDirs(t *testing.T) {
@@ -177,7 +176,7 @@ func TestUpdateDataDirectories(t *testing.T) {
 		},
 	}
 
-	utils.System.Rename = func(src, dst string) error {
+	hub.ArchiveSource = func(source, target string, renameTarget bool) error {
 		return nil
 	}
 
