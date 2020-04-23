@@ -63,7 +63,7 @@ func ExampleTempDataDir() {
 }
 
 func TestArchiveSource(t *testing.T) {
-	testhelper.SetupTestLogger()
+	_, _, testlog := testhelper.SetupTestLogger()
 
 	t.Run("successfully renames source to archive, and target to source", func(t *testing.T) {
 		source, target, cleanup := mustCreateDataDirs(t)
@@ -207,6 +207,8 @@ func TestArchiveSource(t *testing.T) {
 		}
 
 		verifyRename(t, source, target)
+
+		testutils.VerifyLogDoesNotContain(t, testlog, "Source directory does not exist")
 	})
 
 	t.Run("when renaming the source fails then a re-run succeeds", func(t *testing.T) {
@@ -247,6 +249,8 @@ func TestArchiveSource(t *testing.T) {
 		}
 
 		verifyRename(t, source, target)
+
+		testutils.VerifyLogDoesNotContain(t, testlog, "Source directory does not exist")
 	})
 
 	t.Run("when renaming the target fails then a re-run succeeds", func(t *testing.T) {
@@ -287,6 +291,8 @@ func TestArchiveSource(t *testing.T) {
 		}
 
 		verifyRename(t, source, target)
+
+		testutils.VerifyLogContains(t, testlog, "Source directory does not exist")
 	})
 }
 

@@ -7,9 +7,11 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
+	"github.com/onsi/gomega/gbytes"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 )
@@ -91,5 +93,25 @@ func SetEnv(t *testing.T, envar, value string) func() {
 		if err != nil {
 			t.Fatalf("setting %s environment variable to %s", envar, old)
 		}
+	}
+}
+
+func VerifyLogContains(t *testing.T, testlog *gbytes.Buffer, expected string) {
+	verifyLog(t, testlog, expected, true)
+}
+
+func VerifyLogDoesNotContain(t *testing.T, testlog *gbytes.Buffer, expected string) {
+	verifyLog(t, testlog, expected, false)
+}
+
+func verifyLog(t *testing.T, testlog *gbytes.Buffer, expected string, shouldContain bool) {
+	text := "to not contain"
+	if shouldContain {
+		text = "to contain"
+	}
+
+	contents := string(testlog.Contents())
+	if shouldContain && !strings.Contains(contents, expected) {
+		t.Errorf("\nexpected log: %q\n%s:   %q", contents, text, expected)
 	}
 }
