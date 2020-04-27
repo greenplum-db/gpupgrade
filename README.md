@@ -1,203 +1,143 @@
 # gpupgrade [![Concourse Build Status](https://prod.ci.gpdb.pivotal.io/api/v1/teams/main/pipelines/gpupgrade/badge)](https://prod.ci.gpdb.pivotal.io/teams/main/pipelines/gpupgrade)
 
-`gpupgrade` is a Go utility for coordinating
-[pg_upgrade](https://www.postgresql.org/docs/current/static/pgupgrade.html)
-across all segments in a Greenplum cluster. It's in heavy development, and
-should not be used for production environments at this time -- but if you'd like
-to help us hack on and test gpupgrade in a development environment, we'd welcome
-any feedback you have!
+gpupgrade runs [pg_upgrade](https://www.postgresql.org/docs/current/static/pgupgrade.html)
+across all segments to quickly upgrade a [Greenplum cluster](https://github.com/greenplum-db/gpdb)
+across major versions. Since it's still being actively developed it should not 
+be used in production at this time. We warmly welcome any feedback and 
+[contributions](https://github.com/greenplum-db/gpupgrade/blob/master/CONTRIBUTING.md).
 
-## Developer Workflow
+**Architecture:**
+
+gpupgrade consists of three processes that communicate using gRPC and protocol buffers:
+- CLI
+  - Runs on the master host
+  - Consists of a gRPC client
+- Hub
+  - Runs on the master host
+  - Coordinates the agent processes
+  - Consists of a gRPC client and server 
+- Agents
+  - Run on all segment hosts
+  - Execute commands received from the hub
+  - Consist of a gRPC server
+ 
+```
+       CLI                     Hub                     Agent
+      ------                  ------                  -------
+  gRPC client    <-->      gRPC server
+                           gRPC client     <-->      gRPC server
+```
+
+**Steps:**
+
+Running gpupgrade consists of three main steps:
+- gpupgrade initialize
+  - Then source cluster can still be running. No downtime.
+  - Substeps include creating the gpupgrade state directory, starting the hub 
+  and agents, creating the target cluster, and running pg_ugpgrade checks. 
+- gpupgrade execute
+  - This step will stop the source cluster. Downtime is needed.
+  - Substeps include upgrading the master, copying the master catalog to the 
+  segments, and upgrading the primaries.  
+- gpupgrade finalize
+  - After finalizing the upgrade cannot be reverted.
+  - Substeps include updating the data directories and master catalog, and 
+  upgrading the standby and mirrors.
+
+
+## Getting Started
 
 ### Prerequisites
 
 - Golang. We currently develop against latest stable Golang, which was v1.14 as of April 2020.
 - protoc. This is the compiler for the [gRPC protobuffer](https://grpc.io/) system.
-On macOS, one way to install this is via `brew install protobuf`
+On Mac use `brew install protobuf`.
+- Run `make && make depend-dev` to install other developer dependencies. Note 
+make needs to be run first.
 
-If you want to hack on the code, please run the `make depend-dev` target, as
-this will install test and developer dependencies.
-
-### Build and test the upgrade tool
+### Build and Test
 
 ```
-make
+make         # builds gpupgrade binary locally
 make check   # runs tests
-make install # installs into $GOBIN
+make install # installs gpupgrade into $GOBIN
 ```
 
-### Best Practices
-
-In your development workflow, please run the following command prior to final testing 
-and commit of your modifications.  The code formatting will automatically place your
-golang code in a canonical format.
-```
-make format  # formats code in canonical way
-```
-
-### Build details
+### Running
 
 ```
-make
+gpupgrade initialize --source-bindir "$GPHOME/bin" --target-bindir "$GPHOME/bin" --source-master-port 6000 --disk-free-ratio 0
+gpupgrade execute
+gpupgrade finalize
 ```
-builds the code without running the tests.
 
-We build with a ldflag to set the version of the code based on the current
-git SHA and latest tag at build time.
-
-We build into $GOPATH/bin/gpupgrade and expect that, after a build,
-`which gpupgrade` points to the binary that you just built, assuming
-your PATH is configured correctly.
-
-We build as part of our (integration tests)[#integration-testing]; see more
-information there.
-
-We support cross-compilation into Linux or Darwin, as the GPDB servers that
-this tool upgrades run Linux but many dev workstations run MacOS
-
-For a target-specific build, run
-```
-make build_linux
-```
-or
-```
-make build_mac
-```
-as appropriate for the target platform.
-
-### Run the tests
-
-We use [ginkgo](https://github.com/onsi/ginkgo) and [gomega](https://github.com/onsi/gomega) to run our tests. We have `unit` and `integration` targets predefined.
-
-***Note:*** In order to run integration tests you need to have GPDB installed and running. Instructions to set up a GPDB cluster can be found in [the main GPDB repo](https://github.com/greenplum-db/gpdb).
+### Running Tests
 
 #### Unit tests
 ```
-# To run only the unit tests
 make unit
 ```
 #### Integration tests
+Tests that run against the gpupgrade binary to verify the interaction between 
+components. Before writing a new integration test please review the 
+[README](https://github.com/greenplum-db/gpupgrade/blob/master/integrations/README.md).
 ```
-# To run only the integration tests
 make integration
 ```
-#### All tests
+#### Acceptance tests
+Tests more end-to-end acceptance-level behavior between components. Tests are 
+located in the `test` directory and use BATS (Bash Automated Testing System) framework.
+Please review the [integrations/README](https://github.com/greenplum-db/gpupgrade/blob/master/integrations/README.md).
 ```
-# To run all the tests
+# Some tests require GPDB installed and running
+make check-bats
+```
+#### Installcheck tests
+
+Runs through an upgrade on the locally running GPDB cluster.
+```
+# Requires GPDB installed and running
+make installcheck
+```
+#### All local tests
+```
+# Runs all local tests
 make check
 ```
-
-### Generate gRPC client/server code
+#### End-to-End tests
+Creates a Concourse pipeline that includes various multi-host X-to-Y upgrade and 
+functional tests. These cannot be run locally.
 ```
-# To generate protobuf code and its mocks
-go generate ./idl
-```
-
-## Command line parsing
-
-We are using [the cobra library](https://github.com/spf13/cobra) for
-parsing our commands and flags.
-
-To implement a new command, you will need to implement a commander (see the cobra documentation and files in the `cli/commanders` directory for examples) and add it to the tree of commands in `cli/gpupgrade_main.go` to tell the parser about your new command.
-
-### Bash Completion
-
-You can source the `cli/bash/bash-completion.sh` script from your
-`~/.bash_completion` config, or copy it into your system's completions directory
-(e.g.  `/etc/bash_completion.d` on Debian), to get tab completion for the
-gpupgrade utility.
-
-## Testing
-
-### Unit testing overall
-
-```
-make unit
-```
-should only run the unit tests
-
-We use Ginkgo and Gomega because they provide BDD-style syntax while still
-running `go test` under the hood. Core team members strive to TDD the code as
-much as possible so that the unit test coverage is driven out alongside the code
-
-We use dependency injection wherever possible to enable isolated unit tests
-and drive towards clear interfaces across packages
-
-Some unit tests depend on the environment variable GPHOME, though not on its value. Having GPHOME set is a prerequisite for running a GPDB cluster.
-
-### Integration testing
-
-```
-make integration
-```
-should only run the integration tests
-
-In order to run the integration tests, a Greenplum Database cluster must be up and
-running.
-We typically integration test the "happy path" (expected behavior) of the code
-when writing new features and allow the unit tests to cover error messaging
-and other edge cases. We are not strict about outside-in (integration-first)
-or inside-out (unit-first) TDD.
-
-The default integration tests do not build with the special build flags that
-the Makefile uses because the capability of the code to react to those build
-flags is specifically tested where needed, for example in
-[version_integration_test.go](integrations/version_integration_test.go)
-
-The integration tests may require other binaries to be built. We aim to have
-any such requirements automated.
-
-### Usage of the Command Line Interface(CLI)
-
-While not "testing" per se, we also describe the gpupgrade process from a database 
-maintainer's standpoint.  Since this is the cli, we describe this in a separate
-document, ```README_cli.md```  Note that, once officially released, this user
-documentation will probably be incorporated into a more user-friendly format.
-
-### Directly using pg_upgrade
-
-Under the covers, gpupgrade is calling pg_upgrade, first on the master, and
-then on the segments. If needed, you can call pg_upgrade directly. There is
-make target that runs a test, upgrading from version x to x. To do this, two
-clusters are setup on the local machine using demo_cluster.sh. In the root
-directory for the gpdb repo, run is `make -C contrib/pg_upgrade check`. This
-uses test_gpdb.sh to do the heavy lifting, and that can be customized to fit
-your setup. In particular, four env vars are used for the cluster mapping:
-NEWBINDIR, OLDBINDIR, NEWDATADIR and OLDDATADIR.
-
-### Running tests in a pipeline
-
-The gpupgrade/ci/generated directory contains two pipeline files, which reference task
-files in gpupgrade/ci/tasks, and some secrets in a private repository. To set a
-pipeline, run:
-
-```
-make set-pipeline FLY_TARGET=<CONCOURSE_INSTANCE> GIT_URI=https://github.com/<GITHUB_USERNAME>/gpupgrade.git
+make set-pipeline
 ```
 
-Note: When making pipeline changes, change only the template.yml and run
-`go generate ./ci` (this will automatically run as part of `make set-pipeline`).
-Then check in the pipeline.yml file.
 
-If you want to use the defaults and have access to the continuous-integration
-secrets, there is a convenience recipe:
+## Concourse Pipeline
 
-```
-make deploy-pipeline
-```
+To update the generated pipeline edit `ci/template.yml` and run 
+`make set-pipeline` or `go generate ./ci` which is automatically run as part of
+ `make set-pipeline`. This will update `ci/generated/pipeline.yml`.
 
-Currently the secrets file is only being used to send notifications of failures
-to a slack channel. If you wish to disable this, remove the reference to the
-`slack-alert` anchor from the `unit-tests` job's `on_failure`.
+To make the pipeline publicly visible run `make expose-pipeline`. This will 
+allow anyone to see the pipeline and its status. However, the task details will 
+not be visible unless one logs into Concourse.
 
-To make the pipeline publicly visible, run:
 
-```
-fly --target [target-name] expose-pipeline --pipeline [pipeline-name]
-```
+## Generating gRPC code
 
-(Similarly, there is a `make expose-pipeline` convenience recipe in the
-Makefile.)
+To recompile proto files to generate gRPC client and server code run 
+`go generate ./idl`
 
-This will allow anyone to see the pipeline and its status. The details of the
-run will not be visible unless the user is logged in to concourse.
+
+## Bash Completion
+
+To enable tab completion of gpupgrade commands source the `cli/bash/bash-completion.sh` 
+script from your `~/.bash_completion` config, or copy it into your system's 
+completions directory such as  `/etc/bash_completion.d`.
+
+
+## Building
+
+Cross-compile with:
+- `make build_linux`
+- `make build_mac`
