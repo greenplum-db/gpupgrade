@@ -1,6 +1,6 @@
 # Contributing
 
-We warmly welcome and appreciate contributions from the community! By participating you agree to the [code of conduct](https://github.com/greenplum-db/gpupgrade/CODE-OF-CONDUCT.md). To contribute:
+We warmly welcome and appreciate contributions from the community! By participating you agree to the [code of conduct](https://github.com/greenplum-db/gpupgrade/blob/master/CODE-OF-CONDUCT.md). To contribute:
 
 - Sign our [Contributor License Agreement](https://cla.pivotal.io/sign/greenplum).
 
@@ -22,7 +22,7 @@ We warmly welcome and appreciate contributions from the community! By participat
 
     - Add appropriate tests and view coverage with `make coverage`.
 
-    - Ensure a well written commit message as explained [here](https://chris.beams.io/posts/git-commit/) and [here](http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html).
+    - Ensure a well written commit message as explained [here](https://chris.beams.io/posts/git-commit/) and [here](https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html).
 
     - Format code with `make format`.
      
