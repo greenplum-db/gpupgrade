@@ -16,6 +16,8 @@ import (
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
+	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/upgrade"
 )
 
 func TestRenameSegmentDataDirs(t *testing.T) {
@@ -179,6 +181,54 @@ func TestUpdateDataDirectories(t *testing.T) {
 	hub.ArchiveSource = func(source, target string, renameTarget bool) error {
 		return nil
 	}
+
+	t.Run("renames master data directories", func(t *testing.T) {
+		conf := new(hub.Config)
+
+		sourceDataDir, targetDataDir, cleanup := testutils.MustCreateDataDirs(t)
+		defer cleanup(t)
+
+		conf.Source = hub.MustCreateCluster(t, []greenplum.SegConfig{
+			{ContentID: -1, Hostname: "sdw1", DataDir: sourceDataDir, Role: greenplum.PrimaryRole},
+		})
+
+		conf.TargetInitializeConfig = hub.InitializeConfig{
+			Master: greenplum.SegConfig{
+				ContentID: -1, Hostname: "sdw1", DataDir: targetDataDir, Role: greenplum.PrimaryRole,
+			},
+		}
+
+		hub.ArchiveSource = upgrade.ArchiveSource
+		defer func() {
+			hub.ArchiveSource = func(source, target string, onlyArchive bool) error {
+				return nil
+			}
+		}()
+
+		err := hub.UpdateDataDirectories(conf, nil)
+		if err != nil {
+			t.Errorf("UpdateDataDirectories() returned error: %+v", err)
+		}
+
+		testutils.VerifyRename(t, sourceDataDir, targetDataDir)
+	})
+
+	t.Run("returns error when renaming master data directories fails", func(t *testing.T) {
+		expected := errors.New("permission denied")
+		hub.ArchiveSource = func(source, target string, onlyArchive bool) error {
+			return expected
+		}
+		defer func() {
+			hub.ArchiveSource = func(source, target string, onlyArchive bool) error {
+				return nil
+			}
+		}()
+
+		err := hub.UpdateDataDirectories(conf, nil)
+		if !xerrors.Is(err, expected) {
+			t.Errorf("got %#v want %#v", err, expected)
+		}
+	})
 
 	t.Run("transmits segment rename requests to the correct agents in copy mode", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
