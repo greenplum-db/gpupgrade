@@ -1,7 +1,7 @@
 # gpupgrade [![Concourse Build Status](https://prod.ci.gpdb.pivotal.io/api/v1/teams/main/pipelines/gpupgrade/badge)](https://prod.ci.gpdb.pivotal.io/teams/main/pipelines/gpupgrade)
 
 gpupgrade runs [pg_upgrade](https://www.postgresql.org/docs/current/static/pgupgrade.html)
-across all segments to quickly upgrade a [Greenplum cluster](https://github.com/greenplum-db/gpdb)
+across all segments to upgrade a [Greenplum cluster](https://github.com/greenplum-db/gpdb)
 across major versions. Since it's still being actively developed it should not 
 be used in production at this time. We warmly welcome any feedback and 
 [contributions](https://github.com/greenplum-db/gpupgrade/blob/master/CONTRIBUTING.md).
@@ -14,10 +14,12 @@ gpupgrade consists of three processes that communicate using gRPC and protocol b
   - Consists of a gRPC client
 - Hub
   - Runs on the master host
+  - Upgrades the master
   - Coordinates the agent processes
   - Consists of a gRPC client and server 
 - Agents
   - Run on all segment hosts
+  - Upgrade the standby, primary, and mirror segments
   - Execute commands received from the hub
   - Consist of a gRPC server
  
@@ -25,6 +27,9 @@ gpupgrade consists of three processes that communicate using gRPC and protocol b
        CLI                     Hub                     Agent
       ------                  ------                  -------
   gRPC client    <-->      gRPC server
+                                ^
+                                |
+                                V
                            gRPC client     <-->      gRPC server
 ```
 
@@ -32,9 +37,9 @@ gpupgrade consists of three processes that communicate using gRPC and protocol b
 
 Running gpupgrade consists of three main steps:
 - gpupgrade initialize
-  - Then source cluster can still be running. No downtime.
+  - The source cluster can still be running. No downtime.
   - Substeps include creating the gpupgrade state directory, starting the hub 
-  and agents, creating the target cluster, and running pg_ugpgrade checks. 
+  and agents, creating the target cluster, and running pre-upgrade checks. 
 - gpupgrade execute
   - This step will stop the source cluster. Downtime is needed.
   - Substeps include upgrading the master, copying the master catalog to the 
@@ -44,14 +49,26 @@ Running gpupgrade consists of three main steps:
   - Substeps include updating the data directories and master catalog, and 
   upgrading the standby and mirrors.
 
+**Link vs. Copy Mode:**
+
+pg_upgrade supports two upgrade modes: link and copy.
+
+| Attribute | Copy Mode | Link Mode
+| --- | --- | ---
+| Description | Copy's source files to the target cluster. | Uses hard links to modify the source cluster data in place.
+| Upgrade Time | Slow, since it copy's the data before upgrading. | Fast, since the data is modified in place.
+| Disk Space | ~60% free disk space needed. | ~20% free disk space needed.
+| Revert Speed | Fast, since the source cluster remains untouched. | Slow, since the source files have been modified the primaries and mirrors need to be rebuilt.
+| Risk | Less risky since the source cluster is untouched. | More risky since the source cluster is modified.
+
 
 ## Getting Started
 
 ### Prerequisites
 
 - Golang. We currently develop against latest stable Golang, which was v1.14 as of April 2020.
-- protoc. This is the compiler for the [gRPC protobuffer](https://grpc.io/) system.
-On Mac use `brew install protobuf`.
+- protoc. This is the compiler for the [gRPC protobuf](https://grpc.io/) 
+system which can be installed on macOS with `brew install protobuf`.
 - Run `make && make depend-dev` to install other developer dependencies. Note 
 make needs to be run first.
 
@@ -86,7 +103,8 @@ make integration
 ```
 #### Acceptance tests
 Tests more end-to-end acceptance-level behavior between components. Tests are 
-located in the `test` directory and use BATS (Bash Automated Testing System) framework.
+located in the `test` directory and use the [BATS (Bash Automated Testing System)](https://github.com/bats-core/bats-core) 
+framework which can be installed on macOS with `brew install bats-core`.
 Please review the [integrations/README](https://github.com/greenplum-db/gpupgrade/blob/master/integrations/README.md).
 ```
 # Some tests require GPDB installed and running
