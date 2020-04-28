@@ -57,7 +57,7 @@ upgrade_cluster() {
         local no_mirrors
         no_mirrors=$(contents_without_mirror "${GPHOME}" "$(hostname)" "${PGPORT}")
 
-        if [ "$LINK_MODE" == "--link" ]; then
+        if [ "$LINK_MODE" == "--mode=link" ]; then
                # create a backup of datadirs as the mirrors will be deleted in finalize
                # and primaries pg_control file will be changed to pg_control.old to disable to old
                # cluster
@@ -83,12 +83,12 @@ upgrade_cluster() {
 
         NEW_CLUSTER="$MASTER_DATA_DIRECTORY"
 
-        if [ "$LINK_MODE" == "--link" ]; then
+        if [ "$LINK_MODE" == "--mode=link" ]; then
             validate_data_directories "EXISTS" "$primary_datadirs"
             validate_data_directories "NOT_EXISTS" "$mirror_datadirs"
 
             # restore the data directories to their archived versions to fit the
-            # teardown in --link mode, finalize deletes the mirrors/standby data
+            # teardown in link mode, finalize deletes the mirrors/standby data
             # directories, so they should be restored.
             for datadir in "${datadirs[@]}"; do
                 local archive=$(archive_dir "$datadir")
@@ -128,12 +128,12 @@ upgrade_cluster() {
         validate_mirrors_and_standby "${GPHOME}" "$(hostname)" "${PGPORT}"
 
 }
-@test "gpupgrade finalize should swap the target data directories and ports with the source cluster" {
+@test "in copy mode gpupgrade finalize should swap the target data directories and ports with the source cluster" {
     upgrade_cluster
 }
 
-@test "gpupgrade finalize with --link mode should swap the primary and master directory and delete the old mirror and standby directory" {
-    upgrade_cluster "--link"
+@test "in link mode gpupgrade finalize should also delete mirror directories" {
+    upgrade_cluster "--mode=link"
 }
 
 setup_state_dir() {

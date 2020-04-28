@@ -79,7 +79,7 @@ dump_sql $MASTER_PORT /tmp/old.sql
 # Now do the upgrade.
 LINK_MODE=""
 if [ "${USE_LINK_MODE}" = "1" ]; then
-    LINK_MODE="--link"
+    LINK_MODE="--mode=link"
 fi
 
 time ssh mdw bash <<EOF

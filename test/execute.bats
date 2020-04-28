@@ -98,7 +98,7 @@ reset_master_and_primary_pg_control_files() {
         --target-bindir="$GPHOME/bin" \
         --source-master-port="${PGPORT}" \
         --temp-port-range 6020-6040 \
-        --link \
+        --mode="link" \
         --disk-free-ratio 0 \
         --verbose
 
@@ -121,7 +121,7 @@ reset_master_and_primary_pg_control_files() {
         --target-bindir="$GPHOME/bin" \
         --source-master-port="${PGPORT}" \
         --temp-port-range 6020-6040 \
-        --link \
+        --mode="link" \
         --disk-free-ratio 0 \
         --verbose
 

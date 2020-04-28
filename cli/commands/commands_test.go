@@ -56,3 +56,76 @@ func TestParsePorts(t *testing.T) {
 		}
 	}
 }
+
+func TestIsLinkMode(t *testing.T) {
+	cases := []struct {
+		name     string
+		mode     string
+		expected bool
+	}{
+		{
+			name:     "parses copy",
+			mode:     "copy",
+			expected: false,
+		},
+		{
+			name:     "parses link",
+			mode:     "link",
+			expected: true,
+		},
+		{
+			name:     "parses capitalizations",
+			mode:     "LiNk",
+			expected: true,
+		},
+		{
+			name:     "trims spaces",
+			mode:     " link  \t",
+			expected: true,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			linkMode, err := isLinkMode(c.mode)
+			if err != nil {
+				t.Errorf("unexpected error %#v", err)
+			}
+
+			if linkMode != c.expected {
+				t.Errorf("got %t want %t", linkMode, c.expected)
+			}
+		})
+	}
+
+	errCases := []struct {
+		name string
+		mode string
+	}{
+		{
+			name: "empty string",
+			mode: "",
+		},
+		{
+			name: "invalid mode",
+			mode: "depeche",
+		},
+		{
+			name: "errors on numbers",
+			mode: "1",
+		},
+	}
+
+	for _, c := range errCases {
+		t.Run(c.name, func(t *testing.T) {
+			linkMode, err := isLinkMode(c.mode)
+			if err == nil {
+				t.Errorf("isLinkMode(%q) returned %v instead of an error", c.mode, err)
+			}
+
+			if linkMode != false {
+				t.Errorf("got linkMode %t want %t", linkMode, false)
+			}
+		})
+	}
+}

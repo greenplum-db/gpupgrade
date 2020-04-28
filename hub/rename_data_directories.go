@@ -31,7 +31,7 @@ func UpdateDataDirectories(conf *Config, agentConns []*Connection) error {
 		return xerrors.Errorf("renaming master data directories: %w", err)
 	}
 
-	// in --link mode, remove the source mirror and standby data directories; otherwise we create a second copy
+	// in link mode, remove the source mirror and standby data directories; otherwise we create a second copy
 	//  of them for the target cluster. That might take too much disk space.
 	if conf.UseLinkMode {
 		if err := DeleteMirrorAndStandbyDataDirectories(agentConns, conf.Source); err != nil {

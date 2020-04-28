@@ -301,13 +301,18 @@ func initialize() *cobra.Command {
 	var stopBeforeClusterCreation bool
 	var verbose bool
 	var ports string
-	var linkMode bool
+	var mode string
 
 	subInit := &cobra.Command{
 		Use:   "initialize",
 		Short: "prepare the system for upgrade",
 		Long:  InitializeHelp,
 		RunE: func(cmd *cobra.Command, args []string) error {
+
+			linkMode, err := isLinkMode(mode)
+			if err != nil {
+				return err
+			}
 
 			// if diskFreeRatio is not explicitly set, use defaults
 			if !cmd.Flag("disk-free-ratio").Changed {
@@ -406,8 +411,7 @@ After executing, you will need to finalize.`)
 	subInit.Flags().Float64Var(&diskFreeRatio, "disk-free-ratio", 0.60, "percentage of disk space that must be available (from 0.0 - 1.0)")
 	subInit.Flags().BoolVarP(&verbose, "verbose", "v", false, "print the output stream from all substeps")
 	subInit.Flags().StringVar(&ports, "temp-port-range", "", "set of ports to use when initializing the target cluster")
-	subInit.Flags().BoolVar(&linkMode, "link", false, "performs upgrade in link mode")
-
+	subInit.Flags().StringVar(&mode, "mode", "copy", "performs upgrade in either copy or link mode. Default is copy.")
 	return addHelpToCommand(subInit, InitializeHelp)
 }
 
@@ -529,6 +533,21 @@ func parsePorts(val string) ([]uint32, error) {
 	return ports, nil
 }
 
+// isLinkMode parses the mode flag returning an error if it is not copy or link.
+// It returns true if mode is link.
+func isLinkMode(input string) (bool, error) {
+	choices := []string{"copy", "link"}
+
+	mode := strings.ToLower(strings.TrimSpace(input))
+	for _, choice := range choices {
+		if mode == choice {
+			return mode == "link", nil
+		}
+	}
+
+	return false, fmt.Errorf("Invalid input %q. Please specify either %s.", input, strings.Join(choices, " or "))
+}
+
 var restartServices = &cobra.Command{
 	Use:   "restart-services",
 	Short: "restarts hub/agents that are not currently running",
@@ -623,7 +642,7 @@ Optional Flags:
 
   -h, --help               displays help output for initialize
 
-      --link               an alternative mode that directly upgrades the primary segments
+      --mode [copy|link]   Upgrade mode to either copy source files to target or use hard links to modify data in place. Default is copy.
 
       --temp-port-range    the set of ports to use when initializing the target cluster
 
@@ -675,7 +694,7 @@ Required Commands: gpupgrade is a three-step process
                     --source-master-port   the master port for the source Greenplum installation
 
                   Optional Flags:
-                    --link                 an alternative mode that directly upgrades the primary segments
+                    --mode [copy|link]     Upgrade mode to either copy source files to target or use hard links to modify data in place. Default is copy.
                     --temp-port-range      the set of ports to use when initializing the target cluster
 
   2. execute      upgrades the master and primary segments to the target Greenplum version
