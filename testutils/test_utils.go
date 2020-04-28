@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/onsi/gomega/gbytes"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/upgrade"
 )
 
 // TODO remove in favor of MustCreateCluster
@@ -75,6 +77,54 @@ func MustRemoveAll(t *testing.T, dir string) {
 	err := os.RemoveAll(dir)
 	if err != nil {
 		t.Fatalf("removing temp dir %q: %#v", dir, err)
+	}
+}
+
+// MustCreateDataDirs returns a temporary source and target data directory that
+// looks like a postgres directory. The last argument returned is a cleanup
+// function that can be used in a defer.
+func MustCreateDataDirs(t *testing.T) (string, string, func(*testing.T)) {
+	t.Helper()
+
+	source := GetTempDir(t, "source")
+	target := GetTempDir(t, "target")
+
+	for _, dir := range []string{source, target} {
+		for _, f := range upgrade.PostgresFiles {
+			path := filepath.Join(dir, f)
+			err := ioutil.WriteFile(path, []byte(""), 0600)
+			if err != nil {
+				t.Fatalf("failed creating postgres file %q: %+v", path, err)
+			}
+		}
+	}
+
+	return source, target, func(t *testing.T) {
+		if err := os.RemoveAll(source); err != nil {
+			t.Errorf("removing source directory: %v", err)
+		}
+		if err := os.RemoveAll(target); err != nil {
+			t.Errorf("removing target directory: %v", err)
+		}
+	}
+}
+
+// VerifyRename ensures the source and archive data directories exist, and the
+// target directory does not exist.
+func VerifyRename(t *testing.T, source, target string) {
+	t.Helper()
+
+	if !upgrade.PathExists(source) {
+		t.Errorf("expected source %q to exist", source)
+	}
+
+	archive := target + upgrade.OldSuffix
+	if !upgrade.PathExists(archive) {
+		t.Errorf("expected archive %q to exist", archive)
+	}
+
+	if upgrade.PathExists(target) {
+		t.Errorf("expected target %q to not exist", target)
 	}
 }
 

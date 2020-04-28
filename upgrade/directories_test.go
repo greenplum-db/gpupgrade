@@ -66,7 +66,7 @@ func TestArchiveSource(t *testing.T) {
 	_, _, testlog := testhelper.SetupTestLogger()
 
 	t.Run("successfully renames source to archive, and target to source", func(t *testing.T) {
-		source, target, cleanup := mustCreateDataDirs(t)
+		source, target, cleanup := testutils.MustCreateDataDirs(t)
 		defer cleanup(t)
 
 		err := upgrade.ArchiveSource(source, target, true)
@@ -74,11 +74,11 @@ func TestArchiveSource(t *testing.T) {
 			t.Errorf("unexpected error: %#v", err)
 		}
 
-		verifyRename(t, source, target)
+		testutils.VerifyRename(t, source, target)
 	})
 
 	t.Run("returns early if already renamed", func(t *testing.T) {
-		source, target, cleanup := mustCreateDataDirs(t)
+		source, target, cleanup := testutils.MustCreateDataDirs(t)
 		defer cleanup(t)
 
 		// To return early create archive directory
@@ -97,7 +97,7 @@ func TestArchiveSource(t *testing.T) {
 			utils.System.Rename = os.Rename
 		}()
 
-		verifyRename(t, source, target)
+		testutils.VerifyRename(t, source, target)
 
 		err = upgrade.ArchiveSource(source, target, true)
 		if err != nil {
@@ -110,7 +110,7 @@ func TestArchiveSource(t *testing.T) {
 	})
 
 	t.Run("bubbles up errors", func(t *testing.T) {
-		source, target, cleanup := mustCreateDataDirs(t)
+		source, target, cleanup := testutils.MustCreateDataDirs(t)
 		defer cleanup(t)
 
 		expected := errors.New("permission denied")
@@ -149,7 +149,7 @@ func TestArchiveSource(t *testing.T) {
 	})
 
 	t.Run("only renames source to archive when renameTarget is false", func(t *testing.T) {
-		source, target, cleanup := mustCreateDataDirs(t)
+		source, target, cleanup := testutils.MustCreateDataDirs(t)
 		defer cleanup(t)
 
 		archive := target + upgrade.OldSuffix
@@ -191,7 +191,7 @@ func TestArchiveSource(t *testing.T) {
 	})
 
 	t.Run("when renaming succeeds then a re-run succeeds", func(t *testing.T) {
-		source, target, cleanup := mustCreateDataDirs(t)
+		source, target, cleanup := testutils.MustCreateDataDirs(t)
 		defer cleanup(t)
 
 		err := upgrade.ArchiveSource(source, target, true)
@@ -199,20 +199,20 @@ func TestArchiveSource(t *testing.T) {
 			t.Errorf("unexpected error: %#v", err)
 		}
 
-		verifyRename(t, source, target)
+		testutils.VerifyRename(t, source, target)
 
 		err = upgrade.ArchiveSource(source, target, true)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
 
-		verifyRename(t, source, target)
+		testutils.VerifyRename(t, source, target)
 
 		testutils.VerifyLogDoesNotContain(t, testlog, "Source directory does not exist")
 	})
 
 	t.Run("when renaming the source fails then a re-run succeeds", func(t *testing.T) {
-		source, target, cleanup := mustCreateDataDirs(t)
+		source, target, cleanup := testutils.MustCreateDataDirs(t)
 		defer cleanup(t)
 
 		expected := errors.New("permission denied")
@@ -248,13 +248,13 @@ func TestArchiveSource(t *testing.T) {
 			t.Errorf("unexpected error: %#v", err)
 		}
 
-		verifyRename(t, source, target)
+		testutils.VerifyRename(t, source, target)
 
 		testutils.VerifyLogDoesNotContain(t, testlog, "Source directory does not exist")
 	})
 
 	t.Run("when renaming the target fails then a re-run succeeds", func(t *testing.T) {
-		source, target, cleanup := mustCreateDataDirs(t)
+		source, target, cleanup := testutils.MustCreateDataDirs(t)
 		defer cleanup(t)
 
 		expected := errors.New("permission denied")
@@ -290,53 +290,10 @@ func TestArchiveSource(t *testing.T) {
 			t.Errorf("unexpected error: %#v", err)
 		}
 
-		verifyRename(t, source, target)
+		testutils.VerifyRename(t, source, target)
 
 		testutils.VerifyLogContains(t, testlog, "Source directory does not exist")
 	})
-}
-
-func mustCreateDataDirs(t *testing.T) (string, string, func(*testing.T)) {
-	t.Helper()
-
-	source := testutils.GetTempDir(t, "source")
-	target := testutils.GetTempDir(t, "target")
-
-	for _, dir := range []string{source, target} {
-		for _, f := range upgrade.PostgresFiles {
-			path := filepath.Join(dir, f)
-			err := ioutil.WriteFile(path, []byte(""), 0600)
-			if err != nil {
-				t.Fatalf("failed creating postgres file %q: %+v", path, err)
-			}
-		}
-	}
-
-	return source, target, func(t *testing.T) {
-		if err := os.RemoveAll(source); err != nil {
-			t.Errorf("removing source directory: %v", err)
-		}
-		if err := os.RemoveAll(target); err != nil {
-			t.Errorf("removing target directory: %v", err)
-		}
-	}
-}
-
-func verifyRename(t *testing.T, source, target string) {
-	t.Helper()
-
-	if !upgrade.PathExists(source) {
-		t.Errorf("expected source %q to exist", source)
-	}
-
-	archive := target + upgrade.OldSuffix
-	if !upgrade.PathExists(archive) {
-		t.Errorf("expected archive %q to exist", archive)
-	}
-
-	if upgrade.PathExists(target) {
-		t.Errorf("expected target %q to not exist", target)
-	}
 }
 
 func setup(t *testing.T) (teardown func(), directories []string, requiredPaths []string) {
