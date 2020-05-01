@@ -12,7 +12,7 @@ import (
 	"reflect"
 	"testing"
 
-	. "github.com/onsi/gomega"
+	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
@@ -54,12 +54,7 @@ func init() {
 	)
 }
 
-var (
-	g *GomegaWithT
-)
-
 func setup(t *testing.T) {
-	g = NewGomegaWithT(t)
 	execCommandHubStart = nil
 	execCommandHubCount = nil
 }
@@ -75,8 +70,13 @@ func TestIsHubRunning_ReturnsFalseWhenNotRunning(t *testing.T) {
 
 	execCommandHubCount = exectest.NewCommand(IsHubRunning_False)
 	running, err := IsHubRunning()
-	g.Expect(err).To(BeNil())
-	g.Expect(running).To(BeFalse())
+	if err != nil {
+		t.Errorf("unexpected error %#v", err)
+	}
+
+	if running {
+		t.Error("expected running to be false")
+	}
 }
 
 func TestIsHubRunning_ReturnsTrueWhenRunning(t *testing.T) {
@@ -85,8 +85,13 @@ func TestIsHubRunning_ReturnsTrueWhenRunning(t *testing.T) {
 
 	execCommandHubCount = exectest.NewCommand(IsHubRunning_True)
 	running, err := IsHubRunning()
-	g.Expect(err).To(BeNil())
-	g.Expect(running).To(BeTrue())
+	if err != nil {
+		t.Errorf("unexpected error %#v", err)
+	}
+
+	if !running {
+		t.Error("expected running to be true")
+	}
 }
 
 func TestIsHubRunning_ErrorsWhenCheckFails(t *testing.T) {
@@ -95,8 +100,14 @@ func TestIsHubRunning_ErrorsWhenCheckFails(t *testing.T) {
 
 	execCommandHubCount = exectest.NewCommand(IsHubRunning_Error)
 	running, err := IsHubRunning()
-	g.Expect(running).To(BeFalse())
-	g.Expect(err).ToNot(BeNil())
+	var expected *exec.ExitError
+	if !xerrors.As(err, &expected) {
+		t.Errorf("returned error %#v want %#v", err, expected)
+	}
+
+	if running {
+		t.Error("expected running to be false")
+	}
 }
 
 func TestStartHub_Succeeds(t *testing.T) {
@@ -106,7 +117,9 @@ func TestStartHub_Succeeds(t *testing.T) {
 	execCommandHubCount = exectest.NewCommand(IsHubRunning_False)
 	execCommandHubStart = exectest.NewCommand(GpupgradeHub_good_Main)
 	err := StartHub()
-	g.Expect(err).To(BeNil())
+	if err != nil {
+		t.Errorf("unexpected error %#v", err)
+	}
 }
 
 func TestStartHub_FailsToStartWhenHubIsRunningErrors(t *testing.T) {
@@ -116,7 +129,10 @@ func TestStartHub_FailsToStartWhenHubIsRunningErrors(t *testing.T) {
 	execCommandHubCount = exectest.NewCommand(IsHubRunning_Error)
 	execCommandHubStart = exectest.NewCommand(GpupgradeHub_good_Main) // should not hit this, but fail it we do
 	err := StartHub()
-	g.Expect(err).ToNot(BeNil())
+	var expected *exec.ExitError
+	if !xerrors.As(err, &expected) {
+		t.Errorf("returned error %#v want %#v", err, expected)
+	}
 }
 
 func TestStartHub_ReturnsWhenHubIsRunning(t *testing.T) {
@@ -126,7 +142,9 @@ func TestStartHub_ReturnsWhenHubIsRunning(t *testing.T) {
 	execCommandHubCount = exectest.NewCommand(IsHubRunning_True)
 	execCommandHubStart = exectest.NewCommand(GpupgradeHub_bad_Main) // should not hit this, but fail if we do
 	err := StartHub()
-	g.Expect(err).To(BeNil())
+	if err != nil {
+		t.Errorf("unexpected error %#v", err)
+	}
 }
 
 func TestStartHub_FailsWhenStartingTheHubErrors(t *testing.T) {
@@ -136,7 +154,9 @@ func TestStartHub_FailsWhenStartingTheHubErrors(t *testing.T) {
 	execCommandHubCount = exectest.NewCommand(IsHubRunning_False)
 	execCommandHubStart = exectest.NewCommand(GpupgradeHub_bad_Main)
 	err := StartHub()
-	g.Expect(err).ToNot(BeNil())
+	if err == nil {
+		t.Errorf("expected error %#v got nil", err)
+	}
 }
 
 func TestCreateStateDir(t *testing.T) {
