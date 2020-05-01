@@ -4,11 +4,14 @@
 package upgrade_test
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"testing"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
@@ -310,14 +313,31 @@ func setup(t *testing.T) (teardown func(), directories []string, requiredPaths [
 	return teardown, directories, requiredPaths
 }
 
+type devNullSpy struct {
+	outStream io.Writer
+}
+
+func (s devNullSpy) Stdout() io.Writer {
+	return s.outStream
+}
+
+func (_ devNullSpy) Stderr() io.Writer {
+	return ioutil.Discard
+}
+
 func TestDeleteDirectories(t *testing.T) {
 	testhelper.SetupTestLogger()
 
 	t.Run("successfully deletes the directories if all required paths exist in that directory", func(t *testing.T) {
+		var buf bytes.Buffer
+		devNull := devNullSpy{
+			outStream: &buf,
+		}
+		hostname := "localhost.local"
 		teardown, directories, requiredPaths := setup(t)
 		defer teardown()
 
-		err := upgrade.DeleteDirectories(directories, requiredPaths)
+		err := upgrade.DeleteDirectories(directories, requiredPaths, hostname, devNull)
 
 		if err != nil {
 			t.Errorf("unexpected error got %+v", err)
@@ -328,13 +348,20 @@ func TestDeleteDirectories(t *testing.T) {
 				t.Errorf("dataDir %s exists", dataDir)
 			}
 		}
+
+		expected := regexp.MustCompile(`Deleting directory: ".*/data/dbfast_mirror1/seg1" on host "localhost.local"\nDeleting directory: ".*/data/dbfast_mirror2/seg2" on host "localhost.local"`)
+
+		actual := buf.String()
+		if !expected.MatchString(actual) {
+			t.Errorf("got stream output %s want %s", actual, expected)
+		}
 	})
 
 	t.Run("fails when the required paths are not in the directories", func(t *testing.T) {
 		teardown, directories, _ := setup(t)
 		defer teardown()
 
-		err := upgrade.DeleteDirectories(directories, []string{"a", "b"})
+		err := upgrade.DeleteDirectories(directories, []string{"a", "b"}, "", utils.DevNull)
 
 		var multiErr *multierror.Error
 		if !xerrors.As(err, &multiErr) {
@@ -361,7 +388,7 @@ func TestDeleteDirectories(t *testing.T) {
 			t.Errorf("unexpected error %+v", err)
 		}
 
-		err2 := upgrade.DeleteDirectories(directories, requiredPaths)
+		err2 := upgrade.DeleteDirectories(directories, requiredPaths, "", utils.DevNull)
 
 		var multiErr *multierror.Error
 		if !xerrors.As(err2, &multiErr) {

@@ -18,6 +18,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 )
@@ -93,7 +94,7 @@ func TestCopyMaster(t *testing.T) {
 			hosts <- host
 		})
 
-		err := hub.CopyMasterDataDir(DevNull, "foobar/path")
+		err := hub.CopyMasterDataDir(utils.DevNull, "foobar/path")
 		if err != nil {
 			t.Errorf("copying master data directory: %+v", err)
 		}
@@ -141,7 +142,7 @@ func TestCopyMaster(t *testing.T) {
 			}
 		})
 
-		err := hub.CopyMasterDataDir(DevNull, "foobar/path")
+		err := hub.CopyMasterDataDir(utils.DevNull, "foobar/path")
 		if err != nil {
 			t.Errorf("copying master data directory: %+v", err)
 		}

@@ -458,24 +458,41 @@ func finalize() *cobra.Command {
 }
 
 func revert() *cobra.Command {
+	var verbose bool
+
 	cmd := &cobra.Command{
 		Use:   "revert",
 		Short: "reverts the upgrade and returns the cluster to its original state",
 		Long:  "reverts the upgrade and returns the cluster to its original state",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// If we got here, the args are okay and the user doesn't need a usage
+			// dump on failure.
+			cmd.SilenceUsage = true
 			client := connectToHub()
-			err := commanders.Revert(client)
+
+			err := commanders.Revert(client, verbose)
 			if err != nil {
 				gplog.Error(err.Error())
 				return err
 			}
 
+			s := commanders.Substep(idl.Substep_STOP_HUB_AND_AGENTS)
 			err = stopHubAndAgents()
+			s.Finish(&err)
+
 			if err != nil {
 				return err
 			}
 
-			err = upgrade.DeleteDirectories([]string{utils.GetStateDir()}, upgrade.StateDirectoryFiles)
+			s = commanders.Substep(idl.Substep_DELETE_MASTER_STATEDIR)
+			hostname, err := os.Hostname()
+			if err != nil {
+				s.Finish(&err)
+				return err
+			}
+
+			err = upgrade.DeleteDirectories([]string{utils.GetStateDir()}, upgrade.StateDirectoryFiles, hostname, &utils.StdStream{})
+			s.Finish(&err)
 			if err != nil {
 				gplog.Error(err.Error())
 				return err
@@ -487,6 +504,8 @@ func revert() *cobra.Command {
 			return nil
 		},
 	}
+
+	cmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print the output stream from all substeps")
 
 	return cmd
 }

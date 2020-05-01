@@ -12,6 +12,7 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/hashicorp/go-multierror"
 
+	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
@@ -161,7 +162,7 @@ func PathExists(path string) bool {
 
 // Each directory in 'directories' is deleted only if every path in 'requiredPaths' exists
 // in that directory.
-func DeleteDirectories(directories []string, requiredPaths []string) error {
+func DeleteDirectories(directories []string, requiredPaths []string, hostname string, streams step.OutStreams) error {
 	var mErr *multierror.Error
 	for _, directory := range directories {
 		statError := false
@@ -179,7 +180,12 @@ func DeleteDirectories(directories []string, requiredPaths []string) error {
 			continue
 		}
 
-		err := utils.System.RemoveAll(directory)
+		_, err := fmt.Fprintf(streams.Stdout(), "Deleting directory: %q on host %q\n", directory, hostname)
+		if err != nil {
+			return err
+		}
+
+		err = utils.System.RemoveAll(directory)
 		if err != nil {
 			mErr = multierror.Append(mErr, err)
 		}

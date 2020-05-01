@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/greenplum-db/gpupgrade/hub"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 // TODO: this is an integration test; move it
@@ -42,7 +43,7 @@ other_log_location = /some/directory
 `)
 
 		// Perform the replacement.
-		err = hub.UpdateGpperfmonConf(hub.DevNull, dir)
+		err = hub.UpdateGpperfmonConf(utils.DevNull, dir)
 		if err != nil {
 			t.Errorf("UpdateGpperfmonConf() returned error %+v", err)
 		}
@@ -75,7 +76,7 @@ port=50000
 `)
 
 		// Perform the replacement.
-		err = hub.UpdatePostgresqlConf(hub.DevNull, dir, 5000, 6000)
+		err = hub.UpdatePostgresqlConf(utils.DevNull, dir, 5000, 6000)
 		if err != nil {
 			t.Errorf("UpdatePostgresqlConf() returned error %+v", err)
 		}

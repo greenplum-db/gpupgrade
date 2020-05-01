@@ -5,6 +5,7 @@ package agent_test
 
 import (
 	"context"
+	"errors"
 	"reflect"
 	"testing"
 
@@ -12,7 +13,9 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/agent"
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 func TestDeleteDataDirectories(t *testing.T) {
@@ -20,13 +23,22 @@ func TestDeleteDataDirectories(t *testing.T) {
 
 	t.Run("deletes the data directories", func(t *testing.T) {
 		var actualDirectories, actualRequiredPaths []string
-		mockDeleteDirectories := func(directories []string, requiredPaths []string) error {
+		var actualHostname string
+		var actualStreams step.OutStreams
+		mockDeleteDirectories := func(directories []string, requiredPaths []string, hostname string, streams step.OutStreams) error {
 			actualDirectories = directories
 			actualRequiredPaths = requiredPaths
+			actualHostname = hostname
+			actualStreams = streams
 			return nil
 		}
 		cleanup := agent.SetDeleteDirectories(mockDeleteDirectories)
 		defer cleanup()
+
+		expectedHostname := "localhost.remote"
+		utils.System.Hostname = func() (s string, err error) {
+			return expectedHostname, nil
+		}
 
 		dataDirectories := []string{
 			"/data/dbfast_mirror1/seg1",
@@ -48,6 +60,33 @@ func TestDeleteDataDirectories(t *testing.T) {
 		if !reflect.DeepEqual(actualRequiredPaths, upgrade.PostgresFiles) {
 			t.Errorf("got required paths: %s want: %s", actualRequiredPaths, upgrade.PostgresFiles)
 		}
+
+		if actualHostname != expectedHostname {
+			t.Errorf("got hostname %q want %q", actualHostname, expectedHostname)
+		}
+
+		if actualStreams != utils.DevNull {
+			t.Errorf("got streams %#v want %#v", actualStreams, utils.DevNull)
+		}
+	})
+
+	t.Run("errors when System.Hostname() returns an error", func(t *testing.T) {
+		expectedErr := errors.New("hostname error")
+		utils.System.Hostname = func() (string, error) {
+			return "", expectedErr
+		}
+
+		cleanup := agent.SetDeleteDirectories(func(strings []string, strings2 []string, s string, streams step.OutStreams) error {
+			return nil
+		})
+		defer cleanup()
+
+		server := agent.NewServer(agent.Config{})
+		_, err := server.DeleteStateDirectory(context.Background(), &idl.DeleteStateDirectoryRequest{})
+
+		if err != expectedErr {
+			t.Errorf("got error %#v want %#v", err, expectedErr)
+		}
 	})
 }
 
@@ -56,13 +95,22 @@ func TestDeleteStateDirectory(t *testing.T) {
 
 	t.Run("deletes the state directory", func(t *testing.T) {
 		var actualDirectories, actualRequiredPaths []string
-		mockDeleteDirectories := func(directories []string, requiredPaths []string) error {
+		var actualHostname string
+		var actualStreams step.OutStreams
+		mockDeleteDirectories := func(directories []string, requiredPaths []string, hostname string, streams step.OutStreams) error {
 			actualDirectories = directories
 			actualRequiredPaths = requiredPaths
+			actualHostname = hostname
+			actualStreams = streams
 			return nil
 		}
 		cleanup := agent.SetDeleteDirectories(mockDeleteDirectories)
 		defer cleanup()
+
+		expectedHostname := "localhost.remote"
+		utils.System.Hostname = func() (s string, err error) {
+			return expectedHostname, nil
+		}
 
 		expectedDirectories := []string{"/my/state/dir"}
 		server := agent.NewServer(agent.Config{
@@ -81,6 +129,33 @@ func TestDeleteStateDirectory(t *testing.T) {
 
 		if !reflect.DeepEqual(actualRequiredPaths, upgrade.StateDirectoryFiles) {
 			t.Errorf("got required paths: %s want: %s", actualRequiredPaths, upgrade.StateDirectoryFiles)
+		}
+
+		if actualHostname != expectedHostname {
+			t.Errorf("got hostname %q want %q", actualHostname, expectedHostname)
+		}
+
+		if actualStreams != utils.DevNull {
+			t.Errorf("got streams %#v want %#v", actualStreams, utils.DevNull)
+		}
+	})
+
+	t.Run("errors when System.Hostname() returns an error", func(t *testing.T) {
+		expectedErr := errors.New("hostname error")
+		utils.System.Hostname = func() (string, error) {
+			return "", expectedErr
+		}
+
+		cleanup := agent.SetDeleteDirectories(func(strings []string, strings2 []string, s string, streams step.OutStreams) error {
+			return nil
+		})
+		defer cleanup()
+
+		server := agent.NewServer(agent.Config{})
+		_, err := server.DeleteStateDirectory(context.Background(), &idl.DeleteStateDirectoryRequest{})
+
+		if err != expectedErr {
+			t.Errorf("got error %#v want %#v", err, expectedErr)
 		}
 	})
 }

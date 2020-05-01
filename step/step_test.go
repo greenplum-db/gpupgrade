@@ -36,7 +36,7 @@ func TestStepRun(t *testing.T) {
 				Status: idl.Status_COMPLETE,
 			}}})
 
-		s := step.New("Initialize", server, &TestStore{}, DevNull)
+		s := step.New("Initialize", server, &TestStore{}, DevNullWithClose)
 
 		var called bool
 		s.Run(idl.Substep_GENERATING_CONFIG, func(streams step.OutStreams) error {
@@ -66,7 +66,7 @@ func TestStepRun(t *testing.T) {
 			}}})
 
 		store := &TestStore{}
-		s := step.New("Initialize", server, store, DevNull)
+		s := step.New("Initialize", server, store, DevNullWithClose)
 
 		var status idl.Status
 		s.Run(idl.Substep_GENERATING_CONFIG, func(streams step.OutStreams) error {
@@ -103,7 +103,7 @@ func TestStepRun(t *testing.T) {
 			}}})
 
 		store := &TestStore{Status: idl.Status_COMPLETE}
-		s := step.New("Initialize", server, store, DevNull)
+		s := step.New("Initialize", server, store, DevNullWithClose)
 
 		var called bool
 		s.AlwaysRun(idl.Substep_CHECK_UPGRADE, func(streams step.OutStreams) error {
@@ -132,7 +132,7 @@ func TestStepRun(t *testing.T) {
 				Status: idl.Status_FAILED,
 			}}})
 
-		s := step.New("Initialize", server, &TestStore{}, DevNull)
+		s := step.New("Initialize", server, &TestStore{}, DevNullWithClose)
 
 		var called bool
 		s.Run(idl.Substep_GENERATING_CONFIG, func(streams step.OutStreams) error {
@@ -152,7 +152,7 @@ func TestStepRun(t *testing.T) {
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 
 		failingStore := &TestStore{WriteErr: errors.New("oops")}
-		s := step.New("Initialize", server, failingStore, DevNull)
+		s := step.New("Initialize", server, failingStore, DevNullWithClose)
 
 		var called bool
 		s.Run(idl.Substep_CHECK_UPGRADE, func(streams step.OutStreams) error {
@@ -181,7 +181,7 @@ func TestStepRun(t *testing.T) {
 			}}})
 
 		store := &TestStore{Status: idl.Status_COMPLETE}
-		s := step.New("Initialize", server, store, DevNull)
+		s := step.New("Initialize", server, store, DevNullWithClose)
 
 		var called bool
 		s.Run(idl.Substep_CHECK_UPGRADE, func(streams step.OutStreams) error {
@@ -201,7 +201,7 @@ func TestStepRun(t *testing.T) {
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 		server.EXPECT().Send(gomock.Any()).AnyTimes()
 
-		s := step.New("Initialize", server, &TestStore{}, DevNull)
+		s := step.New("Initialize", server, &TestStore{}, DevNullWithClose)
 
 		expected := errors.New("oops")
 		s.Run(idl.Substep_GENERATING_CONFIG, func(streams step.OutStreams) error {
@@ -231,7 +231,7 @@ func TestStepRun(t *testing.T) {
 		server.EXPECT().Send(gomock.Any()).AnyTimes()
 
 		store := &TestStore{Status: idl.Status_RUNNING}
-		s := step.New("Initialize", server, store, DevNull)
+		s := step.New("Initialize", server, store, DevNullWithClose)
 
 		var called bool
 		s.Run(idl.Substep_GENERATING_CONFIG, func(streams step.OutStreams) error {
@@ -251,7 +251,7 @@ func TestStepRun(t *testing.T) {
 
 func TestStepFinish(t *testing.T) {
 	t.Run("closes the output streams", func(t *testing.T) {
-		streams := &devNull{}
+		streams := &devNullWithClose{}
 		s := step.New("Initialize", nil, nil, streams)
 
 		err := s.Finish()
@@ -266,7 +266,7 @@ func TestStepFinish(t *testing.T) {
 
 	t.Run("returns an error when failing to close the output streams", func(t *testing.T) {
 		expected := errors.New("oops")
-		streams := &devNull{CloseErr: expected}
+		streams := &devNullWithClose{CloseErr: expected}
 		s := step.New("Initialize", nil, nil, streams)
 
 		err := s.Finish()
@@ -348,24 +348,24 @@ func (t *TestStore) Write(substep idl.Substep, status idl.Status) (err error) {
 	return t.WriteErr
 }
 
-// DevNull implements step.OutStreamsCloser as a no-op. It also tracks calls to
+// DevNullWithClose implements step.OutStreamsCloser as a no-op. It also tracks calls to
 // Close().
-var DevNull = &devNull{}
+var DevNullWithClose = &devNullWithClose{}
 
-type devNull struct {
+type devNullWithClose struct {
 	Closed   bool
 	CloseErr error
 }
 
-func (devNull) Stdout() io.Writer {
+func (devNullWithClose) Stdout() io.Writer {
 	return ioutil.Discard
 }
 
-func (devNull) Stderr() io.Writer {
+func (devNullWithClose) Stderr() io.Writer {
 	return ioutil.Discard
 }
 
-func (d *devNull) Close() error {
+func (d *devNullWithClose) Close() error {
 	d.Closed = true
 	return d.CloseErr
 }

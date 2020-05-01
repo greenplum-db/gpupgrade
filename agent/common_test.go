@@ -3,7 +3,9 @@
 
 package agent
 
-func SetDeleteDirectories(mockDeleteDirectories func([]string, []string) error) func() {
+import "github.com/greenplum-db/gpupgrade/step"
+
+func SetDeleteDirectories(mockDeleteDirectories func([]string, []string, string, step.OutStreams) error) func() {
 	original := deleteDirectories
 	deleteDirectories = mockDeleteDirectories
 	return func() {

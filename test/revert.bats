@@ -23,7 +23,7 @@ setup() {
         --stop-before-cluster-creation \
         --verbose 3>&-
 
-    gpupgrade revert
+    gpupgrade revert --verbose
 
     # the GPUPGRADE_HOME directory is deleted
     if [ -d "${GPUPGRADE_HOME}" ]; then
@@ -52,7 +52,7 @@ setup() {
     process_is_running "[g]pupgrade hub" || fail 'expected hub to be running'
     process_is_running "[g]pupgrade agent" || fail 'expected agent to be running'
 
-    gpupgrade revert
+    gpupgrade revert --verbose
 
     # gpupgrade processes are stopped
     ! process_is_running "[g]pupgrade hub" || fail 'expected hub to have been stopped'

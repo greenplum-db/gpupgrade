@@ -4,8 +4,6 @@
 package hub
 
 import (
-	"io"
-	"io/ioutil"
 	"testing"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
@@ -32,19 +30,6 @@ func ResetExecCommand() {
 
 func ResetRsyncExecCommand() {
 	execCommandRsync = nil
-}
-
-// DevNull implements OutStreams by just discarding all writes.
-var DevNull = devNull{}
-
-type devNull struct{}
-
-func (_ devNull) Stdout() io.Writer {
-	return ioutil.Discard
-}
-
-func (_ devNull) Stderr() io.Writer {
-	return ioutil.Discard
 }
 
 // failingWriter is an io.Writer for which all calls to Write() return an error.

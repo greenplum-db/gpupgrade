@@ -13,7 +13,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 )
 
-func DeleteStateDirectories(agentConns []*Connection, masterHostName string) error {
+func DeleteStateDirectories(agentConns []*Connection, excludeHostname string) error {
 	wg := sync.WaitGroup{}
 	errChan := make(chan error, len(agentConns))
 
@@ -22,7 +22,7 @@ func DeleteStateDirectories(agentConns []*Connection, masterHostName string) err
 
 		// Skip the state directory that is on the master host, which we delete
 		// later from the hub.
-		if conn.Hostname == masterHostName {
+		if conn.Hostname == excludeHostname {
 			continue
 		}
 

@@ -4,8 +4,6 @@
 package greenplum
 
 import (
-	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"reflect"
@@ -51,20 +49,6 @@ func MustCreateCluster(t *testing.T, segs []SegConfig) *Cluster {
 	return cluster
 }
 
-// TODO: Consolidate with the same function in common_test.go in the hub package.
-// DevNull implements OutStreams by just discarding all writes.
-var DevNull = devNull{}
-
-type devNull struct{}
-
-func (_ devNull) Stdout() io.Writer {
-	return ioutil.Discard
-}
-
-func (_ devNull) Stderr() io.Writer {
-	return ioutil.Discard
-}
-
 func TestStartOrStopCluster(t *testing.T) {
 	source := MustCreateCluster(t, []SegConfig{
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "basedir/seg-1", Role: "p"},
@@ -95,7 +79,7 @@ func TestStartOrStopCluster(t *testing.T) {
 				}
 			})
 
-		err := isPostmasterRunning(DevNull, source.MasterDataDir())
+		err := isPostmasterRunning(utils.DevNull, source.MasterDataDir())
 		if err != nil {
 			t.Errorf("unexpected error %#v", err)
 		}
@@ -104,7 +88,7 @@ func TestStartOrStopCluster(t *testing.T) {
 	t.Run("isPostmasterRunning fails", func(t *testing.T) {
 		isPostmasterRunningCmd = exectest.NewCommand(IsPostmasterRunningCmd_Errors)
 
-		err := isPostmasterRunning(DevNull, source.MasterDataDir())
+		err := isPostmasterRunning(utils.DevNull, source.MasterDataDir())
 		if err == nil {
 			t.Errorf("expected error %#v got nil", err)
 		}
@@ -136,7 +120,7 @@ func TestStartOrStopCluster(t *testing.T) {
 				}
 			})
 
-		err := source.Stop(DevNull)
+		err := source.Stop(utils.DevNull)
 		if err != nil {
 			t.Errorf("unexpected error %#v", err)
 		}
@@ -151,7 +135,7 @@ func TestStartOrStopCluster(t *testing.T) {
 				skippedStopClusterCommand = false
 			})
 
-		err := source.Stop(DevNull)
+		err := source.Stop(utils.DevNull)
 		if err == nil {
 			t.Errorf("expected error %#v got nil", err)
 		}
@@ -175,7 +159,7 @@ func TestStartOrStopCluster(t *testing.T) {
 				}
 			})
 
-		err := source.Start(DevNull)
+		err := source.Start(utils.DevNull)
 		if err != nil {
 			t.Errorf("unexpected error %#v", err)
 		}
@@ -195,7 +179,7 @@ func TestStartOrStopCluster(t *testing.T) {
 				}
 			})
 
-		err := source.StartMasterOnly(DevNull)
+		err := source.StartMasterOnly(utils.DevNull)
 		if err != nil {
 			t.Errorf("unexpected error %#v", err)
 		}
@@ -227,7 +211,7 @@ func TestStartOrStopCluster(t *testing.T) {
 				}
 			})
 
-		err := source.StopMasterOnly(DevNull)
+		err := source.StopMasterOnly(utils.DevNull)
 		if err != nil {
 			t.Errorf("unexpected error %#v", err)
 		}

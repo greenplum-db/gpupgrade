@@ -21,7 +21,8 @@ func TestDeleteStateDirectories(t *testing.T) {
 	testhelper.SetupTestLogger()
 
 	t.Run("DeleteStateDirectories", func(t *testing.T) {
-		t.Run("deletes state directories on all non-master hosts", func(t *testing.T) {
+		t.Run("deletes state directories on all hosts except for the host that gets passed in", func(t *testing.T) {
+			excludeHostname := "master-host"
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
@@ -43,10 +44,10 @@ func TestDeleteStateDirectories(t *testing.T) {
 			agentConns := []*hub.Connection{
 				{nil, sdw1Client, "sdw1", nil},
 				{nil, standbyClient, "standby", nil},
-				{nil, masterHostClient, "master-host", nil},
+				{nil, masterHostClient, excludeHostname, nil},
 			}
 
-			err := hub.DeleteStateDirectories(agentConns, "master-host")
+			err := hub.DeleteStateDirectories(agentConns, excludeHostname)
 			if err != nil {
 				t.Errorf("unexpected err %#v", err)
 			}
@@ -74,7 +75,7 @@ func TestDeleteStateDirectories(t *testing.T) {
 				{nil, sdw2ClientFailed, "sdw2", nil},
 			}
 
-			err := hub.DeleteStateDirectories(agentConns, "master-host")
+			err := hub.DeleteStateDirectories(agentConns, "")
 
 			var multiErr *multierror.Error
 			if !xerrors.As(err, &multiErr) {

@@ -156,7 +156,7 @@ func TestUpgradeMaster(t *testing.T) {
 			Source:      source,
 			Target:      target,
 			StateDir:    tempDir,
-			Stream:      DevNull,
+			Stream:      utils.DevNull,
 			CheckOnly:   false,
 			UseLinkMode: false,
 		})
