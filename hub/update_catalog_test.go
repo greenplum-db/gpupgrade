@@ -82,6 +82,7 @@ func TestUpdateCatalog(t *testing.T) {
 		t.Fatalf("creating %s: %+v", config, err)
 	}
 
+	var port int
 	conf := &Config{
 		Source:    src,
 		AgentPort: port, // XXX do we rely on the global MockAgentClient? if not, this can go away
