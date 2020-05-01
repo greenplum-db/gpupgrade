@@ -8,10 +8,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
+	"testing"
 	"time"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"golang.org/x/xerrors"
 )
 
 // basicReadCloser is a helper struct for the implementation of NewReadCloser.
@@ -105,76 +106,117 @@ func (m *MockDaemonizableCommand) StderrPipe() (io.ReadCloser, error) {
 	return reader, nil
 }
 
-var _ = Describe("waitForDaemon", func() {
+func resetBuffers(outbuf, errbuf *bytes.Buffer) {
+	outbuf.Reset()
+	errbuf.Reset()
+}
+
+func TestWaitForDaemon(t *testing.T) {
 	outbuf := new(bytes.Buffer)
 	errbuf := new(bytes.Buffer)
 
-	BeforeEach(func() {
-		outbuf.Reset()
-		errbuf.Reset()
-	})
+	t.Run("starts the passed command", func(t *testing.T) {
+		defer resetBuffers(outbuf, errbuf)
 
-	It("starts the passed command", func() {
 		cmd := MockDaemonizableCommand{}
 		err := waitForDaemon(&cmd, outbuf, errbuf, 0)
+		if err != nil {
+			t.Errorf("unexpected error %#v", err)
+		}
 
-		Expect(err).NotTo(HaveOccurred())
-		Expect(cmd.Started).To(BeTrue())
+		if cmd.Started != true {
+			t.Errorf("got %t want %t", cmd.Started, true)
+		}
 	})
 
-	It("does not wait for the command to complete if there is no stderr", func() {
+	t.Run("does not wait for the command to complete if there is no stderr", func(t *testing.T) {
+		defer resetBuffers(outbuf, errbuf)
+
 		cmd := MockDaemonizableCommand{}
 		err := waitForDaemon(&cmd, outbuf, errbuf, 0)
+		if err != nil {
+			t.Errorf("unexpected error %#v", err)
+		}
 
-		Expect(err).NotTo(HaveOccurred())
-		Expect(cmd.Waited).To(BeFalse())
+		if cmd.Waited != false {
+			t.Errorf("got %t want %t", cmd.Waited, false)
+		}
 	})
 
-	It("waits for the command to complete if stderr contents are found", func() {
+	t.Run("waits for the command to complete if stderr contents are found", func(t *testing.T) {
+		defer resetBuffers(outbuf, errbuf)
+
 		errput := []byte("this is an error\n")
 		exitErr := fmt.Errorf("process exited with code 1")
 		cmd := MockDaemonizableCommand{StderrBuf: errput, WaitError: exitErr}
 
 		err := waitForDaemon(&cmd, outbuf, errbuf, 0)
-		Expect(err).To(Equal(exitErr))
-		Expect(cmd.Waited).To(BeTrue())
+		if !xerrors.Is(err, exitErr) {
+			t.Errorf("returned error %#v want %#v", err, exitErr)
+		}
+
+		if cmd.Waited != true {
+			t.Errorf("got %t want %t", cmd.Waited, true)
+		}
 	})
 
-	It("does not start the command if standard pipes cannot be created", func() {
+	t.Run("does not start the command if standard pipes cannot be created", func(t *testing.T) {
+		defer resetBuffers(outbuf, errbuf)
+
 		pipeErr := fmt.Errorf("generic failure")
 		cmds := [...]MockDaemonizableCommand{
 			{StdoutErrorOnPipe: pipeErr},
 			{StderrErrorOnPipe: pipeErr},
 		}
 
-		for i, cmd := range cmds {
+		for _, cmd := range cmds {
 			err := waitForDaemon(&cmd, outbuf, errbuf, 0)
-			Expect(err).To(Equal(pipeErr), "in iteration %d:", i)
-			Expect(cmd.Started).To(BeFalse(), "in iteration %d:", i)
+			if !xerrors.Is(err, pipeErr) {
+				t.Errorf("returned error %#v want %#v", err, pipeErr)
+			}
+
+			if cmd.Started != false {
+				t.Errorf("got %t want %t", cmd.Started, false)
+			}
 		}
 	})
 
-	It("returns an error if the command cannot be started", func() {
+	t.Run("returns an error if the command cannot be started", func(t *testing.T) {
+		defer resetBuffers(outbuf, errbuf)
+
 		startErr := fmt.Errorf("start failure")
 		cmd := MockDaemonizableCommand{StartError: startErr}
 
 		err := waitForDaemon(&cmd, outbuf, errbuf, 0)
-		Expect(err).To(Equal(startErr))
+		if !xerrors.Is(err, startErr) {
+			t.Errorf("returned error %#v want %#v", err, startErr)
+		}
 	})
 
-	It("passes through pipe content from the child", func() {
-		output := []byte("this is output\n")
-		errput := []byte("this is an error\n")
+	t.Run("passes through pipe content from the child", func(t *testing.T) {
+		defer resetBuffers(outbuf, errbuf)
 
-		cmd := MockDaemonizableCommand{StdoutBuf: output, StderrBuf: errput}
+		output := "this is output\n"
+		errput := "this is an error\n"
+
+		cmd := MockDaemonizableCommand{StdoutBuf: []byte(output), StderrBuf: []byte(errput)}
 		err := waitForDaemon(&cmd, outbuf, errbuf, 0)
-		Expect(err).NotTo(HaveOccurred())
+		if err != nil {
+			t.Errorf("unexpected error %#v", err)
+		}
 
-		Expect(outbuf.Bytes()).To(Equal(output))
-		Expect(errbuf.Bytes()).To(Equal(errput))
+		if outbuf.String() != output {
+			t.Errorf("got %q want %q", outbuf.String(), output)
+		}
+
+		if errbuf.String() != errput {
+			t.Errorf("got %q want %q", errbuf.String(), errput)
+		}
 	})
 
-	It("errors out if it cannot copy from child pipe", func() {
+	t.Run("errors out if it cannot copy from child pipe", func(t *testing.T) {
+		defer resetBuffers(outbuf, errbuf)
+
 		copyErrs := [...]error{
 			errors.New("copy error during stdout"),
 			errors.New("copy error during stderr"),
@@ -186,23 +228,38 @@ var _ = Describe("waitForDaemon", func() {
 
 		for i, cmd := range cmds {
 			err := waitForDaemon(&cmd, outbuf, errbuf, 0)
+			if err == nil {
+				t.Errorf("expected error %#v got nil", err)
+			}
 
-			Expect(err).To(HaveOccurred(), "in iteration %d:", i)
-			Expect(err.Error()).To(ContainSubstring(copyErrs[i].Error()), "in iteration %d:", i)
+			if !strings.Contains(err.Error(), copyErrs[i].Error()) {
+				t.Errorf("expected error %#v to contain %q", err, copyErrs[i].Error())
+			}
 		}
 	})
 
-	It("times out if an error is reported but the command does not exit", func() {
-		errput := []byte("this is an error\n")
-		cmd := MockDaemonizableCommand{StderrBuf: errput, Hang: true}
-		err := waitForDaemon(&cmd, outbuf, errbuf, 1*time.Millisecond)
+	t.Run("times out if an error is reported but the command does not exit", func(t *testing.T) {
+		defer resetBuffers(outbuf, errbuf)
 
-		Expect(cmd.Waited).To(BeTrue())
-		Expect(errbuf.Bytes()).To(Equal(errput))
-		Expect(err).To(HaveOccurred())
+		errput := "this is an error\n"
+		cmd := MockDaemonizableCommand{StderrBuf: []byte(errput), Hang: true}
+		err := waitForDaemon(&cmd, outbuf, errbuf, 1*time.Millisecond)
+		if err == nil {
+			t.Errorf("expected error %#v got nil", err)
+		}
+
+		if errbuf.String() != errput {
+			t.Errorf("got %q want %q", errbuf.String(), errput)
+		}
+
+		if cmd.Waited != true {
+			t.Errorf("got %t want %t", cmd.Waited, true)
+		}
 	})
 
-	It("does not time out if the timeout is set to zero", func() {
+	t.Run("does not time out if the timeout is set to zero", func(t *testing.T) {
+		defer resetBuffers(outbuf, errbuf)
+
 		errput := []byte("this is an error\n")
 		cmd := MockDaemonizableCommand{StderrBuf: errput, Hang: true}
 
@@ -212,7 +269,17 @@ var _ = Describe("waitForDaemon", func() {
 			c <- waitForDaemon(&cmd, outbuf, errbuf, 0)
 		}()
 
-		Consistently(c).ShouldNot(Receive())
-		Expect(cmd.Waited).To(BeTrue())
+		select {
+		case err := <-c:
+			if err != nil {
+				t.Errorf("unexpected error %#v", err)
+			}
+		case <-time.After(100 * time.Millisecond):
+			// waitForDaemon without an error
+		}
+
+		if cmd.Waited != true {
+			t.Errorf("got %t want %t", cmd.Waited, true)
+		}
 	})
-})
+}
