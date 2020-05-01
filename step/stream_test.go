@@ -8,12 +8,11 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"strings"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gbytes"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -81,8 +80,6 @@ func TestMultiplexedStream(t *testing.T) {
 	})
 
 	t.Run("continues writing to the local io.Writer even if Send fails", func(t *testing.T) {
-		g := NewGomegaWithT(t)
-
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -99,15 +96,26 @@ func TestMultiplexedStream(t *testing.T) {
 		// Write 10 bytes to each stream.
 		for i := 0; i < 10; i++ {
 			_, err := stream.Stdout().Write([]byte{'O'})
-			g.Expect(err).To(BeNil())
+			if err != nil {
+				t.Errorf("unexpected error %#v", err)
+			}
 
 			_, err = stream.Stderr().Write([]byte{'E'})
-			g.Expect(err).To(BeNil())
+			if err != nil {
+				t.Errorf("unexpected error %#v", err)
+			}
 		}
 
 		// The Writer should not have been affected in any way.
-		g.Expect(buf.Bytes()).To(HaveLen(20))
-		g.Expect(log).To(gbytes.Say("halting client stream: error during send"))
+		if len(buf.Bytes()) != 20 {
+			t.Errorf("got %d want 20", len(buf.Bytes()))
+		}
+
+		expected := "halting client stream: error during send"
+		contents := string(log.Contents())
+		if !strings.Contains(contents, expected) {
+			t.Errorf("log file %q does not contain %q", contents, expected)
+		}
 	})
 
 	t.Run("bubbles up underlying io.Writer failures before streaming", func(t *testing.T) {
