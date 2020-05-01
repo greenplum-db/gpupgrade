@@ -12,92 +12,113 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("user utils", func() {
+func resetSystemFunctions() {
+	System = InitializeSystemFunctions()
+}
 
-	AfterEach(func() {
-		System = InitializeSystemFunctions()
+func TestUserUtils(t *testing.T) {
+	t.Run("TryEnv returns environment variables", func(t *testing.T) {
+		defer resetSystemFunctions()
+
+		expected := "val"
+		System.Getenv = func(s string) string {
+			return expected
+		}
+
+		actual := TryEnv("VAR", "default")
+		if actual != expected {
+			t.Errorf("got %q want %q", actual, expected)
+		}
 	})
 
-	Describe("#TryEnv", func() {
-		Describe("happy: when an environmental variable exists", func() {
-			It("returns the value", func() {
-				System.Getenv = func(s string) string {
-					return "foo"
-				}
+	t.Run("TryEnv returns the default value when an environmental variable does not exist", func(t *testing.T) {
+		defer resetSystemFunctions()
 
-				rc := TryEnv("bar", "mydefault")
-				Expect(rc).To(Equal("foo"))
-			})
-		})
-		Describe("error: when an environmental variable does not exist", func() {
-			It("returns the default value", func() {
-				System.Getenv = func(s string) string {
-					return ""
-				}
+		System.Getenv = func(s string) string {
+			return ""
+		}
 
-				rc := TryEnv("bar", "mydefault")
-				Expect(rc).To(Equal("mydefault"))
-			})
-		})
+		expected := "default"
+		actual := TryEnv("VAR", expected)
+		if actual != expected {
+			t.Errorf("got %q want %q", actual, expected)
+		}
 	})
 
-	Describe("#GetUser", func() {
-		Describe("happy: when no error", func() {
-			It("returns current user", func() {
-				System.CurrentUser = func() (*user.User, error) {
-					return &user.User{
-						Username: "Joe",
-						HomeDir:  "my_home_dir",
-					}, nil
-				}
+	t.Run("GetUser returns current user and home directory", func(t *testing.T) {
+		defer resetSystemFunctions()
 
-				userName, userDir, err := GetUser()
-				Expect(err).ToNot(HaveOccurred())
-				Expect(userName).To(Equal("Joe"))
-				Expect(userDir).To(Equal("my_home_dir"))
-			})
-		})
-		Describe("error: when CurrentUser() fails", func() {
-			It("returns an error", func() {
-				System.CurrentUser = func() (*user.User, error) {
-					return nil, errors.New("my deliberate user error")
-				}
+		expectedUser := "Joe"
+		expectedDir := "my_home_dir"
+		System.CurrentUser = func() (*user.User, error) {
+			return &user.User{
+				Username: expectedUser,
+				HomeDir:  expectedDir,
+			}, nil
+		}
 
-				_, _, err := GetUser()
-				Expect(err).To(HaveOccurred())
-			})
-		})
+		user, dir, err := GetUser()
+		if err != nil {
+			t.Errorf("unexpected error %#v", err)
+		}
+
+		if user != expectedUser {
+			t.Errorf("got user %q want %q", user, expectedUser)
+		}
+
+		if dir != expectedDir {
+			t.Errorf("got dir %q want %q", dir, expectedDir)
+		}
 	})
-	Describe("#GetHost", func() {
-		Describe("happy: when no error", func() {
-			It("returns host", func() {
-				System.Hostname = func() (string, error) {
-					return "my_host", nil
-				}
 
-				hostname, err := GetHost()
-				Expect(err).ToNot(HaveOccurred())
-				Expect(hostname).To(Equal("my_host"))
-			})
-		})
-		Describe("error: when Hostname() fails", func() {
-			It("returns an error", func() {
-				System.Hostname = func() (string, error) {
-					return "", errors.New("my deliberate hostname error")
-				}
+	t.Run("GetUser bubbles up errors", func(t *testing.T) {
+		defer resetSystemFunctions()
 
-				_, err := GetHost()
-				Expect(err).To(HaveOccurred())
-			})
-		})
+		expected := errors.New("oops!")
+		System.CurrentUser = func() (*user.User, error) {
+			return nil, expected
+		}
 
+		_, _, err := GetUser()
+		if !xerrors.Is(err, expected) {
+			t.Errorf("returned error %#v want %#v", err, expected)
+		}
 	})
-})
+
+	t.Run("GetHost returns host", func(t *testing.T) {
+		defer resetSystemFunctions()
+
+		expected := "host"
+		System.Hostname = func() (string, error) {
+			return expected, nil
+		}
+
+		host, err := GetHost()
+		if err != nil {
+			t.Errorf("unexpected error %#v", err)
+		}
+
+		if host != expected {
+			t.Errorf("got %q want %q", host, expected)
+		}
+	})
+
+	t.Run("GetHost bubbles up errors", func(t *testing.T) {
+		defer resetSystemFunctions()
+
+		expected := errors.New("oops!")
+		System.Hostname = func() (string, error) {
+			return "", expected
+		}
+
+		_, err := GetHost()
+		if !xerrors.Is(err, expected) {
+			t.Errorf("returned error %#v want %#v", err, expected)
+		}
+	})
+}
 
 func TestCreateAllDataDirectories(t *testing.T) {
 	testhelper.SetupTestLogger() // initialize gplog
@@ -105,9 +126,7 @@ func TestCreateAllDataDirectories(t *testing.T) {
 	const dataDir = "/data/qddir_upgrade"
 
 	t.Run("creates directory and marker if they don't already exist", func(t *testing.T) {
-		defer func() {
-			System = InitializeSystemFunctions()
-		}()
+		defer resetSystemFunctions()
 
 		var marker string
 		System.Stat = func(name string) (os.FileInfo, error) {
@@ -155,9 +174,7 @@ func TestCreateAllDataDirectories(t *testing.T) {
 	})
 
 	t.Run("cannot stat the master data directory", func(t *testing.T) {
-		defer func() {
-			System = InitializeSystemFunctions()
-		}()
+		defer resetSystemFunctions()
 
 		expected := errors.New("permission denied")
 		System.Stat = func(name string) (os.FileInfo, error) {
@@ -181,9 +198,7 @@ func TestCreateAllDataDirectories(t *testing.T) {
 	})
 
 	t.Run("cannot create the master data directory", func(t *testing.T) {
-		defer func() {
-			System = InitializeSystemFunctions()
-		}()
+		defer resetSystemFunctions()
 
 		System.Stat = func(name string) (os.FileInfo, error) {
 			return nil, os.ErrNotExist
@@ -201,9 +216,7 @@ func TestCreateAllDataDirectories(t *testing.T) {
 	})
 
 	t.Run("data directory exist but without marker file .gpupgrade", func(t *testing.T) {
-		defer func() {
-			System = InitializeSystemFunctions()
-		}()
+		defer resetSystemFunctions()
 
 		System.Stat = func(name string) (os.FileInfo, error) {
 			return nil, os.ErrNotExist
@@ -233,9 +246,7 @@ func TestCreateAllDataDirectories(t *testing.T) {
 	})
 
 	t.Run("previous data directory is removed and new data directory is created", func(t *testing.T) {
-		defer func() {
-			System = InitializeSystemFunctions()
-		}()
+		defer resetSystemFunctions()
 
 		var marker string
 		System.Stat = func(name string) (os.FileInfo, error) {
