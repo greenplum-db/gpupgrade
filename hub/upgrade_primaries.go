@@ -17,13 +17,14 @@ import (
 )
 
 type UpgradePrimaryArgs struct {
-	CheckOnly       bool
-	MasterBackupDir string
-	AgentConns      []*Connection
-	DataDirPairMap  map[string][]*idl.DataDirPair
-	Source          *greenplum.Cluster
-	Target          *greenplum.Cluster
-	UseLinkMode     bool
+	CheckOnly              bool
+	MasterBackupDir        string
+	AgentConns             []*Connection
+	DataDirPairMap         map[string][]*idl.DataDirPair
+	Source                 *greenplum.Cluster
+	Target                 *greenplum.Cluster
+	UseLinkMode            bool
+	TablespacesMappingFile string
 }
 
 func UpgradePrimaries(args UpgradePrimaryArgs) error {
@@ -37,13 +38,14 @@ func UpgradePrimaries(args UpgradePrimaryArgs) error {
 			defer wg.Done()
 
 			_, err := conn.AgentClient.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{
-				SourceBinDir:    args.Source.BinDir,
-				TargetBinDir:    args.Target.BinDir,
-				TargetVersion:   args.Target.Version.SemVer.String(),
-				DataDirPairs:    args.DataDirPairMap[conn.Hostname],
-				CheckOnly:       args.CheckOnly,
-				UseLinkMode:     args.UseLinkMode,
-				MasterBackupDir: args.MasterBackupDir,
+				SourceBinDir:               args.Source.BinDir,
+				TargetBinDir:               args.Target.BinDir,
+				TargetVersion:              args.Target.Version.SemVer.String(),
+				DataDirPairs:               args.DataDirPairMap[conn.Hostname],
+				CheckOnly:                  args.CheckOnly,
+				UseLinkMode:                args.UseLinkMode,
+				MasterBackupDir:            args.MasterBackupDir,
+				TablespacesMappingFilePath: args.TablespacesMappingFile,
 			})
 
 			if err != nil {
@@ -104,6 +106,7 @@ func (s *Server) GetDataDirPairs() (map[string][]*idl.DataDirPair, error) {
 			TargetPort:    int32(targetSeg.Port),
 			Content:       int32(contentID),
 			DBID:          int32(sourceSeg.DbID),
+			Tablespaces:   getProtoTablespaceMap(s.Tablespaces, targetSeg.DbID),
 		}
 
 		dataDirPairMap[sourceSeg.Hostname] = append(dataDirPairMap[sourceSeg.Hostname], dataPair)
@@ -130,4 +133,20 @@ func (i *InvalidClusterError) Error() string {
 
 func (i *InvalidClusterError) Is(err error) bool {
 	return err == ErrInvalidCluster
+}
+
+func getProtoTablespaceMap(tablespaces greenplum.Tablespaces, dbId int) map[int32]*idl.TablespaceInfo {
+	if tablespaces == nil {
+		return nil
+	}
+
+	segTablespaces := tablespaces[dbId]
+	t := make(map[int32]*idl.TablespaceInfo)
+	for tablespaceOid, tablespace := range segTablespaces {
+		t[int32(tablespaceOid)] = &idl.TablespaceInfo{
+			Location:    tablespace.Location,
+			UserDefined: tablespace.IsUserDefined()}
+	}
+
+	return t
 }

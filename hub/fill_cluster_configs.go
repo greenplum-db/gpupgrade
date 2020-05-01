@@ -16,6 +16,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 // create source/target clusters, write to disk and re-read from disk to make sure it is "durable"
@@ -49,6 +50,18 @@ func FillClusterConfigsSubStep(config *Config, conn *sql.DB, _ step.OutStreams, 
 	config.TargetInitializeConfig, err = AssignDatadirsAndPorts(config.Source, ports, config.UpgradeID)
 	if err != nil {
 		return err
+	}
+
+	// major version upgrade requires upgrading tablespaces
+	if dbconn.Version.Is("5") {
+		if err := utils.System.MkdirAll(utils.GetTablespaceDir(), 0700); err != nil {
+			return errors.Wrapf(err, "creating tablespace directory %q", utils.GetTablespaceDir())
+		}
+		config.TablespacesMappingFilePath = filepath.Join(utils.GetTablespaceDir(), greenplum.TablespacesMappingFile)
+		config.Tablespaces, err = greenplum.TablespacesFromDB(dbconn, config.TablespacesMappingFilePath)
+		if err != nil {
+			return errors.Wrap(err, "extracting tablespace information")
+		}
 	}
 
 	if err := saveConfig(); err != nil {

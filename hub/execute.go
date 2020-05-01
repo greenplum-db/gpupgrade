@@ -5,16 +5,17 @@ package hub
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
-
-	"github.com/pkg/errors"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/hashicorp/go-multierror"
+	"github.com/pkg/errors"
+	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 const executeMasterBackupName = "upgraded-master.bak"
@@ -60,7 +61,17 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 	})
 
 	st.Run(idl.Substep_COPY_MASTER, func(streams step.OutStreams) error {
-		return s.CopyMasterDataDir(streams, upgradedMasterBackupDir)
+		err := s.CopyMasterDataDir(streams, upgradedMasterBackupDir)
+		if err != nil {
+			return err
+		}
+
+		err = s.CopyMasterTablespaces(streams, utils.GetTablespaceDir() + string(os.PathSeparator))
+		if err != nil {
+			return err
+		}
+
+		return nil
 	})
 
 	st.Run(idl.Substep_UPGRADE_PRIMARIES, func(_ step.OutStreams) error {
@@ -77,13 +88,14 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 		}
 
 		return UpgradePrimaries(UpgradePrimaryArgs{
-			CheckOnly:       false,
-			MasterBackupDir: upgradedMasterBackupDir,
-			AgentConns:      agentConns,
-			DataDirPairMap:  dataDirPair,
-			Source:          s.Source,
-			Target:          s.Target,
-			UseLinkMode:     s.UseLinkMode,
+			CheckOnly:              false,
+			MasterBackupDir:        upgradedMasterBackupDir,
+			AgentConns:             agentConns,
+			DataDirPairMap:         dataDirPair,
+			Source:                 s.Source,
+			Target:                 s.Target,
+			UseLinkMode:            s.UseLinkMode,
+			TablespacesMappingFile: s.TablespacesMappingFilePath,
 		})
 	})
 

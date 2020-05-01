@@ -52,6 +52,8 @@ type SystemFunctions struct {
 	Create       func(name string) (*os.File, error)
 	Mkdir        func(name string, perm os.FileMode) error
 	SqlOpen      func(driverName, dataSourceName string) (*sql.DB, error)
+	Symlink      func(oldname, newname string) error
+	Lstat        func(name string) (os.FileInfo, error)
 }
 
 func InitializeSystemFunctions() *SystemFunctions {
@@ -75,6 +77,8 @@ func InitializeSystemFunctions() *SystemFunctions {
 		Create:       os.Create,
 		Mkdir:        os.Mkdir,
 		SqlOpen:      sql.Open,
+		Symlink:      os.Symlink,
+		Lstat:        os.Lstat,
 	}
 }
 
@@ -176,4 +180,8 @@ func (m *StdStream) Stdout() io.Writer {
 
 func (m *StdStream) Stderr() io.Writer {
 	return os.Stderr
+}
+
+func GetTablespaceDir() string {
+	return filepath.Join(GetStateDir(), "tablespaces")
 }

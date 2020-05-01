@@ -10,10 +10,10 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/greenplum-db/gpupgrade/step"
-
 	"github.com/hashicorp/go-multierror"
 	"golang.org/x/xerrors"
+
+	"github.com/greenplum-db/gpupgrade/step"
 )
 
 type Result struct {
@@ -22,21 +22,12 @@ type Result struct {
 	err    error
 }
 
-func (s *Server) CopyMasterDataDir(streams step.OutStreams, destinationDir string) error {
-	// Make sure sourceDir ends with a trailing slash so that rsync will
-	// transfer the directory contents and not the directory itself.
-	sourceDir := filepath.Clean(s.Target.MasterDataDir()) + string(filepath.Separator)
-
+func Copy(streams step.OutStreams, destinationDir string, sourceDirs, hosts []string) error {
 	/*
-	 * Copy the directory once per host.
-	 *
-	 * We don't need to copy the master directory on the master host
-	 * If there are primaries on the same host, the hostname will be
-	 * added for the corresponding primaries.
+	 * Copy the directories once per host.
 	 */
 	var wg sync.WaitGroup
 
-	hosts := s.Target.PrimaryHostnames()
 	results := make(chan *Result, len(hosts))
 
 	for _, hostname := range hosts {
@@ -47,9 +38,10 @@ func (s *Server) CopyMasterDataDir(streams step.OutStreams, destinationDir strin
 			defer wg.Done()
 
 			dest := fmt.Sprintf("%s:%s", hostname, destinationDir)
-			cmd := execCommand("rsync",
-				"--archive", "--compress", "--delete", "--stats",
-				sourceDir, dest)
+			args := []string{"--archive", "--compress", "--delete", "--stats"}
+			args = append(args, sourceDirs...)
+			args = append(args, dest)
+			cmd := execCommand("rsync", args...)
 
 			result := Result{}
 			cmd.Stdout = &result.stdout
@@ -57,7 +49,7 @@ func (s *Server) CopyMasterDataDir(streams step.OutStreams, destinationDir strin
 
 			err := cmd.Run()
 			if err != nil {
-				err = xerrors.Errorf("copying master data directory to host %s: %w", hostname, err)
+				err = xerrors.Errorf("copying source %q to destination %q on host %s: %w", sourceDirs, destinationDir, hostname, err)
 				result.err = err
 			}
 			results <- &result
@@ -84,4 +76,30 @@ func (s *Server) CopyMasterDataDir(streams step.OutStreams, destinationDir strin
 	}
 
 	return multierr.ErrorOrNil()
+}
+
+func (s *Server) CopyMasterDataDir(streams step.OutStreams, destination string) error {
+	// Make sure sourceDir ends with a trailing slash so that rsync will
+	// transfer the directory contents and not the directory itself.
+	source := []string{filepath.Clean(s.Target.MasterDataDir()) + string(filepath.Separator)}
+	return Copy(streams, destination, source, s.Target.PrimaryHostnames())
+}
+
+func (s *Server) CopyMasterTablespaces(streams step.OutStreams, destinationDir string) error {
+	if s.Tablespaces == nil {
+		return nil
+	}
+
+	// include tablespace mapping file which is used as a parameter to pg_upgrade
+	sourcePaths := []string{s.TablespacesMappingFilePath}
+
+	// include all the master tablespace directories
+	for _, tablespace := range s.Tablespaces.GetMasterTablespaces() {
+		if !tablespace.IsUserDefined() {
+			continue
+		}
+		sourcePaths = append(sourcePaths, tablespace.Location)
+	}
+
+	return Copy(streams, destinationDir, sourcePaths, s.Target.PrimaryHostnames())
 }

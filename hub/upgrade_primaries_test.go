@@ -9,9 +9,8 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"golang.org/x/xerrors"
-
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
+	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
@@ -34,6 +33,14 @@ func TestUpgradePrimaries(t *testing.T) {
 	target.BinDir = "/usr/local/greenplum-db-new"
 	target.Version = dbconn.NewVersion("6.0.0")
 
+	segmentDbId2Tablespaces := map[int32]*idl.TablespaceInfo{
+		1663: &idl.TablespaceInfo{Name: "tblspc1", Location: "/tmp/primary1/1663", UserDefined: false},
+		1664: &idl.TablespaceInfo{Name: "tblspc2", Location: "/tmp/primary1/1664", UserDefined: true}}
+
+	segmentDbId3Tablespaces := map[int32]*idl.TablespaceInfo{
+		1663: &idl.TablespaceInfo{Name: "tblspc1", Location: "/tmp/primary1/1663", UserDefined: false},
+		1664: &idl.TablespaceInfo{Name: "tblspc2", Location: "/tmp/primary1/1664", UserDefined: true}}
+
 	pairs := map[string][]*idl.DataDirPair{
 		"sdw1": {
 			{
@@ -43,6 +50,7 @@ func TestUpgradePrimaries(t *testing.T) {
 				TargetPort:    15433,
 				Content:       0,
 				DBID:          2,
+				Tablespaces:   segmentDbId2Tablespaces,
 			},
 		},
 		"sdw2": {
@@ -53,6 +61,7 @@ func TestUpgradePrimaries(t *testing.T) {
 				TargetPort:    15433,
 				Content:       1,
 				DBID:          3,
+				Tablespaces:   segmentDbId3Tablespaces,
 			},
 		},
 	}
@@ -65,13 +74,14 @@ func TestUpgradePrimaries(t *testing.T) {
 		client1.EXPECT().UpgradePrimaries(
 			gomock.Any(),
 			&idl.UpgradePrimariesRequest{
-				SourceBinDir:    "/usr/local/greenplum-db",
-				TargetBinDir:    "/usr/local/greenplum-db-new",
-				TargetVersion:   dbconn.NewVersion("6.0.0").VersionString,
-				DataDirPairs:    pairs["sdw1"],
-				CheckOnly:       false,
-				UseLinkMode:     false,
-				MasterBackupDir: "",
+				SourceBinDir:               "/usr/local/greenplum-db",
+				TargetBinDir:               "/usr/local/greenplum-db-new",
+				TargetVersion:              dbconn.NewVersion("6.0.0").VersionString,
+				DataDirPairs:               pairs["sdw1"],
+				CheckOnly:                  false,
+				UseLinkMode:                false,
+				MasterBackupDir:            "",
+				TablespacesMappingFilePath: "/tmp/tablespaces_mapping.txt",
 			},
 		).Return(&idl.UpgradePrimariesReply{}, nil)
 
@@ -79,13 +89,14 @@ func TestUpgradePrimaries(t *testing.T) {
 		client2.EXPECT().UpgradePrimaries(
 			gomock.Any(),
 			&idl.UpgradePrimariesRequest{
-				SourceBinDir:    "/usr/local/greenplum-db",
-				TargetBinDir:    "/usr/local/greenplum-db-new",
-				TargetVersion:   dbconn.NewVersion("6.0.0").VersionString,
-				DataDirPairs:    pairs["sdw2"],
-				CheckOnly:       false,
-				UseLinkMode:     false,
-				MasterBackupDir: "",
+				SourceBinDir:               "/usr/local/greenplum-db",
+				TargetBinDir:               "/usr/local/greenplum-db-new",
+				TargetVersion:              dbconn.NewVersion("6.0.0").VersionString,
+				DataDirPairs:               pairs["sdw2"],
+				CheckOnly:                  false,
+				UseLinkMode:                false,
+				MasterBackupDir:            "",
+				TablespacesMappingFilePath: "/tmp/tablespaces_mapping.txt",
 			},
 		).Return(&idl.UpgradePrimariesReply{}, nil)
 
@@ -95,13 +106,14 @@ func TestUpgradePrimaries(t *testing.T) {
 		}
 
 		err := hub.UpgradePrimaries(hub.UpgradePrimaryArgs{
-			CheckOnly:       false,
-			MasterBackupDir: "",
-			AgentConns:      agentConns,
-			DataDirPairMap:  pairs,
-			Source:          source,
-			Target:          target,
-			UseLinkMode:     false,
+			CheckOnly:              false,
+			MasterBackupDir:        "",
+			AgentConns:             agentConns,
+			DataDirPairMap:         pairs,
+			Source:                 source,
+			Target:                 target,
+			UseLinkMode:            false,
+			TablespacesMappingFile: "/tmp/tablespaces_mapping.txt",
 		})
 		if err != nil {
 			t.Errorf("got unexpected error: %+v", err)
@@ -131,13 +143,14 @@ func TestUpgradePrimaries(t *testing.T) {
 		failedClient.EXPECT().UpgradePrimaries(
 			gomock.Any(),
 			&idl.UpgradePrimariesRequest{
-				SourceBinDir:    "/usr/local/greenplum-db",
-				TargetBinDir:    "/usr/local/greenplum-db-new",
-				TargetVersion:   dbconn.NewVersion("6.0.0").VersionString,
-				DataDirPairs:    pairs["sdw2"],
-				CheckOnly:       false,
-				UseLinkMode:     false,
-				MasterBackupDir: "",
+				SourceBinDir:               "/usr/local/greenplum-db",
+				TargetBinDir:               "/usr/local/greenplum-db-new",
+				TargetVersion:              dbconn.NewVersion("6.0.0").VersionString,
+				DataDirPairs:               pairs["sdw2"],
+				CheckOnly:                  false,
+				UseLinkMode:                false,
+				MasterBackupDir:            "",
+				TablespacesMappingFilePath: "",
 			},
 		).Return(&idl.UpgradePrimariesReply{}, expected)
 
@@ -147,13 +160,14 @@ func TestUpgradePrimaries(t *testing.T) {
 		}
 
 		err := hub.UpgradePrimaries(hub.UpgradePrimaryArgs{
-			CheckOnly:       false,
-			MasterBackupDir: "",
-			AgentConns:      agentConns,
-			DataDirPairMap:  pairs,
-			Source:          source,
-			Target:          target,
-			UseLinkMode:     false,
+			CheckOnly:              false,
+			MasterBackupDir:        "",
+			AgentConns:             agentConns,
+			DataDirPairMap:         pairs,
+			Source:                 source,
+			Target:                 target,
+			UseLinkMode:            false,
+			TablespacesMappingFile: "",
 		})
 		if err == nil {
 			t.Fatal("expected error got nil")

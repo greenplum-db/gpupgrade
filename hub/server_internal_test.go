@@ -31,6 +31,12 @@ func TestConfig(t *testing.T) {
 			54321,           // AgentPort
 			false,           // UseLinkMode
 			upgrade.NewID(), // UpgradeID
+			map[int]greenplum.SegmentTablespaces{
+				1: {1663: {
+					Location:    "/tmp/master/my_tablespace/1663",
+					UserDefined: 1,
+				}}}, // Tablespaces
+			greenplum.TablespacesMappingFile, // TablespacesMappingFilePath
 		}
 
 		buf := new(bytes.Buffer)

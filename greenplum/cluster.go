@@ -14,6 +14,7 @@ import (
 
 var isPostmasterRunningCmd = exec.Command
 var startStopCmd = exec.Command
+const MasterDbid = 1
 
 type Cluster struct {
 	// ContentIDs contains the list of all primary content IDs, in the same

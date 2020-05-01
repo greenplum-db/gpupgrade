@@ -237,6 +237,7 @@ func TestRun(t *testing.T) {
 				fs.Bool("check", false, "")
 				fs.Bool("retain", false, "")
 				fs.Bool("link", false, "")
+				fs.String("old-tablespaces-file", "", "")
 
 				err := fs.Parse(args)
 				if err != nil {
@@ -244,18 +245,19 @@ func TestRun(t *testing.T) {
 				}
 
 				expected := map[string]interface{}{
-					"old-bindir":  pair.Source.BinDir,
-					"new-bindir":  pair.Target.BinDir,
-					"old-gp-dbid": pair.Source.DBID,
-					"new-gp-dbid": pair.Target.DBID,
-					"old-datadir": pair.Source.DataDir,
-					"new-datadir": pair.Target.DataDir,
-					"old-port":    pair.Source.Port,
-					"new-port":    pair.Target.Port,
-					"mode":        mode,
-					"check":       options.CheckOnly,
-					"retain":      true,
-					"link":        options.UseLinkMode,
+					"old-bindir":           pair.Source.BinDir,
+					"new-bindir":           pair.Target.BinDir,
+					"old-gp-dbid":          pair.Source.DBID,
+					"new-gp-dbid":          pair.Target.DBID,
+					"old-datadir":          pair.Source.DataDir,
+					"new-datadir":          pair.Target.DataDir,
+					"old-port":             pair.Source.Port,
+					"new-port":             pair.Target.Port,
+					"mode":                 mode,
+					"check":                options.CheckOnly,
+					"retain":               true,
+					"link":                 options.UseLinkMode,
+					"old-tablespaces-file": options.TablespaceFilePath,
 				}
 
 				fs.VisitAll(func(f *flag.Flag) {
@@ -285,6 +287,7 @@ func TestRun(t *testing.T) {
 			{"--check mode on segments", []upgrade.Option{upgrade.WithSegmentMode(), upgrade.WithCheckOnly()}},
 			{"--link mode on master", []upgrade.Option{upgrade.WithLinkMode()}},
 			{"--link mode on segments", []upgrade.Option{upgrade.WithSegmentMode(), upgrade.WithLinkMode()}},
+			{"--old-tablespaces-file flag on segments", []upgrade.Option{upgrade.WithTablespaceFile("tablespaceMappingFile.txt"), upgrade.WithSegmentMode()}},
 		}
 
 		for _, c := range cases {

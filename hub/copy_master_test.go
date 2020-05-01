@@ -18,9 +18,8 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
-	"github.com/greenplum-db/gpupgrade/utils"
-
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 const (
@@ -42,61 +41,50 @@ func init() {
 	)
 }
 
-func TestCopyMaster(t *testing.T) {
-	sourceCluster := MustCreateCluster(t, []greenplum.SegConfig{
-		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: "p"},
-		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: "/data/dbfast1/seg1", Role: "p"},
-		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: "p"},
-	})
-	sourceCluster.BinDir = "/source/bindir"
+func TestCopy(t *testing.T) {
+	t.Run("copies the directory only once per host", func(t *testing.T) {
 
-	targetCluster := MustCreateCluster(t, []greenplum.SegConfig{
-		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: "p"},
-		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: "/data/dbfast1/seg1", Role: "p"},
-		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: "p"},
-	})
-	targetCluster.BinDir = "/target/bindir"
-
-	conf := &Config{
-		Source:      sourceCluster,
-		Target:      targetCluster,
-		UseLinkMode: false,
-	}
-	hub := New(conf, grpc.DialContext, ".gpupgrade")
-
-	t.Run("copies the master data directory to each primary host", func(t *testing.T) {
-		// The verifier function can be called in parallel, so use a channel to
-		// communicate which hosts were actually used.
-		hosts := make(chan string, len(targetCluster.PrimaryHostnames()))
+		sourceDir := []string{"/data/qddir/seg-1/"}
+		targetHosts := []string{"localhost"}
 
 		// Validate the rsync call and arguments.
 		execCommand = exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
 			expected := "rsync"
 			if name != expected {
-				t.Errorf("CopyMasterDataDir() invoked %q, want %q", name, expected)
+				t.Errorf("Copy() invoked %q, want %q", name, expected)
 			}
-
-			// The last argument is host:/destination/directory. Remove the
-			// host (saving it for later verification) to make comparison
-			// easier.
-			parts := strings.SplitN(args[len(args)-1], ":", 2)
-			host, dest := parts[0], parts[1]
-			args[len(args)-1] = dest
 
 			expectedArgs := []string{
 				"--archive", "--compress", "--delete", "--stats",
-				"/data/qddir/seg-1/", "foobar/path",
+				"/data/qddir/seg-1/", "localhost:foobar/path",
 			}
 			if !reflect.DeepEqual(args, expectedArgs) {
 				t.Errorf("rsync invoked with %q, want %q", args, expectedArgs)
 			}
-
-			hosts <- host
 		})
 
-		err := hub.CopyMasterDataDir(utils.DevNull, "foobar/path")
+		err := Copy(utils.DevNull, "foobar/path", sourceDir, targetHosts)
 		if err != nil {
-			t.Errorf("copying master data directory: %+v", err)
+			t.Errorf("copying data directory: %+v", err)
+		}
+	})
+
+	t.Run("copies the data directory to each host", func(t *testing.T) {
+		// The verifier function can be called in parallel, so use a channel to
+		// communicate which hosts were actually used.
+		primaryHosts := []string{"host1", "host2"}
+		hosts := make(chan string, len(primaryHosts))
+		sourceDir := []string{"/data/qddir/seg-1"}
+
+		expectedArgs := []string{
+			"--archive", "--compress", "--delete", "--stats",
+			"/data/qddir/seg-1", "foobar/path",
+		}
+		execCommandVerifier(t, hosts, expectedArgs)
+
+		err := Copy(utils.DevNull, "foobar/path", sourceDir, primaryHosts)
+		if err != nil {
+			t.Errorf("copying directory: %+v", err)
 		}
 
 		close(hosts)
@@ -114,45 +102,30 @@ func TestCopyMaster(t *testing.T) {
 		}
 	})
 
-	t.Run("copies the master data directory only once per host", func(t *testing.T) {
-		// Create a one-host cluster.
-		oneHostTargetCluster := MustCreateCluster(t, []greenplum.SegConfig{
-			{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: "p"},
-			{ContentID: 0, DbID: 2, Port: 25432, Hostname: "localhost", DataDir: "/data/dbfast1/seg1", Role: "p"},
-			{ContentID: 1, DbID: 3, Port: 25433, Hostname: "localhost", DataDir: "/data/dbfast2/seg2", Role: "p"},
-		})
-		oneHostTargetCluster.BinDir = "/target/bindir"
+	t.Run("returns errors when writing stdout and stderr buffers to the stream", func(t *testing.T) {
+		execCommand = exectest.NewCommand(StreamingMain)
+		streams := failingStreams{errors.New("e")}
 
-		hub.Target = oneHostTargetCluster
-		defer func() { hub.Target = targetCluster }()
+		err := Copy(streams, "", nil, []string{"localhost"})
 
-		// Validate the rsync call and arguments.
-		execCommand = exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
-			expected := "rsync"
-			if name != expected {
-				t.Errorf("CopyMasterDataDir() invoked %q, want %q", name, expected)
+		// Make sure the errors are correctly propagated up.
+		var merr *multierror.Error
+		if !xerrors.As(err, &merr) {
+			t.Fatalf("returned %#v, want error type %T", err, merr)
+		}
+		for _, err := range merr.Errors {
+			if !xerrors.Is(err, streams.err) {
+				t.Errorf("returned error %#v, want %#v", err, streams.err)
 			}
-
-			expectedArgs := []string{
-				"--archive", "--compress", "--delete", "--stats",
-				"/data/qddir/seg-1/", "localhost:foobar/path",
-			}
-			if !reflect.DeepEqual(args, expectedArgs) {
-				t.Errorf("rsync invoked with %q, want %q", args, expectedArgs)
-			}
-		})
-
-		err := hub.CopyMasterDataDir(utils.DevNull, "foobar/path")
-		if err != nil {
-			t.Errorf("copying master data directory: %+v", err)
 		}
 	})
 
 	t.Run("serializes rsync failures to the log stream", func(t *testing.T) {
 		execCommand = exectest.NewCommand(RsyncFailure)
 		buffer := new(bufferedStreams)
+		hosts := []string{"mdw", "sdw1", "sdw2"}
 
-		err := hub.CopyMasterDataDir(buffer, "foobar/path")
+		err := Copy(buffer, "foobar/path", nil, hosts)
 
 		// Make sure the errors are correctly propagated up.
 		var merr *multierror.Error
@@ -175,27 +148,168 @@ func TestCopyMaster(t *testing.T) {
 		// hosts. They should be serialized sanely, even though we may execute
 		// in parallel.
 		stderr := buffer.stderr.String()
-		expected := strings.Repeat(rsyncErrorMessage, len(targetCluster.PrimaryHostnames()))
+		expected := strings.Repeat(rsyncErrorMessage, len(hosts))
 		if stderr != expected {
 			t.Errorf("got stderr:\n%v\nwant:\n%v", stderr, expected)
 		}
 	})
+}
 
-	t.Run("returns errors when writing stdout and stderr buffers to the stream", func(t *testing.T) {
-		execCommand = exectest.NewCommand(StreamingMain)
-		streams := failingStreams{errors.New("e")}
+func TestCopyMasterDataDir(t *testing.T) {
+	targetCluster := MustCreateCluster(t, []greenplum.SegConfig{
+		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: "p"},
+		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: "/data/dbfast1/seg1", Role: "p"},
+		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: "p"},
+	})
 
-		err := hub.CopyMasterDataDir(streams, "")
+	conf := &Config{
+		Target: targetCluster,
+	}
+	hub := New(conf, grpc.DialContext, ".gpupgrade")
 
-		// Make sure the errors are correctly propagated up.
-		var merr *multierror.Error
-		if !xerrors.As(err, &merr) {
-			t.Fatalf("returned %#v, want error type %T", err, merr)
+	t.Run("copies the master data directory to each primary host", func(t *testing.T) {
+		// The verifier function can be called in parallel, so use a channel to
+		// communicate which hosts were actually used.
+		hosts := make(chan string, len(targetCluster.PrimaryHostnames()))
+
+		expectedArgs := []string{
+			"--archive", "--compress", "--delete", "--stats",
+			"/data/qddir/seg-1/", "foobar/path",
 		}
-		for _, err := range merr.Errors {
-			if !xerrors.Is(err, streams.err) {
-				t.Errorf("returned error %#v, want %#v", err, streams.err)
-			}
+
+		execCommandVerifier(t, hosts, expectedArgs)
+
+		err := hub.CopyMasterDataDir(utils.DevNull, "foobar/path")
+		if err != nil {
+			t.Errorf("copying master data directory: %+v", err)
 		}
+
+		close(hosts)
+
+		expectedHosts := []string{"host1", "host2"}
+		verifyHosts(hosts, expectedHosts, t)
+	})
+}
+
+func TestCopyMasterTablespaces(t *testing.T) {
+	targetCluster := MustCreateCluster(t, []greenplum.SegConfig{
+		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: "p"},
+		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: "/data/dbfast1/seg1", Role: "p"},
+		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: "p"},
+	})
+
+	t.Run("copies tablespace mapping file and master tablespace directory to each primary host", func(t *testing.T) {
+		conf := &Config{
+			Target: targetCluster,
+			Tablespaces: greenplum.Tablespaces{
+				1: greenplum.SegmentTablespaces{
+					1663: greenplum.TablespaceInfo{
+						Location: "/tmp/tblspc1",
+						UserDefined: 0},
+					1664: greenplum.TablespaceInfo{
+						Location: "/tmp/tblspc2",
+						UserDefined: 1},
+				},
+				2: greenplum.SegmentTablespaces{
+					1663: greenplum.TablespaceInfo{
+						Location: "/tmp/primary1/tblspc1",
+						UserDefined: 0},
+					1664: greenplum.TablespaceInfo{
+						Location: "/tmp/primary1/tblspc2",
+						UserDefined: 1},
+				},
+				3: greenplum.SegmentTablespaces{
+					1663: greenplum.TablespaceInfo{
+						Location: "/tmp/primary2/tblspc1",
+						UserDefined: 0},
+					1664: greenplum.TablespaceInfo{
+						Location: "/tmp/primary2/tblspc2",
+						UserDefined: 1},
+				},
+			},
+			TablespacesMappingFilePath: "/tmp/mapping.txt",
+		}
+		hub := New(conf, grpc.DialContext, ".gpupgrade")
+
+		// The verifier function can be called in parallel, so use a channel to
+		// communicate which hosts were actually used.
+		hosts := make(chan string, len(targetCluster.PrimaryHostnames()))
+
+		expectedArgs := []string{
+			"--archive", "--compress", "--delete", "--stats",
+			"/tmp/mapping.txt", "/tmp/tblspc2", "foobar/path",
+		}
+		execCommandVerifier(t, hosts, expectedArgs)
+
+		err := hub.CopyMasterTablespaces(utils.DevNull, "foobar/path")
+		if err != nil {
+			t.Errorf("copying master tablespace directories and mapping file: %+v", err)
+		}
+
+		close(hosts)
+
+		expectedHosts := []string{"host1", "host2"}
+		verifyHosts(hosts, expectedHosts, t)
+	})
+
+	t.Run("CopyMasterTablespaces returns nil if there is no tablespaces", func(t *testing.T) {
+		conf := &Config{
+			Target: targetCluster,
+		}
+		hub := New(conf, grpc.DialContext, ".gpupgrade")
+		// The verifier function can be called in parallel, so use a channel to
+		// communicate which hosts were actually used.
+
+		hosts := make(chan string, len(targetCluster.PrimaryHostnames()))
+
+		var expectedArgs []string
+		execCommandVerifier(t, hosts, expectedArgs)
+
+		err := hub.CopyMasterTablespaces(utils.DevNull, "foobar/path")
+		if err != nil {
+			t.Errorf("got %+v, want nil", err)
+		}
+
+		close(hosts)
+
+		if expectedArgs != nil {
+			t.Errorf("Rsync() should not be invoked")
+		}
+	})
+}
+
+func verifyHosts(hosts chan string, expectedHosts []string, t *testing.T) {
+	// Collect the hostnames for validation.
+	var actualHosts []string
+	for host := range hosts {
+		actualHosts = append(actualHosts, host)
+	}
+	sort.Strings(actualHosts) // receive order not guaranteed
+
+	if !reflect.DeepEqual(actualHosts, expectedHosts) {
+		t.Errorf("copied to hosts %q, want %q", actualHosts, expectedHosts)
+	}
+}
+
+// Validate the rsync call and arguments.
+func execCommandVerifier(t *testing.T, hosts chan string, expectedArgs []string) {
+	execCommand = exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
+		expected := "rsync"
+		if name != expected {
+			t.Errorf("invoked %q, want %q", name, expected)
+		}
+
+		// The last argument is host:/destination/directory. Remove the
+		// host (saving it for later verification) to make comparison
+		// easier.
+		parts := strings.SplitN(args[len(args)-1], ":", 2)
+		host, dest := parts[0], parts[1]
+		args[len(args)-1] = dest
+
+		if !reflect.DeepEqual(args, expectedArgs) {
+			t.Errorf("rsync invoked with %q, want %q", args, expectedArgs)
+		}
+
+		hosts <- host
 	})
 }

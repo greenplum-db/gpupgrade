@@ -379,6 +379,11 @@ type Config struct {
 	AgentPort   int
 	UseLinkMode bool
 	UpgradeID   upgrade.ID
+
+	// Tablespaces contains the tablespace in the database keyed by
+	// dbid and tablespace oid
+	Tablespaces                greenplum.Tablespaces
+	TablespacesMappingFilePath string
 }
 
 func (c *Config) Load(r io.Reader) error {

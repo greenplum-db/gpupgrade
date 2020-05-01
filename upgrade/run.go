@@ -10,6 +10,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+
+	"github.com/greenplum-db/gp-common-go-libs/gplog"
 )
 
 const DefaultAgentPort = 6416
@@ -64,6 +66,10 @@ func Run(p SegmentPair, options ...Option) error {
 		args = append(args, "--link")
 	}
 
+	if opts.TablespaceFilePath != "" {
+		args = append(args, "--old-tablespaces-file", opts.TablespaceFilePath)
+	}
+
 	// If the caller specified an explicit Command implementation to use, get
 	// our exec.Cmd using that. Otherwise use our internal execCommand.
 	cmdFunc := execCommand
@@ -86,6 +92,8 @@ func Run(p SegmentPair, options ...Option) error {
 	if path, ok := os.LookupEnv("LD_LIBRARY_PATH"); ok {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("LD_LIBRARY_PATH=%s", path))
 	}
+
+	gplog.Info(cmd.String())
 
 	return cmd.Run()
 }
@@ -145,16 +153,25 @@ func WithExecCommand(execCommand func(string, ...string) *exec.Cmd) Option {
 	}
 }
 
+// WithTablespaceFile configures the tablespace mapping file path passed to pg_upgrade
+// to perform the upgrade of the segment tablespaces.
+func WithTablespaceFile(filePath string) Option {
+	return func(o *optionList) {
+		o.TablespaceFilePath = filePath
+	}
+}
+
 // optionList holds the combined result of all possible Options. Zero values
 // represent the default settings.
 type optionList struct {
-	Dir            string
-	CheckOnly      bool
-	UseLinkMode    bool
-	ExecCommand    func(string, ...string) *exec.Cmd
-	ExecCommandSet bool // was ExecCommand explicitly set?
-	SegmentMode    bool
-	Stdout, Stderr io.Writer
+	Dir                string
+	CheckOnly          bool
+	UseLinkMode        bool
+	ExecCommand        func(string, ...string) *exec.Cmd
+	ExecCommandSet     bool // was ExecCommand explicitly set?
+	SegmentMode        bool
+	Stdout, Stderr     io.Writer
+	TablespaceFilePath string
 }
 
 // newOptionList returns an optionList with all of the provided Options applied.

@@ -17,6 +17,12 @@ service Agent {
   rpc ArchiveLogDirectory (ArchiveLogDirectoryRequest) returns (ArchiveLogDirectoryReply) {}
 }
 
+message TablespaceInfo {
+  string Name = 3;
+  string Location = 4;
+  bool UserDefined = 5;
+}
+
 message UpgradePrimariesRequest {
     string SourceBinDir = 1;
     string TargetBinDir = 2;
@@ -25,6 +31,7 @@ message UpgradePrimariesRequest {
     bool CheckOnly = 5;
     bool UseLinkMode = 6;
     string MasterBackupDir = 7;
+    string TablespacesMappingFilePath = 8;
 }
 
 message DataDirPair {
@@ -34,6 +41,7 @@ message DataDirPair {
     int32  TargetPort    = 4;
     int32  Content    = 5;
     int32  DBID       = 6;
+    map<int32, TablespaceInfo> Tablespaces = 7;
 }
 
 message UpgradePrimariesReply {}
