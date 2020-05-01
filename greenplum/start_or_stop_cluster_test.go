@@ -8,9 +8,8 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"reflect"
 	"testing"
-
-	. "github.com/onsi/gomega"
 
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -67,8 +66,6 @@ func (_ devNull) Stderr() io.Writer {
 }
 
 func TestStartOrStopCluster(t *testing.T) {
-	g := NewGomegaWithT(t)
-
 	source := MustCreateCluster(t, []SegConfig{
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "basedir/seg-1", Role: "p"},
 	})
@@ -88,37 +85,61 @@ func TestStartOrStopCluster(t *testing.T) {
 	t.Run("isPostmasterRunning succeeds", func(t *testing.T) {
 		isPostmasterRunningCmd = exectest.NewCommandWithVerifier(IsPostmasterRunningCmd,
 			func(path string, args ...string) {
-				g.Expect(path).To(Equal("bash"))
-				g.Expect(args).To(Equal([]string{"-c", "pgrep -F basedir/seg-1/postmaster.pid"}))
+				if path != "bash" {
+					t.Errorf("got %q want bash", path)
+				}
+
+				expected := []string{"-c", "pgrep -F basedir/seg-1/postmaster.pid"}
+				if !reflect.DeepEqual(args, expected) {
+					t.Errorf("got %q want %q", args, expected)
+				}
 			})
 
 		err := isPostmasterRunning(DevNull, source.MasterDataDir())
-		g.Expect(err).ToNot(HaveOccurred())
+		if err != nil {
+			t.Errorf("unexpected error %#v", err)
+		}
 	})
 
 	t.Run("isPostmasterRunning fails", func(t *testing.T) {
 		isPostmasterRunningCmd = exectest.NewCommand(IsPostmasterRunningCmd_Errors)
 
 		err := isPostmasterRunning(DevNull, source.MasterDataDir())
-		g.Expect(err).To(HaveOccurred())
+		if err == nil {
+			t.Errorf("expected error %#v got nil", err)
+		}
 	})
 
 	t.Run("stop cluster successfully shuts down cluster", func(t *testing.T) {
 		isPostmasterRunningCmd = exectest.NewCommandWithVerifier(IsPostmasterRunningCmd,
 			func(path string, args ...string) {
-				g.Expect(path).To(Equal("bash"))
-				g.Expect(args).To(Equal([]string{"-c", "pgrep -F basedir/seg-1/postmaster.pid"}))
+				if path != "bash" {
+					t.Errorf("got %q want bash", path)
+				}
+
+				expected := []string{"-c", "pgrep -F basedir/seg-1/postmaster.pid"}
+				if !reflect.DeepEqual(args, expected) {
+					t.Errorf("got %q want %q", args, expected)
+				}
 			})
 
 		startStopCmd = exectest.NewCommandWithVerifier(StopClusterCmd,
 			func(path string, args ...string) {
-				g.Expect(path).To(Equal("bash"))
-				g.Expect(args).To(Equal([]string{"-c", "source /source/bindir/../greenplum_path.sh " +
-					"&& /source/bindir/gpstop -a -d basedir/seg-1"}))
+				if path != "bash" {
+					t.Errorf("got %q want bash", path)
+				}
+
+				expected := []string{"-c", "source /source/bindir/../greenplum_path.sh " +
+					"&& /source/bindir/gpstop -a -d basedir/seg-1"}
+				if !reflect.DeepEqual(args, expected) {
+					t.Errorf("got %q want %q", args, expected)
+				}
 			})
 
 		err := source.Stop(DevNull)
-		g.Expect(err).ToNot(HaveOccurred())
+		if err != nil {
+			t.Errorf("unexpected error %#v", err)
+		}
 	})
 
 	t.Run("stop cluster detects that cluster is already shutdown", func(t *testing.T) {
@@ -131,49 +152,84 @@ func TestStartOrStopCluster(t *testing.T) {
 			})
 
 		err := source.Stop(DevNull)
-		g.Expect(err).To(HaveOccurred())
-		g.Expect(skippedStopClusterCommand).To(Equal(true))
+		if err == nil {
+			t.Errorf("expected error %#v got nil", err)
+		}
+
+		if !skippedStopClusterCommand {
+			t.Error("expected skippedStopClusterCommand to be true")
+		}
 	})
 
 	t.Run("start cluster successfully starts up cluster", func(t *testing.T) {
 		startStopCmd = exectest.NewCommandWithVerifier(StartClusterCmd,
 			func(path string, args ...string) {
-				g.Expect(path).To(Equal("bash"))
-				g.Expect(args).To(Equal([]string{"-c", "source /source/bindir/../greenplum_path.sh " +
-					"&& /source/bindir/gpstart -a -d basedir/seg-1"}))
+				if path != "bash" {
+					t.Errorf("got %q want bash", path)
+				}
+
+				expected := []string{"-c", "source /source/bindir/../greenplum_path.sh " +
+					"&& /source/bindir/gpstart -a -d basedir/seg-1"}
+				if !reflect.DeepEqual(args, expected) {
+					t.Errorf("got %q want %q", args, expected)
+				}
 			})
 
 		err := source.Start(DevNull)
-		g.Expect(err).ToNot(HaveOccurred())
+		if err != nil {
+			t.Errorf("unexpected error %#v", err)
+		}
 	})
 
 	t.Run("start master successfully starts up master only", func(t *testing.T) {
 		startStopCmd = exectest.NewCommandWithVerifier(StartClusterCmd,
 			func(path string, args ...string) {
-				g.Expect(path).To(Equal("bash"))
-				g.Expect(args).To(Equal([]string{"-c", "source /source/bindir/../greenplum_path.sh " +
-					"&& /source/bindir/gpstart -m -a -d basedir/seg-1"}))
+				if path != "bash" {
+					t.Errorf("got %q want bash", path)
+				}
+
+				expected := []string{"-c", "source /source/bindir/../greenplum_path.sh " +
+					"&& /source/bindir/gpstart -m -a -d basedir/seg-1"}
+				if !reflect.DeepEqual(args, expected) {
+					t.Errorf("got %q want %q", args, expected)
+				}
 			})
 
 		err := source.StartMasterOnly(DevNull)
-		g.Expect(err).ToNot(HaveOccurred())
+		if err != nil {
+			t.Errorf("unexpected error %#v", err)
+		}
 	})
 
 	t.Run("stop master successfully shuts down master only", func(t *testing.T) {
 		isPostmasterRunningCmd = exectest.NewCommandWithVerifier(IsPostmasterRunningCmd,
 			func(path string, args ...string) {
-				g.Expect(path).To(Equal("bash"))
-				g.Expect(args).To(Equal([]string{"-c", "pgrep -F basedir/seg-1/postmaster.pid"}))
+				if path != "bash" {
+					t.Errorf("got %q want bash", path)
+				}
+
+				expected := []string{"-c", "pgrep -F basedir/seg-1/postmaster.pid"}
+				if !reflect.DeepEqual(args, expected) {
+					t.Errorf("got %q want %q", args, expected)
+				}
 			})
 
 		startStopCmd = exectest.NewCommandWithVerifier(StopClusterCmd,
 			func(path string, args ...string) {
-				g.Expect(path).To(Equal("bash"))
-				g.Expect(args).To(Equal([]string{"-c", "source /source/bindir/../greenplum_path.sh " +
-					"&& /source/bindir/gpstop -m -a -d basedir/seg-1"}))
+				if path != "bash" {
+					t.Errorf("got %q want bash", path)
+				}
+
+				expected := []string{"-c", "source /source/bindir/../greenplum_path.sh " +
+					"&& /source/bindir/gpstop -m -a -d basedir/seg-1"}
+				if !reflect.DeepEqual(args, expected) {
+					t.Errorf("got %q want %q", args, expected)
+				}
 			})
 
 		err := source.StopMasterOnly(DevNull)
-		g.Expect(err).ToNot(HaveOccurred())
+		if err != nil {
+			t.Errorf("unexpected error %#v", err)
+		}
 	})
 }
