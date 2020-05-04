@@ -23,7 +23,6 @@ import (
 // Minimal CLI command parsing to embrace that booting this binary to run the hub might have some flags like a log dir
 
 func Hub() *cobra.Command {
-	var logdir string
 	var shouldDaemonize bool
 
 	var cmd = &cobra.Command{
@@ -33,7 +32,7 @@ func Hub() *cobra.Command {
 		Hidden: true,
 		Args:   cobra.MaximumNArgs(0), //no positional args allowed
 		RunE: func(cmd *cobra.Command, args []string) error {
-			gplog.InitializeLogging("gpupgrade hub", logdir)
+			gplog.InitializeLogging("gpupgrade hub", "")
 			debug.SetTraceback("all")
 			defer log.WritePanics()
 
@@ -77,8 +76,6 @@ func Hub() *cobra.Command {
 			return nil
 		},
 	}
-
-	cmd.PersistentFlags().StringVar(&logdir, "log-directory", "", "gpupgrade hub log directory")
 
 	daemon.MakeDaemonizable(cmd, &shouldDaemonize)
 

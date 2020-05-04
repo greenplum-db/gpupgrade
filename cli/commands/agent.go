@@ -14,7 +14,7 @@ import (
 )
 
 func Agent() *cobra.Command {
-	var logdir, statedir string
+	var statedir string
 	var shouldDaemonize bool
 
 	var cmd = &cobra.Command{
@@ -24,7 +24,7 @@ func Agent() *cobra.Command {
 		Hidden: true,
 		Args:   cobra.MaximumNArgs(0), //no positional args allowed
 		RunE: func(cmd *cobra.Command, args []string) error {
-			gplog.InitializeLogging("gpupgrade agent", logdir)
+			gplog.InitializeLogging("gpupgrade agent", "")
 			defer log.WritePanics()
 
 			conf := agent.Config{
@@ -44,7 +44,6 @@ func Agent() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&logdir, "log-directory", "", "command_listener log directory")
 	cmd.Flags().StringVar(&statedir, "state-directory", utils.GetStateDir(), "Agent state directory")
 
 	daemon.MakeDaemonizable(cmd, &shouldDaemonize)
