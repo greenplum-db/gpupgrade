@@ -32,7 +32,11 @@ func Hub() *cobra.Command {
 		Hidden: true,
 		Args:   cobra.MaximumNArgs(0), //no positional args allowed
 		RunE: func(cmd *cobra.Command, args []string) error {
-			gplog.InitializeLogging("gpupgrade hub", "")
+			logdir, err := utils.GetLogDir()
+			if err != nil {
+				return err
+			}
+			gplog.InitializeLogging("gpupgrade_hub", logdir)
 			debug.SetTraceback("all")
 			defer log.WritePanics()
 

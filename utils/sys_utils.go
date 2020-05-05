@@ -106,6 +106,16 @@ func GetStateDir() string {
 	return stateDir
 }
 
+func GetLogDir() (string, error) {
+	currentUser, err := System.CurrentUser()
+	if err != nil {
+		return "", err
+	}
+
+	logDir := filepath.Join(currentUser.HomeDir, "gpAdminLogs", "gpupgrade")
+	return logDir, nil
+}
+
 func CreateDataDirectory(dataDir string) error {
 	file := filepath.Join(dataDir, markerFile)
 	_, err := System.Stat(file)

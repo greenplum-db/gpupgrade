@@ -10,6 +10,7 @@ setup() {
 
     STATE_DIR=`mktemp -d /tmp/gpupgrade.XXXXXX`
     export GPUPGRADE_HOME="${STATE_DIR}/gpupgrade"
+    export GPUPGRADE_LOGDIR=~/gpAdminLogs/gpupgrade
     gpupgrade kill-services
 
     # If this variable is set (to a master data directory), teardown() will call
@@ -61,7 +62,7 @@ teardown() {
 
     NEW_CLUSTER="$(gpupgrade config show --target-datadir)"
 
-    grep "Checking for indexes on partitioned tables                  fatal" "$GPUPGRADE_HOME"/initialize.log
+    grep "Checking for indexes on partitioned tables                  fatal" "$GPUPGRADE_LOGDIR"/initialize_*.log
 
     # revert added index
     $PSQL -d postgres -p $PGPORT -c "DROP TABLE test_pg_upgrade CASCADE;"
@@ -81,7 +82,7 @@ teardown() {
 
     NEW_CLUSTER="$(gpupgrade config show --target-datadir)"
 
-    grep "Clusters are compatible" "$GPUPGRADE_HOME"/initialize.log
+    grep "Clusters are compatible" "$GPUPGRADE_LOGDIR"/initialize_*.log
 
     [ -e "$GPUPGRADE_HOME"/pg_upgrade/seg-1/pg_upgrade_internal.log ]
     [ -e "$GPUPGRADE_HOME"/pg_upgrade/seg0/pg_upgrade_internal.log ]

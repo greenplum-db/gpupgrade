@@ -24,7 +24,11 @@ func Agent() *cobra.Command {
 		Hidden: true,
 		Args:   cobra.MaximumNArgs(0), //no positional args allowed
 		RunE: func(cmd *cobra.Command, args []string) error {
-			gplog.InitializeLogging("gpupgrade agent", "")
+			logdir, err := utils.GetLogDir()
+			if err != nil {
+				return err
+			}
+			gplog.InitializeLogging("gpupgrade_agent", logdir)
 			defer log.WritePanics()
 
 			conf := agent.Config{

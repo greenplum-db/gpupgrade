@@ -9,10 +9,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/greenplum-db/gp-common-go-libs/operating"
 	multierror "github.com/hashicorp/go-multierror"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 type Step struct {
@@ -33,7 +35,12 @@ func New(name string, sender idl.MessageSender, store Store, streams OutStreamsC
 }
 
 func Begin(stateDir string, name string, sender idl.MessageSender) (*Step, error) {
-	path := filepath.Join(stateDir, fmt.Sprintf("%s.log", name))
+	logdir, err := utils.GetLogDir()
+	if err != nil {
+		return nil, err
+	}
+
+	path := filepath.Join(logdir, fmt.Sprintf("%s_%s.log", name, operating.System.Now().Format("20060102")))
 	log, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
 		return nil, xerrors.Errorf(`step "%s": %w`, name, err)
