@@ -89,6 +89,9 @@ func write(out io.Writer, lines ...string) {
 
 func Filter(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
+	// there are lines in icw regression suite requiring buffer
+	// to be atleast 10000000, so keeping it a little higher for now.
+	scanner.Buffer(nil, 9800 * 4024)
 
 	var buf []string // lines buffered for look-ahead
 

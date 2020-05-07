@@ -53,6 +53,7 @@ compare_dumps() {
 USE_LINK_MODE=${USE_LINK_MODE:-0}
 FILTER_DIFF=${FILTER_DIFF:-0}
 DIFF_FILE=${DIFF_FILE:-"icw.diff"}
+COMPARE_DIFF=${COMPARE_DIFF:-0}
 
 # This port is selected by our CI pipeline
 MASTER_PORT=5432
@@ -103,10 +104,12 @@ EOF
 #   perhaps use the controldata("pg_controldata $MASTER_DATA_DIR") system identifier?
 
 # Dump the new cluster and compare.
-dump_sql $MASTER_PORT /tmp/new.sql
-if ! compare_dumps /tmp/old.sql /tmp/new.sql; then
-    echo 'error: before and after dumps differ'
-    exit 1
+if (( $COMPARE_DIFF )); then
+    dump_sql ${MASTER_PORT} /tmp/new.sql
+    if ! compare_dumps /tmp/old.sql /tmp/new.sql; then
+        echo 'error: before and after dumps differ'
+        exit 1
+    fi
 fi
 
 echo 'Upgrade successful.'

@@ -111,19 +111,19 @@ resources:
       bucket: gpdb5-pipeline-dynamic-terraform
       bucket_path: clusters-google/
 
-- name: icw_planner_centos6_dump
+- name: gpdb5_icw_planner_centos6_dump
   type: gcs
   source:
     bucket: ((gcs-bucket-intermediates))
     json_key: ((concourse-gcs-resources-service-account-key))
-    versioned_file: 6X_STABLE/icw_planner_centos6_dump/dump.sql.xz
+    versioned_file: 5X_STABLE/icw_planner_centos6_dump/dump.sql.xz
 
-- name: dump_gpdb5_simple
+- name: dump_gpdb6_icw_gporca_centos6
   type: gcs
   source:
     bucket: ((gcs-bucket-intermediates))
     json_key: ((concourse-gcs-resources-service-account-key))
-    versioned_file: 5X_STABLE/simple_dump/dump.sql.xz
+    versioned_file: 6X_STABLE/icw_gporca_centos6_dump/dump.sql.xz
 
 anchors:
   - &ccp_default_params
@@ -263,9 +263,9 @@ jobs:
         # above binary...
         - get: sqldump
           {{- if eq (majorVersion .Source) "5" }}
-          resource: dump_gpdb5_simple
+          resource: gpdb5_icw_planner_centos6_dump
           {{- else }}
-          resource: icw_planner_centos6_dump
+          resource: dump_gpdb6_icw_gporca_centos6
           {{- end }}
         {{- end }}
     - put: terraform
@@ -357,7 +357,10 @@ jobs:
         {{- end}}
         {{- if .RetailDemo}}
         DIFF_FILE: retail_demo.diff
-        {{- end}}
+        COMPARE_DIFF: 1
+        {{- else }}
+        COMPARE_DIFF: {{if ne (majorVersion .Source) "5"}}1{{else}}0{{end}}
+        {{- end }}
     {{- if not .NoStandby -}}
     {{- if not .PrimariesOnly }}
     - task: validate_mirrors_and_standby
