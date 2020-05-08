@@ -55,6 +55,7 @@ var SubstepDescriptions = map[idl.Substep]substepText{
 	idl.Substep_DELETE_SEGMENT_STATEDIRS:                          substepText{"Deleting state directories on the segments...", "Delete state directories on the segments"},
 	idl.Substep_STOP_HUB_AND_AGENTS:                               substepText{"Stopping hub and agents...", "Stop hub and agents"},
 	idl.Substep_DELETE_MASTER_STATEDIR:                            substepText{"Deleting master state directory...", "Delete master state directory"},
+	idl.Substep_ARCHIVE_LOG_DIRECTORIES:                           substepText{"Archiving log directories...", "Archive log directories"},
 }
 
 var indicators = map[idl.Status]string{

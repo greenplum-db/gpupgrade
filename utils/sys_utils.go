@@ -5,6 +5,7 @@ package utils
 
 import (
 	"database/sql"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
+	"github.com/greenplum-db/gp-common-go-libs/operating"
 	"golang.org/x/xerrors"
 )
 
@@ -114,6 +116,11 @@ func GetLogDir() (string, error) {
 
 	logDir := filepath.Join(currentUser.HomeDir, "gpAdminLogs", "gpupgrade")
 	return logDir, nil
+}
+
+func GetArchiveDirectoryName() string {
+	now := operating.System.Now()
+	return fmt.Sprintf("gpupgrade-%d-%02d-%02dT%02d:%02d", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute())
 }
 
 func CreateDataDirectory(dataDir string) error {

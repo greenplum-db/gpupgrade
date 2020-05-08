@@ -98,6 +98,11 @@ func (m *MockAgentServer) DeleteStateDirectory(context.Context, *idl.DeleteState
 	return &idl.DeleteStateDirectoryReply{}, nil
 }
 
+func (m *MockAgentServer) ArchiveLogDirectory(context.Context, *idl.ArchiveLogDirectoryRequest) (*idl.ArchiveLogDirectoryReply, error) {
+	m.increaseCalls()
+	return &idl.ArchiveLogDirectoryReply{}, nil
+}
+
 func (m *MockAgentServer) StopAgent(ctx context.Context, in *idl.StopAgentRequest) (*idl.StopAgentReply, error) {
 	return &idl.StopAgentReply{}, nil
 }

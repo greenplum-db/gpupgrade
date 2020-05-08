@@ -155,6 +155,26 @@ func (mr *MockAgentClientMockRecorder) DeleteStateDirectory(ctx, in interface{},
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteStateDirectory", reflect.TypeOf((*MockAgentClient)(nil).DeleteStateDirectory), varargs...)
 }
 
+// ArchiveLogDirectory mocks base method
+func (m *MockAgentClient) ArchiveLogDirectory(ctx context.Context, in *idl.ArchiveLogDirectoryRequest, opts ...grpc.CallOption) (*idl.ArchiveLogDirectoryReply, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ArchiveLogDirectory", varargs...)
+	ret0, _ := ret[0].(*idl.ArchiveLogDirectoryReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ArchiveLogDirectory indicates an expected call of ArchiveLogDirectory
+func (mr *MockAgentClientMockRecorder) ArchiveLogDirectory(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ArchiveLogDirectory", reflect.TypeOf((*MockAgentClient)(nil).ArchiveLogDirectory), varargs...)
+}
+
 // MockAgentServer is a mock of AgentServer interface
 type MockAgentServer struct {
 	ctrl     *gomock.Controller
@@ -266,4 +286,19 @@ func (m *MockAgentServer) DeleteStateDirectory(arg0 context.Context, arg1 *idl.D
 func (mr *MockAgentServerMockRecorder) DeleteStateDirectory(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteStateDirectory", reflect.TypeOf((*MockAgentServer)(nil).DeleteStateDirectory), arg0, arg1)
+}
+
+// ArchiveLogDirectory mocks base method
+func (m *MockAgentServer) ArchiveLogDirectory(arg0 context.Context, arg1 *idl.ArchiveLogDirectoryRequest) (*idl.ArchiveLogDirectoryReply, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ArchiveLogDirectory", arg0, arg1)
+	ret0, _ := ret[0].(*idl.ArchiveLogDirectoryReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ArchiveLogDirectory indicates an expected call of ArchiveLogDirectory
+func (mr *MockAgentServerMockRecorder) ArchiveLogDirectory(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ArchiveLogDirectory", reflect.TypeOf((*MockAgentServer)(nil).ArchiveLogDirectory), arg0, arg1)
 }

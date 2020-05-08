@@ -69,4 +69,7 @@ setup() {
         echo "expected GPUPGRADE_HOME directory ${GPUPGRADE_HOME} to have been deleted"
         exit 1
     fi
+
+    # check that archive directory has been created
+    [ -d "$HOME/gpAdminLogs/gpupgrade-"* ] || fail "expected directory matching $HOME/gpAdminLogs/gpupgrade-* to be created"
 }

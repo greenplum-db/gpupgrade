@@ -14,6 +14,7 @@ service Agent {
   rpc StopAgent (StopAgentRequest) returns (StopAgentReply) {}
   rpc DeleteDataDirectories (DeleteDataDirectoriesRequest) returns (DeleteDataDirectoriesReply) {}
   rpc DeleteStateDirectory (DeleteStateDirectoryRequest) returns (DeleteStateDirectoryReply) {}
+  rpc ArchiveLogDirectory (ArchiveLogDirectoryRequest) returns (ArchiveLogDirectoryReply) {}
 }
 
 message UpgradePrimariesRequest {
@@ -44,6 +45,12 @@ message DeleteDataDirectoriesReply {}
 
 message DeleteStateDirectoryRequest {}
 message DeleteStateDirectoryReply {}
+
+message ArchiveLogDirectoryRequest {
+    string OldDir = 1;
+    string NewDir = 2;
+}
+message ArchiveLogDirectoryReply {}
 
 message RenameDirectories {
   string Source = 1;
