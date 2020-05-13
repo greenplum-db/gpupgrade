@@ -81,10 +81,6 @@ func init() {
 	for _, sourceVersion := range sourceVersions {
 		for _, targetVersion := range targetVersions {
 			for _, centosVersion := range centosVersions {
-				// todo: Add the 6-to-6 on centos6 job back in when fixed.
-				if sourceVersion == "6" && targetVersion == "6" && centosVersion == "6" {
-					continue
-				}
 				upgradeJobs = append(upgradeJobs, &UpgradeJob{
 					Source:        sourceVersion,
 					Target:        targetVersion,
