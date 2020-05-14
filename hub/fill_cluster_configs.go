@@ -20,6 +20,8 @@ import (
 
 // create source/target clusters, write to disk and re-read from disk to make sure it is "durable"
 func FillClusterConfigsSubStep(config *Config, conn *sql.DB, _ step.OutStreams, request *idl.InitializeRequest, saveConfig func() error) error {
+	config.AgentPort = int(request.AgentPort)
+
 	// Assign a new universal upgrade identifier.
 	config.UpgradeID = upgrade.NewID()
 

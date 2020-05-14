@@ -12,6 +12,8 @@ import (
 	"strconv"
 )
 
+const DefaultAgentPort = 6416
+
 // execCommand allows tests to stub out the Commands that are actually run. See
 // also the WithExecCommand option.
 var execCommand = exec.Command

@@ -8,12 +8,14 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/greenplum-db/gpupgrade/agent"
+	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/daemon"
 	"github.com/greenplum-db/gpupgrade/utils/log"
 )
 
 func Agent() *cobra.Command {
+	var port int
 	var statedir string
 	var shouldDaemonize bool
 
@@ -32,7 +34,7 @@ func Agent() *cobra.Command {
 			defer log.WritePanics()
 
 			conf := agent.Config{
-				Port:     6416,
+				Port:     port,
 				StateDir: statedir,
 			}
 
@@ -47,7 +49,7 @@ func Agent() *cobra.Command {
 			return nil
 		},
 	}
-
+	cmd.Flags().IntVar(&port, "port", upgrade.DefaultAgentPort, "the port to listen for commands on")
 	cmd.Flags().StringVar(&statedir, "state-directory", utils.GetStateDir(), "Agent state directory")
 
 	daemon.MakeDaemonizable(cmd, &shouldDaemonize)

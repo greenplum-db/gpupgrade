@@ -4,10 +4,13 @@
 package hub_test
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -53,7 +56,7 @@ func TestRestartAgent(t *testing.T) {
 	}()
 
 	hostnames := []string{"host1", "host2"}
-	port := 6416
+	port := 1234
 	stateDir := "/not/existent/directory"
 	ctx := context.Background()
 
@@ -131,6 +134,47 @@ func TestRestartAgent(t *testing.T) {
 		}
 	})
 
+	t.Run("starts agents with correct args including specified port and state directory", func(t *testing.T) {
+		host := "host1"
+
+		execCmd := exectest.NewCommandWithVerifier(gpupgrade_agent, func(name string, args ...string) {
+			if name != "ssh" {
+				t.Errorf("RestartAgents invoked with %q want ssh", name)
+			}
+
+			cmd := fmt.Sprintf("bash -c \"%s/gpupgrade agent --daemonize --port %d --state-directory %s\"", mustGetExecutablePath(t), port, stateDir)
+			expected := []string{host, cmd}
+			if !reflect.DeepEqual(args, expected) {
+				t.Errorf("got %q want %q", args, expected)
+			}
+		})
+		hub.SetExecCommand(execCmd)
+		defer hub.ResetExecCommand()
+
+		dialer := func(ctx context.Context, address string) (net.Conn, error) {
+			if strings.HasPrefix(address, host) { // fail connection attempts to host
+				return nil, immediateFailure{}
+			}
+
+			return listener.Dial()
+		}
+
+		_, err := hub.RestartAgents(ctx, dialer, hostnames, port, stateDir)
+		if err != nil {
+			t.Errorf("unexpected errr %#v", err)
+		}
+	})
+}
+
+func mustGetExecutablePath(t *testing.T) string {
+	t.Helper()
+
+	path, err := os.Executable()
+	if err != nil {
+		t.Fatalf("failed getting test executable path: %#v", err)
+	}
+
+	return filepath.Dir(path)
 }
 
 // immediateFailure is an error that is explicitly marked non-temporary for

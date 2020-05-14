@@ -19,11 +19,12 @@ service CliToHub {
 }
 
 message InitializeRequest {
-    string sourceBinDir = 1;
-    string targetBinDir = 2;
-    int32 sourcePort = 3;
-    bool useLinkMode = 4;
-    repeated uint32 ports = 5;
+    int32 agentPort = 1;
+    string sourceBinDir = 2;
+    string targetBinDir = 3;
+    int32 sourcePort = 4;
+    bool useLinkMode = 5;
+    repeated uint32 ports = 6;
 }
 message InitializeCreateClusterRequest {}
 message ExecuteRequest {}

@@ -306,6 +306,7 @@ func version() *cobra.Command {
 func initialize() *cobra.Command {
 	var sourceBinDir, targetBinDir string
 	var sourcePort int
+	var agentPort int
 	var diskFreeRatio float64
 	var stopBeforeClusterCreation bool
 	var verbose bool
@@ -371,6 +372,7 @@ func initialize() *cobra.Command {
 			client := connectToHub()
 
 			request := &idl.InitializeRequest{
+				AgentPort:    int32(agentPort),
 				SourceBinDir: sourceBinDir,
 				TargetBinDir: targetBinDir,
 				SourcePort:   int32(sourcePort),
@@ -415,6 +417,7 @@ After executing, you will need to finalize.`)
 	subInit.MarkFlagRequired("target-bindir") //nolint
 	subInit.Flags().IntVar(&sourcePort, "source-master-port", 0, "master port for source gpdb cluster")
 	subInit.MarkFlagRequired("source-master-port") //nolint
+	subInit.Flags().IntVar(&agentPort, "agent-port", upgrade.DefaultAgentPort, "the port gpupgrade agent uses to listen for commands on")
 	subInit.Flags().BoolVar(&stopBeforeClusterCreation, "stop-before-cluster-creation", false, "only run up to pre-init")
 	subInit.Flags().MarkHidden("stop-before-cluster-creation") //nolint
 	subInit.Flags().Float64Var(&diskFreeRatio, "disk-free-ratio", 0.60, "percentage of disk space that must be available (from 0.0 - 1.0)")
@@ -674,6 +677,8 @@ Optional Flags:
 
       --temp-port-range    the set of ports to use when initializing the target cluster
 
+      --agent-port         the port gpupgrade agent uses to listen for commands on
+
   -v, --verbose            outputs detailed logs for initialize
 `
 	executeHelp = `
@@ -736,6 +741,7 @@ Required Commands: gpupgrade is a three-step process
                     --source-bindir        the path to the binary directory for the source Greenplum installation
                     --target-bindir        the path to the binary directory for the target Greenplum installation
                     --source-master-port   the master port for the source Greenplum installation
+                    --agent-port           the port gpupgrade agent uses to listen for commands on
 
                   Optional Flags:
                     --mode [copy|link]     Upgrade mode to either copy source files to target or use hard links to modify data in place. Default is copy.

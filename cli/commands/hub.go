@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/greenplum-db/gpupgrade/hub"
+	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/daemon"
 	"github.com/greenplum-db/gpupgrade/utils/log"
@@ -56,7 +57,7 @@ func Hub() *cobra.Command {
 			// pre-initialize), we still need good defaults.
 			conf := &hub.Config{
 				Port:        7527,
-				AgentPort:   6416,
+				AgentPort:   upgrade.DefaultAgentPort,
 				UseLinkMode: false,
 			}
 
