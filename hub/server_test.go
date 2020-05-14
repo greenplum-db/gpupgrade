@@ -46,8 +46,8 @@ func TestHubStart(t *testing.T) {
 		Source:                 source,
 		Target:                 target,
 		TargetInitializeConfig: hub.InitializeConfig{},
-		Port:                   getOpenPort(t),
-		AgentPort:              getOpenPort(t),
+		Port:                   testutils.MustGetPort(t),
+		AgentPort:              testutils.MustGetPort(t),
 		UseLinkMode:            false,
 		UpgradeID:              0,
 	}
@@ -138,15 +138,6 @@ func getTcpListener(t *testing.T) (net.Listener, func()) {
 	return listener, closeListener
 }
 
-func getOpenPort(t *testing.T) int {
-	t.Helper()
-
-	listener, closeListener := getTcpListener(t)
-	defer closeListener()
-
-	return listener.Addr().(*net.TCPAddr).Port
-}
-
 func mustListen(t *testing.T) (int, func()) {
 	t.Helper()
 
@@ -183,7 +174,7 @@ func TestAgentConns(t *testing.T) {
 		Source:                 source,
 		Target:                 target,
 		TargetInitializeConfig: hub.InitializeConfig{},
-		Port:                   getOpenPort(t),
+		Port:                   testutils.MustGetPort(t),
 		AgentPort:              agentPort,
 		UseLinkMode:            false,
 		UpgradeID:              0,

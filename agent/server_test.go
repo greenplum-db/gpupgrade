@@ -25,7 +25,7 @@ func TestServerStart(t *testing.T) {
 		stateDir := path.Join(tempDir, ".gpupgrade")
 
 		server := agent.NewServer(agent.Config{
-			Port:     getOpenPort(t),
+			Port:     testutils.MustGetPort(t),
 			StateDir: stateDir,
 		})
 
@@ -50,7 +50,7 @@ func TestServerStart(t *testing.T) {
 		defer os.RemoveAll(stateDir)
 
 		server := agent.NewServer(agent.Config{
-			Port:     getOpenPort(t),
+			Port:     testutils.MustGetPort(t),
 			StateDir: stateDir,
 		})
 
@@ -65,15 +65,6 @@ func TestServerStart(t *testing.T) {
 			t.Error("expected stateDir to exist")
 		}
 	})
-}
-
-func getOpenPort(t *testing.T) int {
-	port, err := testutils.GetOpenPort()
-	if err != nil {
-		t.Fatalf("getting open port: %+v", err)
-	}
-
-	return port
 }
 
 func doesPathEventuallyExist(path string) (bool, error) {

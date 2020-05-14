@@ -45,19 +45,23 @@ func CreateMultinodeSampleClusterPair(baseDir string) (*greenplum.Cluster, *gree
 	return sourceCluster, targetCluster
 }
 
-func GetOpenPort() (int, error) {
-	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
-	if err != nil {
-		return 0, err
-	}
+func MustGetPort(t *testing.T) int {
+	t.Helper()
 
-	l, err := net.ListenTCP("tcp", addr)
+	listener, err := net.Listen("tcp", ":0")
 	if err != nil {
-		return 0, err
+		t.Fatal("failed to listen on tcp:0")
 	}
-	defer l.Close()
+	defer func() {
+		err = listener.Close()
+		if err != nil {
+			t.Fatal("failed to close listener")
+		}
+	}()
 
-	return l.Addr().(*net.TCPAddr).Port, nil
+	port := listener.Addr().(*net.TCPAddr).Port
+	t.Logf("found available port %d", port)
+	return port
 }
 
 func GetTempDir(t *testing.T, prefix string) string {
