@@ -17,6 +17,7 @@ func TestHelpCommands(t *testing.T) {
 		"initialize": commands.InitializeHelp,
 		"execute":    commands.ExecuteHelp,
 		"finalize":   commands.FinalizeHelp,
+		"revert":     commands.RevertHelp,
 	}
 
 	flagList := []string{"-?", "-h", "--help", "help"}

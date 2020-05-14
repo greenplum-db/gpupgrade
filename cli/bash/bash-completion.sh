@@ -480,9 +480,9 @@ _gpupgrade_restart-services()
     noun_aliases=()
 }
 
-_gpupgrade_revert()
+_gpupgrade_revert_help()
 {
-    last_command="gpupgrade_revert"
+    last_command="gpupgrade_revert_help"
     commands=()
 
     flags=()
@@ -491,6 +491,27 @@ _gpupgrade_revert()
     flags_with_completion=()
     flags_completion=()
 
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_gpupgrade_revert()
+{
+    last_command="gpupgrade_revert"
+    commands=()
+    commands+=("help")
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--?")
+    flags+=("-?")
+    local_nonpersistent_flags+=("--?")
     flags+=("--verbose")
     flags+=("-v")
     local_nonpersistent_flags+=("--verbose")

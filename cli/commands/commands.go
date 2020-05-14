@@ -57,6 +57,7 @@ var (
 	InitializeHelp string
 	ExecuteHelp    string
 	FinalizeHelp   string
+	RevertHelp     string
 )
 
 func init() {
@@ -88,6 +89,14 @@ func init() {
 		idl.Substep_FINALIZE_START_TARGET_CLUSTER,
 		idl.Substep_FINALIZE_UPGRADE_STANDBY,
 		idl.Substep_FINALIZE_UPGRADE_MIRRORS,
+	})
+	RevertHelp = GenerateHelpString(revertHelp, []idl.Substep{
+		idl.Substep_DELETE_PRIMARY_DATADIRS,
+		idl.Substep_DELETE_MASTER_DATADIR,
+		idl.Substep_DELETE_SEGMENT_STATEDIRS,
+		idl.Substep_STOP_HUB_AND_AGENTS,
+		idl.Substep_DELETE_MASTER_STATEDIR,
+		idl.Substep_ARCHIVE_LOG_DIRECTORIES,
 	})
 }
 
@@ -463,7 +472,7 @@ func revert() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "revert",
 		Short: "reverts the upgrade and returns the cluster to its original state",
-		Long:  "reverts the upgrade and returns the cluster to its original state",
+		Long:  RevertHelp,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// If we got here, the args are okay and the user doesn't need a usage
 			// dump on failure.
@@ -507,7 +516,7 @@ func revert() *cobra.Command {
 
 	cmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print the output stream from all substeps")
 
-	return cmd
+	return addHelpToCommand(cmd, RevertHelp)
 }
 
 func parsePorts(val string) ([]uint32, error) {
@@ -694,6 +703,22 @@ Optional Flags:
   -h, --help      displays help output for finalize
 
   -v, --verbose   outputs detailed logs for finalize
+`
+	revertHelp = `
+Returns the cluster to its original state.
+This command cannot be run after gpupgrade finalize has begun.
+This command cannot be stopped.
+
+Revert will carry out some or all of the following steps:
+%s
+
+Usage: gpupgrade revert
+
+Optional Flags:
+
+  -h, --help      displays help output for revert
+
+  -v, --verbose   outputs detailed logs for revert
 `
 	GlobalHelp = `
 gpupgrade enables users to do an in-place cluster upgrade to the next major version.
