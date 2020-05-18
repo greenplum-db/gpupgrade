@@ -53,6 +53,7 @@ var SubstepDescriptions = map[idl.Substep]substepText{
 	idl.Substep_STOP_HUB_AND_AGENTS:                      substepText{"Stopping hub and agents...", "Stop hub and agents"},
 	idl.Substep_DELETE_MASTER_STATEDIR:                   substepText{"Deleting master state directory...", "Delete master state directory"},
 	idl.Substep_ARCHIVE_LOG_DIRECTORIES:                  substepText{"Archiving log directories...", "Archive log directories"},
+	idl.Substep_START_SOURCE_CLUSTER:                     substepText{"Starting source cluster...", "Start source cluster"},
 }
 
 var indicators = map[idl.Status]string{

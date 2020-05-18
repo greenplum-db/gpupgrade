@@ -90,6 +90,10 @@ func GetStatusFile(stateDir string) (path string, err error) {
 	return path, nil
 }
 
+func (s *Step) Streams() OutStreams {
+	return s.streams
+}
+
 func (s *Step) Finish() error {
 	if err := s.streams.Close(); err != nil {
 		return xerrors.Errorf(`step "%s": %w`, s.name, err)

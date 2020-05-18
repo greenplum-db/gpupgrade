@@ -11,25 +11,8 @@ setup() {
     STATE_DIR=`mktemp -d /tmp/gpupgrade.XXXXXX`
     export GPUPGRADE_HOME="${STATE_DIR}/gpupgrade"
     echo $GPUPGRADE_HOME
-}
 
-@test "revert cleans up the state dir when no cluster was created" {
-    gpupgrade initialize \
-        --source-bindir="$GPHOME/bin" \
-        --target-bindir="$GPHOME/bin" \
-        --source-master-port="${PGPORT}" \
-        --temp-port-range 6020-6040 \
-        --disk-free-ratio 0 \
-        --stop-before-cluster-creation \
-        --verbose 3>&-
-
-    gpupgrade revert --verbose
-
-    # the GPUPGRADE_HOME directory is deleted
-    if [ -d "${GPUPGRADE_HOME}" ]; then
-        echo "expected GPUPGRADE_HOME directory ${GPUPGRADE_HOME} to have been deleted"
-        exit 1
-    fi
+    PSQL="$GPHOME"/bin/psql
 }
 
 @test "revert cleans up state dir and data dirs" {
@@ -74,4 +57,50 @@ setup() {
     if ! ls $HOME/gpAdminLogs/gpupgrade-* 1>/dev/null ; then
         fail "expected directory matching $HOME/gpAdminLogs/gpupgrade-* to be created"
     fi
+}
+
+@test "reverting after execute in copy mode succeeds" {
+    local target_master_port=6020
+
+    gpupgrade initialize \
+        --source-bindir="$GPHOME/bin" \
+        --target-bindir="$GPHOME/bin" \
+        --source-master-port="${PGPORT}" \
+        --temp-port-range ${target_master_port}-6040 \
+        --disk-free-ratio 0 \
+        --verbose 3>&-
+
+    gpupgrade execute --verbose
+
+    gpupgrade revert --verbose
+
+    pg_isready -q || fail "expected source cluster to be running on port ${PGPORT}"
+    ! pg_isready -qp ${target_master_port} || fail "expected target cluster to not be running on port ${target_master_port}"
+}
+
+@test "can successfully run gpupgrade after a revert" {
+    gpupgrade initialize \
+        --source-bindir="$GPHOME/bin" \
+        --target-bindir="$GPHOME/bin" \
+        --source-master-port="${PGPORT}" \
+        --temp-port-range 6020-6040 \
+        --disk-free-ratio 0 \
+        --verbose 3>&-
+
+    gpupgrade execute --verbose
+
+    gpupgrade revert --verbose
+
+    gpupgrade initialize \
+        --source-bindir="$GPHOME/bin" \
+        --target-bindir="$GPHOME/bin" \
+        --source-master-port="${PGPORT}" \
+        --temp-port-range 6020-6040 \
+        --disk-free-ratio 0 \
+        --verbose 3>&-
+
+    gpupgrade execute --verbose
+
+    # This last revert is used for test cleanup.
+    gpupgrade revert --verbose
 }
