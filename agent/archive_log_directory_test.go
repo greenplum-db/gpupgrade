@@ -23,7 +23,8 @@ func TestArchiveLogDirectories(t *testing.T) {
 
 	t.Run("bubbles up errors", func(t *testing.T) {
 		expected := errors.New("permission denied")
-		utils.System.Rename = func(old, new string) error {
+
+		utils.System.Rename = func(oldPath, newPath string) error {
 			return expected
 		}
 		defer func() {
@@ -37,19 +38,19 @@ func TestArchiveLogDirectories(t *testing.T) {
 	})
 
 	t.Run("archives log directories", func(t *testing.T) {
-		oldLogDir := "/home/gpAdmin/oldlogidr"
+		oldLogDir, _ := utils.GetLogDir()
 		newLogDir := "/home/gpAdmin/newlogdir"
 		calls := 0
 
-		utils.System.Rename = func(old, new string) error {
+		utils.System.Rename = func(oldPath, newPath string) error {
 			calls++
 
-			if old != oldLogDir {
-				t.Errorf("got %q want %q", old, oldLogDir)
+			if oldPath != oldLogDir {
+				t.Errorf("got %q want %q", oldPath, oldLogDir)
 			}
 
-			if new != newLogDir {
-				t.Errorf("got %q want %q", new, newLogDir)
+			if newPath != newLogDir {
+				t.Errorf("got %q want %q", newPath, newLogDir)
 			}
 
 			return nil
@@ -58,7 +59,7 @@ func TestArchiveLogDirectories(t *testing.T) {
 			utils.System.Rename = os.Rename
 		}()
 
-		_, err := server.ArchiveLogDirectory(context.Background(), &idl.ArchiveLogDirectoryRequest{OldDir: oldLogDir, NewDir: newLogDir})
+		_, err := server.ArchiveLogDirectory(context.Background(), &idl.ArchiveLogDirectoryRequest{NewDir: newLogDir})
 		if err != nil {
 			t.Errorf("unexpected error %#v", err)
 		}

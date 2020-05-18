@@ -17,8 +17,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
 )
 
-const oldDir = "AnOldDirectory"
-const newDir = "AnANewDirectory"
+const newDir = "NewDirectory"
 
 func TestArchiveLogDirectories(t *testing.T) {
 	testhelper.SetupTestLogger()
@@ -30,14 +29,14 @@ func TestArchiveLogDirectories(t *testing.T) {
 		sdwClient := mock_idl.NewMockAgentClient(ctrl)
 		sdwClient.EXPECT().ArchiveLogDirectory(
 			gomock.Any(),
-			&idl.ArchiveLogDirectoryRequest{OldDir: oldDir, NewDir: newDir},
+			&idl.ArchiveLogDirectoryRequest{NewDir: newDir},
 		).Return(&idl.ArchiveLogDirectoryReply{}, nil).Times(1)
 
 		agentConns := []*hub.Connection{
 			{nil, sdwClient, "sdw", nil},
 		}
 
-		err := hub.ArchiveSegmentLogDirectories(agentConns, "", oldDir, newDir)
+		err := hub.ArchiveSegmentLogDirectories(agentConns, "", newDir)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -58,7 +57,7 @@ func TestArchiveLogDirectories(t *testing.T) {
 			{nil, failedClient, "sdw", nil},
 		}
 
-		err := hub.ArchiveSegmentLogDirectories(agentConns, "", oldDir, newDir)
+		err := hub.ArchiveSegmentLogDirectories(agentConns, "", newDir)
 		var multiErr *multierror.Error
 		if !xerrors.As(err, &multiErr) {
 			t.Fatalf("got error %#v, want type %T", err, multiErr)

@@ -55,8 +55,7 @@ message DeleteStateDirectoryRequest {}
 message DeleteStateDirectoryReply {}
 
 message ArchiveLogDirectoryRequest {
-    string OldDir = 1;
-    string NewDir = 2;
+    string NewDir = 1;
 }
 message ArchiveLogDirectoryReply {}
 

@@ -15,6 +15,15 @@ import (
 func (s *Server) ArchiveLogDirectory(ctx context.Context, in *idl.ArchiveLogDirectoryRequest) (*idl.ArchiveLogDirectoryReply, error) {
 	gplog.Info("agent starting %s", idl.Substep_ARCHIVE_LOG_DIRECTORIES)
 
-	err := utils.System.Rename(in.GetOldDir(), in.GetNewDir())
+	logdir, err := utils.GetLogDir()
+	if err != nil {
+		return &idl.ArchiveLogDirectoryReply{}, err
+	}
+	if err = utils.System.Rename(logdir, in.GetNewDir()); err != nil {
+		if utils.System.IsNotExist(err) {
+			gplog.Debug("log directory %s not archived, possibly due to multi-host environment. %+v", logdir, err)
+			err = nil
+		}
+	}
 	return &idl.ArchiveLogDirectoryReply{}, err
 }

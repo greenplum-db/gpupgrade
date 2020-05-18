@@ -12,7 +12,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 )
 
-func ArchiveSegmentLogDirectories(agentConns []*Connection, excludeHostname, oldDir, newDir string) error {
+func ArchiveSegmentLogDirectories(agentConns []*Connection, excludeHostname, newDir string) error {
 	wg := sync.WaitGroup{}
 	errChan := make(chan error, len(agentConns))
 
@@ -30,7 +30,6 @@ func ArchiveSegmentLogDirectories(agentConns []*Connection, excludeHostname, old
 			defer wg.Done()
 
 			_, err := conn.AgentClient.ArchiveLogDirectory(context.Background(), &idl.ArchiveLogDirectoryRequest{
-				OldDir: oldDir,
 				NewDir: newDir,
 			})
 			if err != nil {

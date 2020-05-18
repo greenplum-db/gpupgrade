@@ -71,5 +71,7 @@ setup() {
     fi
 
     # check that archive directory has been created
-    [ -d "$HOME/gpAdminLogs/gpupgrade-"* ] || fail "expected directory matching $HOME/gpAdminLogs/gpupgrade-* to be created"
+    if ! ls $HOME/gpAdminLogs/gpupgrade-* 1>/dev/null ; then
+        fail "expected directory matching $HOME/gpAdminLogs/gpupgrade-* to be created"
+    fi
 }
