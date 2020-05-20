@@ -99,7 +99,8 @@ install:
 	go install $(BUILD_FLAGS) github.com/greenplum-db/gpupgrade/cmd/gpupgrade
 
 # We intentionally do not depend on install here -- the point of installcheck is
-# to test whatever has already been installed.
+# to test whatever has already been installed. NOTE: installcheck.bats is not
+# located in the test directory so that it is not run during check.
 installcheck:
 		@echo "--------------------------------------------------------------"
 		@echo "# FIXME: Make, if run in parallel, hangs after test completes."
