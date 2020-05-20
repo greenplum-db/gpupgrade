@@ -173,7 +173,6 @@ func Revert(client idl.CliToHubClient, verbose bool) error {
 		return err
 	}
 
-	// TODO: add verbose option
 	_, err = UILoop(stream, verbose)
 	if err != nil {
 		return xerrors.Errorf("Revert: %w", err)
