@@ -9,6 +9,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/greenplum-db/gp-common-go-libs/testhelper"
+
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
@@ -50,6 +52,8 @@ func MustCreateCluster(t *testing.T, segs []SegConfig) *Cluster {
 }
 
 func TestStartOrStopCluster(t *testing.T) {
+	testhelper.SetupTestLogger() // initialize gplog
+
 	source := MustCreateCluster(t, []SegConfig{
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "basedir/seg-1", Role: "p"},
 	})

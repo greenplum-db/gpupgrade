@@ -8,6 +8,7 @@ import (
 	"os/exec"
 
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
+	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 )
@@ -314,6 +315,7 @@ func runStartStopCmd(stream OutStreams, binDir, command string) error {
 		command)
 
 	cmd := startStopCmd("bash", "-c", commandWithEnv)
+	gplog.Info("running command: %q", cmd)
 	cmd.Stdout = stream.Stdout()
 	cmd.Stderr = stream.Stderr()
 	return cmd.Run()
