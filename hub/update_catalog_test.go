@@ -18,6 +18,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	. "github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/upgrade"
 )
 
 // Sentinel error values to make error case testing easier.
@@ -60,7 +61,7 @@ func TestUpdateCatalog(t *testing.T) {
 		t.Fatalf("failed to set GPUPGRADE_HOME %#v", err)
 	}
 
-	config := filepath.Join(tempDir, ConfigFileName)
+	config := filepath.Join(tempDir, upgrade.ConfigFileName)
 	data := `{
 	"Source": {
 		"BinDir": "/usr/local/gpdb5/bin",

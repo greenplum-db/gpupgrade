@@ -13,8 +13,6 @@ import (
 	"golang.org/x/net/context"
 )
 
-const ConfigFileName = "config.json"
-
 func (s *Server) SetConfig(ctx context.Context, in *idl.SetConfigRequest) (*idl.SetConfigReply, error) {
 	switch in.Name {
 	case "source-bindir":

@@ -6,7 +6,6 @@ package commands
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"runtime/debug"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -62,8 +61,7 @@ func Hub() *cobra.Command {
 				UseLinkMode: false,
 			}
 
-			path := filepath.Join(stateDir, hub.ConfigFileName)
-			err = hub.LoadConfig(conf, path)
+			err = hub.LoadConfig(conf, upgrade.GetConfigFile())
 			if err != nil {
 				return err
 			}

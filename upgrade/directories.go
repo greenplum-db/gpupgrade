@@ -16,10 +16,15 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
+const ConfigFileName = "config.json"
 const OldSuffix = ".old"
 
 var PostgresFiles = []string{"postgresql.conf", "PG_VERSION"}
 var StateDirectoryFiles = []string{"config.json", "status.json"}
+
+func GetConfigFile() string {
+	return filepath.Join(utils.GetStateDir(), ConfigFileName)
+}
 
 // pgUpgradeDirectory returns a path to a directory underneath the state
 // directory that is to be used for storing pg_upgrade state. It does not ensure

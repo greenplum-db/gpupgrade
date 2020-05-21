@@ -17,7 +17,6 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
-	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 )
@@ -72,8 +71,7 @@ func TestHub(t *testing.T) {
 			}
 
 			// write initial config.json
-			path := filepath.Join(utils.GetStateDir(), hub.ConfigFileName)
-			err = ioutil.WriteFile(path, []byte(c.configContents), 0600)
+			err = ioutil.WriteFile(upgrade.GetConfigFile(), []byte(c.configContents), 0600)
 			if err != nil {
 				t.Errorf("GetConfigFile returned error: %+v", err)
 			}

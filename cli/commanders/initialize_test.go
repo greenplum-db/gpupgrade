@@ -14,8 +14,8 @@ import (
 
 	"golang.org/x/xerrors"
 
-	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
+	"github.com/greenplum-db/gpupgrade/upgrade"
 )
 
 // Streams the above stdout/err constants to the corresponding standard file
@@ -259,7 +259,7 @@ func TestCreateInitialClusterConfigs(t *testing.T) {
 				t.Fatalf("unexpected error %#v", err)
 			}
 
-			if sourceOld, err = os.Stat(filepath.Join(stateDir, hub.ConfigFileName)); err != nil {
+			if sourceOld, err = os.Stat(upgrade.GetConfigFile()); err != nil {
 				t.Errorf("unexpected error %#v", err)
 			}
 		}
@@ -271,7 +271,7 @@ func TestCreateInitialClusterConfigs(t *testing.T) {
 			}
 
 			var sourceNew os.FileInfo
-			if sourceNew, err = os.Stat(filepath.Join(stateDir, hub.ConfigFileName)); err != nil {
+			if sourceNew, err = os.Stat(upgrade.GetConfigFile()); err != nil {
 				t.Errorf("got unexpected error %#v", err)
 			}
 

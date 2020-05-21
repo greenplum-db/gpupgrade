@@ -7,13 +7,12 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/xerrors"
 
-	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
@@ -46,7 +45,7 @@ func CreateInitialClusterConfigs(hubPort int) (err error) {
 	defer s.Finish(&err)
 
 	// if empty json configuration file exists, skip recreating it
-	filename := filepath.Join(utils.GetStateDir(), hub.ConfigFileName)
+	filename := upgrade.GetConfigFile()
 	_, err = os.Stat(filename)
 
 	// if the file exists, there will be no error or if there is an error it might

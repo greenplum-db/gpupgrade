@@ -34,7 +34,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -169,8 +168,7 @@ func connTimeout() time.Duration {
 // CLI when ideally these would be separate.
 func connectToHub() idl.CliToHubClient {
 	conf := &hub.Config{}
-	path := filepath.Join(utils.GetStateDir(), hub.ConfigFileName)
-	err := hub.LoadConfig(conf, path)
+	err := hub.LoadConfig(conf, upgrade.GetConfigFile())
 	if err != nil {
 		gplog.Error("failed to retrieve hub port due to %v", err)
 		os.Exit(1)

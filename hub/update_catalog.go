@@ -6,7 +6,6 @@ package hub
 import (
 	"database/sql"
 	"fmt"
-	"path/filepath"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
@@ -16,7 +15,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
-	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 // TODO: When in copy mode should we update the catalog and in-memory object of
@@ -186,8 +184,7 @@ func (s *Server) UpdateGpSegmentConfiguration(db *sql.DB) (err error) {
 			// target cluster objects to match the catalog and persist to
 			// disk.
 			origConf := &Config{}
-			path := filepath.Join(utils.GetStateDir(), ConfigFileName)
-			err = LoadConfig(origConf, path)
+			err = LoadConfig(origConf, upgrade.GetConfigFile())
 			if err != nil {
 				err = xerrors.Errorf("loading config: %w", err)
 				return
