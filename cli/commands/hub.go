@@ -24,6 +24,7 @@ import (
 // Minimal CLI command parsing to embrace that booting this binary to run the hub might have some flags like a log dir
 
 func Hub() *cobra.Command {
+	var port int
 	var shouldDaemonize bool
 
 	var cmd = &cobra.Command{
@@ -56,7 +57,7 @@ func Hub() *cobra.Command {
 			// they're not defined in the configuration (as happens
 			// pre-initialize), we still need good defaults.
 			conf := &hub.Config{
-				Port:        7527,
+				Port:        port,
 				AgentPort:   upgrade.DefaultAgentPort,
 				UseLinkMode: false,
 			}
@@ -65,6 +66,11 @@ func Hub() *cobra.Command {
 			err = hub.LoadConfig(conf, path)
 			if err != nil {
 				return err
+			}
+
+			// allow command line args precedence over config file values
+			if cmd.Flag("port").Changed {
+				conf.Port = port
 			}
 
 			h := hub.New(conf, grpc.DialContext, stateDir)
@@ -81,6 +87,8 @@ func Hub() *cobra.Command {
 			return nil
 		},
 	}
+
+	cmd.Flags().IntVar(&port, "port", upgrade.DefaultHubPort, "the port to listen for commands on")
 
 	daemon.MakeDaemonizable(cmd, &shouldDaemonize)
 

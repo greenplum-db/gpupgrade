@@ -9,12 +9,11 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gp-common-go-libs/gplog"
+	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/hub"
-
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
-
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
@@ -42,7 +41,7 @@ func CreateStateDir() (err error) {
 	return nil
 }
 
-func CreateInitialClusterConfigs() (err error) {
+func CreateInitialClusterConfigs(hubPort int) (err error) {
 	s := Substep(idl.Substep_GENERATING_CONFIG)
 	defer s.Finish(&err)
 
@@ -69,7 +68,15 @@ func CreateInitialClusterConfigs() (err error) {
 	}
 	defer file.Close()
 
-	fmt.Fprintf(file, "{}") // the hub will fill this in during initialization
+	// Bootstrap with the port to enable the CLI helper function connectToHub to
+	// work with both initialize and all other CLI commands. This overloads the
+	// hub's persisted configuration with that of the CLI when ideally these
+	// would be separate.
+	_, err = fmt.Fprintf(file, `{"Port": %d}`, hubPort) // the hub will fill the rest during initialization
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -90,10 +97,10 @@ func StartHub() (err error) {
 	cmd := execCommandHubStart("gpupgrade", "hub", "--daemonize")
 	stdout, cmdErr := cmd.Output()
 	if cmdErr != nil {
-		err := fmt.Errorf("failed to start hub (%s)", cmdErr)
+		err := xerrors.Errorf("start hub: %w", cmdErr)
 		if exitErr, ok := cmdErr.(*exec.ExitError); ok {
 			// Annotate with the Stderr capture, if we have it.
-			err = fmt.Errorf("%s: %s", err, exitErr.Stderr)
+			err = xerrors.Errorf("%s: %w", exitErr.Stderr, err)
 		}
 		return err
 	}

@@ -34,6 +34,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -48,6 +49,7 @@ import (
 	grpcStatus "google.golang.org/grpc/status"
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
+	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -162,21 +164,25 @@ func connTimeout() time.Duration {
 
 // connectToHub() performs a blocking connection to the hub, and returns a
 // CliToHubClient which wraps the resulting gRPC channel. Any errors result in
-// an os.Exit(1).
+// an os.Exit(1). This reads the hub's persisted configuration for the current
+// port. NOTE: This overloads the hub's persisted configuration with that of the
+// CLI when ideally these would be separate.
 func connectToHub() idl.CliToHubClient {
-	upgradePort := os.Getenv("GPUPGRADE_HUB_PORT")
-	if upgradePort == "" {
-		upgradePort = "7527"
+	conf := &hub.Config{}
+	path := filepath.Join(utils.GetStateDir(), hub.ConfigFileName)
+	err := hub.LoadConfig(conf, path)
+	if err != nil {
+		gplog.Error("failed to retrieve hub port due to %v", err)
+		os.Exit(1)
 	}
-
-	hubAddr := "localhost:" + upgradePort
 
 	// Set up our timeout.
 	ctx, cancel := context.WithTimeout(context.Background(), connTimeout())
 	defer cancel()
 
 	// Attempt a connection.
-	conn, err := grpc.DialContext(ctx, hubAddr, grpc.WithInsecure(), grpc.WithBlock())
+	address := "localhost:" + strconv.Itoa(conf.Port)
+	conn, err := grpc.DialContext(ctx, address, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		// Print a nicer error message if we can't connect to the hub.
 		if ctx.Err() == context.DeadlineExceeded {
@@ -306,6 +312,7 @@ func version() *cobra.Command {
 func initialize() *cobra.Command {
 	var sourceBinDir, targetBinDir string
 	var sourcePort int
+	var hubPort int
 	var agentPort int
 	var diskFreeRatio float64
 	var stopBeforeClusterCreation bool
@@ -359,7 +366,7 @@ func initialize() *cobra.Command {
 				return xerrors.Errorf("create state directory: %w", err)
 			}
 
-			err = commanders.CreateInitialClusterConfigs()
+			err = commanders.CreateInitialClusterConfigs(hubPort)
 			if err != nil {
 				return xerrors.Errorf("create initial cluster configs: %w", err)
 			}
@@ -417,6 +424,7 @@ After executing, you will need to finalize.`)
 	subInit.MarkFlagRequired("target-bindir") //nolint
 	subInit.Flags().IntVar(&sourcePort, "source-master-port", 0, "master port for source gpdb cluster")
 	subInit.MarkFlagRequired("source-master-port") //nolint
+	subInit.Flags().IntVar(&hubPort, "hub-port", upgrade.DefaultHubPort, "the port gpupgrade hub uses to listen for commands on")
 	subInit.Flags().IntVar(&agentPort, "agent-port", upgrade.DefaultAgentPort, "the port gpupgrade agent uses to listen for commands on")
 	subInit.Flags().BoolVar(&stopBeforeClusterCreation, "stop-before-cluster-creation", false, "only run up to pre-init")
 	subInit.Flags().MarkHidden("stop-before-cluster-creation") //nolint
@@ -677,6 +685,8 @@ Optional Flags:
 
       --temp-port-range    the set of ports to use when initializing the target cluster
 
+      --hub-port           the port gpupgrade hub uses to listen for commands on
+
       --agent-port         the port gpupgrade agent uses to listen for commands on
 
   -v, --verbose            outputs detailed logs for initialize
@@ -741,6 +751,7 @@ Required Commands: gpupgrade is a three-step process
                     --source-bindir        the path to the binary directory for the source Greenplum installation
                     --target-bindir        the path to the binary directory for the target Greenplum installation
                     --source-master-port   the master port for the source Greenplum installation
+                    --hub-port             the port gpupgrade hub uses to listen for commands on
                     --agent-port           the port gpupgrade agent uses to listen for commands on
 
                   Optional Flags:

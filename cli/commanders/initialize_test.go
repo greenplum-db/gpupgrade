@@ -222,6 +222,8 @@ func TestCreateStateDir(t *testing.T) {
 }
 
 func TestCreateInitialClusterConfigs(t *testing.T) {
+	const port = -1
+
 	home, err := ioutil.TempDir("", t.Name())
 	if err != nil {
 		t.Fatalf("failed creating temp dir %#v", err)
@@ -252,7 +254,7 @@ func TestCreateInitialClusterConfigs(t *testing.T) {
 	t.Run("test idempotence", func(t *testing.T) {
 
 		{ // creates initial cluster config files if none exist or fails"
-			err = CreateInitialClusterConfigs()
+			err = CreateInitialClusterConfigs(port)
 			if err != nil {
 				t.Fatalf("unexpected error %#v", err)
 			}
@@ -263,7 +265,7 @@ func TestCreateInitialClusterConfigs(t *testing.T) {
 		}
 
 		{ // creating cluster config files is idempotent
-			err = CreateInitialClusterConfigs()
+			err = CreateInitialClusterConfigs(port)
 			if err != nil {
 				t.Fatalf("unexpected error %#v", err)
 			}
@@ -279,7 +281,7 @@ func TestCreateInitialClusterConfigs(t *testing.T) {
 		}
 
 		{ // creating cluster config files succeeds on multiple runs
-			err = CreateInitialClusterConfigs()
+			err = CreateInitialClusterConfigs(port)
 			if err != nil {
 				t.Fatalf("unexpected error %#v", err)
 			}

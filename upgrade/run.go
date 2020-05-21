@@ -14,6 +14,7 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 )
 
+const DefaultHubPort = 7527
 const DefaultAgentPort = 6416
 
 // execCommand allows tests to stub out the Commands that are actually run. See
