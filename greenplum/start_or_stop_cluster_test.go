@@ -4,12 +4,15 @@
 package greenplum
 
 import (
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"reflect"
 	"testing"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
+	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -26,6 +29,9 @@ func IsPostmasterRunningCmd_Errors() {
 	os.Stderr.WriteString("exit status 2")
 	os.Exit(2)
 }
+func IsPostmasterRunningCmd_MatchesNoProcesses() {
+	os.Exit(1)
+}
 
 func init() {
 	exectest.RegisterMains(
@@ -33,6 +39,7 @@ func init() {
 		StopClusterCmd,
 		IsPostmasterRunningCmd,
 		IsPostmasterRunningCmd_Errors,
+		IsPostmasterRunningCmd_MatchesNoProcesses,
 	)
 }
 
@@ -54,8 +61,25 @@ func MustCreateCluster(t *testing.T, segs []SegConfig) *Cluster {
 func TestStartOrStopCluster(t *testing.T) {
 	testhelper.SetupTestLogger() // initialize gplog
 
+	masterDataDir, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatalf("creating temporary directory: %+v", err)
+	}
+	defer func() {
+		err := os.RemoveAll(masterDataDir)
+		if err != nil {
+			t.Fatalf("removing temp dir %q: %#v", masterDataDir, err)
+		}
+	}()
+
+	masterPidFile := filepath.Join(masterDataDir, "postmaster.pid")
+	err = ioutil.WriteFile(masterPidFile, nil, 0600)
+	if err != nil {
+		t.Errorf("WriteFile returned error: %+v", err)
+	}
+
 	source := MustCreateCluster(t, []SegConfig{
-		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "basedir/seg-1", Role: "p"},
+		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: masterDataDir, Role: "p"},
 	})
 	source.BinDir = "/source/bindir"
 
@@ -70,42 +94,78 @@ func TestStartOrStopCluster(t *testing.T) {
 		isPostmasterRunningCmd = exec.Command
 	}()
 
-	t.Run("isPostmasterRunning succeeds", func(t *testing.T) {
+	t.Run("IsMasterRunning succeeds", func(t *testing.T) {
 		isPostmasterRunningCmd = exectest.NewCommandWithVerifier(IsPostmasterRunningCmd,
 			func(path string, args ...string) {
-				if path != "bash" {
-					t.Errorf("got %q want bash", path)
+				if path != "pgrep" {
+					t.Errorf("got %q want pgrep", path)
 				}
 
-				expected := []string{"-c", "pgrep -F basedir/seg-1/postmaster.pid"}
+				expected := []string{"-F", masterPidFile}
 				if !reflect.DeepEqual(args, expected) {
 					t.Errorf("got %q want %q", args, expected)
 				}
 			})
 
-		err := isPostmasterRunning(utils.DevNull, source.MasterDataDir())
+		running, err := source.IsMasterRunning(utils.DevNull)
 		if err != nil {
-			t.Errorf("unexpected error %#v", err)
+			t.Errorf("IsMasterRunning returned error: %+v", err)
+		}
+
+		if !running {
+			t.Error("expected postmaster to be running")
 		}
 	})
 
-	t.Run("isPostmasterRunning fails", func(t *testing.T) {
+	t.Run("IsMasterRunning fails", func(t *testing.T) {
 		isPostmasterRunningCmd = exectest.NewCommand(IsPostmasterRunningCmd_Errors)
 
-		err := isPostmasterRunning(utils.DevNull, source.MasterDataDir())
-		if err == nil {
-			t.Errorf("expected error %#v got nil", err)
+		running, err := source.IsMasterRunning(utils.DevNull)
+		var expected *exec.ExitError
+		if !xerrors.As(err, &expected) {
+			t.Errorf("expected error to contain type %T", expected)
+		}
+
+		if running {
+			t.Error("expected postmaster to not be running")
+		}
+	})
+
+	t.Run("returns false with no error when master data directory does not exist", func(t *testing.T) {
+		source := MustCreateCluster(t, []SegConfig{
+			{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/does/not/exist", Role: "p"},
+		})
+		running, err := source.IsMasterRunning(utils.DevNull)
+		if err != nil {
+			t.Errorf("IsMasterRunning returned error: %+v", err)
+		}
+
+		if running {
+			t.Error("expected postmaster to not be running")
+		}
+	})
+
+	t.Run("returns false with no error when no processes were matched", func(t *testing.T) {
+		isPostmasterRunningCmd = exectest.NewCommand(IsPostmasterRunningCmd_MatchesNoProcesses)
+
+		running, err := source.IsMasterRunning(utils.DevNull)
+		if err != nil {
+			t.Errorf("IsMasterRunning returned error: %+v", err)
+		}
+
+		if running {
+			t.Error("expected postmaster to not be running")
 		}
 	})
 
 	t.Run("stop cluster successfully shuts down cluster", func(t *testing.T) {
 		isPostmasterRunningCmd = exectest.NewCommandWithVerifier(IsPostmasterRunningCmd,
 			func(path string, args ...string) {
-				if path != "bash" {
-					t.Errorf("got %q want bash", path)
+				if path != "pgrep" {
+					t.Errorf("got %q want pgrep", path)
 				}
 
-				expected := []string{"-c", "pgrep -F basedir/seg-1/postmaster.pid"}
+				expected := []string{"-F", masterPidFile}
 				if !reflect.DeepEqual(args, expected) {
 					t.Errorf("got %q want %q", args, expected)
 				}
@@ -118,7 +178,7 @@ func TestStartOrStopCluster(t *testing.T) {
 				}
 
 				expected := []string{"-c", "source /source/bindir/../greenplum_path.sh " +
-					"&& /source/bindir/gpstop -a -d basedir/seg-1"}
+					"&& /source/bindir/gpstop -a -d " + masterDataDir}
 				if !reflect.DeepEqual(args, expected) {
 					t.Errorf("got %q want %q", args, expected)
 				}
@@ -157,7 +217,7 @@ func TestStartOrStopCluster(t *testing.T) {
 				}
 
 				expected := []string{"-c", "source /source/bindir/../greenplum_path.sh " +
-					"&& /source/bindir/gpstart -a -d basedir/seg-1"}
+					"&& /source/bindir/gpstart -a -d " + masterDataDir}
 				if !reflect.DeepEqual(args, expected) {
 					t.Errorf("got %q want %q", args, expected)
 				}
@@ -177,7 +237,7 @@ func TestStartOrStopCluster(t *testing.T) {
 				}
 
 				expected := []string{"-c", "source /source/bindir/../greenplum_path.sh " +
-					"&& /source/bindir/gpstart -m -a -d basedir/seg-1"}
+					"&& /source/bindir/gpstart -m -a -d " + masterDataDir}
 				if !reflect.DeepEqual(args, expected) {
 					t.Errorf("got %q want %q", args, expected)
 				}
@@ -192,11 +252,11 @@ func TestStartOrStopCluster(t *testing.T) {
 	t.Run("stop master successfully shuts down master only", func(t *testing.T) {
 		isPostmasterRunningCmd = exectest.NewCommandWithVerifier(IsPostmasterRunningCmd,
 			func(path string, args ...string) {
-				if path != "bash" {
-					t.Errorf("got %q want bash", path)
+				if path != "pgrep" {
+					t.Errorf("got %q want pgrep", path)
 				}
 
-				expected := []string{"-c", "pgrep -F basedir/seg-1/postmaster.pid"}
+				expected := []string{"-F", masterPidFile}
 				if !reflect.DeepEqual(args, expected) {
 					t.Errorf("got %q want %q", args, expected)
 				}
@@ -209,7 +269,7 @@ func TestStartOrStopCluster(t *testing.T) {
 				}
 
 				expected := []string{"-c", "source /source/bindir/../greenplum_path.sh " +
-					"&& /source/bindir/gpstop -m -a -d basedir/seg-1"}
+					"&& /source/bindir/gpstop -m -a -d " + masterDataDir}
 				if !reflect.DeepEqual(args, expected) {
 					t.Errorf("got %q want %q", args, expected)
 				}

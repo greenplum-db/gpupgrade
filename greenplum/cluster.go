@@ -6,11 +6,14 @@ package greenplum
 import (
 	"fmt"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
+
+	"github.com/greenplum-db/gpupgrade/upgrade"
 )
 
 var isPostmasterRunningCmd = exec.Command
@@ -278,14 +281,17 @@ func (c *Cluster) Start(stream OutStreams) error {
 }
 
 func (c *Cluster) Stop(stream OutStreams) error {
-	// TODO: why can't we call isPostmasterRunning for the !stop case?  If we do, we get this on the pipeline:
+	// TODO: why can't we call IsMasterRunning for the !stop case?  If we do, we get this on the pipeline:
 	// Usage: pgrep [-flvx] [-d DELIM] [-n|-o] [-P PPIDLIST] [-g PGRPLIST] [-s SIDLIST]
 	// [-u EUIDLIST] [-U UIDLIST] [-G GIDLIST] [-t TERMLIST] [PATTERN]
 	//  pgrep: pidfile not valid
-	// TODO: should we actually return an error if we try to gpstop an already stopped cluster?
-	err := isPostmasterRunning(stream, c.MasterDataDir())
+	running, err := c.IsMasterRunning(stream)
 	if err != nil {
 		return err
+	}
+
+	if !running {
+		return errors.New("master is already stopped")
 	}
 
 	return runStartStopCmd(stream, c.BinDir, fmt.Sprintf("gpstop -a -d %[1]s", c.MasterDataDir()))
@@ -296,14 +302,17 @@ func (c *Cluster) StartMasterOnly(stream OutStreams) error {
 }
 
 func (c *Cluster) StopMasterOnly(stream OutStreams) error {
-	// TODO: why can't we call isPostmasterRunning for the !stop case?  If we do, we get this on the pipeline:
+	// TODO: why can't we call IsMasterRunning for the !stop case?  If we do, we get this on the pipeline:
 	// Usage: pgrep [-flvx] [-d DELIM] [-n|-o] [-P PPIDLIST] [-g PGRPLIST] [-s SIDLIST]
 	// [-u EUIDLIST] [-U UIDLIST] [-G GIDLIST] [-t TERMLIST] [PATTERN]
 	//  pgrep: pidfile not valid
-	// TODO: should we actually return an error if we try to gpstop an already stopped cluster?
-	err := isPostmasterRunning(stream, c.MasterDataDir())
+	running, err := c.IsMasterRunning(stream)
 	if err != nil {
 		return err
+	}
+
+	if !running {
+		return errors.New("master is already stopped")
 	}
 
 	return runStartStopCmd(stream, c.BinDir, fmt.Sprintf("gpstop -m -a -d %[1]s", c.MasterDataDir()))
@@ -321,17 +330,32 @@ func runStartStopCmd(stream OutStreams, binDir, command string) error {
 	return cmd.Run()
 }
 
-/*
- * Helper functions
- */
-func isPostmasterRunning(stream OutStreams, masterDataDir string) error {
-	cmd := isPostmasterRunningCmd("bash", "-c",
-		fmt.Sprintf("pgrep -F %s/postmaster.pid",
-			masterDataDir,
-		))
+// IsMasterRunning returns whether the cluster's master process is running.
+func (c *Cluster) IsMasterRunning(stream OutStreams) (bool, error) {
+	path := filepath.Join(c.MasterDataDir(), "postmaster.pid")
+	if !upgrade.PathExists(path) {
+		return false, nil
+	}
+
+	cmd := isPostmasterRunningCmd("pgrep", "-F", path)
 
 	cmd.Stdout = stream.Stdout()
 	cmd.Stderr = stream.Stderr()
 
-	return cmd.Run()
+	gplog.Debug("checking if master process is running with %s", cmd.String())
+
+	err := cmd.Run()
+	var exitErr *exec.ExitError
+	if xerrors.As(err, &exitErr) {
+		if exitErr.ExitCode() == 1 {
+			// No processes were matched
+			return false, nil
+		}
+	}
+
+	if err != nil {
+		return false, xerrors.Errorf("checking for postmaster process: %w", err)
+	}
+
+	return true, nil
 }
