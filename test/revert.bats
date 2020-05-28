@@ -15,7 +15,7 @@ setup() {
     PSQL="$GPHOME"/bin/psql
 }
 
-@test "revert cleans up state dir and data dirs" {
+@test "reverting after initialize succeeds" {
     gpupgrade initialize \
         --source-bindir="$GPHOME/bin" \
         --target-bindir="$GPHOME/bin" \
@@ -24,17 +24,6 @@ setup() {
         --disk-free-ratio 0 \
         --verbose 3>&-
 
-    # parse config.json for the datadirs
-    local target_hosts_dirs=$(jq -r '.Target.Primaries[] | .Hostname + " " + .DataDir' "${GPUPGRADE_HOME}/config.json")
-
-    # check that the target datadirs exist
-    while read -r hostname datadir; do
-        ssh "${hostname}" stat "${datadir}" || fail "expected datadir ${datadir} on host ${hostname} to exist"
-    done <<< "${target_hosts_dirs}"
-
-    process_is_running "[g]pupgrade hub" || fail 'expected hub to be running'
-    process_is_running "[g]pupgrade agent" || fail 'expected agent to be running'
-
     gpupgrade revert --verbose
 
     # gpupgrade processes are stopped
@@ -42,6 +31,8 @@ setup() {
     ! process_is_running "[g]pupgrade agent" || fail 'expected agent to have been stopped'
 
     # check that the target datadirs were deleted
+    local target_hosts_dirs=$(jq -r '.Target.Primaries[] | .Hostname + " " + .DataDir' "${GPUPGRADE_HOME}/config.json")
+
     while read -r hostname datadir; do
         run ssh "${hostname}" stat "${datadir}"
         ! [ $status -eq 0 ] || fail "expected datadir ${datadir} to have been deleted"
