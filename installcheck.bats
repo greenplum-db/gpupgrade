@@ -23,7 +23,7 @@ teardown() {
     skip_if_no_gpdb
 
     if [ -n "$NEW_CLUSTER" ]; then
-        delete_finalized_cluster $NEW_CLUSTER
+        delete_finalized_cluster $GPHOME_TARGET $NEW_CLUSTER
     fi
 
     gpupgrade kill-services
@@ -34,8 +34,8 @@ teardown() {
 
 @test "gpugrade can make it as far as we currently know..." {
     gpupgrade initialize \
-              --source-bindir "$GPHOME"/bin \
-              --target-bindir "$GPHOME_NEW"/bin \
+              --source-bindir "$GPHOME_SOURCE"/bin \
+              --target-bindir "$GPHOME_TARGET"/bin \
               --source-master-port $PGPORT \
               --temp-port-range 6020-6040 \
               --disk-free-ratio=0 \

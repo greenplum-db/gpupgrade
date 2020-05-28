@@ -16,7 +16,7 @@ setup() {
     # gpdeletesystem on this cluster.
     NEW_CLUSTER=
 
-    PSQL="$GPHOME"/bin/psql
+    PSQL="$GPHOME_SOURCE"/bin/psql
 }
 
 teardown() {
@@ -26,18 +26,20 @@ teardown() {
     rm -r "$STATE_DIR"
 
     if [ -n "$NEW_CLUSTER" ]; then
-        delete_cluster $NEW_CLUSTER
+        delete_cluster $GPHOME_TARGET $NEW_CLUSTER
     fi
 }
 
 @test "initialize runs gpinitsystem based on the source cluster" {
     # Store the data directories for each source segment by port.
-    run $PSQL -AtF$'\t' -p $PGPORT postgres -c "select port, datadir from gp_segment_configuration where role = 'p'"
+    run get_segment_configuration "$GPHOME_SOURCE"
     [ "$status" -eq 0 ] || fail "$output"
 
     declare -a olddirs
-    while read -r port dir; do
-        olddirs[$port]="$dir"
+    while read -r content role hostname port datadir; do
+        if [ "$role" == "p" ]; then
+            olddirs[$port]="$datadir"
+        fi
     done <<< "$output"
 
     local masterdir="${olddirs[$PGPORT]}"
@@ -45,8 +47,8 @@ teardown() {
 
     gpupgrade initialize \
         --verbose \
-        --source-bindir "$GPHOME/bin" \
-        --target-bindir "$GPHOME/bin" \
+        --source-bindir "$GPHOME_SOURCE/bin" \
+        --target-bindir "$GPHOME_TARGET/bin" \
         --source-master-port "$PGPORT" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 3>&-
@@ -58,15 +60,17 @@ teardown() {
     # Sanity check the newly created master's location.
     [ "$newmasterdir" = $(expected_target_datadir "$masterdir") ]
 
-    PGPORT=$newport gpstart -a -d "$newmasterdir"
+    (PGPORT=$newport source "$GPHOME_TARGET"/greenplum_path.sh && gpstart -a -d "$newmasterdir")
 
     # Store the data directories for the new cluster.
-    run $PSQL -AtF$'\t' -p $newport postgres -c "select port, datadir from gp_segment_configuration where role = 'p'"
+    run get_segment_configuration "$GPHOME_TARGET" "$newport"
     [ "$status" -eq 0 ] || fail "$output"
 
     declare -a newdirs
-    while read -r port dir; do
-        newdirs[$port]="$dir"
+    while read -r content role hostname port datadir; do
+        if [ "$role" == "p" ]; then
+            newdirs[$port]="$datadir"
+        fi
     done <<< "$output"
 
     # Ensure the new cluster has the expected ports and compare the directories
@@ -88,17 +92,19 @@ teardown() {
 }
 
 @test "initialize accepts a port range" {
-    # We need to have enough ports available for the master, standby, and mirrors.
-    # XXX as usual in these tests, we assume a standard demo cluster.
-    local expected_ports="15432,15434,15435,15436"
-    local mirror_ports="15437,15438,15439"
-    local standby_port=15433
-    local newport=15432
+    # We need to have enough ports available for the master, standby, and
+    # mirrors. As usual in these tests, we assume a standard demo cluster.
+    # XXX: GPDB 5 demo cluster uses port 15432 by default so pick 35432 to avoid
+    # port conflict with new target cluster.
+    local expected_ports="35432,35434,35435,35436"
+    local mirror_ports="35437,35438,35439"
+    local standby_port=35433
+    local newport=35432
 
     gpupgrade initialize \
         --verbose \
-        --source-bindir "$GPHOME/bin" \
-        --target-bindir "$GPHOME/bin" \
+        --source-bindir "$GPHOME_SOURCE/bin" \
+        --target-bindir "$GPHOME_TARGET/bin" \
         --source-master-port "$PGPORT" \
         --temp-port-range $expected_ports,$standby_port,$mirror_ports \
         --disk-free-ratio 0 3>&-
@@ -107,7 +113,7 @@ teardown() {
     local newmasterdir="$(gpupgrade config show --target-datadir)"
     NEW_CLUSTER="${newmasterdir}"
 
-    PGPORT=$newport gpstart -a -d "$newmasterdir"
+    (PGPORT=$newport source "$GPHOME_TARGET"/greenplum_path.sh && gpstart -a -d "$newmasterdir")
 
     # save the actual ports
     local actual_ports=$($PSQL -At -p $newport postgres -c "

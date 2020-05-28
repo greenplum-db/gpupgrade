@@ -17,8 +17,8 @@ setup() {
 
 @test "reverting after initialize succeeds" {
     gpupgrade initialize \
-        --source-bindir="$GPHOME/bin" \
-        --target-bindir="$GPHOME/bin" \
+        --source-bindir="$GPHOME_SOURCE/bin" \
+        --target-bindir="$GPHOME_TARGET/bin" \
         --source-master-port="${PGPORT}" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
@@ -51,11 +51,13 @@ setup() {
 }
 
 @test "reverting after execute in copy mode succeeds" {
+    setup_restore_cluster "--mode=copy"
+
     local target_master_port=6020
 
     gpupgrade initialize \
-        --source-bindir="$GPHOME/bin" \
-        --target-bindir="$GPHOME/bin" \
+        --source-bindir="$GPHOME_SOURCE/bin" \
+        --target-bindir="$GPHOME_TARGET/bin" \
         --source-master-port="${PGPORT}" \
         --temp-port-range ${target_master_port}-6040 \
         --disk-free-ratio 0 \
@@ -63,34 +65,45 @@ setup() {
 
     gpupgrade execute --verbose
 
+    # On GPDB5, restore the primary and master directories before starting the cluster. Hack until revert handles this case
+    restore_cluster
+
     gpupgrade revert --verbose
 
-    pg_isready -q || fail "expected source cluster to be running on port ${PGPORT}"
-    ! pg_isready -qp ${target_master_port} || fail "expected target cluster to not be running on port ${target_master_port}"
+    isready || fail "expected source cluster to be running on port ${PGPORT}"
+    ! isready "${GPHOME_TARGET}" ${target_master_port} || fail "expected target cluster to not be running on port ${target_master_port}"
 }
 
 @test "can successfully run gpupgrade after a revert" {
+    setup_restore_cluster "--mode=copy"
+
     gpupgrade initialize \
-        --source-bindir="$GPHOME/bin" \
-        --target-bindir="$GPHOME/bin" \
+        --source-bindir="$GPHOME_SOURCE/bin" \
+        --target-bindir="$GPHOME_TARGET/bin" \
         --source-master-port="${PGPORT}" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
         --verbose 3>&-
 
     gpupgrade execute --verbose
+
+    # On GPDB5, restore the primary and master directories before starting the cluster. Hack until revert handles this case
+    restore_cluster
 
     gpupgrade revert --verbose
 
     gpupgrade initialize \
-        --source-bindir="$GPHOME/bin" \
-        --target-bindir="$GPHOME/bin" \
+        --source-bindir="$GPHOME_SOURCE/bin" \
+        --target-bindir="$GPHOME_TARGET/bin" \
         --source-master-port="${PGPORT}" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
         --verbose 3>&-
 
     gpupgrade execute --verbose
+
+    # On GPDB5, restore the primary and master directories before starting the cluster. Hack until revert handles this case
+    restore_cluster
 
     # This last revert is used for test cleanup.
     gpupgrade revert --verbose

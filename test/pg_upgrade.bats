@@ -18,7 +18,7 @@ setup() {
     NEW_CLUSTER=
     KEEP_STATE_DIR=1
 
-    PSQL="$GPHOME"/bin/psql
+    PSQL="$GPHOME_SOURCE"/bin/psql
 }
 
 teardown() {
@@ -32,7 +32,7 @@ teardown() {
     fi
 
     if [ -n "$NEW_CLUSTER" ]; then
-        delete_cluster $NEW_CLUSTER
+        delete_cluster $GPHOME_TARGET $NEW_CLUSTER
     fi
 
     start_source_cluster
@@ -52,8 +52,8 @@ teardown() {
     # that output, so manually store the status and ignore the expected failure.
     local status=0
     gpupgrade initialize \
-        --source-bindir "$GPHOME/bin" \
-        --target-bindir "$GPHOME/bin" \
+        --source-bindir "$GPHOME_SOURCE/bin" \
+        --target-bindir "$GPHOME_TARGET/bin" \
         --source-master-port "$PGPORT" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio=0 \
@@ -74,8 +74,8 @@ teardown() {
     skip_if_no_gpdb
 
     gpupgrade initialize \
-        --source-bindir "$GPHOME/bin" \
-        --target-bindir "$GPHOME/bin" \
+        --source-bindir "$GPHOME_SOURCE/bin" \
+        --target-bindir "$GPHOME_TARGET/bin" \
         --source-master-port "$PGPORT" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio=0 3>&-
@@ -101,22 +101,23 @@ teardown() {
 # gp_dbid GUCs actually stored on each segment, NOT the gp_segment_configuration
 # stored on the master.
 count_primary_gp_dbids() {
-    local port=$1
+    local gphome=$1
+    local port=$2
 
-    for datadir in $($PSQL -At -p $port postgres -c "
-        select datadir from gp_segment_configuration where role='p'
-    "); do
-        "$GPHOME"/bin/postgres -C gp_dbid -D $datadir
+    for datadir in $($(query_datadirs $GPHOME_SOURCE $PGPORT "role = 'p'")); do
+        "$gphome"/bin/postgres -C gp_dbid -D $datadir
     done | sort | uniq | wc -l
 }
 
 @test "upgrade maintains separate DBIDs for each segment" {
-    local old_dbid_num=$(count_primary_gp_dbids $PGPORT)
+    setup_restore_cluster "--mode=copy"
+
+    local old_dbid_num=$(count_primary_gp_dbids $GPHOME_SOURCE $PGPORT)
 
     gpupgrade initialize \
         --verbose \
-        --source-bindir "$GPHOME/bin" \
-        --target-bindir "$GPHOME/bin" \
+        --source-bindir "$GPHOME_SOURCE/bin" \
+        --target-bindir "$GPHOME_TARGET/bin" \
         --source-master-port "$PGPORT" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio=0 3>&-
@@ -124,9 +125,11 @@ count_primary_gp_dbids() {
 
     gpupgrade execute --verbose
 
-    local new_dbid_num=$(count_primary_gp_dbids 6020)
+    local new_dbid_num=$(count_primary_gp_dbids $GPHOME_TARGET 6020)
 
     [ $old_dbid_num -eq $new_dbid_num ] || fail "expected $old_dbid_num distinct DBIDs; got $new_dbid_num"
 
     KEEP_STATE_DIR=0
+
+    restore_cluster
 }

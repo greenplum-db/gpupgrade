@@ -78,7 +78,7 @@ are_equivalent_within_tolerance() {
 @test "initialize prints disk space on failure" {
     require_gnu_stat
 
-    datadir=$(psql postgres -Atc "select datadir from gp_segment_configuration where role='p' and content=-1")
+    local datadir=$(query_datadirs $GPHOME_SOURCE $PGPORT "role='p' and content=-1")
 
     run gpupgrade initialize \
         --disk-free-ratio=1.0 \

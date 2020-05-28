@@ -9,7 +9,7 @@ load finalize_checks
 setup() {
     skip_if_no_gpdb
 
-    PSQL="$GPHOME/bin/psql -X --no-align --tuples-only postgres"
+    PSQL="$GPHOME_SOURCE/bin/psql -X --no-align --tuples-only postgres"
 
     setup_state_dir
 
@@ -23,26 +23,29 @@ teardown() {
     fi
 
     if [ -n "$NEW_CLUSTER" ]; then
-        delete_finalized_cluster $NEW_CLUSTER
+        delete_finalized_cluster $GPHOME_TARGET $NEW_CLUSTER
     fi
 
     gpupgrade kill-services
 
+    restore_cluster
+
     # reload old path and start
-    source "${GPHOME}/greenplum_path.sh"
+    source "${GPHOME_SOURCE}/greenplum_path.sh"
     gpstart -a
 
 }
 
 upgrade_cluster() {
-
         LINK_MODE=$1
+
+        setup_restore_cluster "$LINK_MODE"
 
         # place marker file in source master data directory
         local marker_file=source-cluster.test-marker
-        local mirror_datadirs=($(get_mirror_datadirs))
-        local primary_datadirs=($(get_primary_datadirs))
-        local datadirs=($(get_datadirs))
+        local mirror_datadirs=($(query_datadirs $GPHOME_SOURCE $PGPORT "role='m'"))
+        local primary_datadirs=($(query_datadirs $GPHOME_SOURCE $PGPORT "role='p'"))
+        local datadirs=($(query_datadirs $GPHOME_SOURCE $PGPORT))
         for datadir in "${datadirs[@]}"; do
             touch "$datadir/${marker_file}"
         done
@@ -50,19 +53,18 @@ upgrade_cluster() {
 
         # grab the original configuration before starting so we can verify the
         # target cluster ends up with the source cluster's original layout
-        local old_config=$(get_segment_configuration)
+        local old_config=$(get_segment_configuration "${GPHOME_SOURCE}")
 
         # set this variable before we upgrade to make sure our decision to run below
         # is based on the source cluster before upgrade perhaps changes our cluster.
         local no_mirrors
-        no_mirrors=$(contents_without_mirror "${GPHOME}" "$(hostname)" "${PGPORT}")
+        no_mirrors=$(contents_without_mirror "${GPHOME_SOURCE}" "$(hostname)" "${PGPORT}")
 
         if [ "$LINK_MODE" == "--mode=link" ]; then
                # create a backup of datadirs as the mirrors will be deleted in finalize
                # and primaries pg_control file will be changed to pg_control.old to disable to old
                # cluster
-               source "${GPHOME}/greenplum_path.sh"
-               gpstop -a
+               "${GPHOME_SOURCE}"/bin/gpstop -a
                for datadir in "${datadirs[@]}"; do
                    cp -r ${datadir} ${datadir}_backup
                done
@@ -70,8 +72,8 @@ upgrade_cluster() {
         fi
 
         gpupgrade initialize \
-            --source-bindir="$GPHOME/bin" \
-            --target-bindir="$GPHOME/bin" \
+            --source-bindir="$GPHOME_SOURCE/bin" \
+            --target-bindir="$GPHOME_TARGET/bin" \
             --source-master-port="${PGPORT}" \
             --temp-port-range 6020-6040 \
             --disk-free-ratio 0 \
@@ -105,7 +107,7 @@ upgrade_cluster() {
             fail "got gpperfmon.conf file $(cat $gpperfmon_config_file), wanted it to include ${MASTER_DATA_DIRECTORY}"
 
         # Check to make sure the new cluster matches the old one.
-        local new_config=$(get_segment_configuration)
+        local new_config=$(get_segment_configuration "${GPHOME_TARGET}")
         [ "$old_config" = "$new_config" ] || fail "actual config: $new_config, wanted $old_config"
 
         #
@@ -121,13 +123,13 @@ upgrade_cluster() {
         #   That is a more accurate representation if the standby is running and
         #   in sync, since gpstate might simply check if the process is running.
         local new_datadir=$(gpupgrade config show --target-datadir)
-        local actual_standby_status=$(gpstate -d "${new_datadir}")
+        local actual_standby_status=$(source "${GPHOME_TARGET}/greenplum_path.sh" && gpstate -d "${new_datadir}")
         local standby_status_line=$(get_standby_status "$actual_standby_status")
         [[ $standby_status_line == *"Standby host passive"* ]] || fail "expected standby to be up and in passive mode, got **** ${actual_standby_status} ****"
 
-        validate_mirrors_and_standby "${GPHOME}" "$(hostname)" "${PGPORT}"
-
+        validate_mirrors_and_standby "${GPHOME_TARGET}" "$(hostname)" "${PGPORT}"
 }
+
 @test "in copy mode gpupgrade finalize should swap the target data directories and ports with the source cluster" {
     upgrade_cluster
 }
@@ -139,29 +141,6 @@ upgrade_cluster() {
 setup_state_dir() {
     STATE_DIR=$(mktemp -d /tmp/gpupgrade.XXXXXX)
     export GPUPGRADE_HOME="${STATE_DIR}/gpupgrade"
-}
-
-# Writes the pieces of gp_segment_configuration that we need to ensure remain
-# the same across upgrade, one segment per line, sorted by content ID.
-get_segment_configuration() {
-    $PSQL -c "
-        select content, role, hostname, port, datadir
-          from gp_segment_configuration
-          order by content, role
-    "
-}
-
-# Writes all datadirs in the system to stdout, one per line.
-get_datadirs() {
-    $PSQL -Atc "select datadir from gp_segment_configuration"
-}
-
-get_primary_datadirs() {
-    $PSQL -Atc "select datadir from gp_segment_configuration where role='p'"
-}
-
-get_mirror_datadirs() {
-    $PSQL -Atc "select datadir from gp_segment_configuration where role='m'"
 }
 
 get_standby_status() {

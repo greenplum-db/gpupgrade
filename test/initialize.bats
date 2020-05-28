@@ -21,13 +21,13 @@ setup() {
 
     gpupgrade kill-services
     gpupgrade initialize \
-        --source-bindir="${GPHOME}/bin" \
-        --target-bindir="${GPHOME}/bin" \
+        --source-bindir="${GPHOME_SOURCE}/bin" \
+        --target-bindir="${GPHOME_TARGET}/bin" \
         --source-master-port="${PGPORT}"\
         --stop-before-cluster-creation \
         --disk-free-ratio 0 3>&-
 
-    PSQL="$GPHOME"/bin/psql
+    PSQL="$GPHOME_SOURCE"/bin/psql
     TEARDOWN_FUNCTIONS=()
 }
 
@@ -163,8 +163,8 @@ outputContains() {
     for opts in "${option_list[@]}"; do
         run gpupgrade initialize \
             $opts \
-            --source-bindir="$GPHOME"/bin \
-            --target-bindir="$GPHOME"/bin \
+            --source-bindir="$GPHOME_SOURCE"/bin \
+            --target-bindir="$GPHOME_TARGET"/bin \
             --source-master-port="${PGPORT}" \
             --stop-before-cluster-creation \
             --verbose 3>&-
@@ -210,8 +210,8 @@ wait_for_port_change() {
     wait_for_port_change $AGENT_PORT 0
 
     run gpupgrade initialize \
-        --source-bindir="$GPHOME/bin" \
-        --target-bindir="$GPHOME/bin" \
+        --source-bindir="$GPHOME_SOURCE/bin" \
+        --target-bindir="$GPHOME_TARGET/bin" \
         --source-master-port="${PGPORT}" \
         --disk-free-ratio 0 \
         --stop-before-cluster-creation \
@@ -221,8 +221,8 @@ wait_for_port_change() {
     release_held_port
 
     run gpupgrade initialize \
-        --source-bindir="$GPHOME/bin" \
-        --target-bindir="$GPHOME/bin" \
+        --source-bindir="$GPHOME_SOURCE/bin" \
+        --target-bindir="$GPHOME_TARGET/bin" \
         --source-master-port="${PGPORT}" \
         --disk-free-ratio 0 \
         --stop-before-cluster-creation \
@@ -232,8 +232,8 @@ wait_for_port_change() {
 
 @test "the check_upgrade substep always runs" {
     gpupgrade initialize \
-        --source-bindir="$GPHOME/bin" \
-        --target-bindir="$GPHOME/bin" \
+        --source-bindir="$GPHOME_SOURCE/bin" \
+        --target-bindir="$GPHOME_TARGET/bin" \
         --source-master-port="${PGPORT}" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
@@ -246,8 +246,8 @@ wait_for_port_change() {
     TEARDOWN_FUNCTIONS+=( teardown_check_upgrade_failure )
 
     run gpupgrade initialize \
-        --source-bindir="$GPHOME/bin" \
-        --target-bindir="$GPHOME/bin" \
+        --source-bindir="$GPHOME_SOURCE/bin" \
+        --target-bindir="$GPHOME_TARGET/bin" \
         --source-master-port="${PGPORT}" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
@@ -262,7 +262,7 @@ wait_for_port_change() {
     set_target_cluster_var_for_teardown
     TEARDOWN_FUNCTIONS+=( teardown_target_cluster )
 
-    pg_isready -q || fail "expected source cluster to be available"
+    isready || fail "expected source cluster to be available"
 }
 
 # This is a very simple way to flush out the most obvious idempotence bugs. It
@@ -272,8 +272,8 @@ wait_for_port_change() {
     # Force a target cluster to be created (setup's initialize stops before that
     # happens).
     gpupgrade initialize \
-        --source-bindir="$GPHOME/bin" \
-        --target-bindir="$GPHOME/bin" \
+        --source-bindir="$GPHOME_SOURCE/bin" \
+        --target-bindir="$GPHOME_TARGET/bin" \
         --source-master-port="${PGPORT}"\
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
@@ -286,8 +286,8 @@ wait_for_port_change() {
     sed -i.bak -e 's/"COMPLETE"/"FAILED"/g' "$GPUPGRADE_HOME/status.json"
 
     gpupgrade initialize \
-        --source-bindir="$GPHOME/bin" \
-        --target-bindir="$GPHOME/bin" \
+        --source-bindir="$GPHOME_SOURCE/bin" \
+        --target-bindir="$GPHOME_TARGET/bin" \
         --source-master-port="${PGPORT}"\
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
