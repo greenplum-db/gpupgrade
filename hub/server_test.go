@@ -85,7 +85,7 @@ func TestHubStart(t *testing.T) {
 
 		select {
 		case err := <-errChan:
-			expected := "failed to listen"
+			expected := "listen"
 			if err != nil && !strings.Contains(err.Error(), expected) {
 				t.Errorf("got error %#v want %#v", err, expected)
 			}

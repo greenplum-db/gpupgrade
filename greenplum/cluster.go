@@ -14,6 +14,7 @@ import (
 
 var isPostmasterRunningCmd = exec.Command
 var startStopCmd = exec.Command
+
 const MasterDbid = 1
 
 type Cluster struct {
@@ -41,13 +42,13 @@ type Cluster struct {
 func ClusterFromDB(conn *dbconn.DBConn, binDir string) (*Cluster, error) {
 	err := conn.Connect(1)
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't connect to cluster")
+		return nil, xerrors.Errorf("connect to cluster: %w", err)
 	}
 	defer conn.Close()
 
 	segments, err := GetSegmentConfiguration(conn)
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't retrieve segment configuration")
+		return nil, xerrors.Errorf("retrieve segment configuration: %w", err)
 	}
 
 	c, err := NewCluster(segments)

@@ -10,7 +10,6 @@ import (
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/hashicorp/go-multierror"
-	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -66,7 +65,7 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 			return err
 		}
 
-		err = s.CopyMasterTablespaces(streams, utils.GetTablespaceDir() + string(os.PathSeparator))
+		err = s.CopyMasterTablespaces(streams, utils.GetTablespaceDir()+string(os.PathSeparator))
 		if err != nil {
 			return err
 		}
@@ -78,13 +77,13 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 		agentConns, err := s.AgentConns()
 
 		if err != nil {
-			return errors.Wrap(err, "failed to connect to gpupgrade agent")
+			return xerrors.Errorf("connect to gpupgrade agent: %w", err)
 		}
 
 		dataDirPair, err := s.GetDataDirPairs()
 
 		if err != nil {
-			return errors.Wrap(err, "failed to get source and target primary data directories")
+			return xerrors.Errorf("get source and target primary data directories: %w", err)
 		}
 
 		return UpgradePrimaries(UpgradePrimaryArgs{

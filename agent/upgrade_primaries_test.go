@@ -97,7 +97,7 @@ func TestUpgradePrimary(t *testing.T) {
 		// XXX it'd be nice if we didn't couple against a hardcoded string here,
 		// but it's difficult to unwrap multierror with the new xerrors
 		// interface.
-		if !strings.Contains(err.Error(), "failed to check primary on host") ||
+		if !strings.Contains(err.Error(), "check primary on host") ||
 			!strings.Contains(err.Error(), "with content 1") {
 			t.Errorf("error %q did not contain expected contents 'check primary on host' and 'content 1'",
 				err.Error())
@@ -123,7 +123,7 @@ func TestUpgradePrimary(t *testing.T) {
 		// XXX it'd be nice if we didn't couple against a hardcoded string here,
 		// but it's difficult to unwrap multierror with the new xerrors
 		// interface.
-		if !strings.Contains(err.Error(), "failed to upgrade primary on host") ||
+		if !strings.Contains(err.Error(), "upgrade primary on host") ||
 			!strings.Contains(err.Error(), "with content 1") {
 			t.Errorf("error %q did not contain expected contents 'upgrade primary on host' and 'content 1'",
 				err.Error())

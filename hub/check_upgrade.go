@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/pkg/errors"
+	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/step"
 )
@@ -52,7 +52,7 @@ func (s *Server) CheckUpgrade(stream step.OutStreams, conns []*Connection) error
 
 		dataDirPairMap, dataDirPairsErr := s.GetDataDirPairs()
 		if dataDirPairsErr != nil {
-			checkErrs <- errors.Wrap(dataDirPairsErr, "failed to get source and target primary data directories")
+			checkErrs <- xerrors.Errorf("get source and target primary data directories: %w", dataDirPairsErr)
 			return
 		}
 

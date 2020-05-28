@@ -11,6 +11,7 @@ import (
 
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/pkg/errors"
+	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -83,7 +84,7 @@ func GetTablespaceTuples(connection *dbconn.DBConn) (TablespaceTuples, error) {
 	results := make(TablespaceTuples, 0)
 	err := connection.Select(&results, tablespacesQuery)
 	if err != nil {
-		return nil, errors.Wrapf(err, "querying tablespaces %q, query", tablespacesQuery)
+		return nil, xerrors.Errorf("tablespace query %q: %w", tablespacesQuery, err)
 	}
 
 	return results, nil
@@ -118,7 +119,7 @@ func (t TablespaceTuples) Write(w io.Writer) error {
 			tablespace.Location,
 			strconv.Itoa(tablespace.UserDefined)}
 		if err := writer.Write(line); err != nil {
-			return errors.Wrapf(err, "write record %q", line)
+			return xerrors.Errorf("write record %q: %w", line, err)
 		}
 	}
 	defer writer.Flush()
@@ -131,22 +132,22 @@ func (t TablespaceTuples) Write(w io.Writer) error {
 // 3. converts the tablespace information to an internal structure
 func TablespacesFromDB(conn *dbconn.DBConn, tablespacesFile string) (Tablespaces, error) {
 	if err := conn.Connect(1); err != nil {
-		return nil, errors.Wrap(err, "couldn't connect to cluster")
+		return nil, xerrors.Errorf("connect to cluster: %w", err)
 	}
 	defer conn.Close()
 
 	tablespaceTuples, err := GetTablespaceTuples(conn)
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't retrieve tablespace information")
+		return nil, xerrors.Errorf("retrieve tablespace information: %w", err)
 	}
 
 	file, err := utils.System.Create(tablespacesFile)
 	if err != nil {
-		return nil, errors.Wrapf(err, "create tablespace file: %s", tablespacesFile)
+		return nil, xerrors.Errorf("create tablespace file %q: %w", tablespacesFile, err)
 	}
 	defer file.Close()
 	if err := tablespaceTuples.Write(file); err != nil {
-		return nil, errors.Wrap(err, "populate the tablespace mapping file")
+		return nil, xerrors.Errorf("populate tablespace mapping file: %w", err)
 	}
 
 	return NewTablespaces(tablespaceTuples), nil

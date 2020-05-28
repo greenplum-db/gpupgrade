@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/pkg/errors"
+	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -21,13 +21,13 @@ func upgradeSegment(segment Segment, request *idl.UpgradePrimariesRequest, host 
 	err := restoreBackup(request, segment)
 
 	if err != nil {
-		return errors.Wrapf(err, "failed to restore master data directory backup on host %s for content id %d: %s",
+		return xerrors.Errorf("restore master data directory backup on host %s for content id %d: %w",
 			host, segment.Content, err)
 	}
 
 	err = RestoreTablespaces(request, segment)
 	if err != nil {
-		return errors.Wrapf(err, "restore tablespace on host %s for content id %d: %s",
+		return xerrors.Errorf("restore tablespace on host %s for content id %d: %w",
 			host, segment.Content, err)
 	}
 
@@ -38,7 +38,7 @@ func upgradeSegment(segment Segment, request *idl.UpgradePrimariesRequest, host 
 		if request.CheckOnly {
 			failedAction = "check"
 		}
-		return errors.Wrapf(err, "failed to %s primary on host %s with content %d", failedAction, host, segment.Content)
+		return xerrors.Errorf("%s primary on host %s with content %d: %w", failedAction, host, segment.Content, err)
 	}
 
 	return nil
@@ -103,12 +103,12 @@ func RestoreTablespaces(request *idl.UpgradePrimariesRequest, segment Segment) e
 		targetDir := greenplum.GetTablespaceLocationForDbId(tablespace, int(segment.DBID))
 		sourceDir := greenplum.GetMasterTablespaceLocation(filepath.Dir(request.TablespacesMappingFilePath), int(oid))
 		if err := Rsync(sourceDir, targetDir, nil); err != nil {
-			return errors.Wrap(err, "rsync master tablespace directory to segment tablespace directory")
+			return xerrors.Errorf("rsync master tablespace directory to segment tablespace directory: %w", err)
 		}
 
 		symLinkName := fmt.Sprintf("%s/pg_tblspc/%s", segment.TargetDataDir, strconv.Itoa(int(oid)))
 		if err := ReCreateSymLink(targetDir, symLinkName); err != nil {
-			return errors.Wrap(err, "failed to recreate symbolic link")
+			return xerrors.Errorf("recreate symbolic link: %w", err)
 		}
 	}
 
@@ -123,14 +123,14 @@ func reCreateSymLink(sourceDir, symLinkName string) error {
 	_, err := utils.System.Lstat(symLinkName)
 	if err == nil {
 		if err := utils.System.Remove(symLinkName); err != nil {
-			return errors.Wrapf(err, "failed to unlink %q", symLinkName)
+			return xerrors.Errorf("unlink %q: %w", symLinkName, err)
 		}
 	} else if !os.IsNotExist(err) {
-		return errors.Wrapf(err, "stat symbolic link %q", symLinkName)
+		return xerrors.Errorf("stat symbolic link %q: %w", symLinkName, err)
 	}
 
 	if err := utils.System.Symlink(sourceDir, symLinkName); err != nil {
-		return errors.Wrapf(err, "create symbolic link %q to directory %q", symLinkName, sourceDir)
+		return xerrors.Errorf("create symbolic link %q to directory %q: %w", symLinkName, sourceDir, err)
 	}
 
 	return nil

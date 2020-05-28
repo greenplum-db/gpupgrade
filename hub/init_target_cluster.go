@@ -31,7 +31,7 @@ func (s *Server) initsystemConfPath() string {
 func (s *Server) writeConf(sourceDBConn *dbconn.DBConn) error {
 	err := sourceDBConn.Connect(1)
 	if err != nil {
-		return errors.Wrap(err, "could not connect to database")
+		return xerrors.Errorf("connect to database: %w", err)
 	}
 	defer sourceDBConn.Close()
 
@@ -64,7 +64,7 @@ func (s *Server) CreateTargetCluster(stream step.OutStreams) error {
 
 	s.Target, err = greenplum.ClusterFromDB(conn, s.Target.BinDir)
 	if err != nil {
-		return errors.Wrap(err, "could not retrieve target configuration")
+		return xerrors.Errorf("retrieve target configuration: %w", err)
 	}
 
 	if err := s.SaveConfig(); err != nil {
@@ -81,11 +81,11 @@ func (s *Server) InitTargetCluster(stream step.OutStreams) error {
 func GetCheckpointSegmentsAndEncoding(gpinitsystemConfig []string, dbConnector *dbconn.DBConn) ([]string, error) {
 	checkpointSegments, err := dbconn.SelectString(dbConnector, "SELECT current_setting('checkpoint_segments') AS string")
 	if err != nil {
-		return gpinitsystemConfig, errors.Wrap(err, "Could not retrieve checkpoint segments")
+		return gpinitsystemConfig, xerrors.Errorf("retrieve checkpoint segments: %w", err)
 	}
 	encoding, err := dbconn.SelectString(dbConnector, "SELECT current_setting('server_encoding') AS string")
 	if err != nil {
-		return gpinitsystemConfig, errors.Wrap(err, "Could not retrieve server encoding")
+		return gpinitsystemConfig, xerrors.Errorf("retrieve server encoding: %w", err)
 	}
 	gpinitsystemConfig = append(gpinitsystemConfig,
 		fmt.Sprintf("CHECK_POINT_SEGMENTS=%s", checkpointSegments),
@@ -98,7 +98,7 @@ func CreateInitialInitsystemConfig(targetMasterDataDir string) ([]string, error)
 
 	segPrefix, err := GetMasterSegPrefix(targetMasterDataDir)
 	if err != nil {
-		return gpinitsystemConfig, errors.Wrap(err, "Could not get master segment prefix")
+		return gpinitsystemConfig, xerrors.Errorf("determine master segment prefix: %w", err)
 	}
 
 	gpinitsystemConfig = append(gpinitsystemConfig, "SEG_PREFIX="+segPrefix, "TRUSTED_SHELL=ssh")
@@ -111,7 +111,7 @@ func WriteInitsystemFile(gpinitsystemConfig []string, gpinitsystemFilepath strin
 
 	err := ioutil.WriteFile(gpinitsystemFilepath, gpinitsystemContents, 0644)
 	if err != nil {
-		return errors.Wrap(err, "Could not write gpinitsystem_config file")
+		return xerrors.Errorf("write gpinitsystem_config file: %w", err)
 	}
 	return nil
 }

@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
-	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -65,7 +64,7 @@ var indicators = map[idl.Status]string{
 func Initialize(client idl.CliToHubClient, request *idl.InitializeRequest, verbose bool) (err error) {
 	stream, err := client.Initialize(context.Background(), request)
 	if err != nil {
-		return errors.Wrap(err, "initializing hub")
+		return xerrors.Errorf("initialize hub: %w", err)
 	}
 
 	_, err = UILoop(stream, verbose)
@@ -81,7 +80,7 @@ func InitializeCreateCluster(client idl.CliToHubClient, verbose bool) (err error
 		&idl.InitializeCreateClusterRequest{},
 	)
 	if err != nil {
-		return errors.Wrap(err, "initializing hub2")
+		return xerrors.Errorf("initialize create cluster: %w", err)
 	}
 
 	_, err = UILoop(stream, verbose)

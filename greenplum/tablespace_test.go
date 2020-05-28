@@ -66,7 +66,7 @@ func TestGetTablespaces(t *testing.T) {
 			rows:           nil,
 			versionStr:     "",
 			expectedTuples: nil,
-			error:          errors.New("querying tablespaces"),
+			error:          errors.New("tablespace query"),
 		},
 	}
 

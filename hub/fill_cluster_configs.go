@@ -10,6 +10,7 @@ import (
 	"sort"
 
 	"github.com/pkg/errors"
+	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/db"
 	"github.com/greenplum-db/gpupgrade/greenplum"
@@ -35,7 +36,7 @@ func FillClusterConfigsSubStep(config *Config, conn *sql.DB, _ step.OutStreams, 
 	dbconn := db.NewDBConn("localhost", int(request.SourcePort), "template1")
 	source, err := greenplum.ClusterFromDB(dbconn, request.SourceBinDir)
 	if err != nil {
-		return errors.Wrap(err, "could not retrieve source configuration")
+		return xerrors.Errorf("retrieve source configuration: %w", err)
 	}
 
 	config.Source = source
@@ -55,12 +56,12 @@ func FillClusterConfigsSubStep(config *Config, conn *sql.DB, _ step.OutStreams, 
 	// major version upgrade requires upgrading tablespaces
 	if dbconn.Version.Is("5") {
 		if err := utils.System.MkdirAll(utils.GetTablespaceDir(), 0700); err != nil {
-			return errors.Wrapf(err, "creating tablespace directory %q", utils.GetTablespaceDir())
+			return xerrors.Errorf("create tablespace directory %q: %w", utils.GetTablespaceDir(), err)
 		}
 		config.TablespacesMappingFilePath = filepath.Join(utils.GetTablespaceDir(), greenplum.TablespacesMappingFile)
 		config.Tablespaces, err = greenplum.TablespacesFromDB(dbconn, config.TablespacesMappingFilePath)
 		if err != nil {
-			return errors.Wrap(err, "extracting tablespace information")
+			return xerrors.Errorf("extract tablespace information: %w", err)
 		}
 	}
 

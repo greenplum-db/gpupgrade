@@ -356,17 +356,17 @@ func initialize() *cobra.Command {
 
 			err = commanders.CreateStateDir()
 			if err != nil {
-				return errors.Wrap(err, "creating state directory")
+				return xerrors.Errorf("create state directory: %w", err)
 			}
 
 			err = commanders.CreateInitialClusterConfigs()
 			if err != nil {
-				return errors.Wrap(err, "creating initial cluster configs")
+				return xerrors.Errorf("create initial cluster configs: %w", err)
 			}
 
 			err = commanders.StartHub()
 			if err != nil {
-				return errors.Wrap(err, "starting hub")
+				return xerrors.Errorf("start hub: %w", err)
 			}
 
 			client := connectToHub()
@@ -381,7 +381,7 @@ func initialize() *cobra.Command {
 			}
 			err = commanders.Initialize(client, request, verbose)
 			if err != nil {
-				return errors.Wrap(err, "initializing hub")
+				return xerrors.Errorf("initialize hub: %w", err)
 			}
 
 			err = commanders.RunChecks(client, diskFreeRatio)
@@ -395,7 +395,7 @@ func initialize() *cobra.Command {
 
 			err = commanders.InitializeCreateCluster(client, verbose)
 			if err != nil {
-				return errors.Wrap(err, "initializing cluster")
+				return xerrors.Errorf("initialize create cluster: %w", err)
 			}
 
 			fmt.Println(`

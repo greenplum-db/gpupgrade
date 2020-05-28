@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
+	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/agent"
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -64,8 +65,8 @@ func TestRestoreTablespaces(t *testing.T) {
 
 		// all the args for multiple invocations of rsync
 		expectedRsyncArgs := []string{
-				"--archive", "--delete",
-				"/tmp/tablespaces/1663/1/", "/tmp/default/1663/2",
+			"--archive", "--delete",
+			"/tmp/tablespaces/1663/1/", "/tmp/default/1663/2",
 		}
 
 		var actualArgs []string
@@ -179,7 +180,7 @@ func TestRestoreTablespaces(t *testing.T) {
 			t.Error("expected ReCreateSymLink() to fail")
 		}
 
-		expectedErrorStr := "failed to recreate symbolic link"
+		expectedErrorStr := "recreate symbolic link"
 		if !strings.Contains(err.Error(), expectedErrorStr) {
 			t.Errorf("got %+v, want %+v", err, expectedErrorStr)
 		}
@@ -200,8 +201,8 @@ func TestReCreateSymLink(t *testing.T) {
 			t.Errorf("got nil, want %+v", os.ErrPermission)
 		}
 
-		if os.ErrPermission != errors.Cause(err) {
-			t.Errorf("got %#v, want %#v", err, os.ErrPermission)
+		if !xerrors.Is(err, os.ErrPermission) {
+			t.Errorf("expected error %#v to contain %#v", err, os.ErrPermission)
 		}
 	})
 
@@ -225,11 +226,11 @@ func TestReCreateSymLink(t *testing.T) {
 			t.Errorf("expected Lstat() to be called")
 		}
 
-		if os.ErrPermission != errors.Cause(err) {
+		if os.ErrPermission != xerrors.Unwrap(err) {
 			t.Errorf("got %q, want %q", err.Error(), os.ErrPermission)
 		}
 
-		expectedErrStr := "failed to unlink"
+		expectedErrStr := "unlink"
 		if !strings.Contains(err.Error(), expectedErrStr) {
 			t.Errorf("got %q, want %q", err.Error(), expectedErrStr)
 		}
