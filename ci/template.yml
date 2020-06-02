@@ -27,11 +27,13 @@ resources:
     uri: ((gpupgrade-git-remote))
     branch: ((gpupgrade-git-branch))
 
-- name: gpdb6_src
+{{range .AllVersions}}
+- name: gpdb{{.}}_src
   type: git
   source:
     uri: https://github.com/greenplum-db/gpdb
-    branch: 6X_STABLE
+    branch: {{.}}X_STABLE
+{{end}}
 
 - name: retail_demo_src
   type: git
@@ -49,16 +51,6 @@ resources:
     {{- /* note that . can be a full X.y.z, or just a partial X or X.y */}}
     regexp: greenplum-db-{{ majorVersion .GPVersion }}/greenplum-db-({{escapeVersion .GPVersion}}.*)-rhel{{.CentosVersion}}-x86_64.rpm
 {{end}}
-
-{{/* CentOS 6 is still used for the install-tests job. */ -}}
-{{ with .LastTargetVersion -}}
-- name: bin_gpdb{{.}}_centos6
-  type: gcs
-  source:
-    bucket: ((gcs-bucket))
-    json_key: ((concourse-gcs-resources-service-account-key))
-    regexp: server/published/gpdb6/server-rc-({{escapeVersion .}}.*)-rhel6_x86_64.debug.tar.gz
-{{- end }}
 
 - name: bin_gpupgrade
   type: gcs
@@ -218,21 +210,29 @@ jobs:
   on_failure:
     <<: *slack_alert
 
-- name: install-tests
+{{range .CheckJobs}}
+- name: {{.Name}}
   plan:
   - in_parallel:
     - get: gpupgrade_src
       trigger: true
-    - get: gpdb_src
-      resource: gpdb6_src
+    - get: gpdb_src_source
+      resource: gpdb{{.Source}}_src
     - get: bats
-    - get: bin_gpdb
-      resource: bin_gpdb{{.LastTargetVersion}}_centos6
+    - get: rpm_gpdb_source
+      resource: rpm_gpdb{{.Source}}_centos6
+      trigger: true
+    - get: rpm_gpdb_target
+      resource: rpm_gpdb{{.Target}}_centos6
       trigger: true
   - task: install-tests
     file: gpupgrade_src/ci/tasks/install-tests.yml
+    params:
+      SOURCE_PACKAGE: greenplum-db-{{.Source}}
+      TARGET_PACKAGE: greenplum-db-{{.Target}}
   on_failure:
     <<: *slack_alert
+{{end -}}
 
 {{range .UpgradeJobs}}
 - name: {{ .Name }}
@@ -394,7 +394,9 @@ jobs:
         passed:
           - build
           - noinstall-tests
-          - install-tests
+          {{- range .CheckJobs}}
+          - {{ .Name }}
+          {{- end}}
           {{- range .UpgradeJobs}}
           - {{ .Name }}
           {{- end}}

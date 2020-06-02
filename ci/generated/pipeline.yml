@@ -28,11 +28,19 @@ resources:
     uri: ((gpupgrade-git-remote))
     branch: ((gpupgrade-git-branch))
 
+
+- name: gpdb5_src
+  type: git
+  source:
+    uri: https://github.com/greenplum-db/gpdb
+    branch: 5X_STABLE
+
 - name: gpdb6_src
   type: git
   source:
     uri: https://github.com/greenplum-db/gpdb
     branch: 6X_STABLE
+
 
 - name: retail_demo_src
   type: git
@@ -70,13 +78,6 @@ resources:
     json_key: ((cm-gcs-service-account-key))
     regexp: greenplum-db-5/greenplum-db-(5.*)-rhel7-x86_64.rpm
 
-
-- name: bin_gpdb6_centos6
-  type: gcs
-  source:
-    bucket: ((gcs-bucket))
-    json_key: ((concourse-gcs-resources-service-account-key))
-    regexp: server/published/gpdb6/server-rc-(6.*)-rhel6_x86_64.debug.tar.gz
 
 - name: bin_gpupgrade
   type: gcs
@@ -236,22 +237,50 @@ jobs:
   on_failure:
     <<: *slack_alert
 
-- name: install-tests
+
+- name: 6-to-6-install-tests
   plan:
   - in_parallel:
     - get: gpupgrade_src
       trigger: true
-    - get: gpdb_src
+    - get: gpdb_src_source
       resource: gpdb6_src
     - get: bats
-    - get: bin_gpdb
-      resource: bin_gpdb6_centos6
+    - get: rpm_gpdb_source
+      resource: rpm_gpdb6_centos6
+      trigger: true
+    - get: rpm_gpdb_target
+      resource: rpm_gpdb6_centos6
       trigger: true
   - task: install-tests
     file: gpupgrade_src/ci/tasks/install-tests.yml
+    params:
+      SOURCE_PACKAGE: greenplum-db-6
+      TARGET_PACKAGE: greenplum-db-6
   on_failure:
     <<: *slack_alert
 
+- name: 5-to-6-install-tests
+  plan:
+  - in_parallel:
+    - get: gpupgrade_src
+      trigger: true
+    - get: gpdb_src_source
+      resource: gpdb5_src
+    - get: bats
+    - get: rpm_gpdb_source
+      resource: rpm_gpdb5_centos6
+      trigger: true
+    - get: rpm_gpdb_target
+      resource: rpm_gpdb6_centos6
+      trigger: true
+  - task: install-tests
+    file: gpupgrade_src/ci/tasks/install-tests.yml
+    params:
+      SOURCE_PACKAGE: greenplum-db-5
+      TARGET_PACKAGE: greenplum-db-6
+  on_failure:
+    <<: *slack_alert
 
 - name: 6-to-6-centos-6
   serial_groups: [6-to-6]
@@ -1444,7 +1473,8 @@ jobs:
         passed:
           - build
           - noinstall-tests
-          - install-tests
+          - 6-to-6-install-tests
+          - 5-to-6-install-tests
           - 6-to-6-centos-6
           - 6-to-6-centos-7
           - 5-to-6-centos-6

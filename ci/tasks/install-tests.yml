@@ -11,10 +11,10 @@ image_resource:
 
 inputs:
 - name: gpupgrade_src
-  path: go/src/github.com/greenplum-db/gpupgrade
-- name: gpdb_src
-- name: bin_gpdb
+- name: gpdb_src_source
+- name: rpm_gpdb_source
+- name: rpm_gpdb_target
 - name: bats
 
 run:
-  path: go/src/github.com/greenplum-db/gpupgrade/ci/scripts/install-tests.bash
+  path: gpupgrade_src/ci/scripts/install-tests.bash
