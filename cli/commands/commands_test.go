@@ -5,7 +5,11 @@ package commands
 
 import (
 	"reflect"
+	"strconv"
 	"testing"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -174,4 +178,78 @@ func TestGetHubPort(t *testing.T) {
 		}
 	})
 
+}
+
+func TestAddFlags(t *testing.T) {
+	t.Run("sets flags to correct value and marks them as changed", func(t *testing.T) {
+		var name string
+		var port int
+		var isSet bool
+		var unsetFlag string
+		cmd := cobra.Command{}
+		cmd.Flags().StringVar(&name, "name", "", "")
+		cmd.Flags().IntVar(&port, "port", 0, "")
+		cmd.Flags().BoolVar(&isSet, "is-set", false, "")
+		cmd.Flags().StringVar(&unsetFlag, "unset-flag", "", "")
+
+		flags := map[string]string{
+			"name":   "value",
+			"port":   "123",
+			"is-set": "true",
+		}
+
+		err := addFlags(&cmd, flags)
+		if err != nil {
+			t.Errorf("addFlags returned error %+v", err)
+		}
+
+		// verify string flags
+		if name != flags["name"] {
+			t.Errorf("got %q want %q", name, flags["name"])
+		}
+
+		// verify int flags
+		expectedPort, err := strconv.Atoi(flags["port"])
+		if err != nil {
+			t.Errorf("Atoi returned error: %+v", err)
+		}
+
+		if port != expectedPort {
+			t.Errorf("got %d want %d", port, expectedPort)
+		}
+
+		// verify bool flags
+		expectedBool, err := strconv.ParseBool(flags["is-set"])
+		if err != nil {
+			t.Errorf("ParseBool returned error: %+v", err)
+		}
+
+		if isSet != expectedBool {
+			t.Errorf("got %t want %t", isSet, expectedBool)
+		}
+
+		// verify flags have been changed
+		cmd.Flags().Visit(func(flag *pflag.Flag) {
+			if !flag.Changed {
+				t.Errorf("expected flag %q to be changed", flag.Name)
+			}
+		})
+
+		// verify unset flags have not been changed
+		flag := cmd.Flag("unset-flag")
+		if flag.Changed {
+			t.Errorf("expected unset flag %q to not be changed", flag.Name)
+		}
+	})
+
+	t.Run("errors when adding unknown parameter", func(t *testing.T) {
+		flags := map[string]string{
+			"unknown": "value",
+		}
+
+		err := addFlags(&cobra.Command{}, flags)
+		if err == nil {
+			t.Errorf("expected error %#v got nil", err)
+		}
+	})
 }

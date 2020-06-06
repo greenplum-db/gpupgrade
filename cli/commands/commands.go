@@ -39,6 +39,7 @@ import (
 	"time"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
+	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -329,6 +330,7 @@ func version() *cobra.Command {
 //
 
 func initialize() *cobra.Command {
+	var file string
 	var sourceBinDir, targetBinDir string
 	var sourcePort int
 	var hubPort int
@@ -343,7 +345,50 @@ func initialize() *cobra.Command {
 		Use:   "initialize",
 		Short: "prepare the system for upgrade",
 		Long:  InitializeHelp,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			// mark the required flags when the file flag is not set
+			if !cmd.Flag("file").Changed {
+				cmd.MarkFlagRequired("source-bindir")      //nolint
+				cmd.MarkFlagRequired("target-bindir")      //nolint
+				cmd.MarkFlagRequired("source-master-port") //nolint
+			}
+
+			// If the file flag is set check that no other flags are specified
+			// other than verbose.
+			if cmd.Flag("file").Changed {
+				var err error
+				cmd.Flags().Visit(func(flag *pflag.Flag) {
+					if flag.Name != "file" && flag.Name != "verbose" {
+						err = errors.New("The file flag cannot be used with any other flag.")
+					}
+				})
+				return err
+			}
+
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if cmd.Flag("file").Changed {
+				configFile, err := os.Open(file)
+				if err != nil {
+					return err
+				}
+				defer func() {
+					if cErr := configFile.Close(); cErr != nil {
+						err = multierror.Append(err, cErr).ErrorOrNil()
+					}
+				}()
+
+				flags, err := ParseConfig(configFile)
+				if err != nil {
+					return xerrors.Errorf("in file %q: %w", file, err)
+				}
+
+				err = addFlags(cmd, flags)
+				if err != nil {
+					return err
+				}
+			}
 
 			linkMode, err := isLinkMode(mode)
 			if err != nil {
@@ -437,12 +482,10 @@ After executing, you will need to finalize.`)
 		},
 	}
 
+	subInit.Flags().StringVarP(&file, "file", "f", "", "the configuration file to use")
 	subInit.Flags().StringVar(&sourceBinDir, "source-bindir", "", "install directory for source gpdb version")
-	subInit.MarkFlagRequired("source-bindir") //nolint
 	subInit.Flags().StringVar(&targetBinDir, "target-bindir", "", "install directory for target gpdb version")
-	subInit.MarkFlagRequired("target-bindir") //nolint
 	subInit.Flags().IntVar(&sourcePort, "source-master-port", 0, "master port for source gpdb cluster")
-	subInit.MarkFlagRequired("source-master-port") //nolint
 	subInit.Flags().IntVar(&hubPort, "hub-port", upgrade.DefaultHubPort, "the port gpupgrade hub uses to listen for commands on")
 	subInit.Flags().IntVar(&agentPort, "agent-port", upgrade.DefaultAgentPort, "the port gpupgrade agent uses to listen for commands on")
 	subInit.Flags().BoolVar(&stopBeforeClusterCreation, "stop-before-cluster-creation", false, "only run up to pre-init")
@@ -604,6 +647,28 @@ func isLinkMode(input string) (bool, error) {
 	}
 
 	return false, fmt.Errorf("Invalid input %q. Please specify either %s.", input, strings.Join(choices, " or "))
+}
+
+func addFlags(cmd *cobra.Command, flags map[string]string) error {
+	for name, value := range flags {
+		flag := cmd.Flag(name)
+		if flag == nil {
+			var names []string
+			cmd.Flags().VisitAll(func(flag *pflag.Flag) {
+				names = append(names, flag.Name)
+			})
+			return xerrors.Errorf("The configuration parameter %q was not found in the list of supported parameters: %s.", name, strings.Join(names, ", "))
+		}
+
+		err := flag.Value.Set(value)
+		if err != nil {
+			return xerrors.Errorf("set %q to %q: %w", name, value, err)
+		}
+
+		cmd.Flag(name).Changed = true
+	}
+
+	return nil
 }
 
 var restartServices = &cobra.Command{
