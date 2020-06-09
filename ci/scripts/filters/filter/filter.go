@@ -30,20 +30,15 @@ import (
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/greenplum-db/gpupgrade/ci/scripts/filters"
 )
 
-type replacer struct {
-	Regex       *regexp.Regexp
-	Replacement string
-}
-
-func (t *replacer) replace(line string) string {
-	return t.Regex.ReplaceAllString(line, t.Replacement)
-}
+type ReplacementFunc func(line string) string
+var replacementFuncs []ReplacementFunc
 
 var lineRegexes []*regexp.Regexp
 var blockRegexes []*regexp.Regexp
-var replacements []*replacer
 
 func init() {
 	// linePatterns remove exactly what is matched, on a line-by-line basis.
@@ -59,9 +54,8 @@ func init() {
 		"COMMENT ON DATABASE postgres IS",
 	}
 
-	// replacementPatterns is a map of regex substitutions.
-	replacementPatterns := map[string]string{
-		`WITH \(tablename='(.+)', appendonly='true', compresstype=(.+), orientation='column' \)`: `WITH (tablename='${1}', appendonly=true, compresstype=${2}, orientation=column )`,
+	replacementFuncs = []ReplacementFunc{
+		filters.FormatWithClause,
 	}
 
 	for _, pattern := range linePatterns {
@@ -69,12 +63,6 @@ func init() {
 	}
 	for _, pattern := range blockPatterns {
 		blockRegexes = append(blockRegexes, regexp.MustCompile(pattern))
-	}
-	for regex, replacement := range replacementPatterns {
-		replacements = append(replacements, &replacer{
-			Regex:       regexp.MustCompile(regex),
-			Replacement: replacement,
-		})
 	}
 }
 
@@ -91,7 +79,7 @@ func Filter(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
 	// there are lines in icw regression suite requiring buffer
 	// to be atleast 10000000, so keeping it a little higher for now.
-	scanner.Buffer(nil, 9800 * 4024)
+	scanner.Buffer(nil, 9800*4024)
 
 	var buf []string // lines buffered for look-ahead
 
@@ -121,8 +109,8 @@ nextline:
 			}
 		}
 
-		for _, r := range replacements {
-			line = r.replace(line)
+		for _, replacementFunc := range replacementFuncs {
+			line = replacementFunc(line)
 		}
 
 		// We want to keep this line. Flush and empty our buffer first.

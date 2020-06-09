@@ -1,13 +1,11 @@
 // Copyright (c) 2017-2020 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
-package main_test
+package main
 
 import (
 	"bytes"
 	"testing"
-
-	main "github.com/greenplum-db/gpupgrade/ci/scripts/filter"
 )
 
 func TestFilter(t *testing.T) {
@@ -17,7 +15,7 @@ func TestFilter(t *testing.T) {
 		expected := "hello\n"
 		in.WriteString(expected)
 
-		main.Filter(&in, &out)
+		Filter(&in, &out)
 		if out.String() != expected {
 			t.Errorf("wrote %q want %q", out.String(), expected)
 		}
@@ -36,7 +34,7 @@ RESET allow_system_table_mods;
 ALTER DATABASE test SET gp_use_legacy_hashops TO 'on';
 `)
 
-		main.Filter(&in, &out)
+		Filter(&in, &out)
 
 		expected := `
 GRANT ALL ON DATABASE template1 TO gpadmin;
@@ -68,7 +66,7 @@ CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
 RESET allow_system_table_mods;
 `)
 
-		main.Filter(&in, &out)
+		Filter(&in, &out)
 
 		expected := `
 GRANT ALL ON DATABASE template1 TO gpadmin;
@@ -98,7 +96,7 @@ RESET allow_system_table_mods;
 
 `)
 
-		main.Filter(&in, &out)
+		Filter(&in, &out)
 
 		expected := `
 
@@ -129,7 +127,7 @@ START ('2005-12-01 00:00:00'::timestamp without time zone) END ('2006-01-01 00:0
 START ('2005-12-01 00:00:00'::timestamp without time zone) END ('2006-01-01 00:00:00'::timestamp without time zone) EVERY ('1 mon'::interval) WITH (tablename='order_lineitems_1_prt_2', appendonly=true, compresstype=quicklz, orientation=column )
 `
 
-		main.Filter(&in, &out)
+		Filter(&in, &out)
 
 		if out.String() != expected {
 			t.Errorf("wrote %q want %q", out.String(), expected)
@@ -144,7 +142,7 @@ START ('2005-12-01 00:00:00'::timestamp without time zone) END ('2006-01-01 00:0
 		expected := "WITH (appendonly='true', compresstype=quicklz, orientation='column'\n"
 		in.WriteString(expected)
 
-		main.Filter(&in, &out)
+		Filter(&in, &out)
 
 		if out.String() != expected {
 			t.Errorf("wrote %q want %q", out.String(), expected)
