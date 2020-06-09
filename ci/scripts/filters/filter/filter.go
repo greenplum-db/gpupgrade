@@ -66,6 +66,18 @@ func init() {
 	}
 }
 
+func writeBufAndLine(out io.Writer, buf []string, line string) []string {
+	// We want to keep this line. Flush and empty our buffer first.
+	if len(buf) > 0 {
+		write(out, buf...)
+		buf = (buf)[:0]
+	}
+
+	write(out, line)
+
+	return buf
+}
+
 func write(out io.Writer, lines ...string) {
 	for _, line := range lines {
 		_, err := fmt.Fprintln(out, line)
@@ -83,9 +95,29 @@ func Filter(in io.Reader, out io.Writer) {
 
 	var buf []string // lines buffered for look-ahead
 
+	// temporary storage for view/rule ddl processing
+	var allTokens []string
+	var formattingViewOrRuleDdlStmt = false
+
 nextline:
 	for scanner.Scan() {
 		line := scanner.Text()
+
+		// TODO: make it more generic, wherein, all the rules are applied
+		// in a coherent manner, and their complexity is hidden from this
+		// main loop
+		if formattingViewOrRuleDdlStmt || filters.IsViewOrRuleDdl(buf, line) {
+			formattingViewOrRuleDdlStmt = true
+			completeDdl, resultTokens, finishedFormatting := filters.BuildViewOrRuleDdl(line, allTokens)
+			allTokens = resultTokens
+			if finishedFormatting {
+				buf = writeBufAndLine(out, buf, completeDdl)
+				formattingViewOrRuleDdlStmt = false
+				allTokens = nil
+			}
+
+			continue nextline
+		}
 
 		// First filter on a line-by-line basis.
 		for _, r := range lineRegexes {
@@ -113,13 +145,7 @@ nextline:
 			line = replacementFunc(line)
 		}
 
-		// We want to keep this line. Flush and empty our buffer first.
-		if len(buf) > 0 {
-			write(out, buf...)
-			buf = buf[:0]
-		}
-
-		write(out, line)
+		buf = writeBufAndLine(out, buf, line)
 	}
 
 	if scanner.Err() != nil {

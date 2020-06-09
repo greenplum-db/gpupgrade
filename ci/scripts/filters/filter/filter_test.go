@@ -150,4 +150,54 @@ START ('2005-12-01 00:00:00'::timestamp without time zone) END ('2006-01-01 00:0
 			t.Logf("expected (expanded): %s", expected)
 		}
 	})
+
+	t.Run("formats the view body to single line", func(t *testing.T) {
+		var in, out bytes.Buffer
+		in.WriteString(`--
+-- Name: t3; Type: VIEW; Schema: public; Owner: xxxx
+--
+CREATE VIEW public.t3 AS
+ SELECT t1.s2,
+    foo.s2_xform
+   FROM (public.t1
+     JOIN ( SELECT t2.s2,
+            COALESCE((avg(t2.r) - 0.020000), (0)::numeric) AS s2_xform
+           FROM public.t2
+          GROUP BY t2.s2) foo ON ((t1.s2 = foo.s2)));`)
+
+		expected := `--
+-- Name: t3; Type: VIEW; Schema: public; Owner: xxxx
+--
+CREATE VIEW public.t3 AS
+SELECT t1.s2, foo.s2_xform FROM (public.t1 JOIN (SELECT t2.s2, COALESCE((avg(t2.r) - 0.020000), (0)::numeric) AS s2_xform FROM public.t2 GROUP BY t2.s2) foo ON ((t1.s2 = foo.s2)));
+`
+
+		Filter(&in, &out)
+
+		if out.String() != expected {
+			t.Errorf("wrote %q want %q", out.String(), expected)
+		}
+	})
+
+	t.Run("formats the rule ddl to single line", func(t *testing.T) {
+		var in, out bytes.Buffer
+		in.WriteString(`--
+-- Name: oid_consistency_bar2 two; Type: RULE; Schema: public; Owner: gpadmin
+--
+CREATE RULE two AS
+    ON INSERT TO public.oid_consistency_bar2 DO INSTEAD  INSERT INTO public.oid_consistency_foo2 (a)
+  VALUES (1);`)
+
+		expected := `--
+-- Name: oid_consistency_bar2 two; Type: RULE; Schema: public; Owner: gpadmin
+--
+CREATE RULE two AS ON INSERT TO public.oid_consistency_bar2 DO INSTEAD INSERT INTO public.oid_consistency_foo2 (a) VALUES (1);
+`
+
+		Filter(&in, &out)
+
+		if out.String() != expected {
+			t.Errorf("wrote %q want %q", out.String(), expected)
+		}
+	})
 }
