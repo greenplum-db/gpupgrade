@@ -26,7 +26,7 @@ compare_dumps() {
     pushd gpupgrade_src
         # 5 to 6 requires some massaging of the diff due to expected changes.
         if (( $FILTER_DIFF )); then
-            go build ./ci/scripts/filter
+            go build ./ci/scripts/filters/filter
             scp ./filter mdw:/tmp/filter
 
             # First filter out any algorithmically-fixable differences, then
@@ -34,7 +34,7 @@ compare_dumps() {
             ssh mdw "
                 /tmp/filter < '$new_dump' > '$new_dump.filtered'
                 patch -R '$new_dump.filtered'
-            " < ./ci/scripts/filter/${DIFF_FILE}
+            " < ./ci/scripts/filters/${DIFF_FILE}
 
             new_dump="$new_dump.filtered"
         fi
