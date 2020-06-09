@@ -105,6 +105,16 @@ func (c *Cluster) HasMirrors() bool {
 	return false
 }
 
+func (c *Cluster) HasAllMirrorsAndStandby() bool {
+	for content := range c.Primaries {
+		if _, ok := c.Mirrors[content]; !ok {
+			return false
+		}
+	}
+
+	return true
+}
+
 // XXX This does not provide mirror hostnames yet.
 func (c *Cluster) GetHostnames() []string {
 	hostnameMap := make(map[string]bool)

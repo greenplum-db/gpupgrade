@@ -364,3 +364,86 @@ func TestSelectSegments(t *testing.T) {
 	}
 
 }
+
+func TestHasAllMirrorsAndStandby(t *testing.T) {
+	t.Run("returns true on full cluster", func(t *testing.T) {
+		segs := []greenplum.SegConfig{
+			{ContentID: -1, Role: "p"},
+			{ContentID: -1, Role: "m"},
+			{ContentID: 0, Role: "p"},
+			{ContentID: 0, Role: "m"},
+			{ContentID: 1, Role: "p"},
+			{ContentID: 1, Role: "m"},
+			{ContentID: 2, Role: "p"},
+			{ContentID: 2, Role: "m"},
+		}
+		cluster, err := greenplum.NewCluster(segs)
+		if err != nil {
+			t.Fatalf("NewCluster returned error: %+v", err)
+		}
+
+		if !cluster.HasAllMirrorsAndStandby() {
+			t.Errorf("expected a cluster that has all mirrors and a standby")
+		}
+	})
+
+	cases := []struct {
+		name string
+		segs []greenplum.SegConfig
+	}{
+		{
+			"returns false on cluster with no mirrors",
+			[]greenplum.SegConfig{
+				{ContentID: -1, Role: "p"},
+				{ContentID: 0, Role: "p"},
+				{ContentID: 1, Role: "p"},
+				{ContentID: 2, Role: "p"},
+			},
+		},
+		{
+			"returns false on cluster with mirrors but no standby",
+			[]greenplum.SegConfig{
+				{ContentID: -1, Role: "p"},
+				{ContentID: 0, Role: "p"},
+				{ContentID: 0, Role: "m"},
+				{ContentID: 1, Role: "p"},
+				{ContentID: 1, Role: "m"},
+				{ContentID: 2, Role: "p"},
+				{ContentID: 2, Role: "m"},
+			},
+		},
+		{
+			"returns false on cluster with standby and no mirrors",
+			[]greenplum.SegConfig{
+				{ContentID: -1, Role: "p"},
+				{ContentID: -1, Role: "m"},
+				{ContentID: 0, Role: "p"},
+				{ContentID: 1, Role: "p"},
+				{ContentID: 2, Role: "p"},
+			},
+		},
+		{
+			"returns false on cluster with only one mirror",
+			[]greenplum.SegConfig{
+				{ContentID: -1, Role: "p"},
+				{ContentID: 0, Role: "p"},
+				{ContentID: 0, Role: "m"},
+				{ContentID: 1, Role: "p"},
+				{ContentID: 2, Role: "p"},
+			},
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			cluster, err := greenplum.NewCluster(c.segs)
+			if err != nil {
+				t.Fatalf("NewCluster returned error: %+v", err)
+			}
+
+			if cluster.HasAllMirrorsAndStandby() {
+				t.Errorf("expected a cluster missing at least one mirror or its standby")
+			}
+		})
+	}
+
+}
