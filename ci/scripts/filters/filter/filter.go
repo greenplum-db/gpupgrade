@@ -43,7 +43,11 @@ var blockRegexes []*regexp.Regexp
 func init() {
 	// linePatterns remove exactly what is matched, on a line-by-line basis.
 	linePatterns := []string{
-		"ALTER DATABASE .+ SET gp_use_legacy_hashops TO 'on';",
+		`ALTER DATABASE .+ SET gp_use_legacy_hashops TO 'on';`,
+		// TODO: There may be false positives because of the below
+		// pattern, and we might have to do a look ahead to really identify
+		// if it can be deleted.
+		`START WITH \d`,
 	}
 
 	// blockPatterns remove lines that match, AND any comments or whitespace
