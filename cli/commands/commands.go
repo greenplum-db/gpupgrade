@@ -163,25 +163,44 @@ func connTimeout() time.Duration {
 	return time.Duration(duration * float64(time.Second))
 }
 
-// connectToHub() performs a blocking connection to the hub, and returns a
-// CliToHubClient which wraps the resulting gRPC channel. Any errors result in
-// an os.Exit(1). This reads the hub's persisted configuration for the current
-// port. NOTE: This overloads the hub's persisted configuration with that of the
+// This reads the hub's persisted configuration for the current
+// port.  If tryDefault is true and the configuration file does not exist,
+// it will use the default port.  This might be the case if the hub is
+// still running, even though the state directory, which contains the
+// hub's persistent configuration, has been deleted.
+// Any errors result in an os.Exit(1).
+// NOTE: This overloads the hub's persisted configuration with that of the
 // CLI when ideally these would be separate.
-func connectToHub() idl.CliToHubClient {
+func getHubPort(tryDefault bool) int {
 	conf := &hub.Config{}
 	err := hub.LoadConfig(conf, upgrade.GetConfigFile())
-	if err != nil {
+
+	var pathError *os.PathError
+	if tryDefault && xerrors.As(err, &pathError) {
+		conf.Port = upgrade.DefaultHubPort
+	} else if err != nil {
 		gplog.Error("failed to retrieve hub port due to %v", err)
 		os.Exit(1)
 	}
 
+	return conf.Port
+}
+
+// calls connectToHubOnPort() using the port defined in the configuration file
+func connectToHub() idl.CliToHubClient {
+	return connectToHubOnPort(getHubPort(false))
+}
+
+// connectToHubOnPort() performs a blocking connection to the hub based on the
+// passed in port, and returns a CliToHubClient which wraps the resulting gRPC channel.
+// Any errors result in a call to os.Exit(1).
+func connectToHubOnPort(port int) idl.CliToHubClient {
 	// Set up our timeout.
 	ctx, cancel := context.WithTimeout(context.Background(), connTimeout())
 	defer cancel()
 
 	// Attempt a connection.
-	address := "localhost:" + strconv.Itoa(conf.Port)
+	address := "localhost:" + strconv.Itoa(port)
 	conn, err := grpc.DialContext(ctx, address, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		// Print a nicer error message if we can't connect to the hub.
@@ -497,7 +516,7 @@ func revert() *cobra.Command {
 			}
 
 			s := commanders.Substep(idl.Substep_STOP_HUB_AND_AGENTS)
-			err = stopHubAndAgents()
+			err = stopHubAndAgents(false)
 			s.Finish(&err)
 
 			if err != nil {
@@ -640,12 +659,12 @@ var killServices = &cobra.Command{
 			return nil
 		}
 
-		return stopHubAndAgents()
+		return stopHubAndAgents(true)
 	},
 }
 
-func stopHubAndAgents() error {
-	_, err := connectToHub().StopServices(context.Background(), &idl.StopServicesRequest{})
+func stopHubAndAgents(tryDefaultPort bool) error {
+	_, err := connectToHubOnPort(getHubPort(tryDefaultPort)).StopServices(context.Background(), &idl.StopServicesRequest{})
 	if err != nil {
 		errCode := grpcStatus.Code(err)
 		errMsg := grpcStatus.Convert(err).Message()

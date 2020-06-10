@@ -26,6 +26,10 @@ teardown() {
 
     gpupgrade kill-services
     rm -r "$STATE_DIR"
+
+    if [ -n "${TMP_DIR}" ]; then
+        rm -r "${TMP_DIR}"
+    fi
 }
 
 @test "kill-services actually stops hub and agents" {
@@ -39,6 +43,27 @@ teardown() {
     # make sure that they are down
     ! process_is_running "[g]pupgrade hub"
     ! process_is_running "[g]pupgrade agent"
+}
+
+@test "kill-services stops hub and agents on default port if config file does not exist" {
+    # check that hub and agent are up
+    process_is_running "[g]pupgrade hub"
+    process_is_running "[g]pupgrade agent"
+
+    # move the gpupgrade dir so that kill-services will use the default port
+    TMP_DIR=`mktemp -d`
+    mv "${STATE_DIR}/gpupgrade" "${TMP_DIR}"
+
+    # stop them
+    gpupgrade kill-services
+
+    # make sure that they are down
+    ! process_is_running "[g]pupgrade hub"
+    ! process_is_running "[g]pupgrade agent"
+
+    # move the gpupgrade back so that teardown() will work
+    mv "${TMP_DIR}/gpupgrade" "${STATE_DIR}"
+
 }
 
 @test "kill-services can be run multiple times without issue " {
