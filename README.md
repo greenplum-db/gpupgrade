@@ -110,13 +110,6 @@ Please review the [integrations/README](https://github.com/greenplum-db/gpupgrad
 # Some tests require GPDB installed and running
 make check-bats
 ```
-#### Installcheck tests
-
-Runs through an upgrade on the locally running GPDB cluster.
-```
-# Requires GPDB installed and running
-make installcheck
-```
 #### All local tests
 ```
 # Runs all local tests

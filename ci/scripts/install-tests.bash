@@ -94,7 +94,5 @@ su gpadmin -c '
     make
     make check --keep-going
 
-    # Note that installcheck is currently destructive.
     make install
-    make installcheck
 '
