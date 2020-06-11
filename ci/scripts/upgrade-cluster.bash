@@ -12,16 +12,16 @@ dump_sql() {
     echo "Dumping cluster contents from port ${port} to ${dumpfile}..."
 
     ssh -n mdw "
-        source ${GPHOME_NEW}/greenplum_path.sh
+        source ${GPHOME_TARGET}/greenplum_path.sh
         pg_dumpall -p ${port} -f '$dumpfile'
     "
 }
 
 compare_dumps() {
-    local old_dump=$1
-    local new_dump=$2
+    local source_dump=$1
+    local target_dump=$2
 
-    echo "Comparing dumps at ${old_dump} and ${new_dump}..."
+    echo "Comparing dumps at ${source_dump} and ${target_dump}..."
 
     pushd gpupgrade_src
         # 5 to 6 requires some massaging of the diff due to expected changes.
@@ -32,16 +32,16 @@ compare_dumps() {
             # First filter out any algorithmically-fixable differences, then
             # patch out the remaining expected diffs explicitly.
             ssh mdw "
-                /tmp/filter < '$new_dump' > '$new_dump.filtered'
-                patch -R '$new_dump.filtered'
+                /tmp/filter < '$target_dump' > '$target_dump.filtered'
+                patch -R '$target_dump.filtered'
             " < ./ci/scripts/filters/${DIFF_FILE}
 
-            new_dump="$new_dump.filtered"
+            target_dump="$target_dump.filtered"
         fi
     popd
 
     ssh -n mdw "
-        diff -U3 --speed-large-files --ignore-space-change --ignore-blank-lines '$old_dump' '$new_dump'
+        diff -U3 --speed-large-files --ignore-space-change --ignore-blank-lines '$source_dump' '$target_dump'
     "
 }
 
@@ -64,8 +64,8 @@ MASTER_PORT=5432
 # Cache our list of hosts to loop over below.
 mapfile -t hosts < cluster_env_files/hostfile_all
 
-export GPHOME_OLD=/usr/local/greenplum-db-old
-export GPHOME_NEW=/usr/local/greenplum-db-new
+export GPHOME_SOURCE=/usr/local/greenplum-db-source
+export GPHOME_TARGET=/usr/local/greenplum-db-target
 
 # Install gpupgrade binary onto the cluster machines.
 chmod +x bin_gpupgrade/gpupgrade
@@ -74,8 +74,8 @@ for host in "${hosts[@]}"; do
     ssh centos@$host "sudo mv /tmp/gpupgrade /usr/local/bin"
 done
 
-# Dump the old cluster for later comparison.
-dump_sql $MASTER_PORT /tmp/old.sql
+# Dump the source cluster for later comparison.
+dump_sql $MASTER_PORT /tmp/source.sql
 
 # Now do the upgrade.
 LINK_MODE=""
@@ -88,8 +88,8 @@ time ssh mdw bash <<EOF
 
     gpupgrade initialize \
               $LINK_MODE \
-              --target-bindir ${GPHOME_NEW}/bin \
-              --source-bindir ${GPHOME_OLD}/bin \
+              --target-bindir ${GPHOME_TARGET}/bin \
+              --source-bindir ${GPHOME_SOURCE}/bin \
               --source-master-port $MASTER_PORT \
               --temp-port-range 6020-6040
     # TODO: rather than setting a temp port range, consider carving out an
@@ -100,13 +100,13 @@ time ssh mdw bash <<EOF
 EOF
 
 # TODO: how do we know the cluster upgraded?  5 to 6 is a version check; 6 to 6 ?????
-#   currently, it's sleight of hand...old is on port $MASTER_PORT then new is!!!!
+#   currently, it's sleight of hand...source is on port $MASTER_PORT then target is!!!!
 #   perhaps use the controldata("pg_controldata $MASTER_DATA_DIR") system identifier?
 
-# Dump the new cluster and compare.
+# Dump the target cluster and compare.
 if (( $COMPARE_DIFF )); then
-    dump_sql ${MASTER_PORT} /tmp/new.sql
-    if ! compare_dumps /tmp/old.sql /tmp/new.sql; then
+    dump_sql ${MASTER_PORT} /tmp/target.sql
+    if ! compare_dumps /tmp/source.sql /tmp/target.sql; then
         echo 'error: before and after dumps differ'
         exit 1
     fi

@@ -11,4 +11,4 @@ cp -R cluster_env_files/.ssh /root/.ssh
 source gpupgrade_src/test/finalize_checks.bash
 
 echo 'Doing failover tests of mirrors and standby...'
-validate_mirrors_and_standby /usr/local/greenplum-db-new mdw 5432
+validate_mirrors_and_standby /usr/local/greenplum-db-target mdw 5432

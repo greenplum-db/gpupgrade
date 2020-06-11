@@ -14,7 +14,7 @@ echo 'Loading SQL dump into source cluster...'
 time ssh -n gpadmin@mdw "
     set -eux -o pipefail
 
-    source /usr/local/greenplum-db-old/greenplum_path.sh
+    source /usr/local/greenplum-db-source/greenplum_path.sh
     export PGOPTIONS='--client-min-messages=warning'
     unxz < /tmp/dump.sql.xz | psql -f - postgres
 "
@@ -23,7 +23,7 @@ echo 'Dropping gphdfs role...'
 ssh mdw "
     set -x
 
-    source /usr/local/greenplum-db-old/greenplum_path.sh
+    source /usr/local/greenplum-db-source/greenplum_path.sh
     export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
 
     psql -d regression <<SQL_EOF
@@ -54,7 +54,7 @@ echo 'Dropping unique and primary keys on partitioned tables...'
 tables_keys=$(ssh -n mdw "
     set -x
 
-    source /usr/local/greenplum-db-old/greenplum_path.sh
+    source /usr/local/greenplum-db-source/greenplum_path.sh
     export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
 
     psql -d regression --tuples-only --no-align --field-separator ' ' <<SQL_EOF
@@ -73,7 +73,7 @@ SQL_EOF
 if [ -n "${tables_keys}" ]; then
     echo "${tables_keys}" | while read -r table key; do
         ssh -n mdw "
-        source /usr/local/greenplum-db-old/greenplum_path.sh
+        source /usr/local/greenplum-db-source/greenplum_path.sh
         export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
 
         psql regression -c 'ALTER TABLE ${table} DROP CONSTRAINT ${key} CASCADE;'
@@ -85,7 +85,7 @@ echo 'Dropping unique and primary keys on non partitioned tables...'
 tables_keys=$(ssh -n mdw "
     set -x
 
-    source /usr/local/greenplum-db-old/greenplum_path.sh
+    source /usr/local/greenplum-db-source/greenplum_path.sh
     export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
 
     psql -d regression --tuples-only --no-align --field-separator ' ' <<SQL_EOF
@@ -104,7 +104,7 @@ SQL_EOF
 if [ -n "${tables_keys}" ]; then
     echo "${tables_keys}" | while read -r table key; do
         ssh -n mdw "
-        source /usr/local/greenplum-db-old/greenplum_path.sh
+        source /usr/local/greenplum-db-source/greenplum_path.sh
         export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
 
         psql regression -c 'ALTER TABLE ${table} DROP CONSTRAINT ${key} CASCADE;'
@@ -116,7 +116,7 @@ echo 'Dropping columns with name types...'
 columns=$(ssh -n mdw "
     set -x
 
-    source /usr/local/greenplum-db-old/greenplum_path.sh
+    source /usr/local/greenplum-db-source/greenplum_path.sh
     export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
 
     psql -d regression --tuples-only --no-align --field-separator ' ' <<SQL_EOF
@@ -139,7 +139,7 @@ SQL_EOF
 echo "${columns}" | while read -r schema table column; do
     if [ -n "${column}" ]; then
         ssh -n mdw "
-            source /usr/local/greenplum-db-old/greenplum_path.sh
+            source /usr/local/greenplum-db-source/greenplum_path.sh
             export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
 
             psql regression -c 'SET SEARCH_PATH TO ${schema}; ALTER TABLE ${table} DROP COLUMN ${column} CASCADE;'
@@ -149,7 +149,7 @@ done
 
 # this is the only view that contains a column of type name, so hardcoding for now
 ssh -n mdw "
-    source /usr/local/greenplum-db-old/greenplum_path.sh
+    source /usr/local/greenplum-db-source/greenplum_path.sh
     export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
 
     psql regression -c 'DROP VIEW IF EXISTS redundantly_named_part;'
@@ -159,7 +159,7 @@ echo 'Dropping columns with tsquery types...'
 columns=$(ssh -n mdw "
     set -x
 
-    source /usr/local/greenplum-db-old/greenplum_path.sh
+    source /usr/local/greenplum-db-source/greenplum_path.sh
     export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
 
     psql -d regression --tuples-only --no-align --field-separator ' ' <<SQL_EOF
@@ -182,7 +182,7 @@ SQL_EOF
 echo "${columns}" | while read -r schema table column; do
     if [ -n "${column}" ]; then
         ssh -n mdw "
-            source /usr/local/greenplum-db-old/greenplum_path.sh
+            source /usr/local/greenplum-db-source/greenplum_path.sh
             export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
 
             psql regression -c 'SET SEARCH_PATH TO ${schema}; ALTER TABLE ${table} DROP COLUMN ${column} CASCADE;'
@@ -195,7 +195,7 @@ echo 'Dropping columns with abstime, reltime, tinterval user data types...'
 columns=$(ssh -n mdw "
     set -x
 
-    source /usr/local/greenplum-db-old/greenplum_path.sh
+    source /usr/local/greenplum-db-source/greenplum_path.sh
     export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
 
     psql -d regression --tuples-only --no-align --field-separator ' ' <<SQL_EOF
@@ -220,7 +220,7 @@ SQL_EOF
 echo "${columns}" | while read -r schema table column; do
     if [ -n "${column}" ]; then
         ssh -n mdw "
-            source /usr/local/greenplum-db-old/greenplum_path.sh
+            source /usr/local/greenplum-db-source/greenplum_path.sh
             export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
 
             psql regression -c 'SET SEARCH_PATH TO ${schema}; ALTER TABLE ${table} DROP COLUMN ${column} CASCADE;'
@@ -232,7 +232,7 @@ echo 'Dropping extensions...'
 databases=$(ssh -n mdw "
     set -x
 
-    source /usr/local/greenplum-db-old/greenplum_path.sh
+    source /usr/local/greenplum-db-source/greenplum_path.sh
     export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
 
     psql -d regression --tuples-only --no-align --field-separator ' ' <<SQL_EOF
@@ -246,7 +246,7 @@ SQL_EOF
 echo "${databases}" | while read -r database; do
     if [[ -n "${database}" ]]; then
         ssh -n mdw "
-            source /usr/local/greenplum-db-old/greenplum_path.sh
+            source /usr/local/greenplum-db-source/greenplum_path.sh
             export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
             psql -d ${database} -c 'DROP EXTENSION IF EXISTS gp_inject_fault';
         " || echo "drop extensions failed. Continuing..."
@@ -255,7 +255,7 @@ done
 
 echo "Dropping unsupported functions"
 ssh -n mdw "
-    source /usr/local/greenplum-db-old/greenplum_path.sh
+    source /usr/local/greenplum-db-source/greenplum_path.sh
     psql -d regression -c 'DROP FUNCTION public.myfunc(integer);
     DROP AGGREGATE public.newavg(integer);'
     " || echo "Dropping unsupported functions failed. Continuing..."

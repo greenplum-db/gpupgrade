@@ -10,32 +10,32 @@ set -eux -o pipefail
 # Cache our list of hosts to loop over below.
 mapfile -t hosts < cluster_env_files/hostfile_all
 
-export GPHOME_OLD=/usr/local/greenplum-db-old
-export GPHOME_NEW=/usr/local/greenplum-db-new
+export GPHOME_SOURCE=/usr/local/greenplum-db-source
+export GPHOME_TARGET=/usr/local/greenplum-db-target
 
 export PGPORT=5432
 
 # Copy binaries to test runner container to help compile bm.so
-scp -qr mdw:${GPHOME_OLD} ${GPHOME_OLD}
-scp -qr mdw:${GPHOME_NEW} ${GPHOME_NEW}
+scp -qr mdw:${GPHOME_SOURCE} ${GPHOME_SOURCE}
+scp -qr mdw:${GPHOME_TARGET} ${GPHOME_TARGET}
 
 pushd retail_demo_src/box_muller/
   # make bm.so for source cluster
-  make PG_CONFIG=${GPHOME_OLD}/bin/pg_config clean all
+  make PG_CONFIG=${GPHOME_SOURCE}/bin/pg_config clean all
 
   # Install bm.so onto the segments
   for host in "${hosts[@]}"; do
       scp bm.so $host:/tmp
-      ssh centos@$host "sudo mv /tmp/bm.so ${GPHOME_OLD}/lib/postgresql/bm.so"
+      ssh centos@$host "sudo mv /tmp/bm.so ${GPHOME_SOURCE}/lib/postgresql/bm.so"
   done
 
   # make bm.so for target cluster
-  make PG_CONFIG=${GPHOME_NEW}/bin/pg_config clean all
+  make PG_CONFIG=${GPHOME_TARGET}/bin/pg_config clean all
 
   # Install bm.so onto the segments for target cluster
   for host in "${hosts[@]}"; do
       scp bm.so $host:/tmp
-      ssh centos@$host "sudo mv /tmp/bm.so ${GPHOME_NEW}/lib/postgresql/bm.so"
+      ssh centos@$host "sudo mv /tmp/bm.so ${GPHOME_TARGET}/lib/postgresql/bm.so"
   done
 popd
 
@@ -59,7 +59,7 @@ scp -qr retail_demo_src mdw:/home/gpadmin/industry_demo/
 ssh mdw <<EOF
     set -x
 
-    source ${GPHOME_OLD}/greenplum_path.sh
+    source ${GPHOME_SOURCE}/greenplum_path.sh
     cd /home/gpadmin/industry_demo
     psql -d template1 -e -f data_generation/prep_database.sql
     psql -d gpdb_demo -e -f data_generation/prep_external_tables.sql
@@ -72,7 +72,7 @@ for host in "${hosts[@]}"; do
     ssh -n $host "
         set -x
 
-        source ${GPHOME_OLD}/greenplum_path.sh
+        source ${GPHOME_SOURCE}/greenplum_path.sh
         gpfdist -d /data/demo_data -p 8081 -l /data/demo_data/gpfdist.8081.log &
         gpfdist -d /data/demo_data -p 8082 -l /data/demo_data/gpfdist.8082.log &
     "
@@ -82,7 +82,7 @@ done
 time ssh mdw <<EOF
     set -x
 
-    source ${GPHOME_OLD}/greenplum_path.sh
+    source ${GPHOME_SOURCE}/greenplum_path.sh
     export PGPORT=${PGPORT}
     export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
 
@@ -122,7 +122,7 @@ EOF
 ssh mdw "
     set -x
 
-    source ${GPHOME_OLD}/greenplum_path.sh
+    source ${GPHOME_SOURCE}/greenplum_path.sh
     export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
 
     psql -d gpdb_demo <<SQL_EOF

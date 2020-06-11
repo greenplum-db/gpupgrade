@@ -16,7 +16,7 @@
 
 	filter reads from stdin and writes to stdout. Usage:
 
-		filter < new.sql > new-filtered.sql
+		filter < target.sql > target-filtered.sql
 
 	Error handling is basic: any failures result in a log.Fatal() call.
 */
