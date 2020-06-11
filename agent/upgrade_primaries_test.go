@@ -13,17 +13,18 @@ import (
 
 	"golang.org/x/xerrors"
 
-	multierror "github.com/hashicorp/go-multierror"
+	"github.com/hashicorp/go-multierror"
 
 	"github.com/greenplum-db/gpupgrade/agent"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/utils"
+	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
 
 func ResetCommands() {
 	agent.SetExecCommand(nil)
-	agent.SetRsyncCommand(nil)
+	rsync.SetRsyncCommand(nil)
 }
 
 func TestUpgradePrimary(t *testing.T) {
@@ -78,7 +79,7 @@ func TestUpgradePrimary(t *testing.T) {
 
 	t.Run("when pg_upgrade --check fails it returns an error", func(t *testing.T) {
 		agent.SetExecCommand(exectest.NewCommand(agent.FailedMain))
-		agent.SetRsyncCommand(exectest.NewCommand(agent.Success))
+		rsync.SetRsyncCommand(exectest.NewCommand(agent.Success))
 
 		defer ResetCommands()
 
@@ -105,7 +106,7 @@ func TestUpgradePrimary(t *testing.T) {
 	})
 
 	t.Run("when pg_upgrade with no check fails it returns an error", func(t *testing.T) {
-		agent.SetRsyncCommand(exectest.NewCommand(agent.Success))
+		rsync.SetRsyncCommand(exectest.NewCommand(agent.Success))
 		agent.SetExecCommand(exectest.NewCommand(agent.FailedMain))
 		defer ResetCommands()
 
@@ -138,7 +139,7 @@ func TestUpgradePrimary(t *testing.T) {
 		request := buildRequest(pairs)
 		request.CheckOnly = true
 
-		agent.SetRsyncCommand(
+		rsync.SetRsyncCommand(
 			exectest.NewCommandWithVerifier(agent.Success, func(commandName string, _ ...string) {
 				if commandName == "rsync" {
 					t.Error("unexpected rsync call")
@@ -149,7 +150,7 @@ func TestUpgradePrimary(t *testing.T) {
 	})
 
 	t.Run("it returns errors in parallel if the copy step fails", func(t *testing.T) {
-		agent.SetRsyncCommand(exectest.NewCommand(agent.FailedRsync))
+		rsync.SetRsyncCommand(exectest.NewCommand(agent.FailedRsync))
 		agent.SetExecCommand(exectest.NewCommand(agent.Success))
 
 		request := buildRequest(pairs)
@@ -187,7 +188,7 @@ func TestUpgradePrimary(t *testing.T) {
 		targetDataDirsUsedChannel := make(chan string, len(targetDataDirs))
 
 		agent.SetExecCommand(exectest.NewCommand(agent.Success))
-		agent.SetRsyncCommand(exectest.NewCommandWithVerifier(agent.Success, func(utility string, arguments ...string) {
+		rsync.SetRsyncCommand(exectest.NewCommandWithVerifier(agent.Success, func(utility string, arguments ...string) {
 			call := rsyncCall(utility, arguments)
 
 			if call.sourceDir != "/some/master/backup/dir/" {

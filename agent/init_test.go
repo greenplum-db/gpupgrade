@@ -38,7 +38,3 @@ func init() {
 func SetExecCommand(command exectest.Command) {
 	execCommand = command
 }
-
-func SetRsyncCommand(command exectest.Command) {
-	rsyncCommand = command
-}

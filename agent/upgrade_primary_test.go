@@ -16,6 +16,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/utils"
+	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
 
 func getSampleSegment() agent.Segment {
@@ -70,7 +71,7 @@ func TestRestoreTablespaces(t *testing.T) {
 		}
 
 		var actualArgs []string
-		agent.SetRsyncCommand(exectest.NewCommandWithVerifier(agent.Success, func(name string, args ...string) {
+		rsync.SetRsyncCommand(exectest.NewCommandWithVerifier(agent.Success, func(name string, args ...string) {
 			expected := "rsync"
 			if name != expected {
 				t.Errorf("RestoreTablespaces() invoked %q, want %q", name, expected)
@@ -102,7 +103,7 @@ func TestRestoreTablespaces(t *testing.T) {
 			return nil
 		}
 
-		defer func() { agent.SetRsyncCommand(nil) }()
+		defer func() { rsync.SetRsyncCommand(nil) }()
 
 		expectedRecreateSymLinkArgs := [][]string{
 			{"/tmp/default/1663/2", "/tmp/newprimary1/pg_tblspc/1663"},
@@ -143,8 +144,8 @@ func TestRestoreTablespaces(t *testing.T) {
 
 		segment := getSampleSegment()
 
-		agent.SetRsyncCommand(exectest.NewCommand(agent.FailedMain))
-		defer func() { agent.SetRsyncCommand(nil) }()
+		rsync.SetRsyncCommand(exectest.NewCommand(agent.FailedMain))
+		defer func() { rsync.SetRsyncCommand(nil) }()
 
 		err := agent.RestoreTablespaces(request, segment)
 
@@ -172,8 +173,8 @@ func TestRestoreTablespaces(t *testing.T) {
 			utils.System = utils.InitializeSystemFunctions()
 		}()
 
-		agent.SetRsyncCommand(exectest.NewCommand(agent.Success))
-		defer func() { agent.SetRsyncCommand(nil) }()
+		rsync.SetRsyncCommand(exectest.NewCommand(agent.Success))
+		defer func() { rsync.SetRsyncCommand(nil) }()
 
 		err := agent.RestoreTablespaces(request, segment)
 		if err == nil {

@@ -122,7 +122,7 @@ func MustCreateDataDirs(t *testing.T) (string, string, func(*testing.T)) {
 	}
 }
 
-func MustReadFile(path string, t *testing.T) []byte {
+func MustReadFile(t *testing.T, path string) []byte {
 	t.Helper()
 
 	buf, err := ioutil.ReadFile(path)
@@ -133,7 +133,7 @@ func MustReadFile(path string, t *testing.T) []byte {
 	return buf
 }
 
-func MustWriteToFile(path string, contents []byte, t *testing.T) {
+func MustWriteToFile(t *testing.T, path string, contents []byte) {
 	t.Helper()
 
 	err := ioutil.WriteFile(path, contents, 0644)
