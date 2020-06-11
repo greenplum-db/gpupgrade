@@ -135,17 +135,24 @@ func VerifyRename(t *testing.T, source, target string) {
 func SetEnv(t *testing.T, envar, value string) func() {
 	t.Helper()
 
-	old := os.Getenv(envar)
+	old, reset := os.LookupEnv(envar)
 
 	err := os.Setenv(envar, value)
 	if err != nil {
-		t.Fatalf("setting %s environment variable to %s", envar, value)
+		t.Fatalf("setting %s environment variable to %s: %#v", envar, value, err)
 	}
 
 	return func() {
-		err := os.Setenv(envar, old)
-		if err != nil {
-			t.Fatalf("setting %s environment variable to %s", envar, old)
+		if reset {
+			err := os.Setenv(envar, old)
+			if err != nil {
+				t.Fatalf("resetting %s environment variable to %s: %#v", envar, old, err)
+			}
+		} else {
+			err := os.Unsetenv(envar)
+			if err != nil {
+				t.Fatalf("unsetting %s environment variable: %#v", envar, err)
+			}
 		}
 	}
 }
