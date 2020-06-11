@@ -5,6 +5,27 @@
 
 set -eux -o pipefail
 
+is_GPDB5() {
+    local gphome=$1
+    version=$(ssh mdw "$gphome"/bin/postgres --gp-version)
+    [[ $version =~ ^"postgres (Greenplum Database) 5." ]]
+}
+
+# set the database gucs
+# 1. bytea_output: by default for bytea the output format is hex on GPDB 6,
+#    so change it to escape to match GPDB 5 representation
+configure_gpdb_gucs() {
+    local gphome=$1
+    ssh mdw bash <<EOF
+        set -eux -o pipefail
+
+        source ${gphome}/greenplum_path.sh
+        export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
+        gpconfig -c bytea_output -v escape
+        gpstop -u
+EOF
+}
+
 dump_sql() {
     local port=$1
     local dumpfile=$2
@@ -74,7 +95,12 @@ for host in "${hosts[@]}"; do
     ssh centos@$host "sudo mv /tmp/gpupgrade /usr/local/bin"
 done
 
-# Dump the source cluster for later comparison.
+# On GPDB version other than 5, set the gucs before taking dumps
+if ! is_GPDB5 ${GPHOME_SOURCE}; then
+    configure_gpdb_gucs ${GPHOME_SOURCE}
+fi
+
+# Dump the old cluster for later comparison.
 dump_sql $MASTER_PORT /tmp/source.sql
 
 # Now do the upgrade.
@@ -98,6 +124,11 @@ time ssh mdw bash <<EOF
     gpupgrade execute
     gpupgrade finalize
 EOF
+
+# On GPDB version other than 5, set the gucs before taking dumps
+if ! is_GPDB5 ${GPHOME_TARGET}; then
+    configure_gpdb_gucs ${GPHOME_TARGET}
+fi
 
 # TODO: how do we know the cluster upgraded?  5 to 6 is a version check; 6 to 6 ?????
 #   currently, it's sleight of hand...source is on port $MASTER_PORT then target is!!!!
