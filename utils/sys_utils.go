@@ -88,19 +88,6 @@ func TryEnv(varname string, defval string) string {
 	return val
 }
 
-func GetUser() (string, string, error) {
-	currentUser, err := System.CurrentUser()
-	if err != nil {
-		return "", "", err
-	}
-	return currentUser.Username, currentUser.HomeDir, err
-}
-
-func GetHost() (string, error) {
-	hostname, err := System.Hostname()
-	return hostname, err
-}
-
 func GetStateDir() string {
 	stateDir := os.Getenv("GPUPGRADE_HOME")
 	if stateDir == "" {

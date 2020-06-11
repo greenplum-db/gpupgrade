@@ -5,7 +5,6 @@ package utils
 
 import (
 	"os"
-	"os/user"
 	"strings"
 	"testing"
 	"time"
@@ -45,78 +44,6 @@ func TestUserUtils(t *testing.T) {
 		actual := TryEnv("VAR", expected)
 		if actual != expected {
 			t.Errorf("got %q want %q", actual, expected)
-		}
-	})
-
-	t.Run("GetUser returns current user and home directory", func(t *testing.T) {
-		defer resetSystemFunctions()
-
-		expectedUser := "Joe"
-		expectedDir := "my_home_dir"
-		System.CurrentUser = func() (*user.User, error) {
-			return &user.User{
-				Username: expectedUser,
-				HomeDir:  expectedDir,
-			}, nil
-		}
-
-		user, dir, err := GetUser()
-		if err != nil {
-			t.Errorf("unexpected error %#v", err)
-		}
-
-		if user != expectedUser {
-			t.Errorf("got user %q want %q", user, expectedUser)
-		}
-
-		if dir != expectedDir {
-			t.Errorf("got dir %q want %q", dir, expectedDir)
-		}
-	})
-
-	t.Run("GetUser bubbles up errors", func(t *testing.T) {
-		defer resetSystemFunctions()
-
-		expected := errors.New("oops!")
-		System.CurrentUser = func() (*user.User, error) {
-			return nil, expected
-		}
-
-		_, _, err := GetUser()
-		if !xerrors.Is(err, expected) {
-			t.Errorf("returned error %#v want %#v", err, expected)
-		}
-	})
-
-	t.Run("GetHost returns host", func(t *testing.T) {
-		defer resetSystemFunctions()
-
-		expected := "host"
-		System.Hostname = func() (string, error) {
-			return expected, nil
-		}
-
-		host, err := GetHost()
-		if err != nil {
-			t.Errorf("unexpected error %#v", err)
-		}
-
-		if host != expected {
-			t.Errorf("got %q want %q", host, expected)
-		}
-	})
-
-	t.Run("GetHost bubbles up errors", func(t *testing.T) {
-		defer resetSystemFunctions()
-
-		expected := errors.New("oops!")
-		System.Hostname = func() (string, error) {
-			return "", expected
-		}
-
-		_, err := GetHost()
-		if !xerrors.Is(err, expected) {
-			t.Errorf("returned error %#v want %#v", err, expected)
 		}
 	})
 }
