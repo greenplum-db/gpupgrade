@@ -5,24 +5,20 @@ package greenplum
 
 import (
 	"fmt"
-	"io"
 	"os/exec"
 	"path/filepath"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/kballard/go-shellquote"
+
+	"github.com/greenplum-db/gpupgrade/step"
 )
 
 type Runner interface {
 	Run(utilityName string, arguments ...string) error
 }
 
-type OutStreams interface {
-	Stdout() io.Writer
-	Stderr() io.Writer
-}
-
-func NewRunner(c *Cluster, streams OutStreams) Runner {
+func NewRunner(c *Cluster, streams step.OutStreams) Runner {
 	return &runner{
 		masterPort:          c.MasterPort(),
 		masterDataDirectory: c.MasterDataDir(),
@@ -54,6 +50,5 @@ type runner struct {
 	binDir              string
 	masterDataDirectory string
 	masterPort          int
-
-	streams OutStreams
+	streams             step.OutStreams
 }
