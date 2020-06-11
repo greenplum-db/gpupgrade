@@ -80,14 +80,6 @@ func InitializeSystemFunctions() *SystemFunctions {
 	}
 }
 
-func TryEnv(varname string, defval string) string {
-	val := System.Getenv(varname)
-	if val == "" {
-		return defval
-	}
-	return val
-}
-
 func GetStateDir() string {
 	stateDir := os.Getenv("GPUPGRADE_HOME")
 	if stateDir == "" {

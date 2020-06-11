@@ -18,36 +18,6 @@ func resetSystemFunctions() {
 	System = InitializeSystemFunctions()
 }
 
-func TestUserUtils(t *testing.T) {
-	t.Run("TryEnv returns environment variables", func(t *testing.T) {
-		defer resetSystemFunctions()
-
-		expected := "val"
-		System.Getenv = func(s string) string {
-			return expected
-		}
-
-		actual := TryEnv("VAR", "default")
-		if actual != expected {
-			t.Errorf("got %q want %q", actual, expected)
-		}
-	})
-
-	t.Run("TryEnv returns the default value when an environmental variable does not exist", func(t *testing.T) {
-		defer resetSystemFunctions()
-
-		System.Getenv = func(s string) string {
-			return ""
-		}
-
-		expected := "default"
-		actual := TryEnv("VAR", expected)
-		if actual != expected {
-			t.Errorf("got %q want %q", actual, expected)
-		}
-	})
-}
-
 func TestCreateAllDataDirectories(t *testing.T) {
 	testhelper.SetupTestLogger() // initialize gplog
 

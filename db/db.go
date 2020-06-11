@@ -4,6 +4,7 @@
 package db
 
 import (
+	"os"
 	"os/user"
 
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
@@ -20,10 +21,10 @@ func NewDBConn(masterHost string, masterPort int, dbname string) *dbconn.DBConn 
 		gplog.Error("Failed to look up current user: %s", err)
 		currentUser = &user.User{}
 	}
-	username := utils.TryEnv("PGUSER", currentUser.Username)
+	username := tryEnv("PGUSER", currentUser.Username)
 
 	if dbname == "" {
-		dbname = utils.TryEnv("PGDATABASE", "")
+		dbname = tryEnv("PGDATABASE", "")
 	}
 
 	hostname, err := utils.System.Hostname()
@@ -31,7 +32,7 @@ func NewDBConn(masterHost string, masterPort int, dbname string) *dbconn.DBConn 
 		gplog.Error("Failed to look up hostname: %s", err)
 	}
 	if masterHost == "" {
-		masterHost = utils.TryEnv("PGHOST", hostname)
+		masterHost = tryEnv("PGHOST", hostname)
 	}
 
 	return &dbconn.DBConn{
@@ -45,4 +46,13 @@ func NewDBConn(masterHost string, masterPort int, dbname string) *dbconn.DBConn 
 		Tx:       nil,
 		Version:  dbconn.GPDBVersion{},
 	}
+}
+
+func tryEnv(key string, defaultValue string) string {
+	val, ok := os.LookupEnv(key)
+	if !ok {
+		return defaultValue
+	}
+
+	return val
 }
