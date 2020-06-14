@@ -80,15 +80,21 @@ func restoreBackup(request *idl.UpgradePrimariesRequest, segment Segment) error 
 		return nil
 	}
 
-	return rsync.Rsync(request.MasterBackupDir, "", segment.TargetDataDir, []string{"--archive", "--delete"}, []string{
-		"internal.auto.conf",
-		"postgresql.conf",
-		"pg_hba.conf",
-		"postmaster.opts",
-		"gp_dbid",
-		"gpssh.conf",
-		"gpperfmon",
-	})
+	options := []rsync.Option{
+		rsync.WithSources(request.MasterBackupDir + string(os.PathSeparator)),
+		rsync.WithDestination(segment.TargetDataDir),
+		rsync.WithOptions("--archive", "--delete"),
+		rsync.WithExcludedFiles(
+			"internal.auto.conf",
+			"postgresql.conf",
+			"pg_hba.conf",
+			"postmaster.opts",
+			"gp_dbid",
+			"gpssh.conf",
+			"gpperfmon"),
+	}
+
+	return rsync.Rsync(options...)
 }
 
 func RestoreTablespaces(request *idl.UpgradePrimariesRequest, segment Segment) error {
@@ -103,7 +109,14 @@ func RestoreTablespaces(request *idl.UpgradePrimariesRequest, segment Segment) e
 
 		targetDir := greenplum.GetTablespaceLocationForDbId(tablespace, int(segment.DBID))
 		sourceDir := greenplum.GetMasterTablespaceLocation(filepath.Dir(request.TablespacesMappingFilePath), int(oid))
-		if err := rsync.Rsync(sourceDir, "", targetDir, []string{"--archive", "--delete"}, nil); err != nil {
+
+		options := []rsync.Option{
+			rsync.WithSources(sourceDir + string(os.PathSeparator)),
+			rsync.WithDestination(targetDir),
+			rsync.WithOptions("--archive", "--delete"),
+		}
+
+		if err := rsync.Rsync(options...); err != nil {
 			return xerrors.Errorf("rsync master tablespace directory to segment tablespace directory: %w", err)
 		}
 

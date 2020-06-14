@@ -13,6 +13,7 @@ import (
 
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/hashicorp/go-multierror"
 
 	"github.com/greenplum-db/gpupgrade/agent"
@@ -28,6 +29,8 @@ func ResetCommands() {
 }
 
 func TestUpgradePrimary(t *testing.T) {
+	testhelper.SetupTestLogger()
+
 	// Disable exec.Command. This way, if a test forgets to mock it out, we
 	// crash the test instead of executing code on a dev system.
 	agent.SetExecCommand(nil)
