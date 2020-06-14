@@ -8,28 +8,21 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
+	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
 
 // Set it to nil so we don't accidentally execute a command for real during tests
 func init() {
 	ResetExecCommand()
-	ResetRsyncExecCommand()
+	rsync.ResetRsyncCommand()
 }
 
 func SetExecCommand(cmdFunc exectest.Command) {
 	execCommand = cmdFunc
 }
 
-func SetRsyncExecCommand(cmdFunc exectest.Command) {
-	execCommandRsync = cmdFunc
-}
-
 func ResetExecCommand() {
 	execCommand = nil
-}
-
-func ResetRsyncExecCommand() {
-	execCommandRsync = nil
 }
 
 // MustCreateCluster creates a utils.Cluster and calls t.Fatalf() if there is

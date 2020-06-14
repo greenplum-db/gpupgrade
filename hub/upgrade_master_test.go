@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"testing"
 
+	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
@@ -22,6 +23,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
+	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
 
 func Success() {}
@@ -90,6 +92,8 @@ func init() {
 }
 
 func TestUpgradeMaster(t *testing.T) {
+	testhelper.SetupTestLogger()
+
 	source := MustCreateCluster(t, []greenplum.SegConfig{
 		{ContentID: -1, Port: 5432, DataDir: "/data/old", DbID: 1, Role: "p"},
 	})
@@ -150,8 +154,8 @@ func TestUpgradeMaster(t *testing.T) {
 		SetExecCommand(exectest.NewCommand(Success))
 		defer ResetExecCommand()
 
-		SetRsyncExecCommand(exectest.NewCommand(Success))
-		defer ResetRsyncExecCommand()
+		rsync.SetRsyncCommand(exectest.NewCommand(Success))
+		defer rsync.ResetRsyncCommand()
 
 		err := UpgradeMaster(UpgradeMasterArgs{
 			Source:      source,
@@ -175,8 +179,8 @@ func TestUpgradeMaster(t *testing.T) {
 		SetExecCommand(exectest.NewCommand(StreamingMain))
 		defer ResetExecCommand()
 
-		SetRsyncExecCommand(exectest.NewCommand(Success))
-		defer ResetRsyncExecCommand()
+		rsync.SetRsyncCommand(exectest.NewCommand(Success))
+		defer rsync.ResetRsyncCommand()
 
 		stream := new(step.BufferedStreams)
 
@@ -208,8 +212,8 @@ func TestUpgradeMaster(t *testing.T) {
 		SetExecCommand(exectest.NewCommand(BlindlyWritingMain))
 		defer ResetExecCommand()
 
-		SetRsyncExecCommand(exectest.NewCommand(Success))
-		defer ResetRsyncExecCommand()
+		rsync.SetRsyncCommand(exectest.NewCommand(Success))
+		defer rsync.ResetRsyncCommand()
 
 		expectedErr := errors.New("write failed!")
 		err := UpgradeMaster(UpgradeMasterArgs{
@@ -229,8 +233,8 @@ func TestUpgradeMaster(t *testing.T) {
 		SetExecCommand(exectest.NewCommand(StreamingMain))
 		defer ResetExecCommand()
 
-		SetRsyncExecCommand(exectest.NewCommand(Failure))
-		defer ResetRsyncExecCommand()
+		rsync.SetRsyncCommand(exectest.NewCommand(Failure))
+		defer rsync.ResetRsyncCommand()
 
 		stream := new(step.BufferedStreams)
 
@@ -251,8 +255,8 @@ func TestUpgradeMaster(t *testing.T) {
 
 func TestRsyncMasterDir(t *testing.T) {
 	t.Run("rsync streams stdout and stderr to the client", func(t *testing.T) {
-		SetRsyncExecCommand(exectest.NewCommand(StreamingMain))
-		defer ResetRsyncExecCommand()
+		rsync.SetRsyncCommand(exectest.NewCommand(StreamingMain))
+		defer rsync.ResetRsyncCommand()
 
 		stream := new(step.BufferedStreams)
 		err := RsyncMasterDataDir(stream, "", "")

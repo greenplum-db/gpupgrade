@@ -14,11 +14,11 @@ import (
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
+	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
 
 // Allow exec.Command to be mocked out by exectest.NewCommand.
 var execCommand = exec.Command
-var execCommandRsync = exec.Command
 
 const originalMasterBackupName = "master.bak"
 
@@ -79,14 +79,19 @@ func masterSegmentFromCluster(cluster *greenplum.Cluster) *upgrade.Segment {
 
 func RsyncMasterDataDir(stream step.OutStreams, sourceDir, targetDir string) error {
 	sourceDirRsync := filepath.Clean(sourceDir) + string(os.PathSeparator)
-	cmd := execCommandRsync("rsync", "--archive", "--delete", "--exclude=pg_log/*", sourceDirRsync, targetDir)
 
-	cmd.Stdout = stream.Stdout()
-	cmd.Stderr = stream.Stderr()
+	options := []rsync.Option{
+		rsync.WithSources(sourceDirRsync),
+		rsync.WithDestination(targetDir),
+		rsync.WithOptions("--archive", "--delete"),
+		rsync.WithExcludedFiles("pg_log/*"),
+		rsync.WithStream(stream),
+	}
 
-	err := cmd.Run()
+	err := rsync.Rsync(options...)
 	if err != nil {
 		return xerrors.Errorf("rsync %q to %q: %w", sourceDirRsync, targetDir, err)
 	}
+
 	return nil
 }
