@@ -18,6 +18,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -156,7 +157,7 @@ func TestUpgradeMaster(t *testing.T) {
 			Source:      source,
 			Target:      target,
 			StateDir:    tempDir,
-			Stream:      utils.DevNull,
+			Stream:      step.DevNullStream,
 			CheckOnly:   false,
 			UseLinkMode: false,
 		})
@@ -177,7 +178,7 @@ func TestUpgradeMaster(t *testing.T) {
 		SetRsyncExecCommand(exectest.NewCommand(Success))
 		defer ResetRsyncExecCommand()
 
-		stream := new(bufferedStreams)
+		stream := new(step.BufferedStreams)
 
 		err := UpgradeMaster(UpgradeMasterArgs{
 			Source:      source,
@@ -191,12 +192,12 @@ func TestUpgradeMaster(t *testing.T) {
 			t.Errorf("returned error %+v", err)
 		}
 
-		stdout := stream.stdout.String()
+		stdout := stream.StdoutBuf.String()
 		if stdout != StreamingMainStdout {
 			t.Errorf("got stdout %q, want %q", stdout, StreamingMainStdout)
 		}
 
-		stderr := stream.stderr.String()
+		stderr := stream.StderrBuf.String()
 		if stderr != StreamingMainStderr {
 			t.Errorf("got stderr %q, want %q", stderr, StreamingMainStderr)
 		}
@@ -231,7 +232,7 @@ func TestUpgradeMaster(t *testing.T) {
 		SetRsyncExecCommand(exectest.NewCommand(Failure))
 		defer ResetRsyncExecCommand()
 
-		stream := new(bufferedStreams)
+		stream := new(step.BufferedStreams)
 
 		err := UpgradeMaster(UpgradeMasterArgs{
 			Source:      source,
@@ -253,39 +254,24 @@ func TestRsyncMasterDir(t *testing.T) {
 		SetRsyncExecCommand(exectest.NewCommand(StreamingMain))
 		defer ResetRsyncExecCommand()
 
-		stream := new(bufferedStreams)
+		stream := new(step.BufferedStreams)
 		err := RsyncMasterDataDir(stream, "", "")
 
 		if err != nil {
 			t.Errorf("returned: %+v", err)
 		}
 
-		stdout := stream.stdout.String()
+		stdout := stream.StdoutBuf.String()
 		if stdout != StreamingMainStdout {
 			t.Errorf("got stdout %q, want %q", stdout, StreamingMainStdout)
 		}
 
-		stderr := stream.stderr.String()
+		stderr := stream.StderrBuf.String()
 		if stderr != StreamingMainStderr {
 			t.Errorf("got stderr %q, want %q", stderr, StreamingMainStderr)
 		}
 	})
 
-}
-
-// bufferedStreams is an implementation of OutStreams that just writes to
-// bytes.Buffers.
-type bufferedStreams struct {
-	stdout bytes.Buffer
-	stderr bytes.Buffer
-}
-
-func (b *bufferedStreams) Stdout() io.Writer {
-	return &b.stdout
-}
-
-func (b *bufferedStreams) Stderr() io.Writer {
-	return &b.stderr
 }
 
 // failingStreams is an implementation of OutStreams for which every call to a

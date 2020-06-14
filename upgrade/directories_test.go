@@ -18,6 +18,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -361,7 +362,7 @@ func TestDeleteDirectories(t *testing.T) {
 		teardown, directories, _ := setup(t)
 		defer teardown()
 
-		err := upgrade.DeleteDirectories(directories, []string{"a", "b"}, "", utils.DevNull)
+		err := upgrade.DeleteDirectories(directories, []string{"a", "b"}, "", step.DevNullStream)
 
 		var multiErr *multierror.Error
 		if !xerrors.As(err, &multiErr) {
@@ -388,7 +389,7 @@ func TestDeleteDirectories(t *testing.T) {
 			t.Errorf("unexpected error %+v", err)
 		}
 
-		err2 := upgrade.DeleteDirectories(directories, requiredPaths, "", utils.DevNull)
+		err2 := upgrade.DeleteDirectories(directories, requiredPaths, "", step.DevNullStream)
 
 		var multiErr *multierror.Error
 		if !xerrors.As(err2, &multiErr) {

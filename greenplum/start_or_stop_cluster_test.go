@@ -14,6 +14,7 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
@@ -107,7 +108,7 @@ func TestStartOrStopCluster(t *testing.T) {
 				}
 			})
 
-		running, err := source.IsMasterRunning(utils.DevNull)
+		running, err := source.IsMasterRunning(step.DevNullStream)
 		if err != nil {
 			t.Errorf("IsMasterRunning returned error: %+v", err)
 		}
@@ -120,7 +121,7 @@ func TestStartOrStopCluster(t *testing.T) {
 	t.Run("IsMasterRunning fails", func(t *testing.T) {
 		isPostmasterRunningCmd = exectest.NewCommand(IsPostmasterRunningCmd_Errors)
 
-		running, err := source.IsMasterRunning(utils.DevNull)
+		running, err := source.IsMasterRunning(step.DevNullStream)
 		var expected *exec.ExitError
 		if !xerrors.As(err, &expected) {
 			t.Errorf("expected error to contain type %T", expected)
@@ -135,7 +136,7 @@ func TestStartOrStopCluster(t *testing.T) {
 		source := MustCreateCluster(t, []SegConfig{
 			{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/does/not/exist", Role: "p"},
 		})
-		running, err := source.IsMasterRunning(utils.DevNull)
+		running, err := source.IsMasterRunning(step.DevNullStream)
 		if err != nil {
 			t.Errorf("IsMasterRunning returned error: %+v", err)
 		}
@@ -148,7 +149,7 @@ func TestStartOrStopCluster(t *testing.T) {
 	t.Run("returns false with no error when no processes were matched", func(t *testing.T) {
 		isPostmasterRunningCmd = exectest.NewCommand(IsPostmasterRunningCmd_MatchesNoProcesses)
 
-		running, err := source.IsMasterRunning(utils.DevNull)
+		running, err := source.IsMasterRunning(step.DevNullStream)
 		if err != nil {
 			t.Errorf("IsMasterRunning returned error: %+v", err)
 		}
@@ -184,7 +185,7 @@ func TestStartOrStopCluster(t *testing.T) {
 				}
 			})
 
-		err := source.Stop(utils.DevNull)
+		err := source.Stop(step.DevNullStream)
 		if err != nil {
 			t.Errorf("unexpected error %#v", err)
 		}
@@ -199,7 +200,7 @@ func TestStartOrStopCluster(t *testing.T) {
 				skippedStopClusterCommand = false
 			})
 
-		err := source.Stop(utils.DevNull)
+		err := source.Stop(step.DevNullStream)
 		if err == nil {
 			t.Errorf("expected error %#v got nil", err)
 		}
@@ -223,7 +224,7 @@ func TestStartOrStopCluster(t *testing.T) {
 				}
 			})
 
-		err := source.Start(utils.DevNull)
+		err := source.Start(step.DevNullStream)
 		if err != nil {
 			t.Errorf("unexpected error %#v", err)
 		}
@@ -243,7 +244,7 @@ func TestStartOrStopCluster(t *testing.T) {
 				}
 			})
 
-		err := source.StartMasterOnly(utils.DevNull)
+		err := source.StartMasterOnly(step.DevNullStream)
 		if err != nil {
 			t.Errorf("unexpected error %#v", err)
 		}
@@ -275,7 +276,7 @@ func TestStartOrStopCluster(t *testing.T) {
 				}
 			})
 
-		err := source.StopMasterOnly(utils.DevNull)
+		err := source.StopMasterOnly(step.DevNullStream)
 		if err != nil {
 			t.Errorf("unexpected error %#v", err)
 		}

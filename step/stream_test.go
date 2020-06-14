@@ -19,6 +19,39 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
 )
 
+// Since we have no good way to test devNullStream, we instead
+//   provide an example.
+func ExampleDevNullStream() {
+	const (
+		stdout = "this command has progress..."
+		stderr = "there are some warnings..."
+	)
+	stream := DevNullStream
+	fmt.Fprintf(stream.Stdout(), "%s", stdout)
+	fmt.Fprintf(stream.Stderr(), "%s", stderr)
+	// Output:
+}
+
+func TestBufStream(t *testing.T) {
+	t.Run("records stdout and stderr to the stream", func(t *testing.T) {
+		const (
+			stdout = "this command has progress..."
+			stderr = "there are some warnings..."
+		)
+
+		stream := new(BufferedStreams)
+		fmt.Fprintf(stream.Stdout(), "%s", stdout)
+		fmt.Fprintf(stream.Stderr(), "%s", stderr)
+
+		if stdout != stream.StdoutBuf.String() {
+			t.Errorf("expected %s got %s", stdout, stream.StdoutBuf.String())
+		}
+		if stderr != stream.StderrBuf.String() {
+			t.Errorf("expected %s got %s", stderr, stream.StderrBuf.String())
+		}
+	})
+}
+
 func TestMultiplexedStream(t *testing.T) {
 	// Store gplog output.
 	_, _, log := testhelper.SetupTestLogger()

@@ -65,8 +65,8 @@ func TestDeleteDataDirectories(t *testing.T) {
 			t.Errorf("got hostname %q want %q", actualHostname, expectedHostname)
 		}
 
-		if actualStreams != utils.DevNull {
-			t.Errorf("got streams %#v want %#v", actualStreams, utils.DevNull)
+		if actualStreams != step.DevNullStream {
+			t.Errorf("got streams %#v want %#v", actualStreams, step.DevNullStream)
 		}
 	})
 
@@ -135,8 +135,8 @@ func TestDeleteStateDirectory(t *testing.T) {
 			t.Errorf("got hostname %q want %q", actualHostname, expectedHostname)
 		}
 
-		if actualStreams != utils.DevNull {
-			t.Errorf("got streams %#v want %#v", actualStreams, utils.DevNull)
+		if actualStreams != step.DevNullStream {
+			t.Errorf("got streams %#v want %#v", actualStreams, step.DevNullStream)
 		}
 	})
 

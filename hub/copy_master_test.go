@@ -18,8 +18,8 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
-	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 const (
@@ -63,7 +63,7 @@ func TestCopy(t *testing.T) {
 			}
 		})
 
-		err := Copy(utils.DevNull, "foobar/path", sourceDir, targetHosts)
+		err := Copy(step.DevNullStream, "foobar/path", sourceDir, targetHosts)
 		if err != nil {
 			t.Errorf("copying data directory: %+v", err)
 		}
@@ -82,7 +82,7 @@ func TestCopy(t *testing.T) {
 		}
 		execCommandVerifier(t, hosts, expectedArgs)
 
-		err := Copy(utils.DevNull, "foobar/path", sourceDir, primaryHosts)
+		err := Copy(step.DevNullStream, "foobar/path", sourceDir, primaryHosts)
 		if err != nil {
 			t.Errorf("copying directory: %+v", err)
 		}
@@ -122,7 +122,7 @@ func TestCopy(t *testing.T) {
 
 	t.Run("serializes rsync failures to the log stream", func(t *testing.T) {
 		execCommand = exectest.NewCommand(RsyncFailure)
-		buffer := new(bufferedStreams)
+		buffer := new(step.BufferedStreams)
 		hosts := []string{"mdw", "sdw1", "sdw2"}
 
 		err := Copy(buffer, "foobar/path", nil, hosts)
@@ -139,7 +139,7 @@ func TestCopy(t *testing.T) {
 			}
 		}
 
-		stdout := buffer.stdout.String()
+		stdout := buffer.StdoutBuf.String()
 		if len(stdout) != 0 {
 			t.Errorf("got stdout %q, expected no output", stdout)
 		}
@@ -147,7 +147,7 @@ func TestCopy(t *testing.T) {
 		// Make sure we have as many copies of the stderr string as there are
 		// hosts. They should be serialized sanely, even though we may execute
 		// in parallel.
-		stderr := buffer.stderr.String()
+		stderr := buffer.StderrBuf.String()
 		expected := strings.Repeat(rsyncErrorMessage, len(hosts))
 		if stderr != expected {
 			t.Errorf("got stderr:\n%v\nwant:\n%v", stderr, expected)
@@ -179,7 +179,7 @@ func TestCopyMasterDataDir(t *testing.T) {
 
 		execCommandVerifier(t, hosts, expectedArgs)
 
-		err := hub.CopyMasterDataDir(utils.DevNull, "foobar/path")
+		err := hub.CopyMasterDataDir(step.DevNullStream, "foobar/path")
 		if err != nil {
 			t.Errorf("copying master data directory: %+v", err)
 		}
@@ -204,26 +204,26 @@ func TestCopyMasterTablespaces(t *testing.T) {
 			Tablespaces: greenplum.Tablespaces{
 				1: greenplum.SegmentTablespaces{
 					1663: greenplum.TablespaceInfo{
-						Location: "/tmp/tblspc1",
+						Location:    "/tmp/tblspc1",
 						UserDefined: 0},
 					1664: greenplum.TablespaceInfo{
-						Location: "/tmp/tblspc2",
+						Location:    "/tmp/tblspc2",
 						UserDefined: 1},
 				},
 				2: greenplum.SegmentTablespaces{
 					1663: greenplum.TablespaceInfo{
-						Location: "/tmp/primary1/tblspc1",
+						Location:    "/tmp/primary1/tblspc1",
 						UserDefined: 0},
 					1664: greenplum.TablespaceInfo{
-						Location: "/tmp/primary1/tblspc2",
+						Location:    "/tmp/primary1/tblspc2",
 						UserDefined: 1},
 				},
 				3: greenplum.SegmentTablespaces{
 					1663: greenplum.TablespaceInfo{
-						Location: "/tmp/primary2/tblspc1",
+						Location:    "/tmp/primary2/tblspc1",
 						UserDefined: 0},
 					1664: greenplum.TablespaceInfo{
-						Location: "/tmp/primary2/tblspc2",
+						Location:    "/tmp/primary2/tblspc2",
 						UserDefined: 1},
 				},
 			},
@@ -241,7 +241,7 @@ func TestCopyMasterTablespaces(t *testing.T) {
 		}
 		execCommandVerifier(t, hosts, expectedArgs)
 
-		err := hub.CopyMasterTablespaces(utils.DevNull, "foobar/path")
+		err := hub.CopyMasterTablespaces(step.DevNullStream, "foobar/path")
 		if err != nil {
 			t.Errorf("copying master tablespace directories and mapping file: %+v", err)
 		}
@@ -265,7 +265,7 @@ func TestCopyMasterTablespaces(t *testing.T) {
 		var expectedArgs []string
 		execCommandVerifier(t, hosts, expectedArgs)
 
-		err := hub.CopyMasterTablespaces(utils.DevNull, "foobar/path")
+		err := hub.CopyMasterTablespaces(step.DevNullStream, "foobar/path")
 		if err != nil {
 			t.Errorf("got %+v, want nil", err)
 		}

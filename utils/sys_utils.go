@@ -132,19 +132,6 @@ func CreateDataDirectory(dataDir string) error {
 	return nil
 }
 
-// DevNull implements OutStreams by just discarding all writes.
-var DevNull = devNull{}
-
-type devNull struct{}
-
-func (_ devNull) Stdout() io.Writer {
-	return ioutil.Discard
-}
-
-func (_ devNull) Stderr() io.Writer {
-	return ioutil.Discard
-}
-
 // StdStream can be passed into functions that are called
 // from the CLI.
 type StdStream struct {

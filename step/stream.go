@@ -4,7 +4,9 @@
 package step
 
 import (
+	"bytes"
 	"io"
+	"io/ioutil"
 	"sync"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -20,6 +22,35 @@ type OutStreams interface {
 type OutStreamsCloser interface {
 	OutStreams
 	Close() error
+}
+
+// DevNullStream provides an implementation of OutStreams that drops
+//   all writes to it.
+var DevNullStream = devNullStream{}
+
+type devNullStream struct{}
+
+func (_ devNullStream) Stdout() io.Writer {
+	return ioutil.Discard
+}
+
+func (_ devNullStream) Stderr() io.Writer {
+	return ioutil.Discard
+}
+
+// BufferedStreams provides an implementation of OutStreams that stores
+//   all writes to underlying bytes.Buffer objects.
+type BufferedStreams struct {
+	StdoutBuf bytes.Buffer
+	StderrBuf bytes.Buffer
+}
+
+func (s *BufferedStreams) Stdout() io.Writer {
+	return &s.StdoutBuf
+}
+
+func (s *BufferedStreams) Stderr() io.Writer {
+	return &s.StderrBuf
 }
 
 // multiplexedStream provides an implementation of OutStreams that safely

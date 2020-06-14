@@ -9,6 +9,7 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
@@ -23,7 +24,7 @@ func (s *Server) DeleteStateDirectory(ctx context.Context, in *idl.DeleteStateDi
 		return &idl.DeleteStateDirectoryReply{}, err
 	}
 
-	err = deleteDirectories([]string{s.conf.StateDir}, upgrade.StateDirectoryFiles, hostname, utils.DevNull)
+	err = deleteDirectories([]string{s.conf.StateDir}, upgrade.StateDirectoryFiles, hostname, step.DevNullStream)
 	return &idl.DeleteStateDirectoryReply{}, err
 }
 
@@ -35,6 +36,6 @@ func (s *Server) DeleteDataDirectories(ctx context.Context, in *idl.DeleteDataDi
 		return &idl.DeleteDataDirectoriesReply{}, err
 	}
 
-	err = deleteDirectories(in.Datadirs, upgrade.PostgresFiles, hostname, utils.DevNull)
+	err = deleteDirectories(in.Datadirs, upgrade.PostgresFiles, hostname, step.DevNullStream)
 	return &idl.DeleteDataDirectoriesReply{}, err
 }

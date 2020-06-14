@@ -18,6 +18,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
@@ -164,7 +165,7 @@ func TestRunInitsystemForTargetCluster(t *testing.T) {
 				}
 			})
 
-		err := RunInitsystemForTargetCluster(utils.DevNull, cluster7X, gpinitsystemConfigPath)
+		err := RunInitsystemForTargetCluster(step.DevNullStream, cluster7X, gpinitsystemConfigPath)
 		if err != nil {
 			t.Error("gpinitsystem failed")
 		}
@@ -184,7 +185,7 @@ func TestRunInitsystemForTargetCluster(t *testing.T) {
 				}
 			})
 
-		err := RunInitsystemForTargetCluster(utils.DevNull, cluster6X, gpinitsystemConfigPath)
+		err := RunInitsystemForTargetCluster(step.DevNullStream, cluster6X, gpinitsystemConfigPath)
 		if err != nil {
 			t.Error("gpinitsystem failed")
 		}
@@ -205,7 +206,7 @@ func TestRunInitsystemForTargetCluster(t *testing.T) {
 			})
 
 		cluster7X.BinDir += "/"
-		err := RunInitsystemForTargetCluster(utils.DevNull, cluster7X, gpinitsystemConfigPath)
+		err := RunInitsystemForTargetCluster(step.DevNullStream, cluster7X, gpinitsystemConfigPath)
 		if err != nil {
 			t.Error("gpinitsystem failed")
 		}
@@ -214,7 +215,7 @@ func TestRunInitsystemForTargetCluster(t *testing.T) {
 	t.Run("returns an error when gpinitsystem fails with --ignore-warnings when upgrading to GPDB6", func(t *testing.T) {
 		execCommand = exectest.NewCommand(gpinitsystem_Exits1)
 
-		err := RunInitsystemForTargetCluster(utils.DevNull, cluster6X, gpinitsystemConfigPath)
+		err := RunInitsystemForTargetCluster(step.DevNullStream, cluster6X, gpinitsystemConfigPath)
 
 		var actual *exec.ExitError
 		if !xerrors.As(err, &actual) {
@@ -229,7 +230,7 @@ func TestRunInitsystemForTargetCluster(t *testing.T) {
 	t.Run("returns an error when gpinitsystem errors when upgrading to GPDB7 or higher", func(t *testing.T) {
 		execCommand = exectest.NewCommand(gpinitsystem_Exits1)
 
-		err := RunInitsystemForTargetCluster(utils.DevNull, cluster7X, gpinitsystemConfigPath)
+		err := RunInitsystemForTargetCluster(step.DevNullStream, cluster7X, gpinitsystemConfigPath)
 
 		var actual *exec.ExitError
 		if !xerrors.As(err, &actual) {
