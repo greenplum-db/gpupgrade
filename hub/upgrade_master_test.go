@@ -19,6 +19,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -281,9 +282,9 @@ type failingStreams struct {
 }
 
 func (f failingStreams) Stdout() io.Writer {
-	return &failingWriter{f.err}
+	return &testutils.FailingWriter{f.err}
 }
 
 func (f failingStreams) Stderr() io.Writer {
-	return &failingWriter{f.err}
+	return &testutils.FailingWriter{f.err}
 }

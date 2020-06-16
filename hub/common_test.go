@@ -32,15 +32,6 @@ func ResetRsyncExecCommand() {
 	execCommandRsync = nil
 }
 
-// failingWriter is an io.Writer for which all calls to Write() return an error.
-type failingWriter struct {
-	err error
-}
-
-func (f *failingWriter) Write(_ []byte) (int, error) {
-	return 0, f.err
-}
-
 // MustCreateCluster creates a utils.Cluster and calls t.Fatalf() if there is
 // any error.
 func MustCreateCluster(t *testing.T, segs []greenplum.SegConfig) *greenplum.Cluster {

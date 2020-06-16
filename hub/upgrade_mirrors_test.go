@@ -76,11 +76,11 @@ func TestWriteGpAddmirrorsConfig(t *testing.T) {
 			{DbID: 3, ContentID: 0, Port: 234, Hostname: "localhost", DataDir: "/data/mirrors/seg0", Role: "m"},
 		}
 
-		writer := &failingWriter{errors.New("ahhh")}
+		writer := &testutils.FailingWriter{Err: errors.New("ahhh")}
 
 		err := writeGpAddmirrorsConfig(mirrors, writer)
-		if !xerrors.Is(err, writer.err) {
-			t.Errorf("returned error %#v, want %#v", err, writer.err)
+		if !xerrors.Is(err, writer.Err) {
+			t.Errorf("returned error %#v, want %#v", err, writer.Err)
 		}
 	})
 }

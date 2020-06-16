@@ -18,6 +18,15 @@ import (
 	"github.com/greenplum-db/gpupgrade/upgrade"
 )
 
+// FailingWriter is an io.Writer for which all calls to Write() return an error.
+type FailingWriter struct {
+	Err error
+}
+
+func (f *FailingWriter) Write(_ []byte) (int, error) {
+	return 0, f.Err
+}
+
 // TODO remove in favor of MustCreateCluster
 func CreateMultinodeSampleCluster(baseDir string) *greenplum.Cluster {
 	return &greenplum.Cluster{
