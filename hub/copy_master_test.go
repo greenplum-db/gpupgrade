@@ -19,6 +19,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 )
 
@@ -104,7 +105,7 @@ func TestCopy(t *testing.T) {
 
 	t.Run("returns errors when writing stdout and stderr buffers to the stream", func(t *testing.T) {
 		execCommand = exectest.NewCommand(StreamingMain)
-		streams := failingStreams{errors.New("e")}
+		streams := testutils.FailingStreams{Err: errors.New("e")}
 
 		err := Copy(streams, "", nil, []string{"localhost"})
 
@@ -114,8 +115,8 @@ func TestCopy(t *testing.T) {
 			t.Fatalf("returned %#v, want error type %T", err, merr)
 		}
 		for _, err := range merr.Errors {
-			if !xerrors.Is(err, streams.err) {
-				t.Errorf("returned error %#v, want %#v", err, streams.err)
+			if !xerrors.Is(err, streams.Err) {
+				t.Errorf("returned error %#v, want %#v", err, streams.Err)
 			}
 		}
 	})

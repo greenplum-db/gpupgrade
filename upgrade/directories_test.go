@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -314,25 +313,13 @@ func setup(t *testing.T) (teardown func(), directories []string, requiredPaths [
 	return teardown, directories, requiredPaths
 }
 
-type devNullSpy struct {
-	outStream io.Writer
-}
-
-func (s devNullSpy) Stdout() io.Writer {
-	return s.outStream
-}
-
-func (_ devNullSpy) Stderr() io.Writer {
-	return ioutil.Discard
-}
-
 func TestDeleteDirectories(t *testing.T) {
 	testhelper.SetupTestLogger()
 
 	t.Run("successfully deletes the directories if all required paths exist in that directory", func(t *testing.T) {
 		var buf bytes.Buffer
-		devNull := devNullSpy{
-			outStream: &buf,
+		devNull := testutils.DevNullSpy{
+			OutStream: &buf,
 		}
 		hostname := "localhost.local"
 		teardown, directories, requiredPaths := setup(t)

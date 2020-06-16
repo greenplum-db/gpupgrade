@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -217,7 +216,7 @@ func TestUpgradeMaster(t *testing.T) {
 			Source:      source,
 			Target:      target,
 			StateDir:    tempDir,
-			Stream:      failingStreams{expectedErr},
+			Stream:      testutils.FailingStreams{Err: expectedErr},
 			CheckOnly:   false,
 			UseLinkMode: false,
 		})
@@ -273,18 +272,4 @@ func TestRsyncMasterDir(t *testing.T) {
 		}
 	})
 
-}
-
-// failingStreams is an implementation of OutStreams for which every call to a
-// stream's Write() method will fail with the given error.
-type failingStreams struct {
-	err error
-}
-
-func (f failingStreams) Stdout() io.Writer {
-	return &testutils.FailingWriter{f.err}
-}
-
-func (f failingStreams) Stderr() io.Writer {
-	return &testutils.FailingWriter{f.err}
 }
