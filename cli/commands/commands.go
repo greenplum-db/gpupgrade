@@ -51,6 +51,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
@@ -573,7 +574,7 @@ func revert() *cobra.Command {
 				return err
 			}
 
-			err = upgrade.DeleteDirectories([]string{utils.GetStateDir()}, upgrade.StateDirectoryFiles, hostname, &utils.StdStream{})
+			err = upgrade.DeleteDirectories([]string{utils.GetStateDir()}, upgrade.StateDirectoryFiles, hostname, &step.StdStreams{})
 			s.Finish(&err)
 			if err != nil {
 				gplog.Error(err.Error())

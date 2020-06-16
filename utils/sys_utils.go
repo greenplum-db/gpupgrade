@@ -5,7 +5,6 @@ package utils
 
 import (
 	"database/sql"
-	"io"
 	"io/ioutil"
 	"os"
 	"os/user"
@@ -130,19 +129,6 @@ func CreateDataDirectory(dataDir string) error {
 		return xerrors.Errorf("create gpupgrade marker file %s: %w", mFile, err)
 	}
 	return nil
-}
-
-// StdStream can be passed into functions that are called
-// from the CLI.
-type StdStream struct {
-}
-
-func (m *StdStream) Stdout() io.Writer {
-	return os.Stdout
-}
-
-func (m *StdStream) Stderr() io.Writer {
-	return os.Stderr
 }
 
 func GetTablespaceDir() string {

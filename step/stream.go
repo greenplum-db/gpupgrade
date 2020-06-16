@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
+	"os"
 	"sync"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -51,6 +52,17 @@ func (s *BufferedStreams) Stdout() io.Writer {
 
 func (s *BufferedStreams) Stderr() io.Writer {
 	return &s.StderrBuf
+}
+
+// StdStreams implements OutStreams that writes directly to stdout and stderr
+type StdStreams struct{}
+
+func (m *StdStreams) Stdout() io.Writer {
+	return os.Stdout
+}
+
+func (m *StdStreams) Stderr() io.Writer {
+	return os.Stderr
 }
 
 // multiplexedStream provides an implementation of OutStreams that safely
