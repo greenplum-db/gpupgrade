@@ -13,7 +13,8 @@ import (
 	"strings"
 	"testing"
 
-	multierror "github.com/hashicorp/go-multierror"
+	"github.com/greenplum-db/gp-common-go-libs/testhelper"
+	"github.com/hashicorp/go-multierror"
 	"golang.org/x/xerrors"
 	"google.golang.org/grpc"
 
@@ -21,6 +22,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
+	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
 
 const (
@@ -43,13 +45,15 @@ func init() {
 }
 
 func TestCopy(t *testing.T) {
+	testhelper.SetupTestLogger()
+
 	t.Run("copies the directory only once per host", func(t *testing.T) {
 
 		sourceDir := []string{"/data/qddir/seg-1/"}
 		targetHosts := []string{"localhost"}
 
 		// Validate the rsync call and arguments.
-		execCommand = exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
+		cmd := exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
 			expected := "rsync"
 			if name != expected {
 				t.Errorf("Copy() invoked %q, want %q", name, expected)
@@ -63,6 +67,7 @@ func TestCopy(t *testing.T) {
 				t.Errorf("rsync invoked with %q, want %q", args, expectedArgs)
 			}
 		})
+		rsync.SetRsyncCommand(cmd)
 
 		err := Copy(step.DevNullStream, "foobar/path", sourceDir, targetHosts)
 		if err != nil {
@@ -104,7 +109,7 @@ func TestCopy(t *testing.T) {
 	})
 
 	t.Run("returns errors when writing stdout and stderr buffers to the stream", func(t *testing.T) {
-		execCommand = exectest.NewCommand(StreamingMain)
+		rsync.SetRsyncCommand(exectest.NewCommand(StreamingMain))
 		streams := testutils.FailingStreams{Err: errors.New("e")}
 
 		err := Copy(streams, "", nil, []string{"localhost"})
@@ -122,7 +127,7 @@ func TestCopy(t *testing.T) {
 	})
 
 	t.Run("serializes rsync failures to the log stream", func(t *testing.T) {
-		execCommand = exectest.NewCommand(RsyncFailure)
+		rsync.SetRsyncCommand(exectest.NewCommand(RsyncFailure))
 		buffer := new(step.BufferedStreams)
 		hosts := []string{"mdw", "sdw1", "sdw2"}
 
@@ -294,7 +299,7 @@ func verifyHosts(hosts chan string, expectedHosts []string, t *testing.T) {
 
 // Validate the rsync call and arguments.
 func execCommandVerifier(t *testing.T, hosts chan string, expectedArgs []string) {
-	execCommand = exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
+	cmd := exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
 		expected := "rsync"
 		if name != expected {
 			t.Errorf("invoked %q, want %q", name, expected)
@@ -313,4 +318,5 @@ func execCommandVerifier(t *testing.T, hosts chan string, expectedArgs []string)
 
 		hosts <- host
 	})
+	rsync.SetRsyncCommand(cmd)
 }
