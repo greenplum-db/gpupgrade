@@ -220,10 +220,10 @@ jobs:
       resource: gpdb{{.Source}}_src
     - get: bats
     - get: rpm_gpdb_source
-      resource: rpm_gpdb{{.Source}}_centos6
+      resource: rpm_gpdb{{.Source}}_centos7
       trigger: true
     - get: rpm_gpdb_target
-      resource: rpm_gpdb{{.Target}}_centos6
+      resource: rpm_gpdb{{.Target}}_centos7
       trigger: true
   - task: install-tests
     file: gpupgrade_src/ci/tasks/install-tests.yml
