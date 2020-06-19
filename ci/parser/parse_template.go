@@ -144,26 +144,25 @@ func init() {
 	}
 }
 
-// deduplicate combines, sorts, and deduplicates two string slices.
+// deduplicate combines, deduplicates, and sorts two string slices.
 func deduplicate(a, b []string) []string {
 	var all []string
 
 	all = append(all, a...)
 	all = append(all, b...)
-	sort.Strings(all)
 
-	// Deduplicate by compacting runs of identical strings.
-	cur := 0
-	for next := 1; next < len(all); next++ {
-		if all[cur] == all[next] {
-			continue
-		}
-
-		cur++
-		all[cur] = all[next]
+	set := make(map[string]bool)
+	for _, value := range all {
+		set[value] = true
 	}
 
-	return all[:cur+1]
+	var result []string
+	for key := range set {
+		result = append(result, key)
+	}
+
+	sort.Strings(result)
+	return result
 }
 
 func main() {
