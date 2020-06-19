@@ -122,6 +122,26 @@ func MustCreateDataDirs(t *testing.T) (string, string, func(*testing.T)) {
 	}
 }
 
+func MustReadFile(path string, t *testing.T) []byte {
+	t.Helper()
+
+	buf, err := ioutil.ReadFile(path)
+	if err != nil {
+		t.Fatalf("error reading file %q: %v", path, err)
+	}
+
+	return buf
+}
+
+func MustWriteToFile(path string, contents []byte, t *testing.T) {
+	t.Helper()
+
+	err := ioutil.WriteFile(path, contents, 0644)
+	if err != nil {
+		t.Fatalf("error writing file %q: %v", path, err)
+	}
+}
+
 // VerifyRename ensures the source and archive data directories exist, and the
 // target directory does not exist.
 func VerifyRename(t *testing.T, source, target string) {
