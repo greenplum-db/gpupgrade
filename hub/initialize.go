@@ -35,7 +35,7 @@ func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initi
 		}
 	}()
 
-	st.Run(idl.Substep_GENERATING_CONFIG, func(stream step.OutStreams) error {
+	st.Run(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(stream step.OutStreams) error {
 		conn, err := sql.Open("pgx", fmt.Sprintf(connectionString, in.SourcePort))
 		if err != nil {
 			return err

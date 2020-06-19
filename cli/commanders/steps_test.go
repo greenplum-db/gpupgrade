@@ -275,7 +275,7 @@ func TestSubstep(t *testing.T) {
 	s.Finish(&err)
 
 	err = xerrors.New("error")
-	s = commanders.Substep(idl.Substep_GENERATING_CONFIG)
+	s = commanders.Substep(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG)
 	s.Finish(&err)
 
 	stdout, stderr := d.Collect()
@@ -286,8 +286,8 @@ func TestSubstep(t *testing.T) {
 
 	expected := commanders.Format(commanders.SubstepDescriptions[idl.Substep_CREATING_DIRECTORIES].OutputText, idl.Status_RUNNING) + "\r"
 	expected += commanders.Format(commanders.SubstepDescriptions[idl.Substep_CREATING_DIRECTORIES].OutputText, idl.Status_COMPLETE) + "\n"
-	expected += commanders.Format(commanders.SubstepDescriptions[idl.Substep_GENERATING_CONFIG].OutputText, idl.Status_RUNNING) + "\r"
-	expected += commanders.Format(commanders.SubstepDescriptions[idl.Substep_GENERATING_CONFIG].OutputText, idl.Status_FAILED) + "\n"
+	expected += commanders.Format(commanders.SubstepDescriptions[idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG].OutputText, idl.Status_RUNNING) + "\r"
+	expected += commanders.Format(commanders.SubstepDescriptions[idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG].OutputText, idl.Status_FAILED) + "\n"
 
 	actual := string(stdout)
 	if actual != expected {

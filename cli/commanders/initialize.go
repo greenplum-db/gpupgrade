@@ -41,9 +41,6 @@ func CreateStateDir() (err error) {
 }
 
 func CreateInitialClusterConfigs(hubPort int) (err error) {
-	s := Substep(idl.Substep_GENERATING_CONFIG)
-	defer s.Finish(&err)
-
 	// if empty json configuration file exists, skip recreating it
 	filename := upgrade.GetConfigFile()
 	_, err = os.Stat(filename)
