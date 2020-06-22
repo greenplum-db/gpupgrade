@@ -11,7 +11,6 @@ image_resource:
 
 inputs:
 - name: gpupgrade_src
-  path: ../../../go/src/github.com/greenplum-db/gpupgrade
 
 run:
   path: bash
@@ -20,5 +19,4 @@ run:
   - |
     set -ex
 
-    cd $GOPATH/src/github.com/greenplum-db/gpupgrade
     make lint
