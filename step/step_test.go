@@ -249,6 +249,108 @@ func TestStepRun(t *testing.T) {
 	})
 }
 
+func TestHasRun(t *testing.T) {
+	cases := []struct {
+		description string
+		status      idl.Status
+	}{
+		{
+			description: "returns true when substep is running",
+			status:      idl.Status_RUNNING,
+		},
+		{
+			description: "returns true when substep has completed",
+			status:      idl.Status_COMPLETE,
+		},
+		{
+			description: "returns true when substep has errored",
+			status:      idl.Status_FAILED,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.description, func(t *testing.T) {
+			dir := testutils.GetTempDir(t, "")
+			defer testutils.MustRemoveAll(t, dir)
+
+			resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", dir)
+			defer resetEnv()
+
+			path := filepath.Join(dir, "status.json")
+			testutils.MustWriteToFile(t, path, "{}")
+			store := step.NewFileStore(path)
+			err := store.Write(idl.Step_INITIALIZE, idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, c.status)
+			if err != nil {
+				t.Errorf("store.Write returned error %+v", err)
+			}
+
+			hasRun, err := step.HasRun(idl.Step_INITIALIZE, idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG)
+			if err != nil {
+				t.Errorf("HasRun returned error %+v", err)
+			}
+
+			if !hasRun {
+				t.Errorf("expected substep to have been run")
+			}
+		})
+	}
+
+	t.Run("returns an error when getting the status file fails", func(t *testing.T) {
+		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", "does/not/exist")
+		defer resetEnv()
+
+		hasRun, err := step.HasRun(idl.Step_INITIALIZE, idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG)
+		var expected *os.PathError
+		if !xerrors.As(err, &expected) {
+			t.Errorf("returned error %#v want %#v", err, expected)
+		}
+
+		if hasRun {
+			t.Errorf("expected substep to not have been run")
+		}
+	})
+
+	t.Run("returns an error when reading from the store fails", func(t *testing.T) {
+		dir := testutils.GetTempDir(t, "")
+		defer testutils.MustRemoveAll(t, dir)
+
+		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", dir)
+		defer resetEnv()
+
+		path := filepath.Join(dir, "status.json")
+		testutils.MustWriteToFile(t, path, `{"}"`) // write a malformed JSON status file
+
+		hasRun, err := step.HasRun(idl.Step_INITIALIZE, idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG)
+		if err == nil {
+			t.Errorf("expected error %#v got nil", err)
+		}
+
+		if hasRun {
+			t.Errorf("expected substep to not have been run")
+		}
+	})
+
+	t.Run("returns false with no error when a step has not yet been run", func(t *testing.T) {
+		dir := testutils.GetTempDir(t, "")
+		defer testutils.MustRemoveAll(t, dir)
+
+		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", dir)
+		defer resetEnv()
+
+		path := filepath.Join(dir, "status.json")
+		testutils.MustWriteToFile(t, path, "{}")
+
+		hasRan, err := step.HasRun(idl.Step_FINALIZE, idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG)
+		if err != nil {
+			t.Errorf("HasRun returned error %+v", err)
+		}
+
+		if hasRan {
+			t.Errorf("expected substep to not have been run")
+		}
+	})
+}
+
 func TestStepFinish(t *testing.T) {
 	t.Run("closes the output streams", func(t *testing.T) {
 		streams := &testutils.DevNullWithClose{}

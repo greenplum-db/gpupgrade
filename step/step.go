@@ -90,6 +90,25 @@ func GetStatusFile(stateDir string) (path string, err error) {
 	return path, nil
 }
 
+func HasRun(step idl.Step, substep idl.Substep) (bool, error) {
+	path, err := GetStatusFile(utils.GetStateDir())
+	if err != nil {
+		return false, xerrors.Errorf("status file: %w", err)
+	}
+
+	store := NewFileStore(path)
+	status, err := store.Read(step, substep)
+	if err != nil {
+		return false, err
+	}
+
+	if status != idl.Status_UNKNOWN_STATUS {
+		return true, nil
+	}
+
+	return false, nil
+}
+
 func (s *Step) Streams() OutStreams {
 	return s.streams
 }
