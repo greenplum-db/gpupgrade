@@ -45,6 +45,14 @@ message SubstepStatus {
   Status status = 2;
 }
 
+enum Step {
+  UNKNOWN_STEP = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
+  INITIALIZE = 1;
+  EXECUTE = 2;
+  FINALIZE = 3;
+  REVERT = 4;
+}
+
 enum Substep {
     UNKNOWN_SUBSTEP = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
     CREATING_DIRECTORIES = 1;

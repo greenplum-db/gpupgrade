@@ -29,7 +29,7 @@ func TestFileStore(t *testing.T) {
 	path := filepath.Join(tmpDir, "status.json")
 	fs := step.NewFileStore(path)
 
-	const section = "some_section"
+	const section = idl.Step_INITIALIZE
 
 	t.Run("bubbles up any read failures", func(t *testing.T) {
 		_, err := fs.Read(section, idl.Substep_CHECK_UPGRADE)
@@ -64,11 +64,11 @@ func TestFileStore(t *testing.T) {
 
 		substep := idl.Substep_CHECK_UPGRADE
 		entries := []struct {
-			Section string
+			Section idl.Step
 			Status  idl.Status
 		}{
-			{Section: "section_1", Status: idl.Status_FAILED},
-			{Section: "section_2", Status: idl.Status_COMPLETE},
+			{Section: idl.Step_INITIALIZE, Status: idl.Status_FAILED},
+			{Section: idl.Step_EXECUTE, Status: idl.Status_COMPLETE},
 		}
 
 		for _, e := range entries {
@@ -127,7 +127,7 @@ func TestFileStore(t *testing.T) {
 	t.Run("returns unknown status if substep was written to a different section", func(t *testing.T) {
 		clear(t, path)
 
-		err := fs.Write("other_section", idl.Substep_INIT_TARGET_CLUSTER, idl.Status_FAILED)
+		err := fs.Write(idl.Step_FINALIZE, idl.Substep_INIT_TARGET_CLUSTER, idl.Status_FAILED)
 		if err != nil {
 			t.Fatalf("Write() returned error %+v", err)
 		}
@@ -163,8 +163,8 @@ func TestFileStore(t *testing.T) {
 		}
 
 		key := substep.String()
-		if raw[section][key] != status.String() {
-			t.Errorf("status[%q][%q] = %q, want %q", section, key, raw[section][key], status.String())
+		if raw[section.String()][key] != status.String() {
+			t.Errorf("status[%q][%q] = %q, want %q", section, key, raw[section.String()][key], status.String())
 		}
 	})
 }

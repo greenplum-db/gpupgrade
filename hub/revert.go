@@ -19,7 +19,7 @@ import (
 )
 
 func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) (err error) {
-	st, err := step.Begin(s.StateDir, "revert", stream)
+	st, err := step.Begin(s.StateDir, idl.Step_REVERT, stream)
 	if err != nil {
 		return err
 	}

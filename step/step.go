@@ -18,14 +18,14 @@ import (
 )
 
 type Step struct {
-	name    string
+	name    idl.Step
 	sender  idl.MessageSender // sends substep status messages
 	store   Store             // persistent substep status storage
 	streams OutStreamsCloser  // writes substep stdout/err
 	err     error
 }
 
-func New(name string, sender idl.MessageSender, store Store, streams OutStreamsCloser) *Step {
+func New(name idl.Step, sender idl.MessageSender, store Store, streams OutStreamsCloser) *Step {
 	return &Step{
 		name:    name,
 		sender:  sender,
@@ -34,32 +34,32 @@ func New(name string, sender idl.MessageSender, store Store, streams OutStreamsC
 	}
 }
 
-func Begin(stateDir string, name string, sender idl.MessageSender) (*Step, error) {
+func Begin(stateDir string, step idl.Step, sender idl.MessageSender) (*Step, error) {
 	logdir, err := utils.GetLogDir()
 	if err != nil {
 		return nil, err
 	}
 
-	path := filepath.Join(logdir, fmt.Sprintf("%s_%s.log", name, operating.System.Now().Format("20060102")))
+	path := filepath.Join(logdir, fmt.Sprintf("%s_%s.log", strings.ToLower(step.String()), operating.System.Now().Format("20060102")))
 	log, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
-		return nil, xerrors.Errorf(`step "%s": %w`, name, err)
+		return nil, xerrors.Errorf(`step "%s": %w`, step, err)
 	}
 
-	_, err = fmt.Fprintf(log, "\n%s in progress.\n", strings.Title(name))
+	_, err = fmt.Fprintf(log, "\n%s in progress.\n", strings.Title(step.String()))
 	if err != nil {
 		log.Close()
-		return nil, xerrors.Errorf(`logging step "%s": %w`, name, err)
+		return nil, xerrors.Errorf(`logging step "%s": %w`, step, err)
 	}
 
 	statusPath, err := GetStatusFile(stateDir)
 	if err != nil {
-		return nil, xerrors.Errorf("step %q: %w", name, err)
+		return nil, xerrors.Errorf("step %q: %w", step, err)
 	}
 
 	streams := newMultiplexedStream(sender, log)
 
-	return New(name, sender, NewFileStore(statusPath), streams), nil
+	return New(step, sender, NewFileStore(statusPath), streams), nil
 }
 
 // Returns path to status file, and if one does not exist it creates an empty
@@ -118,7 +118,7 @@ func (s *Step) run(substep idl.Substep, f func(OutStreams) error, alwaysRun bool
 	var err error
 	defer func() {
 		if err != nil {
-			s.err = xerrors.Errorf(`substep "%s": %w`, s.name, err)
+			s.err = xerrors.Errorf(`substep "%s": %w`, substep, err)
 		}
 	}()
 

@@ -15,8 +15,8 @@ import (
 )
 
 type Store interface {
-	Read(string, idl.Substep) (idl.Status, error)
-	Write(string, idl.Substep, idl.Status) error
+	Read(idl.Step, idl.Substep) (idl.Status, error)
+	Write(idl.Step, idl.Substep, idl.Status) error
 }
 
 // FileStore implements step.Store by providing persistent storage on disk.
@@ -67,13 +67,13 @@ func (f *FileStore) load() (prettyMap, error) {
 	return substeps, nil
 }
 
-func (f *FileStore) Read(section string, substep idl.Substep) (idl.Status, error) {
+func (f *FileStore) Read(step idl.Step, substep idl.Substep) (idl.Status, error) {
 	steps, err := f.load()
 	if err != nil {
 		return idl.Status_UNKNOWN_STATUS, err
 	}
 
-	sectionMap, ok := steps[section]
+	sectionMap, ok := steps[step.String()]
 	if !ok {
 		return idl.Status_UNKNOWN_STATUS, nil
 	}
@@ -89,16 +89,16 @@ func (f *FileStore) Read(section string, substep idl.Substep) (idl.Status, error
 // Write atomically updates the status file.
 // Load the latest values from the filesystem, rather than storing
 // in-memory on a struct to avoid having two sources of truth.
-func (f *FileStore) Write(section string, substep idl.Substep, status idl.Status) (err error) {
+func (f *FileStore) Write(step idl.Step, substep idl.Substep, status idl.Status) (err error) {
 	steps, err := f.load()
 	if err != nil {
 		return err
 	}
 
-	if _, ok := steps[section]; !ok {
-		steps[section] = make(map[string]PrettyStatus)
+	if _, ok := steps[step.String()]; !ok {
+		steps[step.String()] = make(map[string]PrettyStatus)
 	}
-	steps[section][substep.String()] = PrettyStatus{status}
+	steps[step.String()][substep.String()] = PrettyStatus{status}
 
 	data, err := json.MarshalIndent(steps, "", "  ") // pretty print JSON
 	if err != nil {
