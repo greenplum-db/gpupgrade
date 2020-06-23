@@ -835,12 +835,12 @@ Required Commands: gpupgrade is a three-step process
                     --source-bindir        the path to the binary directory for the source Greenplum installation
                     --target-bindir        the path to the binary directory for the target Greenplum installation
                     --source-master-port   the master port for the source Greenplum installation
-                    --hub-port             the port gpupgrade hub uses to listen for commands on
-                    --agent-port           the port gpupgrade agent uses to listen for commands on
 
                   Optional Flags:
                     --mode [copy|link]     Upgrade mode to either copy source files to target or use hard links to modify data in place. Default is copy.
                     --temp-port-range      the set of ports to use when initializing the target cluster
+                    --hub-port             the port gpupgrade hub uses to listen for commands on
+                    --agent-port           the port gpupgrade agent uses to listen for commands on
 
   2. execute      upgrades the master and primary segments to the target Greenplum version
 
