@@ -57,6 +57,7 @@ import (
 )
 
 var (
+	Help           map[string]string
 	InitializeHelp string
 	ExecuteHelp    string
 	FinalizeHelp   string
@@ -102,6 +103,12 @@ func init() {
 		idl.Substep_ARCHIVE_LOG_DIRECTORIES,
 		idl.Substep_START_SOURCE_CLUSTER,
 	})
+	Help = map[string]string{
+		"initialize": InitializeHelp,
+		"execute":    ExecuteHelp,
+		"finalize":   FinalizeHelp,
+		"revert":     RevertHelp,
+	}
 }
 
 func BuildRootCommand() *cobra.Command {

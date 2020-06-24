@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"runtime/debug"
+	"strings"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	_ "github.com/lib/pq"
@@ -26,9 +27,17 @@ func main() {
 	gplog.InitializeLogging("gpupgrade_cli", logdir)
 
 	root := commands.BuildRootCommand()
+	// Silence usage since Cobra prints usage for all errors rather than just
+	// "unknown flag" errors.
+	root.SilenceUsage = true
 
 	err = root.Execute()
 	if err != nil && err != daemon.ErrSuccessfullyDaemonized {
+		if strings.HasPrefix(err.Error(), "unknown flag") {
+			cmd := os.Args[1]
+			fmt.Println(commands.Help[cmd])
+		}
+
 		// We use gplog.Debug instead of Error so the error is not displayed
 		// twice to the user in the terminal.
 		gplog.Debug("%+v", err)
