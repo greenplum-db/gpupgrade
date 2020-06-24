@@ -67,6 +67,10 @@ func ClusterFromDB(conn *dbconn.DBConn, binDir string) (*Cluster, error) {
 	return c, nil
 }
 
+func (c *Cluster) Master() SegConfig {
+	return c.Primaries[-1]
+}
+
 func (c *Cluster) MasterDataDir() string {
 	return c.GetDirForContent(-1)
 }
@@ -77,6 +81,11 @@ func (c *Cluster) MasterPort() int {
 
 func (c *Cluster) MasterHostname() string {
 	return c.Primaries[-1].Hostname
+}
+
+// the standby might not exist, so it is the caller's responsibility
+func (c *Cluster) Standby() SegConfig {
+	return c.Mirrors[-1]
 }
 
 func (c *Cluster) HasStandby() bool {
