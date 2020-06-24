@@ -103,6 +103,11 @@ func (m *MockAgentServer) ArchiveLogDirectory(context.Context, *idl.ArchiveLogDi
 	return &idl.ArchiveLogDirectoryReply{}, nil
 }
 
+func (m *MockAgentServer) Rsync(context.Context, *idl.RsyncRequest) (*idl.RsyncReply, error) {
+	m.increaseCalls()
+	return &idl.RsyncReply{}, nil
+}
+
 func (m *MockAgentServer) StopAgent(ctx context.Context, in *idl.StopAgentRequest) (*idl.StopAgentReply, error) {
 	return &idl.StopAgentReply{}, nil
 }

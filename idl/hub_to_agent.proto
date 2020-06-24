@@ -15,6 +15,7 @@ service Agent {
   rpc DeleteDataDirectories (DeleteDataDirectoriesRequest) returns (DeleteDataDirectoriesReply) {}
   rpc DeleteStateDirectory (DeleteStateDirectoryRequest) returns (DeleteStateDirectoryReply) {}
   rpc ArchiveLogDirectory (ArchiveLogDirectoryRequest) returns (ArchiveLogDirectoryReply) {}
+  rpc Rsync (RsyncRequest) returns (RsyncReply) {}
 }
 
 message TablespaceInfo {
@@ -78,3 +79,17 @@ message CheckSegmentDiskSpaceRequest {
     CheckDiskSpaceRequest request = 1;
     repeated string datadirs = 2;
 }
+
+message RsyncPair {
+    string Source = 1;
+    string RemoteHost = 2;
+    string Destination = 3;
+}
+
+message RsyncRequest {
+    repeated string Options = 1;
+    repeated string Excludes = 2;
+    repeated RsyncPair Pairs = 3;
+}
+
+message RsyncReply {}

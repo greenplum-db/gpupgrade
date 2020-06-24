@@ -175,6 +175,26 @@ func (mr *MockAgentClientMockRecorder) ArchiveLogDirectory(ctx, in interface{}, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ArchiveLogDirectory", reflect.TypeOf((*MockAgentClient)(nil).ArchiveLogDirectory), varargs...)
 }
 
+// Rsync mocks base method
+func (m *MockAgentClient) Rsync(ctx context.Context, in *idl.RsyncRequest, opts ...grpc.CallOption) (*idl.RsyncReply, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Rsync", varargs...)
+	ret0, _ := ret[0].(*idl.RsyncReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Rsync indicates an expected call of Rsync
+func (mr *MockAgentClientMockRecorder) Rsync(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Rsync", reflect.TypeOf((*MockAgentClient)(nil).Rsync), varargs...)
+}
+
 // MockAgentServer is a mock of AgentServer interface
 type MockAgentServer struct {
 	ctrl     *gomock.Controller
@@ -301,4 +321,19 @@ func (m *MockAgentServer) ArchiveLogDirectory(arg0 context.Context, arg1 *idl.Ar
 func (mr *MockAgentServerMockRecorder) ArchiveLogDirectory(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ArchiveLogDirectory", reflect.TypeOf((*MockAgentServer)(nil).ArchiveLogDirectory), arg0, arg1)
+}
+
+// Rsync mocks base method
+func (m *MockAgentServer) Rsync(arg0 context.Context, arg1 *idl.RsyncRequest) (*idl.RsyncReply, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Rsync", arg0, arg1)
+	ret0, _ := ret[0].(*idl.RsyncReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Rsync indicates an expected call of Rsync
+func (mr *MockAgentServerMockRecorder) Rsync(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Rsync", reflect.TypeOf((*MockAgentServer)(nil).Rsync), arg0, arg1)
 }
