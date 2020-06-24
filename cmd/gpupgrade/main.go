@@ -26,12 +26,12 @@ func main() {
 	gplog.InitializeLogging("gpupgrade_cli", logdir)
 
 	root := commands.BuildRootCommand()
-	root.SilenceErrors = true // we'll print these ourselves
 
 	err = root.Execute()
 	if err != nil && err != daemon.ErrSuccessfullyDaemonized {
-		// Use v to print the stack trace of an object errors.
-		fmt.Printf("\n%+v\n", err)
+		// We use gplog.Debug instead of Error so the error is not displayed
+		// twice to the user in the terminal.
+		gplog.Debug("%+v", err)
 		os.Exit(1)
 	}
 }
