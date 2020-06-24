@@ -12,6 +12,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/testutils"
 )
 
 func TestFileStore(t *testing.T) {
@@ -172,8 +173,5 @@ func TestFileStore(t *testing.T) {
 func clear(t *testing.T, path string) {
 	t.Helper()
 
-	err := ioutil.WriteFile(path, []byte("{}"), 0600)
-	if err != nil {
-		t.Fatalf("clearing status file: %v", err)
-	}
+	testutils.MustWriteToFile(t, path, "{}")
 }

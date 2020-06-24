@@ -429,10 +429,7 @@ func createDataDir(t *testing.T, name, tmpDir string, requiredPaths []string) (d
 
 	for _, fileName := range requiredPaths {
 		filePath := filepath.Join(dirPath, fileName)
-		err = ioutil.WriteFile(filePath, []byte{}, 0600)
-		if err != nil {
-			t.Errorf("error writing empty file: %v", err)
-		}
+		testutils.MustWriteToFile(t, filePath, "")
 	}
 
 	return dirPath

@@ -78,10 +78,7 @@ func TestUpdateCatalog(t *testing.T) {
 			}
 		}
 }`
-	err = ioutil.WriteFile(config, []byte(data), 0600)
-	if err != nil {
-		t.Fatalf("creating %s: %+v", config, err)
-	}
+	testutils.MustWriteToFile(t, config, data)
 
 	var port int
 	conf := &Config{

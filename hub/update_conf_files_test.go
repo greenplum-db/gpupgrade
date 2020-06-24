@@ -13,6 +13,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/testutils"
 )
 
 // TODO: this is an integration test; move it
@@ -100,21 +101,14 @@ func writeFile(t *testing.T, path string, contents string) {
 		t.Fatalf("creating parent directory: %+v", err)
 	}
 
-	if err := ioutil.WriteFile(path, []byte(contents), 0640); err != nil {
-		t.Fatalf("writing file contents: %+v", err)
-	}
+	testutils.MustWriteToFile(t, path, contents)
 }
 
 func checkContents(t *testing.T, path string, expected string) {
 	t.Helper()
 
-	contents, err := ioutil.ReadFile(path)
-	if err != nil {
-		t.Fatalf("reading final contents: %+v", err)
-	}
-
-	actual := string(contents)
-	if actual != expected {
-		t.Errorf("replaced contents: %s\nwant: %s", actual, expected)
+	contents := testutils.MustReadFile(t, path)
+	if contents != expected {
+		t.Errorf("replaced contents: %s\nwant: %s", contents, expected)
 	}
 }

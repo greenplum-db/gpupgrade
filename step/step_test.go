@@ -300,36 +300,24 @@ func TestStatusFile(t *testing.T) {
 			t.Errorf("unexpected error %v", err)
 		}
 
-		actual, err := ioutil.ReadFile(statusFile)
-		if err != nil {
-			t.Fatalf("ReadFile(%q) returned error %#v", statusFile, err)
-		}
-
-		expected := "{}"
-		if string(actual) != expected {
-			t.Errorf("read %v want %v", string(actual), expected)
+		contents := testutils.MustReadFile(t, statusFile)
+		if contents != "{}" {
+			t.Errorf("read %q want {}", contents)
 		}
 	})
 
 	t.Run("does not create status file if it already exists", func(t *testing.T) {
 		expected := "1234"
-		err := ioutil.WriteFile(path, []byte(expected), 0600)
-		if err != nil {
-			t.Fatalf("unexpected error %v", err)
-		}
+		testutils.MustWriteToFile(t, path, expected)
 
 		statusFile, err := step.GetStatusFile(stateDir)
 		if err != nil {
 			t.Errorf("unexpected error %v", err)
 		}
 
-		actual, err := ioutil.ReadFile(statusFile)
-		if err != nil {
-			t.Errorf("ReadFile(%q) returned error %#v", statusFile, err)
-		}
-
-		if string(actual) != expected {
-			t.Errorf("read %v want %v", string(actual), expected)
+		contents := testutils.MustReadFile(t, statusFile)
+		if contents != expected {
+			t.Errorf("read %q want %q", contents, expected)
 		}
 	})
 }

@@ -6,7 +6,6 @@ package integrations_test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os/exec"
 	"path/filepath"
 	"strconv"
@@ -71,10 +70,7 @@ func TestHub(t *testing.T) {
 			}
 
 			// write initial config.json
-			err = ioutil.WriteFile(upgrade.GetConfigFile(), []byte(c.configContents), 0600)
-			if err != nil {
-				t.Errorf("GetConfigFile returned error: %+v", err)
-			}
+			testutils.MustWriteToFile(t, upgrade.GetConfigFile(), c.configContents)
 
 			cmd := exec.Command("gpupgrade", c.args...)
 

@@ -4,7 +4,6 @@
 package rsync_test
 
 import (
-	"bytes"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -37,7 +36,7 @@ func TestRsync(t *testing.T) {
 		defer testutils.MustRemoveAll(t, destination)
 
 		filename := "file.txt"
-		expected := []byte("hi")
+		expected := "hi"
 		testutils.MustWriteToFile(t, filepath.Join(source, filename), expected)
 
 		opts := []rsync.Option{
@@ -50,8 +49,8 @@ func TestRsync(t *testing.T) {
 		}
 
 		actual := testutils.MustReadFile(t, filepath.Join(destination, "/", filename))
-		if !bytes.Equal(actual, expected) {
-			t.Errorf("got %v want %v", actual, expected)
+		if actual != expected {
+			t.Errorf("got %q want %q", actual, expected)
 		}
 	})
 
@@ -63,7 +62,7 @@ func TestRsync(t *testing.T) {
 		defer testutils.MustRemoveAll(t, destination)
 
 		filename := "file.txt"
-		expected := []byte("hi")
+		expected := "hi"
 		testutils.MustWriteToFile(t, filepath.Join(source, filename), expected)
 
 		opts := []rsync.Option{
@@ -77,8 +76,8 @@ func TestRsync(t *testing.T) {
 
 		path := filepath.Join(destination, string(os.PathSeparator), filepath.Base(source), filename)
 		actual := testutils.MustReadFile(t, path)
-		if !bytes.Equal(actual, expected) {
-			t.Errorf("got %v want %v", actual, expected)
+		if actual != expected {
+			t.Errorf("got %q want %q", actual, expected)
 		}
 	})
 
@@ -93,11 +92,11 @@ func TestRsync(t *testing.T) {
 		defer testutils.MustRemoveAll(t, destination)
 
 		filename := "file.txt"
-		expected := []byte("hi")
+		expected := "hi"
 		testutils.MustWriteToFile(t, filepath.Join(source, filename), expected)
 
 		filename2 := "file2.txt"
-		expected2 := []byte("hi_2")
+		expected2 := "hi_2"
 		testutils.MustWriteToFile(t, filepath.Join(source2, filename2), expected2)
 
 		opts := []rsync.Option{
@@ -111,14 +110,14 @@ func TestRsync(t *testing.T) {
 
 		path := filepath.Join(destination, string(os.PathSeparator), filepath.Base(source), filename)
 		actual := testutils.MustReadFile(t, path)
-		if !bytes.Equal(actual, expected) {
-			t.Errorf("got %v want %v", actual, expected)
+		if actual != expected {
+			t.Errorf("got %q want %q", actual, expected)
 		}
 
 		path = filepath.Join(destination, string(os.PathSeparator), filepath.Base(source2), filename2)
 		actual = testutils.MustReadFile(t, path)
-		if !bytes.Equal(actual, expected2) {
-			t.Errorf("got %v want %v", actual, expected2)
+		if actual != expected2 {
+			t.Errorf("got %q want %q", actual, expected2)
 		}
 	})
 
@@ -130,7 +129,7 @@ func TestRsync(t *testing.T) {
 		defer testutils.MustRemoveAll(t, destination)
 
 		filename := "file.txt"
-		expected := []byte("hi")
+		expected := "hi"
 		testutils.MustWriteToFile(t, filepath.Join(source, filename), expected)
 
 		streams := &step.BufferedStreams{}
@@ -151,8 +150,8 @@ func TestRsync(t *testing.T) {
 
 		path := filepath.Join(destination, string(os.PathSeparator), filename)
 		contents := testutils.MustReadFile(t, path)
-		if !bytes.Equal(contents, expected) {
-			t.Errorf("got %v want %v", contents, expected)
+		if contents != expected {
+			t.Errorf("got %q want %q", contents, expected)
 		}
 	})
 
@@ -164,7 +163,7 @@ func TestRsync(t *testing.T) {
 		defer testutils.MustRemoveAll(t, destination)
 
 		filename := "filename.txt"
-		testutils.MustWriteToFile(t, filepath.Join(destination, filename), []byte(""))
+		testutils.MustWriteToFile(t, filepath.Join(destination, filename), "")
 
 		opts := []rsync.Option{
 			rsync.WithSources(source + string(os.PathSeparator)),
@@ -188,7 +187,7 @@ func TestRsync(t *testing.T) {
 		defer testutils.MustRemoveAll(t, destination)
 
 		filename := "filename.txt"
-		testutils.MustWriteToFile(t, filepath.Join(source, filename), []byte(""))
+		testutils.MustWriteToFile(t, filepath.Join(source, filename), "")
 
 		opts := []rsync.Option{
 			rsync.WithSources(source + string(os.PathSeparator)),
@@ -215,9 +214,9 @@ func TestRsync(t *testing.T) {
 		filename1 := "filename1.txt"
 		filename2 := "filename2.txt"
 		filename3 := "filename3.txt"
-		testutils.MustWriteToFile(t, filepath.Join(source, filename1), []byte(""))
-		testutils.MustWriteToFile(t, filepath.Join(destination, filename2), []byte(""))
-		testutils.MustWriteToFile(t, filepath.Join(destination, filename3), []byte(""))
+		testutils.MustWriteToFile(t, filepath.Join(source, filename1), "")
+		testutils.MustWriteToFile(t, filepath.Join(destination, filename2), "")
+		testutils.MustWriteToFile(t, filepath.Join(destination, filename3), "")
 
 		opts := []rsync.Option{
 			rsync.WithSources(source + string(os.PathSeparator)),
@@ -250,7 +249,7 @@ func TestRsync(t *testing.T) {
 		destination := testutils.GetTempDir(t, "destination")
 		defer testutils.MustRemoveAll(t, destination)
 
-		testutils.MustWriteToFile(t, filepath.Join(source, "filename.txt"), []byte(""))
+		testutils.MustWriteToFile(t, filepath.Join(source, "filename.txt"), "")
 
 		stream := &step.BufferedStreams{}
 		opts := []rsync.Option{
@@ -295,7 +294,7 @@ func TestRsync(t *testing.T) {
 		destination := testutils.GetTempDir(t, "destination")
 		defer testutils.MustRemoveAll(t, destination)
 
-		testutils.MustWriteToFile(t, filepath.Join(source, "filename.txt"), []byte(""))
+		testutils.MustWriteToFile(t, filepath.Join(source, "filename.txt"), "")
 
 		opts := []rsync.Option{
 			rsync.WithSources(source + string(os.PathSeparator)),
