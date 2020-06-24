@@ -115,7 +115,7 @@ func ArchiveSource(source, target string, renameTarget bool) error {
 }
 
 func renameDataDirectory(src, dst string) error {
-	if err := verifyDataDirectory(src); err != nil {
+	if err := VerifyDataDirectory(src); err != nil {
 		return err
 	}
 
@@ -145,7 +145,7 @@ func (i *InvalidDataDirectoryError) Is(err error) bool {
 	return err == ErrInvalidDataDirectory
 }
 
-func verifyDataDirectory(path string) error {
+func VerifyDataDirectory(path string) error {
 	var mErr multierror.Error
 	for _, f := range PostgresFiles {
 		if !PathExists(filepath.Join(path, f)) {
