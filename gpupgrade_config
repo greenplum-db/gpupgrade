@@ -26,9 +26,9 @@ target_bindir =
 # mode = copy
 
 
-# The disk free ratio is the space needed to run gpupgrade.
-# The ratio ranges from 0.0 to 1.0.
-# The recommended free disk space for copy mode is 0.6 [60%] and 0.2 [20%] for link mode.
+# The disk free ratio specifies what fraction of disk space must be free on
+# every host in order for gpupgrade to run. The ratio ranges from 0.0 to 1.0.
+# Recommended values are 0.6 [60%] for copy mode, and 0.2 [20%] for link mode.
 # disk_free_ratio = 0.6
 
 
