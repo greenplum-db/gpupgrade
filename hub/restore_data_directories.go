@@ -5,9 +5,14 @@ package hub
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"os/exec"
+	"path"
+	"path/filepath"
 	"sync"
 
+	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 
@@ -16,6 +21,8 @@ import (
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
+
+var RecoversegCmd = exec.Command
 
 var Options = []string{"--archive", "--compress", "--stats"}
 
@@ -49,6 +56,27 @@ func RestoreMasterAndPrimaries(stream step.OutStreams, agentConns []*Connection,
 	}
 
 	return mErr.ErrorOrNil()
+}
+
+// Restoring the mirrors is needed in copy mode on 5X since the source cluster
+// is left in a bad state after execute. This is because running pg_upgrade on
+// a primary results in a checkpoint that does not get replicated on the mirror.
+// Thus, when the mirror is started it panics and a gprecoverseg or rsync is needed.
+func Recoverseg(stream step.OutStreams, cluster *greenplum.Cluster) error {
+	if cluster.Version.AtLeast("6") {
+		return nil
+	}
+
+	gphome := filepath.Dir(path.Clean(cluster.BinDir)) //works around https://github.com/golang/go/issues/4837 in go10.4
+
+	script := fmt.Sprintf("source %[1]s/greenplum_path.sh && %[1]s/bin/gprecoverseg -a", gphome)
+	cmd := RecoversegCmd("bash", "-c", script)
+
+	cmd.Stdout = stream.Stdout()
+	cmd.Stderr = stream.Stderr()
+
+	gplog.Info("running command: %q", cmd)
+	return cmd.Run()
 }
 
 func RestoreMaster(stream step.OutStreams, standby greenplum.SegConfig, master greenplum.SegConfig) error {

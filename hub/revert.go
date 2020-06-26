@@ -5,6 +5,7 @@ package hub
 
 import (
 	"fmt"
+	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -65,12 +66,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		return err
 	}
 
-	if !running {
-		// Restoring the master and primaries is needed in copy mode due to an issue
-		// in 5X where the source cluster is left in a bad state after execute. This
-		// is because running pg_upgrade on a primary results in a checkpoint that
-		// does not get replicated on the mirror. Thus, when the mirror is started
-		// it panics and a gprecoverseg or rsync is needed.
+	if !running && s.UseLinkMode {
 		st.Run(idl.Substep_RESTORE_SOURCE_MASTER_AND_PRIMARIES, func(stream step.OutStreams) error {
 			return RestoreMasterAndPrimaries(stream, s.agentConns, s.Source)
 		})
@@ -118,10 +114,31 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 
 	if !running {
 		st.Run(idl.Substep_START_SOURCE_CLUSTER, func(streams step.OutStreams) error {
-			if err := s.Source.Start(streams); err != nil {
+			err := s.Source.Start(streams)
+			var exitErr *exec.ExitError
+			if xerrors.As(err, &exitErr) {
+				// In copy mode the gpdb 5x source cluster mirrors do not come
+				// up causing gpstart to return a non-zero exit status.
+				// This substep fails preventing the following substep steps
+				// from running including gprecoverseg.
+				// TODO: For 5X investigate how to check for this case and not
+				//  ignore all errors with exit code 1.
+				if !s.UseLinkMode && exitErr.ExitCode() == 1 {
+					return nil
+				}
+			}
+
+			if err != nil {
 				return xerrors.Errorf("starting source cluster: %w", err)
 			}
+
 			return nil
+		})
+	}
+
+	if !s.UseLinkMode {
+		st.Run(idl.Substep_RESTORE_SOURCE_MASTER_AND_PRIMARIES, func(streams step.OutStreams) error {
+			return Recoverseg(streams, s.Source)
 		})
 	}
 

@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/hashicorp/go-multierror"
 	"golang.org/x/xerrors"
@@ -25,6 +26,10 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
 
+func ResetRecoversegCmd() {
+	hub.RecoversegCmd = exec.Command
+}
+
 func TestRestoreMasterAndPrimaries(t *testing.T) {
 	testhelper.SetupTestLogger()
 
@@ -36,9 +41,11 @@ func TestRestoreMasterAndPrimaries(t *testing.T) {
 		{ContentID: 1, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 		{ContentID: 1, Hostname: "msdw2", DataDir: "/data/dbfast_mirror2/seg2", Role: greenplum.MirrorRole},
 	})
+	cluster.BinDir = "/usr/local/greenplum-db/bin"
+	cluster.Version = dbconn.NewVersion("5.0.0")
 
-	t.Run("restores master using correct rsync arguments", func(t *testing.T) {
-		defer rsync.SetRsyncCommand(exec.Command)
+	t.Run("restores master in link mode using correct rsync arguments", func(t *testing.T) {
+		defer rsync.ResetRsyncCommand()
 		rsync.SetRsyncCommand(exectest.NewCommandWithVerifier(hub.Success, func(utility string, args ...string) {
 			if utility != "rsync" {
 				t.Errorf("got %q want rsync", utility)
@@ -71,6 +78,48 @@ func TestRestoreMasterAndPrimaries(t *testing.T) {
 		err := hub.RestoreMaster(&testutils.DevNullWithClose{}, cluster.Standby(), cluster.Master())
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
+		}
+	})
+
+	t.Run("restores mirrors in copy mode on GPDB5", func(t *testing.T) {
+		defer ResetRecoversegCmd()
+		hub.RecoversegCmd = exectest.NewCommandWithVerifier(hub.Success, func(utility string, args ...string) {
+			if utility != "bash" {
+				t.Errorf("got %q want bash", utility)
+			}
+
+			expected := []string{"-c", "source /usr/local/greenplum-db/greenplum_path.sh && /usr/local/greenplum-db/bin/gprecoverseg -a"}
+			if !reflect.DeepEqual(args, expected) {
+				t.Errorf("got %q want %q", args, expected)
+			}
+		})
+
+		err := hub.Recoverseg(&testutils.DevNullWithClose{}, cluster)
+		if err != nil {
+			t.Errorf("unexpected err %#v", err)
+		}
+	})
+
+	t.Run("does not restore the mirrors in copy mode on GPDB6 or higher", func(t *testing.T) {
+		defer func() {
+			cluster.Version = dbconn.NewVersion("5.0.0")
+		}()
+
+		cluster.Version = dbconn.NewVersion("6.0.0")
+		called := false
+
+		defer ResetRecoversegCmd()
+		hub.RecoversegCmd = exectest.NewCommandWithVerifier(hub.Success, func(utility string, args ...string) {
+			called = true
+		})
+
+		err := hub.Recoverseg(&testutils.DevNullWithClose{}, cluster)
+		if err != nil {
+			t.Errorf("unexpected err %#v", err)
+		}
+
+		if called {
+			t.Errorf("expected gprecoverseg to not be called")
 		}
 	})
 
@@ -128,19 +177,30 @@ func TestRestoreMasterAndPrimaries(t *testing.T) {
 			{ContentID: 1, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 		})
 
-		err := hub.RestoreMasterAndPrimaries(&testutils.DevNullWithClose{}, []*hub.Connection{}, cluster)
+		err := hub.RsyncMasterAndPrimaries(&testutils.DevNullWithClose{}, []*hub.Connection{}, cluster)
 		if err == nil {
 			t.Error("unexpected nil error")
 		}
 	})
 
-	t.Run("errors when restoring the master fails", func(t *testing.T) {
+	t.Run("errors when restoring the master fails in link mode", func(t *testing.T) {
 		rsync.SetRsyncCommand(exectest.NewCommand(hub.Failure))
 		defer rsync.ResetRsyncCommand()
 
 		err := hub.RestoreMaster(&testutils.DevNullWithClose{}, cluster.Standby(), cluster.Master())
 		if err == nil {
 			t.Error("unexpected nil error")
+		}
+	})
+
+	t.Run("errors when restoring the mirrors fails in copy mode on GPDB5", func(t *testing.T) {
+		defer ResetRecoversegCmd()
+		hub.RecoversegCmd = exectest.NewCommand(hub.Failure)
+
+		err := hub.Recoverseg(&testutils.DevNullWithClose{}, cluster)
+		var exitErr *exec.ExitError
+		if !xerrors.As(err, &exitErr) || exitErr.ExitCode() != 1 {
+			t.Errorf("returned error %#v, want exit code %d", err, 1)
 		}
 	})
 
