@@ -24,6 +24,13 @@ teardown() {
     if [ -n "$TABLE" ]; then
         $PSQL postgres -c "DROP TABLE ${TABLE}"
     fi
+
+    if [ -n "$MARKER" ]; then
+        local datadirs=($(query_datadirs $GPHOME_SOURCE $PGPORT))
+        for datadir in "${datadirs[@]}"; do
+            rm -f "$datadir/${MARKER}"
+        done
+    fi
 }
 
 @test "reverting after initialize succeeds" {
@@ -61,38 +68,20 @@ teardown() {
     fi
 }
 
-@test "reverting after execute in copy mode succeeds" {
-    setup_restore_cluster "--mode=copy"
-
-    local old_config=$(get_segment_configuration "${GPHOME_SOURCE}")
-
+test_revert_after_execute() {
+    local mode="$1"
     local target_master_port=6020
+    local old_config, new_config, mirrors, primaries, row_count
 
-    gpupgrade initialize \
-        --source-bindir="$GPHOME_SOURCE/bin" \
-        --target-bindir="$GPHOME_TARGET/bin" \
-        --source-master-port="${PGPORT}" \
-        --temp-port-range ${target_master_port}-6040 \
-        --disk-free-ratio 0 \
-        --verbose 3>&-
+    # Save segment configuration
+    old_config=$(get_segment_configuration "${GPHOME_SOURCE}")
 
-    gpupgrade execute --verbose
-
-    # On GPDB5, restore the primary and master directories before starting the cluster. Hack until revert handles this case
-    restore_cluster
-
-    gpupgrade revert --verbose
-
-    # Check to make sure the new cluster matches the old one.
-    local new_config=$(get_segment_configuration "${GPHOME_SOURCE}")
-    [ "$old_config" = "$new_config" ] || fail "actual config: $new_config, wanted: $old_config"
-
-    isready || fail "expected source cluster to be running on port ${PGPORT}"
-    ! isready "${GPHOME_TARGET}" ${target_master_port} || fail "expected target cluster to not be running on port ${target_master_port}"
-}
-
-@test "reverting after execute in link mode succeeds" {
-    local target_master_port=6020
+    # Place marker files on mirrors
+    MARKER=source-cluster.MARKER
+    mirrors=($(query_datadirs $GPHOME_SOURCE $PGPORT "role='m'"))
+    for datadir in "${mirrors[@]}"; do
+        touch "$datadir/${MARKER}"
+    done
 
     # Add a table
     TABLE="should_be_reverted"
@@ -105,7 +94,7 @@ teardown() {
         --source-master-port="${PGPORT}" \
         --temp-port-range ${target_master_port}-6040 \
         --disk-free-ratio 0 \
-        --mode link \
+        --mode "$mode" \
         --verbose 3>&-
     gpupgrade execute --verbose
 
@@ -115,19 +104,42 @@ teardown() {
     # Revert
     gpupgrade revert --verbose
 
-    # Check that transactions can be started on the source
-    $PSQL postgres --single-transaction -c "SELECT version()" || fail "unable to start transaction"
-
     # Verify the table modifications were reverted
-    local row_count=$($PSQL postgres -Atc "SELECT COUNT(*) FROM ${TABLE}")
+    row_count=$($PSQL postgres -Atc "SELECT COUNT(*) FROM ${TABLE}")
     if (( row_count != 3 )); then
         fail "table ${TABLE} truncated after execute was not reverted: got $row_count rows want 3"
     fi
+
+    # Verify marker files on primaries
+    primaries=($(query_datadirs $GPHOME_SOURCE $PGPORT "role='p'"))
+    for datadir in "${primaries[@]}"; do
+        if [ "$mode" = "link" ]; then
+            [ -f "${datadir}/${MARKER}" ] || fail "in link mode using rsync expected ${MARKER} marker file to be in datadir: $datadir"
+        else
+            [ ! -f "${datadir}/${MARKER}" ] || fail "in copy mode using gprecoverseg unexpected ${MARKER} marker file in datadir: $datadir"
+        fi
+    done
+
+    # Check that transactions can be started on the source
+    $PSQL postgres --single-transaction -c "SELECT version()" || fail "unable to start transaction"
+
+    # Check to make sure the old cluster still matches
+    new_config=$(get_segment_configuration "${GPHOME_SOURCE}")
+    [ "$old_config" = "$new_config" ] || fail "actual config: $new_config, wanted: $old_config"
+
+    # ensure target cluster is down
+    ! isready "${GPHOME_TARGET}" ${target_master_port} || fail "expected target cluster to not be running on port ${target_master_port}"
+}
+
+@test "reverting after execute in link mode succeeds" {
+    test_revert_after_execute "link"
+}
+
+@test "reverting after execute in copy mode succeeds" {
+    test_revert_after_execute "copy"
 }
 
 @test "can successfully run gpupgrade after a revert" {
-    setup_restore_cluster "--mode=copy"
-
     gpupgrade initialize \
         --source-bindir="$GPHOME_SOURCE/bin" \
         --target-bindir="$GPHOME_TARGET/bin" \
@@ -152,9 +164,6 @@ teardown() {
         --verbose 3>&-
 
     gpupgrade execute --verbose
-
-    # On GPDB5, restore the primary and master directories before starting the cluster. Hack until revert handles this case
-    restore_cluster
 
     # This last revert is used for test cleanup.
     gpupgrade revert --verbose
