@@ -71,7 +71,7 @@ teardown() {
 test_revert_after_execute() {
     local mode="$1"
     local target_master_port=6020
-    local old_config, new_config, mirrors, primaries, row_count
+    local old_config new_config mirrors primaries row_count
 
     # Save segment configuration
     old_config=$(get_segment_configuration "${GPHOME_SOURCE}")
