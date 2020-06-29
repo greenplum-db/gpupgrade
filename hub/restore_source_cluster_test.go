@@ -30,7 +30,7 @@ func ResetRecoversegCmd() {
 	hub.RecoversegCmd = exec.Command
 }
 
-func TestRestoreMasterAndPrimaries(t *testing.T) {
+func TestRsyncMasterAndPrimaries(t *testing.T) {
 	testhelper.SetupTestLogger()
 
 	cluster := hub.MustCreateCluster(t, []greenplum.SegConfig{
@@ -75,7 +75,7 @@ func TestRestoreMasterAndPrimaries(t *testing.T) {
 			}
 		}))
 
-		err := hub.RestoreMaster(&testutils.DevNullWithClose{}, cluster.Standby(), cluster.Master())
+		err := hub.RsyncMaster(&testutils.DevNullWithClose{}, cluster.Standby(), cluster.Master())
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -163,7 +163,7 @@ func TestRestoreMasterAndPrimaries(t *testing.T) {
 			{nil, standby, "standby", nil},
 		}
 
-		err := hub.RestorePrimaries(agentConns, cluster)
+		err := hub.RsyncPrimaries(agentConns, cluster)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -187,7 +187,7 @@ func TestRestoreMasterAndPrimaries(t *testing.T) {
 		rsync.SetRsyncCommand(exectest.NewCommand(hub.Failure))
 		defer rsync.ResetRsyncCommand()
 
-		err := hub.RestoreMaster(&testutils.DevNullWithClose{}, cluster.Standby(), cluster.Master())
+		err := hub.RsyncMaster(&testutils.DevNullWithClose{}, cluster.Standby(), cluster.Master())
 		if err == nil {
 			t.Error("unexpected nil error")
 		}
@@ -226,7 +226,7 @@ func TestRestoreMasterAndPrimaries(t *testing.T) {
 			{nil, failedClient, "msdw2", nil},
 		}
 
-		err := hub.RestorePrimaries(agentConns, cluster)
+		err := hub.RsyncPrimaries(agentConns, cluster)
 
 		var multiErr *multierror.Error
 		if !xerrors.As(err, &multiErr) {

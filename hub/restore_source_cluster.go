@@ -31,7 +31,7 @@ var Excludes = []string{
 	"gp_dbid", "postgresql.conf", "backup_label.old", "postmaster.pid", "recovery.conf",
 }
 
-func RestoreMasterAndPrimaries(stream step.OutStreams, agentConns []*Connection, source *greenplum.Cluster) error {
+func RsyncMasterAndPrimaries(stream step.OutStreams, agentConns []*Connection, source *greenplum.Cluster) error {
 	if !source.HasAllMirrorsAndStandby() {
 		return errors.New("Source cluster does not have mirrors and/or standby. Cannot restore source cluster. Please contact support.")
 	}
@@ -42,10 +42,10 @@ func RestoreMasterAndPrimaries(stream step.OutStreams, agentConns []*Connection,
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		errs <- RestoreMaster(stream, source.Standby(), source.Master())
+		errs <- RsyncMaster(stream, source.Standby(), source.Master())
 	}()
 
-	errs <- RestorePrimaries(agentConns, source)
+	errs <- RsyncPrimaries(agentConns, source)
 
 	wg.Wait()
 	close(errs)
@@ -79,7 +79,7 @@ func Recoverseg(stream step.OutStreams, cluster *greenplum.Cluster) error {
 	return cmd.Run()
 }
 
-func RestoreMaster(stream step.OutStreams, standby greenplum.SegConfig, master greenplum.SegConfig) error {
+func RsyncMaster(stream step.OutStreams, standby greenplum.SegConfig, master greenplum.SegConfig) error {
 	opts := []rsync.Option{
 		rsync.WithSources(standby.DataDir + string(os.PathSeparator)),
 		rsync.WithRemoteHost(master.Hostname),
@@ -92,7 +92,7 @@ func RestoreMaster(stream step.OutStreams, standby greenplum.SegConfig, master g
 	return rsync.Rsync(opts...)
 }
 
-func RestorePrimaries(agentConns []*Connection, source *greenplum.Cluster) error {
+func RsyncPrimaries(agentConns []*Connection, source *greenplum.Cluster) error {
 	var wg sync.WaitGroup
 	errs := make(chan error, len(agentConns))
 

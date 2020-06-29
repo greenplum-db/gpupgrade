@@ -68,7 +68,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 
 	if !running && s.UseLinkMode {
 		st.Run(idl.Substep_RESTORE_SOURCE_CLUSTER, func(stream step.OutStreams) error {
-			return RestoreMasterAndPrimaries(stream, s.agentConns, s.Source)
+			return RsyncMasterAndPrimaries(stream, s.agentConns, s.Source)
 		})
 	}
 
