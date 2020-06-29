@@ -101,7 +101,7 @@ func init() {
 		idl.Substep_STOP_HUB_AND_AGENTS,
 		idl.Substep_DELETE_MASTER_STATEDIR,
 		idl.Substep_ARCHIVE_LOG_DIRECTORIES,
-		idl.Substep_RESTORE_SOURCE_MASTER_AND_PRIMARIES,
+		idl.Substep_RESTORE_SOURCE_CLUSTER,
 		idl.Substep_START_SOURCE_CLUSTER,
 	})
 	Help = map[string]string{

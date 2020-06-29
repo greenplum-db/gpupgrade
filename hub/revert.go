@@ -67,7 +67,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 	}
 
 	if !running && s.UseLinkMode {
-		st.Run(idl.Substep_RESTORE_SOURCE_MASTER_AND_PRIMARIES, func(stream step.OutStreams) error {
+		st.Run(idl.Substep_RESTORE_SOURCE_CLUSTER, func(stream step.OutStreams) error {
 			return RestoreMasterAndPrimaries(stream, s.agentConns, s.Source)
 		})
 	}
@@ -137,7 +137,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 	}
 
 	if !s.UseLinkMode {
-		st.Run(idl.Substep_RESTORE_SOURCE_MASTER_AND_PRIMARIES, func(streams step.OutStreams) error {
+		st.Run(idl.Substep_RESTORE_SOURCE_CLUSTER, func(streams step.OutStreams) error {
 			return Recoverseg(streams, s.Source)
 		})
 	}
