@@ -454,15 +454,3 @@ func AgentHosts(c *greenplum.Cluster) []string {
 	}
 	return hosts
 }
-
-func MakeTargetClusterMessage(target *greenplum.Cluster) *idl.Message {
-	data := make(map[string]string)
-	data[idl.ResponseKey_target_port.String()] = strconv.Itoa(target.MasterPort())
-	data[idl.ResponseKey_target_master_data_directory.String()] = target.MasterDataDir()
-
-	return &idl.Message{
-		Contents: &idl.Message_Response{
-			Response: &idl.Response{Data: data},
-		},
-	}
-}

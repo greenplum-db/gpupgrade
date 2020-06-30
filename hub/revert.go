@@ -85,20 +85,21 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		})
 	}
 
+	var archiveDir string
 	st.Run(idl.Substep_ARCHIVE_LOG_DIRECTORIES, func(_ step.OutStreams) error {
 		// Archive log directory on master
 		oldDir, err := utils.GetLogDir()
 		if err != nil {
 			return err
 		}
-		newDir := filepath.Join(filepath.Dir(oldDir), utils.GetArchiveDirectoryName(time.Now()))
-		if err = utils.System.Rename(oldDir, newDir); err != nil {
+		archiveDir = filepath.Join(filepath.Dir(oldDir), upgrade.GetArchiveDirectoryName(s.UpgradeID, time.Now()))
+		if err = utils.System.Rename(oldDir, archiveDir); err != nil {
 			if utils.System.IsNotExist(err) {
-				gplog.Debug("log directory %s not archived, possibly due to multi-host environment. %+v", newDir, err)
+				gplog.Debug("log directory %s not archived, possibly due to multi-host environment. %+v", archiveDir, err)
 			}
 		}
 
-		return ArchiveSegmentLogDirectories(s.agentConns, s.Config.Target.MasterHostname(), newDir)
+		return ArchiveSegmentLogDirectories(s.agentConns, s.Config.Target.MasterHostname(), archiveDir)
 	})
 
 	st.Run(idl.Substep_DELETE_SEGMENT_STATEDIRS, func(_ step.OutStreams) error {
@@ -140,6 +141,14 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		st.Run(idl.Substep_RESTORE_SOURCE_CLUSTER, func(streams step.OutStreams) error {
 			return Recoverseg(streams, s.Source)
 		})
+	}
+
+	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Data: map[string]string{
+		idl.ResponseKey_source_version.String():               s.Source.Version.VersionString,
+		idl.ResponseKey_revert_log_archive_directory.String(): archiveDir,
+	}}}}
+	if err := stream.Send(message); err != nil {
+		return xerrors.Errorf("sending response message: %w", err)
 	}
 
 	return st.Err()

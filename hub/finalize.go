@@ -5,6 +5,7 @@ package hub
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/hashicorp/go-multierror"
@@ -99,7 +100,10 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 		})
 	}
 
-	message := MakeTargetClusterMessage(s.Target)
+	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Data: map[string]string{
+		idl.ResponseKey_target_port.String():                  strconv.Itoa(s.Target.MasterPort()),
+		idl.ResponseKey_target_master_data_directory.String(): s.Target.MasterDataDir(),
+	}}}}
 	if err = stream.Send(message); err != nil {
 		return err
 	}

@@ -93,10 +93,6 @@ func GetLogDir() (string, error) {
 	return logDir, nil
 }
 
-func GetArchiveDirectoryName(t time.Time) string {
-	return t.Format("gpupgrade-2006-01-02T15:04")
-}
-
 func GetTablespaceDir() string {
 	return filepath.Join(GetStateDir(), "tablespaces")
 }

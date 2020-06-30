@@ -560,7 +560,7 @@ func revert() *cobra.Command {
 			cmd.SilenceUsage = true
 			client := connectToHub()
 
-			err := commanders.Revert(client, verbose)
+			response, err := commanders.Revert(client, verbose)
 			if err != nil {
 				gplog.Error(err.Error())
 				return err
@@ -581,14 +581,33 @@ func revert() *cobra.Command {
 				return err
 			}
 
-			err = upgrade.DeleteDirectories([]string{utils.GetStateDir()}, upgrade.StateDirectoryFiles, hostname, &step.StdStreams{})
+			streams := &step.BufferedStreams{}
+			err = upgrade.DeleteDirectories([]string{utils.GetStateDir()}, upgrade.StateDirectoryFiles, hostname, streams)
+			if verbose {
+				os.Stdout.Write(streams.StdoutBuf.Bytes())
+				os.Stdout.Write(streams.StderrBuf.Bytes())
+			}
 			s.Finish(&err)
 			if err != nil {
 				gplog.Error(err.Error())
 				return err
 			}
 
+			fmt.Println()
 			fmt.Println("Revert completed successfully.")
+			fmt.Printf(`
+The source cluster has reverted to %s.
+
+The gpupgrade logs can be found on the master and segment hosts in: 
+%s
+
+NEXT ACTIONS
+------------
+If you would like to re-run gpupgrade, run "gpupgrade initialize" again.
+
+If you no longer want to proceed with gpupgrade, you must recreate 
+any tables, indexes, and/or roles that were dropped in order to pass 
+the pg_upgrade checks.`, response.Version, response.ArchiveDir)
 			fmt.Println()
 
 			return nil

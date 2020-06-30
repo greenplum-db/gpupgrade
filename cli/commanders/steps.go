@@ -8,13 +8,17 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 )
+
+type RevertResponse struct {
+	Version    string
+	ArchiveDir string
+}
 
 type receiver interface {
 	Recv() (*idl.Message, error)
@@ -104,16 +108,13 @@ func Execute(client idl.CliToHubClient, verbose bool) error {
 		return err
 	}
 
-	dataMap, err := UILoop(stream, verbose)
+	response, err := UILoop(stream, verbose)
 	if err != nil {
 		return xerrors.Errorf("Execute: %w", err)
 	}
 
-	port, datadir, err := extractTargetClusterInfo(dataMap)
-
-	if err != nil {
-		return xerrors.Errorf("Execute: %w", err)
-	}
+	port := response[idl.ResponseKey_target_port.String()]
+	datadir := response[idl.ResponseKey_target_master_data_directory.String()]
 
 	message := fmt.Sprintf(`
 Execute completed successfully.
@@ -145,15 +146,13 @@ func Finalize(client idl.CliToHubClient, verbose bool) error {
 		return err
 	}
 
-	dataMap, err := UILoop(stream, verbose)
+	response, err := UILoop(stream, verbose)
 	if err != nil {
 		return xerrors.Errorf("Finalize: %w", err)
 	}
 
-	port, datadir, err := extractTargetClusterInfo(dataMap)
-	if err != nil {
-		return xerrors.Errorf("Finalize: %w", err)
-	}
+	port := response[idl.ResponseKey_target_port.String()]
+	datadir := response[idl.ResponseKey_target_master_data_directory.String()]
 
 	fmt.Println("")
 	fmt.Println("Finalize completed successfully.")
@@ -163,7 +162,7 @@ func Finalize(client idl.CliToHubClient, verbose bool) error {
 	return nil
 }
 
-func Revert(client idl.CliToHubClient, verbose bool) error {
+func Revert(client idl.CliToHubClient, verbose bool) (*RevertResponse, error) {
 	fmt.Println()
 	fmt.Println("Revert in progress.")
 	fmt.Println()
@@ -171,38 +170,18 @@ func Revert(client idl.CliToHubClient, verbose bool) error {
 	stream, err := client.Revert(context.Background(), &idl.RevertRequest{})
 	if err != nil {
 		gplog.Error(err.Error())
-		return err
+		return &RevertResponse{}, err
 	}
 
-	_, err = UILoop(stream, verbose)
+	response, err := UILoop(stream, verbose)
 	if err != nil {
-		return xerrors.Errorf("Revert: %w", err)
+		return &RevertResponse{}, xerrors.Errorf("Revert: %w", err)
 	}
 
-	fmt.Println()
-	// TODO: add more info to this message
-	fmt.Printf("The source cluster is now restored to its original state.\n")
+	version := response[idl.ResponseKey_source_version.String()]
+	archiveDir := response[idl.ResponseKey_revert_log_archive_directory.String()]
 
-	return nil
-}
-
-func extractTargetClusterInfo(dataMap map[string]string) (string, string, error) {
-	port, portOk := dataMap[idl.ResponseKey_target_port.String()]
-	var missingKeys []string
-	if !portOk {
-		missingKeys = append(missingKeys, "target port")
-	}
-
-	datadir, datadirOk := dataMap[idl.ResponseKey_target_master_data_directory.String()]
-	if !datadirOk {
-		missingKeys = append(missingKeys, "target datadir")
-	}
-
-	if len(missingKeys) > 0 {
-		return "", "", xerrors.Errorf("did not receive the expected configuration values: %s", strings.Join(missingKeys, ", "))
-	}
-
-	return port, datadir, nil
+	return &RevertResponse{version, archiveDir}, nil
 }
 
 func UILoop(stream receiver, verbose bool) (map[string]string, error) {

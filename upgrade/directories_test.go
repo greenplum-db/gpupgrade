@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/hashicorp/go-multierror"
@@ -63,6 +64,20 @@ func ExampleTempDataDir() {
 	// /data/master/seg.AAAAAAAAAAA.-1
 	// /data/standby.AAAAAAAAAAA
 	// /data/primary/seg.AAAAAAAAAAA.3
+}
+
+func TestGetArchiveDirectoryName(t *testing.T) {
+	// Make sure every part of the date is distinct, to catch mistakes in
+	// formatting (e.g. using seconds rather than minutes).
+	stamp := time.Date(2000, 03, 14, 12, 15, 45, 1, time.Local)
+
+	var id upgrade.ID
+	actual := upgrade.GetArchiveDirectoryName(id, stamp)
+
+	expected := fmt.Sprintf("gpupgrade-%s-2000-03-14T12:15", id.String())
+	if actual != expected {
+		t.Errorf("GetArchiveDirectoryName() = %q, want %q", actual, expected)
+	}
 }
 
 func TestArchiveSource(t *testing.T) {
