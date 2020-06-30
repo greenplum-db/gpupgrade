@@ -34,6 +34,8 @@ teardown() {
 }
 
 @test "reverting after initialize succeeds" {
+    local target_hosts_dirs upgradeID
+
     gpupgrade initialize \
         --source-bindir="$GPHOME_SOURCE/bin" \
         --target-bindir="$GPHOME_TARGET/bin" \
@@ -42,7 +44,9 @@ teardown() {
         --disk-free-ratio 0 \
         --verbose 3>&-
 
-    local target_hosts_dirs=$(jq -r '.Target.Primaries[] | .DataDir' "${GPUPGRADE_HOME}/config.json")
+    # grab cluster data before revert destroys it
+    target_hosts_dirs=$(jq -r '.Target.Primaries[] | .DataDir' "${GPUPGRADE_HOME}/config.json")
+    upgradeID=$(gpupgrade config show --id)
 
     gpupgrade revert --verbose
 
@@ -62,8 +66,8 @@ teardown() {
         exit 1
     fi
 
-    # check that the archived log directory was created within the last 3 minutes
-    if [[ -z $(find "${HOME}/gpAdminLogs/gpupgrade-"* -type d -cmin -3) ]]; then
+    # check that the archived log directory corresponds to this tests upgradeID
+    if [[ -z $(find "${HOME}/gpAdminLogs/gpupgrade-${upgradeID}-"* -type d) ]]; then
         fail "expected the log directory to be archived and match ${HOME}/gpAdminLogs/gpupgrade-*"
     fi
 }
