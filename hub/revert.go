@@ -21,6 +21,8 @@ import (
 )
 
 func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) (err error) {
+	var archiveDir string
+
 	st, err := step.Begin(s.StateDir, idl.Step_REVERT, stream)
 	if err != nil {
 		return err
@@ -91,12 +93,13 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		if err != nil {
 			return err
 		}
-		newDir := filepath.Join(filepath.Dir(oldDir), utils.GetArchiveDirectoryName(time.Now()))
+		newDir := filepath.Join(filepath.Dir(oldDir), utils.GetArchiveDirectoryName(s.UpgradeID, time.Now()))
 		if err = utils.System.Rename(oldDir, newDir); err != nil {
 			if utils.System.IsNotExist(err) {
 				gplog.Debug("log directory %s not archived, possibly due to multi-host environment. %+v", newDir, err)
 			}
 		}
+		archiveDir = newDir
 
 		return ArchiveSegmentLogDirectories(s.agentConns, s.Config.Target.MasterHostname(), newDir)
 	})
@@ -140,6 +143,11 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		st.Run(idl.Substep_RESTORE_SOURCE_CLUSTER, func(streams step.OutStreams) error {
 			return Recoverseg(streams, s.Source)
 		})
+	}
+
+	message := MakeRevertMessage(s.Source, archiveDir)
+	if err := stream.Send(message); err != nil {
+		return xerrors.Errorf("could not send revert response message: %w", err)
 	}
 
 	return st.Err()

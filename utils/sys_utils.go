@@ -5,11 +5,14 @@ package utils
 
 import (
 	"database/sql"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/user"
 	"path/filepath"
 	"time"
+
+	"github.com/greenplum-db/gpupgrade/upgrade/unique"
 )
 
 var (
@@ -93,8 +96,8 @@ func GetLogDir() (string, error) {
 	return logDir, nil
 }
 
-func GetArchiveDirectoryName(t time.Time) string {
-	return t.Format("gpupgrade-2006-01-02T15:04")
+func GetArchiveDirectoryName(id unique.ID, t time.Time) string {
+	return fmt.Sprintf("gpupgrade-%s-%s", id.String(), t.Format("2006-01-02T15:04"))
 }
 
 func GetTablespaceDir() string {

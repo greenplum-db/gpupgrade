@@ -4,10 +4,14 @@
 package commanders_test
 
 import (
+	"errors"
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"reflect"
+	"strconv"
+	"strings"
 	"sync"
 	"testing"
 
@@ -15,6 +19,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/testutils"
 )
 
 type msgStream []*idl.Message
@@ -262,6 +267,144 @@ func TestFormatStatus(t *testing.T) {
 		if numberOfSubsteps != len(commanders.SubstepDescriptions) {
 			t.Errorf("got %q, expected FormatStatus to be able to format all %d statuses %q. Formatted only %d",
 				commanders.SubstepDescriptions, len(idl.Substep_name), idl.Substep_name, len(commanders.SubstepDescriptions))
+		}
+	})
+}
+
+func TestExtractTargetClusterInfo(t *testing.T) {
+	port := 12345
+	dataDir := testutils.GetTempDir(t, "")
+	defer testutils.MustRemoveAll(t, dataDir)
+
+	m := map[string]string{
+		idl.ResponseKey_target_port.String(): strconv.Itoa(port),
+	}
+
+	t.Run("returns good values with a good directory passed in", func(t *testing.T) {
+		m[idl.ResponseKey_target_master_data_directory.String()] = dataDir
+
+		portActual, dataDirActual, err := commanders.ExtractTargetClusterInfo(m)
+		if err != nil {
+			t.Errorf("unexpected error %#v", err)
+		}
+		if dataDirActual != dataDir {
+			t.Errorf("got %q want %q", dataDirActual, dataDir)
+		}
+		if portActual != strconv.Itoa(port) {
+			t.Errorf("got %q want %d", portActual, port)
+		}
+	})
+
+	t.Run("returns error when data directory does not exist", func(t *testing.T) {
+		badDir := "/does/not/exist/"
+		m[idl.ResponseKey_target_master_data_directory.String()] = badDir
+
+		_, _, err := commanders.ExtractTargetClusterInfo(m)
+		if err == nil {
+			t.Errorf("expected error got nil")
+		}
+
+		var pErr *os.PathError
+		if !errors.As(err, &pErr) {
+			t.Errorf("expect type %T, got %T", pErr, err)
+		}
+
+		expected := "no such file or directory"
+		actual := err.Error()
+		if !strings.Contains(actual, expected) {
+			t.Errorf("error %#v does not contain string %q", err.Error(), expected)
+		}
+	})
+
+	t.Run("returns error when data directory is actually a file", func(t *testing.T) {
+		file := filepath.Join(dataDir, "file.txt")
+		testutils.MustWriteToFile(t, file, "")
+
+		m[idl.ResponseKey_target_master_data_directory.String()] = file
+
+		_, _, err := commanders.ExtractTargetClusterInfo(m)
+		if err == nil {
+			t.Errorf("expected error got nil")
+		}
+
+		var pErr *os.PathError
+		if errors.As(err, &pErr) {
+			t.Errorf("expected err to not be of type: %T", pErr)
+		}
+
+		expected := "returned master data directory is not a directory"
+		actual := err.Error()
+		if !strings.Contains(actual, expected) {
+			t.Errorf("error %#v does not contain string %q", err.Error(), expected)
+		}
+	})
+}
+
+func TestExtractArchiveInfo(t *testing.T) {
+	version := "5.8.1"
+	archiveDir := testutils.GetTempDir(t, "")
+	defer testutils.MustRemoveAll(t, archiveDir)
+
+	m := map[string]string{
+		idl.ResponseKey_source_version.String(): version,
+	}
+
+	t.Run("returns good values with a good directory passed in", func(t *testing.T) {
+		m[idl.ResponseKey_revert_log_archive_directory.String()] = archiveDir
+
+		versionActual, archiveDirActual, err := commanders.ExtractArchiveInfo(m)
+		if err != nil {
+			t.Errorf("unexpected error %#v", err)
+		}
+		if archiveDirActual != archiveDir {
+			t.Errorf("got %q want %q", archiveDirActual, archiveDir)
+		}
+		if versionActual != version {
+			t.Errorf("got %q want %q", versionActual, version)
+		}
+	})
+
+	t.Run("returns error when archive directory does not exist", func(t *testing.T) {
+		badDir := "/does/not/exist/"
+		m[idl.ResponseKey_revert_log_archive_directory.String()] = badDir
+
+		_, _, err := commanders.ExtractArchiveInfo(m)
+		if err == nil {
+			t.Errorf("expected error got nil")
+		}
+
+		var pErr *os.PathError
+		if !errors.As(err, &pErr) {
+			t.Errorf("expect type %T, got %T", pErr, err)
+		}
+
+		expected := "no such file or directory"
+		actual := err.Error()
+		if !strings.Contains(actual, expected) {
+			t.Errorf("error %#v does not contain string %q", err.Error(), expected)
+		}
+	})
+
+	t.Run("returns error when archive directory is actually a file", func(t *testing.T) {
+		file := filepath.Join(archiveDir, "file.txt")
+		testutils.MustWriteToFile(t, file, "")
+
+		m[idl.ResponseKey_revert_log_archive_directory.String()] = file
+
+		_, _, err := commanders.ExtractArchiveInfo(m)
+		if err == nil {
+			t.Errorf("expected error got nil")
+		}
+
+		var pErr *os.PathError
+		if errors.As(err, &pErr) {
+			t.Errorf("expected err to not be of type: %T", pErr)
+		}
+
+		expected := "returned archive directory is not a directory"
+		actual := err.Error()
+		if !strings.Contains(actual, expected) {
+			t.Errorf("error %#v does not contain string %q", err.Error(), expected)
 		}
 	})
 }

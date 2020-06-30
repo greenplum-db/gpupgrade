@@ -9,10 +9,12 @@ import (
 	"os"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
@@ -22,6 +24,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/mock_agent"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -452,5 +455,56 @@ func TestAgentHosts(t *testing.T) {
 				t.Errorf("got %q want %q", actual, c.expected)
 			}
 		})
+	}
+}
+
+func TestMakeTargetClusterMessage(t *testing.T) {
+	datadir := "/master/data/dir"
+	port := 12345
+
+	c := hub.MustCreateCluster(t, []greenplum.SegConfig{
+		{ContentID: -1, Role: "p", DataDir: datadir, Port: port},
+	})
+
+	expected := &idl.Message{
+		Contents: &idl.Message_Response{
+			Response: &idl.Response{
+				Data: map[string]string{
+					idl.ResponseKey_target_master_data_directory.String(): datadir,
+					idl.ResponseKey_target_port.String():                  strconv.Itoa(port),
+				},
+			},
+		},
+	}
+
+	msg := hub.MakeTargetClusterMessage(c)
+	if !reflect.DeepEqual(msg, expected) {
+		t.Errorf("got %v want %v", msg, expected)
+	}
+}
+
+func TestMakeRevertMessage(t *testing.T) {
+	version := "5.8.1"
+	archiveDir := "/my/archive/dir"
+
+	source := hub.MustCreateCluster(t, []greenplum.SegConfig{
+		{ContentID: -1, Role: "p"},
+	})
+	source.Version = dbconn.NewVersion(version)
+
+	expected := &idl.Message{
+		Contents: &idl.Message_Response{
+			Response: &idl.Response{
+				Data: map[string]string{
+					idl.ResponseKey_source_version.String():               version,
+					idl.ResponseKey_revert_log_archive_directory.String(): archiveDir,
+				},
+			},
+		},
+	}
+
+	msg := hub.MakeRevertMessage(source, archiveDir)
+	if !reflect.DeepEqual(msg, expected) {
+		t.Errorf("got %v want %v", msg, expected)
 	}
 }

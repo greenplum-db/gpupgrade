@@ -109,7 +109,7 @@ func Execute(client idl.CliToHubClient, verbose bool) error {
 		return xerrors.Errorf("Execute: %w", err)
 	}
 
-	port, datadir, err := extractTargetClusterInfo(dataMap)
+	port, datadir, err := ExtractTargetClusterInfo(dataMap)
 
 	if err != nil {
 		return xerrors.Errorf("Execute: %w", err)
@@ -150,7 +150,7 @@ func Finalize(client idl.CliToHubClient, verbose bool) error {
 		return xerrors.Errorf("Finalize: %w", err)
 	}
 
-	port, datadir, err := extractTargetClusterInfo(dataMap)
+	port, datadir, err := ExtractTargetClusterInfo(dataMap)
 	if err != nil {
 		return xerrors.Errorf("Finalize: %w", err)
 	}
@@ -163,7 +163,7 @@ func Finalize(client idl.CliToHubClient, verbose bool) error {
 	return nil
 }
 
-func Revert(client idl.CliToHubClient, verbose bool) error {
+func Revert(client idl.CliToHubClient, verbose bool) (string, string, error) {
 	fmt.Println()
 	fmt.Println("Revert in progress.")
 	fmt.Println()
@@ -171,22 +171,23 @@ func Revert(client idl.CliToHubClient, verbose bool) error {
 	stream, err := client.Revert(context.Background(), &idl.RevertRequest{})
 	if err != nil {
 		gplog.Error(err.Error())
-		return err
+		return "", "", err
 	}
 
-	_, err = UILoop(stream, verbose)
+	dataMap, err := UILoop(stream, verbose)
 	if err != nil {
-		return xerrors.Errorf("Revert: %w", err)
+		return "", "", xerrors.Errorf("Revert: %w", err)
 	}
 
-	fmt.Println()
-	// TODO: add more info to this message
-	fmt.Printf("The source cluster is now restored to its original state.\n")
+	sourceVersion, archiveDir, err := ExtractArchiveInfo(dataMap)
+	if err != nil {
+		return "", "", err
+	}
 
-	return nil
+	return sourceVersion, archiveDir, nil
 }
 
-func extractTargetClusterInfo(dataMap map[string]string) (string, string, error) {
+func ExtractTargetClusterInfo(dataMap map[string]string) (string, string, error) {
 	port, portOk := dataMap[idl.ResponseKey_target_port.String()]
 	var missingKeys []string
 	if !portOk {
@@ -198,11 +199,43 @@ func extractTargetClusterInfo(dataMap map[string]string) (string, string, error)
 		missingKeys = append(missingKeys, "target datadir")
 	}
 
+	// make sure the returned datadir is actually a directory
+	f, err := os.Stat(datadir)
+	if err != nil {
+		return "", "", xerrors.Errorf("bad returned master data directory: %w", err)
+	}
+	if !f.IsDir() {
+		return "", "", xerrors.Errorf("returned master data directory is not a directory: %s", datadir)
+	}
+
 	if len(missingKeys) > 0 {
 		return "", "", xerrors.Errorf("did not receive the expected configuration values: %s", strings.Join(missingKeys, ", "))
 	}
 
 	return port, datadir, nil
+}
+
+func ExtractArchiveInfo(dataMap map[string]string) (string, string, error) {
+	version, ok := dataMap[idl.ResponseKey_source_version.String()]
+	if !ok {
+		return "", "", xerrors.Errorf("no source version")
+	}
+
+	archiveDir, ok := dataMap[idl.ResponseKey_revert_log_archive_directory.String()]
+	if !ok {
+		return "", "", xerrors.Errorf("no archive data directory")
+	}
+
+	// make sure the returned archiveDir is actually an archive directory
+	f, err := os.Stat(archiveDir)
+	if err != nil {
+		return "", "", xerrors.Errorf("bad returned archive directory: %w", err)
+	}
+	if !f.IsDir() {
+		return "", "", xerrors.Errorf("returned archive directory is not a directory: %s", archiveDir)
+	}
+
+	return version, archiveDir, nil
 }
 
 func UILoop(stream receiver, verbose bool) (map[string]string, error) {

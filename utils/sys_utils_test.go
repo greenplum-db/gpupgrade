@@ -4,8 +4,11 @@
 package utils
 
 import (
+	"fmt"
 	"testing"
 	"time"
+
+	"github.com/greenplum-db/gpupgrade/upgrade/unique"
 )
 
 func TestGetArchiveDirectoryName(t *testing.T) {
@@ -13,9 +16,10 @@ func TestGetArchiveDirectoryName(t *testing.T) {
 	// formatting (e.g. using seconds rather than minutes).
 	stamp := time.Date(2000, 03, 14, 12, 15, 45, 1, time.Local)
 
-	actual := GetArchiveDirectoryName(stamp)
+	var id unique.ID
+	actual := GetArchiveDirectoryName(id, stamp)
 
-	expected := "gpupgrade-2000-03-14T12:15"
+	expected := fmt.Sprintf("gpupgrade-%s-2000-03-14T12:15", id.String())
 	if actual != expected {
 		t.Errorf("GetArchiveDirectoryName() = %q, want %q", actual, expected)
 	}

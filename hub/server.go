@@ -467,3 +467,15 @@ func MakeTargetClusterMessage(target *greenplum.Cluster) *idl.Message {
 		},
 	}
 }
+
+func MakeRevertMessage(source *greenplum.Cluster, archiveDir string) *idl.Message {
+	data := make(map[string]string)
+	data[idl.ResponseKey_source_version.String()] = source.Version.VersionString
+	data[idl.ResponseKey_revert_log_archive_directory.String()] = archiveDir
+
+	return &idl.Message{
+		Contents: &idl.Message_Response{
+			Response: &idl.Response{Data: data},
+		},
+	}
+}
