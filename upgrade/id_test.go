@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 
 	"github.com/greenplum-db/gpupgrade/upgrade"
@@ -70,4 +71,16 @@ func TestIDCommand(_ *testing.T) {
 
 	fmt.Printf("%d", upgrade.NewID())
 	os.Exit(0)
+}
+
+// Make sure we are filtering out "--".  Empirical testing shows about 300 iterations
+//  are required to hit a "--", so we choose 10000 to ensure we'd catch an erroneous
+//  implementation.  This test takes 10ms on my laptop.
+func TestNoDoubleDash(t *testing.T) {
+	for i := 0; i < 10000; i++ {
+		id := upgrade.NewID()
+		if strings.Contains(id.String(), "--") {
+			t.Fatalf("id %s contains --", id)
+		}
+	}
 }

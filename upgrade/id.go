@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
+	"strings"
 )
 
 // ID is a unique identifier for a cluster upgrade.
@@ -18,17 +19,26 @@ type ID uint64
 func NewID() ID {
 	var bytes [8]byte // 64 bits
 
-	// Use crypto/rand for this to avoid chicken-and-egg (i.e. what should we
-	// seed math/rand with?). This is more expensive, but we expect this to be
-	// called only once per upgrade anyway.
-	_, err := rand.Read(bytes[:])
-	if err != nil {
-		// TODO: should we fall back in this case? It will be system-dependent.
-		panic(fmt.Sprintf("unable to get random data: %+v", err))
-	}
+	for {
+		// Use crypto/rand for this to avoid chicken-and-egg (i.e. what should we
+		// seed math/rand with?). This is more expensive, but we expect this to be
+		// called only once per upgrade anyway.
+		_, err := rand.Read(bytes[:])
+		if err != nil {
+			// TODO: should we fall back in this case? It will be system-dependent.
+			panic(fmt.Sprintf("unable to get random data: %+v", err))
+		}
 
-	num := binary.LittleEndian.Uint64(bytes[:])
-	return ID(num)
+		num := binary.LittleEndian.Uint64(bytes[:])
+
+		// gpstart has a bug that doesn't handle "--" in directory names.
+		// Until that is resolved, we need to generate IDs without "--".
+		if strings.Contains(ID(num).String(), "--") {
+			continue
+		}
+
+		return ID(num)
+	}
 }
 
 // String returns an unpadded, filesystem-safe base64 encoding of the
