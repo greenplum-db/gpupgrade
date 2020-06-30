@@ -17,6 +17,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
+	"github.com/greenplum-db/gpupgrade/upgrade/unique"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
@@ -25,7 +26,7 @@ func FillClusterConfigsSubStep(config *Config, conn *sql.DB, _ step.OutStreams, 
 	config.AgentPort = int(request.AgentPort)
 
 	// Assign a new universal upgrade identifier.
-	config.UpgradeID = upgrade.NewID()
+	config.UpgradeID = unique.NewID()
 
 	if err := CheckSourceClusterConfiguration(conn); err != nil {
 		return err
@@ -72,7 +73,7 @@ func FillClusterConfigsSubStep(config *Config, conn *sql.DB, _ step.OutStreams, 
 	return nil
 }
 
-func AssignDatadirsAndPorts(source *greenplum.Cluster, ports []int, upgradeID upgrade.ID) (InitializeConfig, error) {
+func AssignDatadirsAndPorts(source *greenplum.Cluster, ports []int, upgradeID unique.ID) (InitializeConfig, error) {
 	if len(ports) == 0 {
 		port := 50432
 		numberOfSegments := len(source.Mirrors) + len(source.Primaries) + 2 // +2 for master/standby
@@ -92,7 +93,7 @@ func AssignDatadirsAndPorts(source *greenplum.Cluster, ports []int, upgradeID up
 }
 
 // can return an error if we run out of ports to use
-func assignDatadirsAndCustomPorts(source *greenplum.Cluster, ports []int, upgradeID upgrade.ID) (InitializeConfig, error) {
+func assignDatadirsAndCustomPorts(source *greenplum.Cluster, ports []int, upgradeID unique.ID) (InitializeConfig, error) {
 	targetInitializeConfig := InitializeConfig{}
 
 	var segPrefix string

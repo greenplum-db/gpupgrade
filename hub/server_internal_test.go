@@ -10,7 +10,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/testutils"
-	"github.com/greenplum-db/gpupgrade/upgrade"
+	"github.com/greenplum-db/gpupgrade/upgrade/unique"
 )
 
 func TestConfig(t *testing.T) {
@@ -27,10 +27,10 @@ func TestConfig(t *testing.T) {
 			source,
 			target,
 			targetInitializeConfig,
-			12345,           // Port
-			54321,           // AgentPort
-			false,           // UseLinkMode
-			upgrade.NewID(), // UpgradeID
+			12345,          // Port
+			54321,          // AgentPort
+			false,          // UseLinkMode
+			unique.NewID(), // UpgradeID
 			map[int]greenplum.SegmentTablespaces{
 				1: {1663: {
 					Location:    "/tmp/master/my_tablespace/1663",

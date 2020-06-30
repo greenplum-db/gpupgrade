@@ -20,11 +20,12 @@ import (
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/upgrade"
+	"github.com/greenplum-db/gpupgrade/upgrade/unique"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 func TestTempDataDir(t *testing.T) {
-	var id upgrade.ID
+	var id unique.ID
 
 	cases := []struct {
 		datadir        string
@@ -50,7 +51,7 @@ func TestTempDataDir(t *testing.T) {
 }
 
 func ExampleTempDataDir() {
-	var id upgrade.ID
+	var id unique.ID
 
 	master := upgrade.TempDataDir("/data/master/seg-1", "seg", id)
 	standby := upgrade.TempDataDir("/data/standby", "seg", id)

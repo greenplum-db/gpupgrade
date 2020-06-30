@@ -9,10 +9,11 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/upgrade"
+	"github.com/greenplum-db/gpupgrade/upgrade/unique"
 )
 
 func TestAssignDataDirsAndPorts(t *testing.T) {
-	var upgradeID upgrade.ID
+	var upgradeID unique.ID
 
 	expectedDataDir := func(sourceDir string) string {
 		return upgrade.TempDataDir(sourceDir, "seg", upgradeID)

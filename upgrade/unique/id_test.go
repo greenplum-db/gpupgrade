@@ -1,7 +1,7 @@
 // Copyright (c) 2017-2020 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
-package upgrade_test
+package unique_test
 
 import (
 	"fmt"
@@ -9,13 +9,13 @@ import (
 	"os/exec"
 	"testing"
 
-	"github.com/greenplum-db/gpupgrade/upgrade"
+	"github.com/greenplum-db/gpupgrade/upgrade/unique"
 )
 
 func TestID(t *testing.T) {
 	t.Run("NewID gives a unique identifier for each run", func(t *testing.T) {
-		one := upgrade.NewID()
-		two := upgrade.NewID()
+		one := unique.NewID()
+		two := unique.NewID()
 
 		if one == two {
 			t.Errorf("second generated ID was equal to first ID (%d)", one)
@@ -23,7 +23,7 @@ func TestID(t *testing.T) {
 	})
 
 	t.Run("String gives a base64 representation of the ID", func(t *testing.T) {
-		var id upgrade.ID
+		var id unique.ID
 
 		expected := "AAAAAAAAAAA" // all zeroes in base64. 8 bytes decoded -> 11 bytes encoded
 		if id.String() != expected {
@@ -68,6 +68,6 @@ func TestIDCommand(_ *testing.T) {
 		return
 	}
 
-	fmt.Printf("%d", upgrade.NewID())
+	fmt.Printf("%d", unique.NewID())
 	os.Exit(0)
 }

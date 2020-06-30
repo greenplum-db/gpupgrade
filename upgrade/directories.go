@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/upgrade/unique"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
@@ -62,7 +63,7 @@ func MasterWorkingDirectory(stateDir string) string {
 // - If the datadir basename does not start with the segment prefix (as can
 // happen with e.g. standby data directories), the temporary datadir will
 // start with the original basename.
-func TempDataDir(datadir, segPrefix string, id ID) string {
+func TempDataDir(datadir, segPrefix string, id unique.ID) string {
 	datadir = filepath.Clean(datadir) // sanitize trailing slashes for Split
 	dir, base := filepath.Split(datadir)
 
