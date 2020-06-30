@@ -4,9 +4,14 @@
 package hub
 
 import (
+	"bufio"
+	"bytes"
+	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"golang.org/x/xerrors"
 
@@ -52,10 +57,14 @@ func UpgradeMaster(args UpgradeMasterArgs) error {
 		Target: masterSegmentFromCluster(args.Target),
 	}
 
+	// Buffer stdout to add context to errors.
+	stdout := new(bytes.Buffer)
+	tee := io.MultiWriter(args.Stream.Stdout(), stdout)
+
 	options := []upgrade.Option{
 		upgrade.WithExecCommand(execCommand),
 		upgrade.WithWorkDir(wd),
-		upgrade.WithOutputStreams(args.Stream.Stdout(), args.Stream.Stderr()),
+		upgrade.WithOutputStreams(tee, args.Stream.Stderr()),
 	}
 	if args.CheckOnly {
 		options = append(options, upgrade.WithCheckOnly())
@@ -65,7 +74,43 @@ func UpgradeMaster(args UpgradeMasterArgs) error {
 		options = append(options, upgrade.WithLinkMode())
 	}
 
-	return upgrade.Run(pair, options...)
+	err = upgrade.Run(pair, options...)
+	if err != nil {
+		// Error details from stdout are added to any errors containing "fatal"
+		// such as pg_ugprade check errors.
+		var text []string
+		var addText bool
+
+		scanner := bufio.NewScanner(stdout)
+		for scanner.Scan() {
+			line := scanner.Text()
+			if strings.HasSuffix(line, "fatal") || addText {
+				addText = true
+				text = append(text, line)
+			}
+		}
+
+		return UpgradeMasterError{ErrorText: strings.Join(text, "\n"), err: err}
+	}
+
+	return nil
+}
+
+type UpgradeMasterError struct {
+	ErrorText string
+	err       error
+}
+
+func (u UpgradeMasterError) Error() string {
+	if u.ErrorText == "" {
+		return fmt.Sprintf("upgrading master: %v", u.err)
+	}
+
+	return fmt.Sprintf("upgrading master: %s: %v", u.ErrorText, u.err)
+}
+
+func (u UpgradeMasterError) Unwrap() error {
+	return u.err
 }
 
 func masterSegmentFromCluster(cluster *greenplum.Cluster) *upgrade.Segment {

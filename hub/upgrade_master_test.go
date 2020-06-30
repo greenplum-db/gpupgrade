@@ -31,6 +31,25 @@ func Failure() {
 	os.Exit(1)
 }
 
+const FailureStdout = `
+Checking for orphaned TOAST relations                       ok
+Checking for gphdfs external tables                         ok
+Checking for users assigned the gphdfs role                 fatal
+
+| Your installation contains roles that have gphdfs privileges.
+| These privileges need to be revoked before upgrade.  A list
+| of roles and their corresponding gphdfs privileges that
+| must be revoked is provided in the file:
+|       gphdfs_user_roles.txt
+
+Failure, exiting
+`
+
+func PgCheckFailure() {
+	os.Stdout.WriteString(FailureStdout)
+	os.Exit(1)
+}
+
 const StreamingMainStdout = "expected\nstdout\n"
 const StreamingMainStderr = "process\nstderr\n"
 
@@ -63,6 +82,7 @@ func init() {
 		StreamingMain,
 		BlindlyWritingMain,
 		Failure,
+		PgCheckFailure,
 	)
 }
 
@@ -250,6 +270,47 @@ func TestUpgradeMaster(t *testing.T) {
 			t.Errorf("expected error, returned nil")
 		}
 
+	})
+
+	t.Run("when pg_upgrade check fails it adds stdout context to the error", func(t *testing.T) {
+		SetExecCommand(exectest.NewCommand(PgCheckFailure))
+		defer ResetExecCommand()
+
+		rsync.SetRsyncCommand(exectest.NewCommand(Success))
+		defer rsync.ResetRsyncCommand()
+
+		stream := new(step.BufferedStreams)
+
+		err := UpgradeMaster(UpgradeMasterArgs{
+			Source:      source,
+			Target:      target,
+			StateDir:    tempDir,
+			Stream:      stream,
+			CheckOnly:   false,
+			UseLinkMode: false,
+		})
+		if err == nil {
+			t.Errorf("expected error, returned nil")
+		}
+
+		var upgradeErr UpgradeMasterError
+		if !xerrors.As(err, &upgradeErr) {
+			t.Errorf("got type %T want %T", err, upgradeErr)
+		}
+
+		expected := `Checking for users assigned the gphdfs role                 fatal
+
+| Your installation contains roles that have gphdfs privileges.
+| These privileges need to be revoked before upgrade.  A list
+| of roles and their corresponding gphdfs privileges that
+| must be revoked is provided in the file:
+|       gphdfs_user_roles.txt
+
+Failure, exiting`
+
+		if upgradeErr.ErrorText != expected {
+			t.Errorf("got error text %q, want %q", upgradeErr.ErrorText, expected)
+		}
 	})
 }
 
