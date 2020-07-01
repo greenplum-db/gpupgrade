@@ -130,7 +130,7 @@ NEXT ACTIONS
 If you are satisfied with the state of the cluster, run "gpupgrade finalize" to proceed with the upgrade.
 `, port, datadir)
 
-	fmt.Println(message)
+	fmt.Print(message)
 
 	return nil
 }
