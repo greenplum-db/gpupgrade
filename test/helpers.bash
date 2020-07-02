@@ -289,7 +289,7 @@ get_segment_configuration() {
     local port=${2:-$PGPORT}
 
     if is_GPDB5 "$gphome"; then
-        $PSQL -AtF$'\t' -p "$port" postgres -c "
+        "$gphome"/bin/psql -AXtF$'\t' -p "$port" postgres -c "
             SELECT s.content, s.role, s.hostname, s.port, e.fselocation as datadir
             FROM gp_segment_configuration s
             JOIN pg_filespace_entry e ON s.dbid = e.fsedbid
@@ -298,7 +298,7 @@ get_segment_configuration() {
             ORDER BY s.content, s.role
         "
     else
-        $PSQL -AtF$'\t' -p "$port" postgres -c "
+        "$gphome"/bin/psql -AXtF$'\t' -p "$port" postgres -c "
             SELECT content, role, hostname, port, datadir
             FROM gp_segment_configuration
             ORDER BY content, role
