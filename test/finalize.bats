@@ -25,6 +25,9 @@ teardown() {
     if [ -n "$NEW_CLUSTER" ]; then
         delete_finalized_cluster $GPHOME_TARGET $NEW_CLUSTER
     fi
+    if [ -n "$STATE_DIR" ]; then
+        rm -r "$STATE_DIR"
+    fi
 
     gpupgrade kill-services
 
@@ -71,6 +74,8 @@ upgrade_cluster() {
                gpstart -a
         fi
 
+        create_tablespace_with_table
+
         gpupgrade initialize \
             --source-bindir="$GPHOME_SOURCE/bin" \
             --target-bindir="$GPHOME_TARGET/bin" \
@@ -83,6 +88,7 @@ upgrade_cluster() {
         gpupgrade execute --verbose
         gpupgrade finalize --verbose
 
+        check_tablespace_data
         NEW_CLUSTER="$MASTER_DATA_DIRECTORY"
 
         if [ "$LINK_MODE" == "--mode=link" ]; then
@@ -169,4 +175,39 @@ validate_data_directories() {
             [ -f "${datadir}/postgresql.conf" ] || fail "expected postgresql.conf file to be in $datadir"
             [ ! -f "${datadir}/${marker_file}" ] || fail "unexpected ${marker_file} marker file in target datadir: $datadir"
         done
+}
+
+create_tablespace_with_table() {
+    TABLESPACE_ROOT="$STATE_DIR"/testfs
+    TABLESPACE_CONFIG="$TABLESPACE_ROOT"/"fs.txt"
+    cat <<- EOF > "$TABLESPACE_CONFIG"
+				filespace:batsFS
+				$(hostname):1:$TABLESPACE_ROOT/m/demoDataDir-1
+				$(hostname):2:$TABLESPACE_ROOT/p1/demoDataDir0
+				$(hostname):3:$TABLESPACE_ROOT/p1/demoDataDir1
+				$(hostname):4:$TABLESPACE_ROOT/p3/demoDataDir2
+				$(hostname):5:$TABLESPACE_ROOT/m1/demoDataDir0
+				$(hostname):6:$TABLESPACE_ROOT/m2/demoDataDir1
+				$(hostname):7:$TABLESPACE_ROOT/m3/demoDataDir2
+				$(hostname):8:$TABLESPACE_ROOT/m/standby
+EOF
+
+    $PSQL -c "DROP TABLE IF EXISTS batsTable;"
+    $PSQL -c "DROP TABLESPACE IF EXISTS batsTbsp;"
+    $PSQL -c "DROP FILESPACE IF EXISTS batsFS;"
+
+    mkdir -p "$TABLESPACE_ROOT"/{p,m}{1,2,3}
+    mkdir -p "$TABLESPACE_ROOT"/m
+    gpfilespace --config "$TABLESPACE_CONFIG"
+
+    $PSQL -c "CREATE TABLESPACE batsTbsp FILESPACE batsFS;"
+    $PSQL -c "CREATE TABLE batsTable(a int) TABLESPACE batsTbsp;"
+    $PSQL -c "INSERT INTO batsTable SELECT i from generate_series(1,100)i;"
+}
+
+check_tablespace_data() {
+    row_count=$($PSQL -Atc "SELECT COUNT(*) FROM batsTable;")
+    if (( row_count != 100 )); then
+      fail "Table $TABLE only has $row_count rows; should have 100"
+    fi
 }
