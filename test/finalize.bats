@@ -9,8 +9,6 @@ load finalize_checks
 setup() {
     skip_if_no_gpdb
 
-    PSQL="$GPHOME_SOURCE/bin/psql -X --no-align --tuples-only postgres"
-
     setup_state_dir
 
     gpupgrade kill-services
@@ -25,9 +23,6 @@ teardown() {
     if [ -n "$NEW_CLUSTER" ]; then
         delete_finalized_cluster $GPHOME_TARGET $NEW_CLUSTER
     fi
-    if [ -n "$STATE_DIR" ]; then
-        rm -r "$STATE_DIR"
-    fi
 
     gpupgrade kill-services
 
@@ -37,6 +32,15 @@ teardown() {
     source "${GPHOME_SOURCE}/greenplum_path.sh"
     gpstart -a
 
+    # the tablespace data is added before initialize so added to the pre-gpupgrade
+    #  source cluster; we must delete it after the original cluster comes up.
+    if is_GPDB5 "${GPHOME_SOURCE}"; then
+        delete_tablespace_data
+    fi
+
+    # since we might be using tablespaces, and that tablespace might use a filespace
+    #  under STATE_DIR, clean it up at the end.
+    cleanup_state_dir
 }
 
 upgrade_cluster() {
@@ -74,7 +78,10 @@ upgrade_cluster() {
                gpstart -a
         fi
 
-        create_tablespace_with_table
+        # upgrade on 6-6 does not work due to a bug in pg_upgrade
+        if is_GPDB5 "$GPHOME_SOURCE"; then
+            create_tablespace_with_table
+        fi
 
         gpupgrade initialize \
             --source-bindir="$GPHOME_SOURCE/bin" \
@@ -88,7 +95,10 @@ upgrade_cluster() {
         gpupgrade execute --verbose
         gpupgrade finalize --verbose
 
-        check_tablespace_data
+        if is_GPDB5 "$GPHOME_SOURCE"; then
+            check_tablespace_data
+        fi
+
         NEW_CLUSTER="$MASTER_DATA_DIRECTORY"
 
         if [ "$LINK_MODE" == "--mode=link" ]; then
@@ -149,6 +159,12 @@ setup_state_dir() {
     export GPUPGRADE_HOME="${STATE_DIR}/gpupgrade"
 }
 
+cleanup_state_dir() {
+    if [ -n "$STATE_DIR" ]; then
+        rm -r "$STATE_DIR"
+    fi
+}
+
 get_standby_status() {
     local standby_status=$1
     echo "$standby_status" | grep 'Standby master state'
@@ -177,9 +193,14 @@ validate_data_directories() {
         done
 }
 
+# This is 5X-only
 create_tablespace_with_table() {
+    # the tablespace is under the STATE_DIR so it gets deleted when it does
     TABLESPACE_ROOT="$STATE_DIR"/testfs
+    mkdir "$TABLESPACE_ROOT"
     TABLESPACE_CONFIG="$TABLESPACE_ROOT"/"fs.txt"
+
+    # create the filespace file and its directories
     cat <<- EOF > "$TABLESPACE_CONFIG"
 				filespace:batsFS
 				$(hostname):1:$TABLESPACE_ROOT/m/demoDataDir-1
@@ -191,23 +212,29 @@ create_tablespace_with_table() {
 				$(hostname):7:$TABLESPACE_ROOT/m3/demoDataDir2
 				$(hostname):8:$TABLESPACE_ROOT/m/standby
 EOF
-
-    $PSQL -c "DROP TABLE IF EXISTS batsTable;"
-    $PSQL -c "DROP TABLESPACE IF EXISTS batsTbsp;"
-    $PSQL -c "DROP FILESPACE IF EXISTS batsFS;"
-
     mkdir -p "$TABLESPACE_ROOT"/{p,m}{1,2,3}
     mkdir -p "$TABLESPACE_ROOT"/m
+
     gpfilespace --config "$TABLESPACE_CONFIG"
 
-    $PSQL -c "CREATE TABLESPACE batsTbsp FILESPACE batsFS;"
-    $PSQL -c "CREATE TABLE batsTable(a int) TABLESPACE batsTbsp;"
-    $PSQL -c "INSERT INTO batsTable SELECT i from generate_series(1,100)i;"
+    # create a tablespace in said filespace and a table in that tablespace
+    local psql="${GPHOME_SOURCE}/bin/psql -d postgres"
+    $psql -c "CREATE TABLESPACE batsTbsp FILESPACE batsFS;"
+    $psql -c "CREATE TABLE batsTable(a int) TABLESPACE batsTbsp;"
+    $psql -c "INSERT INTO batsTable SELECT i from generate_series(1,100)i;"
+}
+
+# This is 5X-only
+delete_tablespace_data() {
+    local psql="${GPHOME_SOURCE}/bin/psql -d postgres"
+    $psql -c "DROP TABLE IF EXISTS batsTable;"
+    $psql -c "DROP TABLESPACE IF EXISTS batsTbsp;"
+    $psql -c "DROP FILESPACE IF EXISTS batsFS;"
 }
 
 check_tablespace_data() {
-    row_count=$($PSQL -Atc "SELECT COUNT(*) FROM batsTable;")
+    row_count=$("$GPHOME_TARGET"/bin/psql -d postgres -Atc "SELECT COUNT(*) FROM batsTable;")
     if (( row_count != 100 )); then
-      fail "Table $TABLE only has $row_count rows; should have 100"
+        fail "Table $TABLE only has $row_count rows; should have 100"
     fi
 }
