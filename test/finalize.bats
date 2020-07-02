@@ -9,8 +9,6 @@ load finalize_checks
 setup() {
     skip_if_no_gpdb
 
-    PSQL="$GPHOME_SOURCE/bin/psql -X --no-align --tuples-only postgres"
-
     setup_state_dir
 
     gpupgrade kill-services
@@ -34,6 +32,13 @@ teardown() {
     source "${GPHOME_SOURCE}/greenplum_path.sh"
     gpstart -a
 
+    # delete tablespace data added to the source cluster
+    if is_GPDB5 "${GPHOME_SOURCE}"; then
+        delete_tablespace_data
+    fi
+
+    # delete the state_dir, which also contains the tablespace filesystem
+    cleanup_state_dir
 }
 
 upgrade_cluster() {
@@ -71,6 +76,11 @@ upgrade_cluster() {
                gpstart -a
         fi
 
+        # upgrade on 6-6 does not work due to a bug in pg_upgrade
+        if is_GPDB5 "$GPHOME_SOURCE"; then
+            create_tablespace_with_table
+        fi
+
         gpupgrade initialize \
             --source-gphome="$GPHOME_SOURCE" \
             --target-gphome="$GPHOME_TARGET" \
@@ -82,6 +92,10 @@ upgrade_cluster() {
 
         gpupgrade execute --verbose
         gpupgrade finalize --verbose
+
+        if is_GPDB5 "$GPHOME_SOURCE"; then
+            check_tablespace_data
+        fi
 
         NEW_CLUSTER="$MASTER_DATA_DIRECTORY"
 
@@ -95,7 +109,7 @@ upgrade_cluster() {
             for datadir in "${datadirs[@]}"; do
                 local archive=$(archive_dir "$datadir")
                 rm -rf ${archive}
-                mv ${datadir}_backup ${archive}
+                mv "${datadir}"_backup "${archive}"
             done
         else
             validate_data_directories "EXISTS" "${datadirs}"
@@ -143,6 +157,12 @@ setup_state_dir() {
     export GPUPGRADE_HOME="${STATE_DIR}/gpupgrade"
 }
 
+cleanup_state_dir() {
+    if [ -n "$STATE_DIR" ]; then
+        rm -r "$STATE_DIR"
+    fi
+}
+
 get_standby_status() {
     local standby_status=$1
     echo "$standby_status" | grep 'Standby master state'
@@ -169,4 +189,53 @@ validate_data_directories() {
             [ -f "${datadir}/postgresql.conf" ] || fail "expected postgresql.conf file to be in $datadir"
             [ ! -f "${datadir}/${marker_file}" ] || fail "unexpected ${marker_file} marker file in target datadir: $datadir"
         done
+}
+
+# This is 5X-only due to a bug in pg_upgrade for 6-6
+create_tablespace_with_table() {
+    # the tablespace directory will get deleted when the STATE_DIR is deleted in teardown()
+    TABLESPACE_ROOT="${STATE_DIR}"/testfs
+    TABLESPACE_CONFIG="${TABLESPACE_ROOT}"/fs.txt
+
+    # create the directories required to implement our filespace
+    mkdir -p "${TABLESPACE_ROOT}"/{m,{p,m}{1,2,3}}
+
+    # create the filespace config file
+    cat <<- EOF > "$TABLESPACE_CONFIG"
+				filespace:batsFS
+				$(hostname):1:${TABLESPACE_ROOT}/m/demoDataDir-1
+				$(hostname):2:${TABLESPACE_ROOT}/p1/demoDataDir0
+				$(hostname):3:${TABLESPACE_ROOT}/p2/demoDataDir1
+				$(hostname):4:${TABLESPACE_ROOT}/p3/demoDataDir2
+				$(hostname):5:${TABLESPACE_ROOT}/m1/demoDataDir0
+				$(hostname):6:${TABLESPACE_ROOT}/m2/demoDataDir1
+				$(hostname):7:${TABLESPACE_ROOT}/m3/demoDataDir2
+				$(hostname):8:${TABLESPACE_ROOT}/m/standby
+EOF
+
+    (source "${GPHOME_SOURCE}"/greenplum_path.sh && gpfilespace --config "${TABLESPACE_CONFIG}")
+
+    # create a tablespace in said filespace and a table in that tablespace
+    "${GPHOME_SOURCE}"/bin/psql -d postgres -v ON_ERROR_STOP=1 <<- EOF
+				CREATE TABLESPACE batsTbsp FILESPACE batsFS;
+				CREATE TABLE batsTable(a int) TABLESPACE batsTbsp;
+				INSERT INTO batsTable SELECT i from generate_series(1,100)i;
+EOF
+}
+
+# This is 5X-only
+delete_tablespace_data() {
+    "${GPHOME_SOURCE}"/bin/psql -d postgres -v ON_ERROR_STOP=1 <<- EOF
+				DROP TABLE IF EXISTS batsTable;
+				DROP TABLESPACE IF EXISTS batsTbsp;
+				DROP FILESPACE IF EXISTS batsFS;
+EOF
+}
+
+check_tablespace_data() {
+    local row_count
+    row_count=$("$GPHOME_TARGET"/bin/psql -d postgres -Atc "SELECT COUNT(*) FROM batsTable;")
+    if (( row_count != 100 )); then
+        fail "failed verifying tablespaces. batsTable got $rows want 100"
+    fi
 }
