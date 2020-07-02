@@ -64,6 +64,11 @@ teardown() {
     $PREUPGRADE_SCRIPTS_DIR/generate_preupgrade_sql.bash $GPHOME_SOURCE $PGPORT $PREUPGRADE_DIR
     $PREUPGRADE_SCRIPTS_DIR/execute_preupgrade_sql.bash $GPHOME_SOURCE $PGPORT $PREUPGRADE_DIR
 
+    # the migration script should not remove primary / unique key constraints on partitioned tables, so
+    # remove them manually by dropping the table as they can't be dropped.
+    $GPHOME_SOURCE/bin/psql -d $TEST_DBNAME -p $PGPORT -c "DROP TABLE table_with_unique_constraint_p;"
+    $GPHOME_SOURCE/bin/psql -d $TEST_DBNAME -p $PGPORT -c "DROP TABLE table_with_primary_constraint_p;"
+
     gpupgrade initialize \
             --source-gphome="$GPHOME_SOURCE" \
             --target-gphome="$GPHOME_TARGET" \

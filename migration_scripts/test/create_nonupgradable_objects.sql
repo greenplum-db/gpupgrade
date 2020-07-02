@@ -4,21 +4,51 @@
 DROP TABLE IF EXISTS regular CASCADE;
 CREATE TABLE regular (a int unique);
 
--- create partitioned table with foreign, unique and primary key constraints
+-- create partitioned table with foreign key constraints
 DROP TABLE IF EXISTS pt_with_index CASCADE;
 CREATE TABLE pt_with_index (a int references regular(a), b int, c int, d int)
     PARTITION BY RANGE(b)
         (
         PARTITION pt1 START(1),
-        PARTITION pt2 START(2) END (3)
+        PARTITION pt2 START(2) END (3),
+        PARTITION pt3 START(3) END (4)
         );
 
 CREATE INDEX ptidxc on pt_with_index(c);
+CREATE INDEX ptidxc_bitmap on pt_with_index using bitmap(c);
+
 CREATE INDEX ptidxb_prt_2 on pt_with_index_1_prt_pt2(b);
+CREATE INDEX ptidxb_prt_2_bitmap on pt_with_index_1_prt_pt2 using bitmap(b);
+
 CREATE INDEX ptidxc_prt_2 on pt_with_index_1_prt_pt2(c);
+CREATE INDEX ptidxc_prt_2_bitmap on pt_with_index_1_prt_pt2 using bitmap(c);
 INSERT INTO pt_with_index SELECT i, i%2+1, i, i FROM generate_series(1,10)i;
 
--- create tables where the index relation name is not equal primary/unique key constraint name
+-- create multi level partitioned table with indexes
+DROP TABLE IF EXISTS sales;
+CREATE TABLE sales (trans_id int, office_id int, region text)
+    DISTRIBUTED BY (trans_id)
+    PARTITION BY RANGE (office_id)
+        SUBPARTITION BY LIST (region)
+            SUBPARTITION TEMPLATE
+            ( SUBPARTITION usa VALUES ('usa'),
+            SUBPARTITION asia VALUES ('asia'),
+            SUBPARTITION europe VALUES ('europe'),
+            DEFAULT SUBPARTITION other_regions)
+        (START (1) END (4) EVERY (1),
+        DEFAULT PARTITION outlying_dates );
+
+CREATE INDEX sales_idx on sales(office_id);
+CREATE INDEX sales_idx_bitmap on sales using bitmap(office_id);
+CREATE INDEX sales_1_prt_2_idx on sales_1_prt_2(office_id, region);
+CREATE INDEX sales_1_prt_3_2_prt_asia_idx on sales_1_prt_3_2_prt_asia(region);
+CREATE INDEX sales_1_prt_outlying_dates_idx on sales_1_prt_outlying_dates(trans_id);
+CREATE UNIQUE INDEX sales_unique_idx on sales(office_id);
+
+-- create tables where the index relation name is not equal primary/unique key constraint name.
+-- we create a TYPE with the default name of the constraint that would have been created to force
+-- skipping the default name
+DROP TABLE IF EXISTS table_with_unique_constraint;
 CREATE TYPE table_with_unique_constraint_author_key AS (dummy int);
 CREATE TYPE table_with_unique_constraint_author_key1 AS (dummy int);
 CREATE TABLE table_with_unique_constraint (author int, title int, CONSTRAINT table_with_unique_constraint_uniq_au_ti UNIQUE (author, title)) DISTRIBUTED BY (author);
@@ -27,6 +57,7 @@ ALTER TABLE table_with_unique_constraint ADD PRIMARY KEY (author, title);
 INSERT INTO table_with_unique_constraint VALUES(1, 1);
 INSERT INTO table_with_unique_constraint VALUES(2, 2);
 
+DROP TABLE IF EXISTS table_with_primary_constraint;
 CREATE TYPE table_with_primary_constraint_pkey AS (dummy int);
 CREATE TYPE table_with_primary_constraint_pkey1 AS (dummy int);
 CREATE TABLE table_with_primary_constraint (author int, title int, CONSTRAINT table_with_primary_constraint_au_ti PRIMARY KEY (author, title)) DISTRIBUTED BY (author);
@@ -37,3 +68,23 @@ INSERT INTO table_with_primary_constraint VALUES(2, 2);
 
 -- create role with gphdfs readable and writable privileges
 CREATE ROLE gphdfs_user CREATEEXTTABLE(protocol='gphdfs', type='writable') CREATEEXTTABLE(protocol='gphdfs', type='readable');
+
+
+-- create partitioned tables where the index relation name is not equal primary/unique key constraint name for the root
+DROP TABLE IF EXISTS table_with_unique_constraint_p;
+CREATE TYPE table_with_unique_constraint_p_author_key AS (dummy int);
+CREATE TYPE table_with_unique_constraint_p_author_key1 AS (dummy int);
+CREATE TABLE table_with_unique_constraint_p (author int, title int, CONSTRAINT table_with_unique_constraint_p_uniq_au_ti UNIQUE (author, title)) PARTITION BY RANGE(title) (START(1) END(4) EVERY(1));
+DROP TYPE table_with_unique_constraint_p_author_key, table_with_unique_constraint_p_author_key1;
+ALTER TABLE table_with_unique_constraint_p ADD PRIMARY KEY (author, title);
+INSERT INTO table_with_unique_constraint_p VALUES(1, 1);
+INSERT INTO table_with_unique_constraint_p VALUES(2, 2);
+
+DROP TABLE IF EXISTS table_with_primary_constraint_p;
+CREATE TYPE table_with_primary_constraint_p_pkey AS (dummy int);
+CREATE TYPE table_with_primary_constraint_p_pkey1 AS (dummy int);
+CREATE TABLE table_with_primary_constraint_p (author int, title int, CONSTRAINT table_with_primary_constraint_p_au_ti PRIMARY KEY (author, title)) PARTITION BY RANGE(title) (START(1) END(4) EVERY(1));
+DROP TYPE table_with_primary_constraint_p_pkey, table_with_primary_constraint_p_pkey1;
+ALTER TABLE table_with_primary_constraint_p ADD UNIQUE (author, title);
+INSERT INTO table_with_primary_constraint_p VALUES(1, 1);
+INSERT INTO table_with_primary_constraint_p VALUES(2, 2);
