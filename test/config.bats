@@ -78,3 +78,12 @@ teardown() {
     [ "${lines[1]}" = "source-gphome - /usr/local/source" ]
     [ "${lines[3]}" = "target-gphome - /usr/local/target" ]
 }
+
+@test "configuration sanitizes source-gphome and target-gphome" {
+    gpupgrade config set --source-gphome /usr/local/source/ --target-gphome /usr/local/target//
+
+    run gpupgrade config show
+    [ "$status" -eq 0 ]
+    [ "${lines[1]}" = "source-gphome - /usr/local/source" ]
+    [ "${lines[3]}" = "target-gphome - /usr/local/target" ]
+}

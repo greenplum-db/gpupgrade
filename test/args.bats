@@ -63,3 +63,20 @@ teardown() {
     [ "$status" -eq 0 ]
     [ "$output" = "/usr/local/source" ]
 }
+
+@test "initialize sanitizes source-gphome and target-gphome" {
+    gpupgrade initialize \
+        --source-gphome "/usr/local/source/" \
+        --target-gphome "/usr/local/target//" \
+        --source-master-port ${PGPORT} \
+        --stop-before-cluster-creation \
+        --disk-free-ratio 0 3>&-
+
+    run gpupgrade config show --source-gphome
+    [ "$status" -eq 0 ]
+    [ "$output" = "/usr/local/source" ]
+
+    run gpupgrade config show --target-gphome
+    [ "$status" -eq 0 ]
+    [ "$output" = "/usr/local/target" ]
+}

@@ -34,6 +34,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -467,8 +468,8 @@ func initialize() *cobra.Command {
 
 			request := &idl.InitializeRequest{
 				AgentPort:    int32(agentPort),
-				SourceGPHome: sourceGPHome,
-				TargetGPHome: targetGPHome,
+				SourceGPHome: filepath.Clean(sourceGPHome),
+				TargetGPHome: filepath.Clean(targetGPHome),
 				SourcePort:   int32(sourcePort),
 				UseLinkMode:  linkMode,
 				Ports:        ports,

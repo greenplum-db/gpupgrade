@@ -191,27 +191,6 @@ func TestRunInitsystemForTargetCluster(t *testing.T) {
 		}
 	})
 
-	t.Run("should use executables in the source's bindir even if bindir has a trailing slash", func(t *testing.T) {
-		execCommand = exectest.NewCommandWithVerifier(gpinitsystem,
-			func(path string, args ...string) {
-				if path != "bash" {
-					t.Errorf("executed %q, want bash", path)
-				}
-
-				expected := []string{"-c", "source /target/greenplum_path.sh && " +
-					"/target/bin/gpinitsystem -a -I /dir/.gpupgrade/gpinitsystem_config"}
-				if !reflect.DeepEqual(args, expected) {
-					t.Errorf("args %q, want %q", args, expected)
-				}
-			})
-
-		cluster7X.GPHome += "/"
-		err := RunInitsystemForTargetCluster(step.DevNullStream, cluster7X, gpinitsystemConfigPath)
-		if err != nil {
-			t.Error("gpinitsystem failed")
-		}
-	})
-
 	t.Run("returns an error when gpinitsystem fails with --ignore-warnings when upgrading to GPDB6", func(t *testing.T) {
 		execCommand = exectest.NewCommand(gpinitsystem_Exits1)
 

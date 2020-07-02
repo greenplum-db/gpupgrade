@@ -4,6 +4,8 @@
 package hub
 
 import (
+	"path/filepath"
+
 	"github.com/greenplum-db/gpupgrade/idl"
 
 	"google.golang.org/grpc/codes"
@@ -16,9 +18,9 @@ import (
 func (s *Server) SetConfig(ctx context.Context, in *idl.SetConfigRequest) (*idl.SetConfigReply, error) {
 	switch in.Name {
 	case "source-gphome":
-		s.Source.GPHome = in.Value
+		s.Source.GPHome = filepath.Clean(in.Value)
 	case "target-gphome":
-		s.Target.GPHome = in.Value
+		s.Target.GPHome = filepath.Clean(in.Value)
 	default:
 		return nil, status.Errorf(codes.NotFound, "%s is not a valid configuration key", in.Name)
 	}
