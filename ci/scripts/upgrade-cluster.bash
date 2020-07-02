@@ -114,8 +114,8 @@ time ssh mdw bash <<EOF
 
     gpupgrade initialize \
               $LINK_MODE \
-              --target-bindir ${GPHOME_TARGET}/bin \
-              --source-bindir ${GPHOME_SOURCE}/bin \
+              --target-gphome ${GPHOME_TARGET} \
+              --source-gphome ${GPHOME_SOURCE} \
               --source-master-port $MASTER_PORT \
               --temp-port-range 6020-6040
     # TODO: rather than setting a temp port range, consider carving out an

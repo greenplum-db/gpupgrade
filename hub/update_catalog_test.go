@@ -64,14 +64,14 @@ func TestUpdateCatalog(t *testing.T) {
 	config := filepath.Join(tempDir, upgrade.ConfigFileName)
 	data := `{
 	"Source": {
-		"BinDir": "/usr/local/gpdb5/bin",
+		"GPHome": "/usr/local/gpdb5",
 			"Version": {
 			  "VersionString": "5.0.0",
 			  "SemVer": "5.0.0"
 			}
 		},
 	"Target": {
-		"BinDir": "/usr/local/gpdb6/bin",
+		"GPHome": "/usr/local/gpdb6",
 			"Version": {
 			  "VersionString": "6.0.0-beta.1 build dev",
 			  "SemVer": "6.0.0"

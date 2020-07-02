@@ -6,6 +6,7 @@ package hub
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"sort"
 	"sync"
 
@@ -39,8 +40,8 @@ func UpgradePrimaries(args UpgradePrimaryArgs) error {
 			defer wg.Done()
 
 			_, err := conn.AgentClient.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{
-				SourceBinDir:               args.Source.BinDir,
-				TargetBinDir:               args.Target.BinDir,
+				SourceBinDir:               filepath.Join(args.Source.GPHome, "bin"),
+				TargetBinDir:               filepath.Join(args.Target.GPHome, "bin"),
 				TargetVersion:              args.Target.Version.SemVer.String(),
 				DataDirPairs:               args.DataDirPairMap[conn.Hostname],
 				CheckOnly:                  args.CheckOnly,

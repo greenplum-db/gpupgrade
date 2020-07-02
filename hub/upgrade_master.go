@@ -115,7 +115,7 @@ func (u UpgradeMasterError) Unwrap() error {
 
 func masterSegmentFromCluster(cluster *greenplum.Cluster) *upgrade.Segment {
 	return &upgrade.Segment{
-		BinDir:  cluster.BinDir,
+		BinDir:  filepath.Join(cluster.GPHome, "bin"),
 		DataDir: cluster.MasterDataDir(),
 		DBID:    cluster.GetDbidForContent(-1),
 		Port:    cluster.MasterPort(),

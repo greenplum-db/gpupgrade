@@ -72,8 +72,8 @@ upgrade_cluster() {
         fi
 
         gpupgrade initialize \
-            --source-bindir="$GPHOME_SOURCE/bin" \
-            --target-bindir="$GPHOME_TARGET/bin" \
+            --source-gphome="$GPHOME_SOURCE" \
+            --target-gphome="$GPHOME_TARGET" \
             --source-master-port="${PGPORT}" \
             --temp-port-range 6020-6040 \
             --disk-free-ratio 0 \

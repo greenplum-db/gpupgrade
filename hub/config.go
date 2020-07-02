@@ -15,10 +15,10 @@ import (
 
 func (s *Server) SetConfig(ctx context.Context, in *idl.SetConfigRequest) (*idl.SetConfigReply, error) {
 	switch in.Name {
-	case "source-bindir":
-		s.Source.BinDir = in.Value
-	case "target-bindir":
-		s.Target.BinDir = in.Value
+	case "source-gphome":
+		s.Source.GPHome = in.Value
+	case "target-gphome":
+		s.Target.GPHome = in.Value
 	default:
 		return nil, status.Errorf(codes.NotFound, "%s is not a valid configuration key", in.Name)
 	}
@@ -37,10 +37,10 @@ func (s *Server) GetConfig(ctx context.Context, in *idl.GetConfigRequest) (*idl.
 	switch in.Name {
 	case "id":
 		resp.Value = s.UpgradeID.String()
-	case "source-bindir":
-		resp.Value = s.Source.BinDir
-	case "target-bindir":
-		resp.Value = s.Target.BinDir
+	case "source-gphome":
+		resp.Value = s.Source.GPHome
+	case "target-gphome":
+		resp.Value = s.Target.GPHome
 	case "target-datadir":
 		resp.Value = s.Target.MasterDataDir()
 	default:

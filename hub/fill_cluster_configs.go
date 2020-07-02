@@ -34,13 +34,13 @@ func FillClusterConfigsSubStep(config *Config, conn *sql.DB, _ step.OutStreams, 
 	// XXX ugly; we should just use the conn we're passed, but our DbConn
 	// concept (which isn't really used) gets in the way
 	dbconn := db.NewDBConn("localhost", int(request.SourcePort), "template1")
-	source, err := greenplum.ClusterFromDB(dbconn, request.SourceBinDir)
+	source, err := greenplum.ClusterFromDB(dbconn, request.SourceGPHome)
 	if err != nil {
 		return xerrors.Errorf("retrieve source configuration: %w", err)
 	}
 
 	config.Source = source
-	config.Target = &greenplum.Cluster{BinDir: request.TargetBinDir}
+	config.Target = &greenplum.Cluster{GPHome: request.TargetGPHome}
 	config.UseLinkMode = request.UseLinkMode
 
 	var ports []int

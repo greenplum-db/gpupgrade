@@ -23,14 +23,14 @@ func TestUpgradePrimaries(t *testing.T) {
 		{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
 		{ContentID: 1, DbID: 3, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 	})
-	source.BinDir = "/usr/local/greenplum-db"
+	source.GPHome = "/usr/local/greenplum-db"
 	source.Version = dbconn.NewVersion("5.0.0")
 
 	target := hub.MustCreateCluster(t, []greenplum.SegConfig{
 		{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1_upgrade/seg1", Role: greenplum.PrimaryRole},
 		{ContentID: 1, DbID: 3, Hostname: "sdw2", DataDir: "/data/dbfast2_upgrade/seg2", Role: greenplum.PrimaryRole},
 	})
-	target.BinDir = "/usr/local/greenplum-db-new"
+	target.GPHome = "/usr/local/greenplum-db-new"
 	target.Version = dbconn.NewVersion("6.0.0")
 
 	segmentDbId2Tablespaces := map[int32]*idl.TablespaceInfo{
@@ -74,8 +74,8 @@ func TestUpgradePrimaries(t *testing.T) {
 		client1.EXPECT().UpgradePrimaries(
 			gomock.Any(),
 			&idl.UpgradePrimariesRequest{
-				SourceBinDir:               "/usr/local/greenplum-db",
-				TargetBinDir:               "/usr/local/greenplum-db-new",
+				SourceBinDir:               "/usr/local/greenplum-db/bin",
+				TargetBinDir:               "/usr/local/greenplum-db-new/bin",
 				TargetVersion:              dbconn.NewVersion("6.0.0").VersionString,
 				DataDirPairs:               pairs["sdw1"],
 				CheckOnly:                  false,
@@ -89,8 +89,8 @@ func TestUpgradePrimaries(t *testing.T) {
 		client2.EXPECT().UpgradePrimaries(
 			gomock.Any(),
 			&idl.UpgradePrimariesRequest{
-				SourceBinDir:               "/usr/local/greenplum-db",
-				TargetBinDir:               "/usr/local/greenplum-db-new",
+				SourceBinDir:               "/usr/local/greenplum-db/bin",
+				TargetBinDir:               "/usr/local/greenplum-db-new/bin",
 				TargetVersion:              dbconn.NewVersion("6.0.0").VersionString,
 				DataDirPairs:               pairs["sdw2"],
 				CheckOnly:                  false,
@@ -128,8 +128,8 @@ func TestUpgradePrimaries(t *testing.T) {
 		client1.EXPECT().UpgradePrimaries(
 			gomock.Any(),
 			&idl.UpgradePrimariesRequest{
-				SourceBinDir:    "/usr/local/greenplum-db",
-				TargetBinDir:    "/usr/local/greenplum-db-new",
+				SourceBinDir:    "/usr/local/greenplum-db/bin",
+				TargetBinDir:    "/usr/local/greenplum-db-new/bin",
 				TargetVersion:   dbconn.NewVersion("6.0.0").VersionString,
 				DataDirPairs:    pairs["sdw1"],
 				CheckOnly:       false,
@@ -143,8 +143,8 @@ func TestUpgradePrimaries(t *testing.T) {
 		failedClient.EXPECT().UpgradePrimaries(
 			gomock.Any(),
 			&idl.UpgradePrimariesRequest{
-				SourceBinDir:               "/usr/local/greenplum-db",
-				TargetBinDir:               "/usr/local/greenplum-db-new",
+				SourceBinDir:               "/usr/local/greenplum-db/bin",
+				TargetBinDir:               "/usr/local/greenplum-db-new/bin",
 				TargetVersion:              dbconn.NewVersion("6.0.0").VersionString,
 				DataDirPairs:               pairs["sdw2"],
 				CheckOnly:                  false,

@@ -82,7 +82,7 @@ func TestStartOrStopCluster(t *testing.T) {
 	source := MustCreateCluster(t, []SegConfig{
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: masterDataDir, Role: "p"},
 	})
-	source.BinDir = "/source/bindir"
+	source.GPHome = "/usr/local/source"
 
 	utils.System.RemoveAll = func(s string) error { return nil }
 	utils.System.MkdirAll = func(s string, perm os.FileMode) error { return nil }
@@ -178,8 +178,8 @@ func TestStartOrStopCluster(t *testing.T) {
 					t.Errorf("got %q want bash", path)
 				}
 
-				expected := []string{"-c", "source /source/bindir/../greenplum_path.sh " +
-					"&& /source/bindir/gpstop -a -d " + masterDataDir}
+				expected := []string{"-c", "source /usr/local/source/greenplum_path.sh " +
+					"&& /usr/local/source/bin/gpstop -a -d " + masterDataDir}
 				if !reflect.DeepEqual(args, expected) {
 					t.Errorf("got %q want %q", args, expected)
 				}
@@ -217,8 +217,8 @@ func TestStartOrStopCluster(t *testing.T) {
 					t.Errorf("got %q want bash", path)
 				}
 
-				expected := []string{"-c", "source /source/bindir/../greenplum_path.sh " +
-					"&& /source/bindir/gpstart -a -d " + masterDataDir}
+				expected := []string{"-c", "source /usr/local/source/greenplum_path.sh " +
+					"&& /usr/local/source/bin/gpstart -a -d " + masterDataDir}
 				if !reflect.DeepEqual(args, expected) {
 					t.Errorf("got %q want %q", args, expected)
 				}
@@ -237,8 +237,8 @@ func TestStartOrStopCluster(t *testing.T) {
 					t.Errorf("got %q want bash", path)
 				}
 
-				expected := []string{"-c", "source /source/bindir/../greenplum_path.sh " +
-					"&& /source/bindir/gpstart -m -a -d " + masterDataDir}
+				expected := []string{"-c", "source /usr/local/source/greenplum_path.sh " +
+					"&& /usr/local/source/bin/gpstart -m -a -d " + masterDataDir}
 				if !reflect.DeepEqual(args, expected) {
 					t.Errorf("got %q want %q", args, expected)
 				}
@@ -269,8 +269,8 @@ func TestStartOrStopCluster(t *testing.T) {
 					t.Errorf("got %q want bash", path)
 				}
 
-				expected := []string{"-c", "source /source/bindir/../greenplum_path.sh " +
-					"&& /source/bindir/gpstop -m -a -d " + masterDataDir}
+				expected := []string{"-c", "source /usr/local/source/greenplum_path.sh " +
+					"&& /usr/local/source/bin/gpstop -m -a -d " + masterDataDir}
 				if !reflect.DeepEqual(args, expected) {
 					t.Errorf("got %q want %q", args, expected)
 				}

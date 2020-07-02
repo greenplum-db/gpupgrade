@@ -47,8 +47,8 @@ teardown() {
 
     gpupgrade initialize \
         --verbose \
-        --source-bindir "$GPHOME_SOURCE/bin" \
-        --target-bindir "$GPHOME_TARGET/bin" \
+        --source-gphome "$GPHOME_SOURCE" \
+        --target-gphome "$GPHOME_TARGET" \
         --source-master-port "$PGPORT" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 3>&-
@@ -103,8 +103,8 @@ teardown() {
 
     gpupgrade initialize \
         --verbose \
-        --source-bindir "$GPHOME_SOURCE/bin" \
-        --target-bindir "$GPHOME_TARGET/bin" \
+        --source-gphome "$GPHOME_SOURCE" \
+        --target-gphome "$GPHOME_TARGET" \
         --source-master-port "$PGPORT" \
         --temp-port-range $expected_ports,$standby_port,$mirror_ports \
         --disk-free-ratio 0 3>&-

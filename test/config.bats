@@ -18,8 +18,8 @@ setup() {
     # installation. This causes problems for tests that need to call GPDB
     # executables...
     gpupgrade initialize \
-        --source-bindir "$PWD" \
-        --target-bindir "$PWD" \
+        --source-gphome "$PWD" \
+        --target-gphome "$PWD" \
         --source-master-port ${PGPORT} \
         --stop-before-cluster-creation \
         --disk-free-ratio 0 3>&-
@@ -34,47 +34,47 @@ teardown() {
 }
 
 @test "configuration can be read after it is written" {
-    gpupgrade config set --target-bindir /my/new/bin/dir
-    gpupgrade config set --source-bindir /my/old/bin/dir
+    gpupgrade config set --target-gphome /usr/local/target
+    gpupgrade config set --source-gphome /usr/local/source
 
-    run gpupgrade config show --target-bindir
+    run gpupgrade config show --target-gphome
     echo $output
     [ "$status" -eq 0 ]
-    [ "$output" = "/my/new/bin/dir" ]
+    [ "$output" = "/usr/local/target" ]
 
-    run gpupgrade config show --source-bindir
+    run gpupgrade config show --source-gphome
     [ "$status" -eq 0 ]
-    [ "$output" = "/my/old/bin/dir" ]
+    [ "$output" = "/usr/local/source" ]
 }
 
 @test "configuration persists after hub is killed and restarted" {
-    gpupgrade config set --target-bindir /my/bin/dir
+    gpupgrade config set --target-gphome /usr/local/target
 
     gpupgrade kill-services
     gpupgrade hub --daemonize
 
-    run gpupgrade config show --target-bindir
+    run gpupgrade config show --target-gphome
     [ "$status" -eq 0 ]
-    [ "$output" = "/my/bin/dir" ]
+    [ "$output" = "/usr/local/target" ]
 }
 
 @test "configuration can be dumped as a whole" {
-    gpupgrade config set --target-bindir /my/new/bin/dir
-    gpupgrade config set --source-bindir /my/old/bin/dir
+    gpupgrade config set --target-gphome /usr/local/target
+    gpupgrade config set --source-gphome /usr/local/source
 
     run gpupgrade config show
     [ "$status" -eq 0 ]
     [[ "${lines[0]}" = "id - "* ]] # this is randomly generated; we could replace * with a base64 regex matcher
-    [ "${lines[1]}" = "source-bindir - /my/old/bin/dir" ]
-    [ "${lines[2]}" = "target-bindir - /my/new/bin/dir" ]
-    [ "${lines[3]}" = "target-datadir - " ] # This isn't populated until cluster creation, but it's still displayed here
+    [ "${lines[1]}" = "source-gphome - /usr/local/source" ]
+    [ "${lines[2]}" = "target-datadir - " ] # This isn't populated until cluster creation, but it's still displayed here
+    [ "${lines[3]}" = "target-gphome - /usr/local/target" ]
 }
 
 @test "multiple configuration values can be set at once" {
-    gpupgrade config set --target-bindir /my/new/bin/dir --source-bindir /my/old/bin/dir
+    gpupgrade config set --target-gphome /usr/local/target --source-gphome /usr/local/source
 
     run gpupgrade config show
     [ "$status" -eq 0 ]
-    [ "${lines[1]}" = "source-bindir - /my/old/bin/dir" ]
-    [ "${lines[2]}" = "target-bindir - /my/new/bin/dir" ]
+    [ "${lines[1]}" = "source-gphome - /usr/local/source" ]
+    [ "${lines[3]}" = "target-gphome - /usr/local/target" ]
 }

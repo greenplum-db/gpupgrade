@@ -37,8 +37,8 @@ teardown() {
     local target_hosts_dirs upgradeID
 
     gpupgrade initialize \
-        --source-bindir="$GPHOME_SOURCE/bin" \
-        --target-bindir="$GPHOME_TARGET/bin" \
+        --source-gphome="$GPHOME_SOURCE" \
+        --target-gphome="$GPHOME_TARGET" \
         --source-master-port="${PGPORT}" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
@@ -93,8 +93,8 @@ test_revert_after_execute() {
     $PSQL postgres -c "INSERT INTO ${TABLE} VALUES (1), (2), (3)"
 
     gpupgrade initialize \
-        --source-bindir="$GPHOME_SOURCE/bin" \
-        --target-bindir="$GPHOME_TARGET/bin" \
+        --source-gphome="$GPHOME_SOURCE" \
+        --target-gphome="$GPHOME_TARGET" \
         --source-master-port="${PGPORT}" \
         --temp-port-range ${target_master_port}-6040 \
         --disk-free-ratio 0 \
@@ -145,8 +145,8 @@ test_revert_after_execute() {
 
 @test "can successfully run gpupgrade after a revert" {
     gpupgrade initialize \
-        --source-bindir="$GPHOME_SOURCE/bin" \
-        --target-bindir="$GPHOME_TARGET/bin" \
+        --source-gphome="$GPHOME_SOURCE" \
+        --target-gphome="$GPHOME_TARGET" \
         --source-master-port="${PGPORT}" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
@@ -160,8 +160,8 @@ test_revert_after_execute() {
     gpupgrade revert --verbose
 
     gpupgrade initialize \
-        --source-bindir="$GPHOME_SOURCE/bin" \
-        --target-bindir="$GPHOME_TARGET/bin" \
+        --source-gphome="$GPHOME_SOURCE" \
+        --target-gphome="$GPHOME_TARGET" \
         --source-master-port="${PGPORT}" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \

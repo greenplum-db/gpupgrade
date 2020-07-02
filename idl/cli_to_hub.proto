@@ -20,8 +20,8 @@ service CliToHub {
 
 message InitializeRequest {
     int32 agentPort = 1;
-    string sourceBinDir = 2;
-    string targetBinDir = 3;
+    string sourceGPHome = 2;
+    string targetGPHome = 3;
     int32 sourcePort = 4;
     bool useLinkMode = 5;
     repeated uint32 ports = 6;

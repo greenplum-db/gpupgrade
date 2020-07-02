@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"testing"
@@ -117,13 +118,14 @@ func TestUpgradeMaster(t *testing.T) {
 	source := MustCreateCluster(t, []greenplum.SegConfig{
 		{ContentID: -1, Port: 5432, DataDir: "/data/old", DbID: 1, Role: "p"},
 	})
-	source.BinDir = "/old/bin"
+	source.GPHome = "/usr/local/source"
 
 	t.Run("masterSegmentFromCluster() creates a correct upgrade segment", func(t *testing.T) {
 		seg := masterSegmentFromCluster(source)
 
-		if seg.BinDir != source.BinDir {
-			t.Errorf("BinDir was %q, want %q", seg.BinDir, source.BinDir)
+		expected := filepath.Join(source.GPHome, "bin")
+		if seg.BinDir != expected {
+			t.Errorf("BinDir was %q, want %q", seg.BinDir, expected)
 		}
 		if seg.DataDir != source.MasterDataDir() {
 			t.Errorf("DataDir was %q, want %q", seg.DataDir, source.MasterDataDir())
@@ -144,7 +146,7 @@ func TestUpgradeMaster(t *testing.T) {
 	target := MustCreateCluster(t, []greenplum.SegConfig{
 		{ContentID: -1, Port: 5433, DataDir: "/data/new", DbID: 2, Role: "p"},
 	})
-	target.BinDir = "/new/bin"
+	target.GPHome = "/usr/local/target"
 
 	// We need a real temporary directory to change to. Replace MkdirAll() so
 	// that we can make sure the directory is the correct one.

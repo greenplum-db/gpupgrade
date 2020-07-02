@@ -83,7 +83,7 @@ make install # installs gpupgrade into $GOBIN
 ### Running
 
 ```
-gpupgrade initialize --source-bindir "$GPHOME/bin" --target-bindir "$GPHOME/bin" --source-master-port 6000 --disk-free-ratio 0
+gpupgrade initialize --source-gphome "$GPHOME" --target-gphome "$GPHOME" --source-master-port 6000 --disk-free-ratio 0
 gpupgrade execute
 gpupgrade finalize
 ```

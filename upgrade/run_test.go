@@ -14,6 +14,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
@@ -58,6 +59,8 @@ func init() {
 }
 
 func TestRun(t *testing.T) {
+	testhelper.SetupTestLogger()
+
 	pair := upgrade.SegmentPair{
 		Source: &upgrade.Segment{
 			BinDir:  "/old/bin",

@@ -41,7 +41,7 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 		{ContentID: 1, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 		{ContentID: 1, Hostname: "msdw2", DataDir: "/data/dbfast_mirror2/seg2", Role: greenplum.MirrorRole},
 	})
-	cluster.BinDir = "/usr/local/greenplum-db/bin"
+	cluster.GPHome = "/usr/local/greenplum-db"
 	cluster.Version = dbconn.NewVersion("5.0.0")
 
 	t.Run("restores master in link mode using correct rsync arguments", func(t *testing.T) {

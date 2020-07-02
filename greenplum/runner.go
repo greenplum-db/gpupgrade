@@ -22,18 +22,18 @@ func NewRunner(c *Cluster, streams step.OutStreams) Runner {
 	return &runner{
 		masterPort:          c.MasterPort(),
 		masterDataDirectory: c.MasterDataDir(),
-		binDir:              c.BinDir,
+		gphome:              c.GPHome,
 		streams:             streams,
 	}
 }
 
 func (e *runner) Run(utilityName string, arguments ...string) error {
-	path := filepath.Join(e.binDir, utilityName)
+	path := filepath.Join(e.gphome, "bin", utilityName)
 
 	arguments = append([]string{path}, arguments...)
 	script := shellquote.Join(arguments...)
 
-	withGreenplumPath := fmt.Sprintf("source %s/../greenplum_path.sh && %s", e.binDir, script)
+	withGreenplumPath := fmt.Sprintf("source %s/greenplum_path.sh && %s", e.gphome, script)
 	gplog.Debug(withGreenplumPath)
 
 	command := exec.Command("bash", "-c", withGreenplumPath)
@@ -47,7 +47,7 @@ func (e *runner) Run(utilityName string, arguments ...string) error {
 }
 
 type runner struct {
-	binDir              string
+	gphome              string
 	masterDataDirectory string
 	masterPort          int
 	streams             step.OutStreams

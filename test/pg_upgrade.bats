@@ -52,8 +52,8 @@ teardown() {
     # that output, so manually store the status and ignore the expected failure.
     local status=0
     gpupgrade initialize \
-        --source-bindir "$GPHOME_SOURCE/bin" \
-        --target-bindir "$GPHOME_TARGET/bin" \
+        --source-gphome "$GPHOME_SOURCE" \
+        --target-gphome "$GPHOME_TARGET" \
         --source-master-port "$PGPORT" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio=0 \
@@ -74,8 +74,8 @@ teardown() {
     skip_if_no_gpdb
 
     gpupgrade initialize \
-        --source-bindir "$GPHOME_SOURCE/bin" \
-        --target-bindir "$GPHOME_TARGET/bin" \
+        --source-gphome "$GPHOME_SOURCE" \
+        --target-gphome "$GPHOME_TARGET" \
         --source-master-port "$PGPORT" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio=0 3>&-
@@ -116,8 +116,8 @@ count_primary_gp_dbids() {
 
     gpupgrade initialize \
         --verbose \
-        --source-bindir "$GPHOME_SOURCE/bin" \
-        --target-bindir "$GPHOME_TARGET/bin" \
+        --source-gphome "$GPHOME_SOURCE" \
+        --target-gphome "$GPHOME_TARGET" \
         --source-master-port "$PGPORT" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio=0 3>&-

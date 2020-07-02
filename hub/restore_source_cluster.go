@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
-	"path/filepath"
 	"sync"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -67,9 +65,7 @@ func Recoverseg(stream step.OutStreams, cluster *greenplum.Cluster) error {
 		return nil
 	}
 
-	gphome := filepath.Dir(path.Clean(cluster.BinDir)) //works around https://github.com/golang/go/issues/4837 in go10.4
-
-	script := fmt.Sprintf("source %[1]s/greenplum_path.sh && %[1]s/bin/gprecoverseg -a", gphome)
+	script := fmt.Sprintf("source %[1]s/greenplum_path.sh && %[1]s/bin/gprecoverseg -a", cluster.GPHome)
 	cmd := RecoversegCmd("bash", "-c", script)
 
 	cmd.Stdout = stream.Stdout()

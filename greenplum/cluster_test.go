@@ -241,8 +241,7 @@ func TestPrimaryHostnames(t *testing.T) {
 		t.Errorf("got error when creating tempdir: %+v", err)
 	}
 	expectedCluster := testutils.CreateMultinodeSampleCluster("/tmp")
-	// todo: pass args for bindir / version to CreateMultinodeSampleCluster
-	expectedCluster.BinDir = "/fake/path"
+	expectedCluster.GPHome = "/fake/path"
 	expectedCluster.Version = dbconn.NewVersion("6.0.0")
 	testhelper.SetupTestLogger()
 
@@ -317,16 +316,16 @@ func TestClusterFromDB(t *testing.T) {
 		testhelper.ExpectVersionQuery(mock, "5.3.4")
 		mock.ExpectQuery("SELECT .* FROM gp_segment_configuration").WillReturnRows(testutils.MockSegmentConfiguration())
 
-		binDir := "/usr/local/gpdb/bin"
+		gphome := "/usr/local/gpdb"
 
-		actualCluster, err := greenplum.ClusterFromDB(conn, binDir)
+		actualCluster, err := greenplum.ClusterFromDB(conn, gphome)
 		if err != nil {
 			t.Errorf("got unexpected error: %+v", err)
 		}
 
 		expectedCluster := testutils.MockCluster()
 		expectedCluster.Version = dbconn.NewVersion("5.3.4")
-		expectedCluster.BinDir = binDir
+		expectedCluster.GPHome = gphome
 
 		if !reflect.DeepEqual(actualCluster, expectedCluster) {
 			t.Errorf("expected: %#v got: %#v", expectedCluster, actualCluster)

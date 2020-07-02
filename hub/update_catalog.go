@@ -45,7 +45,7 @@ func (s *Server) UpdateCatalogAndClusterConfig(streams step.OutStreams) (err err
 	master.DataDir = upgrade.TempDataDir(master.DataDir, segPrefix, s.Config.UpgradeID)
 
 	segs := map[int]greenplum.SegConfig{-1: master}
-	oldTarget := &greenplum.Cluster{Primaries: segs, BinDir: s.Target.BinDir}
+	oldTarget := &greenplum.Cluster{Primaries: segs, GPHome: s.Target.GPHome}
 
 	err = oldTarget.StopMasterOnly(streams)
 	if err != nil {
@@ -193,7 +193,7 @@ func (s *Server) UpdateGpSegmentConfiguration(db *sql.DB) (err error) {
 			// TODO: this is out of sync now, as the standby/mirrors are added later.
 			//   replace with one without standby/mirrors
 			s.Target = origConf.Source
-			s.Target.BinDir = origConf.Target.BinDir
+			s.Target.GPHome = origConf.Target.GPHome
 			s.Target.Version = origConf.Target.Version
 
 			err = s.SaveConfig()

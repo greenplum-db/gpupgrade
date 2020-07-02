@@ -62,7 +62,7 @@ func (s *Server) CreateTargetCluster(stream step.OutStreams) error {
 	conn := db.NewDBConn("localhost", s.TargetInitializeConfig.Master.Port, "template1")
 	defer conn.Close()
 
-	s.Target, err = greenplum.ClusterFromDB(conn, s.Target.BinDir)
+	s.Target, err = greenplum.ClusterFromDB(conn, s.Target.GPHome)
 	if err != nil {
 		return xerrors.Errorf("retrieve target configuration: %w", err)
 	}
@@ -151,8 +151,6 @@ func WriteSegmentArray(config []string, targetInitializeConfig InitializeConfig)
 }
 
 func RunInitsystemForTargetCluster(stream step.OutStreams, target *greenplum.Cluster, gpinitsystemFilepath string) error {
-	gphome := filepath.Dir(path.Clean(target.BinDir)) //works around https://github.com/golang/go/issues/4837 in go10.4
-
 	args := "-a -I " + gpinitsystemFilepath
 	if target.Version.SemVer.Major < 7 {
 		// For 6X we add --ignore-warnings to gpinitsystem to return 0 on
@@ -161,7 +159,7 @@ func RunInitsystemForTargetCluster(stream step.OutStreams, target *greenplum.Clu
 	}
 
 	script := fmt.Sprintf("source %[1]s/greenplum_path.sh && %[1]s/bin/gpinitsystem %[2]s",
-		gphome,
+		target.GPHome,
 		args,
 	)
 	cmd := execCommand("bash", "-c", script)

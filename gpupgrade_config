@@ -7,16 +7,16 @@
 # Parameters commented out below are default values.
 
 
-# The path to the binary directory for the source Greenplum installation.
-# For example, /usr/local/<source-greenplum-version>/bin.
-# This parameter is required. 
-source_bindir =
-
-
-# The path to the binary directory for the target Greenplum installation.
-# For example, /usr/local/<target-greenplum-version>/bin.
+# The installation path for the source Greenplum Database.
+# For example, /usr/local/<source-greenplum-version>.
 # This parameter is required.
-target_bindir =
+source_gphome =
+
+
+# The installation path for the target Greenplum Database.
+# For example, /usr/local/<target-greenplum-version>.
+# This parameter is required.
+target_gphome =
 
 
 # The mode is the upgrade method. The choices are “link” or “copy”.

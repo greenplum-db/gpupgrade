@@ -14,8 +14,8 @@ setup() {
     gpupgrade kill-services
 
     gpupgrade initialize \
-        --source-bindir="${GPHOME_SOURCE}/bin" \
-        --target-bindir="${GPHOME_TARGET}/bin" \
+        --source-gphome="${GPHOME_SOURCE}" \
+        --target-gphome="${GPHOME_TARGET}" \
         --source-master-port="${PGPORT}" \
         --stop-before-cluster-creation \
         --disk-free-ratio 0 3>&-

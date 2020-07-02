@@ -264,8 +264,8 @@ func createConfigSetSubcommand() *cobra.Command {
 		},
 	}
 
-	subSet.Flags().String("source-bindir", "", "install directory for source gpdb version")
-	subSet.Flags().String("target-bindir", "", "install directory for target gpdb version")
+	subSet.Flags().String("source-gphome", "", "path for the source Greenplum installation")
+	subSet.Flags().String("target-gphome", "", "path for the target Greenplum installation")
 
 	return subSet
 }
@@ -315,8 +315,8 @@ func createConfigShowSubcommand() *cobra.Command {
 	}
 
 	subShow.Flags().Bool("id", false, "show upgrade identifier")
-	subShow.Flags().Bool("source-bindir", false, "show install directory for source gpdb version")
-	subShow.Flags().Bool("target-bindir", false, "show install directory for target gpdb version")
+	subShow.Flags().Bool("source-gphome", false, "show path for the source Greenplum installation")
+	subShow.Flags().Bool("target-gphome", false, "show path for the target Greenplum installation")
 	subShow.Flags().Bool("target-datadir", false, "show temporary data directory for target gpdb cluster")
 
 	return subShow
@@ -340,7 +340,7 @@ func version() *cobra.Command {
 
 func initialize() *cobra.Command {
 	var file string
-	var sourceBinDir, targetBinDir string
+	var sourceGPHome, targetGPHome string
 	var sourcePort int
 	var hubPort int
 	var agentPort int
@@ -357,8 +357,8 @@ func initialize() *cobra.Command {
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			// mark the required flags when the file flag is not set
 			if !cmd.Flag("file").Changed {
-				cmd.MarkFlagRequired("source-bindir")      //nolint
-				cmd.MarkFlagRequired("target-bindir")      //nolint
+				cmd.MarkFlagRequired("source-gphome")      //nolint
+				cmd.MarkFlagRequired("target-gphome")      //nolint
 				cmd.MarkFlagRequired("source-master-port") //nolint
 			}
 
@@ -467,8 +467,8 @@ func initialize() *cobra.Command {
 
 			request := &idl.InitializeRequest{
 				AgentPort:    int32(agentPort),
-				SourceBinDir: sourceBinDir,
-				TargetBinDir: targetBinDir,
+				SourceGPHome: sourceGPHome,
+				TargetGPHome: targetGPHome,
 				SourcePort:   int32(sourcePort),
 				UseLinkMode:  linkMode,
 				Ports:        ports,
@@ -504,10 +504,9 @@ After executing, you will need to finalize.`)
 			return nil
 		},
 	}
-
 	subInit.Flags().StringVarP(&file, "file", "f", "", "the configuration file to use")
-	subInit.Flags().StringVar(&sourceBinDir, "source-bindir", "", "install directory for source gpdb version")
-	subInit.Flags().StringVar(&targetBinDir, "target-bindir", "", "install directory for target gpdb version")
+	subInit.Flags().StringVar(&sourceGPHome, "source-gphome", "", "path for the source Greenplum installation")
+	subInit.Flags().StringVar(&targetGPHome, "target-gphome", "", "path for the target Greenplum installation")
 	subInit.Flags().IntVar(&sourcePort, "source-master-port", 5432, "master port for source gpdb cluster")
 	subInit.Flags().IntVar(&hubPort, "hub-port", upgrade.DefaultHubPort, "the port gpupgrade hub uses to listen for commands on")
 	subInit.Flags().IntVar(&agentPort, "agent-port", upgrade.DefaultAgentPort, "the port gpupgrade agent uses to listen for commands on")
@@ -795,9 +794,9 @@ Usage: gpupgrade initialize <flags>
 
 Required Flags:
 
-  --source-bindir         the path to the binary directory for the source Greenplum installation
+  --source-gphome         path for the source Greenplum installation
 
-  --target-bindir         the path to the binary directory for the target Greenplum installation
+  --target-gphome         path for the target Greenplum installation
 
   --source-master-port    the master port for the source Greenplum installation
 
@@ -874,8 +873,8 @@ Required Commands: gpupgrade is a three-step process
                   Usage: gpupgrade initialize <flags>
 
                   Required Flags:
-                    --source-bindir        the path to the binary directory for the source Greenplum installation
-                    --target-bindir        the path to the binary directory for the target Greenplum installation
+                    --source-gphome        path for the source Greenplum installation
+                    --target-gphome        path for the target Greenplum installation
                     --source-master-port   the master port for the source Greenplum installation
 
                   Optional Flags:

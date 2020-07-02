@@ -37,14 +37,14 @@ type Cluster struct {
 	// check for key existence.
 	Mirrors map[int]SegConfig
 
-	BinDir  string
+	GPHome  string
 	Version dbconn.GPDBVersion
 }
 
 // ClusterFromDB will create a Cluster by querying the passed DBConn for
-// information. You must pass the cluster's binary directory, since it cannot be
+// information. You must pass the cluster's gphome, since it cannot be
 // divined from the database.
-func ClusterFromDB(conn *dbconn.DBConn, binDir string) (*Cluster, error) {
+func ClusterFromDB(conn *dbconn.DBConn, gphome string) (*Cluster, error) {
 	err := conn.Connect(1)
 	if err != nil {
 		return nil, xerrors.Errorf("connect to cluster: %w", err)
@@ -62,7 +62,7 @@ func ClusterFromDB(conn *dbconn.DBConn, binDir string) (*Cluster, error) {
 	}
 
 	c.Version = conn.Version
-	c.BinDir = binDir
+	c.GPHome = gphome
 
 	return c, nil
 }
@@ -297,7 +297,7 @@ func (c *Cluster) GetDirForContent(contentID int) string {
 }
 
 func (c *Cluster) Start(stream step.OutStreams) error {
-	return runStartStopCmd(stream, c.BinDir, fmt.Sprintf("gpstart -a -d %[1]s", c.MasterDataDir()))
+	return runStartStopCmd(stream, c.GPHome, fmt.Sprintf("gpstart -a -d %[1]s", c.MasterDataDir()))
 }
 
 func (c *Cluster) Stop(stream step.OutStreams) error {
@@ -314,11 +314,11 @@ func (c *Cluster) Stop(stream step.OutStreams) error {
 		return errors.New("master is already stopped")
 	}
 
-	return runStartStopCmd(stream, c.BinDir, fmt.Sprintf("gpstop -a -d %[1]s", c.MasterDataDir()))
+	return runStartStopCmd(stream, c.GPHome, fmt.Sprintf("gpstop -a -d %[1]s", c.MasterDataDir()))
 }
 
 func (c *Cluster) StartMasterOnly(stream step.OutStreams) error {
-	return runStartStopCmd(stream, c.BinDir, fmt.Sprintf("gpstart -m -a -d %[1]s", c.MasterDataDir()))
+	return runStartStopCmd(stream, c.GPHome, fmt.Sprintf("gpstart -m -a -d %[1]s", c.MasterDataDir()))
 }
 
 func (c *Cluster) StopMasterOnly(stream step.OutStreams) error {
@@ -335,12 +335,12 @@ func (c *Cluster) StopMasterOnly(stream step.OutStreams) error {
 		return errors.New("master is already stopped")
 	}
 
-	return runStartStopCmd(stream, c.BinDir, fmt.Sprintf("gpstop -m -a -d %[1]s", c.MasterDataDir()))
+	return runStartStopCmd(stream, c.GPHome, fmt.Sprintf("gpstop -m -a -d %[1]s", c.MasterDataDir()))
 }
 
-func runStartStopCmd(stream step.OutStreams, binDir, command string) error {
-	commandWithEnv := fmt.Sprintf("source %[1]s/../greenplum_path.sh && %[1]s/%[2]s",
-		binDir,
+func runStartStopCmd(stream step.OutStreams, gphome, command string) error {
+	commandWithEnv := fmt.Sprintf("source %[1]s/greenplum_path.sh && %[1]s/bin/%[2]s",
+		gphome,
 		command)
 
 	cmd := startStopCmd("bash", "-c", commandWithEnv)

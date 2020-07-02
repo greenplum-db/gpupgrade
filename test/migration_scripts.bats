@@ -49,8 +49,8 @@ teardown() {
     $PSQL -f $BATS_TEST_DIRNAME/../migration_scripts/test/create_nonupgradable_objects.sql -d $TEST_DBNAME
 
     run gpupgrade initialize \
-            --source-bindir="$GPHOME_SOURCE/bin" \
-            --target-bindir="$GPHOME_TARGET/bin" \
+            --source-gphome="$GPHOME_SOURCE" \
+            --target-gphome="$GPHOME_TARGET" \
             --source-master-port="${PGPORT}" \
             --temp-port-range 6020-6040 \
             --disk-free-ratio 0 \
@@ -65,8 +65,8 @@ teardown() {
     $PREUPGRADE_SCRIPTS_DIR/execute_preupgrade_sql.bash $GPHOME_SOURCE $PGPORT $PREUPGRADE_DIR
 
     gpupgrade initialize \
-            --source-bindir="$GPHOME_SOURCE/bin" \
-            --target-bindir="$GPHOME_TARGET/bin" \
+            --source-gphome="$GPHOME_SOURCE" \
+            --target-gphome="$GPHOME_TARGET" \
             --source-master-port="${PGPORT}" \
             --temp-port-range 6020-6040 \
             --disk-free-ratio 0 \

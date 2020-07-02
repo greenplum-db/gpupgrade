@@ -24,7 +24,7 @@ teardown() {
 @test "gpupgrade subcommands fail when passed insufficient arguments" {
     run gpupgrade initialize
     [ "$status" -eq 1 ]
-    if ! [[ "$output" = *'required flag(s) "source-bindir", "source-master-port", "target-bindir" not set'* ]]; then
+    if ! [[ "$output" = *'required flag(s) "source-gphome", "source-master-port", "target-gphome" not set'* ]]; then
         fail "actual: $output"
     fi
 
@@ -36,7 +36,7 @@ teardown() {
 }
 
 @test "gpupgrade initialize fails when other flags are used with --file" {
-    run gpupgrade initialize --file /some/config --source-bindir /old/bindir
+    run gpupgrade initialize --file /some/config --source-gphome /usr/local/source
     [ "$status" -eq 1 ]
     if ! [[ "$output" = *'The file flag cannot be used with any other flag'* ]]; then
         fail "actual: $output"
@@ -46,8 +46,8 @@ teardown() {
 @test "gpupgrade initialize --file with verbose uses the configured values" {
     config_file=${STATE_DIR}/gpupgrade_config
     cat <<- EOF > "$config_file"
-		source-bindir = /my/old/bin/dir
-		target-bindir = /my/new/bin/dir
+		source-gphome = /usr/local/source
+		target-gphome = /usr/local/target
 		source-master-port = ${PGPORT}
 		disk-free-ratio = 0
 		stop-before-cluster-creation = true
@@ -55,11 +55,11 @@ teardown() {
 
     gpupgrade initialize --verbose --file "$config_file"
 
-    run gpupgrade config show --target-bindir
+    run gpupgrade config show --target-gphome
     [ "$status" -eq 0 ]
-    [ "$output" = "/my/new/bin/dir" ]
+    [ "$output" = "/usr/local/target" ]
 
-    run gpupgrade config show --source-bindir
+    run gpupgrade config show --source-gphome
     [ "$status" -eq 0 ]
-    [ "$output" = "/my/old/bin/dir" ]
+    [ "$output" = "/usr/local/source" ]
 }

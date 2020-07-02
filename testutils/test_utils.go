@@ -44,11 +44,11 @@ func CreateMultinodeSampleClusterPair(baseDir string) (*greenplum.Cluster, *gree
 	gpdbVersion := dbconn.NewVersion("6.0.0")
 
 	sourceCluster := CreateMultinodeSampleCluster(baseDir)
-	sourceCluster.BinDir = "/source/bindir"
+	sourceCluster.GPHome = "/usr/local/source"
 	sourceCluster.Version = gpdbVersion
 
 	targetCluster := CreateMultinodeSampleCluster(baseDir)
-	targetCluster.BinDir = "/target/bindir"
+	targetCluster.GPHome = "/usr/local/target"
 	targetCluster.Version = gpdbVersion
 
 	return sourceCluster, targetCluster

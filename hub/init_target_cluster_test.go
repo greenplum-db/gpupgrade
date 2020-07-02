@@ -135,12 +135,12 @@ func TestWriteSegmentArray(t *testing.T) {
 
 func TestRunInitsystemForTargetCluster(t *testing.T) {
 	cluster6X := &greenplum.Cluster{
-		BinDir:  "/target/bin",
+		GPHome:  "/usr/local/gpdb6",
 		Version: dbconn.NewVersion("6.0.0"),
 	}
 
 	cluster7X := &greenplum.Cluster{
-		BinDir:  "/target/bin",
+		GPHome:  "/usr/local/gpdb7",
 		Version: dbconn.NewVersion("7.0.0"),
 	}
 
@@ -158,8 +158,8 @@ func TestRunInitsystemForTargetCluster(t *testing.T) {
 					t.Errorf("executed %q, want bash", path)
 				}
 
-				expected := []string{"-c", "source /target/greenplum_path.sh && " +
-					"/target/bin/gpinitsystem -a -I /dir/.gpupgrade/gpinitsystem_config"}
+				expected := []string{"-c", "source /usr/local/gpdb7/greenplum_path.sh && " +
+					"/usr/local/gpdb7/bin/gpinitsystem -a -I /dir/.gpupgrade/gpinitsystem_config"}
 				if !reflect.DeepEqual(args, expected) {
 					t.Errorf("args %q, want %q", args, expected)
 				}
@@ -178,8 +178,8 @@ func TestRunInitsystemForTargetCluster(t *testing.T) {
 					t.Errorf("executed %q, want bash", path)
 				}
 
-				expected := []string{"-c", "source /target/greenplum_path.sh && " +
-					"/target/bin/gpinitsystem -a -I /dir/.gpupgrade/gpinitsystem_config --ignore-warnings"}
+				expected := []string{"-c", "source /usr/local/gpdb6/greenplum_path.sh && " +
+					"/usr/local/gpdb6/bin/gpinitsystem -a -I /dir/.gpupgrade/gpinitsystem_config --ignore-warnings"}
 				if !reflect.DeepEqual(args, expected) {
 					t.Errorf("args %q, want %q", args, expected)
 				}
@@ -205,7 +205,7 @@ func TestRunInitsystemForTargetCluster(t *testing.T) {
 				}
 			})
 
-		cluster7X.BinDir += "/"
+		cluster7X.GPHome += "/"
 		err := RunInitsystemForTargetCluster(step.DevNullStream, cluster7X, gpinitsystemConfigPath)
 		if err != nil {
 			t.Error("gpinitsystem failed")
