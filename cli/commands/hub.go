@@ -19,9 +19,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/log"
 )
 
-// This directory to have the implementation code for the gRPC server to serve
-// Minimal CLI command parsing to embrace that booting this binary to run the hub might have some flags like a log dir
-
 func Hub() *cobra.Command {
 	var port int
 	var shouldDaemonize bool
