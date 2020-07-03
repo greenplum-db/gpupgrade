@@ -310,7 +310,7 @@ func TestArchiveSource(t *testing.T) {
 
 		testutils.VerifyRename(t, source, target)
 
-		testutils.VerifyLogContains(t, testlog, "Source directory does not exist")
+		testutils.VerifyLogContains(t, testlog, "Source directory not found")
 	})
 }
 

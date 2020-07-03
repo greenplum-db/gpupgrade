@@ -84,7 +84,7 @@ func GetArchiveDirectoryName(id ID, t time.Time) string {
 	return fmt.Sprintf("gpupgrade-%s-%s", id.String(), t.Format("2006-01-02T15:04"))
 }
 
-// ArchiveSourceAndRenameTarget archives the source directory, and renames
+// ArchiveSource archives the source directory, and renames
 // source to target. For example:
 //   source '/data/dbfast1/demoDataDir0' becomes archive '/data/dbfast1/demoDataDir.123ABC.0.old'
 //   target '/data/dbfast1/demoDataDir.123ABC.0' becomes source '/data/dbfast1/demoDataDir0'
@@ -105,7 +105,7 @@ func ArchiveSource(source, target string, renameTarget bool) error {
 			return err
 		}
 	} else {
-		gplog.Debug("Renaming '%q' to '%q'. Source directory does not exist. It was already renamed from a previous re-run.", source, archive)
+		gplog.Debug("Source directory not found when renaming %q to %q. It was already renamed from a previous run.", source, archive)
 	}
 
 	// In link mode mirrors have been deleted to save disk space, so there is
