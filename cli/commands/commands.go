@@ -570,11 +570,7 @@ func revert() *cobra.Command {
 		Short: "reverts the upgrade and returns the cluster to its original state",
 		Long:  RevertHelp,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// If we got here, the args are okay and the user doesn't need a usage
-			// dump on failure.
-			cmd.SilenceUsage = true
 			client := connectToHub()
-
 			response, err := commanders.Revert(client, verbose)
 			if err != nil {
 				gplog.Error(err.Error())
