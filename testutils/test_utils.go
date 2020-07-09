@@ -187,14 +187,18 @@ func SetEnv(t *testing.T, envar, value string) func() {
 }
 
 func VerifyLogContains(t *testing.T, testlog *gbytes.Buffer, expected string) {
+	t.Helper()
 	verifyLog(t, testlog, expected, true)
 }
 
 func VerifyLogDoesNotContain(t *testing.T, testlog *gbytes.Buffer, expected string) {
+	t.Helper()
 	verifyLog(t, testlog, expected, false)
 }
 
 func verifyLog(t *testing.T, testlog *gbytes.Buffer, expected string, shouldContain bool) {
+	t.Helper()
+
 	text := "to not contain"
 	if shouldContain {
 		text = "to contain"
