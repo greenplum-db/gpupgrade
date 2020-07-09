@@ -94,12 +94,12 @@ teardown() {
 @test "initialize accepts a port range" {
     # We need to have enough ports available for the master, standby, and
     # mirrors. As usual in these tests, we assume a standard demo cluster.
-    # XXX: GPDB 5 demo cluster uses port 15432 by default so pick 35432 to avoid
-    # port conflict with new target cluster.
-    local expected_ports="35432,35434,35435,35436"
-    local mirror_ports="35437,35438,35439"
-    local standby_port=35433
-    local newport=35432
+    # XXX: GPDB 5 demo cluster uses port 15432 by default so pick ports
+    # not in the ephemeral range that do not conflict with it.
+    local expected_ports="30432,30434,30435,30436"
+    local mirror_ports="30437,30438,30439"
+    local standby_port=30433
+    local newport=30432
 
     gpupgrade initialize \
         --verbose \
