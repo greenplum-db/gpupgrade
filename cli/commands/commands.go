@@ -858,43 +858,44 @@ Optional Flags:
   -v, --verbose   outputs detailed logs for revert
 `
 	GlobalHelp = `
-gpupgrade enables users to do an in-place cluster upgrade to the next major version.
-The default mode is copy, which creates a copy of the primary segments and performs the upgrade on the copies.
+gpupgrade performs an in-place cluster upgrade to the next major version.
+
+NOTE: Before running gpupgrade, you must prepare the cluster. Refer to
+release notes for instructions.
 
 Usage: gpupgrade [command] <flags> 
 
-Required Commands: gpupgrade is a three-step process
+Required Commands: Run the three commands in this order
 
-  1. initialize   runs through pre-upgrade checks and prepares the cluster for upgrade
+  1. initialize   runs pre-upgrade checks and prepares the cluster for upgrade
 
-                  Usage: gpupgrade initialize <flags>
+                  Usage: gpupgrade initialize --file </path/to/config_file>
 
                   Required Flags:
-                    --source-gphome        path for the source Greenplum installation
-                    --target-gphome        path for the target Greenplum installation
-                    --source-master-port   the master port for the source Greenplum installation
+                    -f, --file   config file containing upgrade parameters
+                                 (e.g. gpupgrade_config)
 
-                  Optional Flags:
-                    --mode [copy|link]     Upgrade mode to either copy source files to target or use hard links to modify data in place. Default is copy.
-                    --temp-port-range      the set of ports to use when initializing the target cluster
-                    --hub-port             the port gpupgrade hub uses to listen for commands on
-                    --agent-port           the port gpupgrade agent uses to listen for commands on
+  2. execute      upgrades the master and primary segments to the target
+                  Greenplum version
 
-  2. execute      upgrades the master and primary segments to the target Greenplum version
+  3. finalize     upgrades the standby master and mirror segments to the target
+                  Greenplum version
 
-  3. finalize     upgrades the standby master and mirror segments to the target Greenplum version
+Optional Commands:
+
+  revert          returns the cluster to its original state
+                  Note: revert cannot be used after gpupgrade finalize
 
 Optional Flags:
 
-  --disk-free-ratio    ratio of free space needed in order to run upgrade, range from 0.0 to 1.0
+  -h, --help      displays help output for gpupgrade
 
-  -h, --help           displays help output for gpupgrade
+  -v, --verbose   outputs detailed logs for gpupgrade
 
-  -v, --verbose        outputs detailed logs for gpupgrade
-
-  -V, --version        displays the version of the current gpupgrade utility
+  -V, --version   displays the version of the current gpupgrade utility
 
 Use "gpupgrade [command] --help" for more information about a command.
+
 `
 )
 
