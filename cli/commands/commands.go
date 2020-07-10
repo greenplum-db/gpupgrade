@@ -825,8 +825,11 @@ Optional Flags:
 	finalizeHelp = `
 Upgrades the standby master and mirror segments to the target Greenplum version.
 
-Finalize will carry out the following sub-steps:
+Finalize will carry out the following steps:
 %s
+
+Once you run gpupgrade finalize, you may not revert the cluster to its
+original state by running gpupgrade revert.
 
 Usage: gpupgrade finalize
 
@@ -835,6 +838,7 @@ Optional Flags:
   -h, --help      displays help output for finalize
 
   -v, --verbose   outputs detailed logs for finalize
+
 `
 	revertHelp = `
 Returns the cluster to its original state.
