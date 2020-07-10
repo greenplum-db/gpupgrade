@@ -5,10 +5,7 @@ package hub
 
 import (
 	"context"
-	"sync"
 
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
-	"github.com/hashicorp/go-multierror"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
@@ -84,36 +81,15 @@ func getRenameMap(source *greenplum.Cluster, target InitializeConfig, onlyRename
 // e.g. for source /data/dbfast1/demoDataDir0 becomes /data/dbfast1/demoDataDir0_old
 // e.g. for target /data/dbfast1/demoDataDir0_123ABC becomes /data/dbfast1/demoDataDir0
 func RenameSegmentDataDirs(agentConns []*Connection, renames RenameMap) error {
-	wg := sync.WaitGroup{}
-	errs := make(chan error, len(agentConns))
-
-	for _, conn := range agentConns {
-		conn := conn
-
+	request := func(conn *Connection) error {
 		if len(renames[conn.Hostname]) == 0 {
-			continue
+			return nil
 		}
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-
-			req := &idl.RenameDirectoriesRequest{Dirs: renames[conn.Hostname]}
-			_, err := conn.AgentClient.RenameDirectories(context.Background(), req)
-			if err != nil {
-				gplog.Error("renaming segment data directories on host %s: %s", conn.Hostname, err.Error())
-				errs <- err
-			}
-		}()
+		req := &idl.RenameDirectoriesRequest{Dirs: renames[conn.Hostname]}
+		_, err := conn.AgentClient.RenameDirectories(context.Background(), req)
+		return err
 	}
 
-	wg.Wait()
-	close(errs)
-
-	var mErr *multierror.Error
-	for err := range errs {
-		mErr = multierror.Append(mErr, err)
-	}
-
-	return mErr.ErrorOrNil()
+	return ExecuteRPC(agentConns, request)
 }

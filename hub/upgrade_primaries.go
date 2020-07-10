@@ -8,9 +8,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"sort"
-	"sync"
 
-	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
@@ -30,42 +28,25 @@ type UpgradePrimaryArgs struct {
 }
 
 func UpgradePrimaries(args UpgradePrimaryArgs) error {
-	wg := sync.WaitGroup{}
+	request := func(conn *Connection) error {
+		_, err := conn.AgentClient.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{
+			SourceBinDir:               filepath.Join(args.Source.GPHome, "bin"),
+			TargetBinDir:               filepath.Join(args.Target.GPHome, "bin"),
+			TargetVersion:              args.Target.Version.SemVer.String(),
+			DataDirPairs:               args.DataDirPairMap[conn.Hostname],
+			CheckOnly:                  args.CheckOnly,
+			UseLinkMode:                args.UseLinkMode,
+			MasterBackupDir:            args.MasterBackupDir,
+			TablespacesMappingFilePath: args.TablespacesMappingFile,
+		})
+		if err != nil {
+			return xerrors.Errorf("upgrade primary segment on host %s: %w", conn.Hostname, err)
+		}
 
-	agentErrs := make(chan error, len(args.AgentConns))
-	for _, conn := range args.AgentConns {
-		wg.Add(1)
-
-		go func(conn *Connection) {
-			defer wg.Done()
-
-			_, err := conn.AgentClient.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{
-				SourceBinDir:               filepath.Join(args.Source.GPHome, "bin"),
-				TargetBinDir:               filepath.Join(args.Target.GPHome, "bin"),
-				TargetVersion:              args.Target.Version.SemVer.String(),
-				DataDirPairs:               args.DataDirPairMap[conn.Hostname],
-				CheckOnly:                  args.CheckOnly,
-				UseLinkMode:                args.UseLinkMode,
-				MasterBackupDir:            args.MasterBackupDir,
-				TablespacesMappingFilePath: args.TablespacesMappingFile,
-			})
-
-			if err != nil {
-				agentErrs <- xerrors.Errorf("upgrade primary segment on host %s: %w", conn.Hostname, err)
-			}
-		}(conn)
+		return nil
 	}
 
-	wg.Wait()
-	close(agentErrs)
-
-	var err error
-
-	for agentErr := range agentErrs {
-		err = multierror.Append(err, agentErr)
-	}
-
-	return err
+	return ExecuteRPC(args.AgentConns, request)
 }
 
 // ErrInvalidCluster is returned by GetDataDirPairs if the source and target

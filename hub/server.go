@@ -144,47 +144,29 @@ func (s *Server) StopServices(ctx context.Context, in *idl.StopServicesRequest) 
 // TODO: add unit tests for this; this is currently tricky due to h.AgentConns()
 //    mutating global state
 func (s *Server) StopAgents() error {
+	request := func(conn *Connection) error {
+		_, err := conn.AgentClient.StopAgent(context.Background(), &idl.StopAgentRequest{})
+		if err == nil { // no error means the agent did not terminate as expected
+			return xerrors.Errorf("failed to stop agent on host: %s", conn.Hostname)
+		}
+
+		// XXX: "transport is closing" is not documented but is needed to uniquely interpret codes.Unavailable
+		// https://github.com/grpc/grpc/blob/v1.24.0/doc/statuscodes.md
+		errStatus := grpcStatus.Convert(err)
+		if errStatus.Code() != codes.Unavailable || errStatus.Message() != "transport is closing" {
+			return xerrors.Errorf("failed to stop agent on host %s : %w", conn.Hostname, err)
+		}
+
+		return nil
+	}
+
 	// FIXME: s.AgentConns() fails fast if a single agent isn't available
 	//    we need to connect to all available agents so we can stop just those
 	_, err := s.AgentConns()
 	if err != nil {
 		return err
 	}
-
-	var wg sync.WaitGroup
-	errs := make(chan error, len(s.agentConns))
-
-	for _, conn := range s.agentConns {
-		conn := conn
-
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-
-			_, err := conn.AgentClient.StopAgent(context.Background(), &idl.StopAgentRequest{})
-			if err == nil { // no error means the agent did not terminate as expected
-				errs <- xerrors.Errorf("failed to stop agent on host: %s", conn.Hostname)
-				return
-			}
-
-			// XXX: "transport is closing" is not documented but is needed to uniquely interpret codes.Unavailable
-			// https://github.com/grpc/grpc/blob/v1.24.0/doc/statuscodes.md
-			errStatus := grpcStatus.Convert(err)
-			if errStatus.Code() != codes.Unavailable || errStatus.Message() != "transport is closing" {
-				errs <- xerrors.Errorf("failed to stop agent on host %s : %w", conn.Hostname, err)
-			}
-		}()
-	}
-
-	wg.Wait()
-	close(errs)
-
-	var multiErr *multierror.Error
-	for err := range errs {
-		multiErr = multierror.Append(multiErr, err)
-	}
-
-	return multiErr.ErrorOrNil()
+	return ExecuteRPC(s.agentConns, request)
 }
 
 func (s *Server) Stop(closeAgentConns bool) {

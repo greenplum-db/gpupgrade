@@ -4,10 +4,6 @@
 package hub
 
 import (
-	"sync"
-
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
-	"github.com/hashicorp/go-multierror"
 	"golang.org/x/net/context"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
@@ -23,13 +19,8 @@ func DeletePrimaryDataDirectories(agentConns []*Connection, cluster *greenplum.C
 }
 
 func deleteDataDirectories(agentConns []*Connection, cluster *greenplum.Cluster, primaries bool) error {
-	wg := sync.WaitGroup{}
-	errChan := make(chan error, len(agentConns))
-
-	for _, conn := range agentConns {
-		conn := conn
-
-		filterFunc := func(seg *greenplum.SegConfig) bool {
+	request := func(conn *Connection) error {
+		segs := cluster.SelectSegments(func(seg *greenplum.SegConfig) bool {
 			if seg.Hostname != conn.Hostname {
 				return false
 			}
@@ -38,40 +29,22 @@ func deleteDataDirectories(agentConns []*Connection, cluster *greenplum.Cluster,
 				return seg.IsPrimary()
 			}
 			return seg.Role == greenplum.MirrorRole
-		}
+		})
 
-		segments := cluster.SelectSegments(filterFunc)
-		if len(segments) == 0 {
+		if len(segs) == 0 {
 			// This can happen if there are no segments matching the filter on a host
-			continue
+			return nil
 		}
 
-		wg.Add(1)
-		go func(c *Connection) {
-			defer wg.Done()
+		req := new(idl.DeleteDataDirectoriesRequest)
+		for _, seg := range segs {
+			datadir := seg.DataDir
+			req.Datadirs = append(req.Datadirs, datadir)
+		}
 
-			req := new(idl.DeleteDataDirectoriesRequest)
-			for _, seg := range segments {
-				datadir := seg.DataDir
-				req.Datadirs = append(req.Datadirs, datadir)
-			}
-
-			_, err := c.AgentClient.DeleteDataDirectories(context.Background(), req)
-			if err != nil {
-				gplog.Error("Error deleting data directories on host %s: %s",
-					c.Hostname, err.Error())
-				errChan <- err
-			}
-		}(conn)
+		_, err := conn.AgentClient.DeleteDataDirectories(context.Background(), req)
+		return err
 	}
 
-	wg.Wait()
-	close(errChan)
-
-	var mErr *multierror.Error
-	for err := range errChan {
-		mErr = multierror.Append(mErr, err)
-	}
-
-	return mErr.ErrorOrNil()
+	return ExecuteRPC(agentConns, request)
 }

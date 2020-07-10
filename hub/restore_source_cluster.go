@@ -89,51 +89,34 @@ func RsyncMaster(stream step.OutStreams, standby greenplum.SegConfig, master gre
 }
 
 func RsyncPrimaries(agentConns []*Connection, source *greenplum.Cluster) error {
-	var wg sync.WaitGroup
-	errs := make(chan error, len(agentConns))
+	request := func(conn *Connection) error {
+		mirrors := source.SelectSegments(func(seg *greenplum.SegConfig) bool {
+			return seg.IsOnHost(conn.Hostname) && !seg.IsStandby() && seg.IsMirror()
+		})
 
-	for _, conn := range agentConns {
-		conn := conn
+		if len(mirrors) == 0 {
+			return nil
+		}
 
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-
-			mirrors := source.SelectSegments(func(seg *greenplum.SegConfig) bool {
-				return seg.IsOnHost(conn.Hostname) && !seg.IsStandby() && seg.IsMirror()
-			})
-			if len(mirrors) == 0 {
-				return
+		var pairs []*idl.RsyncPair
+		for _, mirror := range mirrors {
+			pair := &idl.RsyncPair{
+				Source:      mirror.DataDir + string(os.PathSeparator),
+				RemoteHost:  source.Primaries[mirror.ContentID].Hostname,
+				Destination: source.Primaries[mirror.ContentID].DataDir,
 			}
+			pairs = append(pairs, pair)
+		}
 
-			var pairs []*idl.RsyncPair
-			for _, mirror := range mirrors {
-				pair := &idl.RsyncPair{
-					Source:      mirror.DataDir + string(os.PathSeparator),
-					RemoteHost:  source.Primaries[mirror.ContentID].Hostname,
-					Destination: source.Primaries[mirror.ContentID].DataDir,
-				}
-				pairs = append(pairs, pair)
-			}
+		req := &idl.RsyncRequest{
+			Options:  Options,
+			Excludes: Excludes,
+			Pairs:    pairs,
+		}
 
-			req := &idl.RsyncRequest{
-				Options:  Options,
-				Excludes: Excludes,
-				Pairs:    pairs,
-			}
-
-			_, err := conn.AgentClient.Rsync(context.Background(), req)
-			errs <- err
-		}()
+		_, err := conn.AgentClient.Rsync(context.Background(), req)
+		return err
 	}
 
-	wg.Wait()
-	close(errs)
-
-	var mErr *multierror.Error
-	for err := range errs {
-		mErr = multierror.Append(mErr, err)
-	}
-
-	return mErr.ErrorOrNil()
+	return ExecuteRPC(agentConns, request)
 }
