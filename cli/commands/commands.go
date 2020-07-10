@@ -782,36 +782,27 @@ func stopHubAndAgents(tryDefaultPort bool) error {
 
 const (
 	initializeHelp = `
-Runs through pre-upgrade checks and prepares the cluster for upgrade.
+Runs pre-upgrade checks and prepares the cluster for upgrade.
 
-Initialize will carry out the following sub-steps:
+Initialize will carry out the following steps:
 %s
 
-Usage: gpupgrade initialize <flags>
+During or after gpupgrade initialize, you may revert the cluster to its
+original state by running gpupgrade revert.
+
+Usage: gpupgrade initialize --file <path/to/config_file>
 
 Required Flags:
 
-  --source-gphome         path for the source Greenplum installation
-
-  --target-gphome         path for the target Greenplum installation
-
-  --source-master-port    the master port for the source Greenplum installation
+  -f, --file      config file containing upgrade parameters
+                  (e.g. gpupgrade_config)
 
 Optional Flags:
 
-      --disk-free-ratio    ratio of free space needed in order to run upgrade, range from 0.0 to 1.0
+  -h, --help      displays help output for initialize
 
-  -h, --help               displays help output for initialize
+  -v, --verbose   outputs detailed logs for initialize
 
-      --mode [copy|link]   Upgrade mode to either copy source files to target or use hard links to modify data in place. Default is copy.
-
-      --temp-port-range    the set of ports to use when initializing the target cluster
-
-      --hub-port           the port gpupgrade hub uses to listen for commands on
-
-      --agent-port         the port gpupgrade agent uses to listen for commands on
-
-  -v, --verbose            outputs detailed logs for initialize
 `
 	executeHelp = `
 Upgrades the master and primary segments to the target Greenplum version.
