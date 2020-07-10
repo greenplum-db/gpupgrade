@@ -807,8 +807,11 @@ Optional Flags:
 	executeHelp = `
 Upgrades the master and primary segments to the target Greenplum version.
 
-Execute will carry out the following sub-steps:
+Execute will carry out the following steps:
 %s
+
+During or after gpupgrade execute, you may revert the cluster to its
+original state by running gpupgrade revert.
 
 Usage: gpupgrade execute
 
@@ -817,6 +820,7 @@ Optional Flags:
   -h, --help      displays help output for execute
 
   -v, --verbose   outputs detailed logs for execute
+
 `
 	finalizeHelp = `
 Upgrades the standby master and mirror segments to the target Greenplum version.
