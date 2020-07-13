@@ -366,6 +366,7 @@ type Config struct {
 	// dbid and tablespace oid
 	Tablespaces                greenplum.Tablespaces
 	TablespacesMappingFilePath string
+	TargetCatalogVersion       string
 }
 
 func (c *Config) Load(r io.Reader) error {

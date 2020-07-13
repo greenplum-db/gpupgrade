@@ -5,6 +5,7 @@ package hub
 
 import (
 	"database/sql/driver"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -30,10 +31,24 @@ func gpinitsystem_Exits1() {
 	os.Exit(1)
 }
 
+func pg_controldata() {
+	os.Stdout.WriteString(`
+pg_control version number:            9420600
+Catalog version number:               301908232
+Database system identifier:           6849079892457217099
+Database cluster state:               in production
+pg_control last modified:             Mon Jul 13 14:36:28 2020
+Latest checkpoint location:           0/180001D0
+Prior checkpoint location:            0/18000150
+Latest checkpoint's REDO location:    0/180001D0
+`)
+}
+
 func init() {
 	exectest.RegisterMains(
 		gpinitsystem,
 		gpinitsystem_Exits1,
+		pg_controldata,
 	)
 }
 
@@ -263,6 +278,61 @@ func TestGetMasterSegPrefix(t *testing.T) {
 			if err == nil {
 				t.Fatalf("got nil, want err")
 			}
+		}
+	})
+}
+
+func TestGetCatalogVersion(t *testing.T) {
+	testhelper.SetupTestLogger()
+
+	gphome := "/usr/local/target"
+	datadir := "/data/qddir_upgrade/seg-1"
+
+	t.Run("returns catalog version", func(t *testing.T) {
+		SetExecCommand(exectest.NewCommand(pg_controldata))
+		defer ResetExecCommand()
+
+		version, err := GetCatalogVersion(step.DevNullStream, gphome, datadir)
+		if err != nil {
+			t.Errorf("GetCatalogVersion returned error %+v", err)
+		}
+
+		expected := "301908232"
+		if version != expected {
+			t.Errorf("got %s want %s", version, expected)
+		}
+	})
+
+	t.Run("errors when pg_controldata fails", func(t *testing.T) {
+		SetExecCommand(exectest.NewCommand(Failure))
+		defer ResetExecCommand()
+
+		version, err := GetCatalogVersion(step.DevNullStream, gphome, datadir)
+		var exitErr *exec.ExitError
+		if !errors.As(err, &exitErr) {
+			t.Fatalf("got error %#v want %T", err, exitErr)
+		}
+
+		if exitErr.ExitCode() != 1 {
+			t.Errorf("got exit code %d want 1", exitErr.ExitCode())
+		}
+
+		if version != "" {
+			t.Errorf("got version %s want empty string", version)
+		}
+	})
+
+	t.Run("errors when catalog version is not found", func(t *testing.T) {
+		SetExecCommand(exectest.NewCommand(Success))
+		defer ResetExecCommand()
+
+		version, err := GetCatalogVersion(step.DevNullStream, gphome, datadir)
+		if !errors.Is(err, ErrUnknownCatalogVersion) {
+			t.Errorf("got error %#v want %#v", err, ErrUnknownCatalogVersion)
+		}
+
+		if version != "" {
+			t.Errorf("got version %s want empty string", version)
 		}
 	})
 }

@@ -4,13 +4,17 @@
 package hub
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"path"
 	"path/filepath"
 	"strings"
 
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
+	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
@@ -18,6 +22,8 @@ import (
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/step"
 )
+
+var ErrUnknownCatalogVersion = errors.New("pg_controldata output is missing catalog version")
 
 func (s *Server) GenerateInitsystemConfig() error {
 	sourceDBConn := db.NewDBConn("localhost", int(s.Source.MasterPort()), "template1")
@@ -188,4 +194,44 @@ func GetMasterSegPrefix(datadir string) (string, error) {
 		return "", fmt.Errorf("path has no segment prefix: '%s'", datadir)
 	}
 	return segPrefix, nil
+}
+
+func GetCatalogVersion(stream step.OutStreams, gphome, datadir string) (string, error) {
+	utility := filepath.Join(gphome, "bin", "pg_controldata")
+	cmd := execCommand(utility, datadir)
+
+	// Buffer stdout to parse pg_controldata
+	stdout := new(bytes.Buffer)
+	tee := io.MultiWriter(stream.Stdout(), stdout)
+
+	cmd.Stdout = tee
+	cmd.Stderr = stream.Stderr()
+
+	gplog.Debug("determining catalog version with %s", cmd.String())
+	if err := cmd.Run(); err != nil {
+		return "", err
+	}
+
+	// parse pg_control data
+	var version string
+	prefix := "Catalog version number:"
+
+	scanner := bufio.NewScanner(stdout)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, prefix) {
+			line = strings.TrimPrefix(line, prefix)
+			version = strings.TrimSpace(line)
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return "", xerrors.Errorf("scanning pg_controldata: %w", err)
+	}
+
+	if version == "" {
+		return "", ErrUnknownCatalogVersion
+	}
+
+	return version, nil
 }

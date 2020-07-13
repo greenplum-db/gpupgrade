@@ -78,7 +78,21 @@ func (s *Server) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest,
 	})
 
 	st.Run(idl.Substep_INIT_TARGET_CLUSTER, func(stream step.OutStreams) error {
-		return s.CreateTargetCluster(stream)
+		err := s.CreateTargetCluster(stream)
+		if err != nil {
+			return err
+		}
+
+		// Persist target catalog version which is needed to revert tablespaces.
+		// We do this right after target cluster creation since during revert the
+		// state of the cluster is unknown.
+		version, err := GetCatalogVersion(stream, s.Target.GPHome, s.Target.MasterDataDir())
+		if err != nil {
+			return err
+		}
+
+		s.TargetCatalogVersion = version
+		return s.SaveConfig()
 	})
 
 	st.Run(idl.Substep_SHUTDOWN_TARGET_CLUSTER, func(stream step.OutStreams) error {
