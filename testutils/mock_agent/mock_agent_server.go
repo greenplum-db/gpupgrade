@@ -98,6 +98,11 @@ func (m *MockAgentServer) DeleteStateDirectory(context.Context, *idl.DeleteState
 	return &idl.DeleteStateDirectoryReply{}, nil
 }
 
+func (m *MockAgentServer) DeleteTablespaceDirectories(context.Context, *idl.DeleteTablespaceRequest) (*idl.DeleteTablespaceReply, error) {
+	m.increaseCalls()
+	return &idl.DeleteTablespaceReply{}, nil
+}
+
 func (m *MockAgentServer) ArchiveLogDirectory(context.Context, *idl.ArchiveLogDirectoryRequest) (*idl.ArchiveLogDirectoryReply, error) {
 	m.increaseCalls()
 	return &idl.ArchiveLogDirectoryReply{}, nil

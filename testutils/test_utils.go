@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -208,4 +209,40 @@ func verifyLog(t *testing.T, testlog *gbytes.Buffer, expected string, shouldCont
 	if shouldContain && !strings.Contains(contents, expected) {
 		t.Errorf("\nexpected log: %q\n%s:   %q", contents, text, expected)
 	}
+}
+
+// MustMakeTablespaceDir returns a temporary tablespace directory, its parent
+// dbId directory, and its grandparent tablespace location. The location should
+// be removed for cleanup.
+func MustMakeTablespaceDir(t *testing.T, tablespaceOid int) (string, string, string) {
+	t.Helper()
+
+	// ex: /filespace/demoDataDir0
+	filespace := os.TempDir()
+
+	// ex: /filespace/demoDataDir0/16386
+	if tablespaceOid == 0 {
+		tablespaceOid = 16386
+	}
+	location := filepath.Join(filespace, strconv.Itoa(tablespaceOid))
+	err := os.MkdirAll(location, 0700)
+	if err != nil {
+		t.Fatalf("creating tablespace location directory: %v", err)
+	}
+
+	// ex: /filespace/demoDataDir0/16386/1
+	dbID := filepath.Join(location, "1")
+	err = os.MkdirAll(dbID, 0700)
+	if err != nil {
+		t.Fatalf("creating tablespace dbId directory: %v", err)
+	}
+
+	// ex: /filespace/demoDataDir0/16386/1/GPDB_6_301908232
+	tablespace := filepath.Join(dbID, "GPDB_6_301908232")
+	err = os.MkdirAll(tablespace, 0700)
+	if err != nil {
+		t.Fatalf("creating tablespace directory: %v", err)
+	}
+
+	return tablespace, dbID, location
 }

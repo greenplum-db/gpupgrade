@@ -14,6 +14,7 @@ service Agent {
   rpc StopAgent (StopAgentRequest) returns (StopAgentReply) {}
   rpc DeleteDataDirectories (DeleteDataDirectoriesRequest) returns (DeleteDataDirectoriesReply) {}
   rpc DeleteStateDirectory (DeleteStateDirectoryRequest) returns (DeleteStateDirectoryReply) {}
+  rpc DeleteTablespaceDirectories (DeleteTablespaceRequest) returns (DeleteTablespaceReply) {}
   rpc ArchiveLogDirectory (ArchiveLogDirectoryRequest) returns (ArchiveLogDirectoryReply) {}
   rpc Rsync (RsyncRequest) returns (RsyncReply) {}
 }
@@ -54,6 +55,11 @@ message DeleteDataDirectoriesReply {}
 
 message DeleteStateDirectoryRequest {}
 message DeleteStateDirectoryReply {}
+
+message DeleteTablespaceRequest {
+  repeated string dirs = 1;
+}
+message DeleteTablespaceReply {}
 
 message ArchiveLogDirectoryRequest {
     string NewDir = 1;

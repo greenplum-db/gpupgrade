@@ -444,6 +444,205 @@ func TestDeleteDirectories(t *testing.T) {
 	})
 }
 
+func TestTablespacePath(t *testing.T) {
+	t.Run("returns correct path", func(t *testing.T) {
+		path := upgrade.TablespacePath("/tmp/testfs/master/demoDataDir-1/16386", 1, 6, "301908232")
+		expected := "/tmp/testfs/master/demoDataDir-1/16386/1/GPDB_6_301908232"
+		if path != expected {
+			t.Errorf("got %q want %q", path, expected)
+		}
+	})
+}
+
+// The default tablespace permissions with execute set to allow access to children
+// directories and files.
+const userRWX = 0700
+
+func TestDeleteTablespaceDirectories(t *testing.T) {
+	utils.System.Hostname = func() (s string, err error) {
+		return "", nil
+	}
+	defer func() {
+		utils.System.Hostname = os.Hostname
+	}()
+
+	t.Run("deletes parent dbid directory when it's empty", func(t *testing.T) {
+		tablespaceDir, dbIdDir, tsLocation := testutils.MustMakeTablespaceDir(t, 0)
+		defer testutils.MustRemoveAll(t, tsLocation)
+
+		err := upgrade.DeleteNewTablespaceDirectories(step.DevNullStream, []string{tablespaceDir})
+		if err != nil {
+			t.Errorf("DeleteNewTablespaceDirectories returned error %+v", err)
+		}
+
+		if upgrade.PathExists(tablespaceDir) {
+			t.Errorf("expected directory %q to be deleted", tablespaceDir)
+		}
+
+		if upgrade.PathExists(dbIdDir) {
+			t.Errorf("expected parent dbid directory %q to be deleted", dbIdDir)
+		}
+	})
+
+	t.Run("does not delete parent dbid directory when it's not empty", func(t *testing.T) {
+		tablespaceDir, dbIdDir, tsLocation := testutils.MustMakeTablespaceDir(t, 0)
+		defer testutils.MustRemoveAll(t, tsLocation)
+
+		relfileNode := filepath.Join(dbIdDir, "16389")
+		testutils.MustWriteToFile(t, relfileNode, "")
+
+		err := upgrade.DeleteNewTablespaceDirectories(step.DevNullStream, []string{tablespaceDir})
+		if err != nil {
+			t.Errorf("DeleteNewTablespaceDirectories returned error %+v", err)
+		}
+
+		if upgrade.PathExists(tablespaceDir) {
+			t.Errorf("expected directory %q to be deleted", tablespaceDir)
+		}
+
+		if !upgrade.PathExists(dbIdDir) {
+			t.Errorf("expected parent dbid directory %q to not be deleted", dbIdDir)
+		}
+	})
+
+	t.Run("deletes multiple tablespace directories including their parent dbid directory when empty", func(t *testing.T) {
+		type TablespaceDirs struct {
+			tablespaceDir string
+			dbIdDir       string
+		}
+		var dirs []TablespaceDirs
+		var tsDirs []string
+
+		tablespaceOids := []int{16386, 16387, 16388}
+		for _, oid := range tablespaceOids {
+			tablespaceDir, dbIdDir, tsLocation := testutils.MustMakeTablespaceDir(t, oid)
+			defer testutils.MustRemoveAll(t, tsLocation)
+
+			dirs = append(dirs, TablespaceDirs{tablespaceDir, dbIdDir})
+			tsDirs = append(tsDirs, tablespaceDir)
+		}
+
+		err := upgrade.DeleteNewTablespaceDirectories(step.DevNullStream, tsDirs)
+		if err != nil {
+			t.Errorf("DeleteNewTablespaceDirectories returned error %+v", err)
+		}
+
+		for _, dir := range dirs {
+			if upgrade.PathExists(dir.tablespaceDir) {
+				t.Errorf("expected directory %q to be deleted", dir.tablespaceDir)
+			}
+
+			if upgrade.PathExists(dir.dbIdDir) {
+				t.Errorf("expected parent dbid directory %q to be deleted", dir.dbIdDir)
+			}
+		}
+	})
+
+	t.Run("errors when tablespace directory can't be deleted", func(t *testing.T) {
+		tablespaceDir, dbIdDir, tsLocation := testutils.MustMakeTablespaceDir(t, 0)
+		defer func() {
+			err := os.Chmod(dbIdDir, userRWX)
+			if err != nil {
+				t.Fatalf("making parent dbId directory writeable: %v", err)
+			}
+			testutils.MustRemoveAll(t, tsLocation)
+		}()
+
+		// Set parent dbid directory to read only so its children cannot be
+		// removed.
+		err := os.Chmod(dbIdDir, 0500)
+		if err != nil {
+			t.Fatalf("making parent dbID directory read only: %v", err)
+		}
+
+		err = upgrade.DeleteNewTablespaceDirectories(step.DevNullStream, []string{tablespaceDir})
+		var multiErr *multierror.Error
+		if !errors.As(err, &multiErr) {
+			t.Fatalf("got error %#v want type %T", err, multiErr)
+		}
+
+		if len(multiErr.Errors) != 1 {
+			t.Errorf("received %d errors, want %d", len(multiErr.Errors), 1)
+		}
+
+		for _, err := range multiErr.Errors {
+			if !errors.Is(err, os.ErrPermission) {
+				t.Errorf("got error %#v want %#v", err, os.ErrPermission)
+			}
+		}
+
+		if !upgrade.PathExists(tablespaceDir) {
+			t.Errorf("expected directory %q to not be deleted", tablespaceDir)
+		}
+
+		if !upgrade.PathExists(dbIdDir) {
+			t.Errorf("expected parent dbid directory %q to not be deleted", dbIdDir)
+		}
+	})
+
+	t.Run("errors when failing to read parent dbid directory", func(t *testing.T) {
+		tablespaceDir, dbIdDir, tsLocation := testutils.MustMakeTablespaceDir(t, 0)
+		defer func() {
+			err := os.Chmod(dbIdDir, userRWX)
+			if err != nil {
+				t.Fatalf("making parent dbId directory writeable: %v", err)
+			}
+			testutils.MustRemoveAll(t, tsLocation)
+		}()
+
+		// Set parent dbid directory to write and execute to allow its children
+		// to be removed, but does not allow its contents to be read.
+		err := os.Chmod(dbIdDir, 0300)
+		if err != nil {
+			t.Fatalf("making parent directory read only: %v", err)
+		}
+
+		err = upgrade.DeleteNewTablespaceDirectories(step.DevNullStream, []string{tablespaceDir})
+		if !errors.Is(err, os.ErrPermission) {
+			t.Errorf("got error %#v want %#v", err, os.ErrPermission)
+		}
+
+		if upgrade.PathExists(tablespaceDir) {
+			t.Errorf("expected directory %q to be deleted", tablespaceDir)
+		}
+
+		if !upgrade.PathExists(dbIdDir) {
+			t.Errorf("expected parent dbid directory %q to not be deleted", dbIdDir)
+		}
+	})
+
+	t.Run("errors when failing to remove parent dbid directory", func(t *testing.T) {
+		tablespaceDir, dbIdDir, tsLocation := testutils.MustMakeTablespaceDir(t, 0)
+		defer func() {
+			err := os.Chmod(tsLocation, userRWX)
+			if err != nil {
+				t.Fatalf("making tablespace location writeable: %v", err)
+			}
+			testutils.MustRemoveAll(t, tsLocation)
+		}()
+
+		// Set tablespace location to read and execute to allow its children
+		// to be removed.
+		err := os.Chmod(tsLocation, 0500)
+		if err != nil {
+			t.Fatalf("making tablespace location directory read only: %v", err)
+		}
+
+		err = upgrade.DeleteNewTablespaceDirectories(step.DevNullStream, []string{tablespaceDir})
+		if !errors.Is(err, os.ErrPermission) {
+			t.Errorf("got error %#v want %#v", err, os.ErrPermission)
+		}
+
+		if upgrade.PathExists(tablespaceDir) {
+			t.Errorf("expected directory %q to be deleted", tablespaceDir)
+		}
+
+		if !upgrade.PathExists(dbIdDir) {
+			t.Errorf("expected parent dbid directory %q to not be deleted", dbIdDir)
+		}
+	})
+}
+
 func setupDirs(t *testing.T, subdirectories []string, requiredPaths []string) (tmpDir string, createdDirectories []string) {
 	var err error
 	tmpDir, err = ioutil.TempDir("", "")
@@ -461,7 +660,7 @@ func setupDirs(t *testing.T, subdirectories []string, requiredPaths []string) (t
 func createDataDir(t *testing.T, name, tmpDir string, requiredPaths []string) (dirPath string) {
 	dirPath = filepath.Join(tmpDir, name)
 
-	err := os.MkdirAll(dirPath, 0700)
+	err := os.MkdirAll(dirPath, userRWX)
 	if err != nil {
 		t.Errorf("error creating path: %v", err)
 	}

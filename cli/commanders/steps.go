@@ -52,6 +52,7 @@ var SubstepDescriptions = map[idl.Substep]substepText{
 	idl.Substep_UPDATE_TARGET_CONF_FILES:                 substepText{"Updating target master configuration files...", "Update target master configuration files"},
 	idl.Substep_UPGRADE_STANDBY:                          substepText{"Upgrading standby master...", "Upgrade standby master"},
 	idl.Substep_UPGRADE_MIRRORS:                          substepText{"Upgrading mirror segments...", "Upgrade mirror segments"},
+	idl.Substep_DELETE_TABLESPACES:                       substepText{"Deleting target tablespace directories...", "Delete target tablespace directories"},
 	idl.Substep_DELETE_PRIMARY_DATADIRS:                  substepText{"Deleting primary segment data directories...", "Delete primary segment data directories"},
 	idl.Substep_DELETE_MASTER_DATADIR:                    substepText{"Deleting master data directory...", "Delete master data directory"},
 	idl.Substep_DELETE_SEGMENT_STATEDIRS:                 substepText{"Deleting state directories on the segments...", "Delete state directories on the segments"},

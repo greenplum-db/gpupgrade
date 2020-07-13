@@ -90,6 +90,10 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 			datadir := s.TargetInitializeConfig.Master.DataDir
 			return upgrade.DeleteDirectories([]string{datadir}, upgrade.PostgresFiles, streams)
 		})
+
+		st.Run(idl.Substep_DELETE_TABLESPACES, func(streams step.OutStreams) error {
+			return DeleteTargetTablespaces(streams, s.agentConns, s.Config.Target, s.TargetCatalogVersion, s.Tablespaces)
+		})
 	}
 
 	var archiveDir string
