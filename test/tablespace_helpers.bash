@@ -7,6 +7,8 @@
 
 # This is 5X-only due to a bug in pg_upgrade for 6-6
 create_tablespace_with_table() {
+   local tablespace_table=${1:-batsTable}
+
     # the tablespace directory will get deleted when the STATE_DIR is deleted in teardown()
     TABLESPACE_ROOT="${STATE_DIR}"/testfs
     TABLESPACE_CONFIG="${TABLESPACE_ROOT}"/fs.txt
@@ -32,24 +34,28 @@ EOF
     # create a tablespace in said filespace and a table in that tablespace
     "${GPHOME_SOURCE}"/bin/psql -d postgres -v ON_ERROR_STOP=1 <<- EOF
 				CREATE TABLESPACE batsTbsp FILESPACE batsFS;
-				CREATE TABLE batsTable(a int) TABLESPACE batsTbsp;
-				INSERT INTO batsTable SELECT i from generate_series(1,100)i;
+				CREATE TABLE "$tablespace_table"(a int) TABLESPACE batsTbsp;
+				INSERT INTO "$tablespace_table" SELECT i from generate_series(1,100)i;
 EOF
 }
 
 # This is 5X-only
 delete_tablespace_data() {
+   local tablespace_table=${1:-batsTable}
+
     "${GPHOME_SOURCE}"/bin/psql -d postgres -v ON_ERROR_STOP=1 <<- EOF
-				DROP TABLE IF EXISTS batsTable;
+				DROP TABLE IF EXISTS "$tablespace_table";
 				DROP TABLESPACE IF EXISTS batsTbsp;
 				DROP FILESPACE IF EXISTS batsFS;
 EOF
 }
 
 check_tablespace_data() {
+    local tablespace_table=${1:-batsTable}
+
     local row_count
-    row_count=$("$GPHOME_TARGET"/bin/psql -d postgres -Atc "SELECT COUNT(*) FROM batsTable;")
+    row_count=$("$GPHOME_TARGET"/bin/psql -d postgres -Atc "SELECT COUNT(*) FROM \"$tablespace_table\";")
     if (( row_count != 100 )); then
-        fail "failed verifying tablespaces. batsTable got $rows want 100"
+        fail "failed verifying tablespaces. $tablespace_table got $rows want 100"
     fi
 }

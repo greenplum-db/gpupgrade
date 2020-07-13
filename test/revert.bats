@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load helpers
+load tablespace_helpers
+load teardown_helpers
 
 setup() {
     skip_if_no_gpdb
@@ -31,6 +33,8 @@ teardown() {
             rm -f "$datadir/${MARKER}"
         done
     fi
+
+    run_teardowns
 }
 
 @test "reverting after initialize succeeds" {
@@ -87,6 +91,13 @@ test_revert_after_execute() {
         touch "$datadir/${MARKER}"
     done
 
+    # Add a tablespace, which only works when upgrading from 5X.
+    if is_GPDB5 "$GPHOME_SOURCE"; then
+        local tablespace_table="tablespace_table"
+        create_tablespace_with_table "$tablespace_table"
+        register_teardown delete_tablespace_data "$tablespace_table"
+    fi
+
     # Add a table
     TABLE="should_be_reverted"
     $PSQL postgres -c "CREATE TABLE ${TABLE} (a INT)"
@@ -105,6 +116,12 @@ test_revert_after_execute() {
     # Modify the table on the target cluster
     $PSQL -p $target_master_port postgres -c "TRUNCATE ${TABLE}"
 
+    # Modify the table in the tablespace on the target cluster
+    # Note: tablespace only work when upgrading from 5X.
+    if is_GPDB5 "$GPHOME_SOURCE"; then
+        $PSQL -p $target_master_port postgres -c "TRUNCATE $tablespace_table"
+    fi
+
     # Revert
     gpupgrade revert --verbose
 
@@ -112,6 +129,10 @@ test_revert_after_execute() {
     row_count=$($PSQL postgres -Atc "SELECT COUNT(*) FROM ${TABLE}")
     if (( row_count != 3 )); then
         fail "table ${TABLE} truncated after execute was not reverted: got $row_count rows want 3"
+    fi
+
+    if is_GPDB5 "$GPHOME_SOURCE"; then
+        check_tablespace_data "$tablespace_table"
     fi
 
     # Verify marker files on primaries
