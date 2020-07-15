@@ -113,6 +113,11 @@ func (m *MockAgentServer) Rsync(context.Context, *idl.RsyncRequest) (*idl.RsyncR
 	return &idl.RsyncReply{}, nil
 }
 
+func (m *MockAgentServer) RsyncDataDirectories(context.Context, *idl.RsyncRequest) (*idl.RsyncReply, error) {
+	m.increaseCalls()
+	return &idl.RsyncReply{}, nil
+}
+
 func (m *MockAgentServer) StopAgent(ctx context.Context, in *idl.StopAgentRequest) (*idl.StopAgentReply, error) {
 	return &idl.StopAgentReply{}, nil
 }

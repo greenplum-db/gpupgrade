@@ -21,6 +21,8 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
+var ErrMissingMirrorsAndStandby = errors.New("Source cluster does not have mirrors and/or standby. Cannot restore source cluster. Please contact support.")
+
 func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) (err error) {
 	st, err := step.Begin(s.StateDir, idl.Step_REVERT, stream)
 	if err != nil {
@@ -75,7 +77,11 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 
 	if !running && s.UseLinkMode {
 		st.Run(idl.Substep_RESTORE_SOURCE_CLUSTER, func(stream step.OutStreams) error {
-			return RsyncMasterAndPrimaries(stream, s.agentConns, s.Source)
+			if err := RsyncMasterAndPrimaries(stream, s.agentConns, s.Source); err != nil {
+				return err
+			}
+
+			return RsyncMasterAndPrimariesTablespaces(stream, s.agentConns, s.Source, s.Tablespaces)
 		})
 	}
 

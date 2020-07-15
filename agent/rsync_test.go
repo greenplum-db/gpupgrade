@@ -43,7 +43,7 @@ func TestRsync(t *testing.T) {
 		testutils.MustWriteToFile(t, path, "")
 	}
 
-	t.Run("successfully rsyncs", func(t *testing.T) {
+	t.Run("successfully rsyncs data directories", func(t *testing.T) {
 		var options = []string{"--archive", "--compress", "--stats"}
 		var excludes = []string{"pg_hba.conf", "postmaster.opts"}
 
@@ -87,17 +87,16 @@ func TestRsync(t *testing.T) {
 			Excludes: excludes,
 		}
 
-		_, err := server.Rsync(context.Background(), request)
+		_, err := server.RsyncDataDirectories(context.Background(), request)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
 	})
 
-	t.Run("errors when source data directory is invalid", func(t *testing.T) {
+	t.Run("errors when source data directory is empty", func(t *testing.T) {
 		rsync.SetRsyncCommand(exectest.NewCommand(agent.Success))
 		defer rsync.ResetRsyncCommand()
 
-		// create invalid directory that omits postgres files
 		source := testutils.GetTempDir(t, "")
 		defer testutils.MustRemoveAll(t, source)
 
@@ -105,7 +104,36 @@ func TestRsync(t *testing.T) {
 			{Source: source, Destination: destination},
 		}}
 
-		_, err := server.Rsync(context.Background(), request)
+		_, err := server.RsyncDataDirectories(context.Background(), request)
+		if err == nil {
+			t.Errorf("expected an error")
+		}
+
+		var invalid *upgrade.InvalidDataDirectoryError
+		if !errors.As(invalid, &err) {
+			t.Errorf("got type %T want %T", err, invalid)
+		}
+	})
+
+	t.Run("errors when source data directory is invalid", func(t *testing.T) {
+		rsync.SetRsyncCommand(exectest.NewCommand(agent.Success))
+		defer rsync.ResetRsyncCommand()
+
+		dir := testutils.GetTempDir(t, "")
+		defer testutils.MustRemoveAll(t, dir)
+
+		// create invalid directory that omits postgres verification files
+		testutils.MustWriteToFile(t, filepath.Join(dir, "foo.txt"), "")
+		err := os.Mkdir(filepath.Join(dir, "bar"), 0700)
+		if err != nil {
+			t.Fatalf("creating bar directory: %v", err)
+		}
+
+		request := &idl.RsyncRequest{Pairs: []*idl.RsyncPair{
+			{Source: dir, Destination: destination},
+		}}
+
+		_, err = server.RsyncDataDirectories(context.Background(), request)
 		if err == nil {
 			t.Errorf("expected an error")
 		}
@@ -125,7 +153,7 @@ func TestRsync(t *testing.T) {
 			{Source: source, Destination: destination},
 		}}
 
-		_, err := server.Rsync(context.Background(), request)
+		_, err := server.RsyncDataDirectories(context.Background(), request)
 		if err == nil {
 			t.Error("expected error, returned nil")
 		}

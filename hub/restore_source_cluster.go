@@ -56,6 +56,33 @@ func RsyncMasterAndPrimaries(stream step.OutStreams, agentConns []*Connection, s
 	return mErr.ErrorOrNil()
 }
 
+func RsyncMasterAndPrimariesTablespaces(stream step.OutStreams, agentConns []*Connection, source *greenplum.Cluster, tablespaces greenplum.Tablespaces) error {
+	if !source.HasAllMirrorsAndStandby() {
+		return ErrMissingMirrorsAndStandby
+	}
+
+	var wg sync.WaitGroup
+	errs := make(chan error, 2)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		errs <- RsyncMasterTablespaces(stream, source.StandbyHostname(), tablespaces[source.Master().DbID], tablespaces[source.Standby().DbID])
+	}()
+
+	errs <- RsyncPrimariesTablespaces(agentConns, source, tablespaces)
+
+	wg.Wait()
+	close(errs)
+
+	var mErr *multierror.Error
+	for err := range errs {
+		mErr = multierror.Append(mErr, err)
+	}
+
+	return mErr.ErrorOrNil()
+}
+
 // Restoring the mirrors is needed in copy mode on 5X since the source cluster
 // is left in a bad state after execute. This is because running pg_upgrade on
 // a primary results in a checkpoint that does not get replicated on the mirror.
@@ -88,6 +115,29 @@ func RsyncMaster(stream step.OutStreams, standby greenplum.SegConfig, master gre
 	return rsync.Rsync(opts...)
 }
 
+func RsyncMasterTablespaces(stream step.OutStreams, standbyHostname string, masterTablespaces greenplum.SegmentTablespaces, standbyTablespaces greenplum.SegmentTablespaces) error {
+	for oid, masterTsInfo := range masterTablespaces {
+		if !masterTsInfo.IsUserDefined() {
+			continue
+		}
+
+		opts := []rsync.Option{
+			rsync.WithSourceHost(standbyHostname),
+			rsync.WithSources(standbyTablespaces[oid].Location + string(os.PathSeparator)),
+			rsync.WithDestination(masterTsInfo.Location),
+			rsync.WithOptions(Options...),
+			rsync.WithStream(stream),
+		}
+
+		err := rsync.Rsync(opts...)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func RsyncPrimaries(agentConns []*Connection, source *greenplum.Cluster) error {
 	request := func(conn *Connection) error {
 		mirrors := source.SelectSegments(func(seg *greenplum.SegConfig) bool {
@@ -106,6 +156,49 @@ func RsyncPrimaries(agentConns []*Connection, source *greenplum.Cluster) error {
 				Destination:     source.Primaries[mirror.ContentID].DataDir,
 			}
 			pairs = append(pairs, pair)
+		}
+
+		req := &idl.RsyncRequest{
+			Options:  Options,
+			Excludes: Excludes,
+			Pairs:    pairs,
+		}
+
+		_, err := conn.AgentClient.RsyncDataDirectories(context.Background(), req)
+		return err
+	}
+
+	return ExecuteRPC(agentConns, request)
+}
+
+func RsyncPrimariesTablespaces(agentConns []*Connection, source *greenplum.Cluster, tablespaces greenplum.Tablespaces) error {
+	request := func(conn *Connection) error {
+		mirrors := source.SelectSegments(func(seg *greenplum.SegConfig) bool {
+			return seg.IsOnHost(conn.Hostname) && !seg.IsStandby() && seg.IsMirror()
+		})
+
+		if len(mirrors) == 0 {
+			return nil
+		}
+
+		var pairs []*idl.RsyncPair
+		for _, mirror := range mirrors {
+			primary := source.Primaries[mirror.ContentID]
+
+			primaryTablespaces := tablespaces[primary.DbID]
+			mirrorTablespaces := tablespaces[mirror.DbID]
+			for oid, mirrorTsInfo := range mirrorTablespaces {
+				if !mirrorTsInfo.IsUserDefined() {
+					continue
+				}
+
+				pair := &idl.RsyncPair{
+					Source:          mirrorTsInfo.Location + string(os.PathSeparator),
+					DestinationHost: primary.Hostname,
+					Destination:     primaryTablespaces[oid].Location,
+				}
+				pairs = append(pairs, pair)
+			}
 		}
 
 		req := &idl.RsyncRequest{

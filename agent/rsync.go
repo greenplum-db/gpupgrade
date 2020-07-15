@@ -16,8 +16,8 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
 
-func (s *Server) Rsync(ctx context.Context, in *idl.RsyncRequest) (*idl.RsyncReply, error) {
-	gplog.Info("agent received request to rsync from source to destination")
+func (s *Server) RsyncDataDirectories(ctx context.Context, in *idl.RsyncRequest) (*idl.RsyncReply, error) {
+	gplog.Info("agent received request to rsync data directories")
 
 	// verify source data directories
 	var mErr *multierror.Error
@@ -31,7 +31,17 @@ func (s *Server) Rsync(ctx context.Context, in *idl.RsyncRequest) (*idl.RsyncRep
 		return &idl.RsyncReply{}, mErr
 	}
 
-	// rsync source data directories to destination
+	return &idl.RsyncReply{}, rsyncRequestDirs(in)
+}
+
+func (s *Server) Rsync(ctx context.Context, in *idl.RsyncRequest) (*idl.RsyncReply, error) {
+	gplog.Info("agent received request to rsync from source to destination")
+
+	return &idl.RsyncReply{}, rsyncRequestDirs(in)
+}
+
+func rsyncRequestDirs(in *idl.RsyncRequest) error {
+	var mErr *multierror.Error
 	var wg sync.WaitGroup
 	errs := make(chan error, len(in.Pairs))
 
@@ -60,5 +70,5 @@ func (s *Server) Rsync(ctx context.Context, in *idl.RsyncRequest) (*idl.RsyncRep
 		mErr = multierror.Append(mErr, err)
 	}
 
-	return &idl.RsyncReply{}, mErr.ErrorOrNil()
+	return mErr.ErrorOrNil()
 }

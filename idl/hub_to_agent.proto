@@ -16,6 +16,7 @@ service Agent {
   rpc DeleteStateDirectory (DeleteStateDirectoryRequest) returns (DeleteStateDirectoryReply) {}
   rpc DeleteTablespaceDirectories (DeleteTablespaceRequest) returns (DeleteTablespaceReply) {}
   rpc ArchiveLogDirectory (ArchiveLogDirectoryRequest) returns (ArchiveLogDirectoryReply) {}
+  rpc RsyncDataDirectories (RsyncRequest) returns (RsyncReply) {}
   rpc Rsync (RsyncRequest) returns (RsyncReply) {}
 }
 
