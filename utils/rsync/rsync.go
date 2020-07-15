@@ -7,12 +7,17 @@ import (
 	"os/exec"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
+	"github.com/pkg/errors"
 
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 )
 
 var rsyncCommand = exec.Command
+
+// ErrInvalidRsyncSourcePath is returned when there are multiple source path
+// used to rsync from a remote source host
+var ErrInvalidRsyncSourcePath = errors.New("multiple remote source path passed")
 
 // Rsync executes "rsync" on the system with the given options.
 // The caller needs to consider adding "/" using os.PathSeparator to the
@@ -25,13 +30,23 @@ func Rsync(options ...Option) error {
 	opts := newOptionList(options...)
 
 	dstPath := opts.destination
-	if opts.hasRemoteHost {
-		dstPath = opts.remoteHost + ":" + opts.destination
+	if opts.hasDestinationHost {
+		dstPath = opts.destinationHost + ":" + opts.destination
+	}
+
+	srcPath := opts.sources
+	if opts.hasSourceHost {
+		// can't make an assumption what is required here
+		// i.e host:path1 path2 or host:path1 host:path2
+		if len(opts.sources) != 1 {
+			return ErrInvalidRsyncSourcePath
+		}
+		srcPath = []string{opts.sourceHost + ":" + opts.sources[0]}
 	}
 
 	var args []string
 	args = append(args, opts.options...)
-	args = append(args, opts.sources...)
+	args = append(args, srcPath...)
 	args = append(args, dstPath)
 	args = append(args, opts.excludedFiles...)
 
@@ -92,10 +107,17 @@ func WithSources(srcs ...string) Option {
 	}
 }
 
-func WithRemoteHost(host string) Option {
+func WithDestinationHost(host string) Option {
 	return func(options *optionList) {
-		options.hasRemoteHost = true
-		options.remoteHost = host
+		options.hasDestinationHost = true
+		options.destinationHost = host
+	}
+}
+
+func WithSourceHost(host string) Option {
+	return func(options *optionList) {
+		options.hasSourceHost = true
+		options.sourceHost = host
 	}
 }
 
@@ -127,14 +149,16 @@ func WithStream(stream step.OutStreams) Option {
 }
 
 type optionList struct {
-	sources       []string
-	hasRemoteHost bool
-	remoteHost    string
-	destination   string
-	options       []string
-	excludedFiles []string
-	useStream     bool
-	stream        step.OutStreams
+	sources            []string
+	hasSourceHost      bool
+	sourceHost         string
+	hasDestinationHost bool
+	destinationHost    string
+	destination        string
+	options            []string
+	excludedFiles      []string
+	useStream          bool
+	stream             step.OutStreams
 }
 
 func newOptionList(opts ...Option) *optionList {

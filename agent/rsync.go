@@ -44,7 +44,7 @@ func (s *Server) Rsync(ctx context.Context, in *idl.RsyncRequest) (*idl.RsyncRep
 
 			opts := []rsync.Option{
 				rsync.WithSources(pair.GetSource() + string(os.PathSeparator)),
-				rsync.WithRemoteHost(pair.GetRemoteHost()),
+				rsync.WithDestinationHost(pair.GetDestinationHost()),
 				rsync.WithDestination(pair.GetDestination()),
 				rsync.WithOptions(in.GetOptions()...),
 				rsync.WithExcludedFiles(in.GetExcludes()...),

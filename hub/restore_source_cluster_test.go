@@ -57,13 +57,13 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 			}
 
 			source := args[3]
-			expected := "/data/standby/"
+			expected := "standby:/data/standby/"
 			if source != expected {
 				t.Errorf("got source %q want %q", source, expected)
 			}
 
 			destination := args[4]
-			expected = "master:/data/qddir"
+			expected = "/data/qddir"
 			if destination != expected {
 				t.Errorf("got destination %q want %q", destination, expected)
 			}
@@ -134,9 +134,9 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 				Options:  hub.Options,
 				Excludes: hub.Excludes,
 				Pairs: []*idl.RsyncPair{{
-					Source:      "/data/dbfast_mirror1/seg1" + string(os.PathSeparator),
-					RemoteHost:  "sdw1",
-					Destination: "/data/dbfast1/seg1",
+					Source:          "/data/dbfast_mirror1/seg1" + string(os.PathSeparator),
+					DestinationHost: "sdw1",
+					Destination:     "/data/dbfast1/seg1",
 				}},
 			},
 		).Return(&idl.RsyncReply{}, nil)
@@ -148,9 +148,9 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 				Options:  hub.Options,
 				Excludes: hub.Excludes,
 				Pairs: []*idl.RsyncPair{{
-					Source:      "/data/dbfast_mirror2/seg2" + string(os.PathSeparator),
-					RemoteHost:  "sdw2",
-					Destination: "/data/dbfast2/seg2",
+					Source:          "/data/dbfast_mirror2/seg2" + string(os.PathSeparator),
+					DestinationHost: "sdw2",
+					Destination:     "/data/dbfast2/seg2",
 				}},
 			},
 		).Return(&idl.RsyncReply{}, nil)

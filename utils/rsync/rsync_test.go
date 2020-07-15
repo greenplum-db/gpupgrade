@@ -15,9 +15,23 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
+
+func Success() {}
+
+func init() {
+	exectest.RegisterMains(
+		Success,
+	)
+}
+
+// Enable exectest.NewCommand mocking.
+func TestMain(m *testing.M) {
+	os.Exit(exectest.Run(m))
+}
 
 func TestRsync(t *testing.T) {
 	testhelper.SetupTestLogger()
@@ -321,6 +335,64 @@ func TestRsync(t *testing.T) {
 		}
 		if !strings.Contains(rsyncError.Error(), expected) {
 			t.Errorf("got %v, expected substring %s", err.Error(), expected)
+		}
+	})
+
+	t.Run("rsync with remote source host", func(t *testing.T) {
+		sourceDir := "/data/qddir/seg-1"
+		sourceHost := "localhost"
+		targetDir := "/tmp/"
+
+		// Validate the rsync call and arguments.
+		cmd := exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
+			expected := "rsync"
+			if name != expected {
+				t.Errorf("Copy() invoked %q, want %q", name, expected)
+			}
+
+			expectedSourcePath := sourceHost + ":" + sourceDir + string(os.PathSeparator)
+			if expectedSourcePath != args[0] {
+				t.Errorf("got %q, want %q", args[0], expectedSourcePath)
+			}
+
+			expectedDestination := targetDir
+			if expectedDestination != args[1] {
+				t.Errorf("got %q, want %q", args[1], expectedDestination)
+			}
+		})
+
+		rsync.SetRsyncCommand(cmd)
+		defer rsync.ResetRsyncCommand()
+
+		opts := []rsync.Option{
+			rsync.WithSources(sourceDir + string(os.PathSeparator)),
+			rsync.WithSourceHost(sourceHost),
+			rsync.WithDestination(targetDir),
+		}
+		err := rsync.Rsync(opts...)
+		if err != nil {
+			t.Errorf("unexpected error %#v", err)
+		}
+	})
+
+	t.Run("rsync for multiple path from remote host fails", func(t *testing.T) {
+		sourceDir := "/data/qddir/seg-1"
+		sourceHost := "localhost"
+		targetDir := "/tmp/"
+
+		opts := []rsync.Option{
+			rsync.WithSources(sourceDir+string(os.PathSeparator), sourceDir+string(os.PathSeparator)),
+			rsync.WithSourceHost(sourceHost),
+			rsync.WithDestination(targetDir),
+		}
+		err := rsync.Rsync(opts...)
+
+		if err == nil {
+			t.Errorf("expected error '%#v', got nil", rsync.ErrInvalidRsyncSourcePath)
+		}
+
+		if !xerrors.Is(err, rsync.ErrInvalidRsyncSourcePath) {
+			t.Errorf("got error '%#v' want '%#v'", err, rsync.ErrInvalidRsyncSourcePath)
 		}
 	})
 }

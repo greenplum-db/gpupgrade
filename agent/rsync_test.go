@@ -79,9 +79,9 @@ func TestRsync(t *testing.T) {
 
 		request := &idl.RsyncRequest{
 			Pairs: []*idl.RsyncPair{{
-				Source:      source,
-				RemoteHost:  "sdw1",
-				Destination: destination,
+				Source:          source,
+				DestinationHost: "sdw1",
+				Destination:     destination,
 			}},
 			Options:  options,
 			Excludes: excludes,

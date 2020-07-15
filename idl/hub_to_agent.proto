@@ -82,7 +82,7 @@ message CheckSegmentDiskSpaceRequest {
 
 message RsyncPair {
     string Source = 1;
-    string RemoteHost = 2;
+    string DestinationHost = 2;
     string Destination = 3;
 }
 

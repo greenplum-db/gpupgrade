@@ -78,7 +78,7 @@ func Recoverseg(stream step.OutStreams, cluster *greenplum.Cluster) error {
 func RsyncMaster(stream step.OutStreams, standby greenplum.SegConfig, master greenplum.SegConfig) error {
 	opts := []rsync.Option{
 		rsync.WithSources(standby.DataDir + string(os.PathSeparator)),
-		rsync.WithRemoteHost(master.Hostname),
+		rsync.WithSourceHost(standby.Hostname),
 		rsync.WithDestination(master.DataDir),
 		rsync.WithOptions(Options...),
 		rsync.WithExcludedFiles(Excludes...),
@@ -101,9 +101,9 @@ func RsyncPrimaries(agentConns []*Connection, source *greenplum.Cluster) error {
 		var pairs []*idl.RsyncPair
 		for _, mirror := range mirrors {
 			pair := &idl.RsyncPair{
-				Source:      mirror.DataDir + string(os.PathSeparator),
-				RemoteHost:  source.Primaries[mirror.ContentID].Hostname,
-				Destination: source.Primaries[mirror.ContentID].DataDir,
+				Source:          mirror.DataDir + string(os.PathSeparator),
+				DestinationHost: source.Primaries[mirror.ContentID].Hostname,
+				Destination:     source.Primaries[mirror.ContentID].DataDir,
 			}
 			pairs = append(pairs, pair)
 		}

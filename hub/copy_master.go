@@ -41,7 +41,7 @@ func Copy(streams step.OutStreams, destinationDir string, sourceDirs, hosts []st
 
 			options := []rsync.Option{
 				rsync.WithSources(sourceDirs...),
-				rsync.WithRemoteHost(hostname),
+				rsync.WithDestinationHost(hostname),
 				rsync.WithDestination(destinationDir),
 				rsync.WithOptions("--archive", "--compress", "--delete", "--stats"),
 				rsync.WithStream(stream),
