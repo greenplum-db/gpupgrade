@@ -41,6 +41,12 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		return errors.New("Source cluster does not have mirrors and/or standby. Cannot restore source cluster. Please contact support.")
 	}
 
+	// ensure that agentConns is populated
+	_, err = s.AgentConns()
+	if err != nil {
+		return xerrors.Errorf("connect to gpupgrade agent: %w", err)
+	}
+
 	// Since revert needs to work at any point, and stop is not yet idempotent
 	// check if the cluster is running before stopping.
 	// TODO: This will fail if the target does not exist which can occur when
