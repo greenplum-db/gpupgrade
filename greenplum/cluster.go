@@ -297,7 +297,7 @@ func (c *Cluster) GetDirForContent(contentID int) string {
 }
 
 func (c *Cluster) Start(stream step.OutStreams) error {
-	return runStartStopCmd(stream, c.GPHome, fmt.Sprintf("gpstart -a -d %[1]s", c.MasterDataDir()))
+	return runStartStopCmd(stream, c.GPHome, fmt.Sprintf("gpstart -a -d %[1]s", c.MasterDataDir()), fmt.Sprintf("MASTER_DATA_DIRECTORY=%s", c.MasterDataDir()))
 }
 
 func (c *Cluster) Stop(stream step.OutStreams) error {
@@ -314,11 +314,11 @@ func (c *Cluster) Stop(stream step.OutStreams) error {
 		return errors.New("master is already stopped")
 	}
 
-	return runStartStopCmd(stream, c.GPHome, fmt.Sprintf("gpstop -a -d %[1]s", c.MasterDataDir()))
+	return runStartStopCmd(stream, c.GPHome, fmt.Sprintf("gpstop -a -d %[1]s", c.MasterDataDir()), fmt.Sprintf("MASTER_DATA_DIRECTORY=%s", c.MasterDataDir()))
 }
 
 func (c *Cluster) StartMasterOnly(stream step.OutStreams) error {
-	return runStartStopCmd(stream, c.GPHome, fmt.Sprintf("gpstart -m -a -d %[1]s", c.MasterDataDir()))
+	return runStartStopCmd(stream, c.GPHome, fmt.Sprintf("gpstart -m -a -d %[1]s", c.MasterDataDir()), fmt.Sprintf("MASTER_DATA_DIRECTORY=%s", c.MasterDataDir()))
 }
 
 func (c *Cluster) StopMasterOnly(stream step.OutStreams) error {
@@ -335,12 +335,13 @@ func (c *Cluster) StopMasterOnly(stream step.OutStreams) error {
 		return errors.New("master is already stopped")
 	}
 
-	return runStartStopCmd(stream, c.GPHome, fmt.Sprintf("gpstop -m -a -d %[1]s", c.MasterDataDir()))
+	return runStartStopCmd(stream, c.GPHome, fmt.Sprintf("gpstop -m -a -d %[1]s", c.MasterDataDir()), fmt.Sprintf("MASTER_DATA_DIRECTORY=%s", c.MasterDataDir()))
 }
 
-func runStartStopCmd(stream step.OutStreams, gphome, command string) error {
-	commandWithEnv := fmt.Sprintf("source %[1]s/greenplum_path.sh && %[1]s/bin/%[2]s",
+func runStartStopCmd(stream step.OutStreams, gphome, command string, env string) error {
+	commandWithEnv := fmt.Sprintf("source %[1]s/greenplum_path.sh && %[2]s %[1]s/bin/%[3]s",
 		gphome,
+		env,
 		command)
 
 	cmd := startStopCmd("bash", "-c", commandWithEnv)

@@ -179,7 +179,7 @@ func TestStartOrStopCluster(t *testing.T) {
 				}
 
 				expected := []string{"-c", "source /usr/local/source/greenplum_path.sh " +
-					"&& /usr/local/source/bin/gpstop -a -d " + masterDataDir}
+					"&& MASTER_DATA_DIRECTORY=" + masterDataDir + " /usr/local/source/bin/gpstop -a -d " + masterDataDir}
 				if !reflect.DeepEqual(args, expected) {
 					t.Errorf("got %q want %q", args, expected)
 				}
@@ -218,7 +218,7 @@ func TestStartOrStopCluster(t *testing.T) {
 				}
 
 				expected := []string{"-c", "source /usr/local/source/greenplum_path.sh " +
-					"&& /usr/local/source/bin/gpstart -a -d " + masterDataDir}
+					"&& MASTER_DATA_DIRECTORY=" + masterDataDir + " /usr/local/source/bin/gpstart -a -d " + masterDataDir}
 				if !reflect.DeepEqual(args, expected) {
 					t.Errorf("got %q want %q", args, expected)
 				}
@@ -238,7 +238,7 @@ func TestStartOrStopCluster(t *testing.T) {
 				}
 
 				expected := []string{"-c", "source /usr/local/source/greenplum_path.sh " +
-					"&& /usr/local/source/bin/gpstart -m -a -d " + masterDataDir}
+					"&& MASTER_DATA_DIRECTORY=" + masterDataDir + " /usr/local/source/bin/gpstart -m -a -d " + masterDataDir}
 				if !reflect.DeepEqual(args, expected) {
 					t.Errorf("got %q want %q", args, expected)
 				}
@@ -270,7 +270,7 @@ func TestStartOrStopCluster(t *testing.T) {
 				}
 
 				expected := []string{"-c", "source /usr/local/source/greenplum_path.sh " +
-					"&& /usr/local/source/bin/gpstop -m -a -d " + masterDataDir}
+					"&& MASTER_DATA_DIRECTORY=" + masterDataDir + " /usr/local/source/bin/gpstop -m -a -d " + masterDataDir}
 				if !reflect.DeepEqual(args, expected) {
 					t.Errorf("got %q want %q", args, expected)
 				}
