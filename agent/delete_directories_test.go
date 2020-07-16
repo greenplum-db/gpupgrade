@@ -127,8 +127,8 @@ func TestDeleteStateDirectory(t *testing.T) {
 			t.Errorf("got directories: %s want: %s", actualDirectories, expectedDirectories)
 		}
 
-		if !reflect.DeepEqual(actualRequiredPaths, upgrade.StateDirectoryFiles) {
-			t.Errorf("got required paths: %s want: %s", actualRequiredPaths, upgrade.StateDirectoryFiles)
+		if len(actualRequiredPaths) != 0 {
+			t.Errorf("unexpected required paths: %s", actualRequiredPaths)
 		}
 
 		if actualHostname != expectedHostname {

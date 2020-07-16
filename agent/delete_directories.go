@@ -24,7 +24,9 @@ func (s *Server) DeleteStateDirectory(ctx context.Context, in *idl.DeleteStateDi
 		return &idl.DeleteStateDirectoryReply{}, err
 	}
 
-	err = deleteDirectories([]string{s.conf.StateDir}, upgrade.StateDirectoryFiles, hostname, step.DevNullStream)
+	// pass an empty []string to avoid check for any pre-existing files,
+	// this call might come in before any stateDir files are created
+	err = deleteDirectories([]string{s.conf.StateDir}, []string{}, hostname, step.DevNullStream)
 	return &idl.DeleteStateDirectoryReply{}, err
 }
 
