@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"os/user"
 	"path/filepath"
 	"time"
@@ -95,4 +96,17 @@ func GetLogDir() (string, error) {
 
 func GetTablespaceDir() string {
 	return filepath.Join(GetStateDir(), "tablespaces")
+}
+
+// Calling os.Rename for a directory is allowed only when both the
+// source and the destination path are on the top layer of filesystem.
+// Otherwise, it returns EXDEV error ("cross-device link not permitted").
+// To avoid such case, use the Move utility instead of os.Rename.
+// Found this issue on docker containers, when os.Rename was being used
+// to archive the gpupgrade log directory.
+func Move(src string, dst string) error {
+	cmd := exec.Command("mv", src, dst)
+	_, err := cmd.Output()
+
+	return err
 }
