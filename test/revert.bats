@@ -133,6 +133,8 @@ test_revert_after_execute() {
 
     # ensure target cluster is down
     ! isready "${GPHOME_TARGET}" ${target_master_port} || fail "expected target cluster to not be running on port ${target_master_port}"
+
+    is_source_standby_in_sync || fail "expected standby to eventually be in sync"
 }
 
 @test "reverting after execute in link mode succeeds" {
@@ -171,4 +173,36 @@ test_revert_after_execute() {
 
     # This last revert is used for test cleanup.
     gpupgrade revert --verbose
+}
+
+# gp_segment_configuration does not show us the status correctly. We must check that the
+# sent_location from the master equals the replay_location of the standby.
+is_source_standby_in_sync() {
+    local INSYNC="f"
+    local duration=600 # wait up to 10 minutes
+    local poll=5
+
+    while (( duration > 0 )); do
+        INSYNC=$("$PSQL" -AXt postgres -c "SELECT sent_location=replay_location FROM pg_stat_replication")
+
+        if [[ -z "$INSYNC" ]] && ! is_source_standby_running; then
+            break # standby has disappeared
+        elif [[ "$INSYNC" == "t" ]]; then
+            break
+        fi
+
+        sleep $poll
+        (( duration = duration - poll ))
+    done
+
+    [[ $INSYNC == "t" ]]
+}
+
+is_source_standby_running() {
+    local standby_datadir
+    standby_datadir=$(query_datadirs "$GPHOME_SOURCE" "$PGPORT" "content = '-1' AND role = 'm'")
+
+    if ! "${GPHOME_SOURCE}"/bin/pg_ctl status -D "$standby_datadir" > /dev/null; then
+        return 1
+    fi
 }
