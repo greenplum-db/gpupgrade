@@ -19,11 +19,8 @@ func (s *Server) ArchiveLogDirectory(ctx context.Context, in *idl.ArchiveLogDire
 	if err != nil {
 		return &idl.ArchiveLogDirectoryReply{}, err
 	}
-	if err = utils.System.Rename(logdir, in.GetNewDir()); err != nil {
-		if utils.System.IsNotExist(err) {
-			gplog.Debug("log directory %s not archived, possibly due to multi-host environment. %+v", logdir, err)
-			err = nil
-		}
-	}
+
+	gplog.Debug("moving directory %q to %q", logdir, in.GetNewDir())
+	err = utils.Move(logdir, in.GetNewDir())
 	return &idl.ArchiveLogDirectoryReply{}, err
 }

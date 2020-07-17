@@ -93,10 +93,10 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 			return err
 		}
 		archiveDir = filepath.Join(filepath.Dir(oldDir), upgrade.GetArchiveDirectoryName(s.UpgradeID, time.Now()))
-		if err = utils.System.Rename(oldDir, archiveDir); err != nil {
-			if utils.System.IsNotExist(err) {
-				gplog.Debug("log directory %s not archived, possibly due to multi-host environment. %+v", archiveDir, err)
-			}
+
+		gplog.Debug("moving directory %q to %q", oldDir, archiveDir)
+		if err = utils.Move(oldDir, archiveDir); err != nil {
+			return err
 		}
 
 		return ArchiveSegmentLogDirectories(s.agentConns, s.Config.Target.MasterHostname(), archiveDir)

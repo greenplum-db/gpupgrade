@@ -5,9 +5,13 @@ package agent_test
 
 import (
 	"context"
-	"errors"
 	"os"
+	"os/exec"
+	"os/user"
+	"path/filepath"
 	"testing"
+
+	"github.com/greenplum-db/gpupgrade/testutils"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"golang.org/x/xerrors"
@@ -22,50 +26,47 @@ func TestArchiveLogDirectories(t *testing.T) {
 	server := agent.NewServer(agent.Config{})
 
 	t.Run("bubbles up errors", func(t *testing.T) {
-		expected := errors.New("permission denied")
-
-		utils.System.Rename = func(oldPath, newPath string) error {
-			return expected
+		// empty target directory string to force an error
+		newDir := ""
+		_, err := server.ArchiveLogDirectory(context.Background(), &idl.ArchiveLogDirectoryRequest{NewDir: newDir})
+		if err == nil {
+			t.Errorf("expected error")
 		}
-		defer func() {
-			utils.System.Rename = os.Rename
-		}()
-
-		_, err := server.ArchiveLogDirectory(context.Background(), &idl.ArchiveLogDirectoryRequest{})
-		if !xerrors.Is(err, expected) {
-			t.Errorf("returned error %#v, want %#v", err, expected)
+		var exitError *exec.ExitError
+		if !xerrors.As(err, &exitError) {
+			t.Errorf("got %T, want %T", err, exitError)
 		}
 	})
 
 	t.Run("archives log directories", func(t *testing.T) {
-		oldLogDir, _ := utils.GetLogDir()
-		newLogDir := "/home/gpAdmin/newlogdir"
-		calls := 0
+		homeDir := testutils.GetTempDir(t, "")
 
-		utils.System.Rename = func(oldPath, newPath string) error {
-			calls++
-
-			if oldPath != oldLogDir {
-				t.Errorf("got %q want %q", oldPath, oldLogDir)
-			}
-
-			if newPath != newLogDir {
-				t.Errorf("got %q want %q", newPath, newLogDir)
-			}
-
-			return nil
+		mockUser := user.User{HomeDir: homeDir}
+		utils.System.CurrentUser = func() (*user.User, error) {
+			return &mockUser, nil
 		}
-		defer func() {
-			utils.System.Rename = os.Rename
-		}()
-
-		_, err := server.ArchiveLogDirectory(context.Background(), &idl.ArchiveLogDirectoryRequest{NewDir: newLogDir})
+		oldLogDir := filepath.Join(mockUser.HomeDir, "gpAdminLogs", "gpupgrade")
+		err := utils.System.MkdirAll(oldLogDir, 0700)
 		if err != nil {
 			t.Errorf("unexpected error %#v", err)
 		}
+		defer os.RemoveAll(homeDir)
 
-		if calls != 1 {
-			t.Errorf("expected rename to be called once, got %d", calls)
+		newLogDir := oldLogDir + "xxxxxx"
+		_, err = server.ArchiveLogDirectory(context.Background(), &idl.ArchiveLogDirectoryRequest{NewDir: newLogDir})
+		if err != nil {
+			t.Errorf("unexpected error %#v", err)
+		}
+		defer os.RemoveAll(newLogDir)
+
+		_, err = os.Stat(oldLogDir)
+		if !os.IsNotExist(err) {
+			t.Errorf("old log dir %q must be removed", oldLogDir)
+		}
+
+		_, err = os.Stat(newLogDir)
+		if err != nil {
+			t.Errorf("got %#v, want nil", err)
 		}
 	})
 }
