@@ -65,7 +65,7 @@ func Recoverseg(stream step.OutStreams, cluster *greenplum.Cluster) error {
 		return nil
 	}
 
-	script := fmt.Sprintf("source %[1]s/greenplum_path.sh && %[1]s/bin/gprecoverseg -a", cluster.GPHome)
+	script := fmt.Sprintf("source %[1]s/greenplum_path.sh && MASTER_DATA_DIRECTORY=%[2]s %[1]s/bin/gprecoverseg -a", cluster.GPHome, cluster.MasterDataDir())
 	cmd := RecoversegCmd("bash", "-c", script)
 
 	cmd.Stdout = stream.Stdout()

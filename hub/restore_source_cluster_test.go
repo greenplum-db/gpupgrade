@@ -5,6 +5,7 @@ package hub_test
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"reflect"
@@ -88,7 +89,7 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 				t.Errorf("got %q want bash", utility)
 			}
 
-			expected := []string{"-c", "source /usr/local/greenplum-db/greenplum_path.sh && /usr/local/greenplum-db/bin/gprecoverseg -a"}
+			expected := []string{"-c", fmt.Sprintf("source /usr/local/greenplum-db/greenplum_path.sh && MASTER_DATA_DIRECTORY=%s /usr/local/greenplum-db/bin/gprecoverseg -a", cluster.MasterDataDir())}
 			if !reflect.DeepEqual(args, expected) {
 				t.Errorf("got %q want %q", args, expected)
 			}
