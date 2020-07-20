@@ -66,12 +66,20 @@ func UpgradeMaster(args UpgradeMasterArgs) error {
 		upgrade.WithWorkDir(wd),
 		upgrade.WithOutputStreams(tee, args.Stream.Stderr()),
 	}
+
 	if args.CheckOnly {
 		options = append(options, upgrade.WithCheckOnly())
 	}
 
 	if args.UseLinkMode {
 		options = append(options, upgrade.WithLinkMode())
+	}
+
+	// When upgrading from 5 the master must be provided with its standby's dbid to allow WAL to sync.
+	if args.Source.Version.Before("6") {
+		if args.Source.HasStandby() {
+			options = append(options, upgrade.WithOldOptions(fmt.Sprintf("-x %d", args.Source.Standby().DbID)))
+		}
 	}
 
 	err = upgrade.Run(pair, options...)

@@ -15,6 +15,7 @@ import (
 	"syscall"
 	"testing"
 
+	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"golang.org/x/xerrors"
 
@@ -117,6 +118,7 @@ func TestUpgradeMaster(t *testing.T) {
 
 	source := MustCreateCluster(t, []greenplum.SegConfig{
 		{ContentID: -1, Port: 5432, DataDir: "/data/old", DbID: 1, Role: "p"},
+		{ContentID: -1, Port: 5433, DataDir: "/data/standby", DbID: 2, Role: "m"},
 	})
 	source.GPHome = "/usr/local/source"
 
@@ -226,6 +228,63 @@ func TestUpgradeMaster(t *testing.T) {
 		stderr := stream.StderrBuf.String()
 		if stderr != StreamingMainStderr {
 			t.Errorf("got stderr %q, want %q", stderr, StreamingMainStderr)
+		}
+	})
+
+	t.Run("sets the standby dbid on the master if the GPDB version is 5", func(t *testing.T) {
+		execCmd := exectest.NewCommandWithVerifier(Success, func(command string, args ...string) {
+			expected := "--old-options -x 2"
+			if !strings.Contains(strings.Join(args, " "), expected) {
+				t.Errorf("did not find %q in the args %q", expected, args)
+			}
+		})
+		SetExecCommand(execCmd)
+		defer ResetExecCommand()
+
+		rsync.SetRsyncCommand(exectest.NewCommand(Success))
+		defer rsync.ResetRsyncCommand()
+
+		source.Version = dbconn.NewVersion("5.28.0")
+
+		err := UpgradeMaster(UpgradeMasterArgs{
+			Source:      source,
+			Target:      target,
+			StateDir:    tempDir,
+			Stream:      step.DevNullStream,
+			CheckOnly:   false,
+			UseLinkMode: false,
+		})
+		if err != nil {
+			t.Errorf("returned error %+v", err)
+		}
+	})
+
+	t.Run("does not set the standby dbid on the master if the GPDB version is 6", func(t *testing.T) {
+		execCmd := exectest.NewCommandWithVerifier(Success, func(command string, args ...string) {
+			for _, arg := range args {
+				if arg == "--old-options" {
+					t.Errorf("expected --old-options to not be in args %q", args)
+				}
+			}
+		})
+		SetExecCommand(execCmd)
+		defer ResetExecCommand()
+
+		rsync.SetRsyncCommand(exectest.NewCommand(Success))
+		defer rsync.ResetRsyncCommand()
+
+		source.Version = dbconn.NewVersion("6.10.0")
+
+		err := UpgradeMaster(UpgradeMasterArgs{
+			Source:      source,
+			Target:      target,
+			StateDir:    tempDir,
+			Stream:      step.DevNullStream,
+			CheckOnly:   false,
+			UseLinkMode: false,
+		})
+		if err != nil {
+			t.Errorf("returned error %+v", err)
 		}
 	})
 
