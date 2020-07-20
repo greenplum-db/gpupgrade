@@ -69,6 +69,10 @@ func Run(p SegmentPair, options ...Option) error {
 		args = append(args, "--old-tablespaces-file", opts.TablespaceFilePath)
 	}
 
+	if opts.OldOptions != "" {
+		args = append(args, "--old-options", opts.OldOptions)
+	}
+
 	// If the caller specified an explicit Command implementation to use, get
 	// our exec.Cmd using that. Otherwise use our internal execCommand.
 	cmdFunc := execCommand
@@ -153,6 +157,14 @@ func WithTablespaceFile(filePath string) Option {
 	}
 }
 
+// WithOldOptions allows the "--old-options" flag to pg_upgrade to be set by the caller,
+// to set extra options on the pg_ctl used for the source cluster.
+func WithOldOptions(opts string) Option {
+	return func(o *optionList) {
+		o.OldOptions = opts
+	}
+}
+
 // optionList holds the combined result of all possible Options. Zero values
 // represent the default settings.
 type optionList struct {
@@ -164,6 +176,7 @@ type optionList struct {
 	SegmentMode        bool
 	Stdout, Stderr     io.Writer
 	TablespaceFilePath string
+	OldOptions         string
 }
 
 // newOptionList returns an optionList with all of the provided Options applied.

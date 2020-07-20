@@ -241,6 +241,7 @@ func TestRun(t *testing.T) {
 				fs.Bool("retain", false, "")
 				fs.Bool("link", false, "")
 				fs.String("old-tablespaces-file", "", "")
+				fs.String("old-options", "", "")
 
 				err := fs.Parse(args)
 				if err != nil {
@@ -261,6 +262,7 @@ func TestRun(t *testing.T) {
 					"retain":               true,
 					"link":                 options.UseLinkMode,
 					"old-tablespaces-file": options.TablespaceFilePath,
+					"old-options":          options.OldOptions,
 				}
 
 				fs.VisitAll(func(f *flag.Flag) {
@@ -291,6 +293,7 @@ func TestRun(t *testing.T) {
 			{"--link mode on master", []upgrade.Option{upgrade.WithLinkMode()}},
 			{"--link mode on segments", []upgrade.Option{upgrade.WithSegmentMode(), upgrade.WithLinkMode()}},
 			{"--old-tablespaces-file flag on segments", []upgrade.Option{upgrade.WithTablespaceFile("tablespaceMappingFile.txt"), upgrade.WithSegmentMode()}},
+			{"--old-options on master", []upgrade.Option{upgrade.WithOldOptions("option value")}},
 		}
 
 		for _, c := range cases {
