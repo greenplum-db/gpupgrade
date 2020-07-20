@@ -79,7 +79,7 @@ teardown() {
 test_revert_after_execute() {
     local mode="$1"
     local target_master_port=6020
-    local old_config new_config mirrors primaries row_count
+    local old_config new_config mirrors primaries rows
 
     # Save segment configuration
     old_config=$(get_segment_configuration "${GPHOME_SOURCE}")
@@ -126,9 +126,9 @@ test_revert_after_execute() {
     gpupgrade revert --verbose
 
     # Verify the table modifications were reverted
-    row_count=$($PSQL postgres -Atc "SELECT COUNT(*) FROM ${TABLE}")
-    if (( row_count != 3 )); then
-        fail "table ${TABLE} truncated after execute was not reverted: got $row_count rows want 3"
+    rows=$($PSQL postgres -Atc "SELECT COUNT(*) FROM ${TABLE}")
+    if (( rows != 3 )); then
+        fail "table ${TABLE} truncated after execute was not reverted: got $rows rows want 3"
     fi
 
     if is_GPDB5 "$GPHOME_SOURCE"; then

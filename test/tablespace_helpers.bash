@@ -53,9 +53,9 @@ EOF
 check_tablespace_data() {
     local tablespace_table=${1:-batsTable}
 
-    local row_count
-    row_count=$("$GPHOME_TARGET"/bin/psql -d postgres -Atc "SELECT COUNT(*) FROM \"$tablespace_table\";")
-    if (( row_count != 100 )); then
+    local rows
+    rows=$("$GPHOME_TARGET"/bin/psql -d postgres -Atc "SELECT COUNT(*) FROM \"$tablespace_table\";")
+    if (( rows != 100 )); then
         fail "failed verifying tablespaces. $tablespace_table got $rows want 100"
     fi
 }
