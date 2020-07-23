@@ -126,10 +126,13 @@ drop_unfixable_objects() {
     egrep "^Checking.*fatal$" $GPUPGRADE_HOME/pg_upgrade/seg-1/pg_upgrade_internal.log
 
     MIGRATION_DIR=`mktemp -d /tmp/migration.XXXXXX`
-    $SCRIPTS_DIR/generate_migration_sql.bash $GPHOME_SOURCE $PGPORT $MIGRATION_DIR
-    $SCRIPTS_DIR/execute_migration_sql.bash $GPHOME_SOURCE $PGPORT $MIGRATION_DIR/pre-upgrade
+    "$SCRIPTS_DIR"/generate_migration_sql.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"
 
     drop_unfixable_objects
+
+    root_child_indexes_before=$(get_indexes "$GPHOME_SOURCE")
+
+    "$SCRIPTS_DIR"/execute_migration_sql.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/pre-upgrade
 
     gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
@@ -140,6 +143,14 @@ drop_unfixable_objects() {
         --verbose
     gpupgrade execute --verbose
     gpupgrade finalize --verbose
+
+    "$SCRIPTS_DIR"/execute_migration_sql.bash "$GPHOME_TARGET" "$PGPORT" "$MIGRATION_DIR"/post-upgrade
+
+    # post-upgrade scripts should create the indexes on the target cluster
+    root_child_indexes_after=$(get_indexes "$GPHOME_TARGET")
+
+    # expect the index information to be same after the upgrade
+    diff -U3 <(echo "$root_child_indexes_before") <(echo "$root_child_indexes_after")
 
     NEW_CLUSTER="$MASTER_DATA_DIRECTORY"
 }
@@ -173,8 +184,27 @@ drop_unfixable_objects() {
     gpupgrade execute --verbose
     gpupgrade revert --verbose
 
-    $SCRIPTS_DIR/execute_migration_sql.bash $GPHOME_SOURCE $PGPORT $MIGRATION_DIR/post-revert
+    $SCRIPTS_DIR/execute_migration_sql.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/post-revert
 
     "$GPHOME_SOURCE"/bin/pg_dump --schema-only $TEST_DBNAME $EXCLUSIONS -f "$MIGRATION_DIR"/after.sql
     diff -U3 --speed-large-files "$MIGRATION_DIR"/before.sql "$MIGRATION_DIR"/after.sql
+}
+
+get_indexes() {
+    local gphome=$1
+    $gphome/bin/psql -d "$TEST_DBNAME" -p "$PGPORT" -Atc "
+         SELECT indrelid::regclass, unnest(indkey)
+         FROM pg_index pi
+         JOIN pg_partition pp ON pi.indrelid=pp.parrelid
+         JOIN pg_class pc ON pc.oid=pp.parrelid
+         ORDER by 1,2;
+        "
+    $gphome/bin/psql -d "$TEST_DBNAME" -p "$PGPORT" -Atc "
+        SELECT indrelid::regclass, unnest(indkey)
+        FROM pg_index pi
+        JOIN pg_partition_rule pp ON pi.indrelid=pp.parchildrelid
+        JOIN pg_class pc ON pc.oid=pp.parchildrelid
+        WHERE pc.relhassubclass='f'
+        ORDER by 1,2;
+    "
 }

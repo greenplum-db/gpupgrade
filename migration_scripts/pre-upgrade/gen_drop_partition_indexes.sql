@@ -58,8 +58,7 @@ part_constraint AS
          ON (n.oid = cc.relnamespace)
 )
 SELECT
-   $$ DROP INDEX $$ || i.relname || $$ ;
- $$
+   $$ DROP INDEX $$ || i.relname || $$ ;$$
 FROM
    pg_index x
    JOIN

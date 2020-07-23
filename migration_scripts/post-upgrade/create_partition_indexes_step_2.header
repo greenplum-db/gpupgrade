@@ -1,0 +1,18 @@
+-- The below CREATE INDEX statement will create the indexes on the root
+-- partitions, which get cascaded to the child partitions. Prior to execution of
+-- the CREATE INDEX statement on root, CREATE INDEX statement on the child
+-- partitions must be executed for non-unique indexes. When CREATE INDEX on
+-- root is created and cascaded, it will identify that an index on the child partition
+-- already exists on the desired column, so it will adopt it, instead of creating a new one.
+-- 
+-- Note:
+-- 1. There may be cases where an index was dropped on child partition in
+-- source cluster explicitly as it was allowed with Greenplum Database 5.x
+-- version, but with Greenplum Database 6.x since a CREATE INDEX will be executed
+-- on the root, indexes will be created on all the child partitions.
+--
+-- 2. If there were any indexes only on the mid-level partitions in source cluster,
+-- they will not be created, as they don't serve any functional purpose
+--
+-- 3. The name of the unique indexes on the child partitions created in target cluster
+-- may have a different name in source cluster.

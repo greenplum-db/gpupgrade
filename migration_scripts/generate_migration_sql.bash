@@ -38,7 +38,11 @@ exec_script(){
     fi
 
     if [[ -n "$records" ]]; then
-        echo "\c $database" > "${output_dir}/${output_file}"
+        header_file=$(echo "${path/.sql/.header}")
+        if [[ -f $header_file ]]; then
+            cat $header_file >> "${output_dir}/${output_file}"
+        fi
+        echo "\c $database" >> "${output_dir}/${output_file}"
         echo "$records" >> "${output_dir}/${output_file}"
     fi
 }
@@ -53,7 +57,7 @@ execute_script_directory() {
     local dir=$1; shift
     local databases=( "$@" )
 
-    local paths=($(find "$(dirname "$0")/${dir}" -type f \( -name "*.sql" -o -name "*.sh" \) ))
+    local paths=($(find "$(dirname "$0")/${dir}" -type f \( -name "*.sql" -o -name "*.sh" \) | sort -n))
     local output_dir="${OUTPUT_DIR}/${dir}"
 
     mkdir -p "$output_dir"
@@ -73,7 +77,7 @@ execute_script_directory() {
 }
 
 main(){
-    local dirs=(pre-upgrade post-revert)
+    local dirs=(pre-upgrade post-revert post-upgrade)
     local databases=($(get_databases))
 
     for dir in "${dirs[@]}"; do

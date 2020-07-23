@@ -1,0 +1,3 @@
+-- The below CREATE INDEX statement will create the indexes on the leaf
+-- partitions only. Indexes on the root partition will be created via a
+-- separate step which must be executed after these SQL statements.
