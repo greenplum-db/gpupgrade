@@ -580,20 +580,13 @@ func revert() *cobra.Command {
 			s := commanders.Substep(idl.Substep_STOP_HUB_AND_AGENTS)
 			err = stopHubAndAgents(false)
 			s.Finish(&err)
-
 			if err != nil {
 				return err
 			}
 
 			s = commanders.Substep(idl.Substep_DELETE_MASTER_STATEDIR)
-			hostname, err := os.Hostname()
-			if err != nil {
-				s.Finish(&err)
-				return err
-			}
-
 			streams := &step.BufferedStreams{}
-			err = upgrade.DeleteDirectories([]string{utils.GetStateDir()}, upgrade.StateDirectoryFiles, hostname, streams)
+			err = upgrade.DeleteDirectories([]string{utils.GetStateDir()}, upgrade.StateDirectoryFiles, streams)
 			if verbose {
 				os.Stdout.Write(streams.StdoutBuf.Bytes())
 				os.Stdout.Write(streams.StderrBuf.Bytes())

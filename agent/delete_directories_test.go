@@ -5,7 +5,6 @@ package agent_test
 
 import (
 	"context"
-	"errors"
 	"reflect"
 	"testing"
 
@@ -23,21 +22,18 @@ func TestDeleteDataDirectories(t *testing.T) {
 
 	t.Run("deletes the data directories", func(t *testing.T) {
 		var actualDirectories, actualRequiredPaths []string
-		var actualHostname string
 		var actualStreams step.OutStreams
-		mockDeleteDirectories := func(directories []string, requiredPaths []string, hostname string, streams step.OutStreams) error {
+		mockDeleteDirectories := func(directories []string, requiredPaths []string, streams step.OutStreams) error {
 			actualDirectories = directories
 			actualRequiredPaths = requiredPaths
-			actualHostname = hostname
 			actualStreams = streams
 			return nil
 		}
 		cleanup := agent.SetDeleteDirectories(mockDeleteDirectories)
 		defer cleanup()
 
-		expectedHostname := "localhost.remote"
-		utils.System.Hostname = func() (s string, err error) {
-			return expectedHostname, nil
+		utils.System.Hostname = func() (string, error) {
+			return "localhost.remote", nil
 		}
 
 		dataDirectories := []string{
@@ -61,31 +57,8 @@ func TestDeleteDataDirectories(t *testing.T) {
 			t.Errorf("got required paths: %s want: %s", actualRequiredPaths, upgrade.PostgresFiles)
 		}
 
-		if actualHostname != expectedHostname {
-			t.Errorf("got hostname %q want %q", actualHostname, expectedHostname)
-		}
-
 		if actualStreams != step.DevNullStream {
 			t.Errorf("got streams %#v want %#v", actualStreams, step.DevNullStream)
-		}
-	})
-
-	t.Run("errors when System.Hostname() returns an error", func(t *testing.T) {
-		expectedErr := errors.New("hostname error")
-		utils.System.Hostname = func() (string, error) {
-			return "", expectedErr
-		}
-
-		cleanup := agent.SetDeleteDirectories(func(strings []string, strings2 []string, s string, streams step.OutStreams) error {
-			return nil
-		})
-		defer cleanup()
-
-		server := agent.NewServer(agent.Config{})
-		_, err := server.DeleteStateDirectory(context.Background(), &idl.DeleteStateDirectoryRequest{})
-
-		if err != expectedErr {
-			t.Errorf("got error %#v want %#v", err, expectedErr)
 		}
 	})
 }
@@ -95,21 +68,18 @@ func TestDeleteStateDirectory(t *testing.T) {
 
 	t.Run("deletes the state directory", func(t *testing.T) {
 		var actualDirectories, actualRequiredPaths []string
-		var actualHostname string
 		var actualStreams step.OutStreams
-		mockDeleteDirectories := func(directories []string, requiredPaths []string, hostname string, streams step.OutStreams) error {
+		mockDeleteDirectories := func(directories []string, requiredPaths []string, streams step.OutStreams) error {
 			actualDirectories = directories
 			actualRequiredPaths = requiredPaths
-			actualHostname = hostname
 			actualStreams = streams
 			return nil
 		}
 		cleanup := agent.SetDeleteDirectories(mockDeleteDirectories)
 		defer cleanup()
 
-		expectedHostname := "localhost.remote"
-		utils.System.Hostname = func() (s string, err error) {
-			return expectedHostname, nil
+		utils.System.Hostname = func() (string, error) {
+			return "localhost.remote", nil
 		}
 
 		expectedDirectories := []string{"/my/state/dir"}
@@ -131,31 +101,8 @@ func TestDeleteStateDirectory(t *testing.T) {
 			t.Errorf("unexpected required paths: %s", actualRequiredPaths)
 		}
 
-		if actualHostname != expectedHostname {
-			t.Errorf("got hostname %q want %q", actualHostname, expectedHostname)
-		}
-
 		if actualStreams != step.DevNullStream {
 			t.Errorf("got streams %#v want %#v", actualStreams, step.DevNullStream)
-		}
-	})
-
-	t.Run("errors when System.Hostname() returns an error", func(t *testing.T) {
-		expectedErr := errors.New("hostname error")
-		utils.System.Hostname = func() (string, error) {
-			return "", expectedErr
-		}
-
-		cleanup := agent.SetDeleteDirectories(func(strings []string, strings2 []string, s string, streams step.OutStreams) error {
-			return nil
-		})
-		defer cleanup()
-
-		server := agent.NewServer(agent.Config{})
-		_, err := server.DeleteStateDirectory(context.Background(), &idl.DeleteStateDirectoryRequest{})
-
-		if err != expectedErr {
-			t.Errorf("got error %#v want %#v", err, expectedErr)
 		}
 	})
 }

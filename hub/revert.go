@@ -79,9 +79,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 
 		st.Run(idl.Substep_DELETE_MASTER_DATADIR, func(streams step.OutStreams) error {
 			datadir := s.Config.Target.MasterDataDir()
-			hostname := s.Config.Target.MasterHostname()
-
-			return upgrade.DeleteDirectories([]string{datadir}, upgrade.PostgresFiles, hostname, streams)
+			return upgrade.DeleteDirectories([]string{datadir}, upgrade.PostgresFiles, streams)
 		})
 	}
 

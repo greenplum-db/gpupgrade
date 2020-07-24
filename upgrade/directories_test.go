@@ -331,16 +331,22 @@ func setup(t *testing.T) (teardown func(), directories []string, requiredPaths [
 func TestDeleteDirectories(t *testing.T) {
 	testhelper.SetupTestLogger()
 
+	utils.System.Hostname = func() (string, error) {
+		return "localhost.local", nil
+	}
+	defer func() {
+		utils.System.Hostname = os.Hostname
+	}()
+
 	t.Run("successfully deletes the directories if all required paths exist in that directory", func(t *testing.T) {
 		var buf bytes.Buffer
 		devNull := testutils.DevNullSpy{
 			OutStream: &buf,
 		}
-		hostname := "localhost.local"
 		teardown, directories, requiredPaths := setup(t)
 		defer teardown()
 
-		err := upgrade.DeleteDirectories(directories, requiredPaths, hostname, devNull)
+		err := upgrade.DeleteDirectories(directories, requiredPaths, devNull)
 
 		if err != nil {
 			t.Errorf("unexpected error got %+v", err)
@@ -364,7 +370,7 @@ func TestDeleteDirectories(t *testing.T) {
 		teardown, directories, _ := setup(t)
 		defer teardown()
 
-		err := upgrade.DeleteDirectories(directories, []string{"a", "b"}, "", step.DevNullStream)
+		err := upgrade.DeleteDirectories(directories, []string{"a", "b"}, step.DevNullStream)
 
 		var multiErr *multierror.Error
 		if !xerrors.As(err, &multiErr) {
@@ -391,7 +397,7 @@ func TestDeleteDirectories(t *testing.T) {
 			t.Errorf("unexpected error %+v", err)
 		}
 
-		err2 := upgrade.DeleteDirectories(directories, requiredPaths, "", step.DevNullStream)
+		err2 := upgrade.DeleteDirectories(directories, requiredPaths, step.DevNullStream)
 
 		var multiErr *multierror.Error
 		if !xerrors.As(err2, &multiErr) {
@@ -416,6 +422,24 @@ func TestDeleteDirectories(t *testing.T) {
 
 		if _, err := os.Stat(directories[1]); err == nil {
 			t.Errorf("dataDir %s exists", directories[1])
+		}
+	})
+
+	t.Run("errors when hostname fails", func(t *testing.T) {
+		teardown, directories, requiredPaths := setup(t)
+		defer teardown()
+
+		expected := errors.New("unable to resolve host name")
+		utils.System.Hostname = func() (string, error) {
+			return "", expected
+		}
+		defer func() {
+			utils.System.Hostname = os.Hostname
+		}()
+
+		err := upgrade.DeleteDirectories(directories, requiredPaths, step.DevNullStream)
+		if !xerrors.Is(err, expected) {
+			t.Errorf("got error %#v want %#v", err, expected)
 		}
 	})
 }

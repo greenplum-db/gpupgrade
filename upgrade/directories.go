@@ -174,7 +174,7 @@ func PathExists(path string) bool {
 
 // Each directory in 'directories' is deleted only if every path in 'requiredPaths' exists
 // in that directory.
-func DeleteDirectories(directories []string, requiredPaths []string, hostname string, streams step.OutStreams) error {
+func DeleteDirectories(directories []string, requiredPaths []string, streams step.OutStreams) error {
 	var mErr *multierror.Error
 	for _, directory := range directories {
 		statError := false
@@ -192,7 +192,12 @@ func DeleteDirectories(directories []string, requiredPaths []string, hostname st
 			continue
 		}
 
-		_, err := fmt.Fprintf(streams.Stdout(), "Deleting directory: %q on host %q\n", directory, hostname)
+		hostname, err := utils.System.Hostname()
+		if err != nil {
+			return err
+		}
+
+		_, err = fmt.Fprintf(streams.Stdout(), "Deleting directory: %q on host %q\n", directory, hostname)
 		if err != nil {
 			return err
 		}
