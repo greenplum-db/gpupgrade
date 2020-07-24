@@ -15,6 +15,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/renameio"
+
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
@@ -28,7 +30,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/upgrade"
-	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/daemon"
 	"github.com/greenplum-db/gpupgrade/utils/log"
 )
@@ -37,6 +38,7 @@ var DialTimeout = 3 * time.Second
 
 // Returned from Server.Start() if Server.Stop() has already been called.
 var ErrHubStopped = errors.New("hub is stopped")
+var TempFileFunc = renameio.TempFile
 
 type Dialer func(ctx context.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error)
 
@@ -380,19 +382,14 @@ func (c *Config) Save(w io.Writer) error {
 
 // SaveConfig persists the hub's configuration to disk.
 func (s *Server) SaveConfig() (err error) {
-	// TODO: Switch to an atomic implementation like renameio. Consider what
-	// happens if Config.Save() panics: we'll have truncated the file
-	// on disk and the hub will be unable to recover. For now, since we normally
-	// only save the configuration during initialize and any configuration
-	// errors could be fixed by reinitializing, the risk seems small.
-	file, err := utils.System.Create(upgrade.GetConfigFile())
+	// Use renameio to ensure atomicity when writing
+	file, err := TempFileFunc("", upgrade.GetConfigFile())
 	if err != nil {
 		return err
 	}
 	defer func() {
-		if cerr := file.Close(); cerr != nil {
-			cerr = xerrors.Errorf("closing hub configuration: %w", cerr)
-			err = multierror.Append(err, cerr).ErrorOrNil()
+		if cErr := file.Cleanup(); cErr != nil {
+			err = multierror.Append(err, cErr).ErrorOrNil()
 		}
 	}()
 
@@ -401,7 +398,7 @@ func (s *Server) SaveConfig() (err error) {
 		return xerrors.Errorf("saving hub configuration: %w", err)
 	}
 
-	return nil
+	return file.CloseAtomicallyReplace()
 }
 
 func LoadConfig(conf *Config, path string) error {
