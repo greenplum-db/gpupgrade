@@ -5,10 +5,11 @@ package hub
 
 import (
 	"fmt"
-	"io/ioutil"
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/hashicorp/go-multierror"
 
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/pkg/errors"
@@ -106,14 +107,24 @@ func CreateInitialInitsystemConfig(targetMasterDataDir string) ([]string, error)
 	return gpinitsystemConfig, nil
 }
 
-func WriteInitsystemFile(gpinitsystemConfig []string, gpinitsystemFilepath string) error {
-	gpinitsystemContents := []byte(strings.Join(gpinitsystemConfig, "\n"))
-
-	err := ioutil.WriteFile(gpinitsystemFilepath, gpinitsystemContents, 0644)
+func WriteInitsystemFile(gpinitsystemConfig []string, path string) error {
+	// Use renameio to ensure atomicity when writing
+	file, err := TempFileFunc("", path)
 	if err != nil {
-		return xerrors.Errorf("write gpinitsystem_config file: %w", err)
+		return err
 	}
-	return nil
+	defer func() {
+		if cErr := file.Cleanup(); cErr != nil {
+			err = multierror.Append(err, cErr).ErrorOrNil()
+		}
+	}()
+
+	_, err = file.WriteString(strings.Join(gpinitsystemConfig, "\n"))
+	if err != nil {
+		return xerrors.Errorf("writing gpinitsystem_config file: %w", err)
+	}
+
+	return file.CloseAtomicallyReplace()
 }
 
 func WriteSegmentArray(config []string, targetInitializeConfig InitializeConfig) ([]string, error) {
