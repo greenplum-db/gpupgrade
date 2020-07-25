@@ -9,12 +9,14 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/google/renameio"
+	"github.com/hashicorp/go-multierror"
+
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 const tablespacesQuery = `
@@ -141,13 +143,23 @@ func TablespacesFromDB(conn *dbconn.DBConn, tablespacesFile string) (Tablespaces
 		return nil, xerrors.Errorf("retrieve tablespace information: %w", err)
 	}
 
-	file, err := utils.System.Create(tablespacesFile)
+	// Use renameio to ensure atomicity when writing
+	file, err := renameio.TempFile("", tablespacesFile)
 	if err != nil {
-		return nil, xerrors.Errorf("create tablespace file %q: %w", tablespacesFile, err)
+		return nil, err
 	}
-	defer file.Close()
+	defer func() {
+		if cErr := file.Cleanup(); cErr != nil {
+			err = multierror.Append(err, cErr).ErrorOrNil()
+		}
+	}()
+
 	if err := tablespaceTuples.Write(file); err != nil {
 		return nil, xerrors.Errorf("populate tablespace mapping file: %w", err)
+	}
+
+	if err := file.CloseAtomicallyReplace(); err != nil {
+		return nil, err
 	}
 
 	return NewTablespaces(tablespaceTuples), nil

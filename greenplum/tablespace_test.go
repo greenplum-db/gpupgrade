@@ -7,7 +7,9 @@ import (
 	"bytes"
 	"database/sql/driver"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -16,8 +18,6 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/pkg/errors"
-
-	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 func TestGetTablespaces(t *testing.T) {
@@ -272,35 +272,26 @@ func TestTablespacesFromDB(t *testing.T) {
 	})
 
 	t.Run("populates Tablespaces using DB information", func(t *testing.T) {
+		dir, err := ioutil.TempDir("", "")
+		if err != nil {
+			t.Fatalf("creating temporary directory: %+v", err)
+		}
+		defer func() {
+			err := os.RemoveAll(dir)
+			if err != nil {
+				t.Fatalf("removing temp dir %q: %#v", dir, err)
+			}
+		}()
+
+		file := filepath.Join(dir, TablespacesMappingFile)
 
 		conn, mock := testhelper.CreateMockDBConn()
-
 		testhelper.ExpectVersionQuery(mock, "5.3.4")
 		mock.ExpectQuery("SELECT .* upgrade_tablespace").WillReturnRows(MockTablespaceQueryResult())
 
-		_, write, _ := os.Pipe()
-		createCalled := false
-		inputFileName := ""
-		utils.System.Create = func(name string) (*os.File, error) {
-			inputFileName = name
-			createCalled = true
-			return write, nil
-		}
-		defer write.Close()
-
-		expectedFileName := "/tmp/mappingFile.txt"
-		tablespaces, err := TablespacesFromDB(conn, expectedFileName)
-
+		tablespaces, err := TablespacesFromDB(conn, file)
 		if err != nil {
 			t.Errorf("got unexpected error: %+v", err)
-		}
-
-		if !createCalled {
-			t.Error("expected Create() to be invoked")
-		}
-
-		if inputFileName != expectedFileName {
-			t.Errorf("Create() got %q, want %q", inputFileName, expectedFileName)
 		}
 
 		expectedTablespaces := Tablespaces{
@@ -321,33 +312,15 @@ func TestTablespacesFromDB(t *testing.T) {
 		if !reflect.DeepEqual(tablespaces, expectedTablespaces) {
 			t.Errorf("expected: %#v got: %#v", expectedTablespaces, tablespaces)
 		}
-	})
 
-	t.Run("fails to create tablespacesFile", func(t *testing.T) {
-
-		conn, mock := testhelper.CreateMockDBConn()
-
-		testhelper.ExpectVersionQuery(mock, "5.3.4")
-		mock.ExpectQuery("SELECT .* upgrade_tablespace").WillReturnRows(MockTablespaceQueryResult())
-
-		expectedFileName := "/tmp/mappingFile.txt"
-		expectedError := errors.New("permission denied")
-		createCalled := false
-		utils.System.Create = func(name string) (*os.File, error) {
-			if name != expectedFileName {
-				t.Errorf("got %q, want %q", name, expectedFileName)
-			}
-			createCalled = true
-			return nil, expectedError
-		}
-		_, err := TablespacesFromDB(conn, expectedFileName)
-
-		if err == nil {
-			t.Errorf("expected error: %+v", expectedError)
+		contents, err := ioutil.ReadFile(file)
+		if err != nil {
+			t.Fatalf("error reading file %q: %v", file, err)
 		}
 
-		if !createCalled {
-			t.Errorf("expected Create() to be called")
+		expected := "1,1663,pg_default,/tmp/master_tablespace,0\n2,1663,pg_default,/tmp/my_tablespace,0\n"
+		if string(contents) != expected {
+			t.Errorf("got %q want %q", contents, expected)
 		}
 	})
 }
