@@ -838,17 +838,14 @@ Optional Flags:
 	revertHelp = `
 Returns the cluster to its original state.
 This command cannot be run after gpupgrade finalize has begun.
-This command cannot be stopped.
 
 Revert will carry out some or all of the following steps:
 %s
-
 Usage: gpupgrade revert
 
 Optional Flags:
 
   -h, --help      displays help output for revert
-
   -v, --verbose   outputs detailed logs for revert
 `
 	GlobalHelp = `
