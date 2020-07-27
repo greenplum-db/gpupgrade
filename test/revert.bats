@@ -23,17 +23,6 @@ setup() {
 teardown() {
     skip_if_no_gpdb
 
-    if [ -n "$TABLE" ]; then
-        $PSQL postgres -c "DROP TABLE ${TABLE}"
-    fi
-
-    if [ -n "$MARKER" ]; then
-        local datadirs=($(query_datadirs $GPHOME_SOURCE $PGPORT))
-        for datadir in "${datadirs[@]}"; do
-            rm -f "$datadir/${MARKER}"
-        done
-    fi
-
     run_teardowns
 }
 
@@ -91,6 +80,14 @@ test_revert_after_execute() {
         touch "$datadir/${MARKER}"
     done
 
+    # Cleanup marker files in all directories since on success link mode rsyncs
+    # the marker file to primaries, and the test can fail at any point.
+    local datadirs
+    datadirs=($(query_datadirs $GPHOME_SOURCE $PGPORT))
+    for datadir in "${datadirs[@]}"; do
+        register_teardown rm -f "$datadir/${MARKER}"
+    done
+
     # Add a tablespace, which only works when upgrading from 5X.
     if is_GPDB5 "$GPHOME_SOURCE"; then
         local tablespace_table="tablespace_table"
@@ -101,6 +98,8 @@ test_revert_after_execute() {
     # Add a table
     TABLE="should_be_reverted"
     $PSQL postgres -c "CREATE TABLE ${TABLE} (a INT)"
+    register_teardown $PSQL postgres -c "DROP TABLE ${TABLE}"
+
     $PSQL postgres -c "INSERT INTO ${TABLE} VALUES (1), (2), (3)"
 
     gpupgrade initialize \
