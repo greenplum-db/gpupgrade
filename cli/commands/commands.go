@@ -493,14 +493,16 @@ func initialize() *cobra.Command {
 				return xerrors.Errorf("initialize create cluster: %w", err)
 			}
 
-			fmt.Println(`
+			fmt.Print(`
 Initialize completed successfully.
 
 NEXT ACTIONS
 ------------
-Run "gpupgrade execute" to proceed with the upgrade.
+To proceed with the upgrade, run "gpupgrade execute"
+followed by "gpupgrade finalize".
 
-After executing, you will need to finalize.`)
+To return the cluster to its original state, run "gpupgrade revert".
+`)
 
 			return nil
 		},
