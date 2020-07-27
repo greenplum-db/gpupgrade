@@ -16,8 +16,10 @@ import (
 )
 
 type RevertResponse struct {
-	Version    string
-	ArchiveDir string
+	SourcePort          string
+	SourceMasterDataDir string
+	Version             string
+	ArchiveDir          string
 }
 
 type receiver interface {
@@ -184,10 +186,12 @@ func Revert(client idl.CliToHubClient, verbose bool) (*RevertResponse, error) {
 		return &RevertResponse{}, xerrors.Errorf("Revert: %w", err)
 	}
 
-	version := response[idl.ResponseKey_source_version.String()]
-	archiveDir := response[idl.ResponseKey_revert_log_archive_directory.String()]
-
-	return &RevertResponse{version, archiveDir}, nil
+	return &RevertResponse{
+		SourcePort:          response[idl.ResponseKey_source_port.String()],
+		SourceMasterDataDir: response[idl.ResponseKey_source_master_data_directory.String()],
+		Version:             response[idl.ResponseKey_source_version.String()],
+		ArchiveDir:          response[idl.ResponseKey_revert_log_archive_directory.String()],
+	}, nil
 }
 
 func UILoop(stream receiver, verbose bool) (map[string]string, error) {

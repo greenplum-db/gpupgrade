@@ -126,10 +126,13 @@ message Message {
 }
 
 enum ResponseKey {
-    target_port = 0;
-    target_master_data_directory = 1;
-    revert_log_archive_directory = 2;
-    source_version = 3;
+    ResponseKey_UNSPECIFIED = 0; // https://developers.google.com/protocol-buffers/docs/style#enums
+    source_port = 1;
+    target_port = 2;
+    source_master_data_directory = 3;
+    target_master_data_directory = 4;
+    revert_log_archive_directory = 5;
+    source_version = 6;
 }
 
 message Response {

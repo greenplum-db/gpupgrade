@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -142,6 +143,8 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 	}
 
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Data: map[string]string{
+		idl.ResponseKey_source_port.String():                  strconv.Itoa(s.Source.MasterPort()),
+		idl.ResponseKey_source_master_data_directory.String(): s.Source.MasterDataDir(),
 		idl.ResponseKey_source_version.String():               s.Source.Version.VersionString,
 		idl.ResponseKey_revert_log_archive_directory.String(): archiveDir,
 	}}}}

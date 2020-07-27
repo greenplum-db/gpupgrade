@@ -599,22 +599,24 @@ func revert() *cobra.Command {
 				return err
 			}
 
-			fmt.Println()
-			fmt.Println("Revert completed successfully.")
 			fmt.Printf(`
-The source cluster has reverted to %s.
+Revert completed successfully.
 
-The gpupgrade logs can be found on the master and segment hosts in: 
+Reverted to source cluster version %s.
+
+The source cluster is now running. The PGPORT is %s and the 
+MASTER_DATA_DIRECTORY is %s
+
+The gpupgrade logs can be found on the master and segment hosts in
 %s
 
 NEXT ACTIONS
 ------------
-If you would like to re-run gpupgrade, run "gpupgrade initialize" again.
+To restart the upgrade, run "gpupgrade initialize" again.
 
-If you no longer want to proceed with gpupgrade, you must recreate 
-any tables, indexes, and/or roles that were dropped in order to pass 
-the pg_upgrade checks.`, response.Version, response.ArchiveDir)
-			fmt.Println()
+To use the reverted cluster, you must recreate any tables, indexes, and/or 
+roles that were dropped or altered to pass the pg_upgrade checks.
+`, response.Version, response.SourcePort, response.SourceMasterDataDir, response.ArchiveDir)
 
 			return nil
 		},
