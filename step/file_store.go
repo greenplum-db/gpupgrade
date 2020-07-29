@@ -8,10 +8,8 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/google/renameio"
-	"github.com/hashicorp/go-multierror"
-
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 type Store interface {
@@ -105,21 +103,5 @@ func (f *FileStore) Write(step idl.Step, substep idl.Substep, status idl.Status)
 		return err
 	}
 
-	// Use renameio to ensure atomicity when writing the status file.
-	t, err := renameio.TempFile("", f.path)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if cErr := t.Cleanup(); cErr != nil {
-			err = multierror.Append(err, cErr).ErrorOrNil()
-		}
-	}()
-
-	_, err = t.Write(data)
-	if err != nil {
-		return err
-	}
-
-	return t.CloseAtomicallyReplace()
+	return utils.AtomicallyWrite(f.path, data)
 }

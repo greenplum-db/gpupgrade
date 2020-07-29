@@ -9,6 +9,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
@@ -56,6 +57,39 @@ func TestMove(t *testing.T) {
 		var exitError *exec.ExitError
 		if !xerrors.As(err, &exitError) {
 			t.Errorf("got %T, want %T", err, exitError)
+		}
+	})
+}
+
+func TestAtomicallyWrite(t *testing.T) {
+	t.Run("successfully writes", func(t *testing.T) {
+		dir := testutils.GetTempDir(t, "")
+		defer testutils.MustRemoveAll(t, dir)
+
+		path := filepath.Join(dir, upgrade.ConfigFileName)
+
+		expected := "testing writing to a file"
+		if err := utils.AtomicallyWrite(path, []byte(expected)); err != nil {
+			t.Errorf("AtomicallyWrite returned error %+v", err)
+		}
+
+		contents := testutils.MustReadFile(t, path)
+		if contents != expected {
+			t.Errorf("wrote %#q want %q", contents, expected)
+		}
+	})
+
+	t.Run("errors when directory does not exist", func(t *testing.T) {
+		path := "/does/not/exist"
+
+		err := utils.AtomicallyWrite(path, []byte{})
+		var expected *os.PathError
+		if !xerrors.As(err, &expected) {
+			t.Errorf("returned error type %T want %T", err, expected)
+		}
+
+		if upgrade.PathExists(path) {
+			t.Errorf("expected file %q to not exist", path)
 		}
 	})
 }

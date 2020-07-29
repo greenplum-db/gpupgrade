@@ -11,6 +11,9 @@ import (
 	"os/user"
 	"path/filepath"
 	"time"
+
+	"github.com/google/renameio"
+	"github.com/hashicorp/go-multierror"
 )
 
 var (
@@ -109,4 +112,25 @@ func Move(src string, dst string) error {
 	_, err := cmd.Output()
 
 	return err
+}
+
+func AtomicallyWrite(path string, data []byte) (err error) {
+	// Use renameio to atomically write the file located at path.
+	var file *renameio.PendingFile
+	file, err = renameio.TempFile("", path)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if cErr := file.Cleanup(); cErr != nil {
+			err = multierror.Append(err, cErr).ErrorOrNil()
+		}
+	}()
+
+	_, err = file.Write(data)
+	if err != nil {
+		return err
+	}
+
+	return file.CloseAtomicallyReplace()
 }
