@@ -4,6 +4,7 @@
 package hub
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -380,28 +381,12 @@ func (c *Config) Save(w io.Writer) error {
 
 // SaveConfig persists the hub's configuration to disk.
 func (s *Server) SaveConfig() (err error) {
-	// TODO: Switch to an atomic implementation like renameio. Consider what
-	// happens if Config.Save() panics: we'll have truncated the file
-	// on disk and the hub will be unable to recover. For now, since we normally
-	// only save the configuration during initialize and any configuration
-	// errors could be fixed by reinitializing, the risk seems small.
-	file, err := utils.System.Create(upgrade.GetConfigFile())
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if cerr := file.Close(); cerr != nil {
-			cerr = xerrors.Errorf("closing hub configuration: %w", cerr)
-			err = multierror.Append(err, cerr).ErrorOrNil()
-		}
-	}()
-
-	err = s.Config.Save(file)
-	if err != nil {
-		return xerrors.Errorf("saving hub configuration: %w", err)
+	var buffer bytes.Buffer
+	if err = s.Config.Save(&buffer); err != nil {
+		return xerrors.Errorf("save config: %w", err)
 	}
 
-	return nil
+	return utils.AtomicallyWrite(upgrade.GetConfigFile(), buffer.Bytes())
 }
 
 func LoadConfig(conf *Config, path string) error {

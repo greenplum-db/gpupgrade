@@ -7,6 +7,7 @@ import (
 	"context"
 	"net"
 	"os"
+	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
@@ -14,7 +15,6 @@ import (
 	"time"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 	"google.golang.org/grpc"
@@ -24,7 +24,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/mock_agent"
-	"github.com/greenplum-db/gpupgrade/utils"
+	"github.com/greenplum-db/gpupgrade/upgrade"
 )
 
 const timeout = 1 * time.Second
@@ -331,81 +331,31 @@ func TestHubSaveConfig(t *testing.T) {
 	h := hub.New(conf, nil, "")
 
 	t.Run("saves configuration contents to disk", func(t *testing.T) {
-		// Set up utils.System.Create to return the write side of a pipe. We can
-		// read from the other side to confirm what was saved to "disk".
-		read, write, err := os.Pipe()
-		if err != nil {
-			t.Fatalf("creating pipe: %+v", err)
-		}
-		defer func() {
-			read.Close()
-			write.Close()
-		}()
+		stateDir := testutils.GetTempDir(t, "")
+		defer testutils.MustRemoveAll(t, stateDir)
 
-		utils.System.Create = func(path string) (*os.File, error) {
-			return write, nil
-		}
-		defer func() {
-			utils.System = utils.InitializeSystemFunctions()
-		}()
+		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
+		defer resetEnv()
 
-		// Write the hub's configuration to the pipe.
+		// Write the hub's configuration.
 		if err := h.SaveConfig(); err != nil {
-			t.Errorf("SaveConfig() returned error %+v", err)
+			t.Errorf("SaveConfig returned error %+v", err)
 		}
 
-		// Reload the configuration from the read side of the pipe and ensure the
-		// contents are the same.
+		// Reload the configuration and ensure the contents are the same.
+		path := filepath.Join(stateDir, upgrade.ConfigFileName)
+		file, err := os.Open(path)
+		if err != nil {
+			t.Fatalf("error opening config %q: %+v", path, err)
+		}
+
 		actual := new(hub.Config)
-		if err := actual.Load(read); err != nil {
-			t.Errorf("loading configuration results: %+v", err)
+		if err := actual.Load(file); err != nil {
+			t.Errorf("loading config: %+v", err)
 		}
 
-		if !reflect.DeepEqual(h.Config, actual) {
-			t.Errorf("wrote config %#v, want %#v", actual, h.Config)
-		}
-	})
-
-	t.Run("bubbles up file creation errors", func(t *testing.T) {
-		expected := errors.New("can't create")
-
-		utils.System.Create = func(path string) (*os.File, error) {
-			return nil, expected
-		}
-		defer func() {
-			utils.System = utils.InitializeSystemFunctions()
-		}()
-
-		err := h.SaveConfig()
-		if !xerrors.Is(err, expected) {
-			t.Errorf("returned %#v, want %#v", err, expected)
-		}
-	})
-
-	t.Run("bubbles up file manipulation errors", func(t *testing.T) {
-		// A nil file will fail to write and close, so we can make sure things
-		// are handled correctly.
-		utils.System.Create = func(path string) (*os.File, error) {
-			return nil, nil
-		}
-		defer func() {
-			utils.System = utils.InitializeSystemFunctions()
-		}()
-
-		err := h.SaveConfig()
-
-		// multierror.Error that contains os.ErrInvalid is not itself an instance
-		// of os.ErrInvalid, so unpack it to check existence of os.ErrInvalid
-		var merr *multierror.Error
-		if !xerrors.As(err, &merr) {
-			t.Fatalf("returned %#v, want error type %T", err, merr)
-		}
-
-		for _, err := range merr.Errors {
-			// For nil Files, operations return os.ErrInvalid.
-			if !xerrors.Is(err, os.ErrInvalid) {
-				t.Errorf("returned error %#v, want %#v", err, os.ErrInvalid)
-			}
+		if !reflect.DeepEqual(actual, h.Config) {
+			t.Errorf("wrote config %#v want %#v", actual, h.Config)
 		}
 	})
 }
