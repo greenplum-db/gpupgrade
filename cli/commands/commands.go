@@ -59,6 +59,7 @@ import (
 )
 
 var (
+	timeout        time.Duration
 	Help           map[string]string
 	InitializeHelp string
 	ExecuteHelp    string
@@ -131,6 +132,7 @@ func BuildRootCommand() *cobra.Command {
 	}
 
 	root.Flags().BoolVarP(&shouldPrintVersion, "version", "V", false, "prints version")
+	root.PersistentFlags().DurationVar(&timeout, "timeout", time.Second, `Connection timeout to the hub specified as a duration. Default is "1s". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".`)
 
 	root.AddCommand(config)
 	root.AddCommand(version())
@@ -148,30 +150,6 @@ func BuildRootCommand() *cobra.Command {
 	config.AddCommand(subConfigSet, subConfigShow)
 
 	return addHelpToCommand(root, GlobalHelp)
-}
-
-// connTimeout retrieves the GPUPGRADE_CONNECTION_TIMEOUT environment variable,
-// interprets it as a (possibly fractional) number of seconds, and converts it
-// into a Duration. The default is one second if the envvar is unset or
-// unreadable.
-//
-// TODO: should we make this a global --option instead?
-func connTimeout() time.Duration {
-	const defaultDuration = time.Second
-
-	seconds, ok := os.LookupEnv("GPUPGRADE_CONNECTION_TIMEOUT")
-	if !ok {
-		return defaultDuration
-	}
-
-	duration, err := strconv.ParseFloat(seconds, 64)
-	if err != nil {
-		gplog.Warn(`GPUPGRADE_CONNECTION_TIMEOUT of "%s" is invalid (%s); using default of one second`,
-			seconds, err)
-		return defaultDuration
-	}
-
-	return time.Duration(duration * float64(time.Second))
 }
 
 // This reads the hub's persisted configuration for the current
@@ -207,7 +185,7 @@ func connectToHub() idl.CliToHubClient {
 // Any errors result in a call to os.Exit(1).
 func connectToHubOnPort(port int) idl.CliToHubClient {
 	// Set up our timeout.
-	ctx, cancel := context.WithTimeout(context.Background(), connTimeout())
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	// Attempt a connection.

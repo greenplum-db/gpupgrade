@@ -132,13 +132,11 @@ outputContains() {
         'finalize'
     )
 
-    # We don't want to have to wait for the default one-second timeout for all
-    # of these commands.
-    export GPUPGRADE_CONNECTION_TIMEOUT=0
-
     # Run every subcommand.
     for command in "${commands[@]}"; do
-        run gpupgrade $command
+        # We don't want to have to wait for the default one-second timeout for
+        # all of these commands.
+        run gpupgrade $command --timeout 0
 
         # Trace which command we're on to make debugging easier.
         echo "\$ gpupgrade $command -> $status"

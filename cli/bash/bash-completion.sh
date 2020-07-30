@@ -342,6 +342,8 @@ _gpupgrade_config_set()
     flags+=("--target-gphome=")
     two_word_flags+=("--target-gphome")
     local_nonpersistent_flags+=("--target-gphome=")
+    flags+=("--timeout=")
+    two_word_flags+=("--timeout")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -370,6 +372,8 @@ _gpupgrade_config_show()
     local_nonpersistent_flags+=("--target-datadir")
     flags+=("--target-gphome")
     local_nonpersistent_flags+=("--target-gphome")
+    flags+=("--timeout=")
+    two_word_flags+=("--timeout")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -392,26 +396,8 @@ _gpupgrade_config()
     flags_with_completion=()
     flags_completion=()
 
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_gpupgrade_execute_help()
-{
-    last_command="gpupgrade_execute_help"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
+    flags+=("--timeout=")
+    two_word_flags+=("--timeout")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -425,7 +411,6 @@ _gpupgrade_execute()
     command_aliases=()
 
     commands=()
-    commands+=("help")
 
     flags=()
     two_word_flags=()
@@ -433,32 +418,11 @@ _gpupgrade_execute()
     flags_with_completion=()
     flags_completion=()
 
-    flags+=("--?")
-    flags+=("-?")
-    local_nonpersistent_flags+=("--?")
     flags+=("--verbose")
     flags+=("-v")
     local_nonpersistent_flags+=("--verbose")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_gpupgrade_finalize_help()
-{
-    last_command="gpupgrade_finalize_help"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
+    flags+=("--timeout=")
+    two_word_flags+=("--timeout")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -472,7 +436,6 @@ _gpupgrade_finalize()
     command_aliases=()
 
     commands=()
-    commands+=("help")
 
     flags=()
     two_word_flags=()
@@ -480,52 +443,11 @@ _gpupgrade_finalize()
     flags_with_completion=()
     flags_completion=()
 
-    flags+=("--?")
-    flags+=("-?")
-    local_nonpersistent_flags+=("--?")
     flags+=("--verbose")
     flags+=("-v")
     local_nonpersistent_flags+=("--verbose")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_gpupgrade_help()
-{
-    last_command="gpupgrade_help"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_gpupgrade_initialize_help()
-{
-    last_command="gpupgrade_initialize_help"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
+    flags+=("--timeout=")
+    two_word_flags+=("--timeout")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -539,7 +461,6 @@ _gpupgrade_initialize()
     command_aliases=()
 
     commands=()
-    commands+=("help")
 
     flags=()
     two_word_flags=()
@@ -547,9 +468,6 @@ _gpupgrade_initialize()
     flags_with_completion=()
     flags_completion=()
 
-    flags+=("--?")
-    flags+=("-?")
-    local_nonpersistent_flags+=("--?")
     flags+=("--agent-port=")
     two_word_flags+=("--agent-port")
     local_nonpersistent_flags+=("--agent-port=")
@@ -581,6 +499,8 @@ _gpupgrade_initialize()
     flags+=("--verbose")
     flags+=("-v")
     local_nonpersistent_flags+=("--verbose")
+    flags+=("--timeout=")
+    two_word_flags+=("--timeout")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -601,6 +521,8 @@ _gpupgrade_kill-services()
     flags_with_completion=()
     flags_completion=()
 
+    flags+=("--timeout=")
+    two_word_flags+=("--timeout")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -621,26 +543,8 @@ _gpupgrade_restart-services()
     flags_with_completion=()
     flags_completion=()
 
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_gpupgrade_revert_help()
-{
-    last_command="gpupgrade_revert_help"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
+    flags+=("--timeout=")
+    two_word_flags+=("--timeout")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -654,7 +558,6 @@ _gpupgrade_revert()
     command_aliases=()
 
     commands=()
-    commands+=("help")
 
     flags=()
     two_word_flags=()
@@ -662,12 +565,11 @@ _gpupgrade_revert()
     flags_with_completion=()
     flags_completion=()
 
-    flags+=("--?")
-    flags+=("-?")
-    local_nonpersistent_flags+=("--?")
     flags+=("--verbose")
     flags+=("-v")
     local_nonpersistent_flags+=("--verbose")
+    flags+=("--timeout=")
+    two_word_flags+=("--timeout")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -688,6 +590,8 @@ _gpupgrade_version()
     flags_with_completion=()
     flags_completion=()
 
+    flags+=("--timeout=")
+    two_word_flags+=("--timeout")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -704,7 +608,6 @@ _gpupgrade_root_command()
     commands+=("config")
     commands+=("execute")
     commands+=("finalize")
-    commands+=("help")
     commands+=("initialize")
     commands+=("kill-services")
     commands+=("restart-services")
@@ -717,9 +620,8 @@ _gpupgrade_root_command()
     flags_with_completion=()
     flags_completion=()
 
-    flags+=("--?")
-    flags+=("-?")
-    local_nonpersistent_flags+=("--?")
+    flags+=("--timeout=")
+    two_word_flags+=("--timeout")
     flags+=("--version")
     flags+=("-V")
     local_nonpersistent_flags+=("--version")
