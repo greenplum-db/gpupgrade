@@ -38,7 +38,7 @@ const tablespacesQuery = `
 // map<tablespaceOid, tablespaceInfo>
 type SegmentTablespaces map[int]TablespaceInfo
 
-// map<databaseOid, map<tablespaceOid, tablespaceInfo>>
+// map<DbID, map<tablespaceOid, tablespaceInfo>>
 type Tablespaces map[int]SegmentTablespaces
 
 // slice of tablespace rows from database
