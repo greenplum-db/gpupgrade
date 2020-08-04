@@ -19,18 +19,28 @@ import (
 )
 
 func TestDeleteSegmentDataDirs(t *testing.T) {
-	c := hub.MustCreateCluster(t, []greenplum.SegConfig{
+	segConfigs := []greenplum.SegConfig{
 		{ContentID: -1, DbID: 0, Port: 25431, Hostname: "master", DataDir: "/data/qddir", Role: greenplum.PrimaryRole},
 		{ContentID: -1, DbID: 1, Port: 25431, Hostname: "standby", DataDir: "/data/standby", Role: greenplum.MirrorRole},
+	}
+
+	primarySegConfigs := []greenplum.SegConfig{
 		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
 		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 		{ContentID: 2, DbID: 4, Port: 25434, Hostname: "sdw1", DataDir: "/data/dbfast1/seg3", Role: greenplum.PrimaryRole},
 		{ContentID: 3, DbID: 5, Port: 25435, Hostname: "sdw2", DataDir: "/data/dbfast2/seg4", Role: greenplum.PrimaryRole},
+	}
+	segConfigs = append(segConfigs, primarySegConfigs...)
+
+	mirrorSegConfigs := []greenplum.SegConfig{
 		{ContentID: 0, DbID: 6, Port: 35432, Hostname: "sdw1", DataDir: "/data/dbfast_mirror1/seg1", Role: greenplum.MirrorRole},
 		{ContentID: 1, DbID: 7, Port: 35433, Hostname: "sdw2", DataDir: "/data/dbfast_mirror2/seg2", Role: greenplum.MirrorRole},
 		{ContentID: 2, DbID: 8, Port: 35434, Hostname: "sdw1", DataDir: "/data/dbfast_mirror1/seg3", Role: greenplum.MirrorRole},
 		{ContentID: 3, DbID: 9, Port: 35435, Hostname: "sdw2", DataDir: "/data/dbfast_mirror2/seg4", Role: greenplum.MirrorRole},
-	})
+	}
+	segConfigs = append(segConfigs, mirrorSegConfigs...)
+
+	c := hub.MustCreateCluster(t, segConfigs)
 
 	testhelper.SetupTestLogger()
 
@@ -108,7 +118,7 @@ func TestDeleteSegmentDataDirs(t *testing.T) {
 				{nil, standbyClient, "standby", nil},
 			}
 
-			err := hub.DeletePrimaryDataDirectories(agentConns, c)
+			err := hub.DeletePrimaryDataDirectories(agentConns, primarySegConfigs)
 			if err != nil {
 				t.Errorf("unexpected err %#v", err)
 			}
@@ -136,7 +146,7 @@ func TestDeleteSegmentDataDirs(t *testing.T) {
 				{nil, sdw2ClientFailed, "sdw2", nil},
 			}
 
-			err := hub.DeletePrimaryDataDirectories(agentConns, c)
+			err := hub.DeletePrimaryDataDirectories(agentConns, primarySegConfigs)
 
 			var multiErr *multierror.Error
 			if !xerrors.As(err, &multiErr) {

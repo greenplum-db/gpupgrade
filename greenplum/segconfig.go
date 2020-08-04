@@ -17,6 +17,8 @@ type SegConfig struct {
 	Role      string
 }
 
+type SegConfigs []SegConfig
+
 const (
 	PrimaryRole = "p"
 	MirrorRole  = "m"
@@ -83,4 +85,19 @@ func MustGetSegmentConfiguration(connection *dbconn.DBConn) []SegConfig {
 	segConfigs, err := GetSegmentConfiguration(connection)
 	gplog.FatalOnError(err)
 	return segConfigs
+}
+
+// SelectSegmentConfigs returns a list of all segments that match the given selector
+// function. Segments are visited in order of ascending content ID (primaries
+// before mirrors).
+func (s SegConfigs) Select(selector func(*SegConfig) bool) SegConfigs {
+	var matches SegConfigs
+
+	for _, seg := range s {
+		if selector(&seg) {
+			matches = append(matches, seg)
+		}
+	}
+
+	return matches
 }

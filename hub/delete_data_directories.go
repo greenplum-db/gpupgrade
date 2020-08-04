@@ -11,24 +11,21 @@ import (
 )
 
 func DeleteMirrorAndStandbyDataDirectories(agentConns []*Connection, cluster *greenplum.Cluster) error {
-	return deleteDataDirectories(agentConns, cluster, false)
+	segs := cluster.SelectSegments(func(seg *greenplum.SegConfig) bool {
+		return seg.Role == greenplum.MirrorRole
+	})
+	return deleteDataDirectories(agentConns, segs)
 }
 
-func DeletePrimaryDataDirectories(agentConns []*Connection, cluster *greenplum.Cluster) error {
-	return deleteDataDirectories(agentConns, cluster, true)
+func DeletePrimaryDataDirectories(agentConns []*Connection, segConfigs greenplum.SegConfigs) error {
+	return deleteDataDirectories(agentConns, segConfigs)
 }
 
-func deleteDataDirectories(agentConns []*Connection, cluster *greenplum.Cluster, primaries bool) error {
+func deleteDataDirectories(agentConns []*Connection, segConfigs greenplum.SegConfigs) error {
 	request := func(conn *Connection) error {
-		segs := cluster.SelectSegments(func(seg *greenplum.SegConfig) bool {
-			if seg.Hostname != conn.Hostname {
-				return false
-			}
 
-			if primaries {
-				return seg.IsPrimary()
-			}
-			return seg.Role == greenplum.MirrorRole
+		segs := segConfigs.Select(func(seg *greenplum.SegConfig) bool {
+			return seg.Hostname == conn.Hostname
 		})
 
 		if len(segs) == 0 {

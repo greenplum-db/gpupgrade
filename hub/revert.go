@@ -73,13 +73,15 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		})
 	}
 
-	if len(s.Config.Target.Primaries) > 0 {
+	if s.TargetInitializeConfig.Primaries != nil {
 		st.Run(idl.Substep_DELETE_PRIMARY_DATADIRS, func(_ step.OutStreams) error {
-			return DeletePrimaryDataDirectories(s.agentConns, s.Config.Target)
+			return DeletePrimaryDataDirectories(s.agentConns, s.TargetInitializeConfig.Primaries)
 		})
+	}
 
+	if s.TargetInitializeConfig.Master.DataDir != "" {
 		st.Run(idl.Substep_DELETE_MASTER_DATADIR, func(streams step.OutStreams) error {
-			datadir := s.Config.Target.MasterDataDir()
+			datadir := s.TargetInitializeConfig.Master.DataDir
 			return upgrade.DeleteDirectories([]string{datadir}, upgrade.PostgresFiles, streams)
 		})
 	}
