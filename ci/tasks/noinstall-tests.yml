@@ -23,10 +23,20 @@ run:
     apt update
     apt install -y rsync
 
-    export TERM=linux
     ./bats/install.sh /usr/local
 
-    export GOFLAGS="-mod=readonly" # do not update dependencies during build
-    cd gpupgrade_src
-    make
-    make check --keep-going
+    # Run unit tests as a non-root user since some tests rely on specifying file
+    # permissions which are overridden by root.
+    adduser  --disabled-password --gecos "" --ingroup tty --shell /bin/bash gpadmin
+    chmod -R a+w gpupgrade_src
+
+    su gpadmin -c '
+      set -ex
+
+      export TERM=linux
+      export GOFLAGS="-mod=readonly" # do not update dependencies during build
+
+      cd gpupgrade_src
+      make
+      make check --keep-going
+    '
