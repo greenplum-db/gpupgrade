@@ -283,7 +283,7 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 		defer ctrl.Finish()
 
 		msdw1 := mock_idl.NewMockAgentClient(ctrl)
-		msdw1.EXPECT().Rsync(
+		msdw1.EXPECT().RsyncTablespaceDirectories(
 			gomock.Any(),
 			&idl.RsyncRequest{
 				Options:  hub.Options,
@@ -297,7 +297,7 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 		).Return(&idl.RsyncReply{}, nil)
 
 		msdw2 := mock_idl.NewMockAgentClient(ctrl)
-		msdw2.EXPECT().Rsync(
+		msdw2.EXPECT().RsyncTablespaceDirectories(
 			gomock.Any(),
 			&idl.RsyncRequest{
 				Options:  hub.Options,
@@ -414,14 +414,14 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 		defer ctrl.Finish()
 
 		msdw1 := mock_idl.NewMockAgentClient(ctrl)
-		msdw1.EXPECT().Rsync(
+		msdw1.EXPECT().RsyncTablespaceDirectories(
 			gomock.Any(),
 			gomock.Any(),
 		).Return(&idl.RsyncReply{}, nil)
 
 		expected := errors.New("permission denied")
 		failedClient := mock_idl.NewMockAgentClient(ctrl)
-		failedClient.EXPECT().Rsync(
+		failedClient.EXPECT().RsyncTablespaceDirectories(
 			gomock.Any(),
 			gomock.Any(),
 		).Return(nil, expected)
