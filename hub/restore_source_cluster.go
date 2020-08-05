@@ -207,7 +207,7 @@ func RsyncPrimariesTablespaces(agentConns []*Connection, source *greenplum.Clust
 			Pairs:    pairs,
 		}
 
-		_, err := conn.AgentClient.Rsync(context.Background(), req)
+		_, err := conn.AgentClient.RsyncTablespaceDirectories(context.Background(), req)
 		return err
 	}
 

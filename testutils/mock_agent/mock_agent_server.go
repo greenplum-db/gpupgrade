@@ -108,7 +108,7 @@ func (m *MockAgentServer) ArchiveLogDirectory(context.Context, *idl.ArchiveLogDi
 	return &idl.ArchiveLogDirectoryReply{}, nil
 }
 
-func (m *MockAgentServer) Rsync(context.Context, *idl.RsyncRequest) (*idl.RsyncReply, error) {
+func (m *MockAgentServer) RsyncTablespaceDirectories(context.Context, *idl.RsyncRequest) (*idl.RsyncReply, error) {
 	m.increaseCalls()
 	return &idl.RsyncReply{}, nil
 }

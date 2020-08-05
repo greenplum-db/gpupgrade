@@ -34,8 +34,8 @@ func (s *Server) RsyncDataDirectories(ctx context.Context, in *idl.RsyncRequest)
 	return &idl.RsyncReply{}, rsyncRequestDirs(in)
 }
 
-func (s *Server) Rsync(ctx context.Context, in *idl.RsyncRequest) (*idl.RsyncReply, error) {
-	gplog.Info("agent received request to rsync from source to destination")
+func (s *Server) RsyncTablespaceDirectories(ctx context.Context, in *idl.RsyncRequest) (*idl.RsyncReply, error) {
+	gplog.Info("agent received request to rsync tablespace directories")
 
 	return &idl.RsyncReply{}, rsyncRequestDirs(in)
 }

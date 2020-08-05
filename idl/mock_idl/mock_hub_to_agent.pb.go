@@ -215,24 +215,24 @@ func (mr *MockAgentClientMockRecorder) RsyncDataDirectories(ctx, in interface{},
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RsyncDataDirectories", reflect.TypeOf((*MockAgentClient)(nil).RsyncDataDirectories), varargs...)
 }
 
-// Rsync mocks base method
-func (m *MockAgentClient) Rsync(ctx context.Context, in *idl.RsyncRequest, opts ...grpc.CallOption) (*idl.RsyncReply, error) {
+// RsyncTablespaceDirectories mocks base method
+func (m *MockAgentClient) RsyncTablespaceDirectories(ctx context.Context, in *idl.RsyncRequest, opts ...grpc.CallOption) (*idl.RsyncReply, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "Rsync", varargs...)
+	ret := m.ctrl.Call(m, "RsyncTablespaceDirectories", varargs...)
 	ret0, _ := ret[0].(*idl.RsyncReply)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Rsync indicates an expected call of Rsync
-func (mr *MockAgentClientMockRecorder) Rsync(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+// RsyncTablespaceDirectories indicates an expected call of RsyncTablespaceDirectories
+func (mr *MockAgentClientMockRecorder) RsyncTablespaceDirectories(ctx, in interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Rsync", reflect.TypeOf((*MockAgentClient)(nil).Rsync), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RsyncTablespaceDirectories", reflect.TypeOf((*MockAgentClient)(nil).RsyncTablespaceDirectories), varargs...)
 }
 
 // MockAgentServer is a mock of AgentServer interface
@@ -393,17 +393,17 @@ func (mr *MockAgentServerMockRecorder) RsyncDataDirectories(arg0, arg1 interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RsyncDataDirectories", reflect.TypeOf((*MockAgentServer)(nil).RsyncDataDirectories), arg0, arg1)
 }
 
-// Rsync mocks base method
-func (m *MockAgentServer) Rsync(arg0 context.Context, arg1 *idl.RsyncRequest) (*idl.RsyncReply, error) {
+// RsyncTablespaceDirectories mocks base method
+func (m *MockAgentServer) RsyncTablespaceDirectories(arg0 context.Context, arg1 *idl.RsyncRequest) (*idl.RsyncReply, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Rsync", arg0, arg1)
+	ret := m.ctrl.Call(m, "RsyncTablespaceDirectories", arg0, arg1)
 	ret0, _ := ret[0].(*idl.RsyncReply)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Rsync indicates an expected call of Rsync
-func (mr *MockAgentServerMockRecorder) Rsync(arg0, arg1 interface{}) *gomock.Call {
+// RsyncTablespaceDirectories indicates an expected call of RsyncTablespaceDirectories
+func (mr *MockAgentServerMockRecorder) RsyncTablespaceDirectories(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Rsync", reflect.TypeOf((*MockAgentServer)(nil).Rsync), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RsyncTablespaceDirectories", reflect.TypeOf((*MockAgentServer)(nil).RsyncTablespaceDirectories), arg0, arg1)
 }
