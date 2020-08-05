@@ -22,6 +22,7 @@ import (
 
 const ConfigFileName = "config.json"
 const OldSuffix = ".old"
+const PG_VERSION = "PG_VERSION"
 
 var PostgresFiles = []string{"postgresql.conf", "PG_VERSION"}
 var StateDirectoryFiles = []string{"config.json", "status.json"}
@@ -321,6 +322,18 @@ func VerifyTargetTablespaceDirectories(dirs []string) error {
 	}
 
 	return nil
+}
+
+func Verify5XSourceTablespaceDirectories(dirs []string) error {
+	var mErr *multierror.Error
+	for _, dir := range dirs {
+		path := filepath.Join(dir, PG_VERSION)
+		if !PathExists(path) {
+			mErr = multierror.Append(mErr, NewTablespaceError("5X source", "missing "+path))
+		}
+	}
+
+	return mErr.ErrorOrNil()
 }
 
 func TablespacePath(tablespaceLocation string, dbID int, majorVersion uint64, catalogVersion string) string {

@@ -175,3 +175,95 @@ func TestRsync(t *testing.T) {
 		}
 	})
 }
+
+func TestRsyncTablespaceDirectories(t *testing.T) {
+	testhelper.SetupTestLogger()
+	server := agent.NewServer(agent.Config{})
+
+	source := testutils.GetTempDir(t, "")
+	defer testutils.MustRemoveAll(t, source)
+
+	destination := testutils.GetTempDir(t, "")
+	defer testutils.MustRemoveAll(t, destination)
+
+	t.Run("successfully rsyncs tablespace directories", func(t *testing.T) {
+		var options = []string{"--archive", "--compress", "--stats"}
+		var excludes = []string{"pg_hba.conf", "postmaster.opts"}
+
+		// ensure source looks like a valid tablespace directory
+		testutils.MustWriteToFile(t, filepath.Join(source, upgrade.PG_VERSION), "")
+
+		defer rsync.SetRsyncCommand(exec.Command)
+		rsync.SetRsyncCommand(exectest.NewCommandWithVerifier(agent.Success, func(utility string, args ...string) {
+			if utility != "rsync" {
+				t.Errorf("got %q want rsync", utility)
+			}
+
+			options := args[:3]
+			if !reflect.DeepEqual(options, hub.Options) {
+				t.Errorf("got options %q want %q", options, hub.Options)
+			}
+
+			src := args[3]
+			expected := source + string(os.PathSeparator)
+			if src != expected {
+				t.Errorf("got source %q want %q", src, expected)
+			}
+
+			dst := args[4]
+			expected = "sdw1:" + destination
+			if dst != expected {
+				t.Errorf("got destination %q want %q", dst, expected)
+			}
+
+			exclusions := strings.Join(args[6:], " ")
+			expected = strings.Join(excludes, " --exclude ")
+			if !reflect.DeepEqual(exclusions, expected) {
+				t.Errorf("got exclusions %q want %q", exclusions, expected)
+			}
+		}))
+
+		request := &idl.RsyncRequest{
+			Pairs: []*idl.RsyncPair{{
+				Source:          source,
+				DestinationHost: "sdw1",
+				Destination:     destination,
+			}},
+			Options:  options,
+			Excludes: excludes,
+		}
+
+		_, err := server.RsyncTablespaceDirectories(context.Background(), request)
+		if err != nil {
+			t.Errorf("unexpected err %#v", err)
+		}
+	})
+
+	t.Run("errors when tablespace directory is invalid", func(t *testing.T) {
+		rsync.SetRsyncCommand(exectest.NewCommand(agent.Success))
+		defer rsync.ResetRsyncCommand()
+
+		invalidTablespaceDir := testutils.GetTempDir(t, "")
+		defer testutils.MustRemoveAll(t, invalidTablespaceDir)
+
+		request := &idl.RsyncRequest{Pairs: []*idl.RsyncPair{
+			{Source: invalidTablespaceDir, Destination: destination},
+		}}
+
+		_, err := server.RsyncTablespaceDirectories(context.Background(), request)
+		var multiErr *multierror.Error
+		if !errors.As(err, &multiErr) {
+			t.Fatalf("got error %#v want type %T", err, multiErr)
+		}
+
+		if len(multiErr.Errors) != 1 {
+			t.Errorf("received %d errors, want %d", len(multiErr.Errors), 1)
+		}
+
+		for _, err := range multiErr.Errors {
+			if !errors.Is(err, upgrade.ErrInvalidTablespace) {
+				t.Errorf("got error %#v want %#v", err, upgrade.ErrInvalidTablespace)
+			}
+		}
+	})
+}
