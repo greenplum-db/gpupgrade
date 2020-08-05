@@ -173,6 +173,8 @@ func alreadyRenamed(archive, target string) bool {
 	return PathExists(archive) && !PathExists(target)
 }
 
+// AlreadyRenamed infers if a successful rename has already occurred
+// by making sure src does not exist but dst does.
 func AlreadyRenamed(src, dst string) (bool, error) {
 	srcExist, err := PathExist(src)
 	if err != nil {

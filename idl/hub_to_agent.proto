@@ -18,6 +18,7 @@ service Agent {
   rpc ArchiveLogDirectory (ArchiveLogDirectoryRequest) returns (ArchiveLogDirectoryReply) {}
   rpc RsyncDataDirectories (RsyncRequest) returns (RsyncReply) {}
   rpc RsyncTablespaceDirectories (RsyncRequest) returns (RsyncReply) {}
+  rpc RestorePrimariesPgControl (RestorePgControlRequest) returns (RestorePgControlReply) {}
 }
 
 message TablespaceInfo {
@@ -100,3 +101,9 @@ message RsyncRequest {
 }
 
 message RsyncReply {}
+
+message RestorePgControlRequest {
+  repeated string datadirs = 1;
+}
+
+message RestorePgControlReply {}

@@ -235,6 +235,26 @@ func (mr *MockAgentClientMockRecorder) RsyncTablespaceDirectories(ctx, in interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RsyncTablespaceDirectories", reflect.TypeOf((*MockAgentClient)(nil).RsyncTablespaceDirectories), varargs...)
 }
 
+// RestorePrimariesPgControl mocks base method
+func (m *MockAgentClient) RestorePrimariesPgControl(ctx context.Context, in *idl.RestorePgControlRequest, opts ...grpc.CallOption) (*idl.RestorePgControlReply, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "RestorePrimariesPgControl", varargs...)
+	ret0, _ := ret[0].(*idl.RestorePgControlReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RestorePrimariesPgControl indicates an expected call of RestorePrimariesPgControl
+func (mr *MockAgentClientMockRecorder) RestorePrimariesPgControl(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RestorePrimariesPgControl", reflect.TypeOf((*MockAgentClient)(nil).RestorePrimariesPgControl), varargs...)
+}
+
 // MockAgentServer is a mock of AgentServer interface
 type MockAgentServer struct {
 	ctrl     *gomock.Controller
@@ -406,4 +426,19 @@ func (m *MockAgentServer) RsyncTablespaceDirectories(arg0 context.Context, arg1 
 func (mr *MockAgentServerMockRecorder) RsyncTablespaceDirectories(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RsyncTablespaceDirectories", reflect.TypeOf((*MockAgentServer)(nil).RsyncTablespaceDirectories), arg0, arg1)
+}
+
+// RestorePrimariesPgControl mocks base method
+func (m *MockAgentServer) RestorePrimariesPgControl(arg0 context.Context, arg1 *idl.RestorePgControlRequest) (*idl.RestorePgControlReply, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RestorePrimariesPgControl", arg0, arg1)
+	ret0, _ := ret[0].(*idl.RestorePgControlReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RestorePrimariesPgControl indicates an expected call of RestorePrimariesPgControl
+func (mr *MockAgentServerMockRecorder) RestorePrimariesPgControl(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RestorePrimariesPgControl", reflect.TypeOf((*MockAgentServer)(nil).RestorePrimariesPgControl), arg0, arg1)
 }

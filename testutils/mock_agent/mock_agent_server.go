@@ -139,3 +139,7 @@ func (m *MockAgentServer) NumberOfCalls() int {
 
 	return m.numCalls
 }
+
+func (m *MockAgentServer) RestorePrimariesPgControl(ctx context.Context, in *idl.RestorePgControlRequest) (*idl.RestorePgControlReply, error) {
+	return &idl.RestorePgControlReply{}, nil
+}

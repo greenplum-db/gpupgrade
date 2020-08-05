@@ -17,6 +17,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
 
@@ -208,6 +209,55 @@ func RsyncPrimariesTablespaces(agentConns []*Connection, source *greenplum.Clust
 		}
 
 		_, err := conn.AgentClient.RsyncTablespaceDirectories(context.Background(), req)
+		return err
+	}
+
+	return ExecuteRPC(agentConns, request)
+}
+
+func RestoreMasterAndPrimariesPgControl(streams step.OutStreams, agentConns []*Connection, source *greenplum.Cluster) error {
+	var wg sync.WaitGroup
+	errs := make(chan error, 2)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		errs <- upgrade.RestorePgControl(source.MasterDataDir(), streams)
+	}()
+
+	errs <- restorePrimariesPgControl(agentConns, source)
+
+	wg.Wait()
+	close(errs)
+
+	var mErr *multierror.Error
+	for err := range errs {
+		mErr = multierror.Append(mErr, err)
+	}
+
+	return mErr.ErrorOrNil()
+}
+
+func restorePrimariesPgControl(agentConns []*Connection, source *greenplum.Cluster) error {
+	request := func(conn *Connection) error {
+		primaries := source.SelectSegments(func(seg *greenplum.SegConfig) bool {
+			return seg.IsOnHost(conn.Hostname) && !seg.IsStandby() && seg.IsPrimary()
+		})
+
+		if len(primaries) == 0 {
+			return nil
+		}
+
+		var dataDirs []string
+		for _, primary := range primaries {
+			dataDirs = append(dataDirs, primary.DataDir)
+		}
+
+		req := &idl.RestorePgControlRequest{
+			Datadirs: dataDirs,
+		}
+
+		_, err := conn.AgentClient.RestorePrimariesPgControl(context.Background(), req)
 		return err
 	}
 

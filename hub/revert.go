@@ -78,13 +78,31 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 	}
 
 	if !running && s.UseLinkMode {
-		st.Run(idl.Substep_RESTORE_SOURCE_CLUSTER, func(stream step.OutStreams) error {
-			if err := RsyncMasterAndPrimaries(stream, s.agentConns, s.Source); err != nil {
-				return err
-			}
+		hasRun, err := step.HasRun(idl.Step_EXECUTE, idl.Substep_START_TARGET_CLUSTER)
+		if err != nil {
+			return err
+		}
 
-			return RsyncMasterAndPrimariesTablespaces(stream, s.agentConns, s.Source, s.Tablespaces)
-		})
+		if hasRun {
+			st.Run(idl.Substep_RESTORE_SOURCE_CLUSTER, func(stream step.OutStreams) error {
+				if err := RestoreMasterAndPrimariesPgControl(stream, s.agentConns, s.Source); err != nil {
+					return err
+				}
+
+				if err := RsyncMasterAndPrimaries(stream, s.agentConns, s.Source); err != nil {
+					return err
+				}
+
+				return RsyncMasterAndPrimariesTablespaces(stream, s.agentConns, s.Source, s.Tablespaces)
+			})
+		} else {
+			// Since the target cluster was not started, just restore pg_control.old
+			// to pg_control. See the "Reverting to old cluster" section of
+			// https://www.postgresql.org/docs/9.4/pgupgrade.html
+			st.Run(idl.Substep_RESTORE_PGCONTROL, func(streams step.OutStreams) error {
+				return RestoreMasterAndPrimariesPgControl(streams, s.agentConns, s.Source)
+			})
+		}
 	}
 
 	if s.TargetInitializeConfig.Primaries != nil {
@@ -125,6 +143,11 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		return DeleteStateDirectories(s.agentConns, s.Source.MasterHostname())
 	})
 
+	handleMirrorStartupFailure, err := s.expectMirrorFailure()
+	if err != nil {
+		return err
+	}
+
 	// If the source cluster is not running, it must be started.
 	st.AlwaysRun(idl.Substep_START_SOURCE_CLUSTER, func(streams step.OutStreams) error {
 		running, err = s.Source.IsMasterRunning(streams)
@@ -141,11 +164,11 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		if xerrors.As(err, &exitErr) {
 			// In copy mode the gpdb 5x source cluster mirrors do not come
 			// up causing gpstart to return a non-zero exit status.
-			// This substep fails preventing the following substep steps
-			// from running including gprecoverseg.
+			// Ignore such failures, as gprecoverseg executed later will bring
+			// the mirrors up
 			// TODO: For 5X investigate how to check for this case and not
 			//  ignore all errors with exit code 1.
-			if !s.UseLinkMode && exitErr.ExitCode() == 1 {
+			if handleMirrorStartupFailure && exitErr.ExitCode() == 1 {
 				return nil
 			}
 		}
@@ -157,8 +180,8 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		return nil
 	})
 
-	if !s.UseLinkMode {
-		st.Run(idl.Substep_RESTORE_SOURCE_CLUSTER, func(streams step.OutStreams) error {
+	if handleMirrorStartupFailure {
+		st.Run(idl.Substep_RECOVERSEG_SOURCE_CLUSTER, func(streams step.OutStreams) error {
 			return Recoverseg(streams, s.Source)
 		})
 	}
@@ -174,4 +197,29 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 	}
 
 	return st.Err()
+}
+
+// In 5X, running pg_upgrade on the primaries can cause the mirrors to receive an invalid
+// checkpoint upon starting. There are two ways to resolve this:
+// - Rsync from the corresponding mirrors
+// or
+// - Running recoverseg
+// If the former hasn't run yet, then we do expect mirror failure upon start, so return true.
+func (s *Server) expectMirrorFailure() (bool, error) {
+	// mirror startup failure is expected only for GPDB 5x
+	if !s.Source.Version.Is("5") {
+		return false, nil
+	}
+
+	hasRestoreRun, err := step.HasRun(idl.Step_REVERT, idl.Substep_RESTORE_SOURCE_CLUSTER)
+	if err != nil {
+		return false, err
+	}
+
+	primariesUpgraded, err := step.HasRun(idl.Step_EXECUTE, idl.Substep_UPGRADE_PRIMARIES)
+	if err != nil {
+		return false, err
+	}
+
+	return !hasRestoreRun && primariesUpgraded, nil
 }
