@@ -214,6 +214,26 @@ func DeleteDirectories(directories []string, requiredPaths []string, streams ste
 	return mErr.ErrorOrNil()
 }
 
+var ErrInvalidTablespace = errors.New("invalid tablespace directory")
+
+// TablespaceError is the backing error type for ErrInvalidTablespace.
+type TablespaceError struct {
+	whichCluster string
+	reason       string
+}
+
+func NewTablespaceError(whichCluster, reason string) *TablespaceError {
+	return &TablespaceError{whichCluster: whichCluster, reason: reason}
+}
+
+func (i *TablespaceError) Error() string {
+	return fmt.Sprintf("invalid %s tablespace directory: %s", i.whichCluster, i.reason)
+}
+
+func (i *TablespaceError) Is(err error) bool {
+	return err == ErrInvalidTablespace
+}
+
 // DeleteNewTablespaceDirectories deletes tablespace directories with the
 // following format:
 //   DIR/<fsname>/<datadir>/<tablespaceOid>/<dbId>/GPDB_<majorVersion>_<catalogVersion>
@@ -249,6 +269,10 @@ func DeleteDirectories(directories []string, requiredPaths []string, streams ste
 //  GPDB 5X:  DIR/<fsname>/<datadir>/<tablespaceOid>/<dbOid>/<relfilenode>
 //  GPDB 6X:  DIR/<fsname>/<datadir>/<tablespaceOid>/<dbId>/GPDB_6_<catalogVersion>/<dbOid>/<relfilenode>
 func DeleteNewTablespaceDirectories(streams step.OutStreams, dirs []string) error {
+	if err := VerifyTargetTablespaceDirectories(dirs); err != nil {
+		return err
+	}
+
 	err := DeleteDirectories(dirs, []string{}, streams)
 	if err != nil {
 		return err
@@ -280,6 +304,19 @@ func DeleteNewTablespaceDirectories(streams step.OutStreams, dirs []string) erro
 		// NOTE: Each directory passed in has a different parent.
 		if err := os.Remove(parent); err != nil {
 			return err
+		}
+	}
+
+	return nil
+}
+
+// VerifyTargetTablespaceDirectories checks tablespace directories on GPDB 6X
+// and later clusters.
+func VerifyTargetTablespaceDirectories(dirs []string) error {
+	for _, dir := range dirs {
+		element := filepath.Base(dir)
+		if !strings.HasPrefix(element, "GPDB_") {
+			return NewTablespaceError("target", `missing "GPDB_" in last path element`)
 		}
 	}
 
