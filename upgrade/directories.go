@@ -15,6 +15,7 @@ import (
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/hashicorp/go-multierror"
+	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -22,8 +23,9 @@ import (
 
 const ConfigFileName = "config.json"
 const OldSuffix = ".old"
+const PGVersion = "PG_VERSION"
 
-var PostgresFiles = []string{"postgresql.conf", "PG_VERSION"}
+var PostgresFiles = []string{"postgresql.conf", PGVersion}
 var StateDirectoryFiles = []string{"config.json", "status.json"}
 
 func GetConfigFile() string {
@@ -226,6 +228,26 @@ func DeleteDirectories(directories []string, requiredPaths []string, streams ste
 	return mErr.ErrorOrNil()
 }
 
+var ErrInvalidTablespaceDirectory = errors.New("invalid tablespace directory")
+
+// TablespaceDirectoryError is the backing error type for ErrInvalidTablespaceDirectory.
+type TablespaceDirectoryError struct {
+	description string
+	reason      string
+}
+
+func newTablespaceDirectoryError(clusterDescription, reason string) *TablespaceDirectoryError {
+	return &TablespaceDirectoryError{description: clusterDescription, reason: reason}
+}
+
+func (i *TablespaceDirectoryError) Error() string {
+	return fmt.Sprintf("invalid %s tablespace directory: %s", i.description, i.reason)
+}
+
+func (i *TablespaceDirectoryError) Is(err error) bool {
+	return err == ErrInvalidTablespaceDirectory
+}
+
 // DeleteNewTablespaceDirectories deletes tablespace directories with the
 // following format:
 //   DIR/<fsname>/<datadir>/<tablespaceOid>/<dbId>/GPDB_<majorVersion>_<catalogVersion>
@@ -261,6 +283,10 @@ func DeleteDirectories(directories []string, requiredPaths []string, streams ste
 //  GPDB 5X:  DIR/<fsname>/<datadir>/<tablespaceOid>/<dbOid>/<relfilenode>
 //  GPDB 6X:  DIR/<fsname>/<datadir>/<tablespaceOid>/<dbId>/GPDB_6_<catalogVersion>/<dbOid>/<relfilenode>
 func DeleteNewTablespaceDirectories(streams step.OutStreams, dirs []string) error {
+	if err := VerifyTargetTablespaceDirectories(dirs); err != nil {
+		return err
+	}
+
 	err := DeleteDirectories(dirs, []string{}, streams)
 	if err != nil {
 		return err
@@ -299,6 +325,47 @@ func DeleteNewTablespaceDirectories(streams step.OutStreams, dirs []string) erro
 	}
 
 	return nil
+}
+
+// VerifyTargetTablespaceDirectories checks tablespace directories on GPDB 6X
+// and later clusters.
+func VerifyTargetTablespaceDirectories(dirs []string) error {
+	for _, dir := range dirs {
+		element := filepath.Base(dir)
+		if !strings.HasPrefix(element, "GPDB_") {
+			return newTablespaceDirectoryError("target", dir+` missing "GPDB_" in last path element`)
+		}
+	}
+
+	return nil
+}
+
+// Verify5XTablespaceDirectories checks tablespace location directories of the
+// following format: DIR/<fsname>/<datadir>/<tablespaceOid>
+// It ensures the PG_VERSION file is found in all dbOid directories.
+// NOTE: No error is returned when the dbOid directory does not exist since
+// the user may not have created a table within the tablespace.
+func Verify5XTablespaceDirectories(tsLocations []string) error {
+	var mErr *multierror.Error
+	for _, tsLocation := range tsLocations {
+		entries, err := ioutil.ReadDir(tsLocation)
+		if err != nil {
+			return xerrors.Errorf("reading 5X tablespace directory: %w", err)
+		}
+
+		for _, dbOidDir := range entries {
+			if !dbOidDir.IsDir() {
+				continue
+			}
+
+			path := filepath.Join(tsLocation, dbOidDir.Name(), PGVersion)
+			if !PathExists(path) {
+				mErr = multierror.Append(mErr, newTablespaceDirectoryError("5X source cluster", "missing "+path))
+			}
+		}
+	}
+
+	return mErr.ErrorOrNil()
 }
 
 func TablespacePath(tablespaceLocation string, dbID int, majorVersion uint64, catalogVersion string) string {

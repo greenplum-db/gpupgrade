@@ -584,6 +584,31 @@ func TestDeleteNewTablespaceDirectories(t *testing.T) {
 		}
 	})
 
+	t.Run("errors when tablespace directory is invalid", func(t *testing.T) {
+		tablespaceDir, _, tsLocation := testutils.MustMakeTablespaceDir(t, 0)
+		defer testutils.MustRemoveAll(t, tsLocation)
+
+		invalidTablespaceDir := testutils.GetTempDir(t, "invalidTablespace")
+		defer testutils.MustRemoveAll(t, invalidTablespaceDir)
+
+		dirs := []string{tablespaceDir, invalidTablespaceDir}
+		err := upgrade.DeleteNewTablespaceDirectories(step.DevNullStream, dirs)
+		if !errors.Is(err, upgrade.ErrInvalidTablespaceDirectory) {
+			t.Errorf("got error %#v want %#v", err, upgrade.ErrInvalidTablespaceDirectory)
+		}
+
+		for _, dir := range dirs {
+			if !upgrade.PathExists(dir) {
+				t.Errorf("expected directory %q to not be deleted", dir)
+			}
+
+			dbIdDir := filepath.Dir(filepath.Clean(dir))
+			if !upgrade.PathExists(dbIdDir) {
+				t.Errorf("expected parent dbid directory %q to not be deleted", dbIdDir)
+			}
+		}
+	})
+
 	t.Run("errors when tablespace directory can't be deleted", func(t *testing.T) {
 		tablespaceDir, dbIdDir, tsLocation := testutils.MustMakeTablespaceDir(t, 0)
 		defer func() {
