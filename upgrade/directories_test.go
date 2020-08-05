@@ -752,6 +752,85 @@ func TestDeleteNewTablespaceDirectories(t *testing.T) {
 	})
 }
 
+func TestVerify5XTablespaceDirectories(t *testing.T) {
+	t.Run("succeeds when given multiple 5X tablespace locations", func(t *testing.T) {
+		var dirs []string
+		tablespaceOids := []int{16386, 16387, 16388}
+		for _, oid := range tablespaceOids {
+			_, tsLocationDir := testutils.MustMake5XTablespaceDir(t, oid)
+			defer testutils.MustRemoveAll(t, tsLocationDir)
+
+			dirs = append(dirs, tsLocationDir)
+		}
+
+		err := upgrade.Verify5XTablespaceDirectories(dirs)
+		if err != nil {
+			t.Errorf("Verify5XTablespaceDirectories returned error %+v", err)
+		}
+	})
+
+	t.Run("succeeds when tablespace directory contains other files but no dbOid directory", func(t *testing.T) {
+		tsLocationDir := testutils.GetTempDir(t, "")
+		defer testutils.MustRemoveAll(t, tsLocationDir)
+
+		testutils.MustWriteToFile(t, filepath.Join(tsLocationDir, "foo"), "")
+
+		err := upgrade.Verify5XTablespaceDirectories([]string{tsLocationDir})
+		if err != nil {
+			t.Errorf("Verify5XTablespaceDirectories returned error %+v", err)
+		}
+	})
+
+	t.Run("errors when failing to read tablespace directory", func(t *testing.T) {
+		tsLocationDir := testutils.GetTempDir(t, "")
+		defer func() {
+			err := os.Chmod(tsLocationDir, userRWX)
+			if err != nil {
+				t.Fatalf("making tablespace location directory writeable: %v", err)
+			}
+			testutils.MustRemoveAll(t, tsLocationDir)
+		}()
+
+		// Set tablespace directory to write and execute to prevent its contents
+		// from being read.
+		err := os.Chmod(tsLocationDir, 0300)
+		if err != nil {
+			t.Fatalf("making tablespace directory non-readable: %v", err)
+		}
+
+		err = upgrade.Verify5XTablespaceDirectories([]string{tsLocationDir})
+		if !errors.Is(err, os.ErrPermission) {
+			t.Errorf("got error %#v want %#v", err, os.ErrPermission)
+		}
+	})
+
+	t.Run("errors when dbOid directory does not contain required file", func(t *testing.T) {
+		dbOidDir, tsLocationDir := testutils.MustMake5XTablespaceDir(t, 0)
+		defer testutils.MustRemoveAll(t, tsLocationDir)
+
+		err := os.Remove(filepath.Join(dbOidDir, upgrade.PGVersion))
+		if err != nil {
+			t.Fatalf("removing PG_VERSION from %q: %v", dbOidDir, err)
+		}
+
+		err = upgrade.Verify5XTablespaceDirectories([]string{tsLocationDir})
+		var multiErr *multierror.Error
+		if !errors.As(err, &multiErr) {
+			t.Fatalf("got error %#v want type %T", err, multiErr)
+		}
+
+		if len(multiErr.Errors) != 1 {
+			t.Errorf("received %d errors want %d", len(multiErr.Errors), 1)
+		}
+
+		for _, err := range multiErr.Errors {
+			if !errors.Is(err, upgrade.ErrInvalidTablespaceDirectory) {
+				t.Errorf("got error %#v want %#v", err, upgrade.ErrInvalidTablespaceDirectory)
+			}
+		}
+	})
+}
+
 func setupDirs(t *testing.T, subdirectories []string, requiredPaths []string) (tmpDir string, createdDirectories []string) {
 	var err error
 	tmpDir, err = ioutil.TempDir("", "")

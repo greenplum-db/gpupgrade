@@ -37,6 +37,18 @@ func (s *Server) RsyncDataDirectories(ctx context.Context, in *idl.RsyncRequest)
 func (s *Server) RsyncTablespaceDirectories(ctx context.Context, in *idl.RsyncRequest) (*idl.RsyncReply, error) {
 	gplog.Info("agent received request to rsync tablespace directories")
 
+	// We can only verify the source directories since the destination
+	// directories are on another host.
+	var sourceDirs []string
+	for _, pair := range in.Pairs {
+		sourceDirs = append(sourceDirs, pair.GetSource())
+	}
+
+	// NOTE: Rsync will still be called if a given sourceDir is empty.
+	if err := upgrade.Verify5XTablespaceDirectories(sourceDirs); err != nil {
+		return &idl.RsyncReply{}, err
+	}
+
 	return &idl.RsyncReply{}, rsyncRequestDirs(in)
 }
 
