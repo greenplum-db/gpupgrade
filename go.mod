@@ -11,7 +11,7 @@ require (
 	github.com/google/renameio v0.1.0
 	github.com/greenplum-db/gp-common-go-libs v1.0.4
 	github.com/hashicorp/go-multierror v1.0.0
-	github.com/jackc/pgx v3.2.0+incompatible // indirect
+	github.com/jackc/pgx v3.2.0+incompatible
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/lib/pq v1.3.0
 	github.com/onsi/gomega v1.7.1

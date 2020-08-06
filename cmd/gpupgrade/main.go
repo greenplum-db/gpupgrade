@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
+	_ "github.com/jackc/pgx" // pgx is used directly in the hub via its global state
 	_ "github.com/lib/pq"
 
 	"github.com/greenplum-db/gpupgrade/cli"
