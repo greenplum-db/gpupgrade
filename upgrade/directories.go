@@ -175,34 +175,46 @@ func PathExists(path string) bool {
 	return err == nil
 }
 
+func verifyPathsExist(path string, files ...string) error {
+	var mErr *multierror.Error
+
+	for _, f := range files {
+		path := filepath.Join(path, f)
+		_, err := utils.System.Stat(path)
+		if err != nil {
+			mErr = multierror.Append(mErr, err)
+		}
+	}
+
+	return mErr.ErrorOrNil()
+}
+
 // Each directory in 'directories' is deleted only if every path in 'requiredPaths' exists
 // in that directory.
 func DeleteDirectories(directories []string, requiredPaths []string, streams step.OutStreams) error {
+	hostname, err := utils.System.Hostname()
+	if err != nil {
+		return err
+	}
+
 	var mErr *multierror.Error
 	for _, directory := range directories {
-		statError := false
-
-		for _, requiredPath := range requiredPaths {
-			filePath := filepath.Join(directory, requiredPath)
-			_, err := utils.System.Stat(filePath)
-			if err != nil {
-				mErr = multierror.Append(mErr, err)
-				statError = true
-			}
-		}
-
-		if statError {
-			continue
-		}
-
-		hostname, err := utils.System.Hostname()
-		if err != nil {
-			return err
-		}
-
+		gplog.Debug("Deleting directory: %q on host %q\n", directory, hostname)
 		_, err = fmt.Fprintf(streams.Stdout(), "Deleting directory: %q on host %q\n", directory, hostname)
 		if err != nil {
 			return err
+		}
+
+		if !PathExists(directory) {
+			fmt.Fprintf(streams.Stdout(), "directory: %q does not exist on host %q\n", directory, hostname)
+			gplog.Debug("Directory: %q does not exist on host %q\n", directory, hostname)
+			continue
+		}
+
+		err = verifyPathsExist(directory, requiredPaths...)
+		if err != nil {
+			mErr = multierror.Append(mErr, err)
+			continue
 		}
 
 		err = utils.System.RemoveAll(directory)
@@ -263,7 +275,10 @@ func DeleteNewTablespaceDirectories(streams step.OutStreams, dirs []string) erro
 		parent := filepath.Dir(filepath.Clean(dir))
 
 		entries, err := ioutil.ReadDir(parent)
-		if err != nil {
+		if os.IsNotExist(err) {
+			// directory may have been already removed during previous execution
+			continue
+		} else if err != nil {
 			return err
 		}
 
