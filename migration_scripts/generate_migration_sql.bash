@@ -38,11 +38,12 @@ exec_script(){
     fi
 
     if [[ -n "$records" ]]; then
+        # change database before header, to allow header to define SQL functions
+        echo "\c $database" >> "${output_dir}/${output_file}"
         header_file=$(echo "${path/.sql/.header}")
         if [[ -f $header_file ]]; then
             cat $header_file >> "${output_dir}/${output_file}"
         fi
-        echo "\c $database" >> "${output_dir}/${output_file}"
         echo "$records" >> "${output_dir}/${output_file}"
     fi
 }
