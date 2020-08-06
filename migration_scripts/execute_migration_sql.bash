@@ -26,9 +26,9 @@ main(){
     fi
 
     for file in ${files[*]}; do
-        local cmd="${GPHOME}/bin/psql -d postgres -p ${PGPORT} -f ${file}"
+        local cmd="${GPHOME}/bin/psql -d postgres -p ${PGPORT} -f ${file} --echo-queries --quiet"
         echo "Executing command: ${cmd}" | tee -a "$log_file"
-        ${cmd} | tee -a "$log_file"
+        ${cmd} 2>&1 | tee -a "$log_file"
     done
 
     echo "Check log file for execution details: $log_file"
