@@ -24,7 +24,7 @@ import (
 	"sort"
 	"text/template"
 
-	"github.com/blang/semver"
+	"github.com/blang/semver/v4"
 )
 
 var sourceVersions = []string{"6", "5"}
