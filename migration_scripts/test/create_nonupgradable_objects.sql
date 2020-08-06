@@ -101,3 +101,16 @@ CREATE EXTERNAL TABLE ext_gphdfs (name text)
 CREATE EXTERNAL TABLE "ext gphdfs" (name text) -- whitespace in the name
 	LOCATION ('gphdfs://example.com/data/filename.txt')
 	FORMAT 'TEXT' (DELIMITER '|');
+
+-- create name datatype attributes as the not-first column
+DROP TABLE IF EXISTS table_with_name_as_second_column;
+CREATE TABLE table_with_name_as_second_column (a int, "first last" name);
+INSERT INTO table_with_name_as_second_column VALUES(1, 'George Washington');
+INSERT INTO table_with_name_as_second_column VALUES(1, 'Henry Ford');
+-- create partition table with name datatype attribute as the not-first column as the partition key
+DROP TABLE IF EXISTS partition_table_partitioned_by_name_type;
+CREATE TABLE partition_table_partitioned_by_name_type(a int, b name) PARTITION BY RANGE (b) (START('a') END('z'));
+-- create table with name datatype attribute as the not-first column as the distribution key
+DROP TABLE IF EXISTS table_distributed_by_name_type;
+CREATE TABLE table_distributed_by_name_type(a int, b name) DISTRIBUTED BY (b);
+INSERT INTO table_distributed_by_name_type VALUES (1,'z'),(2,'x');

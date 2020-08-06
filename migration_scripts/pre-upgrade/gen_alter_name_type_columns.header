@@ -1,0 +1,19 @@
+-- The below SQL alters, where possible, the name data type to varchar(63)
+-- in columns other than the first.  For a partition table, SQL is only generated
+-- for root partitions as that cascades to the child partitions. Where not possible,
+-- a message is logged, and such tables must be manually modified to remove the name
+-- data type prior to running gpugprade.
+
+\set VERBOSITY terse
+
+\unset ECHO
+CREATE OR REPLACE FUNCTION pg_temp.notsupported(text) RETURNS VOID AS $$
+BEGIN
+    RAISE WARNING '---------------------------------------------------------------------------------';
+    RAISE WARNING 'Removing the name datatype column failed on table ''%''.  You must resolve it manually.',$1;
+    RAISE WARNING '---------------------------------------------------------------------------------';
+END
+$$ LANGUAGE plpgsql;
+\set ECHO queries
+
+

@@ -97,6 +97,8 @@ drop_unfixable_objects() {
     # remove them manually by dropping the table as they can't be dropped.
     $GPHOME_SOURCE/bin/psql -d $TEST_DBNAME -p $PGPORT -c "DROP TABLE table_with_unique_constraint_p;"
     $GPHOME_SOURCE/bin/psql -d $TEST_DBNAME -p $PGPORT -c "DROP TABLE table_with_primary_constraint_p;"
+    $GPHOME_SOURCE/bin/psql -d $TEST_DBNAME -p $PGPORT -c "DROP TABLE partition_table_partitioned_by_name_type;"
+    $GPHOME_SOURCE/bin/psql -d $TEST_DBNAME -p $PGPORT -c "DROP TABLE table_distributed_by_name_type;"
 }
 
 @test "migration scripts generate sql to modify non-upgradeable objects and fix pg_upgrade check errors" {
@@ -147,21 +149,24 @@ drop_unfixable_objects() {
     NEW_CLUSTER="$MASTER_DATA_DIRECTORY"
 }
 
-@test "after reverting recreate scripts restore dropped objects" {
+@test "after reverting recreate scripts must restore non-upgradeable objects" {
     $PSQL -c "CREATE DATABASE $TEST_DBNAME;" -d $DEFAULT_DBNAME
     $PSQL -f $BATS_TEST_DIRNAME/../migration_scripts/test/create_nonupgradable_objects.sql -d $TEST_DBNAME
 
     drop_unfixable_objects # don't test what we won't fix
 
-    # XXX We don't properly handle index constraints after revert, yet. Ignore
-    # the test tables that break the diff for now.
+    # Ignore the test tables that break the diff for now.
+    # XXX We don't properly handle index constraints after revert, yet.
+    # XXX We don't properly handle name type columns after revert, yet.
     EXCLUSIONS="-T table_with_primary_constraint "
     EXCLUSIONS+="-T table_with_unique_constraint "
     EXCLUSIONS+="-T pt_with_index "
     EXCLUSIONS+="-T sales "
+    EXCLUSIONS+="-T table_with_name_as_second_column "
 
     MIGRATION_DIR=`mktemp -d /tmp/migration.XXXXXX`
-    "$GPHOME_SOURCE"/bin/pg_dump --schema-only $TEST_DBNAME $EXCLUSIONS -f "$MIGRATION_DIR"/before.sql
+    "$GPHOME_SOURCE"/bin/pg_dump --schema-only "$TEST_DBNAME" $EXCLUSIONS -f "$MIGRATION_DIR"/before.sql
+
 
     $SCRIPTS_DIR/generate_migration_sql.bash $GPHOME_SOURCE $PGPORT $MIGRATION_DIR
     $SCRIPTS_DIR/execute_migration_sql.bash $GPHOME_SOURCE $PGPORT $MIGRATION_DIR/pre-upgrade
