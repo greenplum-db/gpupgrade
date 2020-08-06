@@ -4,6 +4,7 @@
 package hub_test
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net"
@@ -16,7 +17,6 @@ import (
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/hashicorp/go-multierror"
-	"golang.org/x/net/context"
 	"golang.org/x/xerrors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"

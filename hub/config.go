@@ -4,12 +4,12 @@
 package hub
 
 import (
+	"context"
+
 	"github.com/greenplum-db/gpupgrade/idl"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	"golang.org/x/net/context"
 )
 
 func (s *Server) GetConfig(ctx context.Context, in *idl.GetConfigRequest) (*idl.GetConfigReply, error) {

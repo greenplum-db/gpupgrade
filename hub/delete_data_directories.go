@@ -4,10 +4,10 @@
 package hub
 
 import (
+	"context"
 	"sync"
 
 	"github.com/hashicorp/go-multierror"
-	"golang.org/x/net/context"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
