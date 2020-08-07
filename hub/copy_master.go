@@ -86,7 +86,7 @@ func (s *Server) CopyMasterDataDir(streams step.OutStreams, destination string) 
 }
 
 func (s *Server) CopyMasterTablespaces(streams step.OutStreams, destinationDir string) error {
-	if s.Tablespaces == nil {
+	if s.Source == nil || s.Source.Tablespaces == nil {
 		return nil
 	}
 
@@ -94,7 +94,7 @@ func (s *Server) CopyMasterTablespaces(streams step.OutStreams, destinationDir s
 	sourcePaths := []string{s.Source.TablespacesMappingFilePath}
 
 	// include all the master tablespace directories
-	for _, tablespace := range s.Tablespaces.GetMasterTablespaces() {
+	for _, tablespace := range s.Source.Tablespaces.GetMasterTablespaces() {
 		if !tablespace.IsUserDefined() {
 			continue
 		}

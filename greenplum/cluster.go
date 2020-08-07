@@ -40,6 +40,8 @@ type Cluster struct {
 	GPHome  string
 	Version dbconn.GPDBVersion
 
+	// Tablespaces contains the tablespace in the database keyed by
+	// dbid and tablespace oid
 	Tablespaces                Tablespaces
 	TablespacesMappingFilePath string
 }

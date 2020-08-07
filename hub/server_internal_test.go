@@ -18,6 +18,13 @@ func TestConfig(t *testing.T) {
 	t.Run("saves itself to the provided stream", func(t *testing.T) {
 		source, target := testutils.CreateMultinodeSampleClusterPair("/tmp")
 		source.TablespacesMappingFilePath = greenplum.TablespacesMappingFile
+		source.Tablespaces = map[int]greenplum.SegmentTablespaces{
+			1: {1663: {
+				Location:    "/tmp/master/my_tablespace/1663",
+				UserDefined: 1,
+			}},
+		}
+
 		targetInitializeConfig := InitializeConfig{Master: greenplum.SegConfig{Hostname: "mdw"}}
 
 		// NOTE: we explicitly do not name the struct members here, to ensure
@@ -33,12 +40,7 @@ func TestConfig(t *testing.T) {
 			false,           // UseLinkMode
 			target.GPHome,   // TargetGPHome
 			upgrade.NewID(), // UpgradeID
-			map[int]greenplum.SegmentTablespaces{
-				1: {1663: {
-					Location:    "/tmp/master/my_tablespace/1663",
-					UserDefined: 1,
-				}}}, // Tablespaces
-			"301908232", // TargetCatalogVersion
+			"301908232",     // TargetCatalogVersion
 		}
 
 		buf := new(bytes.Buffer)

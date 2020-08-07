@@ -89,7 +89,7 @@ func (s *Server) GetDataDirPairs() (map[string][]*idl.DataDirPair, error) {
 			TargetPort:    int32(targetSeg.Port),
 			Content:       int32(contentID),
 			DBID:          int32(sourceSeg.DbID),
-			Tablespaces:   getProtoTablespaceMap(s.Tablespaces, targetSeg.DbID),
+			Tablespaces:   getProtoTablespaceMap(s.Source.Tablespaces, targetSeg.DbID),
 		}
 
 		dataDirPairMap[sourceSeg.Hostname] = append(dataDirPairMap[sourceSeg.Hostname], dataPair)
