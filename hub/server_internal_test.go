@@ -17,6 +17,7 @@ func TestConfig(t *testing.T) {
 	// "stream" refers to the io.Writer/Reader interfaces.
 	t.Run("saves itself to the provided stream", func(t *testing.T) {
 		source, target := testutils.CreateMultinodeSampleClusterPair("/tmp")
+		source.TablespacesMappingFilePath = greenplum.TablespacesMappingFile
 		targetInitializeConfig := InitializeConfig{Master: greenplum.SegConfig{Hostname: "mdw"}}
 
 		// NOTE: we explicitly do not name the struct members here, to ensure
@@ -37,8 +38,7 @@ func TestConfig(t *testing.T) {
 					Location:    "/tmp/master/my_tablespace/1663",
 					UserDefined: 1,
 				}}}, // Tablespaces
-			greenplum.TablespacesMappingFile, // TablespacesMappingFilePath
-			"301908232",                      // TargetCatalogVersion
+			"301908232", // TargetCatalogVersion
 		}
 
 		buf := new(bytes.Buffer)

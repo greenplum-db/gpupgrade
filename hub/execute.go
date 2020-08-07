@@ -95,7 +95,7 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 			Source:                 s.Source,
 			Target:                 s.Target,
 			UseLinkMode:            s.UseLinkMode,
-			TablespacesMappingFile: s.TablespacesMappingFilePath,
+			TablespacesMappingFile: s.Source.TablespacesMappingFilePath,
 		})
 	})
 

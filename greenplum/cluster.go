@@ -39,6 +39,9 @@ type Cluster struct {
 
 	GPHome  string
 	Version dbconn.GPDBVersion
+
+	Tablespaces                Tablespaces
+	TablespacesMappingFilePath string
 }
 
 // ClusterFromDB will create a Cluster by querying the passed DBConn for

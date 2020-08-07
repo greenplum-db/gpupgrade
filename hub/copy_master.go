@@ -91,7 +91,7 @@ func (s *Server) CopyMasterTablespaces(streams step.OutStreams, destinationDir s
 	}
 
 	// include tablespace mapping file which is used as a parameter to pg_upgrade
-	sourcePaths := []string{s.TablespacesMappingFilePath}
+	sourcePaths := []string{s.Source.TablespacesMappingFilePath}
 
 	// include all the master tablespace directories
 	for _, tablespace := range s.Tablespaces.GetMasterTablespaces() {

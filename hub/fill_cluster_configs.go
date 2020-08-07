@@ -60,8 +60,8 @@ func FillConfiguration(config *Config, conn *sql.DB, _ step.OutStreams, request 
 		if err := utils.System.MkdirAll(utils.GetTablespaceDir(), 0700); err != nil {
 			return xerrors.Errorf("create tablespace directory %q: %w", utils.GetTablespaceDir(), err)
 		}
-		config.TablespacesMappingFilePath = filepath.Join(utils.GetTablespaceDir(), greenplum.TablespacesMappingFile)
-		config.Tablespaces, err = greenplum.TablespacesFromDB(dbconn, config.TablespacesMappingFilePath)
+		config.Source.TablespacesMappingFilePath = filepath.Join(utils.GetTablespaceDir(), greenplum.TablespacesMappingFile)
+		config.Tablespaces, err = greenplum.TablespacesFromDB(dbconn, config.Source.TablespacesMappingFilePath)
 		if err != nil {
 			return xerrors.Errorf("extract tablespace information: %w", err)
 		}
