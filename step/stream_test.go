@@ -13,7 +13,6 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
@@ -163,12 +162,12 @@ func TestMultiplexedStream(t *testing.T) {
 		stream := newMultiplexedStream(mockStream, &failingWriter{expected})
 
 		_, err := stream.Stdout().Write([]byte{'x'})
-		if !xerrors.Is(err, expected) {
+		if !errors.Is(err, expected) {
 			t.Errorf("Stdout().Write() returned %#v, want %#v", err, expected)
 		}
 
 		_, err = stream.Stderr().Write([]byte{'x'})
-		if !xerrors.Is(err, expected) {
+		if !errors.Is(err, expected) {
 			t.Errorf("Stderr().Write() returned %#v, want %#v", err, expected)
 		}
 	})

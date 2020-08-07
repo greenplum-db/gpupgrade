@@ -9,8 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"golang.org/x/xerrors"
-
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
@@ -125,13 +123,13 @@ func TestDiskSpaceCheck(t *testing.T) {
 			expectedStatus := idl.Status_FAILED
 			switch {
 			case c.grpcErr != nil:
-				if !xerrors.Is(err, c.grpcErr) {
+				if !errors.Is(err, c.grpcErr) {
 					t.Errorf("returned error %#v, want %#v", err, c.grpcErr)
 				}
 
 			case len(c.failed) != 0:
 				var diskSpaceError commanders.DiskSpaceError
-				if !xerrors.As(err, &diskSpaceError) {
+				if !errors.As(err, &diskSpaceError) {
 					t.Errorf("returned error %#v, want a DiskSpaceError", err)
 				} else if !reflect.DeepEqual(diskSpaceError.Failed, c.failed) {
 					t.Errorf("error contents were %v, want %v", diskSpaceError.Failed, c.failed)

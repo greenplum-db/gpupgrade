@@ -4,6 +4,7 @@
 package rsync_test
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -11,7 +12,6 @@ import (
 	"testing"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -278,7 +278,7 @@ func TestRsync(t *testing.T) {
 		}
 
 		var rsyncError rsync.RsyncError
-		if !xerrors.As(err, &rsyncError) {
+		if !errors.As(err, &rsyncError) {
 			t.Errorf("got error %#v, wanted type %T", err, rsyncError)
 		}
 		expected := "exit status 1"
@@ -287,7 +287,7 @@ func TestRsync(t *testing.T) {
 		}
 
 		var exitError *exec.ExitError
-		if !xerrors.As(err, &exitError) {
+		if !errors.As(err, &exitError) {
 			t.Errorf("expected err to wrap ExitError")
 		}
 		if exitError.Error() != expected {
@@ -321,7 +321,7 @@ func TestRsync(t *testing.T) {
 		}
 
 		var rsyncError rsync.RsyncError
-		if !xerrors.As(err, &rsyncError) {
+		if !errors.As(err, &rsyncError) {
 			t.Errorf("got error %#v, wanted type %T", err, rsyncError)
 		}
 		expected := "rsync: --BOGUS: unknown option"
@@ -330,7 +330,7 @@ func TestRsync(t *testing.T) {
 		}
 
 		var exitError *exec.ExitError
-		if !xerrors.As(err, &exitError) {
+		if !errors.As(err, &exitError) {
 			t.Errorf("expected err to wrap ExitError")
 		}
 		if !strings.Contains(rsyncError.Error(), expected) {
@@ -391,7 +391,7 @@ func TestRsync(t *testing.T) {
 			t.Errorf("expected error '%#v', got nil", rsync.ErrInvalidRsyncSourcePath)
 		}
 
-		if !xerrors.Is(err, rsync.ErrInvalidRsyncSourcePath) {
+		if !errors.Is(err, rsync.ErrInvalidRsyncSourcePath) {
 			t.Errorf("got error '%#v' want '%#v'", err, rsync.ErrInvalidRsyncSourcePath)
 		}
 	})

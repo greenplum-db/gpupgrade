@@ -16,7 +16,6 @@ import (
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/blang/semver/v4"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/step"
@@ -208,7 +207,7 @@ func TestRunInitsystemForTargetCluster(t *testing.T) {
 		err := RunInitsystemForTargetCluster(step.DevNullStream, gpHome6, gpinitsystemConfigPath, version6)
 
 		var actual *exec.ExitError
-		if !xerrors.As(err, &actual) {
+		if !errors.As(err, &actual) {
 			t.Fatalf("got %#v, want ExitError", err)
 		}
 
@@ -223,7 +222,7 @@ func TestRunInitsystemForTargetCluster(t *testing.T) {
 		err := RunInitsystemForTargetCluster(step.DevNullStream, gpHome7, gpinitsystemConfigPath, version7)
 
 		var actual *exec.ExitError
-		if !xerrors.As(err, &actual) {
+		if !errors.As(err, &actual) {
 			t.Fatalf("got %#v, want ExitError", err)
 		}
 

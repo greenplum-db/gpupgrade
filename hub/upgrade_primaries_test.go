@@ -10,7 +10,6 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
@@ -201,7 +200,7 @@ func TestGetDataDirPairs(t *testing.T) {
 		server := hub.New(conf, nil, "")
 
 		_, err := server.GetDataDirPairs()
-		if !xerrors.Is(err, hub.ErrInvalidCluster) {
+		if !errors.Is(err, hub.ErrInvalidCluster) {
 			t.Errorf("returned error %#v got: %#v", err, hub.ErrInvalidCluster)
 		}
 	})
@@ -226,7 +225,7 @@ func TestGetDataDirPairs(t *testing.T) {
 		server := hub.New(conf, nil, "")
 
 		_, err := server.GetDataDirPairs()
-		if !xerrors.Is(err, hub.ErrInvalidCluster) {
+		if !errors.Is(err, hub.ErrInvalidCluster) {
 			t.Errorf("returned error %#v got: %#v", err, hub.ErrInvalidCluster)
 		}
 	})
@@ -251,7 +250,7 @@ func TestGetDataDirPairs(t *testing.T) {
 		server := hub.New(conf, nil, "")
 
 		_, err := server.GetDataDirPairs()
-		if !xerrors.Is(err, hub.ErrInvalidCluster) {
+		if !errors.Is(err, hub.ErrInvalidCluster) {
 			t.Errorf("returned error %#v got: %#v", err, hub.ErrInvalidCluster)
 		}
 	})

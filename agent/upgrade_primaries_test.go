@@ -4,14 +4,13 @@
 package agent_test
 
 import (
+	"errors"
 	"io/ioutil"
 	"os"
 	"reflect"
 	"sort"
 	"strings"
 	"testing"
-
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/hashicorp/go-multierror"
@@ -162,7 +161,7 @@ func TestUpgradePrimary(t *testing.T) {
 		// We expect each part of the request to return its own ExitError,
 		// containing the expected message from FailedRsync.
 		var multiErr *multierror.Error
-		if !xerrors.As(err, &multiErr) {
+		if !errors.As(err, &multiErr) {
 			t.Fatalf("got error %#v, want type %T", err, multiErr)
 		}
 

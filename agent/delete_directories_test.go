@@ -9,8 +9,6 @@ import (
 	"reflect"
 	"testing"
 
-	"golang.org/x/xerrors"
-
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 
 	"github.com/greenplum-db/gpupgrade/agent"
@@ -62,7 +60,7 @@ func TestDeleteDataDirectories(t *testing.T) {
 		server := agent.NewServer(agent.Config{})
 		req := &idl.DeleteDataDirectoriesRequest{}
 		_, err := server.DeleteDataDirectories(context.Background(), req)
-		if !xerrors.Is(err, expected) {
+		if !errors.Is(err, expected) {
 			t.Errorf("got error %#v, want %#v", expected, err)
 		}
 	})
@@ -110,7 +108,7 @@ func TestDeleteStateDirectory(t *testing.T) {
 		server := agent.NewServer(agent.Config{})
 		req := &idl.DeleteStateDirectoryRequest{}
 		_, err := server.DeleteStateDirectory(context.Background(), req)
-		if !xerrors.Is(err, expected) {
+		if !errors.Is(err, expected) {
 			t.Errorf("got error %#v, want %#v", expected, err)
 		}
 	})

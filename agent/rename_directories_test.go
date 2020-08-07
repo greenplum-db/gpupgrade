@@ -10,7 +10,6 @@ import (
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/hashicorp/go-multierror"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/agent"
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -28,11 +27,11 @@ func TestRenameDirectories(t *testing.T) {
 
 		_, err := server.RenameDirectories(context.Background(), &idl.RenameDirectoriesRequest{Dirs: []*idl.RenameDirectories{{}}})
 		var merr *multierror.Error
-		if !xerrors.As(err, &merr) {
+		if !errors.As(err, &merr) {
 			t.Fatalf("returned %#v, want error type %T", err, merr)
 		}
 		for _, err := range merr.Errors {
-			if !xerrors.Is(err, expected) {
+			if !errors.Is(err, expected) {
 				t.Errorf("returned error %#v, want %#v", err, expected)
 			}
 		}

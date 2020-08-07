@@ -16,7 +16,6 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	multierror "github.com/hashicorp/go-multierror"
 	"golang.org/x/sys/unix"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -237,7 +236,7 @@ func checkMultierrorContents(t *testing.T, err error, expected []error) {
 	t.Helper()
 
 	var multierr *multierror.Error
-	if !xerrors.As(err, &multierr) {
+	if !errors.As(err, &multierr) {
 		t.Errorf("error %#v does not contain type %T", err, multierr)
 		return
 	}
@@ -252,7 +251,7 @@ func checkMultierrorContents(t *testing.T, err error, expected []error) {
 		match := -1
 
 		for i, candidate := range expected {
-			if xerrors.Is(actual, candidate) {
+			if errors.Is(actual, candidate) {
 				match = i
 				break
 			}

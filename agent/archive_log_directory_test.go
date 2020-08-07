@@ -5,6 +5,7 @@ package agent_test
 
 import (
 	"context"
+	"errors"
 	"os"
 	"os/exec"
 	"os/user"
@@ -14,7 +15,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/testutils"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/agent"
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -33,7 +33,7 @@ func TestArchiveLogDirectories(t *testing.T) {
 			t.Errorf("expected error")
 		}
 		var exitError *exec.ExitError
-		if !xerrors.As(err, &exitError) {
+		if !errors.As(err, &exitError) {
 			t.Errorf("got %T, want %T", err, exitError)
 		}
 	})

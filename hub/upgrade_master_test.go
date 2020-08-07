@@ -17,7 +17,6 @@ import (
 
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/step"
@@ -305,7 +304,7 @@ func TestUpgradeMaster(t *testing.T) {
 			CheckOnly:   false,
 			UseLinkMode: false,
 		})
-		if !xerrors.Is(err, expectedErr) {
+		if !errors.Is(err, expectedErr) {
 			t.Errorf("returned error %+v, want %+v", err, expectedErr)
 		}
 	})
@@ -355,7 +354,7 @@ func TestUpgradeMaster(t *testing.T) {
 		}
 
 		var upgradeErr UpgradeMasterError
-		if !xerrors.As(err, &upgradeErr) {
+		if !errors.As(err, &upgradeErr) {
 			t.Errorf("got type %T want %T", err, upgradeErr)
 		}
 

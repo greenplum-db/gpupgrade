@@ -11,8 +11,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"golang.org/x/xerrors"
 )
 
 // basicReadCloser is a helper struct for the implementation of NewReadCloser.
@@ -151,7 +149,7 @@ func TestWaitForDaemon(t *testing.T) {
 		cmd := MockDaemonizableCommand{StderrBuf: errput, WaitError: exitErr}
 
 		err := waitForDaemon(&cmd, outbuf, errbuf, 0)
-		if !xerrors.Is(err, exitErr) {
+		if !errors.Is(err, exitErr) {
 			t.Errorf("returned error %#v want %#v", err, exitErr)
 		}
 
@@ -171,7 +169,7 @@ func TestWaitForDaemon(t *testing.T) {
 
 		for _, cmd := range cmds {
 			err := waitForDaemon(&cmd, outbuf, errbuf, 0)
-			if !xerrors.Is(err, pipeErr) {
+			if !errors.Is(err, pipeErr) {
 				t.Errorf("returned error %#v want %#v", err, pipeErr)
 			}
 
@@ -188,7 +186,7 @@ func TestWaitForDaemon(t *testing.T) {
 		cmd := MockDaemonizableCommand{StartError: startErr}
 
 		err := waitForDaemon(&cmd, outbuf, errbuf, 0)
-		if !xerrors.Is(err, startErr) {
+		if !errors.Is(err, startErr) {
 			t.Errorf("returned error %#v want %#v", err, startErr)
 		}
 	})

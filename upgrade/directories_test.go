@@ -16,7 +16,6 @@ import (
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/hashicorp/go-multierror"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -140,7 +139,7 @@ func TestArchiveSource(t *testing.T) {
 		}()
 
 		err := upgrade.ArchiveSource(source, target, true)
-		if !xerrors.Is(err, expected) {
+		if !errors.Is(err, expected) {
 			t.Errorf("got %#v want %#v", err, expected)
 		}
 	})
@@ -154,13 +153,13 @@ func TestArchiveSource(t *testing.T) {
 
 		err := upgrade.ArchiveSource(source, target, true)
 		var merr *multierror.Error
-		if !xerrors.As(err, &merr) {
+		if !errors.As(err, &merr) {
 			t.Fatalf("returned %#v want error type %T", err, merr)
 		}
 
 		for _, err := range merr.Errors {
 			expected := upgrade.ErrInvalidDataDirectory
-			if !xerrors.Is(err, expected) {
+			if !errors.Is(err, expected) {
 				t.Errorf("returned error %#v want %#v", err, expected)
 			}
 		}
@@ -242,7 +241,7 @@ func TestArchiveSource(t *testing.T) {
 		}
 
 		err := upgrade.ArchiveSource(source, target, true)
-		if !xerrors.Is(err, expected) {
+		if !errors.Is(err, expected) {
 			t.Errorf("got %#v want %#v", err, expected)
 		}
 
@@ -284,7 +283,7 @@ func TestArchiveSource(t *testing.T) {
 		}
 
 		err := upgrade.ArchiveSource(source, target, true)
-		if !xerrors.Is(err, expected) {
+		if !errors.Is(err, expected) {
 			t.Errorf("got %#v want %#v", err, expected)
 		}
 
@@ -373,7 +372,7 @@ func TestDeleteDirectories(t *testing.T) {
 		err := upgrade.DeleteDirectories(directories, []string{"a", "b"}, step.DevNullStream)
 
 		var multiErr *multierror.Error
-		if !xerrors.As(err, &multiErr) {
+		if !errors.As(err, &multiErr) {
 			t.Fatalf("got error %#v, want type %T", err, multiErr)
 		}
 
@@ -382,7 +381,7 @@ func TestDeleteDirectories(t *testing.T) {
 		}
 
 		for _, err := range multiErr.Errors {
-			if !xerrors.Is(err, os.ErrNotExist) {
+			if !errors.Is(err, os.ErrNotExist) {
 				t.Errorf("got error %#v, want %#v", err, os.ErrNotExist)
 			}
 		}
@@ -400,7 +399,7 @@ func TestDeleteDirectories(t *testing.T) {
 		err2 := upgrade.DeleteDirectories(directories, requiredPaths, step.DevNullStream)
 
 		var multiErr *multierror.Error
-		if !xerrors.As(err2, &multiErr) {
+		if !errors.As(err2, &multiErr) {
 			t.Fatalf("got error %#v, want type %T", err2, multiErr)
 		}
 
@@ -411,7 +410,7 @@ func TestDeleteDirectories(t *testing.T) {
 		var actualErr *os.PathError
 
 		for _, err := range multiErr.Errors {
-			if !xerrors.As(err, &actualErr) {
+			if !errors.As(err, &actualErr) {
 				t.Errorf("got error %#v, want %#v", err, "PathError")
 			}
 		}
@@ -438,7 +437,7 @@ func TestDeleteDirectories(t *testing.T) {
 		}()
 
 		err := upgrade.DeleteDirectories(directories, requiredPaths, step.DevNullStream)
-		if !xerrors.Is(err, expected) {
+		if !errors.Is(err, expected) {
 			t.Errorf("got error %#v want %#v", err, expected)
 		}
 	})

@@ -5,6 +5,7 @@ package hub_test
 
 import (
 	"context"
+	"errors"
 	"net"
 	"os"
 	"path/filepath"
@@ -15,7 +16,6 @@ import (
 	"time"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
@@ -63,7 +63,7 @@ func TestHubStart(t *testing.T) {
 
 		select {
 		case err := <-errChan:
-			if !xerrors.Is(err, hub.ErrHubStopped) {
+			if !errors.Is(err, hub.ErrHubStopped) {
 				t.Errorf("got error %#v want %#v", err, hub.ErrHubStopped)
 			}
 		case <-time.After(timeout): // use timeout to prevent test from hanging
@@ -279,7 +279,7 @@ func TestAgentConns(t *testing.T) {
 		h := hub.New(conf, errDialer, "")
 
 		_, err := h.AgentConns()
-		if !xerrors.Is(err, expected) {
+		if !errors.Is(err, expected) {
 			t.Errorf("returned error %#v want %#v", err, expected)
 		}
 	})

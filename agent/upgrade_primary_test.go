@@ -4,13 +4,11 @@
 package agent_test
 
 import (
+	"errors"
 	"os"
 	"reflect"
 	"strings"
 	"testing"
-
-	"github.com/pkg/errors"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/agent"
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -202,7 +200,7 @@ func TestReCreateSymLink(t *testing.T) {
 			t.Errorf("got nil, want %+v", os.ErrPermission)
 		}
 
-		if !xerrors.Is(err, os.ErrPermission) {
+		if !errors.Is(err, os.ErrPermission) {
 			t.Errorf("expected error %#v to contain %#v", err, os.ErrPermission)
 		}
 	})
@@ -227,7 +225,7 @@ func TestReCreateSymLink(t *testing.T) {
 			t.Errorf("expected Lstat() to be called")
 		}
 
-		if os.ErrPermission != xerrors.Unwrap(err) {
+		if os.ErrPermission != errors.Unwrap(err) {
 			t.Errorf("got %q, want %q", err.Error(), os.ErrPermission)
 		}
 

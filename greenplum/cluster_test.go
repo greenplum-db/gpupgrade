@@ -17,7 +17,6 @@ import (
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -157,7 +156,7 @@ func TestCluster(t *testing.T) {
 		t.Run(fmt.Sprintf("doesn't allow %s", c.name), func(t *testing.T) {
 			_, err := greenplum.NewCluster(c.segments)
 
-			if !xerrors.Is(err, greenplum.ErrInvalidSegments) {
+			if !errors.Is(err, greenplum.ErrInvalidSegments) {
 				t.Errorf("returned error %#v, want %#v", err, greenplum.ErrInvalidSegments)
 			}
 		})

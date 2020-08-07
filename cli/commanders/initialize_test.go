@@ -4,6 +4,7 @@
 package commanders
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -11,8 +12,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
-
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/upgrade"
@@ -101,7 +100,7 @@ func TestIsHubRunning_ErrorsWhenCheckFails(t *testing.T) {
 	execCommandHubCount = exectest.NewCommand(IsHubRunning_Error)
 	running, err := IsHubRunning()
 	var expected *exec.ExitError
-	if !xerrors.As(err, &expected) {
+	if !errors.As(err, &expected) {
 		t.Errorf("returned error %#v want %#v", err, expected)
 	}
 
@@ -130,7 +129,7 @@ func TestStartHub_FailsToStartWhenHubIsRunningErrors(t *testing.T) {
 	execCommandHubStart = exectest.NewCommand(GpupgradeHub_good_Main) // should not hit this, but fail it we do
 	err := StartHub()
 	var expected *exec.ExitError
-	if !xerrors.As(err, &expected) {
+	if !errors.As(err, &expected) {
 		t.Errorf("returned error %#v want %#v", err, expected)
 	}
 }

@@ -4,6 +4,7 @@
 package disk_test
 
 import (
+	"errors"
 	"os"
 	"reflect"
 	"strings"
@@ -11,9 +12,7 @@ import (
 
 	sigar "github.com/cloudfoundry/gosigar"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils/disk"
@@ -214,7 +213,7 @@ func TestCheckUsage(t *testing.T) {
 			t.Helper() // don't include this function in the stack trace
 
 			_, err := disk.CheckUsage(d, 0.5, "/test/path")
-			if !xerrors.Is(err, d.err) {
+			if !errors.Is(err, d.err) {
 				t.Errorf("returned %#v want %#v", err, d.err)
 			}
 		}

@@ -17,7 +17,6 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/hashicorp/go-multierror"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -79,7 +78,7 @@ func TestWriteGpAddmirrorsConfig(t *testing.T) {
 		writer := &testutils.FailingWriter{Err: errors.New("ahhh")}
 
 		err := writeGpAddmirrorsConfig(mirrors, writer)
-		if !xerrors.Is(err, writer.Err) {
+		if !errors.Is(err, writer.Err) {
 			t.Errorf("returned error %#v, want %#v", err, writer.Err)
 		}
 	})
@@ -139,7 +138,7 @@ func TestRunAddMirrors(t *testing.T) {
 		}
 
 		actual := runAddMirrors(stub, "")
-		if !xerrors.Is(actual, expected) {
+		if !errors.Is(actual, expected) {
 			t.Errorf("returned error %#v, want %#v", actual, expected)
 		}
 	})
@@ -251,7 +250,7 @@ func TestDoUpgrade(t *testing.T) {
 		}
 
 		err = doUpgrade(db, "", []greenplum.SegConfig{}, &greenplumStub{})
-		if !xerrors.Is(err, expectedError) {
+		if !errors.Is(err, expectedError) {
 			t.Errorf("returned error %#v want %#v", err, expectedError)
 		}
 	})
@@ -276,7 +275,7 @@ func TestDoUpgrade(t *testing.T) {
 		err = doUpgrade(db, "/state/dir", mirrors, stub)
 
 		var merr *multierror.Error
-		if !xerrors.As(err, &merr) {
+		if !errors.As(err, &merr) {
 			t.Fatalf("returned error %#v, want error type %T", err, merr)
 		}
 
@@ -285,7 +284,7 @@ func TestDoUpgrade(t *testing.T) {
 		}
 
 		for _, err := range merr.Errors {
-			if !xerrors.Is(err, os.ErrInvalid) {
+			if !errors.Is(err, os.ErrInvalid) {
 				t.Errorf("returned error %#v want %#v", err, os.ErrInvalid)
 			}
 		}
@@ -303,7 +302,7 @@ func TestDoUpgrade(t *testing.T) {
 		}}
 
 		err = doUpgrade(db, "/state/dir", []greenplum.SegConfig{}, stub)
-		if !xerrors.Is(err, expected) {
+		if !errors.Is(err, expected) {
 			t.Errorf("returned error %#v want %#v", err, expected)
 		}
 	})
@@ -357,7 +356,7 @@ func TestUpgradeMirrors(t *testing.T) {
 		}
 
 		err := UpgradeMirrors("", 123, []greenplum.SegConfig{}, stub)
-		if !xerrors.Is(err, expected) {
+		if !errors.Is(err, expected) {
 			t.Errorf("got: %#v want: %#v", err, expected)
 		}
 	})

@@ -6,6 +6,7 @@ package upgrade_test
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -15,7 +16,6 @@ import (
 	"testing"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/upgrade"
@@ -203,7 +203,7 @@ func TestRun(t *testing.T) {
 		err := upgrade.Run(pair)
 
 		var exitErr *exec.ExitError
-		if !xerrors.As(err, &exitErr) {
+		if !errors.As(err, &exitErr) {
 			t.Fatalf("got error %#v, want type *exec.ExitError", err)
 		}
 

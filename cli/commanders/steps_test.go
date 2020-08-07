@@ -4,6 +4,7 @@
 package commanders_test
 
 import (
+	"errors"
 	"io"
 	"io/ioutil"
 	"os"
@@ -79,7 +80,7 @@ func TestUILoop(t *testing.T) {
 	})
 
 	t.Run("returns an error when a non io.EOF error is encountered", func(t *testing.T) {
-		expected := xerrors.New("bengie")
+		expected := errors.New("bengie")
 
 		_, err := commanders.UILoop(&errStream{expected}, true)
 		if err != expected {
@@ -274,7 +275,7 @@ func TestSubstep(t *testing.T) {
 	s := commanders.Substep(idl.Substep_CREATING_DIRECTORIES)
 	s.Finish(&err)
 
-	err = xerrors.New("error")
+	err = errors.New("error")
 	s = commanders.Substep(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG)
 	s.Finish(&err)
 

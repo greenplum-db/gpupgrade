@@ -5,6 +5,7 @@ package hub_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -17,7 +18,6 @@ import (
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/hashicorp/go-multierror"
-	"golang.org/x/xerrors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 
@@ -123,7 +123,7 @@ func TestRestartAgent(t *testing.T) {
 
 			var exitErr *exec.ExitError
 			for _, err := range merr.WrappedErrors() {
-				if !xerrors.As(err, &exitErr) || exitErr.ExitCode() != 1 {
+				if !errors.As(err, &exitErr) || exitErr.ExitCode() != 1 {
 					t.Errorf("expected exit code: 1 but got: %#v", err)
 				}
 			}

@@ -10,7 +10,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/hashicorp/go-multierror"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -59,7 +58,7 @@ func TestArchiveLogDirectories(t *testing.T) {
 
 		err := hub.ArchiveSegmentLogDirectories(agentConns, "", newDir)
 		var multiErr *multierror.Error
-		if !xerrors.As(err, &multiErr) {
+		if !errors.As(err, &multiErr) {
 			t.Fatalf("got error %#v, want type %T", err, multiErr)
 		}
 
@@ -68,7 +67,7 @@ func TestArchiveLogDirectories(t *testing.T) {
 		}
 
 		for _, err := range multiErr.Errors {
-			if !xerrors.Is(err, expected) {
+			if !errors.Is(err, expected) {
 				t.Errorf("got error %#v, want %#v", expected, err)
 			}
 		}

@@ -16,7 +16,6 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/hashicorp/go-multierror"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
@@ -364,7 +363,7 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 
 		err := hub.Recoverseg(&testutils.DevNullWithClose{}, cluster)
 		var exitErr *exec.ExitError
-		if !xerrors.As(err, &exitErr) || exitErr.ExitCode() != 1 {
+		if !errors.As(err, &exitErr) || exitErr.ExitCode() != 1 {
 			t.Errorf("returned error %#v, want exit code %d", err, 1)
 		}
 	})
@@ -394,7 +393,7 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 		err := hub.RsyncPrimaries(agentConns, cluster)
 
 		var multiErr *multierror.Error
-		if !xerrors.As(err, &multiErr) {
+		if !errors.As(err, &multiErr) {
 			t.Fatalf("got error %#v, want type %T", err, multiErr)
 		}
 
@@ -403,7 +402,7 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 		}
 
 		for _, err := range multiErr.Errors {
-			if !xerrors.Is(err, expected) {
+			if !errors.Is(err, expected) {
 				t.Errorf("got error %#v, want %#v", expected, err)
 			}
 		}
@@ -434,7 +433,7 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 		err := hub.RsyncPrimariesTablespaces(agentConns, cluster, tablespaces)
 
 		var multiErr *multierror.Error
-		if !xerrors.As(err, &multiErr) {
+		if !errors.As(err, &multiErr) {
 			t.Fatalf("got error %#v, want type %T", err, multiErr)
 		}
 
@@ -443,7 +442,7 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 		}
 
 		for _, err := range multiErr.Errors {
-			if !xerrors.Is(err, expected) {
+			if !errors.Is(err, expected) {
 				t.Errorf("got error %#v, want %#v", expected, err)
 			}
 		}

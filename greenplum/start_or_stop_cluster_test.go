@@ -4,6 +4,7 @@
 package greenplum
 
 import (
+	"errors"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -12,7 +13,6 @@ import (
 	"testing"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
@@ -108,7 +108,7 @@ func TestStartOrStopCluster(t *testing.T) {
 
 		running, err := source.IsMasterRunning(step.DevNullStream)
 		var expected *exec.ExitError
-		if !xerrors.As(err, &expected) {
+		if !errors.As(err, &expected) {
 			t.Errorf("expected error to contain type %T", expected)
 		}
 

@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
@@ -160,7 +159,7 @@ func TestStepRun(t *testing.T) {
 			return nil
 		})
 
-		if !xerrors.Is(s.Err(), failingStore.WriteErr) {
+		if !errors.Is(s.Err(), failingStore.WriteErr) {
 			t.Errorf("returned error %#v want %#v", s.Err(), failingStore.WriteErr)
 		}
 
@@ -218,7 +217,7 @@ func TestStepRun(t *testing.T) {
 			t.Error("expected substep to be skipped")
 		}
 
-		if !xerrors.Is(s.Err(), expected) {
+		if !errors.Is(s.Err(), expected) {
 			t.Errorf("got error %#v, want %#v", s.Err(), expected)
 		}
 	})
@@ -301,7 +300,7 @@ func TestHasRun(t *testing.T) {
 
 		hasRun, err := step.HasRun(idl.Step_INITIALIZE, idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG)
 		var expected *os.PathError
-		if !xerrors.As(err, &expected) {
+		if !errors.As(err, &expected) {
 			t.Errorf("returned error %#v want %#v", err, expected)
 		}
 
@@ -372,7 +371,7 @@ func TestStepFinish(t *testing.T) {
 		s := step.New(idl.Step_INITIALIZE, nil, nil, streams)
 
 		err := s.Finish()
-		if !xerrors.Is(err, expected) {
+		if !errors.Is(err, expected) {
 			t.Errorf("got error %#v, want %#v", err, expected)
 		}
 	})

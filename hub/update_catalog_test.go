@@ -4,6 +4,7 @@
 package hub_test
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -13,7 +14,6 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/hashicorp/go-multierror"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	. "github.com/greenplum-db/gpupgrade/hub"
@@ -230,10 +230,10 @@ func TestUpdateCatalog(t *testing.T) {
 			if !ok {
 				t.Fatal("did not return a multierror")
 			}
-			if !xerrors.Is(multiErr.Errors[0], ErrSentinel) {
+			if !errors.Is(multiErr.Errors[0], ErrSentinel) {
 				t.Errorf("first error was %#v want %#v", err, ErrSentinel)
 			}
-			if !xerrors.Is(multiErr.Errors[1], ErrRollback) {
+			if !errors.Is(multiErr.Errors[1], ErrRollback) {
 				t.Errorf("second error was %#v want %#v", err, ErrRollback)
 			}
 		},
@@ -319,7 +319,7 @@ func TestUpdateCatalog(t *testing.T) {
 // through the testing.T if not.
 func expect(expected error) func(*testing.T, error) {
 	return func(t *testing.T, actual error) {
-		if !xerrors.Is(actual, expected) {
+		if !errors.Is(actual, expected) {
 			t.Errorf("returned %#v want %#v", actual, expected)
 		}
 	}

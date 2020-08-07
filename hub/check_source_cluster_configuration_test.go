@@ -10,7 +10,6 @@ import (
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/hashicorp/go-multierror"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -67,7 +66,7 @@ func TestSegmentStatusErrors(t *testing.T) {
 		var multiError *multierror.Error
 		var segmentStatusError hub.UnbalancedSegmentStatusError
 
-		if !xerrors.As(err, &multiError) || !xerrors.As(multiError.Errors[0], &segmentStatusError) {
+		if !errors.As(err, &multiError) || !errors.As(multiError.Errors[0], &segmentStatusError) {
 			t.Errorf("got an error that was not a segment status error: %v",
 				err.Error())
 		}
@@ -125,7 +124,7 @@ func TestSegmentStatusErrors(t *testing.T) {
 		var segmentStatusError hub.DownSegmentStatusError
 
 		var multiError *multierror.Error
-		if !xerrors.As(err, &multiError) || !xerrors.As(multiError.Errors[0], &segmentStatusError) {
+		if !errors.As(err, &multiError) || !errors.As(multiError.Errors[0], &segmentStatusError) {
 			t.Errorf("got an error that was not a segment status error: %v",
 				err.Error())
 		}
@@ -174,19 +173,19 @@ func TestSegmentStatusErrors(t *testing.T) {
 
 		var multiError *multierror.Error
 
-		if !xerrors.As(err, &multiError) {
+		if !errors.As(err, &multiError) {
 			t.Errorf("got an error that was not a multi error: %v",
 				err.Error())
 		}
 
 		var downSegmentStatusError hub.DownSegmentStatusError
-		if !xerrors.As(multiError.Errors[0], &downSegmentStatusError) {
+		if !errors.As(multiError.Errors[0], &downSegmentStatusError) {
 			t.Errorf("got an error that was not a down segment status error: %v",
 				err.Error())
 		}
 
 		var unbalancedSegmentStatusError hub.UnbalancedSegmentStatusError
-		if !xerrors.As(multiError.Errors[1], &unbalancedSegmentStatusError) {
+		if !errors.As(multiError.Errors[1], &unbalancedSegmentStatusError) {
 			t.Errorf("got an error that was not an unbalanced segment status error: %v",
 				err.Error())
 		}
@@ -243,7 +242,7 @@ func TestCheckSourceClusterConfiguration(t *testing.T) {
 		sqlmock.ExpectQuery(".*").WillReturnError(expected)
 
 		err = hub.CheckSourceClusterConfiguration(connection)
-		if !xerrors.Is(err, expected) {
+		if !errors.Is(err, expected) {
 			t.Errorf("got error %#v, want %#v", err, expected)
 		}
 	})
@@ -301,7 +300,7 @@ func TestGetSegmentStatuses(t *testing.T) {
 		sqlmock.ExpectQuery(".*").WillReturnError(expected)
 
 		_, err = hub.GetSegmentStatuses(connection)
-		if !xerrors.Is(err, expected) {
+		if !errors.Is(err, expected) {
 			t.Errorf("got error %#v, want %#v", err, expected)
 		}
 	})
@@ -347,7 +346,7 @@ func TestGetSegmentStatuses(t *testing.T) {
 		sqlmock.ExpectQuery(".*").WillReturnRows(rows)
 
 		_, err = hub.GetSegmentStatuses(connection)
-		if !xerrors.Is(err, expected) {
+		if !errors.Is(err, expected) {
 			t.Errorf("got error %#v, want %#v", err, expected)
 		}
 	})
