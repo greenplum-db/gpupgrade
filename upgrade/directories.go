@@ -252,7 +252,7 @@ func (i *TablespaceDirectoryError) Is(err error) bool {
 // following format:
 //   DIR/<fsname>/<datadir>/<tablespaceOid>/<dbId>/GPDB_<majorVersion>_<catalogVersion>
 // It first deletes the specified directory and checks if its safe to delete the
-// parent DBID directory.
+// parent dbID directory.
 //
 // Tablespace Directory Structure When Upgrading from 5X
 // =====================================================
@@ -280,8 +280,8 @@ func (i *TablespaceDirectoryError) Is(err error) bool {
 //   │                   └── 12812
 //   │                       └── 16389
 //
-//  GPDB 5X:  DIR/<fsname>/<datadir>/<tablespaceOid>/<dbOid>/<relfilenode>
-//  GPDB 6X:  DIR/<fsname>/<datadir>/<tablespaceOid>/<dbId>/GPDB_6_<catalogVersion>/<dbOid>/<relfilenode>
+//  GPDB 5X:  DIR/<fsname>/<datadir>/<tablespaceOID>/<dbOID>/<relfilenode>
+//  GPDB 6X:  DIR/<fsname>/<datadir>/<tablespaceOID>/<dbID>/GPDB_6_<catalogVersion>/<dbOID>/<relfilenode>
 func DeleteNewTablespaceDirectories(streams step.OutStreams, dirs []string) error {
 	if err := VerifyTargetTablespaceDirectories(dirs); err != nil {
 		return err
@@ -341,7 +341,7 @@ func VerifyTargetTablespaceDirectories(dirs []string) error {
 }
 
 // Verify5XTablespaceDirectories checks tablespace location directories of the
-// following format: DIR/<fsname>/<datadir>/<tablespaceOid>
+// following format: DIR/<fsname>/<datadir>/<tablespaceOID>
 // It ensures the PG_VERSION file is found in all dbOid directories.
 // NOTE: No error is returned when the dbOid directory does not exist since
 // the user may not have created a table within the tablespace.

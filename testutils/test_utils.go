@@ -212,7 +212,7 @@ func verifyLog(t *testing.T, testlog *gbytes.Buffer, expected string, shouldCont
 }
 
 // MustMakeTablespaceDir returns a temporary tablespace directory, its parent
-// dbId directory, and its grandparent tablespace location. The location should
+// dbID directory, and its grandparent tablespace location. The location should
 // be removed for cleanup.
 func MustMakeTablespaceDir(t *testing.T, tablespaceOid int) (string, string, string) {
 	t.Helper()
@@ -234,7 +234,7 @@ func MustMakeTablespaceDir(t *testing.T, tablespaceOid int) (string, string, str
 	dbID := filepath.Join(location, "1")
 	err = os.MkdirAll(dbID, 0700)
 	if err != nil {
-		t.Fatalf("creating tablespace dbId directory: %v", err)
+		t.Fatalf("creating tablespace dbID directory: %v", err)
 	}
 
 	// ex: /filespace/demoDataDir0/16386/1/GPDB_6_301908232
@@ -247,7 +247,7 @@ func MustMakeTablespaceDir(t *testing.T, tablespaceOid int) (string, string, str
 	return tablespace, dbID, location
 }
 
-// MustMake5XTablespaceDir returns the parent tablespace location and dbOid
+// MustMake5XTablespaceDir returns the parent tablespace location and dbOID
 // directory containing PG_VERSION and a relfile. The location should be removed
 // for cleanup. An optional tablespaceOid may be specified to construct unique
 // tablespace directories.
