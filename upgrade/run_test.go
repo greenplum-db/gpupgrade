@@ -15,9 +15,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 )
 
@@ -59,7 +58,7 @@ func init() {
 }
 
 func TestRun(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testlog.SetupLogger()
 
 	pair := upgrade.SegmentPair{
 		Source: &upgrade.Segment{

@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/hashicorp/go-multierror"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
@@ -16,11 +15,12 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 )
 
 func TestRenameSegmentDataDirs(t *testing.T) {
-	testhelper.SetupTestLogger() // initialize gplog
+	testlog.SetupLogger()
 
 	m := hub.RenameMap{
 		"sdw1": {

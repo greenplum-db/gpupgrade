@@ -14,11 +14,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/hashicorp/go-multierror"
 
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
@@ -80,7 +80,7 @@ func TestGetArchiveDirectoryName(t *testing.T) {
 }
 
 func TestArchiveSource(t *testing.T) {
-	_, _, testlog := testhelper.SetupTestLogger()
+	_, _, log := testlog.SetupLogger()
 
 	t.Run("successfully renames source to archive, and target to source", func(t *testing.T) {
 		source, target, cleanup := testutils.MustCreateDataDirs(t)
@@ -225,7 +225,7 @@ func TestArchiveSource(t *testing.T) {
 
 		testutils.VerifyRename(t, source, target)
 
-		testutils.VerifyLogDoesNotContain(t, testlog, "Source directory does not exist")
+		testlog.VerifyLogDoesNotContain(t, log, "Source directory does not exist")
 	})
 
 	t.Run("when renaming the source fails then a re-run succeeds", func(t *testing.T) {
@@ -267,7 +267,7 @@ func TestArchiveSource(t *testing.T) {
 
 		testutils.VerifyRename(t, source, target)
 
-		testutils.VerifyLogDoesNotContain(t, testlog, "Source directory does not exist")
+		testlog.VerifyLogDoesNotContain(t, log, "Source directory does not exist")
 	})
 
 	t.Run("when renaming the target fails then a re-run succeeds", func(t *testing.T) {
@@ -309,7 +309,7 @@ func TestArchiveSource(t *testing.T) {
 
 		testutils.VerifyRename(t, source, target)
 
-		testutils.VerifyLogContains(t, testlog, "Source directory not found")
+		testlog.VerifyLogContains(t, log, "Source directory not found")
 	})
 }
 
@@ -328,7 +328,7 @@ func setup(t *testing.T) (teardown func(), directories []string, requiredPaths [
 }
 
 func TestDeleteDirectories(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testlog.SetupLogger()
 
 	utils.System.Hostname = func() (string, error) {
 		return "localhost.local", nil
@@ -481,7 +481,7 @@ func TestTablespacePath(t *testing.T) {
 const userRWX = 0700
 
 func TestDeleteNewTablespaceDirectories(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testlog.SetupLogger()
 	utils.System.Hostname = func() (s string, err error) {
 		return "", nil
 	}

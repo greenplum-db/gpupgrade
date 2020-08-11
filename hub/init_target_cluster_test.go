@@ -20,6 +20,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
@@ -278,7 +279,7 @@ func TestGetMasterSegPrefix(t *testing.T) {
 }
 
 func TestGetCatalogVersion(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testlog.SetupLogger()
 
 	gphome := "/usr/local/target"
 	datadir := "/data/qddir_upgrade/seg-1"

@@ -15,7 +15,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"golang.org/x/xerrors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
@@ -24,6 +23,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/mock_agent"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 )
 
@@ -180,7 +180,7 @@ func TestAgentConns(t *testing.T) {
 		UpgradeID:              0,
 	}
 
-	testhelper.SetupTestLogger()
+	testlog.SetupLogger()
 
 	t.Run("closes open connections when shutting down", func(t *testing.T) {
 		h := hub.New(conf, dialer, "")

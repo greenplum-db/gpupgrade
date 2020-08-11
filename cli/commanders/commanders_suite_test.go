@@ -7,12 +7,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 )
 
 func TestMain(m *testing.M) {
-	testhelper.SetupTestLogger()
+	testlog.SetupLogger()
 	os.Exit(exectest.Run(m))
 }

@@ -13,8 +13,7 @@ import (
 	"testing"
 
 	"github.com/greenplum-db/gpupgrade/testutils"
-
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 
 	"github.com/greenplum-db/gpupgrade/agent"
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -22,7 +21,7 @@ import (
 )
 
 func TestArchiveLogDirectories(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testlog.SetupLogger()
 	server := agent.NewServer(agent.Config{})
 
 	t.Run("bubbles up errors", func(t *testing.T) {

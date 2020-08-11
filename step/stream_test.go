@@ -12,10 +12,10 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 )
 
 // Since we have no good way to test devNullStream, we instead
@@ -52,8 +52,7 @@ func TestBufStream(t *testing.T) {
 }
 
 func TestMultiplexedStream(t *testing.T) {
-	// Store gplog output.
-	_, _, log := testhelper.SetupTestLogger()
+	_, _, log := testlog.SetupLogger()
 
 	t.Run("forwards stdout and stderr to the stream", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
@@ -144,7 +143,7 @@ func TestMultiplexedStream(t *testing.T) {
 		}
 
 		expected := "halting client stream: error during send"
-		contents := string(log.Contents())
+		contents := string(log.Bytes())
 		if !strings.Contains(contents, expected) {
 			t.Errorf("log file %q does not contain %q", contents, expected)
 		}

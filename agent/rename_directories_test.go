@@ -8,15 +8,15 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/hashicorp/go-multierror"
 
 	"github.com/greenplum-db/gpupgrade/agent"
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 )
 
 func TestRenameDirectories(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testlog.SetupLogger()
 	server := agent.NewServer(agent.Config{})
 
 	t.Run("bubbles up errors", func(t *testing.T) {

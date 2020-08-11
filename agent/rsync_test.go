@@ -13,7 +13,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/hashicorp/go-multierror"
 
 	"github.com/greenplum-db/gpupgrade/agent"
@@ -21,12 +20,13 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
 
 func TestRsync(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testlog.SetupLogger()
 	server := agent.NewServer(agent.Config{})
 
 	source := testutils.GetTempDir(t, "")
@@ -177,7 +177,7 @@ func TestRsync(t *testing.T) {
 }
 
 func TestRsyncTablespaceDirectories(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testlog.SetupLogger()
 	server := agent.NewServer(agent.Config{})
 
 	_, sourceTsLocationDir := testutils.MustMake5XTablespaceDir(t, 0)

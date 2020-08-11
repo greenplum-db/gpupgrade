@@ -20,6 +20,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 )
 
 func TestCluster(t *testing.T) {
@@ -164,7 +165,7 @@ func TestCluster(t *testing.T) {
 }
 
 func TestGetSegmentConfiguration(t *testing.T) {
-	testhelper.SetupTestLogger() // init gplog
+	testlog.SetupLogger()
 
 	cases := []struct {
 		name     string
@@ -238,7 +239,7 @@ func TestPrimaryHostnames(t *testing.T) {
 	expectedCluster := testutils.CreateMultinodeSampleCluster("/tmp")
 	expectedCluster.GPHome = "/fake/path"
 	expectedCluster.Version = dbconn.NewVersion("6.0.0")
-	testhelper.SetupTestLogger()
+	testlog.SetupLogger()
 
 	defer func() {
 		os.RemoveAll(testStateDir)
@@ -261,7 +262,7 @@ func TestClusterFromDB(t *testing.T) {
 		t.Errorf("got error when creating tempdir: %+v", err)
 	}
 
-	testhelper.SetupTestLogger()
+	testlog.SetupLogger()
 
 	defer func() {
 		os.RemoveAll(testStateDir)

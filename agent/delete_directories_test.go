@@ -9,17 +9,16 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-
 	"github.com/greenplum-db/gpupgrade/agent"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 func TestDeleteDataDirectories(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testlog.SetupLogger()
 
 	t.Run("deletes data directories", func(t *testing.T) {
 		utils.System.Hostname = func() (string, error) {
@@ -67,7 +66,7 @@ func TestDeleteDataDirectories(t *testing.T) {
 }
 
 func TestDeleteStateDirectory(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testlog.SetupLogger()
 
 	t.Run("deletes the state directory", func(t *testing.T) {
 		utils.System.Hostname = func() (string, error) {

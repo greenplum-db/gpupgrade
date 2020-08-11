@@ -8,18 +8,18 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/hashicorp/go-multierror"
 
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 )
 
 const newDir = "NewDirectory"
 
 func TestArchiveLogDirectories(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testlog.SetupLogger()
 
 	t.Run("archive segment log directories", func(t *testing.T) {
 		ctrl := gomock.NewController(t)

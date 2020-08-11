@@ -14,7 +14,6 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/hashicorp/go-multierror"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
@@ -23,6 +22,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
 
@@ -31,7 +31,7 @@ func ResetRecoversegCmd() {
 }
 
 func TestRsyncMasterAndPrimaries(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testlog.SetupLogger()
 
 	cluster := hub.MustCreateCluster(t, []greenplum.SegConfig{
 		{DbID: 1, ContentID: -1, Hostname: "master", DataDir: "/data/qddir", Role: greenplum.PrimaryRole},

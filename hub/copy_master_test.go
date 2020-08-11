@@ -13,7 +13,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/hashicorp/go-multierror"
 	"google.golang.org/grpc"
 
@@ -21,6 +20,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
 
@@ -44,7 +44,7 @@ func init() {
 }
 
 func TestCopy(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testlog.SetupLogger()
 
 	t.Run("copies the directory only once per host", func(t *testing.T) {
 

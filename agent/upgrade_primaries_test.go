@@ -12,12 +12,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/hashicorp/go-multierror"
 
 	"github.com/greenplum-db/gpupgrade/agent"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
@@ -28,7 +28,7 @@ func ResetCommands() {
 }
 
 func TestUpgradePrimary(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testlog.SetupLogger()
 
 	// Disable exec.Command. This way, if a test forgets to mock it out, we
 	// crash the test instead of executing code on a dev system.

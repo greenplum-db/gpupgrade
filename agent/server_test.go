@@ -9,15 +9,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/agent"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 )
 
 func TestServerStart(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testlog.SetupLogger()
 
 	t.Run("successfully starts and creates state directory if it does not exist", func(t *testing.T) {
 		tempDir := testutils.GetTempDir(t, "")

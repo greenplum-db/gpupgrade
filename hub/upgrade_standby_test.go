@@ -6,13 +6,12 @@ package hub_test
 import (
 	"testing"
 
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-
 	"github.com/greenplum-db/gpupgrade/hub"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 )
 
 func TestUpgradeStandby(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testlog.SetupLogger()
 
 	t.Run("it upgrades the standby through gpinitstandby", func(t *testing.T) {
 		config := hub.StandbyConfig{

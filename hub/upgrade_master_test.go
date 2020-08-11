@@ -16,12 +16,12 @@ import (
 	"testing"
 
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/rsync"
@@ -113,7 +113,7 @@ func init() {
 }
 
 func TestUpgradeMaster(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testlog.SetupLogger()
 
 	source := MustCreateCluster(t, []greenplum.SegConfig{
 		{ContentID: -1, Port: 5432, DataDir: "/data/old", DbID: 1, Role: "p"},

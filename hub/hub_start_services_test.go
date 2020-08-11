@@ -16,7 +16,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/hashicorp/go-multierror"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
@@ -25,6 +24,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 )
 
 func gpupgrade_agent() {
@@ -43,7 +43,7 @@ func init() {
 }
 
 func TestRestartAgent(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testlog.SetupLogger()
 	listener := bufconn.Listen(1024 * 1024)
 	agentServer := grpc.NewServer()
 	defer agentServer.Stop()

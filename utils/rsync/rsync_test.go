@@ -11,11 +11,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
@@ -34,7 +33,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestRsync(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testlog.SetupLogger()
 
 	if _, err := exec.LookPath("rsync"); err != nil {
 		t.Fatalf("tests require rsync (%v)", err)

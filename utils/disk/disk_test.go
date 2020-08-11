@@ -11,15 +11,15 @@ import (
 	"testing"
 
 	sigar "github.com/cloudfoundry/gosigar"
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"golang.org/x/sys/unix"
 
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/utils/disk"
 )
 
 func TestCheckUsage(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testlog.SetupLogger()
 
 	// This test disk has two mount points:
 	//  - /, at 25% utilization

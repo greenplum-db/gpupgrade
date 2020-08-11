@@ -8,16 +8,16 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/hashicorp/go-multierror"
 
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 )
 
 func TestDeleteStateDirectories(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testlog.SetupLogger()
 
 	t.Run("DeleteStateDirectories", func(t *testing.T) {
 		t.Run("deletes state directories on all hosts except for the host that gets passed in", func(t *testing.T) {

@@ -12,10 +12,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
@@ -45,7 +44,7 @@ func init() {
 }
 
 func TestStartOrStopCluster(t *testing.T) {
-	testhelper.SetupTestLogger() // initialize gplog
+	testlog.SetupLogger()
 
 	masterDataDir, err := ioutil.TempDir("", "")
 	if err != nil {

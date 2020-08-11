@@ -13,13 +13,13 @@ import (
 
 	sigar "github.com/cloudfoundry/gosigar"
 	"github.com/golang/mock/gomock"
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	multierror "github.com/hashicorp/go-multierror"
 	"golang.org/x/sys/unix"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/utils/disk"
 )
 
@@ -30,7 +30,7 @@ func TestCheckDiskSpace(t *testing.T) {
 	var req *idl.CheckDiskSpaceRequest
 	ctx := context.Background()
 
-	testhelper.SetupTestLogger()
+	testlog.SetupLogger()
 
 	// This helper performs the boring test work. Set the above variables as
 	// part of your more interesting test setup.

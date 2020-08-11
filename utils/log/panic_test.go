@@ -7,19 +7,18 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/utils/log"
 )
 
 func TestWritePanics(t *testing.T) {
 	t.Run("writes panics to the log file", func(t *testing.T) {
-		_, _, buffer := testhelper.SetupTestLogger()
+		_, _, buffer := testlog.SetupLogger()
 
 		expected := "ahhh"
 		defer func() {
 			if e := recover(); e != nil {
-				contents := string(buffer.Contents())
+				contents := string(buffer.Bytes())
 				if !strings.Contains(contents, expected) {
 					t.Errorf("expected %q in log file: %q", expected, contents)
 				}
