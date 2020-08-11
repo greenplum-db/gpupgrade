@@ -9,11 +9,9 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
-	"github.com/onsi/gomega/gbytes"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/upgrade"
@@ -184,30 +182,6 @@ func SetEnv(t *testing.T, envar, value string) func() {
 				t.Fatalf("unsetting %s environment variable: %#v", envar, err)
 			}
 		}
-	}
-}
-
-func VerifyLogContains(t *testing.T, testlog *gbytes.Buffer, expected string) {
-	t.Helper()
-	verifyLog(t, testlog, expected, true)
-}
-
-func VerifyLogDoesNotContain(t *testing.T, testlog *gbytes.Buffer, expected string) {
-	t.Helper()
-	verifyLog(t, testlog, expected, false)
-}
-
-func verifyLog(t *testing.T, testlog *gbytes.Buffer, expected string, shouldContain bool) {
-	t.Helper()
-
-	text := "to not contain"
-	if shouldContain {
-		text = "to contain"
-	}
-
-	contents := string(testlog.Contents())
-	if shouldContain && !strings.Contains(contents, expected) {
-		t.Errorf("\nexpected log: %q\n%s:   %q", contents, text, expected)
 	}
 }
 
