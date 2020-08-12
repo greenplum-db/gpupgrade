@@ -168,13 +168,42 @@ func VerifyDataDirectory(path string) error {
 	return mErr.ErrorOrNil()
 }
 
+// TODO: Remove alreadyRenamed and use AlreadyRenamed
 func alreadyRenamed(archive, target string) bool {
 	return PathExists(archive) && !PathExists(target)
 }
 
+func AlreadyRenamed(src, dst string) (bool, error) {
+	srcExist, err := PathExist(src)
+	if err != nil {
+		return false, err
+	}
+
+	dstExist, err := PathExist(dst)
+	if err != nil {
+		return false, err
+	}
+
+	return !srcExist && dstExist, nil
+}
+
+// TODO: Remove PathExists and use PathExist
 func PathExists(path string) bool {
 	_, err := utils.System.Stat(path)
 	return err == nil
+}
+
+func PathExist(path string) (bool, error) {
+	_, err := utils.System.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+
+	return false, err
 }
 
 func verifyPathsExist(path string, files ...string) error {

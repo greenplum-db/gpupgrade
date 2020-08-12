@@ -476,6 +476,56 @@ func TestTablespacePath(t *testing.T) {
 	})
 }
 
+func TestPathExist(t *testing.T) {
+	t.Run("path exists", func(t *testing.T) {
+		dir := testutils.GetTempDir(t, "")
+		defer testutils.MustRemoveAll(t, dir)
+
+		doesExist, err := upgrade.PathExist(dir)
+		if err != nil {
+			t.Errorf("unexpected error %#v", err)
+		}
+
+		if !doesExist {
+			t.Errorf("expected path %q to exist", dir)
+		}
+	})
+
+	t.Run("path does not exists", func(t *testing.T) {
+		dir := testutils.GetTempDir(t, "")
+		defer testutils.MustRemoveAll(t, dir)
+
+		path := filepath.Join(dir, "doesnotexist")
+		doesExist, err := upgrade.PathExist(path)
+		if err != nil {
+			t.Errorf("unexpected error %#v", err)
+		}
+
+		if doesExist {
+			t.Errorf("expected path %q to not exist", dir)
+		}
+	})
+
+	t.Run("returns error", func(t *testing.T) {
+		expected := os.ErrInvalid
+		utils.System.Stat = func(name string) (os.FileInfo, error) {
+			return nil, expected
+		}
+		defer func() {
+			utils.System = utils.InitializeSystemFunctions()
+		}()
+
+		doesExist, err := upgrade.PathExist("somepath")
+		if !errors.Is(err, expected) {
+			t.Errorf("got error %#v want %#v", err, expected)
+		}
+
+		if doesExist {
+			t.Error("expected path to not exist")
+		}
+	})
+}
+
 // The default tablespace permissions with execute set to allow access to children
 // directories and files.
 const userRWX = 0700
