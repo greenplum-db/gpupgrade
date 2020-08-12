@@ -78,7 +78,7 @@ execute_script_directory() {
 }
 
 main(){
-    local dirs=(pre-upgrade post-revert post-upgrade)
+    local dirs=(start complete revert)
     local databases=($(get_databases))
 
     for dir in "${dirs[@]}"; do

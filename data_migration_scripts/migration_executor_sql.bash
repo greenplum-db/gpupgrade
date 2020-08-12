@@ -14,7 +14,7 @@ PGPORT=$2
 INPUT_DIR=$3
 
 main(){
-    local log_file="${INPUT_DIR}/migration_sql.log"
+    local log_file="${INPUT_DIR}/data_migration.log"
 
     rm -f "$log_file"
 

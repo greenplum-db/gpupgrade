@@ -5,7 +5,7 @@
 
 load helpers
 
-SCRIPTS_DIR=$BATS_TEST_DIRNAME/../migration_scripts
+SCRIPTS_DIR=$BATS_TEST_DIRNAME/../data_migration_scripts
 
 setup() {
     skip_if_no_gpdb
@@ -104,7 +104,7 @@ drop_unfixable_objects() {
 @test "migration scripts generate sql to modify non-upgradeable objects and fix pg_upgrade check errors" {
 
     $PSQL -c "CREATE DATABASE $TEST_DBNAME;" -d $DEFAULT_DBNAME
-    $PSQL -f $BATS_TEST_DIRNAME/../migration_scripts/test/create_nonupgradable_objects.sql -d $TEST_DBNAME
+    $PSQL -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql -d $TEST_DBNAME
 
     run gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
@@ -120,13 +120,13 @@ drop_unfixable_objects() {
     egrep "^Checking.*fatal$" $GPUPGRADE_HOME/pg_upgrade/seg-1/pg_upgrade_internal.log
 
     MIGRATION_DIR=`mktemp -d /tmp/migration.XXXXXX`
-    "$SCRIPTS_DIR"/generate_migration_sql.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"
+    "$SCRIPTS_DIR"/migration_generator_sql.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"
 
     drop_unfixable_objects
 
     root_child_indexes_before=$(get_indexes "$GPHOME_SOURCE")
 
-    "$SCRIPTS_DIR"/execute_migration_sql.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/pre-upgrade
+    "$SCRIPTS_DIR"/migration_executor_sql.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/start
 
     gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
@@ -138,9 +138,9 @@ drop_unfixable_objects() {
     gpupgrade execute --verbose
     gpupgrade finalize --verbose
 
-    "$SCRIPTS_DIR"/execute_migration_sql.bash "$GPHOME_TARGET" "$PGPORT" "$MIGRATION_DIR"/post-upgrade
+    "$SCRIPTS_DIR"/migration_executor_sql.bash "$GPHOME_TARGET" "$PGPORT" "$MIGRATION_DIR"/complete
 
-    # post-upgrade scripts should create the indexes on the target cluster
+    # migration scripts should create the indexes on the target cluster
     root_child_indexes_after=$(get_indexes "$GPHOME_TARGET")
 
     # expect the index information to be same after the upgrade
@@ -151,7 +151,7 @@ drop_unfixable_objects() {
 
 @test "after reverting recreate scripts must restore non-upgradeable objects" {
     $PSQL -c "CREATE DATABASE $TEST_DBNAME;" -d $DEFAULT_DBNAME
-    $PSQL -f $BATS_TEST_DIRNAME/../migration_scripts/test/create_nonupgradable_objects.sql -d $TEST_DBNAME
+    $PSQL -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql -d $TEST_DBNAME
 
     drop_unfixable_objects # don't test what we won't fix
 
@@ -168,8 +168,8 @@ drop_unfixable_objects() {
     "$GPHOME_SOURCE"/bin/pg_dump --schema-only "$TEST_DBNAME" $EXCLUSIONS -f "$MIGRATION_DIR"/before.sql
 
 
-    $SCRIPTS_DIR/generate_migration_sql.bash $GPHOME_SOURCE $PGPORT $MIGRATION_DIR
-    $SCRIPTS_DIR/execute_migration_sql.bash $GPHOME_SOURCE $PGPORT $MIGRATION_DIR/pre-upgrade
+    $SCRIPTS_DIR/migration_generator_sql.bash $GPHOME_SOURCE $PGPORT $MIGRATION_DIR
+    $SCRIPTS_DIR/migration_executor_sql.bash $GPHOME_SOURCE $PGPORT $MIGRATION_DIR/start
 
     gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
@@ -181,7 +181,7 @@ drop_unfixable_objects() {
     gpupgrade execute --verbose
     gpupgrade revert --verbose
 
-    $SCRIPTS_DIR/execute_migration_sql.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/post-revert
+    $SCRIPTS_DIR/migration_executor_sql.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/revert
 
     "$GPHOME_SOURCE"/bin/pg_dump --schema-only $TEST_DBNAME $EXCLUSIONS -f "$MIGRATION_DIR"/after.sql
     diff -U3 --speed-large-files "$MIGRATION_DIR"/before.sql "$MIGRATION_DIR"/after.sql
