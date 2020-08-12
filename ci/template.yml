@@ -402,6 +402,95 @@ jobs:
     <<: *slack_alert
 {{end -}}
 
+{{range .MultihostBatsJobs}}
+- name: {{ .Name }}
+  serial_groups: [{{ .BaseName }}]
+  # Specifying serial groups so that only one platform runs at a time. For
+  # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
+  # will prevent concourse from becoming overloaded.
+  plan:
+    - in_parallel:
+        - get: bin_gpupgrade
+          trigger: true
+          passed: [ build ]
+        - get: gpupgrade_src
+          passed: [ build ]
+        - get: rpm_gpdb_source
+          resource: rpm_gpdb{{.Source}}_centos{{.CentosVersion}}
+          trigger: true
+        {{- if ne .Source .Target }}
+        - get: rpm_gpdb_target
+          resource: rpm_gpdb{{.Target}}_centos{{.CentosVersion}}
+          trigger: true
+        {{- end }}
+        - get: ccp_src
+        - get: bats
+    - put: terraform
+      params:
+        <<: *ccp_default_params
+        vars:
+          standby_master: true
+          instance_type: n1-standard-2
+          number_of_nodes: 4
+          PLATFORM: centos{{.CentosVersion}}
+          # Decrease the reap time from the default of 8 hours now that there are
+          # both centos6 and centos7 jobs in order to not overload concourse.
+          ccp_reap_minutes: 180
+    - task: gen_source_cluster
+      file: ccp_src/ci/tasks/gen_cluster.yml
+      params:
+        <<: *ccp_gen_cluster_default_params
+        PLATFORM: centos{{.CentosVersion}}
+        GPDB_RPM: true
+      input_mapping:
+        gpdb_rpm: rpm_gpdb_source
+    - task: gpinitsystem_source_cluster
+      file: ccp_src/ci/tasks/gpinitsystem.yml
+    - task: prepare_source_and_target_installations
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source:
+            repository: alpine
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: cluster_env_files
+          {{- if ne .Source .Target }}
+          - name: rpm_gpdb_target
+          {{- end }}
+        run:
+          path: gpupgrade_src/ci/scripts/prepare-source-and-target-installations.sh
+          args:
+            - greenplum-db-{{majorVersion .Source}}
+            - greenplum-db-{{majorVersion .Target}}
+    - task: run_bats
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source:
+            repository: pivotaldata/centos-gpdb-dev
+            tag: "6-gcc6.2-llvm3.7"
+        inputs:
+          - name: terraform
+          - name: ccp_src
+          - name: cluster_env_files
+          - name: gpupgrade_src
+          - name: bin_gpupgrade
+          - name: bats
+        run:
+          path: gpupgrade_src/ci/scripts/bats-on-cluster.bash
+      params:
+  ensure:
+    <<: *set_failed
+  on_success:
+    <<: *ccp_destroy
+  on_failure:
+    <<: *slack_alert
+{{end -}}
+
 - name: publish-release-candidate
   plan:
     - in_parallel:
@@ -416,10 +505,16 @@ jobs:
           {{- range .UpgradeJobs}}
           - {{ .Name }}
           {{- end}}
+          {{- range .MultihostBatsJobs}}
+          - {{ .Name }}
+          {{- end}}
       - get: bin_gpupgrade
         passed:
           - build
           {{- range .UpgradeJobs}}
+          - {{ .Name }}
+          {{- end}}
+          {{- range .MultihostBatsJobs}}
           - {{ .Name }}
           {{- end}}
     - task: version-rc

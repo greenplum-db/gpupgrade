@@ -72,6 +72,22 @@ func (j *UpgradeJob) BaseName() string {
 	return fmt.Sprintf("%s-to-%s%s", j.Source, j.Target, suffix)
 }
 
+type MultihostBatsJob struct {
+	Source, Target string
+	CentosVersion  string
+}
+
+func (j *MultihostBatsJob) Name() string {
+	return fmt.Sprintf("%s-centos-%s", j.BaseName(), j.CentosVersion)
+}
+
+// BaseName returns the pipeline job name without the operating system.
+// This is used as a tag in Concourse's serial group to limit similar jobs
+// between operating systems from running at once to avoid overloading Concourse.
+func (j *MultihostBatsJob) BaseName() string {
+	return fmt.Sprintf("%s-to-%s-%s", j.Source, j.Target, "multihost-bats")
+}
+
 type Version struct {
 	CentosVersion string
 	GPVersion     string
@@ -83,6 +99,7 @@ type Data struct {
 	LastTargetVersion string
 	Versions          []*Version
 	CheckJobs         []*CheckJob
+	MultihostBatsJobs []*MultihostBatsJob
 }
 
 var data Data
@@ -90,6 +107,7 @@ var data Data
 func init() {
 	var checkJobs []*CheckJob
 	var upgradeJobs []*UpgradeJob
+	var multihostBatsJobs []*MultihostBatsJob
 	for _, sourceVersion := range sourceVersions {
 		for _, targetVersion := range targetVersions {
 			checkJobs = append(checkJobs, &CheckJob{
@@ -98,6 +116,11 @@ func init() {
 			})
 			for _, centosVersion := range centosVersions {
 				upgradeJobs = append(upgradeJobs, &UpgradeJob{
+					Source:        sourceVersion,
+					Target:        targetVersion,
+					CentosVersion: centosVersion,
+				})
+				multihostBatsJobs = append(multihostBatsJobs, &MultihostBatsJob{
 					Source:        sourceVersion,
 					Target:        targetVersion,
 					CentosVersion: centosVersion,
@@ -141,6 +164,7 @@ func init() {
 		LastTargetVersion: targetVersions[len(targetVersions)-1],
 		Versions:          versions,
 		CheckJobs:         checkJobs,
+		MultihostBatsJobs: multihostBatsJobs,
 	}
 }
 
