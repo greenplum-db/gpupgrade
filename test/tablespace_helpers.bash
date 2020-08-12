@@ -5,29 +5,47 @@
 # Helpers for testing and verifying tablespaces.
 #
 
+# Prints a line for each segment containing the hostname, dbid, and datadir,
+# separated by tabs.
+_query_5X_host_dbid_datadirs() {
+    "$GPHOME_SOURCE"/bin/psql -AtF$'\t' postgres -c "
+        SELECT s.hostname,
+               s.dbid,
+               e.fselocation
+          FROM gp_segment_configuration s
+          JOIN pg_filespace_entry e ON (e.fsedbid = s.dbid)
+          JOIN pg_filespace f       ON (f.oid = e.fsefsoid)
+         WHERE f.fsname = 'pg_system'
+         ORDER BY dbid;
+    "
+}
+
 # This is 5X-only due to a bug in pg_upgrade for 6-6
 create_tablespace_with_table() {
-   local tablespace_table=${1:-batsTable}
+    local tablespace_table=${1:-batsTable}
+    local tablespace_dir entries
 
     # the tablespace directory will get deleted when the STATE_DIR is deleted in teardown()
     TABLESPACE_ROOT="${STATE_DIR}"/testfs
     TABLESPACE_CONFIG="${TABLESPACE_ROOT}"/fs.txt
 
-    # create the directories required to implement our filespace
-    mkdir -p "${TABLESPACE_ROOT}"/{m,{p,m}{1,2,3}}
+    # create the filespace config file and the directories required to implement it
+    entries=$(_query_5X_host_dbid_datadirs)
 
-    # create the filespace config file
-    cat <<- EOF > "$TABLESPACE_CONFIG"
-				filespace:batsFS
-				$(hostname):1:${TABLESPACE_ROOT}/m/demoDataDir-1
-				$(hostname):2:${TABLESPACE_ROOT}/p1/demoDataDir0
-				$(hostname):3:${TABLESPACE_ROOT}/p2/demoDataDir1
-				$(hostname):4:${TABLESPACE_ROOT}/p3/demoDataDir2
-				$(hostname):5:${TABLESPACE_ROOT}/m1/demoDataDir0
-				$(hostname):6:${TABLESPACE_ROOT}/m2/demoDataDir1
-				$(hostname):7:${TABLESPACE_ROOT}/m3/demoDataDir2
-				$(hostname):8:${TABLESPACE_ROOT}/m/standby
-EOF
+    mkdir "$TABLESPACE_ROOT"
+    echo "filespace:batsFS" > "$TABLESPACE_CONFIG"
+
+    local host dbid datadir
+    while read -r host dbid datadir; do
+        tablespace_dir="${TABLESPACE_ROOT}/${datadir}"
+
+        ssh -n "$host" mkdir -p "$(dirname "$tablespace_dir")"
+        echo "${host}:${dbid}:${tablespace_dir}" >> "$TABLESPACE_CONFIG"
+    done <<< "$entries"
+
+    # Print out the config to help debug problems.
+    echo "tablespace configuration:"
+    cat "$TABLESPACE_CONFIG"
 
     (source "${GPHOME_SOURCE}"/greenplum_path.sh && gpfilespace --config "${TABLESPACE_CONFIG}")
 

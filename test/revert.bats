@@ -10,9 +10,8 @@ load teardown_helpers
 setup() {
     skip_if_no_gpdb
 
-    STATE_DIR=`mktemp -d /tmp/gpupgrade.XXXXXX`
-    export GPUPGRADE_HOME="${STATE_DIR}/gpupgrade"
-    echo $GPUPGRADE_HOME
+    HOSTS=($(all_hosts))
+    setup_state_dirs "${HOSTS[@]}"
 
     gpupgrade kill-services
 
@@ -24,6 +23,70 @@ teardown() {
     skip_if_no_gpdb
 
     run_teardowns
+}
+
+setup_state_dirs() {
+    local hosts=("$@")
+
+    # Create a temporary state directory locally, on the master segment.
+    STATE_DIR=`mktemp -d /tmp/gpupgrade.XXXXXX`
+    export GPUPGRADE_HOME="${STATE_DIR}/gpupgrade"
+
+    # This repeats the creation of STATE_DIR on the master (local) host, but
+    # `mkdir -p` will ignore that. We still need the teardown on the master
+    # host.
+    for host in "${hosts[@]}"; do
+        ssh "$host" mkdir -p "$STATE_DIR"
+        register_teardown ssh "$host" rm -r "$STATE_DIR"
+    done
+}
+
+# Prints all unique hostnames in the source cluster, one per line.
+all_hosts() {
+    # Use GROUP BY/ORDER BY MIN() rather than SELECT DISTINCT so that results
+    # are ordered by dbid; that's the host order most devs are used to for test
+    # clusters.
+    "$GPHOME_SOURCE"/bin/psql -At postgres -c "
+        SELECT hostname
+          FROM gp_segment_configuration
+         GROUP BY hostname
+         ORDER BY MIN(dbid);
+    "
+}
+
+host_process_is_running() {
+    local host=$1
+    local pattern=$2
+
+    ssh "$host" "ps -ef | grep -wGc '$pattern'"
+}
+
+# query_host_datadirs returns a host/datadir pair for each segment in the
+# cluster. Each pair is on its own line, separated by a tab. Arguments are
+# GPHOME, PGPORT, and an optional WHERE clause to use when querying
+# gp_segment_configuration.
+query_host_datadirs() {
+    local gphome=$1
+    local port=$2
+    local where_clause=${3:-true}
+
+    local sql="SELECT hostname, datadir FROM gp_segment_configuration WHERE ${where_clause} ORDER BY content, role"
+
+     if is_GPDB5 "$gphome"; then
+        sql="
+        SELECT s.hostname,
+               e.fselocation as datadir
+        FROM gp_segment_configuration s
+        JOIN pg_filespace_entry e ON s.dbid = e.fsedbid
+        JOIN pg_filespace f ON e.fsefsoid = f.oid
+        WHERE f.fsname = 'pg_system' AND ${where_clause}
+        ORDER BY s.content, s.role"
+    fi
+
+    run "$gphome"/bin/psql -AtF$'\t' -p "$port" postgres -c "$sql"
+    [ "$status" -eq 0 ] || fail "$output"
+
+    echo "$output"
 }
 
 @test "reverting after initialize succeeds" {
@@ -38,26 +101,26 @@ teardown() {
         --verbose 3>&-
 
     # grab cluster data before revert destroys it
-    target_hosts_dirs=$(jq -r '.Target.Primaries[] | .DataDir' "${GPUPGRADE_HOME}/config.json")
+    target_hosts_dirs=$(jq -r '.Target.Primaries[] | .Hostname + " " + .DataDir' "${GPUPGRADE_HOME}/config.json")
     upgradeID=$(gpupgrade config show --id)
 
     gpupgrade revert --verbose
 
     # gpupgrade processes are stopped
     ! process_is_running "[g]pupgrade hub" || fail 'expected hub to have been stopped'
-    ! process_is_running "[g]pupgrade agent" || fail 'expected agent to have been stopped'
+    for host in "${HOSTS[@]}"; do
+        ! host_process_is_running "$host" "[g]pupgrade agent" || fail "expected agent to have been stopped on host ${host}"
+    done
 
     # target data directories are deleted
-    while read -r datadir; do
-        run stat "$datadir"
-        ! [ $status -eq 0 ] || fail "expected datadir ${datadir} to have been deleted"
+    while read -r host datadir; do
+        ssh -n "$host" "[ ! -d '$datadir' ]" || fail "expected datadir ${host}:${datadir} to have been deleted"
     done <<< "${target_hosts_dirs}"
 
     # the GPUPGRADE_HOME directory is deleted
-    if [ -d "${GPUPGRADE_HOME}" ]; then
-        echo "expected GPUPGRADE_HOME directory ${GPUPGRADE_HOME} to have been deleted"
-        exit 1
-    fi
+    for host in "${HOSTS[@]}"; do
+        ssh "$host" "[ ! -d '$GPUPGRADE_HOME' ]" || fail "expected GPUPGRADE_HOME directory ${host}:${GPUPGRADE_HOME} to have been deleted"
+    done
 
     # check that the archived log directory corresponds to this tests upgradeID
     if [[ -z $(find "${HOME}/gpAdminLogs/gpupgrade-${upgradeID}-"* -type d) ]]; then
@@ -68,25 +131,25 @@ teardown() {
 test_revert_after_execute() {
     local mode="$1"
     local target_master_port=6020
-    local old_config new_config mirrors primaries rows
+    local old_config new_config mirrors primaries rows host datadir
 
     # Save segment configuration
     old_config=$(get_segment_configuration "${GPHOME_SOURCE}")
 
     # Place marker files on mirrors
     MARKER=source-cluster.MARKER
-    mirrors=($(query_datadirs $GPHOME_SOURCE $PGPORT "role='m'"))
-    for datadir in "${mirrors[@]}"; do
-        touch "$datadir/${MARKER}"
-    done
+    mirrors=$(query_host_datadirs "$GPHOME_SOURCE" "$PGPORT" "role='m'")
+    while read -r host datadir; do
+        ssh -n "$host" touch "$datadir/${MARKER}"
+    done <<< "$mirrors"
 
     # Cleanup marker files in all directories since on success link mode rsyncs
     # the marker file to primaries, and the test can fail at any point.
-    local datadirs
-    datadirs=($(query_datadirs $GPHOME_SOURCE $PGPORT))
-    for datadir in "${datadirs[@]}"; do
-        register_teardown rm -f "$datadir/${MARKER}"
-    done
+    local segments
+    segments=$(query_host_datadirs "$GPHOME_SOURCE" "$PGPORT")
+    while read -r host datadir; do
+        register_teardown ssh "$host" rm -f "$datadir/${MARKER}"
+    done <<< "$segments"
 
     # Add a tablespace, which only works when upgrading from 5X.
     if is_GPDB5 "$GPHOME_SOURCE"; then
@@ -135,14 +198,14 @@ test_revert_after_execute() {
     fi
 
     # Verify marker files on primaries
-    primaries=($(query_datadirs $GPHOME_SOURCE $PGPORT "role='p'"))
-    for datadir in "${primaries[@]}"; do
+    primaries=$(query_host_datadirs $GPHOME_SOURCE $PGPORT "role='p'")
+    while read -r host datadir; do
         if [ "$mode" = "link" ]; then
-            [ -f "${datadir}/${MARKER}" ] || fail "in link mode using rsync expected ${MARKER} marker file to be in datadir: $datadir"
+            ssh -n "$host" "[ -f '${datadir}/${MARKER}' ]" || fail "in link mode using rsync expected ${MARKER} marker file to be in datadir: $host:$datadir"
         else
-            [ ! -f "${datadir}/${MARKER}" ] || fail "in copy mode using gprecoverseg unexpected ${MARKER} marker file in datadir: $datadir"
+            ssh -n "$host" "[ ! -f '${datadir}/${MARKER}' ]" || fail "in copy mode using gprecoverseg unexpected ${MARKER} marker file in datadir: $host:$datadir"
         fi
-    done
+    done <<< "$primaries"
 
     # Check that transactions can be started on the source
     $PSQL postgres --single-transaction -c "SELECT version()" || fail "unable to start transaction"
@@ -175,9 +238,6 @@ test_revert_after_execute() {
         --verbose 3>&-
 
     gpupgrade execute --verbose
-
-    # On GPDB5, restore the primary and master directories before starting the cluster. Hack until revert handles this case
-    restore_cluster
 
     gpupgrade revert --verbose
 
@@ -219,10 +279,10 @@ is_source_standby_in_sync() {
 }
 
 is_source_standby_running() {
-    local standby_datadir
-    standby_datadir=$(query_datadirs "$GPHOME_SOURCE" "$PGPORT" "content = '-1' AND role = 'm'")
+    local standby datadir
+    read -r standby datadir <<<"$(query_host_datadirs "$GPHOME_SOURCE" "$PGPORT" "content = '-1' AND role = 'm'")"
 
-    if ! "${GPHOME_SOURCE}"/bin/pg_ctl status -D "$standby_datadir" > /dev/null; then
+    if ! ssh "$standby" "${GPHOME_SOURCE}"/bin/pg_ctl status -D "$datadir" > /dev/null; then
         return 1
     fi
 }
@@ -252,11 +312,11 @@ test_revert_after_execute_master_failure() {
 
     # Place marker files on mirrors
     MARKER=source-cluster.MARKER
-    mirrors=($(query_datadirs $GPHOME_SOURCE $PGPORT "role='m'"))
-    for datadir in "${mirrors[@]}"; do
-        touch "$datadir/${MARKER}"
-        register_teardown rm -f "$datadir/${MARKER}"
-    done
+    mirrors=$(query_host_datadirs "$GPHOME_SOURCE" "$PGPORT" "role='m'")
+    while read -r host datadir; do
+        ssh -n "$host" touch "$datadir/${MARKER}"
+        register_teardown ssh "$host" rm -f "$datadir/${MARKER}"
+    done <<< "$mirrors"
 
     # Add a tablespace, which only works when upgrading from 5X.
     if is_GPDB5 "$GPHOME_SOURCE"; then
@@ -303,10 +363,10 @@ test_revert_after_execute_master_failure() {
     # successful execute case, a revert from a failed master upgrade should
     # never require an rsync from mirrors, since the master hasn't been started
     # yet.
-    primaries=($(query_datadirs $GPHOME_SOURCE $PGPORT "role='p'"))
-    for datadir in "${primaries[@]}"; do
-        [ ! -f "${datadir}/${MARKER}" ] || fail "revert resulted in unexpected ${MARKER} marker file in datadir: $datadir"
-    done
+    primaries=$(query_host_datadirs "$GPHOME_SOURCE" "$PGPORT" "role='p'")
+    while read -r host datadir; do
+        ssh -n "$host" "[ ! -f '${datadir}/${MARKER}' ]" || fail "revert resulted in unexpected ${MARKER} marker file in datadir: $host:$datadir"
+    done <<< "$primaries"
 
     # Check that transactions can be started on the source
     $PSQL postgres --single-transaction -c "SELECT version()" || fail "unable to start transaction"
