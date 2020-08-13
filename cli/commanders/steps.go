@@ -15,6 +15,11 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 )
 
+type ExecuteResponse struct {
+	TargetPort          string
+	TargetMasterDataDir string
+}
+
 type RevertResponse struct {
 	SourcePort          string
 	SourceMasterDataDir string
@@ -99,7 +104,7 @@ func InitializeCreateCluster(client idl.CliToHubClient, verbose bool) (err error
 	return nil
 }
 
-func Execute(client idl.CliToHubClient, verbose bool) error {
+func Execute(client idl.CliToHubClient, verbose bool) (*ExecuteResponse, error) {
 	fmt.Println()
 	fmt.Println("Execute in progress.")
 	fmt.Println()
@@ -108,40 +113,18 @@ func Execute(client idl.CliToHubClient, verbose bool) error {
 	if err != nil {
 		// TODO: Change the logging message?
 		gplog.Error("ERROR - Unable to connect to hub")
-		return err
+		return &ExecuteResponse{}, err
 	}
 
 	response, err := UILoop(stream, verbose)
 	if err != nil {
-		return xerrors.Errorf("Execute: %w", err)
+		return &ExecuteResponse{}, xerrors.Errorf("Execute: %w", err)
 	}
 
-	port := response[idl.ResponseKey_target_port.String()]
-	datadir := response[idl.ResponseKey_target_master_data_directory.String()]
-
-	message := fmt.Sprintf(`
-Execute completed successfully.
-
-The target cluster is now running. The PGPORT is %s and the 
-MASTER_DATA_DIRECTORY is %s
-
-You may now run queries against the target database and perform any other 
-validation desired prior to finalizing your upgrade.
-
-WARNING: If any queries modify the target database prior to gpupgrade finalize, 
-it will be inconsistent with the source database. 
-
-NEXT ACTIONS
-------------
-If you are satisfied with the state of the cluster, run "gpupgrade finalize" 
-to proceed with the upgrade.
-
-To return the cluster to its original state, run "gpupgrade revert".
-`, port, datadir)
-
-	fmt.Print(message)
-
-	return nil
+	return &ExecuteResponse{
+		TargetPort:          response[idl.ResponseKey_target_port.String()],
+		TargetMasterDataDir: response[idl.ResponseKey_target_master_data_directory.String()],
+	}, nil
 }
 
 func Finalize(client idl.CliToHubClient, verbose bool) error {

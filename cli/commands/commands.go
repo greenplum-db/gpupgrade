@@ -494,7 +494,33 @@ func execute() *cobra.Command {
 			cmd.SilenceUsage = true
 
 			client := connectToHub()
-			return commanders.Execute(client, verbose)
+			response, err := commanders.Execute(client, verbose)
+			if err != nil {
+				return err
+			}
+
+			message := fmt.Sprintf(`
+Execute completed successfully.
+
+The target cluster is now running. The PGPORT is %s and the 
+MASTER_DATA_DIRECTORY is %s
+
+You may now run queries against the target database and perform any other 
+validation desired prior to finalizing your upgrade.
+
+WARNING: If any queries modify the target database prior to gpupgrade finalize, 
+it will be inconsistent with the source database. 
+
+NEXT ACTIONS
+------------
+If you are satisfied with the state of the cluster, run "gpupgrade finalize" 
+to proceed with the upgrade.
+
+To return the cluster to its original state, run "gpupgrade revert".
+`, response.TargetPort, response.TargetMasterDataDir)
+
+			fmt.Print(message)
+			return nil
 		},
 	}
 
