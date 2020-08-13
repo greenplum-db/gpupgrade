@@ -272,11 +272,11 @@ func TestSubstep(t *testing.T) {
 	defer d.Close()
 
 	var err error
-	s := commanders.Substep(idl.Substep_CREATING_DIRECTORIES)
+	s := commanders.NewSubstep(idl.Substep_CREATING_DIRECTORIES, false)
 	s.Finish(&err)
 
 	err = errors.New("error")
-	s = commanders.Substep(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG)
+	s = commanders.NewSubstep(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, false)
 	s.Finish(&err)
 
 	stdout, stderr := d.Collect()

@@ -15,6 +15,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
+	"github.com/greenplum-db/gpupgrade/utils/stopwatch"
 )
 
 type Step struct {
@@ -164,6 +165,13 @@ func (s *Step) run(substep idl.Substep, f func(OutStreams) error, alwaysRun bool
 		return
 	}
 
+	timer := stopwatch.Start()
+	defer func() {
+		if pErr := s.printDuration(substep, timer.Stop()); pErr != nil {
+			err = multierror.Append(err, pErr).ErrorOrNil()
+		}
+	}()
+
 	_, err = fmt.Fprintf(s.streams.Stdout(), "\nStarting %s...\n\n", substep)
 	if err != nil {
 		return
@@ -204,4 +212,9 @@ func (s *Step) sendStatus(substep idl.Substep, status idl.Status) {
 			Status: status,
 		}},
 	})
+}
+
+func (s *Step) printDuration(substep idl.Substep, timer *stopwatch.Stopwatch) error {
+	_, err := fmt.Fprintf(s.streams.Stdout(), "\n%s took %s\n\n", substep, timer.String())
+	return err
 }

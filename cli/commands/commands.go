@@ -56,6 +56,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
+	"github.com/greenplum-db/gpupgrade/utils/stopwatch"
 )
 
 var (
@@ -411,7 +412,15 @@ func initialize() *cobra.Command {
 			fmt.Println("Initialize in progress.")
 			fmt.Println()
 
-			s := commanders.Substep(idl.Substep_CREATING_DIRECTORIES)
+			timer := stopwatch.Start()
+			operation := strings.Title(strings.ToLower(idl.Step_INITIALIZE.String()))
+			defer func() {
+				if err != nil {
+					commanders.LogDuration(operation, verbose, timer.Stop())
+				}
+			}()
+
+			s := commanders.NewSubstep(idl.Substep_CREATING_DIRECTORIES, verbose)
 			err = commanders.CreateStateDir()
 			s.Finish(&err)
 			if err != nil {
@@ -423,7 +432,7 @@ func initialize() *cobra.Command {
 				return xerrors.Errorf("create initial cluster configs: %w", err)
 			}
 
-			s = commanders.Substep(idl.Substep_START_HUB)
+			s = commanders.NewSubstep(idl.Substep_START_HUB, verbose)
 			err = commanders.StartHub()
 			s.Finish(&err)
 			if err != nil {
@@ -448,7 +457,7 @@ func initialize() *cobra.Command {
 				return xerrors.Errorf("initialize hub: %w", err)
 			}
 
-			s = commanders.Substep(idl.Substep_CHECK_DISK_SPACE)
+			s = commanders.NewSubstep(idl.Substep_CHECK_DISK_SPACE, verbose)
 			err = commanders.RunChecks(client, diskFreeRatio)
 			s.Finish(&err)
 			if err != nil {
@@ -463,6 +472,8 @@ func initialize() *cobra.Command {
 			if err != nil {
 				return xerrors.Errorf("initialize create cluster: %w", err)
 			}
+
+			commanders.LogDuration(operation, verbose, timer.Stop())
 
 			fmt.Print(`
 Initialize completed successfully.
@@ -500,8 +511,16 @@ func execute() *cobra.Command {
 		Use:   "execute",
 		Short: "executes the upgrade",
 		Long:  ExecuteHelp,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			cmd.SilenceUsage = true
+
+			timer := stopwatch.Start()
+			operation := strings.Title(strings.ToLower(idl.Step_EXECUTE.String()))
+			defer func() {
+				if err != nil {
+					commanders.LogDuration(operation, verbose, timer.Stop())
+				}
+			}()
 
 			client, err := connectToHub()
 			if err != nil {
@@ -512,6 +531,8 @@ func execute() *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			commanders.LogDuration(operation, verbose, timer.Stop())
 
 			message := fmt.Sprintf(`
 Execute completed successfully.
@@ -550,16 +571,25 @@ func finalize() *cobra.Command {
 		Use:   "finalize",
 		Short: "finalizes the cluster after upgrade execution",
 		Long:  FinalizeHelp,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			timer := stopwatch.Start()
+			operation := strings.Title(strings.ToLower(idl.Step_FINALIZE.String()))
+			defer func() {
+				if err != nil {
+					commanders.LogDuration(operation, verbose, timer.Stop())
+				}
+			}()
+
 			client, err := connectToHub()
 			if err != nil {
 				return err
 			}
-
 			response, err := commanders.Finalize(client, verbose)
 			if err != nil {
 				return err
 			}
+
+			commanders.LogDuration(operation, verbose, timer.Stop())
 
 			message := fmt.Sprintf(`
 Finalize completed successfully.
@@ -584,7 +614,15 @@ func revert() *cobra.Command {
 		Use:   "revert",
 		Short: "reverts the upgrade and returns the cluster to its original state",
 		Long:  RevertHelp,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) (err error) {
+			timer := stopwatch.Start()
+			operation := strings.Title(strings.ToLower(idl.Step_REVERT.String()))
+			defer func() {
+				if err != nil {
+					commanders.LogDuration(operation, verbose, timer.Stop())
+				}
+			}()
+
 			client, err := connectToHub()
 			if err != nil {
 				return err
@@ -595,14 +633,14 @@ func revert() *cobra.Command {
 				return err
 			}
 
-			s := commanders.Substep(idl.Substep_STOP_HUB_AND_AGENTS)
+			s := commanders.NewSubstep(idl.Substep_STOP_HUB_AND_AGENTS, verbose)
 			err = stopHubAndAgents(false)
 			s.Finish(&err)
 			if err != nil {
 				return err
 			}
 
-			s = commanders.Substep(idl.Substep_DELETE_MASTER_STATEDIR)
+			s = commanders.NewSubstep(idl.Substep_DELETE_MASTER_STATEDIR, verbose)
 			streams := &step.BufferedStreams{}
 			err = upgrade.DeleteDirectories([]string{utils.GetStateDir()}, upgrade.StateDirectoryFiles, streams)
 			if verbose {
@@ -613,6 +651,8 @@ func revert() *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			commanders.LogDuration(operation, verbose, timer.Stop())
 
 			fmt.Printf(`
 Revert completed successfully.

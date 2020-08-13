@@ -13,6 +13,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/utils/stopwatch"
 )
 
 type ExecuteResponse struct {
@@ -39,6 +40,13 @@ type receiver interface {
 type substepText struct {
 	OutputText string
 	HelpText   string
+}
+
+type substep struct {
+	name    idl.Substep
+	text    substepText
+	verbose bool
+	timer   *stopwatch.Stopwatch
 }
 
 var SubstepDescriptions = map[idl.Substep]substepText{
@@ -262,7 +270,7 @@ func FormatStatus(status *idl.SubstepStatus) string {
 	return Format(line.OutputText, status.Status)
 }
 
-// Format is also exported for ease of testing (see FormatStatus). Use Substep
+// Format is also exported for ease of testing (see FormatStatus). Use NewSubstep
 // instead.
 func Format(description string, status idl.Status) string {
 	indicator, ok := indicators[status]
@@ -273,13 +281,19 @@ func Format(description string, status idl.Status) string {
 	return fmt.Sprintf("%-67s%-13s", description, indicator)
 }
 
-// Substep prints out an "in progress" marker for the given substep description,
+// NewSubstep prints out an "in progress" marker for the given substep description,
 // and returns a struct that can be .Finish()d (in a defer statement) to print
 // the final complete/failed state.
-func Substep(step idl.Substep) *substepText {
+func NewSubstep(step idl.Substep, verbose bool) *substep {
 	substepText := SubstepDescriptions[step]
 	fmt.Printf("%s\r", Format(substepText.OutputText, idl.Status_RUNNING))
-	return &substepText
+
+	return &substep{
+		name:    step,
+		text:    substepText,
+		verbose: verbose,
+		timer:   stopwatch.Start(),
+	}
 }
 
 // Finish prints out the final status of the substep; either COMPLETE or FAILED
@@ -287,17 +301,27 @@ func Substep(step idl.Substep) *substepText {
 // error rather than error to make it possible to defer:
 //
 //    func runSubstep() (err error) {
-//        s := Substep("Doing something...")
+//        s := NewSubstep("Doing something...")
 //        defer s.Finish(&err)
 //
 //        ...
 //    }
 //
-func (s *substepText) Finish(err *error) {
+func (s *substep) Finish(err *error) {
 	status := idl.Status_COMPLETE
 	if *err != nil {
 		status = idl.Status_FAILED
 	}
 
-	fmt.Printf("%s\n", Format(s.OutputText, status))
+	fmt.Printf("%s\n", Format(s.text.OutputText, status))
+
+	LogDuration(s.name.String(), s.verbose, s.timer.Stop())
+}
+
+func LogDuration(operation string, verbose bool, timer *stopwatch.Stopwatch) {
+	msg := operation + " took " + timer.String()
+	if verbose {
+		fmt.Println("\n" + msg)
+	}
+	gplog.Debug(msg)
 }
