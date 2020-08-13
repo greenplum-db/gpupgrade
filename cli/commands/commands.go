@@ -538,11 +538,19 @@ func finalize() *cobra.Command {
 		Long:  FinalizeHelp,
 		Run: func(cmd *cobra.Command, args []string) {
 			client := connectToHub()
-			err := commanders.Finalize(client, verbose)
+			response, err := commanders.Finalize(client, verbose)
 			if err != nil {
 				gplog.Error(err.Error())
 				os.Exit(1)
 			}
+
+			message := fmt.Sprintf(`
+Finalize completed successfully.
+
+The target cluster is now upgraded and is ready to be used. The PGPORT is %s and the MASTER_DATA_DIRECTORY is %s.
+`, response.TargetPort, response.TargetMasterDataDir)
+
+			fmt.Print(message)
 		},
 	}
 

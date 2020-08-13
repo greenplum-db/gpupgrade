@@ -20,6 +20,11 @@ type ExecuteResponse struct {
 	TargetMasterDataDir string
 }
 
+type FinalizeResponse struct {
+	TargetPort          string
+	TargetMasterDataDir string
+}
+
 type RevertResponse struct {
 	SourcePort          string
 	SourceMasterDataDir string
@@ -127,7 +132,7 @@ func Execute(client idl.CliToHubClient, verbose bool) (*ExecuteResponse, error) 
 	}, nil
 }
 
-func Finalize(client idl.CliToHubClient, verbose bool) error {
+func Finalize(client idl.CliToHubClient, verbose bool) (*FinalizeResponse, error) {
 	fmt.Println()
 	fmt.Println("Finalize in progress.")
 	fmt.Println()
@@ -135,23 +140,19 @@ func Finalize(client idl.CliToHubClient, verbose bool) error {
 	stream, err := client.Finalize(context.Background(), &idl.FinalizeRequest{})
 	if err != nil {
 		gplog.Error(err.Error())
-		return err
+		return &FinalizeResponse{}, err
 	}
 
 	response, err := UILoop(stream, verbose)
 	if err != nil {
-		return xerrors.Errorf("Finalize: %w", err)
+		return &FinalizeResponse{}, xerrors.Errorf("Finalize: %w", err)
 	}
 
-	port := response[idl.ResponseKey_target_port.String()]
-	datadir := response[idl.ResponseKey_target_master_data_directory.String()]
-
-	fmt.Println("")
-	fmt.Println("Finalize completed successfully.")
-	fmt.Println("")
-	fmt.Printf("The target cluster is now upgraded and is ready to be used. The PGPORT is %s and the MASTER_DATA_DIRECTORY is %s.\n", port, datadir)
-
-	return nil
+	return &FinalizeResponse{
+			TargetPort:          response[idl.ResponseKey_target_port.String()],
+			TargetMasterDataDir: response[idl.ResponseKey_target_master_data_directory.String()],
+		},
+		nil
 }
 
 func Revert(client idl.CliToHubClient, verbose bool) (*RevertResponse, error) {
