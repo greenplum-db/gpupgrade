@@ -536,12 +536,11 @@ func finalize() *cobra.Command {
 		Use:   "finalize",
 		Short: "finalizes the cluster after upgrade execution",
 		Long:  FinalizeHelp,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			client := connectToHub()
 			response, err := commanders.Finalize(client, verbose)
 			if err != nil {
-				gplog.Error(err.Error())
-				os.Exit(1)
+				return err
 			}
 
 			message := fmt.Sprintf(`
@@ -551,6 +550,7 @@ The target cluster is now upgraded and is ready to be used. The PGPORT is %s and
 `, response.TargetPort, response.TargetMasterDataDir)
 
 			fmt.Print(message)
+			return nil
 		},
 	}
 
@@ -570,7 +570,6 @@ func revert() *cobra.Command {
 			client := connectToHub()
 			response, err := commanders.Revert(client, verbose)
 			if err != nil {
-				gplog.Error(err.Error())
 				return err
 			}
 
@@ -590,7 +589,6 @@ func revert() *cobra.Command {
 			}
 			s.Finish(&err)
 			if err != nil {
-				gplog.Error(err.Error())
 				return err
 			}
 
