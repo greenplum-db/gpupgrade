@@ -97,9 +97,6 @@ func (t tableRows) Swap(i, j int) {
 }
 
 func CheckDiskSpace(client idl.CliToHubClient, ratio float64) (err error) {
-	s := Substep(idl.Substep_CHECK_DISK_SPACE)
-	defer s.Finish(&err)
-
 	reply, err := client.CheckDiskSpace(context.Background(), &idl.CheckDiskSpaceRequest{Ratio: ratio})
 	if err != nil {
 		return xerrors.Errorf("check disk space: %w", err)

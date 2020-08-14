@@ -6,7 +6,6 @@ package commanders_test
 import (
 	"errors"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
@@ -114,13 +113,8 @@ func TestDiskSpaceCheck(t *testing.T) {
 				&idl.CheckDiskSpaceRequest{Ratio: ratio},
 			).Return(&idl.CheckDiskSpaceReply{Failed: c.failed}, c.grpcErr)
 
-			d := bufferStandardDescriptors(t)
-			defer d.Close()
-
 			err := commanders.CheckDiskSpace(client, ratio)
-			actualOut, _ := d.Collect()
 
-			expectedStatus := idl.Status_FAILED
 			switch {
 			case c.grpcErr != nil:
 				if !errors.Is(err, c.grpcErr) {
@@ -136,15 +130,9 @@ func TestDiskSpaceCheck(t *testing.T) {
 				}
 
 			default:
-				expectedStatus = idl.Status_COMPLETE
 				if err != nil {
 					t.Errorf("returned error %#v, expected no error", err)
 				}
-			}
-
-			expected := commanders.Format("Checking disk space...", expectedStatus)
-			if !strings.Contains(string(actualOut), expected) {
-				t.Errorf("Expected string %q to contain %q", actualOut, expected)
 			}
 		})
 	}

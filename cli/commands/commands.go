@@ -411,7 +411,9 @@ func initialize() *cobra.Command {
 			fmt.Println("Initialize in progress.")
 			fmt.Println()
 
+			s := commanders.Substep(idl.Substep_CREATING_DIRECTORIES)
 			err = commanders.CreateStateDir()
+			s.Finish(&err)
 			if err != nil {
 				return xerrors.Errorf("create state directory: %w", err)
 			}
@@ -421,7 +423,9 @@ func initialize() *cobra.Command {
 				return xerrors.Errorf("create initial cluster configs: %w", err)
 			}
 
+			s = commanders.Substep(idl.Substep_START_HUB)
 			err = commanders.StartHub()
+			s.Finish(&err)
 			if err != nil {
 				return xerrors.Errorf("start hub: %w", err)
 			}
@@ -444,7 +448,9 @@ func initialize() *cobra.Command {
 				return xerrors.Errorf("initialize hub: %w", err)
 			}
 
+			s = commanders.Substep(idl.Substep_CHECK_DISK_SPACE)
 			err = commanders.RunChecks(client, diskFreeRatio)
+			s.Finish(&err)
 			if err != nil {
 				return err
 			}

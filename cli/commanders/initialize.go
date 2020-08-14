@@ -11,7 +11,6 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/xerrors"
 
-	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
@@ -23,9 +22,6 @@ var execCommandHubCount = exec.Command
 // we create the state directory in the cli to ensure that at most one gpupgrade is occurring
 // at the same time.
 func CreateStateDir() (err error) {
-	s := Substep(idl.Substep_CREATING_DIRECTORIES)
-	defer s.Finish(&err)
-
 	stateDir := utils.GetStateDir()
 	err = os.Mkdir(stateDir, 0700)
 	if os.IsExist(err) {
@@ -77,9 +73,6 @@ func CreateInitialClusterConfigs(hubPort int) (err error) {
 }
 
 func StartHub() (err error) {
-	s := Substep(idl.Substep_START_HUB)
-	defer s.Finish(&err)
-
 	running, err := IsHubRunning()
 	if err != nil {
 		gplog.Error("failed to determine if hub already running")
