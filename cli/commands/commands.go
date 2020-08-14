@@ -197,14 +197,14 @@ func getHubPort(tryDefault bool) int {
 }
 
 // calls connectToHubOnPort() using the port defined in the configuration file
-func connectToHub() idl.CliToHubClient {
+func connectToHub() (idl.CliToHubClient, error) {
 	return connectToHubOnPort(getHubPort(false))
 }
 
 // connectToHubOnPort() performs a blocking connection to the hub based on the
 // passed in port, and returns a CliToHubClient which wraps the resulting gRPC channel.
 // Any errors result in a call to os.Exit(1).
-func connectToHubOnPort(port int) idl.CliToHubClient {
+func connectToHubOnPort(port int) (idl.CliToHubClient, error) {
 	// Set up our timeout.
 	ctx, cancel := context.WithTimeout(context.Background(), connTimeout())
 	defer cancel()
@@ -216,13 +216,11 @@ func connectToHubOnPort(port int) idl.CliToHubClient {
 		// Print a nicer error message if we can't connect to the hub.
 		if ctx.Err() == context.DeadlineExceeded {
 			gplog.Error("could not connect to the upgrade hub (did you run 'gpupgrade initialize'?)")
-		} else {
-			gplog.Error(err.Error())
 		}
-		os.Exit(1)
+		return nil, xerrors.Errorf("connecting to hub on port %d: %w", port, err)
 	}
 
-	return idl.NewCliToHubClient(conn)
+	return idl.NewCliToHubClient(conn), nil
 }
 
 //////////////////////////////////////// CONFIG and its subcommands
@@ -238,7 +236,10 @@ func createConfigShowSubcommand() *cobra.Command {
 		Short: "show configuration settings",
 		Long:  "show configuration settings",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client := connectToHub()
+			client, err := connectToHub()
+			if err != nil {
+				return err
+			}
 
 			// Build a list of GetConfigRequests, one for each flag. If no flags
 			// are passed, assume we want to retrieve all of them.
@@ -425,7 +426,10 @@ func initialize() *cobra.Command {
 				return xerrors.Errorf("start hub: %w", err)
 			}
 
-			client := connectToHub()
+			client, err := connectToHub()
+			if err != nil {
+				return err
+			}
 
 			request := &idl.InitializeRequest{
 				AgentPort:    int32(agentPort),
@@ -493,7 +497,11 @@ func execute() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cmd.SilenceUsage = true
 
-			client := connectToHub()
+			client, err := connectToHub()
+			if err != nil {
+				return err
+			}
+
 			response, err := commanders.Execute(client, verbose)
 			if err != nil {
 				return err
@@ -537,7 +545,11 @@ func finalize() *cobra.Command {
 		Short: "finalizes the cluster after upgrade execution",
 		Long:  FinalizeHelp,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client := connectToHub()
+			client, err := connectToHub()
+			if err != nil {
+				return err
+			}
+
 			response, err := commanders.Finalize(client, verbose)
 			if err != nil {
 				return err
@@ -567,7 +579,11 @@ func revert() *cobra.Command {
 		Short: "reverts the upgrade and returns the cluster to its original state",
 		Long:  RevertHelp,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client := connectToHub()
+			client, err := connectToHub()
+			if err != nil {
+				return err
+			}
+
 			response, err := commanders.Revert(client, verbose)
 			if err != nil {
 				return err
@@ -717,13 +733,18 @@ var restartServices = &cobra.Command{
 			fmt.Println("Restarted hub")
 		}
 
-		reply, err := connectToHub().RestartAgents(context.Background(), &idl.RestartAgentsRequest{})
-		for _, host := range reply.GetAgentHosts() {
-			fmt.Printf("Restarted agent on: %s\n", host)
+		client, err := connectToHub()
+		if err != nil {
+			return err
 		}
 
+		reply, err := client.RestartAgents(context.Background(), &idl.RestartAgentsRequest{})
 		if err != nil {
-			return xerrors.Errorf("failed to start all agents: %w", err)
+			return xerrors.Errorf("restarting agents: %w", err)
+		}
+
+		for _, host := range reply.GetAgentHosts() {
+			fmt.Printf("Restarted agent on: %s\n", host)
 		}
 
 		return nil
@@ -757,7 +778,12 @@ var killServices = &cobra.Command{
 }
 
 func stopHubAndAgents(tryDefaultPort bool) error {
-	_, err := connectToHubOnPort(getHubPort(tryDefaultPort)).StopServices(context.Background(), &idl.StopServicesRequest{})
+	client, err := connectToHubOnPort(getHubPort(tryDefaultPort))
+	if err != nil {
+		return err
+	}
+
+	_, err = client.StopServices(context.Background(), &idl.StopServicesRequest{})
 	if err != nil {
 		errCode := grpcStatus.Code(err)
 		errMsg := grpcStatus.Convert(err).Message()
