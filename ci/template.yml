@@ -177,6 +177,47 @@ anchors:
           text: |
             Hey team, <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|gpupgrade/$BUILD_JOB_NAME> failed.
 
+groups:
+  - name: all
+    jobs:
+      - build
+      - lint
+      - noinstall-tests
+      {{- range .CheckJobs}}
+      - {{.Name}}
+      {{- end}}
+      {{- range .MultihostBatsJobs}}
+      - {{.Name}}
+      {{- end}}
+      {{- range .UpgradeJobs}}
+      - {{.Name}}
+      {{- end}}
+      - publish-release-candidate
+  - name: bats
+    jobs:
+      {{- range .CheckJobs}}
+      - {{.Name}}
+      {{- end}}
+      {{- range .MultihostBatsJobs}}
+      - {{.Name}}
+      {{- end}}
+  - name: upgrade
+    jobs:
+      - build
+      {{- range .UpgradeJobs}}
+      {{- if not .RetailDemo}}
+      - {{.Name}}
+      {{- end}}
+      {{- end}}
+  - name: functional
+    jobs:
+      - build
+      {{- range .UpgradeJobs}}
+      {{- if .RetailDemo}}
+      - {{.Name}}
+      {{- end}}
+      {{- end}}
+
 jobs:
 - name: build
   plan:

@@ -204,6 +204,58 @@ anchors:
           text: |
             Hey team, <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|gpupgrade/$BUILD_JOB_NAME> failed.
 
+groups:
+  - name: all
+    jobs:
+      - build
+      - lint
+      - noinstall-tests
+      - 6-to-6-install-tests
+      - 5-to-6-install-tests
+      - 6-to-6-multihost-bats-centos-6
+      - 6-to-6-multihost-bats-centos-7
+      - 5-to-6-multihost-bats-centos-6
+      - 5-to-6-multihost-bats-centos-7
+      - 6-to-6-centos-6
+      - 6-to-6-centos-7
+      - 5-to-6-centos-6
+      - 5-to-6-centos-7
+      - 5-to-6-link-mode-centos-6
+      - 5-to-6-primaries-only-centos-6
+      - 5-to-6-no-standby-centos-6
+      - 5-to-6-retail-demo-centos-6
+      - 5-to-6-link-mode-centos-7
+      - 5-to-6-primaries-only-centos-7
+      - 5-to-6-no-standby-centos-7
+      - 5-to-6-retail-demo-centos-7
+      - publish-release-candidate
+  - name: bats
+    jobs:
+      - 6-to-6-install-tests
+      - 5-to-6-install-tests
+      - 6-to-6-multihost-bats-centos-6
+      - 6-to-6-multihost-bats-centos-7
+      - 5-to-6-multihost-bats-centos-6
+      - 5-to-6-multihost-bats-centos-7
+  - name: upgrade
+    jobs:
+      - build
+      - 6-to-6-centos-6
+      - 6-to-6-centos-7
+      - 5-to-6-centos-6
+      - 5-to-6-centos-7
+      - 5-to-6-link-mode-centos-6
+      - 5-to-6-primaries-only-centos-6
+      - 5-to-6-no-standby-centos-6
+      - 5-to-6-link-mode-centos-7
+      - 5-to-6-primaries-only-centos-7
+      - 5-to-6-no-standby-centos-7
+  - name: functional
+    jobs:
+      - build
+      - 5-to-6-retail-demo-centos-6
+      - 5-to-6-retail-demo-centos-7
+
 jobs:
 - name: build
   plan:
