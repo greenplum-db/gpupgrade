@@ -287,6 +287,8 @@ is_source_standby_running() {
     fi
 }
 
+# setup_master_upgrade_failure will cause pg_upgrade on the master to fail.  It creates a table
+# with tuples but then moves its master data directory relfilenode away.
 setup_master_upgrade_failure() {
     "$PSQL" postgres --single-transaction -f - <<"EOF"
         CREATE TABLE master_failure (a int, b int);
@@ -300,6 +302,30 @@ EOF
     dboid=$("$GPHOME_SOURCE"/bin/psql -d postgres -Atc "SELECT oid FROM pg_database WHERE datname='postgres';")
     mv "$MASTER_DATA_DIRECTORY/base/$dboid/$file" "$MASTER_DATA_DIRECTORY/base/$dboid/$file.bkp"
     register_teardown mv "$MASTER_DATA_DIRECTORY/base/$dboid/$file.bkp" "$MASTER_DATA_DIRECTORY/base/$dboid/$file"
+}
+
+# setup_primary_upgrade_failure will cause pg_upgrade on the primary on content 0 to fail.  It creates a table
+# with tuples but then moves its content 0 primary data directory relfilenode away.  Our test clusters should
+# always have a content 0 primary.
+setup_primary_upgrade_failure() {
+    "$PSQL" postgres --single-transaction -f - <<"EOF"
+        CREATE TABLE primary_failure (a int, b int);
+        INSERT INTO primary_failure SELECT i, i FROM generate_series(1,10)i;
+EOF
+
+    register_teardown "$PSQL" postgres -c "DROP TABLE IF EXISTS primary_failure"
+
+    # get host and datadir for segment 0
+    local host datadir
+    read -r host datadir <<<"$(query_host_datadirs "$GPHOME_SOURCE" "$PGPORT" "content=0 AND role = 'p'")"
+
+    # obtain the relfilenode and dbid of the table primary_failure on segment 0
+    local file dboid
+    file=$("$GPHOME_SOURCE"/bin/psql -d postgres -Atc "SELECT relfilenode FROM gp_dist_random('pg_class') WHERE relname='primary_failure' AND gp_segment_id=0;")
+    dboid=$("$GPHOME_SOURCE"/bin/psql -d postgres -Atc "SELECT oid FROM gp_dist_random('pg_database') WHERE datname='postgres' and gp_segment_id=0;")
+
+    ssh "$host" mv "$datadir/base/$dboid/$file" "$datadir/base/$dboid/$file.bkp"
+    register_teardown ssh "$host" mv "$datadir/base/$dboid/$file.bkp" "$datadir/base/$dboid/$file"
 }
 
 test_revert_after_execute_master_failure() {
@@ -388,5 +414,15 @@ test_revert_after_execute_master_failure() {
 
 @test "reverting succeeds after link-mode execute fails during master upgrade" {
     setup_master_upgrade_failure
+    test_revert_after_execute_master_failure link
+}
+
+@test "reverting succeeds after copy-mode execute fails during primary upgrade" {
+    setup_primary_upgrade_failure
+    test_revert_after_execute_master_failure copy
+}
+
+@test "reverting succeeds after link-mode execute fails during primary upgrade" {
+    setup_primary_upgrade_failure
     test_revert_after_execute_master_failure link
 }
