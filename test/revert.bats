@@ -328,8 +328,9 @@ EOF
     register_teardown ssh "$host" mv "$datadir/base/$dboid/$file.bkp" "$datadir/base/$dboid/$file"
 }
 
-test_revert_after_execute_master_failure() {
-    local mode="$1"
+test_revert_after_execute_pg_upgrade_failure() {
+    local failed_substep="$1"
+    local mode="$2"
     local target_master_port=6020
     local old_config new_config mirrors primaries rows
 
@@ -368,9 +369,10 @@ test_revert_after_execute_master_failure() {
         --verbose 3>&-
 
     # Execute should fail.
-    local status=0
-    gpupgrade execute --verbose || status=$?
+    run gpupgrade execute --verbose
+    echo "$output"   # run swallows the output...log it explicitly to allow debugging.
     [ "$status" -ne 0 ] || fail "expected execute to fail"
+    [[ "$output" == *"$failed_substep"*"FAILED"* ]] || fail "expected output to contain $failed_substep as FAILED"
 
     # Revert
     gpupgrade revert --verbose
@@ -407,22 +409,22 @@ test_revert_after_execute_master_failure() {
     is_source_standby_in_sync || fail "expected standby to eventually be in sync"
 }
 
-@test "reverting succeeds after copy-mode execute fails during master upgrade" {
+@test "reverting succeeds after copy-mode execute fails while upgrading master" {
     setup_master_upgrade_failure
-    test_revert_after_execute_master_failure copy
+    test_revert_after_execute_pg_upgrade_failure "Upgrading master" copy
 }
 
-@test "reverting succeeds after link-mode execute fails during master upgrade" {
+@test "reverting succeeds after link-mode execute fails while upgrading master" {
     setup_master_upgrade_failure
-    test_revert_after_execute_master_failure link
+    test_revert_after_execute_pg_upgrade_failure "Upgrading master" link
 }
 
-@test "reverting succeeds after copy-mode execute fails during primary upgrade" {
+@test "reverting succeeds after copy-mode execute fails while upgrading primary segments" {
     setup_primary_upgrade_failure
-    test_revert_after_execute_master_failure copy
+    test_revert_after_execute_pg_upgrade_failure "Upgrading primary segments" copy
 }
 
-@test "reverting succeeds after link-mode execute fails during primary upgrade" {
+@test "reverting succeeds after link-mode execute fails while upgrading primary segments" {
     setup_primary_upgrade_failure
-    test_revert_after_execute_master_failure link
+    test_revert_after_execute_pg_upgrade_failure "Upgrading primary segments" link
 }
