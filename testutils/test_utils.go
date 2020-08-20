@@ -185,6 +185,35 @@ func SetEnv(t *testing.T, envar, value string) func() {
 	}
 }
 
+// MustClearEnv makes sure envar is cleared, and returns a function to be used
+// in a defer that resets the state to what it was prior to this function being called.
+func MustClearEnv(t *testing.T, envar string) func() {
+	t.Helper()
+
+	old, reset := os.LookupEnv(envar)
+
+	if reset {
+		err := os.Unsetenv(envar)
+		if err != nil {
+			t.Fatalf("unsetting %s environment variable: %#v", envar, err)
+		}
+	}
+
+	return func() {
+		if reset {
+			err := os.Setenv(envar, old)
+			if err != nil {
+				t.Fatalf("resetting %s environment variable to %s: %#v", envar, old, err)
+			}
+		} else {
+			err := os.Unsetenv(envar)
+			if err != nil {
+				t.Fatalf("unsetting %s environment variable: %#v", envar, err)
+			}
+		}
+	}
+}
+
 // MustMakeTablespaceDir returns a temporary tablespace directory, its parent
 // dbID directory, and its grandparent tablespace location. The location should
 // be removed for cleanup.

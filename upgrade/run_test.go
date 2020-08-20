@@ -15,6 +15,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/upgrade"
@@ -184,6 +185,39 @@ func TestRun(t *testing.T) {
 		if err := scanner.Err(); err != nil {
 			t.Errorf("got error during scan: %+v", err)
 		}
+
+	})
+
+	t.Run("sets __GPDB_PGUPGRADE_PRINT_TIMING__", func(t *testing.T) {
+		printTiming := "__GPDB_PGUPGRADE_PRINT_TIMING__"
+		resetEnv := testutils.MustClearEnv(t, printTiming)
+		defer resetEnv()
+
+		// Echo the environment to stdout and to a copy for debugging
+		cmd := exectest.NewCommand(EnvironmentMain)
+		stdout := new(bytes.Buffer)
+
+		test(t, cmd, upgrade.WithOutputStreams(stdout, nil))
+		t.Logf("stdout was:\n%s", stdout)
+
+		// search for printTiming in the environment variables
+		var hasPrintTiming bool
+		scanner := bufio.NewScanner(stdout)
+		for scanner.Scan() {
+			line := scanner.Text()
+
+			if strings.HasPrefix(line, printTiming) {
+				hasPrintTiming = true
+				break
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			t.Errorf("got error during scan: %+v", err)
+		}
+		if !hasPrintTiming {
+			t.Errorf("expected stdout to contain %q", printTiming)
+		}
+
 	})
 
 	t.Run("can inject a caller-defined Command stub", func(t *testing.T) {

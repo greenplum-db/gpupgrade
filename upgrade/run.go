@@ -89,6 +89,14 @@ func Run(p SegmentPair, options ...Option) error {
 	// like PATH, and PGPORT et al are explicitly forbidden to be set.
 	cmd.Env = []string{}
 
+	// XXX Use this environment variable to tell pg_upgrade to include timing information
+	// in its returned output.  We would prefer to use the flag `--print-timing` but that
+	// would require coordination with a new release of GPDB-6 as well as a bump in the
+	// minimum version of GPDB-6 required for gpupgrade.  Once we have bumped the minimum
+	// version of GPDB-6 past a release that includes the new print-timing code, we can
+	// migrate to the flag.  See https://github.com/greenplum-db/gpdb/pull/10661.
+	cmd.Env = append(cmd.Env, "__GPDB_PGUPGRADE_PRINT_TIMING__=1")
+
 	gplog.Info(cmd.String())
 
 	return cmd.Run()
