@@ -149,21 +149,11 @@ func TestRun(t *testing.T) {
 
 	t.Run("unsets PGPORT and PGHOST", func(t *testing.T) {
 		// Set our environment.
-		oldPort, isPortSet := os.LookupEnv("PGPORT")
-		os.Setenv("PGPORT", "5432")
-		defer func() {
-			if isPortSet {
-				os.Setenv("PGPORT", oldPort)
-			}
-		}()
+		resetPort := testutils.SetEnv(t, "PGPORT", "5432")
+		defer resetPort()
 
-		oldHost, isHostSet := os.LookupEnv("PGHOST")
-		os.Setenv("PGHOST", "localhost")
-		defer func() {
-			if isHostSet {
-				os.Setenv("PGHOST", oldHost)
-			}
-		}()
+		resetHost := testutils.SetEnv(t, "PGHOST", "localhost")
+		defer resetHost()
 
 		// Echo the environment to stdout.
 		cmd := exectest.NewCommand(EnvironmentMain)
