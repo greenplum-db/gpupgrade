@@ -41,12 +41,13 @@ var ErrHubStopped = errors.New("hub is stopped")
 
 type Dialer func(ctx context.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error)
 
+var agentConns []*Connection = nil
+
 type Server struct {
 	*Config
 
 	StateDir string
 
-	agentConns []*Connection
 	grpcDialer Dialer
 
 	mu     sync.Mutex
@@ -79,6 +80,8 @@ func New(conf *Config, grpcDialer Dialer, stateDir string) *Server {
 		stopped:    make(chan struct{}, 1),
 		grpcDialer: grpcDialer,
 	}
+
+	agentConns = nil
 
 	return h
 }
@@ -163,11 +166,11 @@ func (s *Server) StopAgents() error {
 
 	// FIXME: s.AgentConns() fails fast if a single agent isn't available
 	//    we need to connect to all available agents so we can stop just those
-	_, err := s.AgentConns()
+	conns, err := s.AgentConns()
 	if err != nil {
 		return err
 	}
-	return ExecuteRPC(s.agentConns, request)
+	return ExecuteRPC(conns, request)
 }
 
 func (s *Server) Stop(closeAgentConns bool) {
@@ -276,14 +279,14 @@ func (s *Server) AgentConns() ([]*Connection, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if s.agentConns != nil {
-		err := EnsureConnsAreReady(s.agentConns)
+	if agentConns != nil {
+		err := EnsureConnsAreReady(agentConns)
 		if err != nil {
 			gplog.Error("ensureConnsAreReady failed: %s", err)
 			return nil, err
 		}
 
-		return s.agentConns, nil
+		return agentConns, nil
 	}
 
 	hostnames := AgentHosts(s.Source)
@@ -298,7 +301,7 @@ func (s *Server) AgentConns() ([]*Connection, error) {
 			cancelFunc()
 			return nil, err
 		}
-		s.agentConns = append(s.agentConns, &Connection{
+		agentConns = append(agentConns, &Connection{
 			Conn:          conn,
 			AgentClient:   idl.NewAgentClient(conn),
 			Hostname:      host,
@@ -306,7 +309,7 @@ func (s *Server) AgentConns() ([]*Connection, error) {
 		})
 	}
 
-	return s.agentConns, nil
+	return agentConns, nil
 }
 
 func EnsureConnsAreReady(agentConns []*Connection) error {
@@ -329,7 +332,7 @@ func EnsureConnsAreReady(agentConns []*Connection) error {
 //   state(e.g. already closed).  If so, conn.Conn.WaitForStateChange() can block
 //   indefinitely.
 func (s *Server) closeAgentConns() {
-	for _, conn := range s.agentConns {
+	for _, conn := range agentConns {
 		defer conn.CancelContext()
 		currState := conn.Conn.GetState()
 		err := conn.Conn.Close()

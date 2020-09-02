@@ -43,8 +43,8 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		return errors.New("Source cluster does not have mirrors and/or standby. Cannot restore source cluster. Please contact support.")
 	}
 
-	// ensure that agentConns is populated
-	_, err = s.AgentConns()
+	// ensure that all agent Connections are populated and ready
+	agentConns, err = s.AgentConns()
 	if err != nil {
 		return xerrors.Errorf("connect to gpupgrade agent: %w", err)
 	}
@@ -74,7 +74,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 	// substep implementation, to match the prevailing patterns.
 	if s.TargetInitializeConfig.Primaries != nil {
 		st.Run(idl.Substep_DELETE_PRIMARY_DATADIRS, func(_ step.OutStreams) error {
-			return DeletePrimaryDataDirectories(s.agentConns, s.TargetInitializeConfig.Primaries)
+			return DeletePrimaryDataDirectories(agentConns, s.TargetInitializeConfig.Primaries)
 		})
 	}
 
@@ -85,7 +85,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		})
 
 		st.Run(idl.Substep_DELETE_TABLESPACES, func(streams step.OutStreams) error {
-			return DeleteTargetTablespaces(streams, s.agentConns, s.Config.Target, s.TargetCatalogVersion, s.Tablespaces)
+			return DeleteTargetTablespaces(streams, agentConns, s.Config.Target, s.TargetCatalogVersion, s.Tablespaces)
 		})
 	}
 
@@ -97,7 +97,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		// substep to clean up the pg_control.old file, since the rsync will not
 		// remove it.
 		st.Run(idl.Substep_RESTORE_PGCONTROL, func(streams step.OutStreams) error {
-			return RestoreMasterAndPrimariesPgControl(streams, s.agentConns, s.Source)
+			return RestoreMasterAndPrimariesPgControl(streams, agentConns, s.Source)
 		})
 
 		// if the target cluster has been started at any point, we must restore the source
@@ -109,11 +109,11 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 
 		if targetStarted {
 			st.Run(idl.Substep_RESTORE_SOURCE_CLUSTER, func(stream step.OutStreams) error {
-				if err := RsyncMasterAndPrimaries(stream, s.agentConns, s.Source); err != nil {
+				if err := RsyncMasterAndPrimaries(stream, agentConns, s.Source); err != nil {
 					return err
 				}
 
-				return RsyncMasterAndPrimariesTablespaces(stream, s.agentConns, s.Source, s.Tablespaces)
+				return RsyncMasterAndPrimariesTablespaces(stream, agentConns, s.Source, s.Tablespaces)
 			})
 		}
 	}
@@ -176,11 +176,11 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 			return err
 		}
 
-		return ArchiveSegmentLogDirectories(s.agentConns, s.Config.Target.MasterHostname(), archiveDir)
+		return ArchiveSegmentLogDirectories(agentConns, s.Config.Target.MasterHostname(), archiveDir)
 	})
 
 	st.Run(idl.Substep_DELETE_SEGMENT_STATEDIRS, func(_ step.OutStreams) error {
-		return DeleteStateDirectories(s.agentConns, s.Source.MasterHostname())
+		return DeleteStateDirectories(agentConns, s.Source.MasterHostname())
 	})
 
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Data: map[string]string{

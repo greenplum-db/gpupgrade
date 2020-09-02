@@ -17,8 +17,8 @@ var ArchiveSource = upgrade.ArchiveSource
 
 type RenameMap = map[string][]*idl.RenameDirectories
 
-func (s *Server) UpdateDataDirectories() error {
-	return UpdateDataDirectories(s.Config, s.agentConns)
+func (s *Server) UpdateDataDirectories(agentConns []*Connection) error {
+	return UpdateDataDirectories(s.Config, agentConns)
 }
 
 func UpdateDataDirectories(conf *Config, agentConns []*Connection) error {

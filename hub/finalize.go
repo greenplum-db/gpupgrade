@@ -47,7 +47,11 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 	})
 
 	st.Run(idl.Substep_UPDATE_DATA_DIRECTORIES, func(_ step.OutStreams) error {
-		return s.UpdateDataDirectories()
+		conns, err := s.AgentConns()
+		if err != nil {
+			return err
+		}
+		return s.UpdateDataDirectories(conns)
 	})
 
 	st.Run(idl.Substep_UPDATE_TARGET_CONF_FILES, func(streams step.OutStreams) error {
