@@ -93,8 +93,8 @@ func TestDeleteSegmentDataDirs(t *testing.T) {
 		})
 	})
 
-	t.Run("DeletePrimaryDataDirectories", func(t *testing.T) {
-		t.Run("deletes primary data directories", func(t *testing.T) {
+	t.Run("DeleteMasterAndPrimaryDataDirectories", func(t *testing.T) {
+		t.Run("deletes master and primary data directories", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
@@ -125,7 +125,12 @@ func TestDeleteSegmentDataDirs(t *testing.T) {
 				{nil, standbyClient, "standby", nil},
 			}
 
-			err := hub.DeletePrimaryDataDirectories(agentConns, primarySegConfigs)
+			source := hub.InitializeConfig{
+				Master:    greenplum.SegConfig{ContentID: -1, DbID: 0, Port: 25431, Hostname: "master", DataDir: "/data/qddir", Role: greenplum.PrimaryRole},
+				Primaries: primarySegConfigs,
+			}
+
+			err := hub.DeleteMasterAndPrimaryDataDirectories(step.DevNullStream, agentConns, source)
 			if err != nil {
 				t.Errorf("unexpected err %#v", err)
 			}
@@ -153,7 +158,12 @@ func TestDeleteSegmentDataDirs(t *testing.T) {
 				{nil, sdw2ClientFailed, "sdw2", nil},
 			}
 
-			err := hub.DeletePrimaryDataDirectories(agentConns, primarySegConfigs)
+			source := hub.InitializeConfig{
+				Master:    greenplum.SegConfig{ContentID: -1, DbID: 0, Port: 25431, Hostname: "master", DataDir: "/data/qddir", Role: greenplum.PrimaryRole},
+				Primaries: primarySegConfigs,
+			}
+
+			err := hub.DeleteMasterAndPrimaryDataDirectories(step.DevNullStream, agentConns, source)
 
 			var multiErr *multierror.Error
 			if !errors.As(err, &multiErr) {

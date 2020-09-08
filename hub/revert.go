@@ -69,19 +69,9 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		})
 	}
 
-	// The target cluster's data directories and tablespaces must be removed.
-	// TODO: combine the primary/master data directory deletion into a single
-	// substep implementation, to match the prevailing patterns.
-	if s.TargetInitializeConfig.Primaries != nil {
-		st.Run(idl.Substep_DELETE_PRIMARY_DATADIRS, func(_ step.OutStreams) error {
-			return DeletePrimaryDataDirectories(s.agentConns, s.TargetInitializeConfig.Primaries)
-		})
-	}
-
-	if s.TargetInitializeConfig.Master.DataDir != "" {
-		st.Run(idl.Substep_DELETE_MASTER_DATADIR, func(streams step.OutStreams) error {
-			datadir := s.TargetInitializeConfig.Master.DataDir
-			return upgrade.DeleteDirectories([]string{datadir}, upgrade.PostgresFiles, streams)
+	if s.TargetInitializeConfig.Primaries != nil && s.TargetInitializeConfig.Master.DataDir != "" {
+		st.Run(idl.Substep_DELETE_TARGET_CLUSTER_DATADIRS, func(streams step.OutStreams) error {
+			return DeleteMasterAndPrimaryDataDirectories(streams, s.agentConns, s.TargetInitializeConfig)
 		})
 
 		st.Run(idl.Substep_DELETE_TABLESPACES, func(streams step.OutStreams) error {
