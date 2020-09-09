@@ -5,15 +5,17 @@ package commands
 
 import "fmt"
 
-// This global var Version should have a value set at build time.
-// see Makefile for -ldflags "-X etc"
-var Version = ""
+// These variables are set during build time as specified in the Makefile.
+var Version string
+var Commit string
+var Release string
 
 func VersionString(executableName string) string {
 	if Version == "" {
 		return executableName + " unknown version"
 	}
-	return executableName + " version " + Version
+
+	return fmt.Sprintf("Version: %s\nCommit: %s\nRelease: %s", Version, Commit, Release)
 }
 
 func printVersion() {

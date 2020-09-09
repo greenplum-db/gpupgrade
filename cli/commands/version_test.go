@@ -22,9 +22,13 @@ func TestVersionString(t *testing.T) {
 
 	t.Run("returns version", func(t *testing.T) {
 		commands.Version = "1.2.3"
+		commands.Commit = "5889c19"
+		commands.Release = "Enterprise"
 
 		actual := commands.VersionString("gpupgrade")
-		expected := "gpupgrade version 1.2.3"
+		expected := `Version: 1.2.3
+Commit: 5889c19
+Release: Enterprise`
 		if actual != expected {
 			t.Errorf("got version %q want %q", actual, expected)
 		}

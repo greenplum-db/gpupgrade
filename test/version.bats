@@ -22,5 +22,7 @@
 
 check_version() {
     [ "$status" -eq 0 ]
-    [[ "${lines[0]}" =~ ^gpupgrade[[:space:]]version[[:space:]][[:digit:]]\.[[:digit:]]\.[[:digit:]] ]]
+    [[ "${lines[0]}" =~ "Version:"[[:space:]][[:digit:]]\.[[:digit:]]\.[[:digit:]] ]]
+    [[ "${lines[1]}" =~ "Commit:"[[:space:]][[:alnum:]] ]]
+    [[ "${lines[2]}" = "Release: Dev Build" ]]
 }
