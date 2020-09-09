@@ -10,11 +10,11 @@ import (
 )
 
 func TestVersionString(t *testing.T) {
-	t.Run("returns unknown version when version is not set", func(t *testing.T) {
-		commands.Version = ""
-
-		actual := commands.VersionString("gpupgrade")
-		expected := "gpupgrade unknown version"
+	t.Run("returns empty values when version fields are not set", func(t *testing.T) {
+		actual := commands.VersionString()
+		expected := `Version: 
+Commit: 
+Release: `
 		if actual != expected {
 			t.Errorf("got version %q want %q", actual, expected)
 		}
@@ -25,7 +25,7 @@ func TestVersionString(t *testing.T) {
 		commands.Commit = "5889c19"
 		commands.Release = "Enterprise"
 
-		actual := commands.VersionString("gpupgrade")
+		actual := commands.VersionString()
 		expected := `Version: 1.2.3
 Commit: 5889c19
 Release: Enterprise`

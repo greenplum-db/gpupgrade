@@ -10,14 +10,10 @@ var Version string
 var Commit string
 var Release string
 
-func VersionString(executableName string) string {
-	if Version == "" {
-		return executableName + " unknown version"
-	}
-
+func VersionString() string {
 	return fmt.Sprintf("Version: %s\nCommit: %s\nRelease: %s", Version, Commit, Release)
 }
 
 func printVersion() {
-	fmt.Println(VersionString("gpupgrade"))
+	fmt.Println(VersionString())
 }
