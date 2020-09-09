@@ -5,15 +5,15 @@ package commands
 
 import "fmt"
 
-// This global var UpgradeVersion should have a value set at build time.
+// This global var Version should have a value set at build time.
 // see Makefile for -ldflags "-X etc"
-var UpgradeVersion = ""
+var Version = ""
 
 func VersionString(executableName string) string {
-	if UpgradeVersion == "" {
+	if Version == "" {
 		return executableName + " unknown version"
 	}
-	return executableName + " version " + UpgradeVersion
+	return executableName + " version " + Version
 }
 
 func printVersion() {

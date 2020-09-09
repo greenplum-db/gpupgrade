@@ -11,7 +11,7 @@ import (
 
 func TestVersionString(t *testing.T) {
 	t.Run("returns unknown version when version is not set", func(t *testing.T) {
-		commands.UpgradeVersion = ""
+		commands.Version = ""
 
 		actual := commands.VersionString("gpupgrade")
 		expected := "gpupgrade unknown version"
@@ -21,7 +21,7 @@ func TestVersionString(t *testing.T) {
 	})
 
 	t.Run("returns version", func(t *testing.T) {
-		commands.UpgradeVersion = "1.2.3"
+		commands.Version = "1.2.3"
 
 		actual := commands.VersionString("gpupgrade")
 		expected := "gpupgrade version 1.2.3"
