@@ -198,7 +198,7 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 				t.Errorf("got %q want bash", utility)
 			}
 
-			expected := []string{"-c", fmt.Sprintf("source /usr/local/greenplum-db/greenplum_path.sh && MASTER_DATA_DIRECTORY=%s /usr/local/greenplum-db/bin/gprecoverseg -a", cluster.MasterDataDir())}
+			expected := []string{"-c", fmt.Sprintf("source /usr/local/greenplum-db/greenplum_path.sh && MASTER_DATA_DIRECTORY=%s PGPORT=%d /usr/local/greenplum-db/bin/gprecoverseg -a", cluster.MasterDataDir(), cluster.MasterPort())}
 			if !reflect.DeepEqual(args, expected) {
 				t.Errorf("got %q want %q", args, expected)
 			}
