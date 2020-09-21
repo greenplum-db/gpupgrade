@@ -43,13 +43,23 @@ resources:
     branch: ((retail-demo-git-branch))
 
 {{range .Versions}}
+{{- if eq (majorVersion .GPVersion) "5" }}
+- name: rpm_gpdb{{.GPVersion}}_centos{{.CentosVersion}}
+  type: s3
+  source:
+    access_key_id: ((bucket-access-key-id))
+    bucket: ((gpdb-stable-builds-bucket-name))
+    region_name: ((aws-region))
+    secret_access_key: ((bucket-secret-access-key))
+    regexp: release_candidates/gpdb_rpm_installer_centos{{.CentosVersion}}/gpdb{{ majorVersion .GPVersion }}/greenplum-db-({{escapeVersion .GPVersion}}.*)-rhel{{.CentosVersion}}-x86_64.rpm
+{{- else }}
 - name: rpm_gpdb{{.GPVersion}}_centos{{.CentosVersion}}
   type: gcs
   source:
-    bucket: ((cm-artifacts-bucket))
-    json_key: ((cm-gcs-service-account-key))
-    {{- /* note that . can be a full X.y.z, or just a partial X or X.y */}}
-    regexp: greenplum-db-{{ majorVersion .GPVersion }}/greenplum-db-({{escapeVersion .GPVersion}}.*)-rhel{{.CentosVersion}}-x86_64.rpm
+    bucket: ((gcs-bucket))
+    json_key: ((concourse-gcs-resources-service-account-key))
+    regexp: server/published/gpdb{{ majorVersion .GPVersion }}/greenplum-db-({{escapeVersion .GPVersion}}.*)-rhel{{.CentosVersion}}-x86_64.debug.rpm
+{{- end }}
 {{end}}
 
 - name: bin_gpupgrade

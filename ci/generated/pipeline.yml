@@ -53,30 +53,34 @@ resources:
 - name: rpm_gpdb6_centos6
   type: gcs
   source:
-    bucket: ((cm-artifacts-bucket))
-    json_key: ((cm-gcs-service-account-key))
-    regexp: greenplum-db-6/greenplum-db-(6.*)-rhel6-x86_64.rpm
+    bucket: ((gcs-bucket))
+    json_key: ((concourse-gcs-resources-service-account-key))
+    regexp: server/published/gpdb6/greenplum-db-(6.*)-rhel6-x86_64.debug.rpm
 
 - name: rpm_gpdb6_centos7
   type: gcs
   source:
-    bucket: ((cm-artifacts-bucket))
-    json_key: ((cm-gcs-service-account-key))
-    regexp: greenplum-db-6/greenplum-db-(6.*)-rhel7-x86_64.rpm
+    bucket: ((gcs-bucket))
+    json_key: ((concourse-gcs-resources-service-account-key))
+    regexp: server/published/gpdb6/greenplum-db-(6.*)-rhel7-x86_64.debug.rpm
 
 - name: rpm_gpdb5_centos6
-  type: gcs
+  type: s3
   source:
-    bucket: ((cm-artifacts-bucket))
-    json_key: ((cm-gcs-service-account-key))
-    regexp: greenplum-db-5/greenplum-db-(5.*)-rhel6-x86_64.rpm
+    access_key_id: ((bucket-access-key-id))
+    bucket: ((gpdb-stable-builds-bucket-name))
+    region_name: ((aws-region))
+    secret_access_key: ((bucket-secret-access-key))
+    regexp: release_candidates/gpdb_rpm_installer_centos6/gpdb5/greenplum-db-(5.*)-rhel6-x86_64.rpm
 
 - name: rpm_gpdb5_centos7
-  type: gcs
+  type: s3
   source:
-    bucket: ((cm-artifacts-bucket))
-    json_key: ((cm-gcs-service-account-key))
-    regexp: greenplum-db-5/greenplum-db-(5.*)-rhel7-x86_64.rpm
+    access_key_id: ((bucket-access-key-id))
+    bucket: ((gpdb-stable-builds-bucket-name))
+    region_name: ((aws-region))
+    secret_access_key: ((bucket-secret-access-key))
+    regexp: release_candidates/gpdb_rpm_installer_centos7/gpdb5/greenplum-db-(5.*)-rhel7-x86_64.rpm
 
 
 - name: bin_gpupgrade
