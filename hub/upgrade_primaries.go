@@ -40,7 +40,11 @@ func UpgradePrimaries(args UpgradePrimaryArgs) error {
 			TablespacesMappingFilePath: args.TablespacesMappingFile,
 		})
 		if err != nil {
-			return xerrors.Errorf("upgrade primary segment on host %s: %w", conn.Hostname, err)
+			failedAction := "upgrade"
+			if args.CheckOnly {
+				failedAction = "check"
+			}
+			return xerrors.Errorf("%s primary segment on host %s: %w", failedAction, conn.Hostname, err)
 		}
 
 		return nil

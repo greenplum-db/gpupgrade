@@ -119,65 +119,87 @@ func TestUpgradePrimaries(t *testing.T) {
 		}
 	})
 
-	t.Run("errors when upgrading primary fails", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		client1 := mock_idl.NewMockAgentClient(ctrl)
-		client1.EXPECT().UpgradePrimaries(
-			gomock.Any(),
-			&idl.UpgradePrimariesRequest{
-				SourceBinDir:    "/usr/local/greenplum-db/bin",
-				TargetBinDir:    "/usr/local/greenplum-db-new/bin",
-				TargetVersion:   dbconn.NewVersion("6.0.0").VersionString,
-				DataDirPairs:    pairs["sdw1"],
-				CheckOnly:       false,
-				UseLinkMode:     false,
-				MasterBackupDir: "",
+	t.Run("errors when checking or upgrading primary fails", func(t *testing.T) {
+		errCases := []struct {
+			name         string
+			CheckOnly    bool
+			failedAction string
+		}{
+			{
+				name:         "errors when upgrading primary fails",
+				CheckOnly:    false,
+				failedAction: "upgrade",
 			},
-		).Return(&idl.UpgradePrimariesReply{}, nil)
-
-		expected := errors.New("permission denied")
-		failedClient := mock_idl.NewMockAgentClient(ctrl)
-		failedClient.EXPECT().UpgradePrimaries(
-			gomock.Any(),
-			&idl.UpgradePrimariesRequest{
-				SourceBinDir:               "/usr/local/greenplum-db/bin",
-				TargetBinDir:               "/usr/local/greenplum-db-new/bin",
-				TargetVersion:              dbconn.NewVersion("6.0.0").VersionString,
-				DataDirPairs:               pairs["sdw2"],
-				CheckOnly:                  false,
-				UseLinkMode:                false,
-				MasterBackupDir:            "",
-				TablespacesMappingFilePath: "",
+			{
+				name:         "errors when checking primary fails",
+				CheckOnly:    true,
+				failedAction: "check",
 			},
-		).Return(&idl.UpgradePrimariesReply{}, expected)
-
-		agentConns := []*hub.Connection{
-			{nil, client1, "sdw1", nil},
-			{nil, failedClient, "sdw2", nil},
 		}
 
-		err := hub.UpgradePrimaries(hub.UpgradePrimaryArgs{
-			CheckOnly:              false,
-			MasterBackupDir:        "",
-			AgentConns:             agentConns,
-			DataDirPairMap:         pairs,
-			Source:                 source,
-			Target:                 target,
-			UseLinkMode:            false,
-			TablespacesMappingFile: "",
-		})
-		if err == nil {
-			t.Fatal("expected error got nil")
+		for _, c := range errCases {
+			t.Run(c.name, func(t *testing.T) {
+				ctrl := gomock.NewController(t)
+				defer ctrl.Finish()
+
+				client1 := mock_idl.NewMockAgentClient(ctrl)
+				client1.EXPECT().UpgradePrimaries(
+					gomock.Any(),
+					&idl.UpgradePrimariesRequest{
+						SourceBinDir:    "/usr/local/greenplum-db/bin",
+						TargetBinDir:    "/usr/local/greenplum-db-new/bin",
+						TargetVersion:   dbconn.NewVersion("6.0.0").VersionString,
+						DataDirPairs:    pairs["sdw1"],
+						CheckOnly:       c.CheckOnly,
+						UseLinkMode:     false,
+						MasterBackupDir: "",
+					},
+				).Return(&idl.UpgradePrimariesReply{}, nil)
+
+				expected := errors.New("permission denied")
+				failedClient := mock_idl.NewMockAgentClient(ctrl)
+				failedClient.EXPECT().UpgradePrimaries(
+					gomock.Any(),
+					&idl.UpgradePrimariesRequest{
+						SourceBinDir:               "/usr/local/greenplum-db/bin",
+						TargetBinDir:               "/usr/local/greenplum-db-new/bin",
+						TargetVersion:              dbconn.NewVersion("6.0.0").VersionString,
+						DataDirPairs:               pairs["sdw2"],
+						CheckOnly:                  c.CheckOnly,
+						UseLinkMode:                false,
+						MasterBackupDir:            "",
+						TablespacesMappingFilePath: "",
+					},
+				).Return(&idl.UpgradePrimariesReply{}, expected)
+
+				agentConns := []*hub.Connection{
+					{nil, client1, "sdw1", nil},
+					{nil, failedClient, "sdw2", nil},
+				}
+
+				err := hub.UpgradePrimaries(hub.UpgradePrimaryArgs{
+					CheckOnly:              c.CheckOnly,
+					MasterBackupDir:        "",
+					AgentConns:             agentConns,
+					DataDirPairMap:         pairs,
+					Source:                 source,
+					Target:                 target,
+					UseLinkMode:            false,
+					TablespacesMappingFile: "",
+				})
+				if err == nil {
+					t.Fatal("expected error got nil")
+				}
+
+				// XXX it'd be nice if we didn't couple against a hardcoded string here,
+				// but it's difficult to unwrap multierror with the new xerrors interface.
+				if !strings.Contains(err.Error(), c.failedAction+" primary segment on host sdw2") ||
+					!strings.Contains(err.Error(), expected.Error()) {
+					t.Errorf("error %q did not contain expected contents '%q'", err.Error(), expected.Error())
+				}
+			})
 		}
 
-		// XXX it'd be nice if we didn't couple against a hardcoded string here,
-		// but it's difficult to unwrap multierror with the new xerrors interface.
-		if !strings.Contains(err.Error(), "upgrade primary segment on host sdw2") ||
-			!strings.Contains(err.Error(), expected.Error()) {
-			t.Errorf("error %q did not contain expected contents '%q'", err.Error(), expected.Error())
-		}
 	})
 }
 

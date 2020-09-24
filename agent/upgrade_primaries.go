@@ -70,7 +70,11 @@ func UpgradePrimaries(stateDir string, request *idl.UpgradePrimariesRequest) err
 	// Collect and handle errors
 	//
 	if err != nil {
-		return xerrors.Errorf("upgrading primaries: %w", err)
+		failedAction := "upgrade"
+		if request.CheckOnly {
+			failedAction = "check"
+		}
+		return xerrors.Errorf("%s primaries: %w", failedAction, err)
 	}
 
 	// success
@@ -84,7 +88,7 @@ func buildSegments(request *idl.UpgradePrimariesRequest, stateDir string) ([]Seg
 		workdir := upgrade.SegmentWorkingDirectory(stateDir, int(dataPair.Content))
 		err := utils.System.MkdirAll(workdir, 0700)
 		if err != nil {
-			return nil, xerrors.Errorf("upgrading primaries: %w", err)
+			return nil, xerrors.Errorf("creating pg_upgrade work directory: %w", err)
 		}
 
 		segments = append(segments, Segment{
