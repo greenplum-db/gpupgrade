@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -19,6 +20,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
+	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
 
@@ -103,8 +105,16 @@ func UpgradeMaster(args UpgradeMasterArgs) error {
 				text = append(text, line)
 			}
 		}
+		errText := strings.Join(text, "\n")
 
-		return UpgradeMasterError{ErrorText: strings.Join(text, "\n"), err: err}
+		// include the full path of any pg_upgrade error files
+		errorFiles, dirErr := fileEntries(wd)
+		err = errorlist.Append(err, dirErr)
+		for _, errFile := range errorFiles {
+			errText = strings.ReplaceAll(errText, errFile, filepath.Join(wd, errFile))
+		}
+
+		return UpgradeMasterError{ErrorText: errText, err: err}
 	}
 
 	return nil
@@ -134,6 +144,22 @@ func masterSegmentFromCluster(cluster *greenplum.Cluster) *upgrade.Segment {
 		DBID:    cluster.GetDbidForContent(-1),
 		Port:    cluster.MasterPort(),
 	}
+}
+
+// fileEntries returns a list of all filenames
+//   under the given root.
+func fileEntries(root string) ([]string, error) {
+	entries, err := ioutil.ReadDir(root)
+	if err != nil {
+		return nil, err
+	}
+
+	var files []string
+	for _, entry := range entries {
+		files = append(files, entry.Name())
+	}
+
+	return files, nil
 }
 
 func RsyncMasterDataDir(stream step.OutStreams, sourceDir, targetDir string) error {

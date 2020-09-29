@@ -15,6 +15,7 @@ import (
 	"syscall"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
@@ -366,7 +367,7 @@ Checking for users assigned the gphdfs role                 fatal
 | These privileges need to be revoked before upgrade.  A list
 | of roles and their corresponding gphdfs privileges that
 | must be revoked is provided in the file:
-|       gphdfs_user_roles.txt
+|       %s/gphdfs_user_roles.txt
 
 Failure, exiting
 				`),
@@ -378,7 +379,7 @@ Checking for users assigned the gphdfs role                 fatal [ 36ms ]
 | These privileges need to be revoked before upgrade.  A list
 | of roles and their corresponding gphdfs privileges that
 | must be revoked is provided in the file:
-|       gphdfs_user_roles.txt
+|       %s/gphdfs_user_roles.txt
 
 Failure, exiting
 				`),
@@ -387,13 +388,23 @@ Failure, exiting
 
 		for _, c := range cases {
 			t.Run(c.name, func(t *testing.T) {
-				SetExecCommand(exectest.NewCommand(c.main))
+				ctrl := gomock.NewController(t)
+				defer ctrl.Finish()
+				cmd, mock := exectest.NewCommandMock(ctrl)
+				SetExecCommand(cmd)
 				defer ResetExecCommand()
 
 				rsync.SetRsyncCommand(exectest.NewCommand(Success))
 				defer rsync.ResetRsyncCommand()
 
 				stream := new(step.BufferedStreams)
+
+				// create a file in the working directory of upgrade_master just like pg_upgrade would do
+				mock.EXPECT().Command("/usr/local/target/bin/pg_upgrade", gomock.Any()).
+					DoAndReturn(func(string, ...string) exectest.Main {
+						testutils.MustWriteToFile(t, filepath.Join(createdWD, "gphdfs_user_roles.txt"), "")
+						return c.main
+					})
 
 				err := UpgradeMaster(UpgradeMasterArgs{
 					Source:      source,
@@ -412,10 +423,11 @@ Failure, exiting
 					t.Errorf("got type %T want %T", err, upgradeErr)
 				}
 
-				if upgradeErr.ErrorText != c.expected {
+				expected := fmt.Sprintf(c.expected, createdWD)
+				if upgradeErr.ErrorText != expected {
 					t.Errorf("actual error text does not match expected")
 					t.Logf("got:\n%s", upgradeErr.ErrorText)
-					t.Logf("want:\n%s", c.expected)
+					t.Logf("want:\n%s", expected)
 				}
 			})
 		}
