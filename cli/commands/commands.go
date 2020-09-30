@@ -407,6 +407,12 @@ func initialize() *cobra.Command {
 				}
 			}()
 
+			// Check for valid versions BEFORE running any initialize
+			// implementation code; why boot a hub if the versions are wrong?
+			if err := cli.ValidateVersions(sourceGPHome, targetGPHome); err != nil {
+				return err
+			}
+
 			fmt.Println()
 			fmt.Println("Initialize in progress.")
 			fmt.Println()
