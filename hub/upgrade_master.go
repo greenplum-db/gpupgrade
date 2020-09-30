@@ -114,23 +114,37 @@ func UpgradeMaster(args UpgradeMasterArgs) error {
 			errText = strings.ReplaceAll(errText, errFile, filepath.Join(wd, errFile))
 		}
 
-		return UpgradeMasterError{ErrorText: errText, err: err}
+		return NewUpgradeMasterError(args.CheckOnly, errText, err)
 	}
 
 	return nil
 }
 
 type UpgradeMasterError struct {
-	ErrorText string
-	err       error
+	FailedAction string
+	ErrorText    string
+	err          error
+}
+
+func NewUpgradeMasterError(checkOnly bool, errText string, err error) UpgradeMasterError {
+	failedAction := "upgrade"
+	if checkOnly {
+		failedAction = "check"
+	}
+
+	return UpgradeMasterError{
+		FailedAction: failedAction,
+		ErrorText:    errText,
+		err:          err,
+	}
 }
 
 func (u UpgradeMasterError) Error() string {
 	if u.ErrorText == "" {
-		return fmt.Sprintf("upgrading master: %v", u.err)
+		return fmt.Sprintf("%s master: %v", u.FailedAction, u.err)
 	}
 
-	return fmt.Sprintf("upgrading master: %s: %v", u.ErrorText, u.err)
+	return fmt.Sprintf("%s master: %s: %v", u.FailedAction, u.ErrorText, u.err)
 }
 
 func (u UpgradeMasterError) Unwrap() error {

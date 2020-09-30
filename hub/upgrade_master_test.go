@@ -219,6 +219,35 @@ func TestUpgradeMaster(t *testing.T) {
 		}
 	})
 
+	t.Run("sets error text to upgrading when pg_upgrade fails", func(t *testing.T) {
+		rsync.SetRsyncCommand(exectest.NewCommand(Success))
+		defer rsync.ResetRsyncCommand()
+
+		SetExecCommand(exectest.NewCommand(Failure))
+		defer ResetExecCommand()
+
+		err := UpgradeMaster(UpgradeMasterArgs{
+			Source:      source,
+			Target:      target,
+			StateDir:    tempDir,
+			Stream:      new(step.BufferedStreams),
+			CheckOnly:   false,
+			UseLinkMode: false,
+		})
+		if err == nil {
+			t.Errorf("expected error, returned nil")
+		}
+
+		var upgradeErr UpgradeMasterError
+		if !errors.As(err, &upgradeErr) {
+			t.Errorf("got type %T want %T", err, upgradeErr)
+		}
+
+		if upgradeErr.FailedAction != "upgrade" {
+			t.Errorf("got FailedAction %q want upgrade", upgradeErr.FailedAction)
+		}
+	})
+
 	t.Run("streams stdout and stderr to the client", func(t *testing.T) {
 		SetExecCommand(exectest.NewCommand(StreamingMain))
 		defer ResetExecCommand()
@@ -411,7 +440,7 @@ Failure, exiting
 					Target:      target,
 					StateDir:    tempDir,
 					Stream:      stream,
-					CheckOnly:   false,
+					CheckOnly:   true,
 					UseLinkMode: false,
 				})
 				if err == nil {
@@ -421,6 +450,10 @@ Failure, exiting
 				var upgradeErr UpgradeMasterError
 				if !errors.As(err, &upgradeErr) {
 					t.Errorf("got type %T want %T", err, upgradeErr)
+				}
+
+				if upgradeErr.FailedAction != "check" {
+					t.Errorf("got FailedAction %q want check", upgradeErr.FailedAction)
 				}
 
 				expected := fmt.Sprintf(c.expected, createdWD)
