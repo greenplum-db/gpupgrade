@@ -48,6 +48,33 @@ Running gpupgrade consists of three main steps:
   - After finalizing the upgrade cannot be reverted.
   - Substeps include updating the data directories and master catalog, and 
   upgrading the standby and mirrors.
+- gpupgrade revert
+  - Restores the cluster to the state before upgrade.
+  - Can be run after initialize or execute, but *not* finalize.
+  - Substeps include deleting the target cluster, archiving the gpupgrade log 
+  directory, and restoring the source cluster.
+
+```
+  start <---- run migration
+    |            scripts  |
+run migration             |
+  scripts                 ^
+    |                     |
+    V                     |
+initialize ---> revert ----
+    |                     ^
+    V                     |
+ execute  ----> revert ----
+    |
+    V
+ finalize
+    |
+run migration 
+  scripts
+    |
+    V
+   done
+```
 
 **Link vs. Copy Mode:**
 
