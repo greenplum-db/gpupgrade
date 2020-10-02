@@ -4,15 +4,15 @@
 package filters
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 )
 
 var (
 	// regex for views/rule transformation
-	ruleOrViewCommentRegex *regexp.Regexp
-	ruleOrViewCreateRegex  *regexp.Regexp
-	viewReplacementRegex   []*viewReplacer
+	ruleOrViewCreateRegex *regexp.Regexp
+	viewReplacementRegex  []*viewReplacer
 )
 
 type viewReplacer struct {
@@ -36,7 +36,6 @@ var viewReplacementPatterns = map[string]string{
 }
 
 func init() {
-	ruleOrViewCommentRegex = regexp.MustCompile(`; Type: (VIEW|RULE);`)
 	ruleOrViewCreateRegex = regexp.MustCompile(`CREATE (VIEW|RULE)`)
 
 	for regex, replacement := range viewReplacementPatterns {
@@ -47,36 +46,28 @@ func init() {
 	}
 }
 
-func IsViewOrRuleDdl(buf []string, line string) bool {
-	return len(buf) > 0 && ruleOrViewCommentRegex.MatchString(strings.Join(buf, " ")) && ruleOrViewCreateRegex.MatchString(line)
+func IsViewOrRuleDdl(line string) bool {
+	return ruleOrViewCreateRegex.MatchString(line)
 }
 
-func FormatViewOrRuleDdl(allTokens []string) string {
+func FormatViewOrRuleDdl(tokens []string) (string, error) {
+	if len(tokens) < 4 {
+		return "", fmt.Errorf("tokens '%s' must contain at least 4 elements", tokens)
+	}
+
 	var line string
-	if allTokens[1] == "RULE" {
-		line = strings.Join(allTokens, " ")
+	if tokens[1] == "RULE" {
+		line = strings.Join(tokens, " ")
 	} else {
 		// split the view definition into 2 lines
 		// line 1: CREATE VIEW myview AS (4 elements)
 		// line 2: BODY of the view... (remaining elements)
-		line = strings.Join(allTokens[:4], " ") + "\n" + strings.Join(allTokens[4:], " ")
+		line = strings.Join(tokens[:4], " ") + "\n" + strings.Join(tokens[4:], " ")
 		for _, r := range viewReplacementRegex {
 			line = r.replace(line)
 		}
 	}
 	line = strings.ReplaceAll(line, "( ", "(")
 	line = strings.ReplaceAll(line, ") )", "))")
-	return line
-}
-
-func BuildViewOrRuleDdl(line string, allTokens []string) (string, []string, bool) {
-	tokens := strings.Fields(line)
-	allTokens = append(allTokens, tokens...)
-	formattingFinished := false
-	// if the DDL terminator exists process the whole DDL statement
-	if strings.Contains(line, ";") {
-		formattingFinished = true
-		return FormatViewOrRuleDdl(allTokens), allTokens, formattingFinished
-	}
-	return "", allTokens, formattingFinished
+	return line, nil
 }

@@ -3,7 +3,7 @@
 
 /*
 	The filter command massages the post-upgrade SQL dump by removing known
-	differences. It does this with two sets of rules -- lines and blocks.
+	differences. It does this with the following set of rules
 
 	- Line rules are regular expressions that will cause any matching lines to
 	be removed immediately.
@@ -11,8 +11,8 @@
 	- Block rules are regular expressions that cause any matching lines, and any
 	preceding comments or blank lines, to be removed.
 
-	The main complication here comes from the block rules, which require us to
-	use a lookahead buffer.
+	- Formatting rules are a set of functions that can format the sql statement tokens
+	into a desired format
 
 	filter reads from stdin and writes to stdout. Usage:
 
@@ -35,10 +35,66 @@ import (
 )
 
 type ReplacementFunc func(line string) string
+
 var replacementFuncs []ReplacementFunc
 
-var lineRegexes []*regexp.Regexp
-var blockRegexes []*regexp.Regexp
+// function to identify if the line matches a pattern
+type shouldFormatFunc func(line string) bool
+
+// function to create a formatted string using the tokens
+type formatFunc func(tokens []string) (string, error)
+
+// identifier and corresponding formatting function
+type formatter struct {
+	shouldFormat shouldFormatFunc
+	format       formatFunc
+}
+
+// hold the current tokens for the formatting function
+type formatContext struct {
+	tokens     []string
+	formatFunc formatFunc
+}
+
+var (
+	formatters   []formatter
+	lineRegexes  []*regexp.Regexp
+	blockRegexes []*regexp.Regexp
+)
+
+// is formatting currently in progress
+func (f *formatContext) formatting() bool {
+	return f.formatFunc != nil
+}
+
+func (f *formatContext) addTokens(line string) {
+	f.tokens = append(f.tokens, strings.Fields(line)...)
+}
+
+func endFormatting(line string) bool {
+	return strings.Contains(line, ";")
+}
+
+func (f *formatContext) format() (string, error) {
+	return f.formatFunc(f.tokens)
+}
+
+func newFormattingContext() *formatContext {
+	return &formatContext{}
+}
+
+func (f *formatContext) find(formatters []formatter, line string) {
+	if f.formatFunc != nil {
+		return
+	}
+
+	for _, x := range formatters {
+		if x.shouldFormat(line) {
+			f.formatFunc = x.format
+			break
+		}
+	}
+}
 
 func init() {
 	// linePatterns remove exactly what is matched, on a line-by-line basis.
@@ -60,6 +116,12 @@ func init() {
 
 	replacementFuncs = []ReplacementFunc{
 		filters.FormatWithClause,
+	}
+
+	// patten matching functions and corresponding formatting functions
+	formatters = []formatter{
+		{shouldFormat: filters.IsViewOrRuleDdl, format: filters.FormatViewOrRuleDdl},
+		{shouldFormat: filters.IsTriggerDdl, format: filters.FormatTriggerDdl},
 	}
 
 	for _, pattern := range linePatterns {
@@ -99,27 +161,23 @@ func Filter(in io.Reader, out io.Writer) {
 
 	var buf []string // lines buffered for look-ahead
 
-	// temporary storage for view/rule ddl processing
-	var allTokens []string
-	var formattingViewOrRuleDdlStmt = false
+	var formattingContext = newFormattingContext()
 
 nextline:
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		// TODO: make it more generic, wherein, all the rules are applied
-		// in a coherent manner, and their complexity is hidden from this
-		// main loop
-		if formattingViewOrRuleDdlStmt || filters.IsViewOrRuleDdl(buf, line) {
-			formattingViewOrRuleDdlStmt = true
-			completeDdl, resultTokens, finishedFormatting := filters.BuildViewOrRuleDdl(line, allTokens)
-			allTokens = resultTokens
-			if finishedFormatting {
-				buf = writeBufAndLine(out, buf, completeDdl)
-				formattingViewOrRuleDdlStmt = false
-				allTokens = nil
+		formattingContext.find(formatters, line)
+		if formattingContext.formatting() {
+			formattingContext.addTokens(line)
+			if endFormatting(line) {
+				stmt, err := formattingContext.format()
+				if err != nil {
+					log.Fatalf("unexpected error: %#v", err)
+				}
+				buf = writeBufAndLine(out, buf, stmt)
+				formattingContext = newFormattingContext()
 			}
-
 			continue nextline
 		}
 

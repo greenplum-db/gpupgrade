@@ -27,7 +27,9 @@ func Test_FormatWithClause(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := FormatWithClause(tt.input); got != tt.result {
+			got := FormatWithClause(tt.input)
+
+			if got != tt.result {
 				t.Errorf("got %v, want %v", got, tt.result)
 			}
 		})

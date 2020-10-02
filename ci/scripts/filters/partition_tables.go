@@ -15,6 +15,7 @@ func FormatWithClause(line string) string {
 	if result == nil {
 		return line
 	}
+
 	groups := result[0]
 	// replace all occurrences of single quotes
 	stringWithoutSingleQuotes := strings.ReplaceAll(groups[2], "'", "")

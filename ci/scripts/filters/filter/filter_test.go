@@ -200,4 +200,29 @@ CREATE RULE two AS ON INSERT TO public.oid_consistency_bar2 DO INSTEAD INSERT IN
 			t.Errorf("wrote %q want %q", out.String(), expected)
 		}
 	})
+
+	t.Run("formats the trigger ddl to multi line statement", func(t *testing.T) {
+		var in, out bytes.Buffer
+		in.WriteString(`--
+-- Name: after_trigger; Type: TRIGGER; Schema: public; Owner: gpadmin
+--
+
+CREATE TRIGGER after_trigger AFTER INSERT OR DELETE ON public.bfv_dml_trigger_test FOR EACH ROW EXECUTE PROCEDURE public.bfv_dml_error_func();`)
+
+		expected := `--
+-- Name: after_trigger; Type: TRIGGER; Schema: public; Owner: gpadmin
+--
+
+CREATE TRIGGER after_trigger
+    AFTER INSERT OR DELETE ON public.bfv_dml_trigger_test
+    FOR EACH ROW
+    EXECUTE PROCEDURE public.bfv_dml_error_func();
+`
+
+		Filter(&in, &out)
+
+		if out.String() != expected {
+			t.Errorf("wrote %q want %q", out.String(), expected)
+		}
+	})
 }
