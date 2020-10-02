@@ -395,6 +395,7 @@ func initialize() *cobra.Command {
 
 			// Past this point, we want any errors to be accompanied by helper
 			// text describing the next actions to take.
+			suggestRevert := true
 			defer func() {
 				if err != nil {
 					// XXX work around an annoying UI nit: the error message is
@@ -403,13 +404,14 @@ func initialize() *cobra.Command {
 					// opposed to pushed into business logic.
 					fmt.Println()
 
-					err = cli.NewNextActions(err, "initialize")
+					err = cli.NewNextActions(err, "initialize", suggestRevert)
 				}
 			}()
 
 			// Check for valid versions BEFORE running any initialize
 			// implementation code; why boot a hub if the versions are wrong?
 			if err := cli.ValidateVersions(sourceGPHome, targetGPHome); err != nil {
+				suggestRevert = false
 				return err
 			}
 

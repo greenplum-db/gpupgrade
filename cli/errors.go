@@ -10,24 +10,29 @@ import "fmt"
 // message is printed.
 type NextActions struct {
 	error
-	Subcommand string // the gpupgrade subcommand name to print
+	Subcommand    string // the gpupgrade subcommand name to print
+	suggestRevert bool
 }
 
-func NewNextActions(err error, subcommand string) NextActions {
+func NewNextActions(err error, subcommand string, suggestRevert bool) NextActions {
 	return NextActions{
-		error:      err,
-		Subcommand: subcommand,
+		error:         err,
+		Subcommand:    subcommand,
+		suggestRevert: suggestRevert,
 	}
 }
 
 func (n NextActions) PrintHelp() {
-	// TODO: consider making the "revert" text optional, if we end up using this
-	// in contexts (such as finalize) where revert is not an option.
-	fmt.Printf(`
+	text := `
 NEXT ACTIONS
 ------------
 Please address the above issue and run "gpupgrade %s" again.
+`
+	if n.suggestRevert {
+		text += `
 
 If you would like to return the cluster to its original state, please run "gpupgrade revert".
-`, n.Subcommand)
+`
+	}
+	fmt.Printf(text, n.Subcommand)
 }
