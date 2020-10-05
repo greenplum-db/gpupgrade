@@ -14,8 +14,8 @@ setup() {
     gpupgrade kill-services
 
     gpupgrade initialize \
-        --source-gphome "/usr/local/source" \
-        --target-gphome "/usr/local/target" \
+        --source-gphome "$GPHOME_SOURCE" \
+        --target-gphome "$GPHOME_TARGET" \
         --source-master-port ${PGPORT} \
         --stop-before-cluster-creation \
         --disk-free-ratio 0 3>&-
@@ -33,18 +33,18 @@ teardown() {
     run gpupgrade config show --target-gphome
     echo $output
     [ "$status" -eq 0 ]
-    [ "$output" = "/usr/local/target" ]
+    [ "$output" = "$GPHOME_TARGET" ]
 
     run gpupgrade config show --source-gphome
     [ "$status" -eq 0 ]
-    [ "$output" = "/usr/local/source" ]
+    [ "$output" = "$GPHOME_SOURCE" ]
 }
 
 @test "configuration can be dumped as a whole" {
     run gpupgrade config show
     [ "$status" -eq 0 ]
     [[ "${lines[0]}" = "id - "* ]] # this is randomly generated; we could replace * with a base64 regex matcher
-    [ "${lines[1]}" = "source-gphome - /usr/local/source" ]
+    [ "${lines[1]}" = "source-gphome - $GPHOME_SOURCE" ]
     [ "${lines[2]}" = "target-datadir - " ] # This isn't populated until cluster creation, but it's still displayed here
-    [ "${lines[3]}" = "target-gphome - /usr/local/target" ]
+    [ "${lines[3]}" = "target-gphome - $GPHOME_TARGET" ]
 }

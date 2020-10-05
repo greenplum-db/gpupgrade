@@ -40,8 +40,8 @@ teardown() {
 @test "gpupgrade initialize --file with verbose uses the configured values" {
     config_file=${STATE_DIR}/gpupgrade_config
     cat <<- EOF > "$config_file"
-		source-gphome = /usr/local/source
-		target-gphome = /usr/local/target
+		source-gphome = $GPHOME_SOURCE
+		target-gphome = $GPHOME_TARGET
 		source-master-port = ${PGPORT}
 		disk-free-ratio = 0
 		stop-before-cluster-creation = true
@@ -49,28 +49,28 @@ teardown() {
 
     gpupgrade initialize --verbose --file "$config_file"
 
-    run gpupgrade config show --target-gphome
-    [ "$status" -eq 0 ]
-    [ "$output" = "/usr/local/target" ]
-
     run gpupgrade config show --source-gphome
     [ "$status" -eq 0 ]
-    [ "$output" = "/usr/local/source" ]
+    [ "$output" = "$GPHOME_SOURCE" ]
+
+    run gpupgrade config show --target-gphome
+    [ "$status" -eq 0 ]
+    [ "$output" = "$GPHOME_TARGET" ]
 }
 
 @test "initialize sanitizes source-gphome and target-gphome" {
     gpupgrade initialize \
-        --source-gphome "/usr/local/source/" \
-        --target-gphome "/usr/local/target//" \
+        --source-gphome "${GPHOME_SOURCE}/" \
+        --target-gphome "${GPHOME_TARGET}//" \
         --source-master-port ${PGPORT} \
         --stop-before-cluster-creation \
         --disk-free-ratio 0 3>&-
 
     run gpupgrade config show --source-gphome
     [ "$status" -eq 0 ]
-    [ "$output" = "/usr/local/source" ]
+    [ "$output" = "$GPHOME_SOURCE" ]
 
     run gpupgrade config show --target-gphome
     [ "$status" -eq 0 ]
-    [ "$output" = "/usr/local/target" ]
+    [ "$output" = "$GPHOME_TARGET" ]
 }

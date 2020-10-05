@@ -85,8 +85,8 @@ are_equivalent_within_tolerance() {
 
     run gpupgrade initialize \
         --disk-free-ratio=1.0 \
-        --source-gphome="$PWD" \
-        --target-gphome="$PWD" \
+        --source-gphome="$GPHOME_SOURCE" \
+        --target-gphome="$GPHOME_TARGET" \
         --source-master-port="${PGPORT}" \
         --stop-before-cluster-creation 3>&-
 
