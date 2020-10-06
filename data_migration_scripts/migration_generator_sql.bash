@@ -40,10 +40,19 @@ exec_script(){
     if [[ -n "$records" ]]; then
         # change database before header, to allow header to define SQL functions
         echo "\c $database" >> "${output_dir}/${output_file}"
-        header_file=$(echo "${path/.sql/.header}")
-        if [[ -f $header_file ]]; then
-            cat $header_file >> "${output_dir}/${output_file}"
+
+        local basename suffix header_file
+        basename=$(basename "$path")
+        suffix=${basename##*.}
+        if [[ "$suffix" == "$basename" ]]; then
+          header_file="${path}.header"
+        else
+          header_file=${path/%.$suffix/.header}
         fi
+        if [[ -f $header_file ]]; then
+            cat "$header_file" >> "${output_dir}/${output_file}"
+        fi
+
         echo "$records" >> "${output_dir}/${output_file}"
     fi
 }
