@@ -61,17 +61,26 @@ func accumulateRanges(a *semver.Range, minVersions map[int]string) {
 	}
 }
 
-func minSourceVersion() string {
-	var min int
-	for major := range minSourceVersions {
-		if min == 0 {
-			min = major
+// returns the version string that is the lowest of the major version of "version"
+// or the lowest version supported in minVersions otherwise
+func getMinVersion(version semver.Version, minVersions map[int]string) string {
+
+	major := version.Major
+	min, ok := minVersions[int(major)]
+	if ok {
+		return min
+	}
+
+	var lowest int
+	for major := range minVersions {
+		if lowest == 0 {
+			lowest = major
 		}
-		if major < min {
-			min = major
+		if major < lowest {
+			lowest = major
 		}
 	}
-	return semver.MustParse(minSourceVersions[min]).String()
+	return semver.MustParse(minVersions[lowest]).String()
 }
 
 var gpHomeVersion = greenplum.GPHomeVersion
@@ -98,18 +107,11 @@ func validateVersion(gpHome string, context string) error {
 
 	version, err := gpHomeVersion(gpHome)
 	if err == nil && !versionsAllowed(version) {
-		errStr := fmt.Sprintf("%s cluster version %%s is not supported.", context)
-
-		major := version.Major
-		minVersion, ok := minVersions[int(major)]
-		if !ok {
-			minVersion = minSourceVersion()
-		}
-
-		errStr = fmt.Sprintf(errStr, version)
-		errStr = fmt.Sprintf("%s  The minimum required version is %s. We recommend the latest version.",
-			errStr, minVersion)
-
+		min := getMinVersion(version, minVersions)
+		errStr := fmt.Sprintf("%s cluster version %s is not supported.  "+
+			"The minimum required version is %s. "+
+			"We recommend the latest version.",
+			context, version, min)
 		err = fmt.Errorf(errStr)
 	} else if err != nil {
 		err = fmt.Errorf("could not determine %s cluster version: %w", context, err)

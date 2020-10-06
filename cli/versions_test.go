@@ -5,7 +5,6 @@ package cli
 
 import (
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/blang/semver/v4"
@@ -109,30 +108,34 @@ func TestValidateVersions(t *testing.T) {
 
 func TestValidateVersionsErrorCases(t *testing.T) {
 	cases := []struct {
-		name         string
-		mockFunction func(string) (semver.Version, error)
-		expected     string
+		name           string
+		mockFunction   func(string) (semver.Version, error)
+		expectedSource string
+		expectedTarget string
 	}{
 		{
 			"fails when gpHomeVersion returns an error",
 			func(str string) (semver.Version, error) {
 				return semver.MustParse("1.2.3"), errors.New("some error")
 			},
-			"could not determine %s cluster version: some error",
+			"could not determine source cluster version: some error",
+			"could not determine target cluster version: some error",
 		},
 		{
 			"fails when sourceVersion and targetVersion have unsupported minor versions",
 			func(str string) (semver.Version, error) {
 				return semver.MustParse("6.8.0"), nil
 			},
-			"%s cluster version 6.8.0 is not supported.  The minimum required version is 6.9.0. We recommend the latest version.",
+			"source cluster version 6.8.0 is not supported.  The minimum required version is 6.9.0. We recommend the latest version.",
+			"target cluster version 6.8.0 is not supported.  The minimum required version is 6.9.0. We recommend the latest version.",
 		},
 		{
 			"fails when sourceVersion and targetVersion have unsupported major versions",
 			func(str string) (semver.Version, error) {
 				return semver.MustParse("0.0.0"), nil
 			},
-			"%s cluster version 0.0.0 is not supported.  The minimum required version is 5.28.0. We recommend the latest version.",
+			"source cluster version 0.0.0 is not supported.  The minimum required version is 5.28.0. We recommend the latest version.",
+			"target cluster version 0.0.0 is not supported.  The minimum required version is 6.9.0. We recommend the latest version.",
 		},
 	}
 
@@ -156,13 +159,11 @@ func TestValidateVersionsErrorCases(t *testing.T) {
 				t.Fatalf("got %d errors instead of 2", len(errs))
 			}
 
-			expected := fmt.Sprintf(c.expected, "source")
-			if errs[0].Error() != expected {
-				t.Errorf("got %s want %s", errs[0].Error(), expected)
+			if errs[0].Error() != c.expectedSource {
+				t.Errorf("got %s want %s", errs[0].Error(), c.expectedSource)
 			}
-			expected = fmt.Sprintf(c.expected, "target")
-			if errs[1].Error() != expected {
-				t.Errorf("got %s want %s", errs[1].Error(), expected)
+			if errs[1].Error() != c.expectedTarget {
+				t.Errorf("got %s want %s", errs[1].Error(), c.expectedTarget)
 			}
 		})
 	}
