@@ -439,8 +439,7 @@ func initialize() *cobra.Command {
 			})
 
 			st.RunCLISubstep(idl.Substep_CHECK_DISK_SPACE, func(streams step.OutStreams) error {
-				// TODO: rename from RunChecks to CheckDiskSpace?
-				return commanders.RunChecks(client, diskFreeRatio)
+				return commanders.CheckDiskSpace(client, diskFreeRatio)
 			})
 
 			st.RunHubSubstep(func(streams step.OutStreams) error {

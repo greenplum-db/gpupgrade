@@ -16,8 +16,15 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/disk"
 )
 
-func RunChecks(client idl.CliToHubClient, ratio float64) error {
-	return CheckDiskSpace(client, ratio)
+func CheckDiskSpace(client idl.CliToHubClient, ratio float64) (err error) {
+	reply, err := client.CheckDiskSpace(context.Background(), &idl.CheckDiskSpaceRequest{Ratio: ratio})
+	if err != nil {
+		return xerrors.Errorf("check disk space: %w", err)
+	}
+	if len(reply.Failed) > 0 {
+		return DiskSpaceError{reply.Failed}
+	}
+	return nil
 }
 
 type DiskSpaceError struct {
@@ -94,15 +101,4 @@ func (t tableRows) Less(i, j int) bool {
 
 func (t tableRows) Swap(i, j int) {
 	t[i], t[j] = t[j], t[i]
-}
-
-func CheckDiskSpace(client idl.CliToHubClient, ratio float64) (err error) {
-	reply, err := client.CheckDiskSpace(context.Background(), &idl.CheckDiskSpaceRequest{Ratio: ratio})
-	if err != nil {
-		return xerrors.Errorf("check disk space: %w", err)
-	}
-	if len(reply.Failed) > 0 {
-		return DiskSpaceError{reply.Failed}
-	}
-	return nil
 }
