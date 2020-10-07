@@ -75,10 +75,6 @@ func InitializeCreateCluster(client idl.CliToHubClient, verbose bool) (err error
 }
 
 func Execute(client idl.CliToHubClient, verbose bool) (*ExecuteResponse, error) {
-	fmt.Println()
-	fmt.Println("Execute in progress.")
-	fmt.Println()
-
 	stream, err := client.Execute(context.Background(), &idl.ExecuteRequest{})
 	if err != nil {
 		// TODO: Change the logging message?
@@ -98,10 +94,6 @@ func Execute(client idl.CliToHubClient, verbose bool) (*ExecuteResponse, error) 
 }
 
 func Finalize(client idl.CliToHubClient, verbose bool) (*FinalizeResponse, error) {
-	fmt.Println()
-	fmt.Println("Finalize in progress.")
-	fmt.Println()
-
 	stream, err := client.Finalize(context.Background(), &idl.FinalizeRequest{})
 	if err != nil {
 		gplog.Error(err.Error())
@@ -121,10 +113,6 @@ func Finalize(client idl.CliToHubClient, verbose bool) (*FinalizeResponse, error
 }
 
 func Revert(client idl.CliToHubClient, verbose bool) (*RevertResponse, error) {
-	fmt.Println()
-	fmt.Println("Revert in progress.")
-	fmt.Println()
-
 	stream, err := client.Revert(context.Background(), &idl.RevertRequest{})
 	if err != nil {
 		gplog.Error(err.Error())

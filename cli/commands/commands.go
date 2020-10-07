@@ -56,7 +56,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
-	"github.com/greenplum-db/gpupgrade/utils/stopwatch"
 )
 
 var (
@@ -393,96 +392,72 @@ func initialize() *cobra.Command {
 			// dump on failure.
 			cmd.SilenceUsage = true
 
-			// Past this point, we want any errors to be accompanied by helper
-			// text describing the next actions to take.
-			suggestRevert := true
-			defer func() {
+			st := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, verbose)
+
+			st.RunInternalSubstep(func() error {
+				err := cli.ValidateVersions(sourceGPHome, targetGPHome)
 				if err != nil {
-					// XXX work around an annoying UI nit: the error message is
-					// smashed against the failing substep without any vertical
-					// space. Ideally this would be handled by the "UI" logic as
-					// opposed to pushed into business logic.
-					fmt.Println()
-
-					err = cli.NewNextActions(err, "initialize", suggestRevert)
+					st.SetNextActions(false)
+					return err
 				}
-			}()
 
-			// Check for valid versions BEFORE running any initialize
-			// implementation code; why boot a hub if the versions are wrong?
-			if err := cli.ValidateVersions(sourceGPHome, targetGPHome); err != nil {
-				suggestRevert = false
-				return err
-			}
-
-			fmt.Println()
-			fmt.Println("Initialize in progress.")
-			fmt.Println()
-
-			timer := stopwatch.Start()
-			operation := strings.Title(strings.ToLower(idl.Step_INITIALIZE.String()))
-			defer func() {
-				if err != nil {
-					commanders.LogDuration(operation, verbose, timer.Stop())
-				}
-			}()
-
-			s := commanders.NewSubstep(idl.Substep_CREATING_DIRECTORIES, verbose)
-			err = commanders.CreateStateDir()
-			s.Finish(&err)
-			if err != nil {
-				return xerrors.Errorf("create state directory: %w", err)
-			}
-
-			err = commanders.CreateInitialClusterConfigs(hubPort)
-			if err != nil {
-				return xerrors.Errorf("create initial cluster configs: %w", err)
-			}
-
-			s = commanders.NewSubstep(idl.Substep_START_HUB, verbose)
-			err = commanders.StartHub()
-			s.Finish(&err)
-			if err != nil {
-				return xerrors.Errorf("start hub: %w", err)
-			}
-
-			client, err := connectToHub()
-			if err != nil {
-				return err
-			}
-
-			request := &idl.InitializeRequest{
-				AgentPort:    int32(agentPort),
-				SourceGPHome: filepath.Clean(sourceGPHome),
-				TargetGPHome: filepath.Clean(targetGPHome),
-				SourcePort:   int32(sourcePort),
-				UseLinkMode:  linkMode,
-				Ports:        ports,
-			}
-			err = commanders.Initialize(client, request, verbose)
-			if err != nil {
-				return xerrors.Errorf("initialize hub: %w", err)
-			}
-
-			s = commanders.NewSubstep(idl.Substep_CHECK_DISK_SPACE, verbose)
-			err = commanders.RunChecks(client, diskFreeRatio)
-			s.Finish(&err)
-			if err != nil {
-				return err
-			}
-
-			if stopBeforeClusterCreation {
 				return nil
-			}
+			})
 
-			err = commanders.InitializeCreateCluster(client, verbose)
-			if err != nil {
-				return xerrors.Errorf("initialize create cluster: %w", err)
-			}
+			st.RunInternalSubstep(func() error {
+				return commanders.CreateStateDir()
+			})
 
-			commanders.LogDuration(operation, verbose, timer.Stop())
+			st.RunInternalSubstep(func() error {
+				return commanders.CreateInitialClusterConfigs(hubPort)
+			})
 
-			fmt.Print(`
+			st.RunCLISubstep(idl.Substep_START_HUB, func(streams step.OutStreams) error {
+				return commanders.StartHub()
+			})
+
+			var client idl.CliToHubClient
+			st.RunHubSubstep(func(streams step.OutStreams) error {
+				client, err = connectToHub()
+				if err != nil {
+					return err
+				}
+
+				request := &idl.InitializeRequest{
+					AgentPort:    int32(agentPort),
+					SourceGPHome: filepath.Clean(sourceGPHome),
+					TargetGPHome: filepath.Clean(targetGPHome),
+					SourcePort:   int32(sourcePort),
+					UseLinkMode:  linkMode,
+					Ports:        ports,
+				}
+				err = commanders.Initialize(client, request, verbose)
+				if err != nil {
+					return xerrors.Errorf("initialize hub: %w", err)
+				}
+
+				return nil
+			})
+
+			st.RunCLISubstep(idl.Substep_CHECK_DISK_SPACE, func(streams step.OutStreams) error {
+				// TODO: rename from RunChecks to CheckDiskSpace?
+				return commanders.RunChecks(client, diskFreeRatio)
+			})
+
+			st.RunHubSubstep(func(streams step.OutStreams) error {
+				if stopBeforeClusterCreation {
+					return step.Skip
+				}
+
+				err = commanders.InitializeCreateCluster(client, verbose)
+				if err != nil {
+					return xerrors.Errorf("initialize create cluster: %w", err)
+				}
+
+				return nil
+			})
+
+			return st.Complete(`
 Initialize completed successfully.
 
 NEXT ACTIONS
@@ -492,8 +467,6 @@ followed by "gpupgrade finalize".
 
 To return the cluster to its original state, run "gpupgrade revert".
 `)
-
-			return nil
 		},
 	}
 	subInit.Flags().StringVarP(&file, "file", "f", "", "the configuration file to use")
@@ -520,28 +493,25 @@ func execute() *cobra.Command {
 		Long:  ExecuteHelp,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			cmd.SilenceUsage = true
+			var response *commanders.ExecuteResponse
 
-			timer := stopwatch.Start()
-			operation := strings.Title(strings.ToLower(idl.Step_EXECUTE.String()))
-			defer func() {
+			st := commanders.NewStep(idl.Step_EXECUTE, &step.BufferedStreams{}, verbose)
+
+			st.RunHubSubstep(func(streams step.OutStreams) error {
+				client, err := connectToHub()
 				if err != nil {
-					commanders.LogDuration(operation, verbose, timer.Stop())
+					return err
 				}
-			}()
 
-			client, err := connectToHub()
-			if err != nil {
-				return err
-			}
+				response, err = commanders.Execute(client, verbose)
+				if err != nil {
+					return err
+				}
 
-			response, err := commanders.Execute(client, verbose)
-			if err != nil {
-				return err
-			}
+				return nil
+			})
 
-			commanders.LogDuration(operation, verbose, timer.Stop())
-
-			message := fmt.Sprintf(`
+			return st.Complete(fmt.Sprintf(`
 Execute completed successfully.
 
 The target cluster is now running. The PGPORT is %s and the 
@@ -559,10 +529,7 @@ If you are satisfied with the state of the cluster, run "gpupgrade finalize"
 to proceed with the upgrade.
 
 To return the cluster to its original state, run "gpupgrade revert".
-`, response.TargetPort, response.TargetMasterDataDir)
-
-			fmt.Print(message)
-			return nil
+`, response.TargetPort, response.TargetMasterDataDir))
 		},
 	}
 
@@ -579,33 +546,29 @@ func finalize() *cobra.Command {
 		Short: "finalizes the cluster after upgrade execution",
 		Long:  FinalizeHelp,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			timer := stopwatch.Start()
-			operation := strings.Title(strings.ToLower(idl.Step_FINALIZE.String()))
-			defer func() {
+			var response *commanders.FinalizeResponse
+
+			st := commanders.NewStep(idl.Step_FINALIZE, &step.BufferedStreams{}, verbose)
+
+			st.RunHubSubstep(func(streams step.OutStreams) error {
+				client, err := connectToHub()
 				if err != nil {
-					commanders.LogDuration(operation, verbose, timer.Stop())
+					return err
 				}
-			}()
 
-			client, err := connectToHub()
-			if err != nil {
-				return err
-			}
-			response, err := commanders.Finalize(client, verbose)
-			if err != nil {
-				return err
-			}
+				response, err = commanders.Finalize(client, verbose)
+				if err != nil {
+					return err
+				}
 
-			commanders.LogDuration(operation, verbose, timer.Stop())
+				return nil
+			})
 
-			message := fmt.Sprintf(`
+			return st.Complete(fmt.Sprintf(`
 Finalize completed successfully.
 
 The target cluster is now upgraded and is ready to be used. The PGPORT is %s and the MASTER_DATA_DIRECTORY is %s.
-`, response.TargetPort, response.TargetMasterDataDir)
-
-			fmt.Print(message)
-			return nil
+`, response.TargetPort, response.TargetMasterDataDir))
 		},
 	}
 
@@ -622,46 +585,33 @@ func revert() *cobra.Command {
 		Short: "reverts the upgrade and returns the cluster to its original state",
 		Long:  RevertHelp,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			timer := stopwatch.Start()
-			operation := strings.Title(strings.ToLower(idl.Step_REVERT.String()))
-			defer func() {
+			var response *commanders.RevertResponse
+
+			st := commanders.NewStep(idl.Step_REVERT, &step.BufferedStreams{}, verbose)
+
+			st.RunHubSubstep(func(streams step.OutStreams) error {
+				client, err := connectToHub()
 				if err != nil {
-					commanders.LogDuration(operation, verbose, timer.Stop())
+					return err
 				}
-			}()
 
-			client, err := connectToHub()
-			if err != nil {
-				return err
-			}
+				response, err = commanders.Revert(client, verbose)
+				if err != nil {
+					return err
+				}
 
-			response, err := commanders.Revert(client, verbose)
-			if err != nil {
-				return err
-			}
+				return nil
+			})
 
-			s := commanders.NewSubstep(idl.Substep_STOP_HUB_AND_AGENTS, verbose)
-			err = stopHubAndAgents(false)
-			s.Finish(&err)
-			if err != nil {
-				return err
-			}
+			st.RunCLISubstep(idl.Substep_STOP_HUB_AND_AGENTS, func(streams step.OutStreams) error {
+				return stopHubAndAgents(false)
+			})
 
-			s = commanders.NewSubstep(idl.Substep_DELETE_MASTER_STATEDIR, verbose)
-			streams := &step.BufferedStreams{}
-			err = upgrade.DeleteDirectories([]string{utils.GetStateDir()}, upgrade.StateDirectoryFiles, streams)
-			if verbose {
-				os.Stdout.Write(streams.StdoutBuf.Bytes())
-				os.Stdout.Write(streams.StderrBuf.Bytes())
-			}
-			s.Finish(&err)
-			if err != nil {
-				return err
-			}
+			st.RunCLISubstep(idl.Substep_DELETE_MASTER_STATEDIR, func(streams step.OutStreams) error {
+				return upgrade.DeleteDirectories([]string{utils.GetStateDir()}, upgrade.StateDirectoryFiles, streams)
+			})
 
-			commanders.LogDuration(operation, verbose, timer.Stop())
-
-			fmt.Printf(`
+			return st.Complete(fmt.Sprintf(`
 Revert completed successfully.
 
 Reverted to source cluster version %s.
@@ -678,9 +628,7 @@ To restart the upgrade, run "gpupgrade initialize" again.
 
 To use the reverted cluster, you must recreate any tables, indexes, and/or 
 roles that were dropped or altered to pass the pg_upgrade checks.
-`, response.Version, response.SourcePort, response.SourceMasterDataDir, response.ArchiveDir)
-
-			return nil
+`, response.Version, response.SourcePort, response.SourceMasterDataDir, response.ArchiveDir))
 		},
 	}
 
