@@ -4,20 +4,8 @@
 package commanders
 
 import (
-	"errors"
-	"fmt"
-
 	"github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/step"
-	"github.com/greenplum-db/gpupgrade/utils/stopwatch"
 )
-
-type substep struct {
-	name    idl.Substep
-	text    substepText
-	verbose bool
-	timer   *stopwatch.Stopwatch
-}
 
 type substepText struct {
 	OutputText string
@@ -55,50 +43,4 @@ var SubstepDescriptions = map[idl.Substep]substepText{
 	idl.Substep_START_SOURCE_CLUSTER:                     substepText{"Starting source cluster...", "Start source cluster"},
 	idl.Substep_RESTORE_PGCONTROL:                        substepText{"Re-enabling source cluster...", "Re-enable source cluster"},
 	idl.Substep_RECOVERSEG_SOURCE_CLUSTER:                substepText{"Recovering source cluster mirrors...", "Recover source cluster mirrors"},
-}
-
-// NewSubstep prints out an "in progress" marker for the given substep description,
-// and returns a struct that can be .Finish()d (in a defer statement) to print
-// the final complete/failed state.
-func NewSubstep(step idl.Substep, verbose bool) *substep {
-	substepText := SubstepDescriptions[step]
-	fmt.Printf("%s\r", Format(substepText.OutputText, idl.Status_RUNNING))
-
-	return &substep{
-		name:    step,
-		text:    substepText,
-		verbose: verbose,
-		timer:   stopwatch.Start(),
-	}
-}
-
-// Finish prints out the final status of the substep; either COMPLETE or FAILED
-// depending on whether or not there is an error. The method takes a pointer to
-// error rather than error to make it possible to defer:
-//
-//    func runSubstep() (err error) {
-//        s := NewSubstep("Doing something...")
-//        defer s.Finish(&err)
-//
-//        ...
-//    }
-//
-// As a special case, passing the step.Skip sentinel will report SKIPPED in the
-// UI and reset the passed err to nil.
-//
-func (s *substep) Finish(err *error) {
-	status := idl.Status_COMPLETE
-
-	switch {
-	case errors.Is(*err, step.Skip):
-		status = idl.Status_SKIPPED
-		*err = nil
-
-	case *err != nil:
-		status = idl.Status_FAILED
-	}
-
-	fmt.Printf("%s\n", Format(s.text.OutputText, status))
-
-	LogDuration(s.name.String(), s.verbose, s.timer.Stop())
 }
