@@ -72,12 +72,12 @@ func (f *FileStore) Read(step idl.Step, substep idl.Substep) (idl.Status, error)
 		return idl.Status_UNKNOWN_STATUS, err
 	}
 
-	sectionMap, ok := steps[step.String()]
+	substeps, ok := steps[step.String()]
 	if !ok {
 		return idl.Status_UNKNOWN_STATUS, nil
 	}
 
-	status, ok := sectionMap[substep.String()]
+	status, ok := substeps[substep.String()]
 	if !ok {
 		return idl.Status_UNKNOWN_STATUS, nil
 	}

@@ -29,16 +29,16 @@ func TestFileStore(t *testing.T) {
 	path := filepath.Join(tmpDir, "status.json")
 	fs := step.NewFileStore(path)
 
-	const section = idl.Step_INITIALIZE
+	const step = idl.Step_INITIALIZE
 
 	t.Run("bubbles up any read failures", func(t *testing.T) {
-		_, err := fs.Read(section, idl.Substep_CHECK_UPGRADE)
+		_, err := fs.Read(step, idl.Substep_CHECK_UPGRADE)
 
 		if !os.IsNotExist(err) {
 			t.Errorf("returned error %#v, want ErrNotExist", err)
 		}
 
-		ran, err := fs.HasStepRun(section)
+		ran, err := fs.HasStepRun(step)
 		if !os.IsNotExist(err) {
 			t.Errorf("returned error %#v, want ErrNotExist", err)
 		}
@@ -53,12 +53,12 @@ func TestFileStore(t *testing.T) {
 		substep := idl.Substep_CHECK_UPGRADE
 		expected := idl.Status_COMPLETE
 
-		err := fs.Write(section, substep, expected)
+		err := fs.Write(step, substep, expected)
 		if err != nil {
 			t.Fatalf("Write() returned error %#v", err)
 		}
 
-		status, err := fs.Read(section, substep)
+		status, err := fs.Read(step, substep)
 		if err != nil {
 			t.Errorf("Read() returned error %#v", err)
 		}
@@ -66,7 +66,7 @@ func TestFileStore(t *testing.T) {
 			t.Errorf("read %v, want %v", status, expected)
 		}
 
-		ran, err := fs.HasStepRun(section)
+		ran, err := fs.HasStepRun(step)
 		if err != nil {
 			t.Errorf("HasStepRun() returned error %#v", err)
 		}
@@ -83,42 +83,42 @@ func TestFileStore(t *testing.T) {
 		}
 	})
 
-	t.Run("can write to the same substep in different sections", func(t *testing.T) {
+	t.Run("can write to the same substep in different steps", func(t *testing.T) {
 		clear(t, path)
 
 		substep := idl.Substep_CHECK_UPGRADE
 		entries := []struct {
-			Section idl.Step
-			Status  idl.Status
+			Step   idl.Step
+			Status idl.Status
 		}{
-			{Section: idl.Step_INITIALIZE, Status: idl.Status_FAILED},
-			{Section: idl.Step_EXECUTE, Status: idl.Status_COMPLETE},
+			{Step: idl.Step_INITIALIZE, Status: idl.Status_FAILED},
+			{Step: idl.Step_EXECUTE, Status: idl.Status_COMPLETE},
 		}
 
 		for _, e := range entries {
-			err := fs.Write(e.Section, substep, e.Status)
+			err := fs.Write(e.Step, substep, e.Status)
 			if err != nil {
 				t.Fatalf("Write(%q, %v, %v) returned error %+v",
-					e.Section, substep, e.Status, err)
+					e.Step, substep, e.Status, err)
 			}
 		}
 
 		for _, e := range entries {
-			status, err := fs.Read(e.Section, substep)
+			status, err := fs.Read(e.Step, substep)
 			if err != nil {
-				t.Errorf("Read(%q, %v) returned error %#v", e.Section, substep, err)
+				t.Errorf("Read(%q, %v) returned error %#v", e.Step, substep, err)
 			}
 			if status != e.Status {
-				t.Errorf("Read(%q, %v) = %v, want %v", e.Section, substep,
+				t.Errorf("Read(%q, %v) = %v, want %v", e.Step, substep,
 					status, e.Status)
 			}
 		}
 	})
 
-	t.Run("returns unknown status if requested section has not been written", func(t *testing.T) {
+	t.Run("returns unknown status if requested step has not been written", func(t *testing.T) {
 		clear(t, path)
 
-		status, err := fs.Read(section, idl.Substep_INIT_TARGET_CLUSTER)
+		status, err := fs.Read(step, idl.Substep_INIT_TARGET_CLUSTER)
 		if err != nil {
 			t.Errorf("Read() returned error %#v", err)
 		}
@@ -129,15 +129,15 @@ func TestFileStore(t *testing.T) {
 		}
 	})
 
-	t.Run("returns unknown status if substep was not written to the requested section", func(t *testing.T) {
+	t.Run("returns unknown status if substep was not written to the requested step", func(t *testing.T) {
 		clear(t, path)
 
-		err := fs.Write(section, idl.Substep_CHECK_UPGRADE, idl.Status_FAILED)
+		err := fs.Write(step, idl.Substep_CHECK_UPGRADE, idl.Status_FAILED)
 		if err != nil {
 			t.Fatalf("Write() returned error %+v", err)
 		}
 
-		status, err := fs.Read(section, idl.Substep_INIT_TARGET_CLUSTER)
+		status, err := fs.Read(step, idl.Substep_INIT_TARGET_CLUSTER)
 		if err != nil {
 			t.Errorf("Read() returned error %#v", err)
 		}
@@ -148,7 +148,7 @@ func TestFileStore(t *testing.T) {
 		}
 	})
 
-	t.Run("returns unknown status if substep was written to a different section", func(t *testing.T) {
+	t.Run("returns unknown status if substep was written to a different step", func(t *testing.T) {
 		clear(t, path)
 
 		err := fs.Write(idl.Step_FINALIZE, idl.Substep_INIT_TARGET_CLUSTER, idl.Status_FAILED)
@@ -156,7 +156,7 @@ func TestFileStore(t *testing.T) {
 			t.Fatalf("Write() returned error %+v", err)
 		}
 
-		status, err := fs.Read(section, idl.Substep_INIT_TARGET_CLUSTER)
+		status, err := fs.Read(step, idl.Substep_INIT_TARGET_CLUSTER)
 		if err != nil {
 			t.Errorf("Read() returned error %#v", err)
 		}
@@ -170,7 +170,7 @@ func TestFileStore(t *testing.T) {
 	t.Run("uses human-readable serialization", func(t *testing.T) {
 		substep := idl.Substep_INIT_TARGET_CLUSTER
 		status := idl.Status_FAILED
-		if err := fs.Write(section, substep, status); err != nil {
+		if err := fs.Write(step, substep, status); err != nil {
 			t.Fatalf("Write(): %+v", err)
 		}
 
@@ -187,8 +187,8 @@ func TestFileStore(t *testing.T) {
 		}
 
 		key := substep.String()
-		if raw[section.String()][key] != status.String() {
-			t.Errorf("status[%q][%q] = %q, want %q", section, key, raw[section.String()][key], status.String())
+		if raw[step.String()][key] != status.String() {
+			t.Errorf("status[%q][%q] = %q, want %q", step, key, raw[step.String()][key], status.String())
 		}
 	})
 }
