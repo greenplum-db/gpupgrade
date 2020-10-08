@@ -13,6 +13,7 @@ import (
 )
 
 type Store interface {
+	HasStepRun(idl.Step) (bool, error)
 	Read(idl.Step, idl.Substep) (idl.Status, error)
 	Write(idl.Step, idl.Substep, idl.Status) error
 }
@@ -82,6 +83,20 @@ func (f *FileStore) Read(step idl.Step, substep idl.Substep) (idl.Status, error)
 	}
 
 	return status.Status, nil
+}
+
+func (f *FileStore) HasStepRun(step idl.Step) (bool, error) {
+	steps, err := f.load()
+	if err != nil {
+		return false, err
+	}
+
+	_, ok := steps[step.String()]
+	if !ok {
+		return false, nil
+	}
+
+	return true, nil
 }
 
 // Write atomically updates the status file.

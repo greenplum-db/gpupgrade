@@ -92,6 +92,16 @@ func GetStatusFile(stateDir string) (path string, err error) {
 	return path, nil
 }
 
+func HasStepRun(step idl.Step) (bool, error) {
+	path, err := GetStatusFile(utils.GetStateDir())
+	if err != nil {
+		return false, xerrors.Errorf("status file: %w", err)
+	}
+
+	store := NewFileStore(path)
+	return store.HasStepRun(step)
+}
+
 func HasRun(step idl.Step, substep idl.Substep) (bool, error) {
 	path, err := GetStatusFile(utils.GetStateDir())
 	if err != nil {

@@ -318,9 +318,16 @@ func TestHasRun(t *testing.T) {
 			if err != nil {
 				t.Errorf("HasRun returned error %+v", err)
 			}
-
 			if !hasRun {
 				t.Errorf("expected substep to have been run")
+			}
+
+			hasRun, err = step.HasStepRun(idl.Step_INITIALIZE)
+			if err != nil {
+				t.Errorf("HasStepRun returned error %+v", err)
+			}
+			if !hasRun {
+				t.Errorf("expected step to have been run")
 			}
 		})
 	}
@@ -334,9 +341,16 @@ func TestHasRun(t *testing.T) {
 		if !errors.As(err, &expected) {
 			t.Errorf("returned error %#v want %#v", err, expected)
 		}
-
 		if hasRun {
 			t.Errorf("expected substep to not have been run")
+		}
+
+		hasRun, err = step.HasStepRun(idl.Step_INITIALIZE)
+		if !errors.As(err, &expected) {
+			t.Errorf("returned error %#v want %#v", err, expected)
+		}
+		if hasRun {
+			t.Errorf("expected step to not have been run")
 		}
 	})
 
@@ -354,9 +368,16 @@ func TestHasRun(t *testing.T) {
 		if err == nil {
 			t.Errorf("expected error %#v got nil", err)
 		}
-
 		if hasRun {
 			t.Errorf("expected substep to not have been run")
+		}
+
+		hasRun, err = step.HasStepRun(idl.Step_INITIALIZE)
+		if err == nil {
+			t.Errorf("expected error %#v got nil", err)
+		}
+		if hasRun {
+			t.Errorf("expected step to not have been run")
 		}
 	})
 
@@ -374,9 +395,16 @@ func TestHasRun(t *testing.T) {
 		if err != nil {
 			t.Errorf("HasRun returned error %+v", err)
 		}
-
 		if hasRan {
 			t.Errorf("expected substep to not have been run")
+		}
+
+		hasRan, err = step.HasStepRun(idl.Step_FINALIZE)
+		if err != nil {
+			t.Errorf("HasStepRun returned error %+v", err)
+		}
+		if hasRan {
+			t.Errorf("expected step to not have been run")
 		}
 	})
 }
@@ -466,4 +494,8 @@ func (t *TestStore) Read(_ idl.Step, substep idl.Substep) (idl.Status, error) {
 func (t *TestStore) Write(_ idl.Step, substep idl.Substep, status idl.Status) (err error) {
 	t.Status = status
 	return t.WriteErr
+}
+
+func (t *TestStore) HasStepRun(step idl.Step) (bool, error) {
+	return false, nil
 }

@@ -37,6 +37,14 @@ func TestFileStore(t *testing.T) {
 		if !os.IsNotExist(err) {
 			t.Errorf("returned error %#v, want ErrNotExist", err)
 		}
+
+		ran, err := fs.HasStepRun(section)
+		if !os.IsNotExist(err) {
+			t.Errorf("returned error %#v, want ErrNotExist", err)
+		}
+		if ran {
+			t.Errorf("expected step to not be run")
+		}
 	})
 
 	t.Run("reads the same status that was written", func(t *testing.T) {
@@ -56,6 +64,22 @@ func TestFileStore(t *testing.T) {
 		}
 		if status != expected {
 			t.Errorf("read %v, want %v", status, expected)
+		}
+
+		ran, err := fs.HasStepRun(section)
+		if err != nil {
+			t.Errorf("HasStepRun() returned error %#v", err)
+		}
+		if !ran {
+			t.Errorf("expected step to be run")
+		}
+
+		ran, err = fs.HasStepRun(idl.Step_UNKNOWN_STEP)
+		if err != nil {
+			t.Errorf("HasStepRun() returned error %#v", err)
+		}
+		if ran {
+			t.Errorf("expected unknown step to not be run")
 		}
 	})
 
