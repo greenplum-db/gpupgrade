@@ -491,7 +491,7 @@ func execute() *cobra.Command {
 		Long:  ExecuteHelp,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			cmd.SilenceUsage = true
-			var response *commanders.ExecuteResponse
+			var response commanders.ExecuteResponse
 
 			st := commanders.NewStep(idl.Step_EXECUTE, &step.BufferedStreams{}, verbose)
 
@@ -544,7 +544,7 @@ func finalize() *cobra.Command {
 		Short: "finalizes the cluster after upgrade execution",
 		Long:  FinalizeHelp,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			var response *commanders.FinalizeResponse
+			var response commanders.FinalizeResponse
 
 			st := commanders.NewStep(idl.Step_FINALIZE, &step.BufferedStreams{}, verbose)
 
@@ -583,7 +583,7 @@ func revert() *cobra.Command {
 		Short: "reverts the upgrade and returns the cluster to its original state",
 		Long:  RevertHelp,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			var response *commanders.RevertResponse
+			var response commanders.RevertResponse
 
 			st := commanders.NewStep(idl.Step_REVERT, &step.BufferedStreams{}, verbose)
 

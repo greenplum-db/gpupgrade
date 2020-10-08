@@ -74,57 +74,57 @@ func InitializeCreateCluster(client idl.CliToHubClient, verbose bool) (err error
 	return nil
 }
 
-func Execute(client idl.CliToHubClient, verbose bool) (*ExecuteResponse, error) {
+func Execute(client idl.CliToHubClient, verbose bool) (ExecuteResponse, error) {
 	stream, err := client.Execute(context.Background(), &idl.ExecuteRequest{})
 	if err != nil {
 		// TODO: Change the logging message?
 		gplog.Error("ERROR - Unable to connect to hub")
-		return &ExecuteResponse{}, err
+		return ExecuteResponse{}, err
 	}
 
 	response, err := UILoop(stream, verbose)
 	if err != nil {
-		return &ExecuteResponse{}, xerrors.Errorf("Execute: %w", err)
+		return ExecuteResponse{}, xerrors.Errorf("Execute: %w", err)
 	}
 
-	return &ExecuteResponse{
+	return ExecuteResponse{
 		TargetPort:          response[idl.ResponseKey_target_port.String()],
 		TargetMasterDataDir: response[idl.ResponseKey_target_master_data_directory.String()],
 	}, nil
 }
 
-func Finalize(client idl.CliToHubClient, verbose bool) (*FinalizeResponse, error) {
+func Finalize(client idl.CliToHubClient, verbose bool) (FinalizeResponse, error) {
 	stream, err := client.Finalize(context.Background(), &idl.FinalizeRequest{})
 	if err != nil {
 		gplog.Error(err.Error())
-		return &FinalizeResponse{}, err
+		return FinalizeResponse{}, err
 	}
 
 	response, err := UILoop(stream, verbose)
 	if err != nil {
-		return &FinalizeResponse{}, xerrors.Errorf("Finalize: %w", err)
+		return FinalizeResponse{}, xerrors.Errorf("Finalize: %w", err)
 	}
 
-	return &FinalizeResponse{
+	return FinalizeResponse{
 			TargetPort:          response[idl.ResponseKey_target_port.String()],
 			TargetMasterDataDir: response[idl.ResponseKey_target_master_data_directory.String()],
 		},
 		nil
 }
 
-func Revert(client idl.CliToHubClient, verbose bool) (*RevertResponse, error) {
+func Revert(client idl.CliToHubClient, verbose bool) (RevertResponse, error) {
 	stream, err := client.Revert(context.Background(), &idl.RevertRequest{})
 	if err != nil {
 		gplog.Error(err.Error())
-		return &RevertResponse{}, err
+		return RevertResponse{}, err
 	}
 
 	response, err := UILoop(stream, verbose)
 	if err != nil {
-		return &RevertResponse{}, xerrors.Errorf("Revert: %w", err)
+		return RevertResponse{}, xerrors.Errorf("Revert: %w", err)
 	}
 
-	return &RevertResponse{
+	return RevertResponse{
 		SourcePort:          response[idl.ResponseKey_source_port.String()],
 		SourceMasterDataDir: response[idl.ResponseKey_source_master_data_directory.String()],
 		Version:             response[idl.ResponseKey_source_version.String()],
