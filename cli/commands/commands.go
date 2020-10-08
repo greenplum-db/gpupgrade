@@ -72,7 +72,7 @@ func init() {
 		idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG,
 		idl.Substep_START_AGENTS,
 		idl.Substep_CHECK_DISK_SPACE,
-		idl.Substep_CREATE_TARGET_CONFIG,
+		idl.Substep_GENERATE_TARGET_CONFIG,
 		idl.Substep_INIT_TARGET_CLUSTER,
 		idl.Substep_SHUTDOWN_TARGET_CLUSTER,
 		idl.Substep_BACKUP_TARGET_MASTER,

@@ -73,7 +73,7 @@ func (s *Server) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest,
 		}
 	}()
 
-	st.Run(idl.Substep_CREATE_TARGET_CONFIG, func(_ step.OutStreams) error {
+	st.Run(idl.Substep_GENERATE_TARGET_CONFIG, func(_ step.OutStreams) error {
 		return s.GenerateInitsystemConfig()
 	})
 
