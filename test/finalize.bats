@@ -54,7 +54,7 @@ upgrade_cluster() {
 
         # upgrade on 6-6 does not work due to a bug in pg_upgrade
         if is_GPDB5 "$GPHOME_SOURCE"; then
-            create_tablespace_with_table
+            create_tablespace_with_tables
         fi
 
         gpupgrade initialize \

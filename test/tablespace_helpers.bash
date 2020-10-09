@@ -21,8 +21,8 @@ _query_5X_host_dbid_datadirs() {
 }
 
 # This is 5X-only due to a bug in pg_upgrade for 6-6
-create_tablespace_with_table() {
-    local tablespace_table=${1:-batsTable}
+create_tablespace_with_tables() {
+    local tablespace_table_prefix=${1:-batsTable}
     local tablespace_dir entries
 
     # the tablespace directory will get deleted when the STATE_DIR is deleted in teardown()
@@ -52,28 +52,55 @@ create_tablespace_with_table() {
     # create a tablespace in said filespace and a table in that tablespace
     "${GPHOME_SOURCE}"/bin/psql -d postgres -v ON_ERROR_STOP=1 <<- EOF
 				CREATE TABLESPACE batsTbsp FILESPACE batsFS;
-				CREATE TABLE "$tablespace_table"(a int) TABLESPACE batsTbsp;
-				INSERT INTO "$tablespace_table" SELECT i from generate_series(1,100)i;
+				CREATE TABLE "${tablespace_table_prefix}_0" (a int) TABLESPACE batsTbsp;
+				INSERT INTO "${tablespace_table_prefix}_0" SELECT i from generate_series(1,100)i;
+
+				CREATE TABLE "${tablespace_table_prefix}_1" (a int) WITH(appendonly=true, orientation=row) TABLESPACE batsTbsp;
+				INSERT INTO "${tablespace_table_prefix}_1" SELECT i from generate_series(1,100)i;
+
+				CREATE TABLE "${tablespace_table_prefix}_2" (a int) WITH(appendonly=true, orientation=column) TABLESPACE batsTbsp;
+				INSERT INTO "${tablespace_table_prefix}_2" SELECT i from generate_series(1,100)i;
+
+				CREATE TABLE  "${tablespace_table_prefix}_3" (a int, b int) WITH(appendonly=true, orientation=column) TABLESPACE batsTbsp
+				    PARTITION BY RANGE(b) (START(1) END(4) EVERY(1));
+				INSERT INTO "${tablespace_table_prefix}_3" SELECT i, (i%3)+1 FROM generate_series(1,100)i;
 EOF
 }
 
 # This is 5X-only
 delete_tablespace_data() {
-   local tablespace_table=${1:-batsTable}
+   local tablespace_table_prefix=${1:-batsTable}
 
     "${GPHOME_SOURCE}"/bin/psql -d postgres -v ON_ERROR_STOP=1 <<- EOF
-				DROP TABLE IF EXISTS "$tablespace_table";
+				DROP TABLE IF EXISTS "${tablespace_table_prefix}_0";
+				DROP TABLE IF EXISTS "${tablespace_table_prefix}_1";
+				DROP TABLE IF EXISTS "${tablespace_table_prefix}_2";
+				DROP TABLE IF EXISTS "${tablespace_table_prefix}_3";
 				DROP TABLESPACE IF EXISTS batsTbsp;
 				DROP FILESPACE IF EXISTS batsFS;
 EOF
 }
 
+truncate_tablespace_data() {
+       local tablespace_table_prefix=${1:-batsTable}
+       local port=$2
+
+    "${GPHOME_SOURCE}"/bin/psql -p "$port" -d postgres -v ON_ERROR_STOP=1 <<- EOF
+				TRUNCATE "${tablespace_table_prefix}_0";
+				TRUNCATE "${tablespace_table_prefix}_1";
+				TRUNCATE "${tablespace_table_prefix}_2";
+				TRUNCATE "${tablespace_table_prefix}_3";
+EOF
+}
+
 check_tablespace_data() {
-    local tablespace_table=${1:-batsTable}
+    local tablespace_table_prefix=${1:-batsTable}
 
     local rows
-    rows=$("$GPHOME_TARGET"/bin/psql -d postgres -Atc "SELECT COUNT(*) FROM \"$tablespace_table\";")
-    if (( rows != 100 )); then
-        fail "failed verifying tablespaces. $tablespace_table got $rows want 100"
-    fi
+    for table in "${tablespace_table_prefix}_0" "${tablespace_table_prefix}_1" "${tablespace_table_prefix}_2" "${tablespace_table_prefix}_3"; do
+        rows=$("$GPHOME_TARGET"/bin/psql -d postgres -Atc "SELECT COUNT(*) FROM \"$table\";")
+        if (( rows != 100 )); then
+            fail "failed verifying tablespaces. $table got $rows want 100"
+        fi
+    done
 }

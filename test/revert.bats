@@ -153,9 +153,9 @@ test_revert_after_execute() {
 
     # Add a tablespace, which only works when upgrading from 5X.
     if is_GPDB5 "$GPHOME_SOURCE"; then
-        local tablespace_table="tablespace_table"
-        create_tablespace_with_table "$tablespace_table"
-        register_teardown delete_tablespace_data "$tablespace_table"
+        local tablespace_table_prefix="tablespace_table"
+        create_tablespace_with_tables "$tablespace_table_prefix"
+        register_teardown delete_tablespace_data "$tablespace_table_prefix"
     fi
 
     # Add a table
@@ -164,6 +164,12 @@ test_revert_after_execute() {
     register_teardown $PSQL postgres -c "DROP TABLE ${TABLE}"
 
     $PSQL postgres -c "INSERT INTO ${TABLE} VALUES (1), (2), (3)"
+
+    MIGRATION_DIR=`mktemp -d /tmp/migration.XXXXXX`
+    register_teardown rm -r "$MIGRATION_DIR"
+
+    "$GPHOME_SOURCE"/bin/pg_dump --schema-only postgres -f "$MIGRATION_DIR"/before.sql
+
 
     gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
@@ -181,7 +187,7 @@ test_revert_after_execute() {
     # Modify the table in the tablespace on the target cluster
     # Note: tablespace only work when upgrading from 5X.
     if is_GPDB5 "$GPHOME_SOURCE"; then
-        $PSQL -p $target_master_port postgres -c "TRUNCATE $tablespace_table"
+        truncate_tablespace_data "$tablespace_table_prefix" "$target_master_port"
     fi
 
     # Revert
@@ -194,8 +200,11 @@ test_revert_after_execute() {
     fi
 
     if is_GPDB5 "$GPHOME_SOURCE"; then
-        check_tablespace_data "$tablespace_table"
+        check_tablespace_data "$tablespace_table_prefix"
     fi
+
+    "$GPHOME_SOURCE"/bin/pg_dump --schema-only postgres -f "$MIGRATION_DIR"/after.sql
+    diff -U3 --speed-large-files "$MIGRATION_DIR"/before.sql "$MIGRATION_DIR"/after.sql
 
     # Verify marker files on primaries
     primaries=$(query_host_datadirs $GPHOME_SOURCE $PGPORT "role='p'")
@@ -347,9 +356,9 @@ test_revert_after_execute_pg_upgrade_failure() {
 
     # Add a tablespace, which only works when upgrading from 5X.
     if is_GPDB5 "$GPHOME_SOURCE"; then
-        local tablespace_table="tablespace_table"
-        create_tablespace_with_table "$tablespace_table"
-        register_teardown delete_tablespace_data "$tablespace_table"
+        local tablespace_table_prefix="tablespace_table"
+        create_tablespace_with_tables $tablespace_table_prefix
+        register_teardown delete_tablespace_data "$tablespace_table_prefix"
     fi
 
     # Add a table
@@ -358,6 +367,11 @@ test_revert_after_execute_pg_upgrade_failure() {
     register_teardown $PSQL postgres -c "DROP TABLE ${TABLE}"
 
     $PSQL postgres -c "INSERT INTO ${TABLE} VALUES (1), (2), (3)"
+
+    MIGRATION_DIR=`mktemp -d /tmp/migration.XXXXXX`
+    register_teardown rm -r "$MIGRATION_DIR"
+
+    "$GPHOME_SOURCE"/bin/pg_dump --schema-only postgres -f "$MIGRATION_DIR"/before.sql
 
     gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
@@ -384,8 +398,11 @@ test_revert_after_execute_pg_upgrade_failure() {
     fi
 
     if is_GPDB5 "$GPHOME_SOURCE"; then
-        check_tablespace_data "$tablespace_table"
+        check_tablespace_data "$tablespace_table_prefix"
     fi
+
+    "$GPHOME_SOURCE"/bin/pg_dump --schema-only postgres -f "$MIGRATION_DIR"/after.sql
+    diff -U3 --speed-large-files "$MIGRATION_DIR"/before.sql "$MIGRATION_DIR"/after.sql
 
     # Verify that the marker files do not exist on primaries. Unlike for the
     # successful execute case, a revert from a failed master upgrade should
