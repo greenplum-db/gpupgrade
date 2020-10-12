@@ -76,6 +76,7 @@ drop_unfixable_objects() {
     drop_unfixable_objects
 
     root_child_indexes_before=$(get_indexes "$GPHOME_SOURCE")
+    tsquery_datatype_objects_before=$(get_tsquery_datatypes "$GPHOME_SOURCE")
 
     "$SCRIPTS_DIR"/migration_executor_sql.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/start
 
@@ -93,9 +94,11 @@ drop_unfixable_objects() {
 
     # migration scripts should create the indexes on the target cluster
     root_child_indexes_after=$(get_indexes "$GPHOME_TARGET")
+    tsquery_datatype_objects_after=$(get_tsquery_datatypes "$GPHOME_TARGET")
 
-    # expect the index information to be same after the upgrade
+    # expect the index and tsquery datatype information to be same after the upgrade
     diff -U3 <(echo "$root_child_indexes_before") <(echo "$root_child_indexes_after")
+    diff -U3 <(echo "$tsquery_datatype_objects_before") <(echo "$tsquery_datatype_objects_after")
 }
 
 @test "after reverting recreate scripts must restore non-upgradeable objects" {
@@ -188,4 +191,27 @@ get_indexes() {
         WHERE pc.relhassubclass='f'
         ORDER by 1,2;
     "
+}
+
+get_tsquery_datatypes() {
+    local gphome=$1
+    $gphome/bin/psql -d "$TEST_DBNAME" -p "$PGPORT" -Atc "
+        SELECT n.nspname, c.relname, a.attname
+        FROM pg_catalog.pg_class c,
+             pg_catalog.pg_namespace n,
+            pg_catalog.pg_attribute a
+        WHERE c.relkind = 'r'
+        AND c.oid = a.attrelid
+        AND NOT a.attisdropped
+        AND a.atttypid = 'pg_catalog.tsquery'::pg_catalog.regtype
+        AND c.relnamespace = n.oid
+        AND n.nspname !~ '^pg_temp_'
+        AND n.nspname !~ '^pg_toast_temp_'
+        AND n.nspname NOT IN ('pg_catalog',
+                                'information_schema')
+        AND c.oid NOT IN
+            (SELECT DISTINCT parchildrelid
+            FROM pg_catalog.pg_partition_rule)
+        ORDER BY 1,2,3;
+        "
 }

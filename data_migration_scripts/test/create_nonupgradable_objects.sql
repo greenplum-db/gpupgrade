@@ -114,3 +114,12 @@ CREATE TABLE partition_table_partitioned_by_name_type(a int, b name) PARTITION B
 DROP TABLE IF EXISTS table_distributed_by_name_type;
 CREATE TABLE table_distributed_by_name_type(a int, b name) DISTRIBUTED BY (b);
 INSERT INTO table_distributed_by_name_type VALUES (1,'z'),(2,'x');
+
+-- create tables with tsquery datatype
+DROP TABLE IF EXISTS table_with_tsquery_datatype_columns;
+CREATE TABLE table_with_tsquery_datatype_columns(a tsquery, b tsquery, c tsquery, d int)
+    PARTITION BY RANGE(d) (START(1) END(4) EVERY(1));
+INSERT INTO table_with_tsquery_datatype_columns
+    VALUES  ('b & c'::tsquery, 'b & c'::tsquery, 'b & c'::tsquery, 1),
+            ('e & f'::tsquery, 'e & f'::tsquery, 'e & f'::tsquery, 2),
+            ('x & y'::tsquery, 'x & y'::tsquery, 'x & y'::tsquery, 3);
