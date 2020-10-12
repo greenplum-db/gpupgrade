@@ -18,7 +18,7 @@ main(){
 
     rm -f "$log_file"
 
-    cmd="find ${INPUT_DIR} -type f -name *.sql | sort -n"
+    cmd="find ${INPUT_DIR} -type f -name \"*.sql\" | sort -n"
     local files="$(eval "$cmd")"
     if [ -z "$files" ]; then
         echo "Executing command \"${cmd}\" returned no sql files. Exiting!" | tee -a "$log_file"
