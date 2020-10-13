@@ -308,6 +308,7 @@ func initialize() *cobra.Command {
 	var diskFreeRatio float64
 	var stopBeforeClusterCreation bool
 	var verbose bool
+	var skipVersionCheck bool
 	var ports string
 	var mode string
 
@@ -394,6 +395,10 @@ func initialize() *cobra.Command {
 			st := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, verbose)
 
 			st.RunInternalSubstep(func() error {
+				if skipVersionCheck {
+					return nil
+				}
+
 				err := cli.ValidateVersions(sourceGPHome, targetGPHome)
 				if err != nil {
 					st.SetNextActions(false)
@@ -479,6 +484,7 @@ To return the cluster to its original state, run "gpupgrade revert".
 	subInit.Flags().BoolVarP(&verbose, "verbose", "v", false, "print the output stream from all substeps")
 	subInit.Flags().StringVar(&ports, "temp-port-range", "", "set of ports to use when initializing the target cluster")
 	subInit.Flags().StringVar(&mode, "mode", "copy", "performs upgrade in either copy or link mode. Default is copy.")
+	subInit.Flags().BoolVar(&skipVersionCheck, "skip-version-check", false, "disable source and target version check")
 	return addHelpToCommand(subInit, InitializeHelp)
 }
 
