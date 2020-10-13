@@ -65,7 +65,7 @@ drop_unfixable_objects() {
     echo "$output"
     [ "$status" -ne 0 ] || fail "expected initialize to fail due to pg_upgrade check"
 
-    egrep "\"CHECK_UPGRADE\": \"FAILED\"" $GPUPGRADE_HOME/status.json
+    egrep "\"CHECK_UPGRADE\": \"FAILED\"" $GPUPGRADE_HOME/substeps.json
     egrep "^Checking.*fatal$" $GPUPGRADE_HOME/pg_upgrade/seg-1/pg_upgrade_internal.log
 
     MIGRATION_DIR=`mktemp -d /tmp/migration.XXXXXX`

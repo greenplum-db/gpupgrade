@@ -19,7 +19,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/stopwatch"
 )
 
-const StatusFileName = "status.json"
+const SubstepsFileName = "substeps.json"
 
 type Step struct {
 	name    idl.Step
@@ -69,7 +69,7 @@ func Begin(stateDir string, step idl.Step, sender idl.MessageSender) (*Step, err
 // Returns path to status file, and if one does not exist it creates an empty
 // JSON file.
 func GetStatusFile(stateDir string) (path string, err error) {
-	path = filepath.Join(stateDir, StatusFileName)
+	path = filepath.Join(stateDir, SubstepsFileName)
 
 	f, err := os.OpenFile(path, os.O_EXCL|os.O_CREATE|os.O_WRONLY, 0600)
 	if os.IsExist(err) {

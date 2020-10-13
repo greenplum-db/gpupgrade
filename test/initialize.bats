@@ -275,7 +275,7 @@ wait_for_port_change() {
     delete_target_on_teardown
 
     # Mark every substep in the status file as failed. Then re-initialize.
-    sed -i.bak -e 's/"COMPLETE"/"FAILED"/g' "$GPUPGRADE_HOME/status.json"
+    sed -i.bak -e 's/"COMPLETE"/"FAILED"/g' "$GPUPGRADE_HOME/substeps.json"
 
     gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
