@@ -68,7 +68,6 @@ var (
 
 func init() {
 	InitializeHelp = GenerateHelpString(initializeHelp, []idl.Substep{
-		idl.Substep_CREATING_DIRECTORIES,
 		idl.Substep_START_HUB,
 		idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG,
 		idl.Substep_START_AGENTS,

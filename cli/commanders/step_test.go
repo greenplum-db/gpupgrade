@@ -22,7 +22,7 @@ func TestSubstep(t *testing.T) {
 
 		st := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, false)
 
-		st.RunCLISubstep(idl.Substep_CREATING_DIRECTORIES, func(streams step.OutStreams) error {
+		st.RunCLISubstep(idl.Substep_CHECK_DISK_SPACE, func(streams step.OutStreams) error {
 			return nil
 		})
 
@@ -44,8 +44,8 @@ func TestSubstep(t *testing.T) {
 		}
 
 		expected := "\nInitialize in progress.\n\n"
-		expected += commanders.Format(commanders.SubstepDescriptions[idl.Substep_CREATING_DIRECTORIES].OutputText, idl.Status_RUNNING) + "\r"
-		expected += commanders.Format(commanders.SubstepDescriptions[idl.Substep_CREATING_DIRECTORIES].OutputText, idl.Status_COMPLETE) + "\n"
+		expected += commanders.Format(commanders.SubstepDescriptions[idl.Substep_CHECK_DISK_SPACE].OutputText, idl.Status_RUNNING) + "\r"
+		expected += commanders.Format(commanders.SubstepDescriptions[idl.Substep_CHECK_DISK_SPACE].OutputText, idl.Status_COMPLETE) + "\n"
 		expected += commanders.Format(commanders.SubstepDescriptions[idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG].OutputText, idl.Status_RUNNING) + "\r"
 		expected += commanders.Format(commanders.SubstepDescriptions[idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG].OutputText, idl.Status_FAILED) + "\n"
 		expected += "\n"

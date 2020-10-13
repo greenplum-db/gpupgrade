@@ -13,7 +13,6 @@ type substepText struct {
 }
 
 var SubstepDescriptions = map[idl.Substep]substepText{
-	idl.Substep_CREATING_DIRECTORIES:                     substepText{"Creating directories...", "Create directories"},
 	idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG:             substepText{"Saving source cluster configuration...", "Save source cluster configuration"},
 	idl.Substep_START_HUB:                                substepText{"Starting gpupgrade hub process...", "Start gpupgrade hub process"},
 	idl.Substep_START_AGENTS:                             substepText{"Starting gpupgrade agent processes...", "Start gpupgrade agent processes"},
