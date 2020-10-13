@@ -102,6 +102,34 @@ func GetTablespaceDir() string {
 	return filepath.Join(GetStateDir(), "tablespaces")
 }
 
+// Returns path to a JSON file, and if one does not exist it creates an empty
+// JSON file.
+func GetJSONFile(stateDir string, fileName string) (path string, err error) {
+	path = filepath.Join(stateDir, fileName)
+
+	f, err := os.OpenFile(path, os.O_EXCL|os.O_CREATE|os.O_WRONLY, 0600)
+	if os.IsExist(err) {
+		return path, nil
+	}
+	if err != nil {
+		return "", err
+	}
+
+	defer func() {
+		if cErr := f.Close(); cErr != nil {
+			err = errorlist.Append(err, cErr)
+		}
+	}()
+
+	// MarshallJSON requires a well-formed JSON file
+	_, err = f.WriteString("{}")
+	if err != nil {
+		return "", err
+	}
+
+	return path, nil
+}
+
 // Calling os.Rename for a directory is allowed only when both the
 // source and the destination path are on the top layer of filesystem.
 // Otherwise, it returns EXDEV error ("cross-device link not permitted").

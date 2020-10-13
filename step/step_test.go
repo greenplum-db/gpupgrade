@@ -5,7 +5,6 @@ package step_test
 
 import (
 	"errors"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -404,52 +403,6 @@ func TestStepFinish(t *testing.T) {
 		err := s.Finish()
 		if !errors.Is(err, expected) {
 			t.Errorf("got error %#v, want %#v", err, expected)
-		}
-	})
-}
-
-func TestStatusFile(t *testing.T) {
-	stateDir, err := ioutil.TempDir("", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(stateDir); err != nil {
-			t.Errorf("removing temp directory: %v", err)
-		}
-	}()
-
-	path := filepath.Join(stateDir, step.SubstepFileName)
-
-	t.Run("creates status file if it does not exist", func(t *testing.T) {
-		_, err := os.Open(path)
-		if !os.IsNotExist(err) {
-			t.Errorf("returned error %#v want ErrNotExist", err)
-		}
-
-		statusFile, err := step.GetStatusFile(stateDir)
-		if err != nil {
-			t.Errorf("unexpected error %v", err)
-		}
-
-		contents := testutils.MustReadFile(t, statusFile)
-		if contents != "{}" {
-			t.Errorf("read %q want {}", contents)
-		}
-	})
-
-	t.Run("does not create status file if it already exists", func(t *testing.T) {
-		expected := "1234"
-		testutils.MustWriteToFile(t, path, expected)
-
-		statusFile, err := step.GetStatusFile(stateDir)
-		if err != nil {
-			t.Errorf("unexpected error %v", err)
-		}
-
-		contents := testutils.MustReadFile(t, statusFile)
-		if contents != expected {
-			t.Errorf("read %q want %q", contents, expected)
 		}
 	})
 }
