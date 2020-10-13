@@ -2,10 +2,29 @@
 
 gpupgrade runs [pg_upgrade](https://www.postgresql.org/docs/current/static/pgupgrade.html)
 across all segments to upgrade a [Greenplum cluster](https://github.com/greenplum-db/gpdb)
-across major versions. Since it's still being actively developed it should not 
+across major versions. For further details read the [Greenplum Database Upgrade blog post](https://greenplum.org/greenplum-database-upgrade/). Since it's still being actively developed it should not 
 be used in production at this time. We warmly welcome any feedback and 
 [contributions](https://github.com/greenplum-db/gpupgrade/blob/master/CONTRIBUTING.md).
 
+**Purpose:**
+
+Greenplum has several ways of upgrading including backup & restore and gpcopy.
+These methods usually require additional diskspace for the required copy and 
+significant downtime. gpupgrade can do in-place upgrades without the need 
+for additional hardware, disk space, and with less downtime. 
+
+Creating an easy upgrade path enables users to quickly and confidently upgrade. 
+This enables Greenplum to have faster release cycles with faster user feedback. 
+Most importantly it allows Greenplum to reduce its reliance on supporting legacy 
+versions.
+
+**Supported Versions:**
+
+| Source Cluster | Target Cluster
+| --- | ---
+| 5 | 6
+| 6 | 7 (future work)
+ 
 **Architecture:**
 
 gpupgrade consists of three processes that communicate using gRPC and protocol buffers:
@@ -76,6 +95,11 @@ run migration
    done
 ```
 
+Each substep within a step implements [crash-only idempotence](https://en.wikipedia.org/wiki/Crash-only_software).
+This means that if an error occurs and is fixed then on rerun the step will 
+succeed. This requires each substep to clean up any side effects it creates, 
+or possibly check if the work has been done.
+
 **Link vs. Copy Mode:**
 
 pg_upgrade supports two upgrade modes: link and copy.
@@ -110,6 +134,8 @@ make install # installs gpupgrade into $GOBIN
 ### Running
 
 ```
+gpupgrade initialize --file ./gpupgrade_config
+OR
 gpupgrade initialize --source-gphome "$GPHOME" --target-gphome "$GPHOME" --source-master-port 6000 --disk-free-ratio 0
 gpupgrade execute
 gpupgrade finalize
