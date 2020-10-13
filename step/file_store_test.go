@@ -26,7 +26,7 @@ func TestFileStore(t *testing.T) {
 		}
 	}()
 
-	path := filepath.Join(tmpDir, "status.json")
+	path := filepath.Join(tmpDir, step.StatusFileName)
 	fs := step.NewFileStore(path)
 
 	const section = idl.Step_INITIALIZE

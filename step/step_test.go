@@ -306,7 +306,7 @@ func TestHasRun(t *testing.T) {
 			resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", dir)
 			defer resetEnv()
 
-			path := filepath.Join(dir, "status.json")
+			path := filepath.Join(dir, step.StatusFileName)
 			testutils.MustWriteToFile(t, path, "{}")
 			store := step.NewFileStore(path)
 			err := store.Write(idl.Step_INITIALIZE, idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, c.status)
@@ -347,7 +347,7 @@ func TestHasRun(t *testing.T) {
 		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", dir)
 		defer resetEnv()
 
-		path := filepath.Join(dir, "status.json")
+		path := filepath.Join(dir, step.StatusFileName)
 		testutils.MustWriteToFile(t, path, `{"}"`) // write a malformed JSON status file
 
 		hasRun, err := step.HasRun(idl.Step_INITIALIZE, idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG)
@@ -367,7 +367,7 @@ func TestHasRun(t *testing.T) {
 		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", dir)
 		defer resetEnv()
 
-		path := filepath.Join(dir, "status.json")
+		path := filepath.Join(dir, step.StatusFileName)
 		testutils.MustWriteToFile(t, path, "{}")
 
 		hasRan, err := step.HasRun(idl.Step_FINALIZE, idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG)
@@ -419,7 +419,7 @@ func TestStatusFile(t *testing.T) {
 		}
 	}()
 
-	path := filepath.Join(stateDir, "status.json")
+	path := filepath.Join(stateDir, step.StatusFileName)
 
 	t.Run("creates status file if it does not exist", func(t *testing.T) {
 		_, err := os.Open(path)

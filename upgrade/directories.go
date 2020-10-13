@@ -26,7 +26,7 @@ const OldSuffix = ".old"
 const PGVersion = "PG_VERSION"
 
 var PostgresFiles = []string{"postgresql.conf", PGVersion}
-var StateDirectoryFiles = []string{"config.json", "status.json"}
+var StateDirectoryFiles = []string{"config.json", step.StatusFileName}
 
 func GetConfigFile() string {
 	return filepath.Join(utils.GetStateDir(), ConfigFileName)
