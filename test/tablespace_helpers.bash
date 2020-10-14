@@ -37,7 +37,9 @@ create_tablespace_with_tables() {
 
     local host dbid datadir
     while read -r host dbid datadir; do
-        tablespace_dir="${TABLESPACE_ROOT}/${datadir}"
+        # if symlink length is > 100, it will get trimmed and result in an invalid symlink when pg_basebackup will
+        # copy the master to standby, so keep them short
+        tablespace_dir="${TABLESPACE_ROOT}/${dbid}"/$(basename "$datadir")
 
         ssh -n "$host" mkdir -p "$(dirname "$tablespace_dir")"
         echo "${host}:${dbid}:${tablespace_dir}" >> "$TABLESPACE_CONFIG"
