@@ -25,7 +25,7 @@ teardown() {
     $PSQL postgres -c "drop table if exists test_linking;"
 
     gpupgrade kill-services
-    rm -r "$STATE_DIR"
+    archive_state_dir "$STATE_DIR"
 
     if [ -n "$NEW_CLUSTER" ]; then
         delete_cluster $GPHOME_TARGET $NEW_CLUSTER

@@ -10,7 +10,7 @@ setup() {
     skip_if_no_gpdb
 
     STATE_DIR=`mktemp -d /tmp/gpupgrade.XXXXXX`
-    register_teardown rm -r "$STATE_DIR"
+    register_teardown archive_state_dir "$STATE_DIR"
 
     export GPUPGRADE_HOME="${STATE_DIR}/gpupgrade"
 

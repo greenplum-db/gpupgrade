@@ -25,7 +25,7 @@ teardown() {
     skip_if_no_gpdb
 
     gpupgrade kill-services
-    rm -r "$STATE_DIR"
+    archive_state_dir "$STATE_DIR"
 
     if [ -n "${TMP_DIR}" ]; then
         rm -r "${TMP_DIR}"

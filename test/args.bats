@@ -18,7 +18,7 @@ teardown() {
     skip_if_no_gpdb
 
     gpupgrade kill-services
-    rm -r "$STATE_DIR"
+    archive_state_dir "$STATE_DIR"
 }
 
 @test "gpupgrade initialize fails when passed insufficient arguments" {

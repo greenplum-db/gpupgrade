@@ -26,7 +26,7 @@ teardown() {
 
     gpupgrade kill-services
     if [ $KEEP_STATE_DIR -eq 0 ]; then
-        rm -r "$STATE_DIR"
+        archive_state_dir "$STATE_DIR"
     else
         echo "state dir: $STATE_DIR"
     fi

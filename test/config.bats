@@ -25,7 +25,7 @@ teardown() {
     # XXX Beware, BATS_TEST_SKIPPED is not a documented export.
     if [ -z "${BATS_TEST_SKIPPED}" ]; then
         gpupgrade kill-services
-        rm -r "${STATE_DIR}"
+        archive_state_dir "$STATE_DIR"
     fi
 }
 

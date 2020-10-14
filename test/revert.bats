@@ -37,7 +37,7 @@ setup_state_dirs() {
     # host.
     for host in "${hosts[@]}"; do
         ssh "$host" mkdir -p "$STATE_DIR"
-        register_teardown ssh "$host" rm -r "$STATE_DIR"
+        register_teardown ssh "$host" mv "$STATE_DIR" "${STATE_DIR}_${BATS_TEST_NAME}"
     done
 }
 

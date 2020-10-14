@@ -358,3 +358,8 @@ backup_source_cluster() {
     gpstart -a
     register_teardown stop_any_cluster
 }
+
+archive_state_dir() {
+    state_dir=$1
+    mv "${state_dir}" "${state_dir}_${BATS_TEST_NAME}"
+}

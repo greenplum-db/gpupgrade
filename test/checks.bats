@@ -21,7 +21,7 @@ teardown() {
     fi
 
     gpupgrade kill-services
-    rm -r "$STATE_DIR"
+    archive_state_dir "$STATE_DIR"
 }
 
 # Writes the available disk space, in KiB, on the filesystem containing the

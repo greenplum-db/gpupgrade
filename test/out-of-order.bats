@@ -24,7 +24,7 @@ setup() {
 
 teardown() {
     gpupgrade kill-services
-    rm -r "${STATE_DIR}"
+    archive_state_dir "$STATE_DIR"
 }
 
 # todo: add tests

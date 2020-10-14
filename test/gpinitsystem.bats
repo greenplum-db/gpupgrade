@@ -23,7 +23,7 @@ teardown() {
     skip_if_no_gpdb
 
     gpupgrade kill-services
-    rm -r "$STATE_DIR"
+    archive_state_dir "$STATE_DIR"
 
     if [ -n "$NEW_CLUSTER" ]; then
         delete_cluster $GPHOME_TARGET $NEW_CLUSTER
