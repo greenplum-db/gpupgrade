@@ -401,8 +401,7 @@ func initialize() *cobra.Command {
 
 				err := cli.ValidateVersions(sourceGPHome, targetGPHome)
 				if err != nil {
-					st.SetNextActions(false)
-					return err
+					return cli.NewNextActions(err, strings.ToLower(idl.Step_INITIALIZE.String()), false)
 				}
 
 				return nil

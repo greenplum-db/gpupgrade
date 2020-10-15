@@ -309,6 +309,25 @@ func TestSubstep(t *testing.T) {
 		}
 	})
 
+	t.Run("substeps can override the default next actions error", func(t *testing.T) {
+		st := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, false)
+
+		subcommand := "subcommand"
+		st.RunHubSubstep(func(streams step.OutStreams) error {
+			return cli.NewNextActions(errors.New("oops"), subcommand, false)
+		})
+
+		err := st.Complete("")
+		var nextActions cli.NextActions
+		if !errors.As(err, &nextActions) {
+			t.Errorf("got type %T want %T", err, nextActions)
+		}
+
+		if nextActions.Subcommand != subcommand {
+			t.Errorf("got subcommand %q want %q", nextActions.Subcommand, subcommand)
+		}
+	})
+
 	t.Run("substep duration is printed", func(t *testing.T) {
 		d := commanders.BufferStandardDescriptors(t)
 

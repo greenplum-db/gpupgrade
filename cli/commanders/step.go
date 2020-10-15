@@ -20,13 +20,12 @@ import (
 )
 
 type CLIStep struct {
-	stepName      string
-	streams       *step.BufferedStreams
-	verbose       bool
-	timer         *stopwatch.Stopwatch
-	lastSubstep   idl.Substep
-	suggestRevert bool
-	err           error
+	stepName    string
+	streams     *step.BufferedStreams
+	verbose     bool
+	timer       *stopwatch.Stopwatch
+	lastSubstep idl.Substep
+	err         error
 }
 
 func NewStep(step idl.Step, streams *step.BufferedStreams, verbose bool) *CLIStep {
@@ -37,11 +36,10 @@ func NewStep(step idl.Step, streams *step.BufferedStreams, verbose bool) *CLISte
 	fmt.Println()
 
 	return &CLIStep{
-		stepName:      stepName,
-		streams:       streams,
-		verbose:       verbose,
-		timer:         stopwatch.Start(),
-		suggestRevert: true,
+		stepName: stepName,
+		streams:  streams,
+		verbose:  verbose,
+		timer:    stopwatch.Start(),
 	}
 }
 
@@ -128,16 +126,19 @@ func (s *CLIStep) RunCLISubstep(substep idl.Substep, f func(streams step.OutStre
 	s.printStatus(substep, idl.Status_COMPLETE)
 }
 
-func (s *CLIStep) SetNextActions(suggestRevert bool) {
-	s.suggestRevert = suggestRevert
-}
-
 func (s *CLIStep) Complete(completedText string) error {
 	logDuration(s.stepName, s.verbose, s.timer.Stop())
 
 	if s.Err() != nil {
 		fmt.Println()
-		return cli.NewNextActions(s.Err(), strings.ToLower(s.stepName), s.suggestRevert)
+
+		// allow substpes to override the default next actions
+		var nextActions cli.NextActions
+		if errors.As(s.Err(), &nextActions) {
+			return nextActions
+		}
+
+		return cli.NewNextActions(s.Err(), strings.ToLower(s.stepName), true)
 	}
 
 	fmt.Println(completedText)
