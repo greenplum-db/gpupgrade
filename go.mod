@@ -1,6 +1,6 @@
 module github.com/greenplum-db/gpupgrade
 
-go 1.14
+go 1.15
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.4.1

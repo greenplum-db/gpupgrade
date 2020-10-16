@@ -117,7 +117,7 @@ pg_upgrade supports two upgrade modes: link and copy.
 
 ### Prerequisites
 
-- Golang. We currently develop against latest stable Golang, which was v1.14 as of April 2020.
+- Golang. We currently develop against latest stable Golang, which was v1.15 as of October 2020.
 - protoc. This is the compiler for the [gRPC protobuf](https://grpc.io/) 
 system which can be installed on macOS with `brew install protobuf`.
 - Run `make && make depend-dev` to install other developer dependencies. Note 

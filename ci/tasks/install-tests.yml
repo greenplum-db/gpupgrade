@@ -6,8 +6,8 @@ PLATFORM: linux
 image_resource:
   type: docker-image
   source:
-    repository: pivotaldata/centos-gpdb-dev
-    tag: "7-gcc6.2-llvm3.7"
+    repository: pivotaldata/gpdb6-centos7-test-golang
+    tag: "latest"
 
 inputs:
 - name: gpupgrade_src

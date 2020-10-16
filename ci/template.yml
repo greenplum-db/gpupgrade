@@ -405,8 +405,8 @@ jobs:
         image_resource:
           type: docker-image
           source:
-            repository: pivotaldata/centos-gpdb-dev
-            tag: "6-gcc6.2-llvm3.7"
+            repository: pivotaldata/gpdb6-centos7-test-golang
+            tag: "latest"
         inputs:
         - name: terraform
         - name: ccp_src
@@ -436,8 +436,8 @@ jobs:
         image_resource:
           type: docker-image
           source:
-            repository: pivotaldata/centos-gpdb-dev
-            tag: "6-gcc6.2-llvm3.7"
+            repository: pivotaldata/gpdb6-centos7-test-golang
+            tag: "latest"
         inputs:
           - name: gpupgrade_src
           - name: cluster_env_files
@@ -522,8 +522,8 @@ jobs:
         image_resource:
           type: docker-image
           source:
-            repository: pivotaldata/centos-gpdb-dev
-            tag: "6-gcc6.2-llvm3.7"
+            repository: pivotaldata/gpdb6-centos7-test-golang
+            tag: "latest"
         inputs:
           - name: terraform
           - name: ccp_src
@@ -575,7 +575,7 @@ jobs:
           type: docker-image
           source:
             repository: golang
-            tag: '1.14'
+            tag: '1.15'
         inputs:
           - name: gpupgrade_src
           - name: bin_gpupgrade
