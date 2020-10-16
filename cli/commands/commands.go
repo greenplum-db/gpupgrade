@@ -407,7 +407,8 @@ func initialize() *cobra.Command {
 			// working state directory.
 			err = commanders.CreateStateDir()
 			if err != nil {
-				return cli.NewNextActions(err, strings.ToLower(idl.Step_INITIALIZE.String()), false)
+				nextActions := fmt.Sprintf(`Please address the above issue and run "gpupgrade %s" again.`, strings.ToLower(idl.Step_INITIALIZE.String()))
+				return cli.NewNextActions(err, nextActions)
 			}
 
 			st, err := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, verbose)
@@ -422,7 +423,8 @@ func initialize() *cobra.Command {
 
 				err := cli.ValidateVersions(sourceGPHome, targetGPHome)
 				if err != nil {
-					return cli.NewNextActions(err, strings.ToLower(idl.Step_INITIALIZE.String()), false)
+					nextActions := fmt.Sprintf(`Please address the above issue and run "gpupgrade %s" again.`, strings.ToLower(idl.Step_INITIALIZE.String()))
+					return cli.NewNextActions(err, nextActions)
 				}
 
 				return nil

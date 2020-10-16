@@ -169,7 +169,9 @@ func (s *CLIStep) Complete(completedText string) error {
 			return nextActions
 		}
 
-		return cli.NewNextActions(s.Err(), strings.ToLower(s.stepName), true)
+		msg := fmt.Sprintf(`Please address the above issue and run "gpupgrade %s" again.
+If you would like to return the cluster to its original state, please run "gpupgrade revert".`, strings.ToLower(s.stepName))
+		return cli.NewNextActions(s.Err(), msg)
 	}
 
 	fmt.Println(completedText)

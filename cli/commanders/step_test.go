@@ -361,9 +361,9 @@ func TestSubstep(t *testing.T) {
 			t.Errorf("unexpected err %#v", err)
 		}
 
-		subcommand := "subcommand"
+		nextAction := "re-run gpupgrade"
 		st.RunHubSubstep(func(streams step.OutStreams) error {
-			return cli.NewNextActions(errors.New("oops"), subcommand, false)
+			return cli.NewNextActions(errors.New("oops"), nextAction)
 		})
 
 		err = st.Complete("")
@@ -372,8 +372,8 @@ func TestSubstep(t *testing.T) {
 			t.Errorf("got type %T want %T", err, nextActions)
 		}
 
-		if nextActions.Subcommand != subcommand {
-			t.Errorf("got subcommand %q want %q", nextActions.Subcommand, subcommand)
+		if nextActions.NextAction != nextAction {
+			t.Errorf("got next action %q want %q", nextActions.NextAction, nextAction)
 		}
 	})
 
