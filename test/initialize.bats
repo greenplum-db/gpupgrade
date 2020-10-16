@@ -128,7 +128,7 @@ outputContains() {
     commands=(
         'config show'
         'execute'
-        'finalize'
+        'revert'
     )
 
     # We don't want to have to wait for the default one-second timeout for all

@@ -355,6 +355,21 @@ func TestSubstep(t *testing.T) {
 		}
 	})
 
+	t.Run("fails to create a new step when the state directory does not exist", func(t *testing.T) {
+		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", "/does/not/exist")
+		defer resetEnv()
+
+		_, err := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, false)
+		var nextActionsErr cli.NextActions
+		if !errors.As(err, &nextActionsErr) {
+			t.Errorf("got %T, want %T", err, nextActionsErr)
+		}
+
+		if nextActionsErr.NextAction != commanders.StepErr.Error() {
+			t.Errorf("got %q want %q", nextActionsErr.NextAction, commanders.StepErr.Error())
+		}
+	})
+
 	t.Run("substeps can override the default next actions error", func(t *testing.T) {
 		st, err := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, false)
 		if err != nil {
@@ -492,7 +507,7 @@ func TestStepStatus(t *testing.T) {
 	})
 
 	t.Run("when a hub substep fails it sets the step status to failed", func(t *testing.T) {
-		st, err := commanders.NewStep(idl.Step_EXECUTE, &step.BufferedStreams{}, false)
+		st, err := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, false)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -507,7 +522,7 @@ func TestStepStatus(t *testing.T) {
 			t.Errorf("got %T, want %T", err, nextActionsErr)
 		}
 
-		status, err := store.Read(idl.Step_EXECUTE)
+		status, err := store.Read(idl.Step_INITIALIZE)
 		if err != nil {
 			t.Errorf("Read failed %#v", err)
 		}
@@ -519,7 +534,7 @@ func TestStepStatus(t *testing.T) {
 	})
 
 	t.Run("when an internal substep fails it sets the step status to failed", func(t *testing.T) {
-		st, err := commanders.NewStep(idl.Step_EXECUTE, &step.BufferedStreams{}, false)
+		st, err := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, false)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -534,7 +549,7 @@ func TestStepStatus(t *testing.T) {
 			t.Errorf("got %T, want %T", err, nextActionsErr)
 		}
 
-		status, err := store.Read(idl.Step_EXECUTE)
+		status, err := store.Read(idl.Step_INITIALIZE)
 		if err != nil {
 			t.Errorf("Read failed %#v", err)
 		}
@@ -546,7 +561,7 @@ func TestStepStatus(t *testing.T) {
 	})
 
 	t.Run("when a cli substep fails it sets the step status to failed", func(t *testing.T) {
-		st, err := commanders.NewStep(idl.Step_EXECUTE, &step.BufferedStreams{}, false)
+		st, err := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, false)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -561,7 +576,7 @@ func TestStepStatus(t *testing.T) {
 			t.Errorf("got %T, want %T", err, nextActionsErr)
 		}
 
-		status, err := store.Read(idl.Step_EXECUTE)
+		status, err := store.Read(idl.Step_INITIALIZE)
 		if err != nil {
 			t.Errorf("Read failed %#v", err)
 		}

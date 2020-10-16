@@ -35,7 +35,12 @@ type CLIStep struct {
 func NewStep(step idl.Step, streams *step.BufferedStreams, verbose bool) (*CLIStep, error) {
 	store, err := NewStepStore()
 	if err != nil {
-		return &CLIStep{}, err
+		return &CLIStep{}, cli.NewNextActions(err, StepErr.Error())
+	}
+
+	err = store.ValidateStep(step)
+	if err != nil {
+		return nil, err
 	}
 
 	err = store.Write(step, idl.Status_RUNNING)
