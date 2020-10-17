@@ -4,6 +4,7 @@
 package commands
 
 import (
+	"fmt"
 	"reflect"
 	"strconv"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
+	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/upgrade"
@@ -252,4 +254,52 @@ func TestAddFlags(t *testing.T) {
 			t.Errorf("expected error %#v got nil", err)
 		}
 	})
+}
+
+func TestInitializeWarningMessageIfAny(t *testing.T) {
+	cases := []struct {
+		name     string
+		input    commanders.InitializeCreateClusterResponse
+		expected string
+	}{
+		{
+			name: "both standby and mirror does not exist",
+			input: commanders.InitializeCreateClusterResponse{
+				HasMirrors: "false",
+				HasStandby: "false",
+			},
+			expected: fmt.Sprintf(InitializeWarningMessage, "standby and mirror segments"),
+		},
+		{
+			name: "only mirrors does not exist",
+			input: commanders.InitializeCreateClusterResponse{
+				HasMirrors: "false",
+				HasStandby: "true",
+			},
+			expected: fmt.Sprintf(InitializeWarningMessage, "mirror segments"),
+		},
+		{
+			name: "only standby does not exist",
+			input: commanders.InitializeCreateClusterResponse{
+				HasMirrors: "true",
+				HasStandby: "false",
+			},
+			expected: fmt.Sprintf(InitializeWarningMessage, "standby"),
+		},
+		{
+			name: "both standby and mirrors exist",
+			input: commanders.InitializeCreateClusterResponse{
+				HasMirrors: "true",
+				HasStandby: "true",
+			},
+			expected: "",
+		},
+	}
+
+	for _, c := range cases {
+		resultMessage := InitializeWarningMessageIfAny(c.input)
+		if resultMessage != c.expected {
+			t.Errorf("got %q, want %q", resultMessage, c.expected)
+		}
+	}
 }

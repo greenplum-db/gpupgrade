@@ -135,6 +135,8 @@ enum ResponseKey {
     target_master_data_directory = 4;
     revert_log_archive_directory = 5;
     source_version = 6;
+    source_has_standby = 7;
+    source_has_mirrors = 8;
 }
 
 message Response {

@@ -16,6 +16,11 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/stopwatch"
 )
 
+type InitializeCreateClusterResponse struct {
+	HasMirrors string
+	HasStandby string
+}
+
 type ExecuteResponse struct {
 	TargetPort          string
 	TargetMasterDataDir string
@@ -58,20 +63,23 @@ func Initialize(client idl.CliToHubClient, request *idl.InitializeRequest, verbo
 	return nil
 }
 
-func InitializeCreateCluster(client idl.CliToHubClient, verbose bool) (err error) {
+func InitializeCreateCluster(client idl.CliToHubClient, verbose bool) (InitializeCreateClusterResponse, error) {
 	stream, err := client.InitializeCreateCluster(context.Background(),
 		&idl.InitializeCreateClusterRequest{},
 	)
 	if err != nil {
-		return xerrors.Errorf("initialize create cluster: %w", err)
+		return InitializeCreateClusterResponse{}, xerrors.Errorf("initialize create cluster: %w", err)
 	}
 
-	_, err = UILoop(stream, verbose)
+	response, err := UILoop(stream, verbose)
 	if err != nil {
-		return xerrors.Errorf("InitializeCreateCluster: %w", err)
+		return InitializeCreateClusterResponse{}, xerrors.Errorf("InitializeCreateCluster: %w", err)
 	}
 
-	return nil
+	return InitializeCreateClusterResponse{
+		HasMirrors: response[idl.ResponseKey_source_has_mirrors.String()],
+		HasStandby: response[idl.ResponseKey_source_has_standby.String()],
+	}, nil
 }
 
 func Execute(client idl.CliToHubClient, verbose bool) (ExecuteResponse, error) {

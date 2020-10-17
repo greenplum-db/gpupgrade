@@ -59,11 +59,21 @@ import (
 )
 
 var (
-	Help           map[string]string
-	InitializeHelp string
-	ExecuteHelp    string
-	FinalizeHelp   string
-	RevertHelp     string
+	Help                     map[string]string
+	InitializeHelp           string
+	ExecuteHelp              string
+	FinalizeHelp             string
+	RevertHelp               string
+	InitializeWarningMessage = `
+WARNING
+_______
+The source cluster does not have %s.
+After "gpupgrade execute" has been run, there will be no way to
+return the cluster to its original state using "gpupgrade revert".
+
+If you do no already have a backup, we strongly recommend that
+you run "gpupgrade revert" now and take a backup of the cluster.
+`
 )
 
 func init() {
@@ -453,12 +463,13 @@ func initialize() *cobra.Command {
 				return commanders.CheckDiskSpace(client, diskFreeRatio)
 			})
 
+			var response commanders.InitializeCreateClusterResponse
 			st.RunHubSubstep(func(streams step.OutStreams) error {
 				if stopBeforeClusterCreation {
 					return step.Skip
 				}
 
-				err = commanders.InitializeCreateCluster(client, verbose)
+				response, err = commanders.InitializeCreateCluster(client, verbose)
 				if err != nil {
 					return xerrors.Errorf("initialize create cluster: %w", err)
 				}
@@ -466,16 +477,18 @@ func initialize() *cobra.Command {
 				return nil
 			})
 
-			return st.Complete(`
-Initialize completed successfully.
+			warningMessage := InitializeWarningMessageIfAny(response)
 
+			return st.Complete(fmt.Sprintf(`
+Initialize completed successfully.
+%s
 NEXT ACTIONS
 ------------
 To proceed with the upgrade, run "gpupgrade execute"
 followed by "gpupgrade finalize".
 
 To return the cluster to its original state, run "gpupgrade revert".
-`)
+`, warningMessage))
 		},
 	}
 	subInit.Flags().StringVarP(&file, "file", "f", "", "the configuration file to use")
@@ -988,4 +1001,21 @@ func addHelpToCommand(cmd *cobra.Command, help string) *cobra.Command {
 	})
 
 	return cmd
+}
+
+func InitializeWarningMessageIfAny(response commanders.InitializeCreateClusterResponse) string {
+	message := ""
+	if response.HasStandby == "false" && response.HasMirrors == "false" {
+		message = "standby and mirror segments"
+	} else if response.HasMirrors == "false" {
+		message = "mirror segments"
+	} else if response.HasStandby == "false" {
+		message = "standby"
+	}
+
+	if message != "" {
+		return fmt.Sprintf(InitializeWarningMessage, message)
+	}
+
+	return message
 }
