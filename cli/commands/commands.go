@@ -392,7 +392,18 @@ func initialize() *cobra.Command {
 			// dump on failure.
 			cmd.SilenceUsage = true
 
-			st := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, verbose)
+			// Create the state directory outside the step framework to ensure
+			// we can write to the status file. The step framework assumes valid
+			// working state directory.
+			err = commanders.CreateStateDir()
+			if err != nil {
+				return cli.NewNextActions(err, strings.ToLower(idl.Step_INITIALIZE.String()), false)
+			}
+
+			st, err := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, verbose)
+			if err != nil {
+				return err
+			}
 
 			st.RunInternalSubstep(func() error {
 				if skipVersionCheck {
@@ -405,10 +416,6 @@ func initialize() *cobra.Command {
 				}
 
 				return nil
-			})
-
-			st.RunInternalSubstep(func() error {
-				return commanders.CreateStateDir()
 			})
 
 			st.RunInternalSubstep(func() error {
@@ -498,7 +505,10 @@ func execute() *cobra.Command {
 			cmd.SilenceUsage = true
 			var response commanders.ExecuteResponse
 
-			st := commanders.NewStep(idl.Step_EXECUTE, &step.BufferedStreams{}, verbose)
+			st, err := commanders.NewStep(idl.Step_EXECUTE, &step.BufferedStreams{}, verbose)
+			if err != nil {
+				return err
+			}
 
 			st.RunHubSubstep(func(streams step.OutStreams) error {
 				client, err := connectToHub()
@@ -551,7 +561,10 @@ func finalize() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			var response commanders.FinalizeResponse
 
-			st := commanders.NewStep(idl.Step_FINALIZE, &step.BufferedStreams{}, verbose)
+			st, err := commanders.NewStep(idl.Step_FINALIZE, &step.BufferedStreams{}, verbose)
+			if err != nil {
+				return err
+			}
 
 			st.RunHubSubstep(func(streams step.OutStreams) error {
 				client, err := connectToHub()
@@ -590,7 +603,10 @@ func revert() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			var response commanders.RevertResponse
 
-			st := commanders.NewStep(idl.Step_REVERT, &step.BufferedStreams{}, verbose)
+			st, err := commanders.NewStep(idl.Step_REVERT, &step.BufferedStreams{}, verbose)
+			if err != nil {
+				return err
+			}
 
 			st.RunHubSubstep(func(streams step.OutStreams) error {
 				client, err := connectToHub()
@@ -611,6 +627,10 @@ func revert() *cobra.Command {
 			})
 
 			st.RunCLISubstep(idl.Substep_DELETE_MASTER_STATEDIR, func(streams step.OutStreams) error {
+				// Removing the state directory removes the step status file.
+				// Disable the store so the step framework does not try to write
+				// to a non-existent status file.
+				st.DisableStore()
 				return upgrade.DeleteDirectories([]string{utils.GetStateDir()}, upgrade.StateDirectoryFiles, streams)
 			})
 

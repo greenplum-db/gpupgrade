@@ -6,6 +6,7 @@ package commanders_test
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -14,19 +15,37 @@ import (
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/testutils"
 )
 
 func TestSubstep(t *testing.T) {
+	stateDir, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := os.RemoveAll(stateDir); err != nil {
+			t.Errorf("removing temp directory: %v", err)
+		}
+	}()
+
+	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
+	defer resetEnv()
+
 	t.Run("substep status is correctly printed on success and failure", func(t *testing.T) {
 		d := commanders.BufferStandardDescriptors(t)
 
-		st := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, false)
+		st, err := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, false)
+		if err != nil {
+			d.Close()
+			t.Errorf("unexpected err %#v", err)
+		}
 
 		st.RunCLISubstep(idl.Substep_CHECK_DISK_SPACE, func(streams step.OutStreams) error {
 			return nil
 		})
 
-		err := errors.New("error")
+		err = errors.New("error")
 		st.RunCLISubstep(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(streams step.OutStreams) error {
 			return err
 		})
@@ -59,14 +78,17 @@ func TestSubstep(t *testing.T) {
 	})
 
 	t.Run("there is no error when a hub substep is skipped", func(t *testing.T) {
-		st := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, false)
+		st, err := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, false)
+		if err != nil {
+			t.Errorf("unexpected err %#v", err)
+		}
 
 		expected := step.Skip
 		st.RunHubSubstep(func(streams step.OutStreams) error {
 			return expected
 		})
 
-		err := st.Complete("")
+		err = st.Complete("")
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -79,14 +101,18 @@ func TestSubstep(t *testing.T) {
 	t.Run("when a CLI substep is skipped its status is printed without error", func(t *testing.T) {
 		d := commanders.BufferStandardDescriptors(t)
 
-		st := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, false)
+		st, err := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, false)
+		if err != nil {
+			d.Close()
+			t.Errorf("unexpected err %#v", err)
+		}
 
 		skipErr := step.Skip
 		st.RunCLISubstep(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(streams step.OutStreams) error {
 			return skipErr
 		})
 
-		err := st.Complete("")
+		err = st.Complete("")
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -115,14 +141,17 @@ func TestSubstep(t *testing.T) {
 	})
 
 	t.Run("there is no error when an internal substep is skipped", func(t *testing.T) {
-		st := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, false)
+		st, err := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, false)
+		if err != nil {
+			t.Errorf("unexpected err %#v", err)
+		}
 
 		skipErr := step.Skip
 		st.RunInternalSubstep(func() error {
 			return skipErr
 		})
 
-		err := st.Complete("")
+		err = st.Complete("")
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -133,9 +162,12 @@ func TestSubstep(t *testing.T) {
 	})
 
 	t.Run("both cli and hub substeps are not run when an internal substep errors", func(t *testing.T) {
-		st := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, false)
+		st, err := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, false)
+		if err != nil {
+			t.Errorf("unexpected err %#v", err)
+		}
 
-		err := errors.New("error")
+		err = errors.New("error")
 		st.RunInternalSubstep(func() error {
 			return err
 		})
@@ -168,7 +200,11 @@ func TestSubstep(t *testing.T) {
 	t.Run("nothing is printed for internal substeps", func(t *testing.T) {
 		d := commanders.BufferStandardDescriptors(t)
 
-		st := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, true)
+		st, err := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, true)
+		if err != nil {
+			d.Close()
+			t.Errorf("unexpected err %#v", err)
+		}
 
 		ran := false
 		st.RunInternalSubstep(func() error {
@@ -176,7 +212,7 @@ func TestSubstep(t *testing.T) {
 			return nil
 		})
 
-		err := st.Complete("")
+		err = st.Complete("")
 		if err != nil {
 			d.Close()
 			t.Errorf("unexpected err %#v", err)
@@ -215,7 +251,11 @@ func TestSubstep(t *testing.T) {
 	t.Run("cli substeps are printed to stdout and stderr in verbose mode", func(t *testing.T) {
 		d := commanders.BufferStandardDescriptors(t)
 
-		st := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, true)
+		st, err := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, true)
+		if err != nil {
+			d.Close()
+			t.Errorf("unexpected err %#v", err)
+		}
 
 		substepStdout := "some substep output text."
 		substepStderr := "oops!"
@@ -225,7 +265,7 @@ func TestSubstep(t *testing.T) {
 			return nil
 		})
 
-		err := st.Complete("")
+		err = st.Complete("")
 		if err != nil {
 			d.Close()
 			t.Errorf("unexpected err %#v", err)
@@ -254,9 +294,12 @@ func TestSubstep(t *testing.T) {
 	})
 
 	t.Run("cli substeps are not run when there is an error", func(t *testing.T) {
-		st := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, false)
+		st, err := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, false)
+		if err != nil {
+			t.Errorf("unexpected err %#v", err)
+		}
 
-		err := errors.New("error")
+		err = errors.New("error")
 		st.RunCLISubstep(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(streams step.OutStreams) error {
 			return err
 		})
@@ -282,9 +325,12 @@ func TestSubstep(t *testing.T) {
 	})
 
 	t.Run("hub substeps are not run when there is an error", func(t *testing.T) {
-		st := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, false)
+		st, err := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, false)
+		if err != nil {
+			t.Errorf("unexpected err %#v", err)
+		}
 
-		err := errors.New("error")
+		err = errors.New("error")
 		st.RunCLISubstep(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(streams step.OutStreams) error {
 			return err
 		})
@@ -310,14 +356,17 @@ func TestSubstep(t *testing.T) {
 	})
 
 	t.Run("substeps can override the default next actions error", func(t *testing.T) {
-		st := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, false)
+		st, err := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, false)
+		if err != nil {
+			t.Errorf("unexpected err %#v", err)
+		}
 
 		subcommand := "subcommand"
 		st.RunHubSubstep(func(streams step.OutStreams) error {
 			return cli.NewNextActions(errors.New("oops"), subcommand, false)
 		})
 
-		err := st.Complete("")
+		err = st.Complete("")
 		var nextActions cli.NextActions
 		if !errors.As(err, &nextActions) {
 			t.Errorf("got type %T want %T", err, nextActions)
@@ -331,13 +380,17 @@ func TestSubstep(t *testing.T) {
 	t.Run("substep duration is printed", func(t *testing.T) {
 		d := commanders.BufferStandardDescriptors(t)
 
-		st := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, true)
+		st, err := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, true)
+		if err != nil {
+			d.Close()
+			t.Errorf("unexpected err %#v", err)
+		}
 
 		st.RunCLISubstep(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(streams step.OutStreams) error {
 			return nil
 		})
 
-		err := st.Complete("")
+		err = st.Complete("")
 		if err != nil {
 			d.Close()
 			t.Errorf("unexpected err %#v", err)
@@ -360,17 +413,162 @@ func TestSubstep(t *testing.T) {
 	})
 
 	t.Run("the step returns next actions when a substep fails", func(t *testing.T) {
-		st := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, false)
+		st, err := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, false)
+		if err != nil {
+			t.Errorf("unexpected err %#v", err)
+		}
 
 		expected := errors.New("oops")
 		st.RunCLISubstep(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(streams step.OutStreams) error {
 			return expected
 		})
 
-		err := st.Complete("")
+		err = st.Complete("")
 		var nextActionsErr cli.NextActions
 		if !errors.As(err, &nextActionsErr) {
 			t.Errorf("got %T, want %T", err, nextActionsErr)
+		}
+	})
+}
+
+func TestStepStatus(t *testing.T) {
+	stateDir, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := os.RemoveAll(stateDir); err != nil {
+			t.Errorf("removing temp directory: %v", err)
+		}
+	}()
+
+	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
+	defer resetEnv()
+
+	store, err := commanders.NewStepStore()
+	if err != nil {
+		t.Fatalf("NewStepStore failed: %v", err)
+	}
+
+	t.Run("when a step is created its status is set to running", func(t *testing.T) {
+		_, err := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, false)
+		if err != nil {
+			t.Errorf("unexpected err %#v", err)
+		}
+
+		status, err := store.Read(idl.Step_INITIALIZE)
+		if err != nil {
+			t.Errorf("Read failed %#v", err)
+		}
+
+		expected := idl.Status_RUNNING
+		if status != expected {
+			t.Errorf("got stauts %q want %q", status, expected)
+		}
+	})
+
+	t.Run("when the store is disabled step.Complete does not update the status", func(t *testing.T) {
+		st, err := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, false)
+		if err != nil {
+			t.Errorf("unexpected err %#v", err)
+		}
+
+		st.DisableStore()
+
+		err = st.Complete("")
+		if err != nil {
+			t.Errorf("unexpected err %#v", err)
+		}
+
+		status, err := store.Read(idl.Step_INITIALIZE)
+		if err != nil {
+			t.Errorf("Read failed %#v", err)
+		}
+
+		expected := idl.Status_RUNNING
+		if status != expected {
+			t.Errorf("got stauts %q want %q", status, expected)
+		}
+	})
+
+	t.Run("when a hub substep fails it sets the step status to failed", func(t *testing.T) {
+		st, err := commanders.NewStep(idl.Step_EXECUTE, &step.BufferedStreams{}, false)
+		if err != nil {
+			t.Errorf("unexpected err %#v", err)
+		}
+
+		st.RunHubSubstep(func(streams step.OutStreams) error {
+			return errors.New("oops")
+		})
+
+		err = st.Complete("")
+		var nextActionsErr cli.NextActions
+		if !errors.As(err, &nextActionsErr) {
+			t.Errorf("got %T, want %T", err, nextActionsErr)
+		}
+
+		status, err := store.Read(idl.Step_EXECUTE)
+		if err != nil {
+			t.Errorf("Read failed %#v", err)
+		}
+
+		expected := idl.Status_FAILED
+		if status != expected {
+			t.Errorf("got stauts %q want %q", status, expected)
+		}
+	})
+
+	t.Run("when an internal substep fails it sets the step status to failed", func(t *testing.T) {
+		st, err := commanders.NewStep(idl.Step_EXECUTE, &step.BufferedStreams{}, false)
+		if err != nil {
+			t.Errorf("unexpected err %#v", err)
+		}
+
+		st.RunInternalSubstep(func() error {
+			return errors.New("oops")
+		})
+
+		err = st.Complete("")
+		var nextActionsErr cli.NextActions
+		if !errors.As(err, &nextActionsErr) {
+			t.Errorf("got %T, want %T", err, nextActionsErr)
+		}
+
+		status, err := store.Read(idl.Step_EXECUTE)
+		if err != nil {
+			t.Errorf("Read failed %#v", err)
+		}
+
+		expected := idl.Status_FAILED
+		if status != expected {
+			t.Errorf("got stauts %q want %q", status, expected)
+		}
+	})
+
+	t.Run("when a cli substep fails it sets the step status to failed", func(t *testing.T) {
+		st, err := commanders.NewStep(idl.Step_EXECUTE, &step.BufferedStreams{}, false)
+		if err != nil {
+			t.Errorf("unexpected err %#v", err)
+		}
+
+		st.RunCLISubstep(idl.Substep_CHECK_DISK_SPACE, func(streams step.OutStreams) error {
+			return errors.New("oops")
+		})
+
+		err = st.Complete("")
+		var nextActionsErr cli.NextActions
+		if !errors.As(err, &nextActionsErr) {
+			t.Errorf("got %T, want %T", err, nextActionsErr)
+		}
+
+		status, err := store.Read(idl.Step_EXECUTE)
+		if err != nil {
+			t.Errorf("Read failed %#v", err)
+		}
+
+		expected := idl.Status_FAILED
+		if status != expected {
+			t.Errorf("got stauts %q want %q", status, expected)
 		}
 	})
 }

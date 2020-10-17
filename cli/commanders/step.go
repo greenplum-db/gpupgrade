@@ -19,8 +19,12 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/stopwatch"
 )
 
+const StepsFileName = "steps.json"
+
 type CLIStep struct {
 	stepName    string
+	step        idl.Step
+	store       *StepStore
 	streams     *step.BufferedStreams
 	verbose     bool
 	timer       *stopwatch.Stopwatch
@@ -28,7 +32,17 @@ type CLIStep struct {
 	err         error
 }
 
-func NewStep(step idl.Step, streams *step.BufferedStreams, verbose bool) *CLIStep {
+func NewStep(step idl.Step, streams *step.BufferedStreams, verbose bool) (*CLIStep, error) {
+	store, err := NewStepStore()
+	if err != nil {
+		return &CLIStep{}, err
+	}
+
+	err = store.Write(step, idl.Status_RUNNING)
+	if err != nil {
+		return &CLIStep{}, err
+	}
+
 	stepName := strings.Title(strings.ToLower(step.String()))
 
 	fmt.Println()
@@ -37,10 +51,12 @@ func NewStep(step idl.Step, streams *step.BufferedStreams, verbose bool) *CLISte
 
 	return &CLIStep{
 		stepName: stepName,
+		step:     step,
+		store:    store,
 		streams:  streams,
 		verbose:  verbose,
 		timer:    stopwatch.Start(),
-	}
+	}, nil
 }
 
 func (s *CLIStep) Err() error {
@@ -126,8 +142,23 @@ func (s *CLIStep) RunCLISubstep(substep idl.Substep, f func(streams step.OutStre
 	s.printStatus(substep, idl.Status_COMPLETE)
 }
 
+func (s *CLIStep) DisableStore() {
+	s.store = nil
+}
+
 func (s *CLIStep) Complete(completedText string) error {
 	logDuration(s.stepName, s.verbose, s.timer.Stop())
+
+	status := idl.Status_COMPLETE
+	if s.Err() != nil {
+		status = idl.Status_FAILED
+	}
+
+	if s.store != nil {
+		if wErr := s.store.Write(s.step, status); wErr != nil {
+			s.err = errorlist.Append(s.err, wErr)
+		}
+	}
 
 	if s.Err() != nil {
 		fmt.Println()

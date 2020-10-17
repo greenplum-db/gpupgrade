@@ -258,7 +258,8 @@ func TestUILoop(t *testing.T) {
 func TestFormatStatus(t *testing.T) {
 	t.Run("it formats all possible types", func(t *testing.T) {
 		ignoreUnknownStep := 1
-		numberOfSubsteps := len(idl.Substep_name) - ignoreUnknownStep
+		ignoreInternalStepStatus := 1
+		numberOfSubsteps := len(idl.Substep_name) - ignoreUnknownStep - ignoreInternalStepStatus
 
 		if numberOfSubsteps != len(commanders.SubstepDescriptions) {
 			t.Errorf("got %q, expected FormatStatus to be able to format all %d statuses %q. Formatted only %d",
