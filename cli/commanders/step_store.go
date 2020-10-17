@@ -48,3 +48,24 @@ func (s *StepStore) Read(stepName idl.Step) (idl.Status, error) {
 
 	return status, nil
 }
+
+func (s *StepStore) HasStepStarted(step idl.Step) (bool, error) {
+	return s.HasStatus(step, func(status idl.Status) bool {
+		return status != idl.Status_UNKNOWN_STATUS
+	})
+}
+
+func (s *StepStore) HasStepCompleted(step idl.Step) (bool, error) {
+	return s.HasStatus(step, func(status idl.Status) bool {
+		return status == idl.Status_COMPLETE
+	})
+}
+
+func (s *StepStore) HasStatus(step idl.Step, check func(status idl.Status) bool) (bool, error) {
+	status, err := s.Read(step)
+	if err != nil {
+		return false, err
+	}
+
+	return check(status), nil
+}
