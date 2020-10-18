@@ -199,7 +199,7 @@ func TestCreateStateDir(t *testing.T) {
 
 		{ // creating state directory is idempotent
 			err = CreateStateDir()
-			if !errors.Is(err, step.Skip) {
+			if err != nil {
 				t.Fatalf("unexpected error %#v", err)
 			}
 
@@ -215,7 +215,7 @@ func TestCreateStateDir(t *testing.T) {
 
 		{ //  creating state directory succeeds on multiple runs
 			err = CreateStateDir()
-			if !errors.Is(err, step.Skip) {
+			if err != nil {
 				t.Fatalf("unexpected error %#v", err)
 			}
 		}

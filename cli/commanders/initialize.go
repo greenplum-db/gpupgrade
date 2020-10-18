@@ -27,7 +27,7 @@ func CreateStateDir() (err error) {
 	err = os.Mkdir(stateDir, 0700)
 	if os.IsExist(err) {
 		gplog.Debug("State directory %s already present...skipping", stateDir)
-		return step.Skip
+		return nil
 	}
 	if err != nil {
 		gplog.Debug("State directory %s could not be created.", stateDir)
