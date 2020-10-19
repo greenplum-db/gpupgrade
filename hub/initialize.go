@@ -8,7 +8,6 @@ import (
 	"database/sql"
 	"fmt"
 	"path/filepath"
-	"strconv"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/xerrors"
@@ -122,10 +121,11 @@ func (s *Server) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest,
 		return s.CheckUpgrade(stream, conns)
 	})
 
-	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Data: map[string]string{
-		idl.ResponseKey_source_has_mirrors.String(): strconv.FormatBool(s.Config.Source.HasMirrors()),
-		idl.ResponseKey_source_has_standby.String(): strconv.FormatBool(s.Config.Source.HasStandby()),
-	}}}}
+	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{
+		Contents: &idl.Response_InitializeResponse{InitializeResponse: &idl.InitializeResponse{
+			HasMirrors: s.Config.Source.HasMirrors(),
+			HasStandby: s.Config.Source.HasStandby(),
+		}}}}}
 
 	if err = stream.Send(message); err != nil {
 		return err

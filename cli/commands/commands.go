@@ -463,7 +463,7 @@ func initialize() *cobra.Command {
 				return commanders.CheckDiskSpace(client, diskFreeRatio)
 			})
 
-			var response commanders.InitializeCreateClusterResponse
+			var response idl.InitializeResponse
 			st.RunHubSubstep(func(streams step.OutStreams) error {
 				if stopBeforeClusterCreation {
 					return step.Skip
@@ -516,7 +516,7 @@ func execute() *cobra.Command {
 		Long:  ExecuteHelp,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			cmd.SilenceUsage = true
-			var response commanders.ExecuteResponse
+			var response idl.ExecuteResponse
 
 			st, err := commanders.NewStep(idl.Step_EXECUTE, &step.BufferedStreams{}, verbose)
 			if err != nil {
@@ -540,7 +540,7 @@ func execute() *cobra.Command {
 			return st.Complete(fmt.Sprintf(`
 Execute completed successfully.
 
-The target cluster is now running. The PGPORT is %s and the 
+The target cluster is now running. The PGPORT is %d and the
 MASTER_DATA_DIRECTORY is %s
 
 You may now run queries against the target database and perform any other 
@@ -555,7 +555,7 @@ If you are satisfied with the state of the cluster, run "gpupgrade finalize"
 to proceed with the upgrade.
 
 To return the cluster to its original state, run "gpupgrade revert".
-`, response.TargetPort, response.TargetMasterDataDir))
+`, response.GetTarget().GetPort(), response.GetTarget().GetMasterDataDirectory()))
 		},
 	}
 
@@ -572,7 +572,7 @@ func finalize() *cobra.Command {
 		Short: "finalizes the cluster after upgrade execution",
 		Long:  FinalizeHelp,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			var response commanders.FinalizeResponse
+			var response idl.FinalizeResponse
 
 			st, err := commanders.NewStep(idl.Step_FINALIZE, &step.BufferedStreams{}, verbose)
 			if err != nil {
@@ -596,8 +596,8 @@ func finalize() *cobra.Command {
 			return st.Complete(fmt.Sprintf(`
 Finalize completed successfully.
 
-The target cluster is now upgraded and is ready to be used. The PGPORT is %s and the MASTER_DATA_DIRECTORY is %s.
-`, response.TargetPort, response.TargetMasterDataDir))
+The target cluster is now upgraded and is ready to be used. The PGPORT is %d and the MASTER_DATA_DIRECTORY is %s.
+`, response.GetTarget().GetPort(), response.GetTarget().GetMasterDataDirectory()))
 		},
 	}
 
@@ -614,7 +614,7 @@ func revert() *cobra.Command {
 		Short: "reverts the upgrade and returns the cluster to its original state",
 		Long:  RevertHelp,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			var response commanders.RevertResponse
+			var response idl.RevertResponse
 
 			st, err := commanders.NewStep(idl.Step_REVERT, &step.BufferedStreams{}, verbose)
 			if err != nil {
@@ -652,7 +652,7 @@ Revert completed successfully.
 
 Reverted to source cluster version %s.
 
-The source cluster is now running. The PGPORT is %s and the 
+The source cluster is now running. The PGPORT is %d and the
 MASTER_DATA_DIRECTORY is %s
 
 The gpupgrade logs can be found on the master and segment hosts in
@@ -664,7 +664,7 @@ To restart the upgrade, run "gpupgrade initialize" again.
 
 To use the reverted cluster, you must recreate any tables, indexes, and/or 
 roles that were dropped or altered to pass the pg_upgrade checks.
-`, response.Version, response.SourcePort, response.SourceMasterDataDir, response.ArchiveDir))
+`, response.GetSourceVersion(), response.GetSource().GetPort(), response.GetSource().GetMasterDataDirectory(), response.GetLogArchiveDirectory()))
 		},
 	}
 
@@ -1003,13 +1003,13 @@ func addHelpToCommand(cmd *cobra.Command, help string) *cobra.Command {
 	return cmd
 }
 
-func InitializeWarningMessageIfAny(response commanders.InitializeCreateClusterResponse) string {
+func InitializeWarningMessageIfAny(response idl.InitializeResponse) string {
 	message := ""
-	if response.HasStandby == "false" && response.HasMirrors == "false" {
+	if !response.GetHasStandby() && !response.GetHasMirrors() {
 		message = "standby and mirror segments"
-	} else if response.HasMirrors == "false" {
+	} else if !response.GetHasMirrors() {
 		message = "mirror segments"
-	} else if response.HasStandby == "false" {
+	} else if !response.GetHasStandby() {
 		message = "standby"
 	}
 

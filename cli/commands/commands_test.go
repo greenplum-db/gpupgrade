@@ -12,8 +12,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
-	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/hub"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 )
@@ -259,38 +259,38 @@ func TestAddFlags(t *testing.T) {
 func TestInitializeWarningMessageIfAny(t *testing.T) {
 	cases := []struct {
 		name     string
-		input    commanders.InitializeCreateClusterResponse
+		input    idl.InitializeResponse
 		expected string
 	}{
 		{
 			name: "both standby and mirror does not exist",
-			input: commanders.InitializeCreateClusterResponse{
-				HasMirrors: "false",
-				HasStandby: "false",
+			input: idl.InitializeResponse{
+				HasMirrors: false,
+				HasStandby: false,
 			},
 			expected: fmt.Sprintf(InitializeWarningMessage, "standby and mirror segments"),
 		},
 		{
 			name: "only mirrors does not exist",
-			input: commanders.InitializeCreateClusterResponse{
-				HasMirrors: "false",
-				HasStandby: "true",
+			input: idl.InitializeResponse{
+				HasMirrors: false,
+				HasStandby: true,
 			},
 			expected: fmt.Sprintf(InitializeWarningMessage, "mirror segments"),
 		},
 		{
 			name: "only standby does not exist",
-			input: commanders.InitializeCreateClusterResponse{
-				HasMirrors: "true",
-				HasStandby: "false",
+			input: idl.InitializeResponse{
+				HasMirrors: true,
+				HasStandby: false,
 			},
 			expected: fmt.Sprintf(InitializeWarningMessage, "standby"),
 		},
 		{
 			name: "both standby and mirrors exist",
-			input: commanders.InitializeCreateClusterResponse{
-				HasMirrors: "true",
-				HasStandby: "true",
+			input: idl.InitializeResponse{
+				HasMirrors: true,
+				HasStandby: true,
 			},
 			expected: "",
 		},

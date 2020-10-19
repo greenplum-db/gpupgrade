@@ -6,7 +6,6 @@ package commanders_test
 import (
 	"errors"
 	"io"
-	"reflect"
 	"testing"
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
@@ -182,37 +181,78 @@ func TestUILoop(t *testing.T) {
 		}
 	})
 
-	t.Run("returns a map of strings that are processed in the stream", func(t *testing.T) {
-		firstMap := make(map[string]string)
-		firstMap["a"] = "b"
-		firstMap["e"] = "f"
-
-		secondMap := make(map[string]string)
-		secondMap["a"] = "c"
-		secondMap["g"] = "5432"
-
-		msgs := msgStream{
-			{Contents: &idl.Message_Response{
-				Response: &idl.Response{Data: firstMap},
-			}},
-			{Contents: &idl.Message_Response{
-				Response: &idl.Response{Data: secondMap},
-			}},
+	t.Run("processes responses successfully", func(t *testing.T) {
+		cases := []struct {
+			name     string
+			msgs     msgStream
+			expected func(response *idl.Response) bool
+		}{
+			{
+				name: "processes initialize response successfully",
+				msgs: msgStream{&idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{
+					Contents: &idl.Response_InitializeResponse{InitializeResponse: &idl.InitializeResponse{
+						HasMirrors: true,
+					}}}}}},
+				expected: func(response *idl.Response) bool {
+					return response.GetInitializeResponse().GetHasMirrors() == true &&
+						response.GetInitializeResponse().GetHasStandby() == false
+				},
+			},
+			{
+				name: "processes execute response successfully",
+				msgs: msgStream{&idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{
+					Contents: &idl.Response_ExecuteResponse{ExecuteResponse: &idl.ExecuteResponse{
+						Target: &idl.Cluster{
+							Port:                15423,
+							MasterDataDirectory: "/data/gpseg-1",
+						}}}}}}},
+				expected: func(response *idl.Response) bool {
+					return response.GetExecuteResponse().GetTarget().GetPort() == 15423 &&
+						response.GetExecuteResponse().GetTarget().GetMasterDataDirectory() == "/data/gpseg-1"
+				},
+			},
+			{
+				name: "processes finalize response successfully",
+				msgs: msgStream{&idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{
+					Contents: &idl.Response_FinalizeResponse{FinalizeResponse: &idl.FinalizeResponse{
+						Target: &idl.Cluster{
+							Port:                15433,
+							MasterDataDirectory: "/data/gpseg-10",
+						}}}}}}},
+				expected: func(response *idl.Response) bool {
+					return response.GetFinalizeResponse().GetTarget().GetPort() == 15433 &&
+						response.GetFinalizeResponse().GetTarget().GetMasterDataDirectory() == "/data/gpseg-10"
+				},
+			},
+			{
+				name: "processes revert response successfully",
+				msgs: msgStream{&idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{
+					Contents: &idl.Response_RevertResponse{RevertResponse: &idl.RevertResponse{
+						Source: &idl.Cluster{
+							Port:                1111,
+							MasterDataDirectory: "/data/gpseg-2",
+						},
+						SourceVersion:       "5.0",
+						LogArchiveDirectory: "/gpAdminLogs/1112",
+					}}}}}},
+				expected: func(response *idl.Response) bool {
+					return response.GetRevertResponse().GetSource().GetPort() == 1111 &&
+						response.GetRevertResponse().GetSource().GetMasterDataDirectory() == "/data/gpseg-2" &&
+						response.GetRevertResponse().GetSourceVersion() == "5.0" &&
+						response.GetRevertResponse().GetLogArchiveDirectory() == "/gpAdminLogs/1112"
+				},
+			},
 		}
 
-		actual, err := commanders.UILoop(&msgs, false)
+		for _, c := range cases {
+			actual, err := commanders.UILoop(&c.msgs, false)
+			if err != nil {
+				t.Errorf("got unexpected err %+v", err)
+			}
 
-		if err != nil {
-			t.Errorf("got unexpected err %+v", err)
-		}
-
-		expected := make(map[string]string)
-		expected["a"] = "c"
-		expected["e"] = "f"
-		expected["g"] = "5432"
-
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("got map %#v want %#v", actual, expected)
+			if !c.expected(actual) {
+				t.Errorf("got unexpected response %s", actual)
+			}
 		}
 	})
 

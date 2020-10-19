@@ -127,20 +127,37 @@ message Message {
   }
 }
 
-enum ResponseKey {
-    ResponseKey_UNSPECIFIED = 0; // https://developers.google.com/protocol-buffers/docs/style#enums
-    source_port = 1;
-    target_port = 2;
-    source_master_data_directory = 3;
-    target_master_data_directory = 4;
-    revert_log_archive_directory = 5;
-    source_version = 6;
-    source_has_standby = 7;
-    source_has_mirrors = 8;
+message Response {
+  oneof contents {
+    InitializeResponse initializeResponse = 3;
+    ExecuteResponse executeResponse = 4;
+    FinalizeResponse finalizeResponse = 5;
+    RevertResponse revertResponse = 6;
+  }
 }
 
-message Response {
-  map<string,string> data = 1;
+message InitializeResponse {
+  bool HasMirrors = 1;
+  bool HasStandby = 2;
+}
+
+message Cluster {
+  int32 Port = 1;
+  string MasterDataDirectory = 2;
+}
+
+message ExecuteResponse {
+  Cluster target = 1;
+}
+
+message FinalizeResponse {
+  Cluster target = 1;
+}
+
+message RevertResponse {
+  Cluster source = 1;
+  string SourceVersion = 2;
+  string LogArchiveDirectory = 3;
 }
 
 message GetConfigRequest {

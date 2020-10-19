@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/xerrors"
@@ -109,10 +108,13 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 		return nil
 	})
 
-	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Data: map[string]string{
-		idl.ResponseKey_target_port.String():                  strconv.Itoa(s.Target.MasterPort()),
-		idl.ResponseKey_target_master_data_directory.String(): s.Target.MasterDataDir(),
-	}}}}
+	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{
+		Contents: &idl.Response_ExecuteResponse{ExecuteResponse: &idl.ExecuteResponse{
+			Target: &idl.Cluster{
+				Port:                int32(s.Target.MasterPort()),
+				MasterDataDirectory: s.Target.MasterDataDir(),
+			}}}}}}
+
 	if err = stream.Send(message); err != nil {
 		return err
 	}

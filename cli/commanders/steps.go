@@ -16,28 +16,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/stopwatch"
 )
 
-type InitializeCreateClusterResponse struct {
-	HasMirrors string
-	HasStandby string
-}
-
-type ExecuteResponse struct {
-	TargetPort          string
-	TargetMasterDataDir string
-}
-
-type FinalizeResponse struct {
-	TargetPort          string
-	TargetMasterDataDir string
-}
-
-type RevertResponse struct {
-	SourcePort          string
-	SourceMasterDataDir string
-	Version             string
-	ArchiveDir          string
-}
-
 type receiver interface {
 	Recv() (*idl.Message, error)
 }
@@ -63,85 +41,90 @@ func Initialize(client idl.CliToHubClient, request *idl.InitializeRequest, verbo
 	return nil
 }
 
-func InitializeCreateCluster(client idl.CliToHubClient, verbose bool) (InitializeCreateClusterResponse, error) {
+func InitializeCreateCluster(client idl.CliToHubClient, verbose bool) (idl.InitializeResponse, error) {
 	stream, err := client.InitializeCreateCluster(context.Background(),
 		&idl.InitializeCreateClusterRequest{},
 	)
 	if err != nil {
-		return InitializeCreateClusterResponse{}, xerrors.Errorf("initialize create cluster: %w", err)
+		return idl.InitializeResponse{}, xerrors.Errorf("initialize create cluster: %w", err)
 	}
 
 	response, err := UILoop(stream, verbose)
 	if err != nil {
-		return InitializeCreateClusterResponse{}, xerrors.Errorf("InitializeCreateCluster: %w", err)
+		return idl.InitializeResponse{}, xerrors.Errorf("InitializeCreateCluster: %w", err)
 	}
 
-	return InitializeCreateClusterResponse{
-		HasMirrors: response[idl.ResponseKey_source_has_mirrors.String()],
-		HasStandby: response[idl.ResponseKey_source_has_standby.String()],
-	}, nil
+	initializeResponse := response.GetInitializeResponse()
+	if initializeResponse == nil {
+		return idl.InitializeResponse{}, xerrors.Errorf("Initialize response is nil")
+	}
+
+	return *initializeResponse, nil
 }
 
-func Execute(client idl.CliToHubClient, verbose bool) (ExecuteResponse, error) {
+func Execute(client idl.CliToHubClient, verbose bool) (idl.ExecuteResponse, error) {
 	stream, err := client.Execute(context.Background(), &idl.ExecuteRequest{})
 	if err != nil {
 		// TODO: Change the logging message?
 		gplog.Error("ERROR - Unable to connect to hub")
-		return ExecuteResponse{}, err
+		return idl.ExecuteResponse{}, err
 	}
 
 	response, err := UILoop(stream, verbose)
 	if err != nil {
-		return ExecuteResponse{}, xerrors.Errorf("Execute: %w", err)
+		return idl.ExecuteResponse{}, xerrors.Errorf("Execute: %w", err)
 	}
 
-	return ExecuteResponse{
-		TargetPort:          response[idl.ResponseKey_target_port.String()],
-		TargetMasterDataDir: response[idl.ResponseKey_target_master_data_directory.String()],
-	}, nil
+	executeResponse := response.GetExecuteResponse()
+	if executeResponse == nil {
+		return idl.ExecuteResponse{}, xerrors.Errorf("Execute response is nil")
+	}
+
+	return *executeResponse, nil
 }
 
-func Finalize(client idl.CliToHubClient, verbose bool) (FinalizeResponse, error) {
+func Finalize(client idl.CliToHubClient, verbose bool) (idl.FinalizeResponse, error) {
 	stream, err := client.Finalize(context.Background(), &idl.FinalizeRequest{})
 	if err != nil {
 		gplog.Error(err.Error())
-		return FinalizeResponse{}, err
+		return idl.FinalizeResponse{}, err
 	}
 
 	response, err := UILoop(stream, verbose)
 	if err != nil {
-		return FinalizeResponse{}, xerrors.Errorf("Finalize: %w", err)
+		return idl.FinalizeResponse{}, xerrors.Errorf("Finalize: %w", err)
 	}
 
-	return FinalizeResponse{
-			TargetPort:          response[idl.ResponseKey_target_port.String()],
-			TargetMasterDataDir: response[idl.ResponseKey_target_master_data_directory.String()],
-		},
-		nil
+	finalizeResponse := response.GetFinalizeResponse()
+	if finalizeResponse == nil {
+		return idl.FinalizeResponse{}, xerrors.Errorf("Finalize response is nil")
+	}
+
+	return *finalizeResponse, nil
 }
 
-func Revert(client idl.CliToHubClient, verbose bool) (RevertResponse, error) {
+func Revert(client idl.CliToHubClient, verbose bool) (idl.RevertResponse, error) {
 	stream, err := client.Revert(context.Background(), &idl.RevertRequest{})
 	if err != nil {
 		gplog.Error(err.Error())
-		return RevertResponse{}, err
+		return idl.RevertResponse{}, err
 	}
 
 	response, err := UILoop(stream, verbose)
 	if err != nil {
-		return RevertResponse{}, xerrors.Errorf("Revert: %w", err)
+		return idl.RevertResponse{}, xerrors.Errorf("Revert: %w", err)
 	}
 
-	return RevertResponse{
-		SourcePort:          response[idl.ResponseKey_source_port.String()],
-		SourceMasterDataDir: response[idl.ResponseKey_source_master_data_directory.String()],
-		Version:             response[idl.ResponseKey_source_version.String()],
-		ArchiveDir:          response[idl.ResponseKey_revert_log_archive_directory.String()],
-	}, nil
+	revertResponse := response.GetRevertResponse()
+	if revertResponse == nil {
+		return idl.RevertResponse{}, xerrors.Errorf("Revert response is nil")
+	}
+
+	return *revertResponse, nil
 }
 
-func UILoop(stream receiver, verbose bool) (map[string]string, error) {
-	data := make(map[string]string)
+func UILoop(stream receiver, verbose bool) (*idl.Response, error) {
+	var response *idl.Response
 	var lastStep idl.Substep
 	var err error
 
@@ -186,10 +169,7 @@ func UILoop(stream receiver, verbose bool) (map[string]string, error) {
 			}
 
 		case *idl.Message_Response:
-			// NOTE: the latest message will clobber earlier keys
-			for k, v := range x.Response.Data {
-				data[k] = v
-			}
+			response = x.Response
 
 		default:
 			panic(fmt.Sprintf("unknown message type: %T", x))
@@ -201,10 +181,10 @@ func UILoop(stream receiver, verbose bool) (map[string]string, error) {
 	}
 
 	if err != io.EOF {
-		return data, err
+		return response, err
 	}
 
-	return data, nil
+	return response, nil
 }
 
 // FormatStatus returns a status string based on the upgrade status message.
