@@ -152,6 +152,7 @@ message ExecuteResponse {
 
 message FinalizeResponse {
   Cluster target = 1;
+  string TargetVersion = 2;
 }
 
 message RevertResponse {

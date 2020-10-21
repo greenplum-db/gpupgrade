@@ -540,11 +540,10 @@ func execute() *cobra.Command {
 			return st.Complete(fmt.Sprintf(`
 Execute completed successfully.
 
-The target cluster is now running. The PGPORT is %d and the
-MASTER_DATA_DIRECTORY is %s
-
-You may now run queries against the target database and perform any other 
-validation desired prior to finalizing your upgrade.
+The target cluster is now running. You may now run queries against the target 
+database and perform any other validation desired prior to finalizing your upgrade.
+PGPORT: %d
+MASTER_DATA_DIRECTORY: %s
 
 WARNING: If any queries modify the target database prior to gpupgrade finalize, 
 it will be inconsistent with the source database. 
@@ -596,8 +595,15 @@ func finalize() *cobra.Command {
 			return st.Complete(fmt.Sprintf(`
 Finalize completed successfully.
 
-The target cluster is now upgraded and is ready to be used. The PGPORT is %d and the MASTER_DATA_DIRECTORY is %s.
-`, response.GetTarget().GetPort(), response.GetTarget().GetMasterDataDirectory()))
+The target cluster is now ready to use, running Greenplum %s.
+PGPORT: %d
+MASTER_DATA_DIRECTORY: %s
+
+NEXT ACTIONS
+------------
+Run the “complete” data migration scripts, and recreate any additional tables,
+indexes, and roles that were dropped or altered to resolve migration issues.
+`, response.GetTargetVersion(), response.GetTarget().GetPort(), response.GetTarget().GetMasterDataDirectory()))
 		},
 	}
 
@@ -650,20 +656,20 @@ func revert() *cobra.Command {
 			return st.Complete(fmt.Sprintf(`
 Revert completed successfully.
 
-Reverted to source cluster version %s.
-
-The source cluster is now running. The PGPORT is %d and the
-MASTER_DATA_DIRECTORY is %s
+The source cluster is now running version %s.
+PGPORT: %d
+MASTER_DATA_DIRECTORY: %s
 
 The gpupgrade logs can be found on the master and segment hosts in
 %s
 
 NEXT ACTIONS
 ------------
-To restart the upgrade, run "gpupgrade initialize" again.
+To use the reverted cluster, run the “revert” data migration scripts, and
+recreate any additional tables, indexes, and roles that were dropped or
+altered to resolve migration issues.
 
-To use the reverted cluster, you must recreate any tables, indexes, and/or 
-roles that were dropped or altered to pass the pg_upgrade checks.
+To restart the upgrade, run "gpupgrade initialize" again.
 `, response.GetSourceVersion(), response.GetSource().GetPort(), response.GetSource().GetMasterDataDirectory(), response.GetLogArchiveDirectory()))
 		},
 	}
