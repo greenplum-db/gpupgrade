@@ -20,18 +20,23 @@ import (
 var execCommandHubStart = exec.Command
 var execCommandHubCount = exec.Command
 
-// we create the state directory in the cli to ensure that at most one gpupgrade is occurring
-// at the same time.
+// Create the state directory in the CLI to properly control the directory
+// creation and destruction.
 func CreateStateDir() (err error) {
 	stateDir := utils.GetStateDir()
-	err = os.Mkdir(stateDir, 0700)
-	if os.IsExist(err) {
-		gplog.Debug("State directory %s already present...skipping", stateDir)
+	exists, err := upgrade.PathExist(stateDir)
+	if err != nil {
+		return xerrors.Errorf("checking if path %q exists: %w", stateDir, err)
+	}
+
+	if exists {
+		gplog.Debug("state directory %q already exists", stateDir)
 		return nil
 	}
+
+	err = os.Mkdir(stateDir, 0700)
 	if err != nil {
-		gplog.Debug("State directory %s could not be created.", stateDir)
-		return err
+		return xerrors.Errorf("creating %q: %w", stateDir, err)
 	}
 
 	return nil
