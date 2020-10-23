@@ -22,7 +22,7 @@ import (
 
 const StepsFileName = "steps.json"
 
-type CLIStep struct {
+type Step struct {
 	stepName    string
 	step        idl.Step
 	store       *StepStore
@@ -33,13 +33,13 @@ type CLIStep struct {
 	err         error
 }
 
-func NewStep(step idl.Step, streams *step.BufferedStreams, verbose bool) (*CLIStep, error) {
+func NewStep(step idl.Step, streams *step.BufferedStreams, verbose bool) (*Step, error) {
 	store, err := NewStepStore()
 	if err != nil {
 		gplog.Error("creating step store: %v", err)
 		context := fmt.Sprintf("Note: If commands were issued in order, ensure gpupgrade can write to %s", utils.GetStateDir())
 		wrappedErr := xerrors.Errorf("%v\n\n%v", StepErr, context)
-		return &CLIStep{}, cli.NewNextActions(wrappedErr, RunInitialize)
+		return &Step{}, cli.NewNextActions(wrappedErr, RunInitialize)
 	}
 
 	err = store.ValidateStep(step)
@@ -49,7 +49,7 @@ func NewStep(step idl.Step, streams *step.BufferedStreams, verbose bool) (*CLISt
 
 	err = store.Write(step, idl.Status_RUNNING)
 	if err != nil {
-		return &CLIStep{}, err
+		return &Step{}, err
 	}
 
 	stepName := strings.Title(strings.ToLower(step.String()))
@@ -58,7 +58,7 @@ func NewStep(step idl.Step, streams *step.BufferedStreams, verbose bool) (*CLISt
 	fmt.Println(stepName + " in progress.")
 	fmt.Println()
 
-	return &CLIStep{
+	return &Step{
 		stepName: stepName,
 		step:     step,
 		store:    store,
@@ -68,11 +68,11 @@ func NewStep(step idl.Step, streams *step.BufferedStreams, verbose bool) (*CLISt
 	}, nil
 }
 
-func (s *CLIStep) Err() error {
+func (s *Step) Err() error {
 	return s.err
 }
 
-func (s *CLIStep) RunHubSubstep(f func(streams step.OutStreams) error) {
+func (s *Step) RunHubSubstep(f func(streams step.OutStreams) error) {
 	if s.err != nil {
 		return
 	}
@@ -87,7 +87,7 @@ func (s *CLIStep) RunHubSubstep(f func(streams step.OutStreams) error) {
 	}
 }
 
-func (s *CLIStep) RunInternalSubstep(f func() error) {
+func (s *Step) RunInternalSubstep(f func() error) {
 	if s.err != nil {
 		return
 	}
@@ -102,7 +102,7 @@ func (s *CLIStep) RunInternalSubstep(f func() error) {
 	}
 }
 
-func (s *CLIStep) RunCLISubstep(substep idl.Substep, f func(streams step.OutStreams) error) {
+func (s *Step) RunCLISubstep(substep idl.Substep, f func(streams step.OutStreams) error) {
 	var err error
 	defer func() {
 		if err != nil {
@@ -151,11 +151,11 @@ func (s *CLIStep) RunCLISubstep(substep idl.Substep, f func(streams step.OutStre
 	s.printStatus(substep, idl.Status_COMPLETE)
 }
 
-func (s *CLIStep) DisableStore() {
+func (s *Step) DisableStore() {
 	s.store = nil
 }
 
-func (s *CLIStep) Complete(completedText string) error {
+func (s *Step) Complete(completedText string) error {
 	logDuration(s.stepName, s.verbose, s.timer.Stop())
 
 	status := idl.Status_COMPLETE
@@ -187,7 +187,7 @@ If you would like to return the cluster to its original state, please run "gpupg
 	return nil
 }
 
-func (s *CLIStep) printStatus(substep idl.Substep, status idl.Status) {
+func (s *Step) printStatus(substep idl.Substep, status idl.Status) {
 	if substep == s.lastSubstep {
 		// For the same substep reset the cursor to overwrite the current status.
 		fmt.Print("\r")
