@@ -86,11 +86,13 @@ type stepCondition struct {
 }
 
 var StepErr = errors.New(`gpupgrade commands must be issued in correct order
+
   1. initialize   runs pre-upgrade checks and prepares the cluster for upgrade
   2. execute      upgrades the master and primary segments to the target
                   Greenplum version
   3. finalize     upgrades the standby master and mirror segments to the target
                   Greenplum version. Revert cannot be run after finalize has started.
+
 Use "gpupgrade --help" for more information`)
 
 const RunInitialize = `To begin the upgrade, run "gpupgrade initialize".`

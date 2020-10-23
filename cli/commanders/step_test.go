@@ -365,8 +365,8 @@ func TestSubstep(t *testing.T) {
 			t.Errorf("got %T, want %T", err, nextActionsErr)
 		}
 
-		if nextActionsErr.NextAction != commanders.StepErr.Error() {
-			t.Errorf("got %q want %q", nextActionsErr.NextAction, commanders.StepErr.Error())
+		if nextActionsErr.NextAction != commanders.RunInitialize {
+			t.Errorf("got %q want %q", nextActionsErr.NextAction, commanders.RunInitialize)
 		}
 	})
 

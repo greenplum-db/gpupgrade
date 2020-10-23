@@ -15,6 +15,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/cli"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 	"github.com/greenplum-db/gpupgrade/utils/stopwatch"
 )
@@ -35,7 +36,10 @@ type CLIStep struct {
 func NewStep(step idl.Step, streams *step.BufferedStreams, verbose bool) (*CLIStep, error) {
 	store, err := NewStepStore()
 	if err != nil {
-		return &CLIStep{}, cli.NewNextActions(err, StepErr.Error())
+		gplog.Error("creating step store: %v", err)
+		context := fmt.Sprintf("Note: If commands were issued in order, ensure gpupgrade can write to %s", utils.GetStateDir())
+		wrappedErr := xerrors.Errorf("%v\n\n%v", StepErr, context)
+		return &CLIStep{}, cli.NewNextActions(wrappedErr, RunInitialize)
 	}
 
 	err = store.ValidateStep(step)
