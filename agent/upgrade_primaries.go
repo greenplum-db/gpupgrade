@@ -18,7 +18,11 @@ import (
 )
 
 func (s *Server) UpgradePrimaries(ctx context.Context, request *idl.UpgradePrimariesRequest) (*idl.UpgradePrimariesReply, error) {
-	gplog.Info("agent starting %s", idl.Substep_UPGRADE_PRIMARIES)
+	if request.CheckOnly {
+		gplog.Info("agent starting %s", idl.Substep_CHECK_UPGRADE)
+	} else {
+		gplog.Info("agent starting %s", idl.Substep_UPGRADE_PRIMARIES)
+	}
 
 	err := UpgradePrimaries(s.conf.StateDir, request)
 
