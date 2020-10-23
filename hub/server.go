@@ -232,13 +232,13 @@ func RestartAgents(ctx context.Context,
 			gplog.Debug("failed to dial agent on %s: %+v", host, err)
 			gplog.Info("starting agent on %s", host)
 
-			agentPath, err := getBinaryPath()
+			path, err := getBinaryPath()
 			if err != nil {
 				errs <- err
 				return
 			}
 			cmd := execCommand("ssh", host,
-				fmt.Sprintf("bash -c \"%s agent --daemonize --port %d --state-directory %s\"", agentPath, port, stateDir))
+				fmt.Sprintf("bash -c \"%s agent --daemonize --port %d --state-directory %s\"", path, port, stateDir))
 			stdout, err := cmd.Output()
 			if err != nil {
 				errs <- err

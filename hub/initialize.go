@@ -49,6 +49,12 @@ func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initi
 		return FillConfiguration(s.Config, conn, stream, in, s.SaveConfig)
 	})
 
+	// we need the cluster information to determine what hosts to check, so we do this check
+	// as early as possible after that information is available
+	st.RunInternalSubstep(func() error {
+		return ValidateGpupgradeVersion(s.Source.MasterHostname(), AgentHosts(s.Source))
+	})
+
 	st.Run(idl.Substep_START_AGENTS, func(_ step.OutStreams) error {
 		_, err := RestartAgents(context.Background(), nil, AgentHosts(s.Source), s.AgentPort, s.StateDir)
 		return err
