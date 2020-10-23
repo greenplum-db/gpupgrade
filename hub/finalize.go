@@ -99,13 +99,15 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 		})
 	}
 
-	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{
-		Contents: &idl.Response_FinalizeResponse{FinalizeResponse: &idl.FinalizeResponse{
+	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_FinalizeResponse{
+		FinalizeResponse: &idl.FinalizeResponse{
 			TargetVersion: s.Target.Version.VersionString,
 			Target: &idl.Cluster{
 				Port:                int32(s.Target.MasterPort()),
 				MasterDataDirectory: s.Target.MasterDataDir(),
-			}}}}}}
+			},
+		},
+	}}}}
 
 	if err = stream.Send(message); err != nil {
 		return err

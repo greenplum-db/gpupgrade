@@ -172,22 +172,16 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		return DeleteStateDirectories(s.agentConns, s.Source.MasterHostname())
 	})
 
-	message := &idl.Message{
-		Contents: &idl.Message_Response{
-			Response: &idl.Response{
-				Contents: &idl.Response_RevertResponse{
-					RevertResponse: &idl.RevertResponse{
-						Source: &idl.Cluster{
-							Port:                int32(s.Target.MasterPort()),
-							MasterDataDirectory: s.Target.MasterDataDir(),
-						},
-						SourceVersion:       s.Source.Version.VersionString,
-						LogArchiveDirectory: archiveDir,
-					},
-				},
+	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_RevertResponse{
+		RevertResponse: &idl.RevertResponse{
+			SourceVersion:       s.Source.Version.VersionString,
+			LogArchiveDirectory: archiveDir,
+			Source: &idl.Cluster{
+				Port:                int32(s.Source.MasterPort()),
+				MasterDataDirectory: s.Source.MasterDataDir(),
 			},
 		},
-	}
+	}}}}
 
 	if err := stream.Send(message); err != nil {
 		return xerrors.Errorf("sending response message: %w", err)

@@ -121,11 +121,12 @@ func (s *Server) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest,
 		return s.CheckUpgrade(stream, conns)
 	})
 
-	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{
-		Contents: &idl.Response_InitializeResponse{InitializeResponse: &idl.InitializeResponse{
+	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_InitializeResponse{
+		InitializeResponse: &idl.InitializeResponse{
 			HasMirrors: s.Config.Source.HasMirrors(),
 			HasStandby: s.Config.Source.HasStandby(),
-		}}}}}
+		},
+	}}}}
 
 	if err = stream.Send(message); err != nil {
 		return err

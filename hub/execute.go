@@ -108,12 +108,13 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 		return nil
 	})
 
-	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{
-		Contents: &idl.Response_ExecuteResponse{ExecuteResponse: &idl.ExecuteResponse{
+	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_ExecuteResponse{
+		ExecuteResponse: &idl.ExecuteResponse{
 			Target: &idl.Cluster{
 				Port:                int32(s.Target.MasterPort()),
 				MasterDataDirectory: s.Target.MasterDataDir(),
-			}}}}}}
+			}},
+	}}}}
 
 	if err = stream.Send(message); err != nil {
 		return err
