@@ -489,8 +489,8 @@ NEXT ACTIONS
 To proceed with the upgrade, run "gpupgrade execute"
 followed by "gpupgrade finalize".
 
-To return the cluster to its original state, run "gpupgrade revert".
-`, warningMessage))
+To return the cluster to its original state, run "gpupgrade revert".`,
+				warningMessage))
 		},
 	}
 	subInit.Flags().StringVarP(&file, "file", "f", "", "the configuration file to use")
@@ -555,8 +555,8 @@ NEXT ACTIONS
 If you are satisfied with the state of the cluster, run "gpupgrade finalize" 
 to proceed with the upgrade.
 
-To return the cluster to its original state, run "gpupgrade revert".
-`, response.GetTarget().GetPort(), response.GetTarget().GetMasterDataDirectory()))
+To return the cluster to its original state, run "gpupgrade revert".`,
+				response.GetTarget().GetPort(), response.GetTarget().GetMasterDataDirectory()))
 		},
 	}
 
@@ -604,8 +604,8 @@ MASTER_DATA_DIRECTORY: %s
 NEXT ACTIONS
 ------------
 Run the “complete” data migration scripts, and recreate any additional tables,
-indexes, and roles that were dropped or altered to resolve migration issues.
-`, response.GetTargetVersion(), response.GetTarget().GetPort(), response.GetTarget().GetMasterDataDirectory()))
+indexes, and roles that were dropped or altered to resolve migration issues.`,
+				response.GetTargetVersion(), response.GetTarget().GetPort(), response.GetTarget().GetMasterDataDirectory()))
 		},
 	}
 
@@ -671,8 +671,8 @@ To use the reverted cluster, run the “revert” data migration scripts, and
 recreate any additional tables, indexes, and roles that were dropped or
 altered to resolve migration issues.
 
-To restart the upgrade, run "gpupgrade initialize" again.
-`, response.GetSourceVersion(), response.GetSource().GetPort(), response.GetSource().GetMasterDataDirectory(), response.GetLogArchiveDirectory()))
+To restart the upgrade, run "gpupgrade initialize" again.`,
+				response.GetSourceVersion(), response.GetSource().GetPort(), response.GetSource().GetMasterDataDirectory(), response.GetLogArchiveDirectory()))
 		},
 	}
 

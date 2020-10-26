@@ -130,7 +130,6 @@ func TestSubstep(t *testing.T) {
 		expected := "\nInitialize in progress.\n\n"
 		expected += commanders.Format(commanders.SubstepDescriptions[idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG].OutputText, idl.Status_RUNNING) + "\r"
 		expected += commanders.Format(commanders.SubstepDescriptions[idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG].OutputText, idl.Status_SKIPPED) + "\n"
-		expected += "\n"
 
 		actual := string(stdout)
 		if actual != expected {
@@ -230,7 +229,6 @@ func TestSubstep(t *testing.T) {
 
 		expectedStdout := "\nInitialize in progress.\n\n"
 		expectedStdout += "Initialize took 0s\n\n"
-		expectedStdout += "\n"
 
 		stdout, stderr := d.Collect()
 		d.Close()

@@ -170,7 +170,7 @@ func (s *CLIStep) Complete(completedText string) error {
 	}
 
 	if s.Err() != nil {
-		fmt.Println()
+		fmt.Println() // Separate the step status from the error text
 
 		// allow substpes to override the default next actions
 		var nextActions cli.NextActions
@@ -183,7 +183,7 @@ If you would like to return the cluster to its original state, please run "gpupg
 		return cli.NewNextActions(s.Err(), msg)
 	}
 
-	fmt.Println(completedText)
+	fmt.Print(completedText)
 	return nil
 }
 
