@@ -11,7 +11,7 @@ var Commit string
 var Release string
 
 func VersionString() string {
-	return fmt.Sprintf("Version: %s\nCommit: %s\nRelease: %s", Version, Commit, Release)
+	return fmt.Sprintf("Version: %s Commit: %s Release: %s", Version, Commit, Release)
 }
 
 func printVersion() {
