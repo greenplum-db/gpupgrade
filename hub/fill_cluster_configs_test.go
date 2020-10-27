@@ -39,22 +39,6 @@ func TestAssignDataDirsAndPorts(t *testing.T) {
 				{ContentID: 1, DbID: 3, Hostname: "mdw", DataDir: expectedDataDir("/data/dbfast2/seg2"), Role: "p", Port: 10},
 			}},
 	}, {
-		name: "uses default port range when port list is empty",
-		cluster: MustCreateCluster(t, []greenplum.SegConfig{
-			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: "p"},
-			{ContentID: 0, DbID: 2, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: "p"},
-			{ContentID: 1, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: "p"},
-			{ContentID: 2, DbID: 4, Hostname: "sdw1", DataDir: "/data/dbfast3/seg3", Role: "p"},
-		}),
-		ports: []int{},
-		expected: InitializeConfig{
-			Master: greenplum.SegConfig{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: expectedDataDir("/data/qddir/seg-1"), Role: "p", Port: 50432},
-			Primaries: []greenplum.SegConfig{
-				{ContentID: 0, DbID: 2, Hostname: "mdw", DataDir: expectedDataDir("/data/dbfast1/seg1"), Role: "p", Port: 50433},
-				{ContentID: 1, DbID: 3, Hostname: "mdw", DataDir: expectedDataDir("/data/dbfast2/seg2"), Role: "p", Port: 50434},
-				{ContentID: 2, DbID: 4, Hostname: "sdw1", DataDir: expectedDataDir("/data/dbfast3/seg3"), Role: "p", Port: 50433},
-			}},
-	}, {
 		name: "gives master its own port regardless of host layout",
 		cluster: MustCreateCluster(t, []greenplum.SegConfig{
 			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: "p"},
@@ -62,7 +46,7 @@ func TestAssignDataDirsAndPorts(t *testing.T) {
 			{ContentID: 1, DbID: 3, Hostname: "sdw1", DataDir: "/data/dbfast2/seg2", Role: "p"},
 			{ContentID: 2, DbID: 4, Hostname: "sdw1", DataDir: "/data/dbfast3/seg3", Role: "p"},
 		}),
-		ports: []int{},
+		ports: []int{50432, 50433, 50434, 50435, 50436, 50437, 50438, 50439, 50440},
 		expected: InitializeConfig{
 			Master: greenplum.SegConfig{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: expectedDataDir("/data/qddir/seg-1"), Role: "p", Port: 50432},
 			Primaries: []greenplum.SegConfig{
@@ -79,7 +63,7 @@ func TestAssignDataDirsAndPorts(t *testing.T) {
 			{ContentID: 0, DbID: 4, Hostname: "sdw1", DataDir: "/data/dbfast_mirror1/seg1", Role: "m"},
 			{ContentID: 1, DbID: 5, Hostname: "sdw1", DataDir: "/data/dbfast_mirror2/seg2", Role: "m"},
 		}),
-		ports: []int{},
+		ports: []int{50432, 50433, 50434, 50435, 50436, 50437, 50438, 50439, 50440},
 		expected: InitializeConfig{
 			Master: greenplum.SegConfig{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: expectedDataDir("/data/qddir/seg-1"), Role: "p", Port: 50432},
 			Primaries: []greenplum.SegConfig{
@@ -98,7 +82,7 @@ func TestAssignDataDirsAndPorts(t *testing.T) {
 			{ContentID: -1, DbID: 2, Hostname: "smdw", DataDir: "/data/standby", Role: "m"},
 			{ContentID: 0, DbID: 3, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: "p"},
 		}),
-		ports: []int{},
+		ports: []int{50432, 50433, 50434, 50435, 50436, 50437, 50438, 50439, 50440},
 		expected: InitializeConfig{
 			Master:    greenplum.SegConfig{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: expectedDataDir("/data/qddir/seg-1"), Role: "p", Port: 50432},
 			Standby:   greenplum.SegConfig{ContentID: -1, DbID: 2, Hostname: "smdw", DataDir: expectedDataDir("/data/standby"), Role: "m", Port: 50433},
@@ -111,7 +95,7 @@ func TestAssignDataDirsAndPorts(t *testing.T) {
 			{ContentID: -1, DbID: 2, Hostname: "mdw", DataDir: "/data/standby", Role: "m"},
 			{ContentID: 0, DbID: 3, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: "p"},
 		}),
-		ports: []int{},
+		ports: []int{50432, 50433, 50434, 50435, 50436, 50437, 50438, 50439, 50440},
 		expected: InitializeConfig{
 			Master:    greenplum.SegConfig{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: expectedDataDir("/data/qddir/seg-1"), Role: "p", Port: 50432},
 			Standby:   greenplum.SegConfig{ContentID: -1, DbID: 2, Hostname: "mdw", DataDir: expectedDataDir("/data/standby"), Role: "m", Port: 50433},
@@ -124,7 +108,7 @@ func TestAssignDataDirsAndPorts(t *testing.T) {
 			{ContentID: -1, DbID: 2, Hostname: "mdw", DataDir: "/data/standby", Role: "m"},
 			{ContentID: 0, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: "p"},
 		}),
-		ports: []int{},
+		ports: []int{50432, 50433, 50434, 50435, 50436, 50437, 50438, 50439, 50440},
 		expected: InitializeConfig{
 			Master:    greenplum.SegConfig{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: expectedDataDir("/data/qddir/seg-1"), Role: "p", Port: 50432},
 			Standby:   greenplum.SegConfig{ContentID: -1, DbID: 2, Hostname: "mdw", DataDir: expectedDataDir("/data/standby"), Role: "m", Port: 50433},

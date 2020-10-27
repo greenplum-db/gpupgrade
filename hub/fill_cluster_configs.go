@@ -75,26 +75,8 @@ func FillConfiguration(config *Config, conn *sql.DB, _ step.OutStreams, request 
 }
 
 func AssignDatadirsAndPorts(source *greenplum.Cluster, ports []int, upgradeID upgrade.ID) (InitializeConfig, error) {
-	if len(ports) == 0 {
-		port := 50432
-		numberOfSegments := len(source.Mirrors) + len(source.Primaries) + 2 // +2 for master/standby
-		if (numberOfSegments + port) > 65535 {
-			numberOfSegments = 65535 - port
-		}
+	ports = sanitize(ports)
 
-		for i := 0; i < numberOfSegments; i++ {
-			ports = append(ports, port)
-			port++
-		}
-	} else {
-		ports = sanitize(ports)
-	}
-
-	return assignDatadirsAndCustomPorts(source, ports, upgradeID)
-}
-
-// can return an error if we run out of ports to use
-func assignDatadirsAndCustomPorts(source *greenplum.Cluster, ports []int, upgradeID upgrade.ID) (InitializeConfig, error) {
 	targetInitializeConfig := InitializeConfig{}
 
 	var segPrefix string

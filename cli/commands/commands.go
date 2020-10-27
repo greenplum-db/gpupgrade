@@ -393,7 +393,7 @@ func initialize() *cobra.Command {
 				)
 			}
 
-			ports, err := parsePorts(ports)
+			parsedPorts, err := parsePorts(ports)
 			if err != nil {
 				return err
 			}
@@ -451,7 +451,7 @@ func initialize() *cobra.Command {
 					TargetGPHome: filepath.Clean(targetGPHome),
 					SourcePort:   int32(sourcePort),
 					UseLinkMode:  linkMode,
-					Ports:        ports,
+					Ports:        parsedPorts,
 				}
 				err = commanders.Initialize(client, request, verbose)
 				if err != nil {
@@ -503,7 +503,7 @@ To return the cluster to its original state, run "gpupgrade revert".`,
 	subInit.Flags().MarkHidden("stop-before-cluster-creation") //nolint
 	subInit.Flags().Float64Var(&diskFreeRatio, "disk-free-ratio", 0.60, "percentage of disk space that must be available (from 0.0 - 1.0)")
 	subInit.Flags().BoolVarP(&verbose, "verbose", "v", false, "print the output stream from all substeps")
-	subInit.Flags().StringVar(&ports, "temp-port-range", "", "set of ports to use when initializing the target cluster")
+	subInit.Flags().StringVar(&ports, "temp-port-range", "50432-65535", "set of ports to use when initializing the target cluster")
 	subInit.Flags().StringVar(&mode, "mode", "copy", "performs upgrade in either copy or link mode. Default is copy.")
 	subInit.Flags().BoolVar(&skipVersionCheck, "skip-version-check", false, "disable source and target version check")
 	subInit.Flags().MarkHidden("skip-version-check") //nolint
