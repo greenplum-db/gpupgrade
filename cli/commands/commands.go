@@ -398,6 +398,16 @@ func initialize() *cobra.Command {
 				return err
 			}
 
+			logdir, err := utils.GetLogDir()
+			if err != nil {
+				return err
+			}
+
+			configPath, err := filepath.Abs(file)
+			if err != nil {
+				return err
+			}
+
 			// If we got here, the args are okay and the user doesn't need a usage
 			// dump on failure.
 			cmd.SilenceUsage = true
@@ -411,7 +421,14 @@ func initialize() *cobra.Command {
 				return cli.NewNextActions(err, nextActions)
 			}
 
-			st, err := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, verbose)
+			confirmationText := fmt.Sprintf(initializeConfirmationText, logdir, configPath, sourceGPHome, targetGPHome,
+				mode, diskFreeRatio, sourcePort, ports, hubPort, agentPort)
+
+			st, err := commanders.NewStep(idl.Step_INITIALIZE,
+				&step.BufferedStreams{},
+				verbose,
+				confirmationText,
+			)
 			if err != nil {
 				return err
 			}
@@ -521,7 +538,18 @@ func execute() *cobra.Command {
 			cmd.SilenceUsage = true
 			var response idl.ExecuteResponse
 
-			st, err := commanders.NewStep(idl.Step_EXECUTE, &step.BufferedStreams{}, verbose)
+			logdir, err := utils.GetLogDir()
+			if err != nil {
+				return err
+			}
+
+			confirmationText := fmt.Sprintf(executeConfirmationText, logdir)
+
+			st, err := commanders.NewStep(idl.Step_EXECUTE,
+				&step.BufferedStreams{},
+				verbose,
+				confirmationText,
+			)
 			if err != nil {
 				return err
 			}
@@ -576,7 +604,18 @@ func finalize() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			var response idl.FinalizeResponse
 
-			st, err := commanders.NewStep(idl.Step_FINALIZE, &step.BufferedStreams{}, verbose)
+			logdir, err := utils.GetLogDir()
+			if err != nil {
+				return err
+			}
+
+			confirmationText := fmt.Sprintf(finalizeConfirmationText, logdir)
+
+			st, err := commanders.NewStep(idl.Step_FINALIZE,
+				&step.BufferedStreams{},
+				verbose,
+				confirmationText,
+			)
 			if err != nil {
 				return err
 			}
@@ -625,7 +664,18 @@ func revert() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			var response idl.RevertResponse
 
-			st, err := commanders.NewStep(idl.Step_REVERT, &step.BufferedStreams{}, verbose)
+			logdir, err := utils.GetLogDir()
+			if err != nil {
+				return err
+			}
+
+			confirmationText := fmt.Sprintf(revertConfirmationText, logdir)
+
+			st, err := commanders.NewStep(idl.Step_REVERT,
+				&step.BufferedStreams{},
+				verbose,
+				confirmationText,
+			)
 			if err != nil {
 				return err
 			}

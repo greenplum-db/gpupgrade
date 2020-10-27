@@ -42,7 +42,7 @@ type Step struct {
 	err         error
 }
 
-func NewStep(step idl.Step, streams *step.BufferedStreams, verbose bool) (*Step, error) {
+func NewStep(step idl.Step, streams *step.BufferedStreams, verbose bool, confirmationText string) (*Step, error) {
 	store, err := NewStepStore()
 	if err != nil {
 		gplog.Error("creating step store: %v", err)
@@ -55,6 +55,8 @@ func NewStep(step idl.Step, streams *step.BufferedStreams, verbose bool) (*Step,
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Println(confirmationText)
 
 	err = store.Write(step, idl.Status_RUNNING)
 	if err != nil {
