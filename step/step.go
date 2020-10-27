@@ -226,3 +226,11 @@ var Skip = skipErr{}
 type skipErr struct{}
 
 func (s skipErr) Error() string { return "skipped" }
+
+// UserCanceled can be returned from creating a step to indicate that the user
+// has canceled the upgrade and does not want to proceed.
+var UserCanceled = userCanceledErr{}
+
+type userCanceledErr struct{}
+
+func (s userCanceledErr) Error() string { return "user canceled" }
