@@ -13,7 +13,6 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/utils/stopwatch"
 )
 
 type receiver interface {
@@ -210,12 +209,4 @@ func Format(description string, status idl.Status) string {
 	}
 
 	return fmt.Sprintf("%-67s%-13s", description, indicator)
-}
-
-func LogDuration(operation string, verbose bool, timer *stopwatch.Stopwatch) {
-	msg := operation + " took " + timer.String()
-	if verbose {
-		fmt.Println("\n" + msg)
-	}
-	gplog.Debug(msg)
 }
