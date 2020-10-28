@@ -506,6 +506,7 @@ To return the cluster to its original state, run "gpupgrade revert".`,
 	subInit.Flags().StringVar(&ports, "temp-port-range", "", "set of ports to use when initializing the target cluster")
 	subInit.Flags().StringVar(&mode, "mode", "copy", "performs upgrade in either copy or link mode. Default is copy.")
 	subInit.Flags().BoolVar(&skipVersionCheck, "skip-version-check", false, "disable source and target version check")
+	subInit.Flags().MarkHidden("skip-version-check") //nolint
 	return addHelpToCommand(subInit, InitializeHelp)
 }
 
