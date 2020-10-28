@@ -22,7 +22,7 @@ teardown() {
 }
 
 @test "gpupgrade initialize fails when passed insufficient arguments" {
-    run gpupgrade initialize
+    run gpupgrade initialize -a
     [ "$status" -eq 1 ]
     if ! [[ "$output" = *'required flag(s) "source-gphome", "source-master-port", "target-gphome" not set'* ]]; then
         fail "actual: $output"
@@ -30,7 +30,7 @@ teardown() {
 }
 
 @test "gpupgrade initialize fails when other flags are used with --file" {
-    run gpupgrade initialize --file /some/config --source-gphome /usr/local/source
+    run gpupgrade initialize -a --file /some/config --source-gphome /usr/local/source
     [ "$status" -eq 1 ]
     if ! [[ "$output" = *'The file flag cannot be used with any other flag'* ]]; then
         fail "actual: $output"
@@ -47,7 +47,7 @@ teardown() {
 		stop-before-cluster-creation = true
 	EOF
 
-    gpupgrade initialize --verbose --file "$config_file"
+    gpupgrade initialize -a --verbose --file "$config_file"
 
     run gpupgrade config show --source-gphome
     [ "$status" -eq 0 ]
@@ -60,6 +60,7 @@ teardown() {
 
 @test "initialize sanitizes source-gphome and target-gphome" {
     gpupgrade initialize \
+        --automatic \
         --source-gphome "${GPHOME_SOURCE}/" \
         --target-gphome "${GPHOME_TARGET}//" \
         --source-master-port ${PGPORT} \

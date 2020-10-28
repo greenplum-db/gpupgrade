@@ -114,6 +114,7 @@ time ssh mdw bash <<EOF
 
     gpupgrade initialize \
               $LINK_MODE \
+              --automatic \
               --target-gphome ${GPHOME_TARGET} \
               --source-gphome ${GPHOME_SOURCE} \
               --source-master-port $MASTER_PORT \
@@ -121,8 +122,8 @@ time ssh mdw bash <<EOF
     # TODO: rather than setting a temp port range, consider carving out an
     # ip_local_reserved_ports range during/after CCP provisioning.
 
-    gpupgrade execute
-    gpupgrade finalize
+    gpupgrade execute -a
+    gpupgrade finalize -a
 EOF
 
 # On GPDB version other than 5, set the gucs before taking dumps

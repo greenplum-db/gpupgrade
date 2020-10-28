@@ -24,6 +24,7 @@ setup() {
 
     gpupgrade kill-services
     gpupgrade initialize \
+        --automatic \
         --source-gphome="${GPHOME_SOURCE}" \
         --target-gphome="${GPHOME_TARGET}" \
         --source-master-port="${PGPORT}"\
@@ -127,8 +128,8 @@ outputContains() {
 
     commands=(
         'config show'
-        'execute'
-        'revert'
+        'execute -a'
+        'revert -a'
     )
 
     # We don't want to have to wait for the default one-second timeout for all
@@ -164,6 +165,7 @@ outputContains() {
             --target-gphome="$GPHOME_TARGET" \
             --source-master-port="${PGPORT}" \
             --stop-before-cluster-creation \
+            --automatic \
             --verbose 3>&-
 
         # Trace which command we're on to make debugging easier.
@@ -212,6 +214,7 @@ wait_for_port_change() {
         --source-master-port="${PGPORT}" \
         --disk-free-ratio 0 \
         --stop-before-cluster-creation \
+        --automatic \
         --verbose 3>&-
     [ "$status" -ne 0 ] || fail "expected start_agent substep to fail with port already in use: $output"
 
@@ -223,6 +226,7 @@ wait_for_port_change() {
         --source-master-port="${PGPORT}" \
         --disk-free-ratio 0 \
         --stop-before-cluster-creation \
+        --automatic \
         --verbose 3>&-
     [ "$status" -eq 0 ] || fail "expected start_agent substep to succeed: $output"
 }
@@ -234,6 +238,7 @@ wait_for_port_change() {
         --source-master-port="${PGPORT}" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
+        --automatic \
         --verbose 3>&-
 
     delete_target_on_teardown
@@ -245,6 +250,7 @@ wait_for_port_change() {
         --source-master-port="${PGPORT}" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
+        --automatic \
         --verbose 3>&-
 
     # Other substeps are skipped when marked completed in the state dir,
@@ -270,6 +276,7 @@ wait_for_port_change() {
         --source-master-port="${PGPORT}"\
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
+        --automatic \
         --verbose 3>&-
 
     delete_target_on_teardown
@@ -283,6 +290,7 @@ wait_for_port_change() {
         --source-master-port="${PGPORT}"\
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
+        --automatic \
         --verbose 3>&-
 }
 
@@ -299,8 +307,9 @@ wait_for_port_change() {
         --source-master-port="${PGPORT}"\
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
+        --automatic \
         --verbose 3>&-
-    register_teardown gpupgrade revert
+    register_teardown gpupgrade revert -a
 
     echo "$output"
     [[ $output != *"libxml2.so.2: no version information available"* ]] || \

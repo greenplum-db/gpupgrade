@@ -57,6 +57,7 @@ teardown() {
         --source-master-port "$PGPORT" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio=0 \
+        --automatic \
         --verbose 3>&- || status=$?
     [ "$status" -eq 1 ]
 
@@ -74,6 +75,7 @@ teardown() {
     skip_if_no_gpdb
 
     gpupgrade initialize \
+        --automatic \
         --source-gphome "$GPHOME_SOURCE" \
         --target-gphome "$GPHOME_TARGET" \
         --source-master-port "$PGPORT" \
@@ -115,6 +117,7 @@ count_primary_gp_dbids() {
     local old_dbid_num=$(count_primary_gp_dbids $GPHOME_SOURCE $PGPORT)
 
     gpupgrade initialize \
+        --automatic \
         --verbose \
         --source-gphome "$GPHOME_SOURCE" \
         --target-gphome "$GPHOME_TARGET" \
@@ -123,7 +126,7 @@ count_primary_gp_dbids() {
         --disk-free-ratio=0 3>&-
     NEW_CLUSTER="$(gpupgrade config show --target-datadir)"
 
-    gpupgrade execute --verbose
+    gpupgrade execute -a --verbose
 
     local new_dbid_num=$(count_primary_gp_dbids $GPHOME_TARGET 6020)
 

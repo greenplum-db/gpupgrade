@@ -61,6 +61,7 @@ drop_unfixable_objects() {
         --source-master-port="${PGPORT}" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
+        --automatic \
         --verbose
     echo "$output"
     [ "$status" -ne 0 ] || fail "expected initialize to fail due to pg_upgrade check"
@@ -86,9 +87,10 @@ drop_unfixable_objects() {
         --source-master-port="${PGPORT}" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
+        --automatic \
         --verbose
-    gpupgrade execute --verbose
-    gpupgrade finalize --verbose
+    gpupgrade execute -a --verbose
+    gpupgrade finalize -a --verbose
 
     "$SCRIPTS_DIR"/migration_executor_sql.bash "$GPHOME_TARGET" "$PGPORT" "$MIGRATION_DIR"/complete
 
@@ -131,9 +133,10 @@ drop_unfixable_objects() {
         --source-master-port="${PGPORT}" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
+        --automatic \
         --verbose
-    gpupgrade execute --verbose
-    gpupgrade revert --verbose
+    gpupgrade execute -a --verbose
+    gpupgrade revert -a --verbose
 
     $SCRIPTS_DIR/migration_executor_sql.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/revert
 
@@ -168,8 +171,9 @@ drop_unfixable_objects() {
         --source-master-port="${PGPORT}" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
+        --automatic \
         --verbose
-    gpupgrade revert --verbose
+    gpupgrade revert -a --verbose
 
     "$SCRIPTS_DIR"/migration_executor_sql.bash "$GPHOME_TARGET" "$PGPORT" "$MIGRATION_DIR"/revert
 }

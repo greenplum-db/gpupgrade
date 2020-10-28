@@ -98,13 +98,14 @@ query_host_datadirs() {
         --source-master-port="${PGPORT}" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
+        --automatic \
         --verbose 3>&-
 
     # grab cluster data before revert destroys it
     target_hosts_dirs=$(jq -r '.Target.Primaries[] | .Hostname + " " + .DataDir' "${GPUPGRADE_HOME}/config.json")
     upgradeID=$(gpupgrade config show --id)
 
-    gpupgrade revert --verbose
+    gpupgrade revert -a --verbose
 
     # gpupgrade processes are stopped
     ! process_is_running "[g]pupgrade hub" || fail 'expected hub to have been stopped'
@@ -178,8 +179,9 @@ test_revert_after_execute() {
         --temp-port-range ${target_master_port}-6040 \
         --disk-free-ratio 0 \
         --mode "$mode" \
+        --automatic \
         --verbose 3>&-
-    gpupgrade execute --verbose
+    gpupgrade execute -a --verbose
 
     # Modify the table on the target cluster
     $PSQL -p $target_master_port postgres -c "TRUNCATE ${TABLE}"
@@ -191,7 +193,7 @@ test_revert_after_execute() {
     fi
 
     # Revert
-    gpupgrade revert --verbose
+    gpupgrade revert -a --verbose
 
     # Verify the table modifications were reverted
     rows=$($PSQL postgres -Atc "SELECT COUNT(*) FROM ${TABLE}")
@@ -244,11 +246,12 @@ test_revert_after_execute() {
         --source-master-port="${PGPORT}" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
+        --automatic \
         --verbose 3>&-
 
-    gpupgrade execute --verbose
+    gpupgrade execute -a --verbose
 
-    gpupgrade revert --verbose
+    gpupgrade revert -a --verbose
 
     gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
@@ -256,12 +259,13 @@ test_revert_after_execute() {
         --source-master-port="${PGPORT}" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
+        --automatic \
         --verbose 3>&-
 
-    gpupgrade execute --verbose
+    gpupgrade execute -a --verbose
 
     # This last revert is used for test cleanup.
-    gpupgrade revert --verbose
+    gpupgrade revert -a --verbose
 }
 
 # gp_segment_configuration does not show us the status correctly. We must check that the
@@ -380,16 +384,17 @@ test_revert_after_execute_pg_upgrade_failure() {
         --temp-port-range ${target_master_port}-6040 \
         --disk-free-ratio 0 \
         --mode "$mode" \
+        --automatic \
         --verbose 3>&-
 
     # Execute should fail.
-    run gpupgrade execute --verbose
+    run gpupgrade execute -a --verbose
     echo "$output"   # run swallows the output...log it explicitly to allow debugging.
     [ "$status" -ne 0 ] || fail "expected execute to fail"
     [[ "$output" == *"$failed_substep"*"FAILED"* ]] || fail "expected output to contain $failed_substep as FAILED"
 
     # Revert
-    gpupgrade revert --verbose
+    gpupgrade revert -a --verbose
 
     # Verify the table is untouched
     rows=$($PSQL postgres -Atc "SELECT COUNT(*) FROM ${TABLE}")

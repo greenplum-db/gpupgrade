@@ -58,6 +58,7 @@ upgrade_cluster() {
         fi
 
         gpupgrade initialize \
+            --automatic \
             --source-gphome="$GPHOME_SOURCE" \
             --target-gphome="$GPHOME_TARGET" \
             --source-master-port="${PGPORT}" \
@@ -66,8 +67,8 @@ upgrade_cluster() {
             $LINK_MODE \
             --verbose 3>&-
 
-        gpupgrade execute --verbose
-        gpupgrade finalize --verbose
+        gpupgrade execute -a --verbose
+        gpupgrade finalize -a --verbose
 
         if is_GPDB5 "$GPHOME_SOURCE"; then
             check_tablespace_data

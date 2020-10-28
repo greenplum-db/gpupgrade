@@ -101,6 +101,7 @@ ensure_hardlinks_for_relfilenode_on_master_and_segments() {
     ensure_hardlinks_for_relfilenode_on_master_and_segments $GPHOME_SOURCE $PGPORT 'test_linking' 1
 
     gpupgrade initialize \
+        --automatic \
         --source-gphome="$GPHOME_SOURCE" \
         --target-gphome="$GPHOME_TARGET" \
         --source-master-port="${PGPORT}" \
@@ -111,7 +112,7 @@ ensure_hardlinks_for_relfilenode_on_master_and_segments() {
 
     NEW_CLUSTER="$(gpupgrade config show --target-datadir)"
 
-    gpupgrade execute --verbose
+    gpupgrade execute -a --verbose
 
     ensure_hardlinks_for_relfilenode_on_master_and_segments $GPHOME_TARGET 6020 'test_linking' 2
 
@@ -125,6 +126,7 @@ ensure_hardlinks_for_relfilenode_on_master_and_segments() {
     delete_target_datadirs "${MASTER_DATA_DIRECTORY}"
 
     gpupgrade initialize \
+        --automatic \
         --source-gphome="$GPHOME_SOURCE" \
         --target-gphome="$GPHOME_TARGET" \
         --source-master-port="${PGPORT}" \
@@ -149,7 +151,7 @@ ensure_hardlinks_for_relfilenode_on_master_and_segments() {
     # --delete flag
     mkdir "${datadir}"/base_extra
     touch "${datadir}"/base_extra/1101
-    gpupgrade execute --verbose
+    gpupgrade execute -a --verbose
     
     # check that the extraneous files are deleted
     [ ! -d "${datadir}"/base_extra ]
@@ -165,6 +167,7 @@ ensure_hardlinks_for_relfilenode_on_master_and_segments() {
     setup_restore_cluster "--mode=copy"
 
     gpupgrade initialize \
+        --automatic \
         --source-gphome="$GPHOME_SOURCE" \
         --target-gphome="$GPHOME_TARGET" \
         --source-master-port="${PGPORT}"\
@@ -174,7 +177,7 @@ ensure_hardlinks_for_relfilenode_on_master_and_segments() {
 
     NEW_CLUSTER="$(gpupgrade config show --target-datadir)"
 
-    gpupgrade execute --verbose 3>&-
+    gpupgrade execute -a --verbose 3>&-
 
     # On GPDB5, restore the primary and master directories before starting the cluster
     restore_cluster
@@ -186,7 +189,7 @@ ensure_hardlinks_for_relfilenode_on_master_and_segments() {
     # Mark every substep in the status file as failed. Then re-execute.
     sed -i.bak -e 's/"COMPLETE"/"FAILED"/g' "$GPUPGRADE_HOME/substeps.json"
 
-    gpupgrade execute --verbose 3>&-
+    gpupgrade execute -a --verbose 3>&-
 
     restore_cluster
 }
