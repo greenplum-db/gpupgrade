@@ -22,6 +22,15 @@ import (
 
 const StepsFileName = "steps.json"
 
+const nextActionRunRevertText = "\nIf you would like to return the cluster to its original state, please run \"gpupgrade revert\"."
+
+var additionalNextActions = map[idl.Step]string{
+	idl.Step_INITIALIZE: nextActionRunRevertText,
+	idl.Step_EXECUTE:    nextActionRunRevertText,
+	idl.Step_FINALIZE:   "",
+	idl.Step_REVERT:     "",
+}
+
 type Step struct {
 	stepName    string
 	step        idl.Step
@@ -178,8 +187,7 @@ func (s *Step) Complete(completedText string) error {
 			return nextActions
 		}
 
-		msg := fmt.Sprintf(`Please address the above issue and run "gpupgrade %s" again.
-If you would like to return the cluster to its original state, please run "gpupgrade revert".`, strings.ToLower(s.stepName))
+		msg := fmt.Sprintf(`Please address the above issue and run "gpupgrade %s" again.`+additionalNextActions[s.step], strings.ToLower(s.stepName))
 		return cli.NewNextActions(s.Err(), msg)
 	}
 
