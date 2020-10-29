@@ -43,7 +43,7 @@ func (s *Server) writeConf(sourceDBConn *dbconn.DBConn) error {
 	}
 	defer sourceDBConn.Close()
 
-	gpinitsystemConfig, err := CreateInitialInitsystemConfig(s.TargetInitializeConfig.Master.DataDir)
+	gpinitsystemConfig, err := CreateInitialInitsystemConfig(s.TargetInitializeConfig.Master.DataDir, s.UseHbaHostnames)
 	if err != nil {
 		return err
 	}
@@ -110,7 +110,7 @@ func GetCheckpointSegmentsAndEncoding(gpinitsystemConfig []string, dbConnector *
 	return gpinitsystemConfig, nil
 }
 
-func CreateInitialInitsystemConfig(targetMasterDataDir string) ([]string, error) {
+func CreateInitialInitsystemConfig(targetMasterDataDir string, useHbaHostnames bool) ([]string, error) {
 	gpinitsystemConfig := []string{`ARRAY_NAME="gp_upgrade cluster"`}
 
 	segPrefix, err := GetMasterSegPrefix(targetMasterDataDir)
@@ -118,7 +118,12 @@ func CreateInitialInitsystemConfig(targetMasterDataDir string) ([]string, error)
 		return gpinitsystemConfig, xerrors.Errorf("determine master segment prefix: %w", err)
 	}
 
-	gpinitsystemConfig = append(gpinitsystemConfig, "SEG_PREFIX="+segPrefix, "TRUSTED_SHELL=ssh")
+	hbaHostnames := "0"
+	if useHbaHostnames {
+		hbaHostnames = "1"
+	}
+
+	gpinitsystemConfig = append(gpinitsystemConfig, "SEG_PREFIX="+segPrefix, "TRUSTED_SHELL=ssh", "HBA_HOSTNAMES="+hbaHostnames)
 
 	return gpinitsystemConfig, nil
 }

@@ -64,7 +64,7 @@ func TestCreateInitialInitsystemConfig(t *testing.T) {
 			return "mdw", nil
 		}
 
-		actualConfig, err := CreateInitialInitsystemConfig("/data/qddir/seg.AAAAAAAAAAA.-1")
+		actualConfig, err := CreateInitialInitsystemConfig("/data/qddir/seg.AAAAAAAAAAA.-1", true)
 		if err != nil {
 			t.Fatalf("got %#v, want nil", err)
 		}
@@ -73,6 +73,7 @@ func TestCreateInitialInitsystemConfig(t *testing.T) {
 			`ARRAY_NAME="gp_upgrade cluster"`,
 			"SEG_PREFIX=seg.AAAAAAAAAAA.",
 			"TRUSTED_SHELL=ssh",
+			"HBA_HOSTNAMES=1",
 		}
 		if !reflect.DeepEqual(actualConfig, expectedConfig) {
 			t.Errorf("got %v, want %v", actualConfig, expectedConfig)
