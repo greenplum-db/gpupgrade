@@ -21,6 +21,11 @@ mode = copy
 # Recommended values are 0.6 [60%] for copy mode, and 0.2 [20%] for link mode.
 disk_free_ratio = 0.6
 
+# Whether to populate pg_hba.conf with hostnames or IP addresses during
+# execution of gpinitsystem and other utilities.
+# Choose "true" to use host names, or "false" to use IP addresses.
+use_hba_hostnames = false
+
 # The master port for the source Greenplum installation.
 source_master_port =
 

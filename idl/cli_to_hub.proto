@@ -23,7 +23,8 @@ message InitializeRequest {
     string targetGPHome = 3;
     int32 sourcePort = 4;
     bool useLinkMode = 5;
-    repeated uint32 ports = 6;
+    bool useHbaHostnames = 6;
+    repeated uint32 ports = 7;
 }
 message InitializeCreateClusterRequest {}
 message ExecuteRequest {}

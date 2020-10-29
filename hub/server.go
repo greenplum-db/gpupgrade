@@ -363,11 +363,12 @@ type Config struct {
 	// target cluster's master, standby, primaries and mirrors.
 	TargetInitializeConfig InitializeConfig
 
-	Port         int
-	AgentPort    int
-	UseLinkMode  bool
-	TargetGPHome string
-	UpgradeID    upgrade.ID
+	Port            int
+	AgentPort       int
+	UseLinkMode     bool
+	UseHbaHostnames bool
+	TargetGPHome    string
+	UpgradeID       upgrade.ID
 
 	// Tablespaces contains the tablespace in the database keyed by
 	// dbid and tablespace oid

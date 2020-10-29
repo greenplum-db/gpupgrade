@@ -19,6 +19,7 @@ source_gphome:      %s
 target_gphome:      %s
 mode:               %s
 disk_free_ratio:    %.1f
+use_hba_hostnames:  %t
 source_master_port: %d
 temp_port_range:    %s
 hub_port:           %d

@@ -25,6 +25,7 @@ import (
 // InitializeRequest from the client. The configuration is then saved to disk.
 func FillConfiguration(config *Config, conn *sql.DB, _ step.OutStreams, request *idl.InitializeRequest, saveConfig func() error) error {
 	config.AgentPort = int(request.AgentPort)
+	config.UseHbaHostnames = request.UseHbaHostnames
 
 	// Assign a new universal upgrade identifier.
 	config.UpgradeID = upgrade.NewID()

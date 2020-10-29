@@ -48,6 +48,7 @@ func initialize() *cobra.Command {
 	var skipVersionCheck bool
 	var ports string
 	var mode string
+	var useHbaHostnames bool
 
 	subInit := &cobra.Command{
 		Use:   "initialize",
@@ -149,7 +150,7 @@ func initialize() *cobra.Command {
 			}
 
 			confirmationText := fmt.Sprintf(initializeConfirmationText, logdir, configPath, sourceGPHome, targetGPHome,
-				mode, diskFreeRatio, sourcePort, ports, hubPort, agentPort)
+				mode, diskFreeRatio, useHbaHostnames, sourcePort, ports, hubPort, agentPort)
 
 			st, err := commanders.NewStep(idl.Step_INITIALIZE,
 				&step.BufferedStreams{},
@@ -196,12 +197,13 @@ func initialize() *cobra.Command {
 				}
 
 				request := &idl.InitializeRequest{
-					AgentPort:    int32(agentPort),
-					SourceGPHome: filepath.Clean(sourceGPHome),
-					TargetGPHome: filepath.Clean(targetGPHome),
-					SourcePort:   int32(sourcePort),
-					UseLinkMode:  linkMode,
-					Ports:        parsedPorts,
+					AgentPort:       int32(agentPort),
+					SourceGPHome:    filepath.Clean(sourceGPHome),
+					TargetGPHome:    filepath.Clean(targetGPHome),
+					SourcePort:      int32(sourcePort),
+					UseLinkMode:     linkMode,
+					UseHbaHostnames: useHbaHostnames,
+					Ports:           parsedPorts,
 				}
 				err = commanders.Initialize(client, request, verbose)
 				if err != nil {
@@ -256,6 +258,7 @@ To return the cluster to its original state, run "gpupgrade revert".`,
 	subInit.Flags().BoolVarP(&verbose, "verbose", "v", false, "print the output stream from all substeps")
 	subInit.Flags().StringVar(&ports, "temp-port-range", "50432-65535", "set of ports to use when initializing the target cluster")
 	subInit.Flags().StringVar(&mode, "mode", "copy", "performs upgrade in either copy or link mode. Default is copy.")
+	subInit.Flags().BoolVar(&useHbaHostnames, "use-hba-hostnames", false, "use hostnames in pg_hba.conf")
 	subInit.Flags().BoolVar(&skipVersionCheck, "skip-version-check", false, "disable source and target version check")
 	subInit.Flags().MarkHidden("skip-version-check") //nolint
 	return addHelpToCommand(subInit, InitializeHelp)
