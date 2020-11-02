@@ -192,7 +192,7 @@ func TestUpgradePrimaries(t *testing.T) {
 				}
 
 				// XXX it'd be nice if we didn't couple against a hardcoded string here,
-				// but it's difficult to unwrap multierror with the new xerrors interface.
+				// but it's difficult to unwrap multiple errors with the new xerrors interface.
 				if !strings.Contains(err.Error(), c.failedAction+" primary segment on host sdw2") ||
 					!strings.Contains(err.Error(), expected.Error()) {
 					t.Errorf("error %q did not contain expected contents '%q'", err.Error(), expected.Error())

@@ -3,7 +3,10 @@
 
 package errorlist
 
-import "github.com/hashicorp/go-multierror"
+import (
+	"fmt"
+	"strings"
+)
 
 // Append takes at least two errors and combines them into a list. The rules are
 // as follows:
@@ -48,7 +51,16 @@ func Append(a, b error, e ...error) error {
 type Errors []error
 
 func (e Errors) Error() string {
-	// TODO: For now we maintain the old multierror output, but this should be
-	// redesigned.
-	return multierror.ListFormatFunc(e)
+	if len(e) == 1 {
+		return fmt.Sprintf("1 error occurred:\n\t* %s\n\n", e[0])
+	}
+
+	errors := make([]string, len(e))
+	for i, err := range e {
+		errors[i] = fmt.Sprintf("* %s", err)
+	}
+
+	return fmt.Sprintf(
+		"%d errors occurred:\n\t%s\n\n",
+		len(e), strings.Join(errors, "\n\t"))
 }

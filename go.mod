@@ -10,7 +10,6 @@ require (
 	github.com/golang/protobuf v1.3.2
 	github.com/google/renameio v0.1.0
 	github.com/greenplum-db/gp-common-go-libs v1.0.4
-	github.com/hashicorp/go-multierror v1.1.0
 	github.com/jackc/pgx v3.2.0+incompatible
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/lib/pq v1.8.0

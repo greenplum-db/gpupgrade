@@ -63,7 +63,7 @@ func TestMasterIsCheckedLinkModeTrue(t *testing.T) {
 			err := s.CheckUpgrade(nil, connections)
 
 			if err != nil {
-				t.Errorf("got error: %+v", err) // yes, '%+v'; '%#v' prints opaque multierror
+				t.Errorf("got error: %+v", err) // yes, '%+v'; '%#v' prints opaque multiple errors
 			}
 		})
 	}

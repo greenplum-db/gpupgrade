@@ -118,7 +118,7 @@ func testlist(t *testing.T, expected errorlist.Errors, input ...error) {
 }
 
 func TestErrors(t *testing.T) {
-	t.Run("Error() uses old multierror format for now", func(t *testing.T) {
+	t.Run("Error() displays multiple errors", func(t *testing.T) {
 		errs := errorlist.Errors{
 			fmt.Errorf("context: %w", errors.New("ahhh")),
 			errors.New("it broke"),

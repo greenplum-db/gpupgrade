@@ -97,7 +97,7 @@ func TestUpgradePrimary(t *testing.T) {
 		}
 
 		// XXX it'd be nice if we didn't couple against a hardcoded string here,
-		// but it's difficult to unwrap multierror with the new xerrors
+		// but it's difficult to unwrap multiple errors with the new xerrors
 		// interface.
 		if !strings.Contains(err.Error(), "check primaries") ||
 			!strings.Contains(err.Error(), "check primary on host") ||
@@ -124,7 +124,7 @@ func TestUpgradePrimary(t *testing.T) {
 		}
 
 		// XXX it'd be nice if we didn't couple against a hardcoded string here,
-		// but it's difficult to unwrap multierror with the new xerrors
+		// but it's difficult to unwrap multiple errors with the new xerrors
 		// interface.
 		if !strings.Contains(err.Error(), "upgrade primaries") ||
 			!strings.Contains(err.Error(), "upgrade primary on host") ||
