@@ -198,13 +198,14 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 				t.Errorf("got %q want bash", utility)
 			}
 
-			expected := []string{"-c", fmt.Sprintf("source /usr/local/greenplum-db/greenplum_path.sh && MASTER_DATA_DIRECTORY=%s PGPORT=%d /usr/local/greenplum-db/bin/gprecoverseg -a", cluster.MasterDataDir(), cluster.MasterPort())}
+			expected := []string{"-c", fmt.Sprintf("source /usr/local/greenplum-db/greenplum_path.sh && MASTER_DATA_DIRECTORY=%s PGPORT=%d "+
+				"/usr/local/greenplum-db/bin/gprecoverseg -a --hba-hostnames", cluster.MasterDataDir(), cluster.MasterPort())}
 			if !reflect.DeepEqual(args, expected) {
 				t.Errorf("got %q want %q", args, expected)
 			}
 		})
 
-		err := hub.Recoverseg(&testutils.DevNullWithClose{}, cluster)
+		err := hub.Recoverseg(&testutils.DevNullWithClose{}, cluster, true)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -223,7 +224,7 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 			called = true
 		})
 
-		err := hub.Recoverseg(&testutils.DevNullWithClose{}, cluster)
+		err := hub.Recoverseg(&testutils.DevNullWithClose{}, cluster, false)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -363,7 +364,7 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 		defer ResetRecoversegCmd()
 		hub.RecoversegCmd = exectest.NewCommand(hub.Failure)
 
-		err := hub.Recoverseg(&testutils.DevNullWithClose{}, cluster)
+		err := hub.Recoverseg(&testutils.DevNullWithClose{}, cluster, false)
 		var exitErr *exec.ExitError
 		if !errors.As(err, &exitErr) || exitErr.ExitCode() != 1 {
 			t.Errorf("returned error %#v, want exit code %d", err, 1)

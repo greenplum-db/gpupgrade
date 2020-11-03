@@ -146,7 +146,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 
 	if handleMirrorStartupFailure {
 		st.Run(idl.Substep_RECOVERSEG_SOURCE_CLUSTER, func(streams step.OutStreams) error {
-			return Recoverseg(streams, s.Source)
+			return Recoverseg(streams, s.Source, s.UseHbaHostnames)
 		})
 	}
 

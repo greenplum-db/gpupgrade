@@ -88,12 +88,18 @@ func RsyncMasterAndPrimariesTablespaces(stream step.OutStreams, agentConns []*Co
 // is left in a bad state after execute. This is because running pg_upgrade on
 // a primary results in a checkpoint that does not get replicated on the mirror.
 // Thus, when the mirror is started it panics and a gprecoverseg or rsync is needed.
-func Recoverseg(stream step.OutStreams, cluster *greenplum.Cluster) error {
+func Recoverseg(stream step.OutStreams, cluster *greenplum.Cluster, useHbaHostnames bool) error {
 	if cluster.Version.AtLeast("6") {
 		return nil
 	}
 
-	script := fmt.Sprintf("source %[1]s/greenplum_path.sh && MASTER_DATA_DIRECTORY=%[2]s PGPORT=%[3]d %[1]s/bin/gprecoverseg -a", cluster.GPHome, cluster.MasterDataDir(), cluster.MasterPort())
+	hbaHostnames := ""
+	if useHbaHostnames {
+		hbaHostnames = "--hba-hostnames"
+	}
+
+	script := fmt.Sprintf("source %[1]s/greenplum_path.sh && MASTER_DATA_DIRECTORY=%[2]s PGPORT=%[3]d %[1]s/bin/gprecoverseg -a %[4]s",
+		cluster.GPHome, cluster.MasterDataDir(), cluster.MasterPort(), hbaHostnames)
 	cmd := RecoversegCmd("bash", "-c", script)
 
 	cmd.Stdout = stream.Stdout()
