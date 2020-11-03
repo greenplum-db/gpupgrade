@@ -99,7 +99,7 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 			}
 
 			return UpgradeMirrors(s.StateDir, s.Target.MasterPort(),
-				s.Source.SelectSegments(mirrors), greenplum.NewRunner(s.Target, streams))
+				s.Source.SelectSegments(mirrors), greenplum.NewRunner(s.Target, streams), s.UseHbaHostnames)
 		})
 	}
 

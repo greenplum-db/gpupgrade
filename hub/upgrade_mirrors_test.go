@@ -102,6 +102,7 @@ func TestRunAddMirrors(t *testing.T) {
 
 				actualFilepath := fs.String("i", "", "")
 				quietMode := fs.Bool("a", false, "")
+				hbaHostnames := fs.Bool("hba-hostnames", false, "")
 
 				err := fs.Parse(arguments)
 				if err != nil {
@@ -115,11 +116,16 @@ func TestRunAddMirrors(t *testing.T) {
 				if !*quietMode {
 					t.Errorf("missing -a flag")
 				}
+
+				if !*hbaHostnames {
+					t.Errorf("missing --hba-hostname flag")
+				}
+
 				return nil
 			},
 		}
 
-		err := runAddMirrors(stub, expectedFilepath)
+		err := runAddMirrors(stub, expectedFilepath, true)
 		if err != nil {
 			t.Errorf("returned error %+v", err)
 		}
@@ -137,7 +143,7 @@ func TestRunAddMirrors(t *testing.T) {
 			return expected
 		}
 
-		actual := runAddMirrors(stub, "")
+		actual := runAddMirrors(stub, "", false)
 		if !errors.Is(actual, expected) {
 			t.Errorf("returned error %#v, want %#v", actual, expected)
 		}
@@ -220,7 +226,7 @@ func TestDoUpgrade(t *testing.T) {
 		expectFtsProbe(mock)
 		expectMirrorsAndReturn(mock, "t")
 
-		err = doUpgrade(db, stateDir, mirrors, &stub)
+		err = doUpgrade(db, stateDir, mirrors, &stub, false)
 
 		if err != nil {
 			t.Errorf("got unexpected error from UpgradeMirrors %#v", err)
@@ -249,7 +255,7 @@ func TestDoUpgrade(t *testing.T) {
 			return nil, expectedError
 		}
 
-		err = doUpgrade(db, "", []greenplum.SegConfig{}, &greenplumStub{})
+		err = doUpgrade(db, "", []greenplum.SegConfig{}, &greenplumStub{}, false)
 		if !errors.Is(err, expectedError) {
 			t.Errorf("returned error %#v want %#v", err, expectedError)
 		}
@@ -272,7 +278,7 @@ func TestDoUpgrade(t *testing.T) {
 			return nil
 		}
 
-		err = doUpgrade(db, "/state/dir", mirrors, stub)
+		err = doUpgrade(db, "/state/dir", mirrors, stub, false)
 
 		var errs errorlist.Errors
 		if !errors.As(err, &errs) {
@@ -301,7 +307,7 @@ func TestDoUpgrade(t *testing.T) {
 			return expected
 		}}
 
-		err = doUpgrade(db, "/state/dir", []greenplum.SegConfig{}, stub)
+		err = doUpgrade(db, "/state/dir", []greenplum.SegConfig{}, stub, false)
 		if !errors.Is(err, expected) {
 			t.Errorf("returned error %#v want %#v", err, expected)
 		}
@@ -343,7 +349,7 @@ func TestUpgradeMirrors(t *testing.T) {
 			return db, nil
 		}
 
-		err = UpgradeMirrors("", 123, []greenplum.SegConfig{}, stub)
+		err = UpgradeMirrors("", 123, []greenplum.SegConfig{}, stub, false)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -355,7 +361,7 @@ func TestUpgradeMirrors(t *testing.T) {
 			return nil, expected
 		}
 
-		err := UpgradeMirrors("", 123, []greenplum.SegConfig{}, stub)
+		err := UpgradeMirrors("", 123, []greenplum.SegConfig{}, stub, false)
 		if !errors.Is(err, expected) {
 			t.Errorf("got: %#v want: %#v", err, expected)
 		}
