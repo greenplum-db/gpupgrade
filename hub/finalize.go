@@ -80,9 +80,10 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 			// move this upgrade step back to before the target shutdown.
 			standby := s.Source.Mirrors[-1]
 			return UpgradeStandby(greenplum.NewRunner(s.Target, streams), StandbyConfig{
-				Port:          standby.Port,
-				Hostname:      standby.Hostname,
-				DataDirectory: standby.DataDir,
+				Port:            standby.Port,
+				Hostname:        standby.Hostname,
+				DataDirectory:   standby.DataDir,
+				UseHbaHostnames: s.UseHbaHostnames,
 			})
 		})
 	}

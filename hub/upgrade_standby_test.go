@@ -15,9 +15,10 @@ func TestUpgradeStandby(t *testing.T) {
 
 	t.Run("it upgrades the standby through gpinitstandby", func(t *testing.T) {
 		config := hub.StandbyConfig{
-			Port:          8888,
-			Hostname:      "some-hostname",
-			DataDirectory: "/some/standby/data/directory",
+			Port:            8888,
+			Hostname:        "some-hostname",
+			DataDirectory:   "/some/standby/data/directory",
+			UseHbaHostnames: true,
 		}
 
 		runner := newSpyRunner()
@@ -56,6 +57,10 @@ func TestUpgradeStandby(t *testing.T) {
 			Call("gpinitstandby", 2).
 			ArgumentsInclude("-a")
 
+		hbaHostnamesArgument := runner.
+			Call("gpinitstandby", 2).
+			ArgumentsInclude("--hba-hostnames")
+
 		if portArgument != "8888" {
 			t.Errorf("got port for new standby = %v, wanted %v",
 				portArgument, "8888")
@@ -73,6 +78,10 @@ func TestUpgradeStandby(t *testing.T) {
 
 		if !automaticArgument {
 			t.Error("got automatic argument to be set, it was not")
+		}
+
+		if !hbaHostnamesArgument {
+			t.Error("got --hba-hostnames argument to be set, it was not")
 		}
 	})
 }

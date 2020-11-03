@@ -13,9 +13,10 @@ import (
 )
 
 type StandbyConfig struct {
-	Port          int
-	Hostname      string
-	DataDirectory string
+	Port            int
+	Hostname        string
+	DataDirectory   string
+	UseHbaHostnames bool
 }
 
 //
@@ -38,9 +39,16 @@ func UpgradeStandby(r greenplum.Runner, standbyConfig StandbyConfig) error {
 
 	gplog.Info(fmt.Sprintf("creating target standby master: %#v", standbyConfig))
 
-	return r.Run("gpinitstandby",
+	args := []string{
 		"-P", strconv.Itoa(standbyConfig.Port),
 		"-s", standbyConfig.Hostname,
 		"-S", standbyConfig.DataDirectory,
-		"-a")
+		"-a",
+	}
+
+	if standbyConfig.UseHbaHostnames {
+		args = append(args, "--hba-hostnames")
+	}
+
+	return r.Run("gpinitstandby", args...)
 }
