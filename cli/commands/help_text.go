@@ -49,6 +49,10 @@ func init() {
 		idl.Substep_START_TARGET_CLUSTER,
 		idl.Substep_UPGRADE_STANDBY,
 		idl.Substep_UPGRADE_MIRRORS,
+		idl.Substep_ARCHIVE_LOG_DIRECTORIES,
+		idl.Substep_DELETE_SEGMENT_STATEDIRS,
+		idl.Substep_STOP_HUB_AND_AGENTS,
+		idl.Substep_DELETE_MASTER_STATEDIR,
 	})
 	RevertHelp = GenerateHelpString(revertHelp, []idl.Substep{
 		idl.Substep_SHUTDOWN_TARGET_CLUSTER,

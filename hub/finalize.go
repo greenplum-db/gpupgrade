@@ -5,6 +5,8 @@ package hub
 
 import (
 	"fmt"
+	"path/filepath"
+	"time"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/xerrors"
@@ -12,6 +14,8 @@ import (
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/upgrade"
+	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
@@ -98,6 +102,28 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 				s.Source.SelectSegments(mirrors), greenplum.NewRunner(s.Target, streams))
 		})
 	}
+
+	// FIXME: archiveDir is not set unless we actually run this substep; it must be persisted.
+	var archiveDir string
+	st.Run(idl.Substep_ARCHIVE_LOG_DIRECTORIES, func(_ step.OutStreams) error {
+		// Archive log directory on master
+		oldDir, err := utils.GetLogDir()
+		if err != nil {
+			return err
+		}
+		archiveDir = filepath.Join(filepath.Dir(oldDir), upgrade.GetArchiveDirectoryName(s.UpgradeID, time.Now()))
+
+		gplog.Debug("moving directory %q to %q", oldDir, archiveDir)
+		if err = utils.Move(oldDir, archiveDir); err != nil {
+			return err
+		}
+
+		return ArchiveSegmentLogDirectories(s.agentConns, s.Config.Target.MasterHostname(), archiveDir)
+	})
+
+	st.Run(idl.Substep_DELETE_SEGMENT_STATEDIRS, func(_ step.OutStreams) error {
+		return DeleteStateDirectories(s.agentConns, s.Source.MasterHostname())
+	})
 
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_FinalizeResponse{
 		FinalizeResponse: &idl.FinalizeResponse{

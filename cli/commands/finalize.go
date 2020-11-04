@@ -12,6 +12,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
@@ -60,6 +61,18 @@ func finalize() *cobra.Command {
 				}
 
 				return nil
+			})
+
+			st.RunCLISubstep(idl.Substep_STOP_HUB_AND_AGENTS, func(streams step.OutStreams) error {
+				return stopHubAndAgents(false)
+			})
+
+			st.RunCLISubstep(idl.Substep_DELETE_MASTER_STATEDIR, func(streams step.OutStreams) error {
+				// Removing the state directory removes the step status file.
+				// Disable the store so the step framework does not try to write
+				// to a non-existent status file.
+				st.DisableStore()
+				return upgrade.DeleteDirectories([]string{utils.GetStateDir()}, upgrade.StateDirectoryFiles, streams)
 			})
 
 			return st.Complete(fmt.Sprintf(`
