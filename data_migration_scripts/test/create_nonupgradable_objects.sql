@@ -114,6 +114,32 @@ CREATE TABLE partition_table_partitioned_by_name_type(a int, b name) PARTITION B
 DROP TABLE IF EXISTS table_distributed_by_name_type;
 CREATE TABLE table_distributed_by_name_type(a int, b name) DISTRIBUTED BY (b);
 INSERT INTO table_distributed_by_name_type VALUES (1,'z'),(2,'x');
+-- create table / views with name dataype
+CREATE TABLE t1_with_name(a name, b name) DISTRIBUTED RANDOMLY;
+INSERT INTO t1_with_name SELECT 'aaa', 'bbb';
+CREATE TABLE t2_with_name(a int, b name) DISTRIBUTED RANDOMLY;
+INSERT INTO t2_with_name SELECT 1, 'bbb';
+CREATE VIEW v2_on_t2_with_name AS SELECT * FROM t2_with_name;
+-- multilevel partition table with partitioning keys using name datatype
+CREATE TABLE multilevel_part_with_partition_col_name_datatype (trans_id int, country name, amount decimal(9,2), region name)
+DISTRIBUTED BY (trans_id)
+PARTITION BY LIST (country)
+SUBPARTITION BY LIST (region)
+SUBPARTITION TEMPLATE
+( SUBPARTITION south VALUES ('south'),
+    DEFAULT SUBPARTITION other_regions)
+    (PARTITION usa VALUES ('usa'),
+    DEFAULT PARTITION outlying_country );
+-- multilevel partition table with partitioning keys using not using name datatype
+CREATE TABLE multilevel_part_with_partition_col_text_datatype (trans_id int, country text, state name, region text)
+DISTRIBUTED BY (trans_id)
+PARTITION BY LIST (country)
+SUBPARTITION BY LIST (region)
+SUBPARTITION TEMPLATE
+( SUBPARTITION south VALUES ('south'),
+    DEFAULT SUBPARTITION other_regions)
+    (PARTITION usa VALUES ('usa'),
+    DEFAULT PARTITION outlying_country );
 
 -- create tables with tsquery datatype
 DROP TABLE IF EXISTS table_with_tsquery_datatype_columns;

@@ -48,6 +48,9 @@ drop_unfixable_objects() {
     $GPHOME_SOURCE/bin/psql -d $TEST_DBNAME -p $PGPORT -c "DROP TABLE table_with_primary_constraint_p;"
     $GPHOME_SOURCE/bin/psql -d $TEST_DBNAME -p $PGPORT -c "DROP TABLE partition_table_partitioned_by_name_type;"
     $GPHOME_SOURCE/bin/psql -d $TEST_DBNAME -p $PGPORT -c "DROP TABLE table_distributed_by_name_type;"
+    $GPHOME_SOURCE/bin/psql -d $TEST_DBNAME -p $PGPORT -c "DROP VIEW v2_on_t2_with_name;"
+    $GPHOME_SOURCE/bin/psql -d $TEST_DBNAME -p $PGPORT -c "DROP TABLE t2_with_name;"
+    $GPHOME_SOURCE/bin/psql -d $TEST_DBNAME -p $PGPORT -c "DROP TABLE multilevel_part_with_partition_col_name_datatype;"
 }
 
 @test "migration scripts generate sql to modify non-upgradeable objects and fix pg_upgrade check errors" {

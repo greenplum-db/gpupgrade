@@ -1,8 +1,16 @@
 -- The below SQL alters, where possible, the name data type to varchar(63)
--- in columns other than the first.  For a partition table, SQL is only generated
--- for root partitions as that cascades to the child partitions. Where not possible,
--- a message is logged, and such tables must be manually modified to remove the name
--- data type prior to running gpugprade.
+-- in columns other than the first.
+-- For a partition table, SQL is only generated for root partitions as that
+-- cascades to the child partitions.
+-- SQL statements are not generated for distribution columns with name data type,
+-- one can alter the datatype using the below steps:
+--   1. ALTER TABLE <tablename> SET DISTRIBUTED RANDOMLY;
+--   2. ALTER TABLE <tablename> ALTER COLUMN <columnname> TYPE VARCHAR(63);
+--   3. ALTER TABLE <tablename> SET DISTRIBUTED BY (columnname);
+-- SQL statements are not generated for partitioning columns with name data type, one
+-- has to manually recreate the table with datatype other than name such as varchar(63).
+-- Where not possible, a message is logged, and such tables must be manually
+-- modified to remove the name data type prior to running gpugprade.
 
 \set VERBOSITY terse
 
