@@ -49,6 +49,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/upgrade"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 func BuildRootCommand() *cobra.Command {
@@ -57,13 +58,23 @@ func BuildRootCommand() *cobra.Command {
 
 	root := &cobra.Command{
 		Use: "gpupgrade",
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			if shouldPrintVersion {
 				printVersion()
-				return
+				return nil
 			}
 
-			fmt.Print(GlobalHelp)
+			logdir, err := utils.GetLogDir()
+			if err != nil {
+				return xerrors.Errorf("getting log directory: %w", err)
+			}
+
+			_, err = fmt.Printf(GlobalHelp, logdir)
+			if err != nil {
+				return err
+			}
+
+			return nil
 		},
 	}
 

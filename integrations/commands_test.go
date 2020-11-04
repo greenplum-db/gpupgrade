@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/greenplum-db/gpupgrade/cli/commands"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 func TestHelpCommands(t *testing.T) {
@@ -51,8 +52,14 @@ func TestHelpCommands(t *testing.T) {
 			t.Errorf("unexpected err: %#v", err)
 		}
 
-		if string(output) != commands.GlobalHelp {
-			t.Errorf("got help output %q want %q", string(output), commands.GlobalHelp)
+		logdir, err := utils.GetLogDir()
+		if err != nil {
+			t.Errorf("failed to get log dir: %v", err)
+		}
+
+		expected := fmt.Sprintf(commands.GlobalHelp, logdir)
+		if string(output) != expected {
+			t.Errorf("got help output %q want %q", string(output), expected)
 		}
 	})
 }

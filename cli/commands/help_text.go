@@ -11,6 +11,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 var (
@@ -69,10 +70,10 @@ func init() {
 
 const initializeHelp = `
 Runs pre-upgrade checks and prepares the cluster for upgrade.
+This command should be run only during a downtime window.
 
 Initialize will carry out the following steps:
 %s
-
 During or after gpupgrade initialize, you may revert the cluster to its
 original state by running gpupgrade revert.
 
@@ -85,17 +86,18 @@ Required Flags:
 
 Optional Flags:
 
-  -h, --help      displays help output for initialize
+  -a, --automatic   suppress summary & confirmation dialog
+  -h, --help        displays help output for initialize
+  -v, --verbose     outputs detailed logs for initialize
 
-  -v, --verbose   outputs detailed logs for initialize
-
+gpupgrade log files can be found on all hosts in %s
 `
 const executeHelp = `
 Upgrades the master and primary segments to the target Greenplum version.
+This command should be run only during a downtime window.
 
 Execute will carry out the following steps:
 %s
-
 During or after gpupgrade execute, you may revert the cluster to its
 original state by running gpupgrade revert.
 
@@ -104,31 +106,35 @@ Usage: gpupgrade execute
 Optional Flags:
 
   -h, --help      displays help output for execute
-
   -v, --verbose   outputs detailed logs for execute
 
+gpupgrade log files can be found on all hosts in %s
 `
 const finalizeHelp = `
 Upgrades the standby master and mirror segments to the target Greenplum version.
+This command should be run only during a downtime window.
 
 Finalize will carry out the following steps:
 %s
-
-Once you run gpupgrade finalize, you may not revert the cluster to its
-original state by running gpupgrade revert.
+Once you run gpupgrade finalize, you may NOT revert the cluster to its
+original state.
 
 Usage: gpupgrade finalize
 
 Optional Flags:
 
   -h, --help      displays help output for finalize
-
   -v, --verbose   outputs detailed logs for finalize
 
+NOTE: After running finalize, you must execute data migration scripts. 
+Refer to documentation for instructions.
+
+gpupgrade log files can be found on all hosts in %s
 `
 const revertHelp = `
 Returns the cluster to its original state.
 This command cannot be run after gpupgrade finalize has begun.
+This command should be run only during a downtime window.
 
 Revert will carry out some or all of the following steps:
 %s
@@ -138,12 +144,18 @@ Optional Flags:
 
   -h, --help      displays help output for revert
   -v, --verbose   outputs detailed logs for revert
+
+NOTE: After running revert, you must execute data migration scripts. 
+Refer to documentation for instructions.
+
+Archived gpupgrade log files can be found on all hosts in %s-<upgradeID>-<timestamp>
 `
 const GlobalHelp = `
 gpupgrade performs an in-place cluster upgrade to the next major version.
 
-NOTE: Before running gpupgrade, you must prepare the cluster. Refer to
-release notes for instructions.
+NOTE: Before running gpupgrade, you must prepare the cluster. This includes
+generating and executing data migration scripts. Refer to documentation 
+for instructions.
 
 Usage: gpupgrade [command] <flags> 
 
@@ -156,6 +168,9 @@ Required Commands: Run the three commands in this order
                   Required Flags:
                     -f, --file   config file containing upgrade parameters
                                  (e.g. gpupgrade_config)
+
+                  Optional Flags:
+                    -a, --automatic   suppress summary & confirmation dialog
 
   2. execute      upgrades the master and primary segments to the target
                   Greenplum version
@@ -171,13 +186,12 @@ Optional Commands:
 Optional Flags:
 
   -h, --help      displays help output for gpupgrade
-
   -v, --verbose   outputs detailed logs for gpupgrade
-
   -V, --version   displays the version of the current gpupgrade utility
 
-Use "gpupgrade [command] --help" for more information about a command.
+gpupgrade log files can be found on all hosts in %s
 
+Use "gpupgrade [command] --help" for more information about a command.
 `
 
 func GenerateHelpString(baseString string, commandList []idl.Substep) string {
@@ -185,8 +199,13 @@ func GenerateHelpString(baseString string, commandList []idl.Substep) string {
 	for _, substep := range commandList {
 		formattedList += fmt.Sprintf(" - %s\n", commanders.SubstepDescriptions[substep].HelpText)
 	}
-	return fmt.Sprintf(baseString, formattedList)
 
+	logdir, err := utils.GetLogDir()
+	if err != nil {
+		panic(fmt.Sprintf("failed to get log directory: %v", err))
+	}
+
+	return fmt.Sprintf(baseString, formattedList, logdir)
 }
 
 // Cobra has multiple ways to handle help text, so we want to force all of them to use the same help text
