@@ -19,11 +19,8 @@ VERSION_LD_STR := -X 'github.com/greenplum-db/$(MODULE_NAME)/cli/commands.Versio
 VERSION_LD_STR += -X 'github.com/greenplum-db/$(MODULE_NAME)/cli/commands.Commit=$(COMMIT)'
 VERSION_LD_STR += -X 'github.com/greenplum-db/$(MODULE_NAME)/cli/commands.Release=$(RELEASE)'
 
-BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 LINUX_ENV := env GOOS=linux GOARCH=amd64
 MAC_ENV := env GOOS=darwin GOARCH=amd64
-LINUX_EXTENSION := .linux.$(BRANCH)
-MAC_EXTENSION := .darwin.$(BRANCH)
 
 # depend-dev will install the necessary Go dependencies for running `go
 # generate`. (This recipe does not have to be run in order to build the
@@ -84,12 +81,11 @@ sshd_build:
 		make -C integrations/sshd
 
 BUILD_ENV = $($(OS)_ENV)
-EXTENSION = $($(OS)_EXTENSION)
 
 .PHONY: build build_linux build_mac
 
 build:
-	$(BUILD_ENV) go build -o gpupgrade$(EXTENSION) $(BUILD_FLAGS) github.com/greenplum-db/gpupgrade/cmd/gpupgrade
+	$(BUILD_ENV) go build -o gpupgrade $(BUILD_FLAGS) github.com/greenplum-db/gpupgrade/cmd/gpupgrade
 	go generate ./cli/bash
 
 build_linux: OS := LINUX
@@ -128,6 +124,7 @@ clean:
 		rm -rf /tmp/unit*
 
 # You can override these from the command line.
+BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
 GIT_URI := $(shell git ls-remote --get-url)
 
 ifeq ($(GIT_URI),https://github.com/greenplum-db/gpupgrade)
