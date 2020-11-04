@@ -6,18 +6,6 @@ all: build
 .DEFAULT_GOAL := all
 MODULE_NAME=gpupgrade
 
-# TAGGING
-#   YOUR_BRANCH> make all of the changes you want for your tag
-#   follow standard procedures for your PR; commit them(PR is completed)
-#   note git hash for that version(might have been rebased, etc); call it GIT_HASH
-#   YOUR_BRANCH> git tag -a TAGNAME -m "version 0.1.1: add version" GIT_HASH
-#   YOUR_BRANCH> git push origin TAGNAME
-VERSION := $(shell git describe --tags --abbrev=0)
-COMMIT := $(shell git rev-parse --short --verify HEAD)
-RELEASE=Dev Build
-VERSION_LD_STR := -X 'github.com/greenplum-db/$(MODULE_NAME)/cli/commands.Version=$(VERSION)'
-VERSION_LD_STR += -X 'github.com/greenplum-db/$(MODULE_NAME)/cli/commands.Commit=$(COMMIT)'
-VERSION_LD_STR += -X 'github.com/greenplum-db/$(MODULE_NAME)/cli/commands.Release=$(RELEASE)'
 
 LINUX_ENV := env GOOS=linux GOARCH=amd64
 MAC_ENV := env GOOS=darwin GOARCH=amd64
@@ -85,6 +73,17 @@ BUILD_ENV = $($(OS)_ENV)
 .PHONY: build build_linux build_mac
 
 build:
+# For tagging a release see the "Upgrade Release Checklist" document.
+	$(eval VERSION := $(shell git describe --tags --abbrev=0))
+	$(eval COMMIT := $(shell git rev-parse --short --verify HEAD))
+	$(eval RELEASE=Dev Build)
+	$(eval VERSION_LD_STR := -X 'github.com/greenplum-db/$(MODULE_NAME)/cli/commands.Version=$(VERSION)')
+	$(eval VERSION_LD_STR += -X 'github.com/greenplum-db/$(MODULE_NAME)/cli/commands.Commit=$(COMMIT)')
+	$(eval VERSION_LD_STR += -X 'github.com/greenplum-db/$(MODULE_NAME)/cli/commands.Release=$(RELEASE)')
+
+	$(eval BUILD_FLAGS = -gcflags="all=-N -l")
+	$(eval override BUILD_FLAGS += -ldflags "$(VERSION_LD_STR)")
+
 	$(BUILD_ENV) go build -o gpupgrade $(BUILD_FLAGS) github.com/greenplum-db/gpupgrade/cmd/gpupgrade
 	go generate ./cli/bash
 
@@ -94,6 +93,29 @@ build_linux build_mac: build
 
 BUILD_FLAGS = -gcflags="all=-N -l"
 override BUILD_FLAGS += -ldflags "$(VERSION_LD_STR)"
+
+enterprise-tarball: RELEASE=Enterprise
+enterprise-tarball: build tarball
+
+oss-tarball: RELEASE=Open Source
+oss-tarball: build tarball
+
+tarball:
+	[ ! -d package ] && mkdir package
+	# gather files
+	cp gpupgrade package
+	cp -r data_migration_scripts/ package/data_migration_scripts/
+	# remove test files
+	rm -r package/data_migration_scripts/test
+	cp cli/bash/bash-completion.sh package
+	cp gpupgrade_config package
+	if [ "$(RELEASE)" = "Enterprise" ]; then \
+		cp open_source_licenses.txt package; \
+	fi
+	# create tarball
+	( cd package; tar czf ../gpupgrade-$(VERSION).tar.gz . )
+	shasum -a 256 gpupgrade-$(VERSION).tar.gz > CHECKSUM
+	rm -r package
 
 install:
 	go install $(BUILD_FLAGS) github.com/greenplum-db/gpupgrade/cmd/gpupgrade

@@ -3,3 +3,5 @@
 
 /gpupgrade
 /.vagrant
+gpupgrade-*.tar.gz
+CHECKSUM
