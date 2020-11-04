@@ -11,7 +11,7 @@
 }
 
 @test "gpupgrade --version prints version" {
-    run gpupgrade -V
+    run gpupgrade --version
     check_version
 }
 
