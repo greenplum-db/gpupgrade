@@ -95,6 +95,18 @@ upgrade_cluster() {
         local new_config=$(get_segment_configuration "${GPHOME_TARGET}")
         [ "$old_config" = "$new_config" ] || fail "actual config: $new_config, wanted $old_config"
 
+        # make sure the hub/agents are down
+        ! process_is_running "[g]pupgrade hub" || fail 'expected hub to have been stopped'
+        ! process_is_running "[g]pupgrade agent" || fail 'expected agent to have been stopped'
+
+        # the GPUPGRADE_HOME directory is deleted
+        [ ! -d "${GPUPGRADE_HOME}" ] || fail "expected GPUPGRADE_HOME directory ${GPUPGRADE_HOME} to have been deleted"
+
+        # check that the archived log directory corresponds to this tests upgradeID
+        if [[ -z $(find "${HOME}/gpAdminLogs/gpupgrade-${upgradeID}-"* -type d) ]]; then
+            fail "expected the log directory to be archived and match ${HOME}/gpAdminLogs/gpupgrade-*"
+        fi
+
         #
         # The tests below depend on the source cluster having a standby and a full set of mirrors
         #
