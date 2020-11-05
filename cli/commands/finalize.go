@@ -82,11 +82,21 @@ The target cluster is now ready to use, running Greenplum %s.
 PGPORT: %d
 MASTER_DATA_DIRECTORY: %s
 
+The source cluster is not running. You may delete the source cluster to recover space from all hosts. 
+All source cluster data directories end in "%s".
+MASTER_DATA_DIRECTORY: %s
+
+The gpupgrade logs can be found on the master and segment hosts in
+%s
+
 NEXT ACTIONS
 ------------
 Run the “complete” data migration scripts, and recreate any additional tables,
 indexes, and roles that were dropped or altered to resolve migration issues.`,
-				response.GetTargetVersion(), response.GetTarget().GetPort(), response.GetTarget().GetMasterDataDirectory()))
+				response.GetTargetVersion(), response.GetTarget().GetPort(), response.GetTarget().GetMasterDataDirectory(),
+				fmt.Sprintf("%s.<contentID>%s", response.GetUpgradeID(), upgrade.OldSuffix),
+				response.GetArchivedSourceMasterDataDirectory(),
+				response.GetLogArchiveDirectory()))
 		},
 	}
 

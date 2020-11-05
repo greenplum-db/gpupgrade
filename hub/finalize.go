@@ -128,6 +128,9 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_FinalizeResponse{
 		FinalizeResponse: &idl.FinalizeResponse{
 			TargetVersion: s.Target.Version.VersionString,
+			LogArchiveDirectory: archiveDir,
+			ArchivedSourceMasterDataDirectory: s.Config.TargetInitializeConfig.Master.DataDir + upgrade.OldSuffix,
+			UpgradeID: s.Config.UpgradeID.String(),
 			Target: &idl.Cluster{
 				Port:                int32(s.Target.MasterPort()),
 				MasterDataDirectory: s.Target.MasterDataDir(),

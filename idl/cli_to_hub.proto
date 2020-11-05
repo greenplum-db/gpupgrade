@@ -153,6 +153,9 @@ message ExecuteResponse {
 message FinalizeResponse {
   Cluster target = 1;
   string TargetVersion = 2;
+  string LogArchiveDirectory = 3;
+  string ArchivedSourceMasterDataDirectory = 4;
+  string UpgradeID = 5;
 }
 
 message RevertResponse {
