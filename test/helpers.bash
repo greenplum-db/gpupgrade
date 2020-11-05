@@ -96,35 +96,6 @@ delete_cluster() {
     delete_target_datadirs "$masterdir"
 }
 
-# delete_finalized_cluster takes an upgrade master data directory and deletes
-# the cluster. It also resets the finalized data directories to what they were
-# before upgrade by removing the upgraded data directories, and renaming the
-# archive directories to their original name (which is the same as their
-# upgraded name).
-delete_finalized_cluster() {
-    local gphome="$1"
-    local masterdir="$2"
-
-    # Perform a sanity check before deleting.
-    local archive_masterdir=$(archive_dir "$masterdir")
-    [ -d "$archive_masterdir" ] || abort "cowardly refusing to delete $masterdir. Expected $archive_masterdir to exist."
-
-    __gpdeletesystem "$gphome" "$masterdir"
-
-    local id=$(gpupgrade config show --id)
-
-    local datadirs=$(dirname "$(dirname "$masterdir")")
-    for archive in $(find "${datadirs}" -name "*${id}*.old"); do
-        # The following sed matches archived data directories and returns the
-        # path of the original directory. For example,
-        #   /dbfast_mirror2/demoDataDir.BY6l9U0LfX8.1.old -> /dbfast_mirror2/demoDataDir1
-        #   /datadirs/standby.BY6l9U0LfX8.old -> /datadirs/standby
-        local original=$(sed -E 's/\.'"${id}"'(\.([-0-9]+))?\.old/\2/' <<< "$archive")
-        rm -rf "${original}"
-        mv "$archive" "$original"
-    done
-}
-
 # Calls gpdeletesystem on the cluster pointed to by the given master data
 # directory.
 __gpdeletesystem() {
