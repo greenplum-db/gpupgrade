@@ -66,19 +66,24 @@ upgrade_cluster() {
             --disk-free-ratio 0 \
             $LINK_MODE \
             --verbose 3>&-
-
         gpupgrade execute -a --verbose
+
+        # do before gpupgrade finalize shuts down the hub
+        local upgradeID new_datadir
+        upgradeID=$(gpupgrade config show --id)
+
         gpupgrade finalize -a --verbose
 
         if is_GPDB5 "$GPHOME_SOURCE"; then
             check_tablespace_data
         fi
 
+        # the source data directories are not deleted
         if [ "$LINK_MODE" == "--mode=link" ]; then
-            validate_data_directories "EXISTS" "$primary_datadirs"
-            validate_data_directories "NOT_EXISTS" "$mirror_datadirs"
+            validate_data_directories "$upgradeID" "EXISTS" "$primary_datadirs"
+            validate_data_directories "$upgradeID" "NOT_EXISTS" "$mirror_datadirs"
         else
-            validate_data_directories "EXISTS" "${datadirs}"
+            validate_data_directories "$upgradeID" "EXISTS" "${datadirs}"
         fi
 
         # ensure gpperfmon configuration file has been modified to reflect new data dir location
@@ -124,11 +129,13 @@ get_standby_status() {
 }
 
 validate_data_directories() {
+        UPGRADE_ID=$1
+        shift
         CHECK_EXISTS=$1
         shift
         DATADIRS=("$@")
         for datadir in "${DATADIRS[@]}"; do
-            local source_datadir=$(archive_dir "$datadir")
+            local source_datadir=$(archive_dir "$datadir" "$UPGRADE_ID")
 
             if [ "$CHECK_EXISTS" == "NOT_EXISTS" ] ; then
                 # ensure that <mirror_datadir>_old directory for mirrors or standby does not exists

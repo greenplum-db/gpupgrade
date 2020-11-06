@@ -150,12 +150,10 @@ process_is_running() {
 #
 expected_target_datadir() {
     local dir=$1
+    local upgradeID=${2:-$(gpupgrade config show --id)}
     local parentDir=$(dirname "${dir}")
     local baseDir=$(basename "${dir}")
     local suffix="${baseDir#demoDataDir}"
-
-    local upgradeID
-    upgradeID=$(gpupgrade config show --id)
 
     # Sanity check.
     [ -n "$parentDir" ]
@@ -172,7 +170,8 @@ expected_target_datadir() {
 # directory.
 archive_dir() {
     local dir=$1
-    echo "$(expected_target_datadir "$dir")".old
+    local upgradeID=$2
+    echo "$(expected_target_datadir "$dir" "$upgradeID")".old
 }
 
 is_GPDB5() {
