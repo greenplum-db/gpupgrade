@@ -3,9 +3,35 @@
 # Copyright (c) 2017-2020 VMware, Inc. or its affiliates
 # SPDX-License-Identifier: Apache-2.0
 
+function print_usage() {
+echo '
+Identifies catalog inconsistencies between the source and target Greenplum versions
+and generates SQL scripts to resolve them. This command should be run prior to "gpupgrade".
+
+Usage: '$(basename $0)' <GPHOME> <PGPORT> <OUTPUT_DIR>
+     <GPHOME>     : the path to the source Greenplum installation directory
+     <PGPORT>     : the source Greenplum system port number
+     <OUTPUT_DIR> : the user-defined directory where the SQL scripts are created
+
+The output directory structure is:
+     <output directory>
+     + pre-initialize  drop and alter objects prior to "gpupgrade initialize"
+     + post-finalize   restore and recreate objects following "gpupgrade finalize"
+     + post-revert     restore objects following "gpupgrade revert"
+
+After running migration_generator_sql.bash, run migration_executor_sql.bash.
+Run migration_executor_sql.bash -h for more information.'
+}
+
+if [ "$#" -eq 0 ] || ([ "$#" -eq 1 ] && ([ "$1" = -h ] || [ "$1" = --help ])) ; then
+    print_usage
+    exit 0
+fi
+
 if [ "$#" -ne 3 ]; then
-    echo "Illegal number of parameters"
-    echo "Usage: $(basename $0) <GPHOME> <PGPORT> <OUTPUT_DIR>"
+    echo ""
+    echo "Error: Incorrect number of arguments"
+    print_usage
     exit 1
 fi
 
