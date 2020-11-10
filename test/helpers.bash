@@ -300,6 +300,19 @@ get_segment_configuration() {
     fi
 }
 
+# Prints all unique hostnames in the source cluster, one per line.
+all_hosts() {
+    # Use GROUP BY/ORDER BY MIN() rather than SELECT DISTINCT so that results
+    # are ordered by dbid; that's the host order most devs are used to for test
+    # clusters.
+    "$GPHOME_SOURCE"/bin/psql -At postgres -c "
+        SELECT hostname
+          FROM gp_segment_configuration
+         GROUP BY hostname
+         ORDER BY MIN(dbid);
+    "
+}
+
 # backup_source_cluster creates an rsync'd backup of a demo cluster and restores
 # its original contents during teardown.
 backup_source_cluster() {

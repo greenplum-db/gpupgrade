@@ -33,6 +33,7 @@ teardown() {
 
 upgrade_cluster() {
         LINK_MODE=$1
+        HBA_HOSTNAMES=$2
 
         # place marker file in source master data directory
         local marker_file=source-cluster.test-marker
@@ -64,7 +65,8 @@ upgrade_cluster() {
             --source-master-port="${PGPORT}" \
             --temp-port-range 6020-6040 \
             --disk-free-ratio 0 \
-            $LINK_MODE \
+            "$LINK_MODE" \
+            "$HBA_HOSTNAMES" \
             --verbose 3>&-
         gpupgrade execute -a --verbose
 
@@ -107,6 +109,8 @@ upgrade_cluster() {
             fail "expected the log directory to be archived and match ${HOME}/gpAdminLogs/gpupgrade-*"
         fi
 
+        validate_pg_hba_conf "$HBA_HOSTNAMES"
+
         #
         # The tests below depend on the source cluster having a standby and a full set of mirrors
         #
@@ -127,12 +131,14 @@ upgrade_cluster() {
         validate_mirrors_and_standby "${GPHOME_TARGET}" "$(hostname)" "${PGPORT}"
 }
 
+# NOTE: To reduce overall test time we test --use-hba-hostnames in link mode, and without in copy mode.
+
 @test "in copy mode gpupgrade finalize should swap the target data directories and ports with the source cluster" {
     upgrade_cluster
 }
 
-@test "in link mode gpupgrade finalize should also delete mirror directories" {
-    upgrade_cluster "--mode=link"
+@test "in link mode gpupgrade finalize should also delete mirror directories and honors --use-hba-hostnames" {
+    upgrade_cluster "--mode=link" "--use-hba-hostnames"
 }
 
 get_standby_status() {
@@ -163,4 +169,42 @@ validate_data_directories() {
             [ -f "${datadir}/postgresql.conf" ] || fail "expected postgresql.conf file to be in $datadir"
             [ ! -f "${datadir}/${marker_file}" ] || fail "unexpected ${marker_file} marker file in target datadir: $datadir"
         done
+}
+
+validate_pg_hba_conf() {
+    local HBA_HOSTNAMES=$1
+    local expected_hosts=()
+    local actual_hosts=()
+    local matched=()
+    local unmatched=()
+
+    # shellcheck disable=SC2207
+    local expected_hosts=( $(all_hosts) )
+    # shellcheck disable=SC2207
+    IFS=$'\n' expected_hosts=( $(sort <<<"${expected_hosts[*]}") )
+    # shellcheck disable=SC2207
+    IFS=$'\n' expected_hosts=( $(uniq <<<"${expected_hosts[*]}") )
+    unset IFS
+
+    for datadir in "${datadirs[@]}"; do
+        # shellcheck disable=SC2207
+        actual_hosts=( $(grep  -v '^#' "${datadir}/pg_hba.conf" | grep -v '^$' | grep -v '^local' | awk '{ print $4 }' | sort | uniq) )
+        for expected_host in "${expected_hosts[@]}"; do
+            for actual_host in "${actual_hosts[@]}"; do
+                if [ "$actual_host" == "$expected_host" ]; then
+                    matched+=( "$actual_host" )
+                    break 2
+                fi
+            done
+            unmatched+=( "$expected_host" )
+        done
+
+        if [[ -n "$HBA_HOSTNAMES" ]] && (( ${#unmatched[@]} )); then
+            log "expected ${datadir}/pg_hba.conf to contain all hosts '${expected_hosts[*]}'. Found '${actual_hosts[*]}'"
+        fi
+
+        if [[ -z "$HBA_HOSTNAMES" ]] && (( ${#matched[@]} )); then
+            log "expected ${datadir}/pg_hba.conf to 'not' contain any of the hosts '${expected_hosts[*]}'. Found '${actual_hosts[*]}'"
+        fi
+    done
 }
