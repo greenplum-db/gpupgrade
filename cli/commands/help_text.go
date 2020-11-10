@@ -57,12 +57,15 @@ func init() {
 	RevertHelp = GenerateHelpString(revertHelp, []idl.Substep{
 		idl.Substep_SHUTDOWN_TARGET_CLUSTER,
 		idl.Substep_DELETE_TARGET_CLUSTER_DATADIRS,
+		idl.Substep_DELETE_TABLESPACES,
+		idl.Substep_RESTORE_PGCONTROL,
+		idl.Substep_RESTORE_SOURCE_CLUSTER,
+		idl.Substep_START_SOURCE_CLUSTER,
+		idl.Substep_RECOVERSEG_SOURCE_CLUSTER,
+		idl.Substep_ARCHIVE_LOG_DIRECTORIES,
 		idl.Substep_DELETE_SEGMENT_STATEDIRS,
 		idl.Substep_STOP_HUB_AND_AGENTS,
 		idl.Substep_DELETE_MASTER_STATEDIR,
-		idl.Substep_ARCHIVE_LOG_DIRECTORIES,
-		idl.Substep_RESTORE_SOURCE_CLUSTER,
-		idl.Substep_START_SOURCE_CLUSTER,
 	})
 	Help = map[string]string{
 		"initialize": InitializeHelp,
