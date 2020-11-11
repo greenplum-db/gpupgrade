@@ -73,7 +73,7 @@ BUILD_ENV = $($(OS)_ENV)
 .PHONY: build build_linux build_mac
 
 build:
-# For tagging a release see the "Upgrade Release Checklist" document.
+	# For tagging a release see the "Upgrade Release Checklist" document.
 	$(eval VERSION := $(shell git describe --tags --abbrev=0))
 	$(eval COMMIT := $(shell git rev-parse --short --verify HEAD))
 	$(eval RELEASE=Dev Build)
@@ -100,6 +100,8 @@ enterprise-tarball: build tarball
 oss-tarball: RELEASE=Open Source
 oss-tarball: build tarball
 
+TARBALL_NAME=greenplum-upgrade.tar.gz
+
 tarball:
 	[ ! -d tarball ] && mkdir tarball
 	# gather files
@@ -113,8 +115,8 @@ tarball:
 	# remove test files
 	rm -r tarball/data_migration_scripts/test
 	# create tarball
-	( cd tarball; tar czf ../gpupgrade-$(VERSION).tar.gz . )
-	shasum -a 256 gpupgrade-$(VERSION).tar.gz > CHECKSUM
+	( cd tarball; tar czf ../$(TARBALL_NAME) . )
+	sha256sum $(TARBALL_NAME) > CHECKSUM
 	rm -r tarball
 
 install:
@@ -146,6 +148,7 @@ clean:
 		rm -rf /tmp/unit*
 		# Package artifacts
 		rm -rf tarball
+		rm -f $(TARBALL_NAME)
 		rm -f CHECKSUM
 
 # You can override these from the command line.
