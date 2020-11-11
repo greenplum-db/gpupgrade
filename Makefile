@@ -119,6 +119,32 @@ tarball:
 	sha256sum $(TARBALL_NAME) > CHECKSUM
 	rm -r tarball
 
+enterprise-package: RELEASE=Enterprise
+enterprise-package: NAME=VMware Tanzu Greenplum Upgrade
+enterprise-package: LICENSE=VMware Software EULA
+enterprise-package: enterprise-tarball package
+
+oss-package: RELEASE=Open Source
+oss-package: NAME=Greenplum Database Upgrade
+oss-package: LICENSE=Apache 2.0
+oss-package: oss-tarball package
+
+package:
+	[ ! -d package ] && mkdir package
+	mkdir -p package/rpmbuild/{BUILD,RPMS,SOURCES,SPECS}
+	cp $(TARBALL_NAME) package/rpmbuild/SOURCES
+	cp greenplum-upgrade.spec package/rpmbuild/SPECS/
+	rpmbuild \
+	--define "_topdir $${PWD}/package/rpmbuild" \
+	--define "gpupgrade_version $(VERSION)" \
+	--define "gpupgrade_rpm_release 1" \
+	--define "release_type $(RELEASE)" \
+	--define "license $(LICENSE)" \
+	--define "summary $(NAME)" \
+	-bb $${PWD}/package/rpmbuild/SPECS/greenplum-upgrade.spec
+	cp package/rpmbuild/RPMS/x86_64/greenplum-upgrade-$(VERSION)*.rpm .
+	rm -r package
+
 install:
 	go install $(BUILD_FLAGS) github.com/greenplum-db/gpupgrade/cmd/gpupgrade
 
@@ -150,6 +176,8 @@ clean:
 		rm -rf tarball
 		rm -f $(TARBALL_NAME)
 		rm -f CHECKSUM
+		rm -rf package
+		rm -f greenplum-upgrade-$(VERSION)*.rpm
 
 # You can override these from the command line.
 BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
