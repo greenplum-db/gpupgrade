@@ -101,21 +101,21 @@ oss-tarball: RELEASE=Open Source
 oss-tarball: build tarball
 
 tarball:
-	[ ! -d package ] && mkdir package
+	[ ! -d tarball ] && mkdir tarball
 	# gather files
-	cp gpupgrade package
-	cp -r data_migration_scripts/ package/data_migration_scripts/
-	# remove test files
-	rm -r package/data_migration_scripts/test
-	cp cli/bash/gpupgrade.bash package
-	cp gpupgrade_config package
+	cp gpupgrade tarball
+	cp cli/bash/gpupgrade.bash tarball
+	cp gpupgrade_config tarball
 	if [ "$(RELEASE)" = "Enterprise" ]; then \
-		cp open_source_licenses.txt package; \
+		cp open_source_licenses.txt tarball; \
 	fi
+	cp -r data_migration_scripts/ tarball/data_migration_scripts/
+	# remove test files
+	rm -r tarball/data_migration_scripts/test
 	# create tarball
-	( cd package; tar czf ../gpupgrade-$(VERSION).tar.gz . )
+	( cd tarball; tar czf ../gpupgrade-$(VERSION).tar.gz . )
 	shasum -a 256 gpupgrade-$(VERSION).tar.gz > CHECKSUM
-	rm -r package
+	rm -r tarball
 
 install:
 	go install $(BUILD_FLAGS) github.com/greenplum-db/gpupgrade/cmd/gpupgrade
@@ -144,6 +144,9 @@ clean:
 		# Code coverage files
 		rm -rf /tmp/cover*
 		rm -rf /tmp/unit*
+		# Package artifacts
+		rm -rf tarball
+		rm -f CHECKSUM
 
 # You can override these from the command line.
 BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
