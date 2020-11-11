@@ -107,7 +107,7 @@ tarball:
 	cp -r data_migration_scripts/ package/data_migration_scripts/
 	# remove test files
 	rm -r package/data_migration_scripts/test
-	cp cli/bash/bash-completion.sh package
+	cp cli/bash/gpupgrade.bash package
 	cp gpupgrade_config package
 	if [ "$(RELEASE)" = "Enterprise" ]; then \
 		cp open_source_licenses.txt package; \

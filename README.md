@@ -195,7 +195,7 @@ To recompile proto files to generate gRPC client and server code run
 
 ## Bash Completion
 
-To enable tab completion of gpupgrade commands source the `cli/bash/bash-completion.sh` 
+To enable tab completion of gpupgrade commands source the `cli/bash/gpupgrade.bash`
 script from your `~/.bash_completion` config, or copy it into your system's 
 completions directory such as  `/etc/bash_completion.d`.
 

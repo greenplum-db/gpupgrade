@@ -13,7 +13,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/cli/commands"
 )
 
-//go:generate go run generate.go bash-completion.sh
+//go:generate go run generate.go gpupgrade.bash
 
 func main() {
 	root := commands.BuildRootCommand()
