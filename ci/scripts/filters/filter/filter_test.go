@@ -15,7 +15,7 @@ func TestFilter(t *testing.T) {
 		expected := "hello\n"
 		in.WriteString(expected)
 
-		Filter(&in, &out)
+		Filter(version6, &in, &out)
 		if out.String() != expected {
 			t.Errorf("wrote %q want %q", out.String(), expected)
 		}
@@ -34,7 +34,7 @@ RESET allow_system_table_mods;
 ALTER DATABASE test SET gp_use_legacy_hashops TO 'on';
 `)
 
-		Filter(&in, &out)
+		Filter(version6, &in, &out)
 
 		expected := `
 GRANT ALL ON DATABASE template1 TO gpadmin;
@@ -66,7 +66,7 @@ CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
 RESET allow_system_table_mods;
 `)
 
-		Filter(&in, &out)
+		Filter(version6, &in, &out)
 
 		expected := `
 GRANT ALL ON DATABASE template1 TO gpadmin;
@@ -96,7 +96,7 @@ RESET allow_system_table_mods;
 
 `)
 
-		Filter(&in, &out)
+		Filter(version6, &in, &out)
 
 		expected := `
 
@@ -127,7 +127,27 @@ START ('2005-12-01 00:00:00'::timestamp without time zone) END ('2006-01-01 00:0
 START ('2005-12-01 00:00:00'::timestamp without time zone) END ('2006-01-01 00:00:00'::timestamp without time zone) EVERY ('1 mon'::interval) WITH (tablename='order_lineitems_1_prt_2', appendonly=true, compresstype=quicklz, orientation=column )
 `
 
-		Filter(&in, &out)
+		Filter(version6, &in, &out)
+
+		if out.String() != expected {
+			t.Errorf("wrote %q want %q", out.String(), expected)
+			t.Logf("actual (expanded): %s", out.String())
+			t.Logf("expected (expanded): %s", expected)
+		}
+	})
+
+	t.Run("start clause", func(t *testing.T) {
+		var in, out bytes.Buffer
+
+		in.WriteString(`
+START (0::double precision) END (1.89999999999999991::double precision) EVERY (2::double precision) WITH (tablename='multivarblock_parttab_1_prt_p1_2_prt_2', checksum=true, appendonly=true, orientation=column ) 
+`)
+
+		expected := `
+START (0::double precision) END (1.XX::double precision) EVERY (2::double precision) WITH (tablename='multivarblock_parttab_1_prt_p1_2_prt_2', checksum=true, appendonly=true, orientation=column ) 
+`
+
+		Filter(version6, &in, &out)
 
 		if out.String() != expected {
 			t.Errorf("wrote %q want %q", out.String(), expected)
@@ -142,7 +162,7 @@ START ('2005-12-01 00:00:00'::timestamp without time zone) END ('2006-01-01 00:0
 		expected := "WITH (appendonly='true', compresstype=quicklz, orientation='column'\n"
 		in.WriteString(expected)
 
-		Filter(&in, &out)
+		Filter(version6, &in, &out)
 
 		if out.String() != expected {
 			t.Errorf("wrote %q want %q", out.String(), expected)
@@ -172,7 +192,7 @@ CREATE VIEW public.t3 AS
 SELECT t1.s2, foo.s2_xform FROM (public.t1 JOIN (SELECT t2.s2, COALESCE((avg(t2.r) - 0.020000), (0)::numeric) AS s2_xform FROM public.t2 GROUP BY t2.s2) foo ON ((t1.s2 = foo.s2)));
 `
 
-		Filter(&in, &out)
+		Filter(version6, &in, &out)
 
 		if out.String() != expected {
 			t.Errorf("wrote %q want %q", out.String(), expected)
@@ -194,7 +214,7 @@ CREATE RULE two AS
 CREATE RULE two AS ON INSERT TO public.oid_consistency_bar2 DO INSTEAD INSERT INTO public.oid_consistency_foo2 (a) VALUES (1);
 `
 
-		Filter(&in, &out)
+		Filter(version6, &in, &out)
 
 		if out.String() != expected {
 			t.Errorf("wrote %q want %q", out.String(), expected)
@@ -219,8 +239,32 @@ CREATE TRIGGER after_trigger
     EXECUTE PROCEDURE public.bfv_dml_error_func();
 `
 
-		Filter(&in, &out)
+		Filter(version6, &in, &out)
 
+		if out.String() != expected {
+			t.Errorf("wrote %q want %q", out.String(), expected)
+		}
+	})
+
+	t.Run("it replaces precision values with XX for 6x dump", func(t *testing.T) {
+		var in, out bytes.Buffer
+
+		in.WriteString(".23	abd	8902342	127.0.0.1	.23	22.42\n")
+
+		expected := ".XX	abd	8902342	127.0.0.1	.XX	22.XX\n"
+		Filter(version6, &in, &out)
+		if out.String() != expected {
+			t.Errorf("wrote %q want %q", out.String(), expected)
+		}
+	})
+
+	t.Run("it replaces precision values with XX for 5x dump", func(t *testing.T) {
+		var in, out bytes.Buffer
+
+		in.WriteString(".23	abd	8902342	127.0.0.1	.23	22.42\n")
+
+		expected := ".XX	abd	8902342	127.0.0.1	.XX	22.XX\n"
+		Filter(version5, &in, &out)
 		if out.String() != expected {
 			t.Errorf("wrote %q want %q", out.String(), expected)
 		}

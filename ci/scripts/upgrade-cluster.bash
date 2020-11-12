@@ -53,11 +53,18 @@ compare_dumps() {
             # First filter out any algorithmically-fixable differences, then
             # patch out the remaining expected diffs explicitly.
             ssh mdw "
-                /tmp/filter < '$target_dump' > '$target_dump.filtered'
+                /tmp/filter -version=6 -inputFile='$target_dump' > '$target_dump.filtered'
                 patch -R '$target_dump.filtered'
             " < ./ci/scripts/filters/${DIFF_FILE}
 
             target_dump="$target_dump.filtered"
+
+            # Run the filter on the source dump
+            ssh mdw "
+                /tmp/filter -version=5 -inputFile='$source_dump' > '$source_dump.filtered'
+            "
+
+            source_dump="$source_dump.filtered"
         fi
     popd
 

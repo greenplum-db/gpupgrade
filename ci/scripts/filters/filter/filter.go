@@ -3,7 +3,8 @@
 
 /*
 	The filter command massages the post-upgrade SQL dump by removing known
-	differences. It does this with the following set of rules
+	differences. Different set of rules are applied for dump from greenplum
+	version 5 and 6. In general, the below set of rules are applied on the dump.
 
 	- Line rules are regular expressions that will cause any matching lines to
 	be removed immediately.
@@ -14,9 +15,9 @@
 	- Formatting rules are a set of functions that can format the sql statement tokens
 	into a desired format
 
-	filter reads from stdin and writes to stdout. Usage:
+	filter reads from an input file and writes to stdout. Usage:
 
-		filter < target.sql > target-filtered.sql
+		filter -version=5 -inputFile=dump.sql > dump-filtered.sql
 
 	Error handling is basic: any failures result in a log.Fatal() call.
 */
@@ -24,112 +25,34 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io"
 	"log"
 	"os"
-	"regexp"
 	"strings"
 
 	"github.com/greenplum-db/gpupgrade/ci/scripts/filters"
 )
 
-type ReplacementFunc func(line string) string
-
-var replacementFuncs []ReplacementFunc
-
-// function to identify if the line matches a pattern
-type shouldFormatFunc func(line string) bool
-
-// function to create a formatted string using the tokens
-type formatFunc func(tokens []string) (string, error)
-
-// identifier and corresponding formatting function
-type formatter struct {
-	shouldFormat shouldFormatFunc
-	format       formatFunc
-}
-
-// hold the current tokens for the formatting function
-type formatContext struct {
-	tokens     []string
-	formatFunc formatFunc
-}
-
 var (
-	formatters   []formatter
-	lineRegexes  []*regexp.Regexp
-	blockRegexes []*regexp.Regexp
+	version5 = 5
+	version6 = 6
 )
 
-// is formatting currently in progress
-func (f *formatContext) formatting() bool {
-	return f.formatFunc != nil
+type rules struct {
+	init func()
 }
 
-func (f *formatContext) addTokens(line string) {
-	f.tokens = append(f.tokens, strings.Fields(line)...)
-}
-
-func endFormatting(line string) bool {
-	return strings.Contains(line, ";")
-}
-
-func (f *formatContext) format() (string, error) {
-	return f.formatFunc(f.tokens)
-}
-
-func newFormattingContext() *formatContext {
-	return &formatContext{}
-}
-
-func (f *formatContext) find(formatters []formatter, line string) {
-	if f.formatFunc != nil {
-		return
+func newRules(version int) *rules {
+	r := &rules{}
+	if version == version5 {
+		r.init = filters.Init5x
+	} else {
+		r.init = filters.Init6x
 	}
 
-	for _, x := range formatters {
-		if x.shouldFormat(line) {
-			f.formatFunc = x.format
-			break
-		}
-	}
-}
-
-func init() {
-	// linePatterns remove exactly what is matched, on a line-by-line basis.
-	linePatterns := []string{
-		`ALTER DATABASE .+ SET gp_use_legacy_hashops TO 'on';`,
-		// TODO: There may be false positives because of the below
-		// pattern, and we might have to do a look ahead to really identify
-		// if it can be deleted.
-		`START WITH \d`,
-	}
-
-	// blockPatterns remove lines that match, AND any comments or whitespace
-	// immediately preceding them.
-	blockPatterns := []string{
-		"CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;",
-		"COMMENT ON EXTENSION plpgsql IS",
-		"COMMENT ON DATABASE postgres IS",
-	}
-
-	replacementFuncs = []ReplacementFunc{
-		filters.FormatWithClause,
-	}
-
-	// patten matching functions and corresponding formatting functions
-	formatters = []formatter{
-		{shouldFormat: filters.IsViewOrRuleDdl, format: filters.FormatViewOrRuleDdl},
-		{shouldFormat: filters.IsTriggerDdl, format: filters.FormatTriggerDdl},
-	}
-
-	for _, pattern := range linePatterns {
-		lineRegexes = append(lineRegexes, regexp.MustCompile(pattern))
-	}
-	for _, pattern := range blockPatterns {
-		blockRegexes = append(blockRegexes, regexp.MustCompile(pattern))
-	}
+	return r
 }
 
 func writeBufAndLine(out io.Writer, buf []string, line string) []string {
@@ -153,7 +76,10 @@ func write(out io.Writer, lines ...string) {
 	}
 }
 
-func Filter(in io.Reader, out io.Writer) {
+func Filter(version int, in io.Reader, out io.Writer) {
+	rules := newRules(version)
+	rules.init()
+
 	scanner := bufio.NewScanner(in)
 	// there are lines in icw regression suite requiring buffer
 	// to be atleast 10000000, so keeping it a little higher for now.
@@ -161,28 +87,28 @@ func Filter(in io.Reader, out io.Writer) {
 
 	var buf []string // lines buffered for look-ahead
 
-	var formattingContext = newFormattingContext()
+	var formattingContext = filters.NewFormattingContext()
 
 nextline:
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		formattingContext.find(formatters, line)
-		if formattingContext.formatting() {
-			formattingContext.addTokens(line)
-			if endFormatting(line) {
-				stmt, err := formattingContext.format()
+		formattingContext.Find(filters.Formatters, line)
+		if formattingContext.Formatting() {
+			formattingContext.AddTokens(line)
+			if filters.EndFormatting(line) {
+				stmt, err := formattingContext.Format()
 				if err != nil {
 					log.Fatalf("unexpected error: %#v", err)
 				}
 				buf = writeBufAndLine(out, buf, stmt)
-				formattingContext = newFormattingContext()
+				formattingContext = filters.NewFormattingContext()
 			}
 			continue nextline
 		}
 
 		// First filter on a line-by-line basis.
-		for _, r := range lineRegexes {
+		for _, r := range filters.LineRegexes {
 			if r.MatchString(line) {
 				continue nextline
 			}
@@ -195,7 +121,7 @@ nextline:
 			continue nextline
 		}
 
-		for _, r := range blockRegexes {
+		for _, r := range filters.BlockRegexes {
 			if r.MatchString(line) {
 				// Discard this line and any buffered comment block.
 				buf = buf[:0]
@@ -203,7 +129,7 @@ nextline:
 			}
 		}
 
-		for _, replacementFunc := range replacementFuncs {
+		for _, replacementFunc := range filters.ReplacementFuncs {
 			line = replacementFunc(line)
 		}
 
@@ -221,5 +147,32 @@ nextline:
 }
 
 func main() {
-	Filter(os.Stdin, os.Stdout)
+	var (
+		version   int
+		inputFile string
+		argCount  = 2
+	)
+
+	flag.IntVar(&version, "version", 0, "identifier specific version of greenplum dump, i.e 5 or 6")
+	flag.StringVar(&inputFile, "inputFile", "", "fully qualified input file name containing the dump")
+	flag.Parse()
+
+	if flag.NFlag() != argCount {
+		fmt.Printf("requires %d arguments, got %d\n", argCount, flag.NFlag())
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	if version != version5 && version != version6 {
+		fmt.Printf("permitted -version values are %d and %d. but got %d\n", version5, version6, version)
+		os.Exit(1)
+	}
+
+	in, err := os.Open(inputFile)
+	if err != nil {
+		fmt.Print(fmt.Errorf("%s: %w\n", inputFile, err))
+		os.Exit(1)
+	}
+
+	Filter(version, in, os.Stdout)
 }
