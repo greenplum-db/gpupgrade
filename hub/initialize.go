@@ -84,7 +84,12 @@ func (s *Server) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest,
 	})
 
 	st.Run(idl.Substep_INIT_TARGET_CLUSTER, func(stream step.OutStreams) error {
-		err := s.CreateTargetCluster(stream)
+		err := s.RemoveTargetCluster(stream)
+		if err != nil {
+			return err
+		}
+
+		err = s.CreateTargetCluster(stream)
 		if err != nil {
 			return err
 		}

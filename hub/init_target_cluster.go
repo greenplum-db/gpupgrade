@@ -61,6 +61,30 @@ func (s *Server) writeConf(sourceDBConn *dbconn.DBConn) error {
 	return WriteInitsystemFile(gpinitsystemConfig, s.initsystemConfPath())
 }
 
+func (s *Server) RemoveTargetCluster(streams step.OutStreams) error {
+	if s.Target == nil {
+		return nil
+	}
+
+	running, err := s.Target.IsMasterRunning(streams)
+	if err != nil {
+		return err
+	}
+
+	if running {
+		if err := s.Target.Stop(streams); err != nil {
+			return xerrors.Errorf("stopping target cluster: %w", err)
+		}
+	}
+
+	err = DeleteMasterAndPrimaryDataDirectories(streams, s.agentConns, s.TargetInitializeConfig)
+	if err != nil {
+		return xerrors.Errorf("deleting target cluster data directories: %w", err)
+	}
+
+	return nil
+}
+
 // CreateTargetCluster runs gpinitsystem using the server's
 // TargetInitializeConfig, then fills in the Target cluster and persists it to
 // disk.

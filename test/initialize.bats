@@ -22,12 +22,15 @@ setup() {
     HELD_PORT_PID=
     AGENT_PORT=
 
+    TARGET_PGPORT=6020
+
     gpupgrade kill-services
     gpupgrade initialize \
         --automatic \
         --source-gphome="${GPHOME_SOURCE}" \
         --target-gphome="${GPHOME_TARGET}" \
-        --source-master-port="${PGPORT}"\
+        --source-master-port="${PGPORT}" \
+        --temp-port-range "$TARGET_PGPORT"-6040 \
         --stop-before-cluster-creation \
         --disk-free-ratio 0 3>&-
     register_teardown gpupgrade kill-services
@@ -262,6 +265,50 @@ wait_for_port_change() {
     delete_target_on_teardown
 
     isready || fail "expected source cluster to be available"
+}
+
+@test "init target cluster is idempotent" {
+    # Force a target cluster to be created (setup's initialize stops before that
+    # happens).
+    gpupgrade initialize \
+        --source-gphome="$GPHOME_SOURCE" \
+        --target-gphome="$GPHOME_TARGET" \
+        --source-master-port="${PGPORT}"\
+        --temp-port-range 6020-6040 \
+        --disk-free-ratio 0 \
+        --automatic \
+        --verbose 3>&-
+
+    delete_target_on_teardown
+
+    # To simulate an init cluster failure, stop a segment and remove a datadir
+    local newmasterdir
+    newmasterdir="$(gpupgrade config show --target-datadir)"
+    (PGPORT=$TARGET_PGPORT source "$GPHOME_TARGET"/greenplum_path.sh && gpstart -a -d "$newmasterdir")
+
+    local datadir=$(query_datadirs "$GPHOME_TARGET" $TARGET_PGPORT "content=1")
+    pg_ctl -D "$datadir" stop
+    rm -r "$datadir"
+
+    # Ensure gpupgrade starts from initializing the target cluster.
+    cat <<- EOF > "$GPUPGRADE_HOME/substeps.json"
+        {
+          "INITIALIZE": {
+            "GENERATE_TARGET_CONFIG": "COMPLETE",
+            "SAVING_SOURCE_CLUSTER_CONFIG": "COMPLETE",
+            "START_AGENTS": "COMPLETE"
+          }
+        }
+	EOF
+
+    gpupgrade initialize \
+        --source-gphome="$GPHOME_SOURCE" \
+        --target-gphome="$GPHOME_TARGET" \
+        --source-master-port="${PGPORT}"\
+        --temp-port-range 6020-6040 \
+        --disk-free-ratio 0 \
+        --automatic \
+        --verbose 3>&-
 }
 
 # This is a very simple way to flush out the most obvious idempotence bugs. It
