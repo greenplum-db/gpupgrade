@@ -6,7 +6,7 @@
 load helpers
 load teardown_helpers
 
-SCRIPTS_DIR=$BATS_TEST_DIRNAME/../data_migration_scripts
+SCRIPTS_DIR=$BATS_TEST_DIRNAME/../data-migration-scripts
 
 setup() {
     skip_if_no_gpdb
@@ -82,7 +82,7 @@ drop_unfixable_objects() {
     root_child_indexes_before=$(get_indexes "$GPHOME_SOURCE")
     tsquery_datatype_objects_before=$(get_tsquery_datatypes "$GPHOME_SOURCE")
 
-    "$SCRIPTS_DIR"/migration_executor_sql.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/start
+    "$SCRIPTS_DIR"/migration_executor_sql.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/pre-initialize
 
     gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
@@ -95,7 +95,7 @@ drop_unfixable_objects() {
     gpupgrade execute -a --verbose
     gpupgrade finalize -a --verbose
 
-    "$SCRIPTS_DIR"/migration_executor_sql.bash "$GPHOME_TARGET" "$PGPORT" "$MIGRATION_DIR"/complete
+    "$SCRIPTS_DIR"/migration_executor_sql.bash "$GPHOME_TARGET" "$PGPORT" "$MIGRATION_DIR"/post-finalize
 
     # migration scripts should create the indexes on the target cluster
     root_child_indexes_after=$(get_indexes "$GPHOME_TARGET")
@@ -128,7 +128,7 @@ drop_unfixable_objects() {
 
 
     $SCRIPTS_DIR/migration_generator_sql.bash $GPHOME_SOURCE $PGPORT $MIGRATION_DIR
-    $SCRIPTS_DIR/migration_executor_sql.bash $GPHOME_SOURCE $PGPORT $MIGRATION_DIR/start
+    $SCRIPTS_DIR/migration_executor_sql.bash $GPHOME_SOURCE $PGPORT $MIGRATION_DIR/pre-initialize
 
     gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
@@ -141,7 +141,7 @@ drop_unfixable_objects() {
     gpupgrade execute -a --verbose
     gpupgrade revert -a --verbose
 
-    $SCRIPTS_DIR/migration_executor_sql.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/revert
+    $SCRIPTS_DIR/migration_executor_sql.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/post-revert
 
     "$GPHOME_SOURCE"/bin/pg_dump --schema-only $TEST_DBNAME $EXCLUSIONS -f "$MIGRATION_DIR"/after.sql
     diff -U3 --speed-large-files "$MIGRATION_DIR"/before.sql "$MIGRATION_DIR"/after.sql
@@ -166,7 +166,7 @@ drop_unfixable_objects() {
 
     "$SCRIPTS_DIR"/migration_generator_sql.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"
     drop_unfixable_objects
-    "$SCRIPTS_DIR"/migration_executor_sql.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/start
+    "$SCRIPTS_DIR"/migration_executor_sql.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/pre-initialize
 
     gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
@@ -178,7 +178,7 @@ drop_unfixable_objects() {
         --verbose
     gpupgrade revert -a --verbose
 
-    "$SCRIPTS_DIR"/migration_executor_sql.bash "$GPHOME_TARGET" "$PGPORT" "$MIGRATION_DIR"/revert
+    "$SCRIPTS_DIR"/migration_executor_sql.bash "$GPHOME_TARGET" "$PGPORT" "$MIGRATION_DIR"/post-revert
 }
 
 get_indexes() {

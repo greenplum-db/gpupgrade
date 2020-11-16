@@ -111,9 +111,9 @@ tarball:
 	if [ "$(RELEASE)" = "Enterprise" ]; then \
 		cp open_source_licenses.txt tarball; \
 	fi
-	cp -r data_migration_scripts/ tarball/data_migration_scripts/
+	cp -r data-migration-scripts/ tarball/data-migration-scripts/
 	# remove test files
-	rm -r tarball/data_migration_scripts/test
+	rm -r tarball/data-migration-scripts/test
 	# create tarball
 	( cd tarball; tar czf ../$(TARBALL_NAME) . )
 	sha256sum $(TARBALL_NAME) > CHECKSUM

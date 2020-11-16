@@ -113,7 +113,7 @@ execute_script_directory() {
 }
 
 main(){
-    local dirs=(start complete revert stats)
+    local dirs=(pre-initialize post-finalize post-revert stats)
     local databases=($(get_databases))
 
     for dir in "${dirs[@]}"; do
