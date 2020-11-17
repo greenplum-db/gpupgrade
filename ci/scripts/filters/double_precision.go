@@ -9,7 +9,7 @@ import (
 )
 
 func ReplacePrecision(line string) string {
-	excludeRegex := regexp.MustCompile(`VALUES.* WITH \(tablename|perform pg_sleep|time.sleep`)
+	excludeRegex := regexp.MustCompile(`VALUES.* WITH \(tablename|perform pg_sleep|time.sleep|COALESCE`)
 	if excludeRegex.MatchString(line) {
 		return line
 	}

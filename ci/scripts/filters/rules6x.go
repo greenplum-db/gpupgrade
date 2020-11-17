@@ -28,6 +28,7 @@ func Init6x() {
 	ReplacementFuncs = []ReplacementFunc{
 		FormatWithClause,
 		ReplacePrecision,
+		Replacements,
 	}
 
 	// patten matching functions and corresponding formatting functions

@@ -6,16 +6,21 @@ package filters
 import (
 	"errors"
 	"regexp"
+	"strings"
 )
 
-var triggerCreateRegex *regexp.Regexp
+var (
+	triggerCommentRegex *regexp.Regexp
+	triggerCreateRegex  *regexp.Regexp
+)
 
 func init() {
+	triggerCommentRegex = regexp.MustCompile(`; Type: TRIGGER;`)
 	triggerCreateRegex = regexp.MustCompile(`CREATE TRIGGER `)
 }
 
-func IsTriggerDdl(line string) bool {
-	return triggerCreateRegex.MatchString(line)
+func IsTriggerDdl(buf []string, line string) bool {
+	return len(buf) > 0 && triggerCommentRegex.MatchString(strings.Join(buf, " ")) && triggerCreateRegex.MatchString(line)
 }
 
 func FormatTriggerDdl(tokens []string) (string, error) {

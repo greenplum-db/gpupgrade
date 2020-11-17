@@ -11,18 +11,10 @@ import (
 
 var (
 	// regex for views/rule transformation
-	ruleOrViewCreateRegex *regexp.Regexp
-	viewReplacementRegex  []*viewReplacer
+	ruleOrViewCommentRegex *regexp.Regexp
+	ruleOrViewCreateRegex  *regexp.Regexp
+	viewReplacementRegex   []*Replacer
 )
-
-type viewReplacer struct {
-	Regex       *regexp.Regexp
-	Replacement string
-}
-
-func (t *viewReplacer) replace(line string) string {
-	return t.Regex.ReplaceAllString(line, t.Replacement)
-}
 
 // viewReplacementPatterns is a map of regex substitutions.
 var viewReplacementPatterns = map[string]string{
@@ -36,18 +28,13 @@ var viewReplacementPatterns = map[string]string{
 }
 
 func init() {
+	ruleOrViewCommentRegex = regexp.MustCompile(`; Type: (VIEW|RULE);`)
 	ruleOrViewCreateRegex = regexp.MustCompile(`CREATE (VIEW|RULE)`)
-
-	for regex, replacement := range viewReplacementPatterns {
-		viewReplacementRegex = append(viewReplacementRegex, &viewReplacer{
-			Regex:       regexp.MustCompile(regex),
-			Replacement: replacement,
-		})
-	}
+	viewReplacementRegex = InitReplacementRegex(viewReplacementPatterns)
 }
 
-func IsViewOrRuleDdl(line string) bool {
-	return ruleOrViewCreateRegex.MatchString(line)
+func IsViewOrRuleDdl(buf []string, line string) bool {
+	return len(buf) > 0 && ruleOrViewCommentRegex.MatchString(strings.Join(buf, " ")) && ruleOrViewCreateRegex.MatchString(line)
 }
 
 func FormatViewOrRuleDdl(tokens []string) (string, error) {

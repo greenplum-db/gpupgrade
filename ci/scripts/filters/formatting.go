@@ -16,7 +16,7 @@ var (
 )
 
 // function to identify if the line matches a pattern
-type shouldFormatFunc func(line string) bool
+type shouldFormatFunc func(buf []string, line string) bool
 
 // function to create a formatted string using the tokens
 type formatFunc func(tokens []string) (string, error)
@@ -52,17 +52,17 @@ func EndFormatting(line string) bool {
 	return strings.Contains(line, ";")
 }
 
-func (f *formatContext) Format() (string, error) {
+func (f *formatContext) Format(buf []string) (string, error) {
 	return f.formatFunc(f.tokens)
 }
 
-func (f *formatContext) Find(formatters []formatter, line string) {
+func (f *formatContext) Find(formatters []formatter, buf []string, line string) {
 	if f.formatFunc != nil {
 		return
 	}
 
 	for _, x := range formatters {
-		if x.shouldFormat(line) {
+		if x.shouldFormat(buf, line) {
 			f.formatFunc = x.format
 			break
 		}

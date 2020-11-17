@@ -93,11 +93,11 @@ nextline:
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		formattingContext.Find(filters.Formatters, line)
+		formattingContext.Find(filters.Formatters, buf, line)
 		if formattingContext.Formatting() {
 			formattingContext.AddTokens(line)
 			if filters.EndFormatting(line) {
-				stmt, err := formattingContext.Format()
+				stmt, err := formattingContext.Format(buf)
 				if err != nil {
 					log.Fatalf("unexpected error: %#v", err)
 				}

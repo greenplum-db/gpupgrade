@@ -9,36 +9,36 @@ import (
 
 func TestFormatTriggerDdl(t *testing.T) {
 	tests := []struct {
-		name    string
-		tokens  []string
-		want    string
-		wantErr bool
+		name        string
+		tokens      []string
+		expected    string
+		expectedErr bool
 	}{
 		{
 			name: "formats create trigger statement and body in to one line",
 			tokens: []string{"CREATE", "TRIGGER", "after_trigger", "AFTER", "INSERT", "OR", "DELETE", "ON",
 				"public.foo", "FOR", "EACH", "ROW", "EXECUTE", "PROCEDURE", "public.bfv_dml_error_func();"},
-			want:    "CREATE TRIGGER after_trigger\n    AFTER INSERT OR DELETE ON public.foo\n    FOR EACH ROW\n    EXECUTE PROCEDURE public.bfv_dml_error_func();",
-			wantErr: false,
+			expected:    "CREATE TRIGGER after_trigger\n    AFTER INSERT OR DELETE ON public.foo\n    FOR EACH ROW\n    EXECUTE PROCEDURE public.bfv_dml_error_func();",
+			expectedErr: false,
 		},
 		{
-			name:    "formats create trigger statement and body in to one line",
-			tokens:  []string{},
-			want:    "",
-			wantErr: true,
+			name:        "formats create trigger statement and body in to one line",
+			tokens:      []string{},
+			expected:    "",
+			expectedErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := FormatTriggerDdl(tt.tokens)
+			actual, err := FormatTriggerDdl(tt.tokens)
 
-			if err == nil && tt.wantErr {
+			if err == nil && tt.expectedErr {
 				t.Errorf("expect an error")
 			}
 
-			if got != tt.want {
-				t.Errorf("got %q, want %q", got, tt.want)
+			if actual != tt.expected {
+				t.Errorf("got %q, want %q", actual, tt.expected)
 			}
 		})
 	}
@@ -46,25 +46,28 @@ func TestFormatTriggerDdl(t *testing.T) {
 
 func TestIsTriggerDdl(t *testing.T) {
 	tests := []struct {
-		name   string
-		line   string
-		result bool
+		name     string
+		buf      []string
+		line     string
+		expected bool
 	}{
 		{
-			name:   "line contains create trigger statement",
-			line:   "CREATE TRIGGER mytrigger AS",
-			result: true,
+			name:     "line contains create trigger statement",
+			buf:      []string{"-- Name: mytrigger; Type: TRIGGER; Schema: public; Owner: gpadmin"},
+			line:     "CREATE TRIGGER mytrigger AS",
+			expected: true,
 		},
 		{
-			name:   "line does not create trigger statement",
-			line:   "CREATE TABLE mytable AS",
-			result: false,
+			name:     "line does not create trigger statement",
+			buf:      []string{"-- Name: mytable; Type: TABLE; Schema: public; Owner: gpadmin"},
+			line:     "CREATE TABLE mytable AS",
+			expected: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := IsTriggerDdl(tt.line); got != tt.result {
-				t.Errorf("got %t, want %t", got, tt.result)
+			if actual := IsTriggerDdl(tt.buf, tt.line); actual != tt.expected {
+				t.Errorf("got %t, want %t", actual, tt.expected)
 			}
 		})
 	}

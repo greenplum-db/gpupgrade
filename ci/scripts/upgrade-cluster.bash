@@ -26,6 +26,17 @@ configure_gpdb_gucs() {
 EOF
 }
 
+reindex_all_dbs() {
+    local gphome=$1
+    ssh mdw bash <<EOF
+        set -eux -o pipefail
+
+        source ${gphome}/greenplum_path.sh
+        export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
+        reindexdb -a
+EOF
+}
+
 dump_sql() {
     local port=$1
     local dumpfile=$2
@@ -81,7 +92,6 @@ compare_dumps() {
 USE_LINK_MODE=${USE_LINK_MODE:-0}
 FILTER_DIFF=${FILTER_DIFF:-0}
 DIFF_FILE=${DIFF_FILE:-"icw.diff"}
-COMPARE_DIFF=${COMPARE_DIFF:-0}
 
 # This port is selected by our CI pipeline
 MASTER_PORT=5432
@@ -134,8 +144,11 @@ time ssh mdw bash <<EOF
 EOF
 
 # On GPDB version other than 5, set the gucs before taking dumps
+# and reindex all the databases to enable bitmap indexes which were
+# marked invalid during upgrade
 if ! is_GPDB5 ${GPHOME_TARGET}; then
     configure_gpdb_gucs ${GPHOME_TARGET}
+    reindex_all_dbs ${GPHOME_TARGET}
 fi
 
 # TODO: how do we know the cluster upgraded?  5 to 6 is a version check; 6 to 6 ?????
@@ -143,12 +156,10 @@ fi
 #   perhaps use the controldata("pg_controldata $MASTER_DATA_DIR") system identifier?
 
 # Dump the target cluster and compare.
-if (( $COMPARE_DIFF )); then
-    dump_sql ${MASTER_PORT} /tmp/target.sql
-    if ! compare_dumps /tmp/source.sql /tmp/target.sql; then
-        echo 'error: before and after dumps differ'
-        exit 1
-    fi
+dump_sql ${MASTER_PORT} /tmp/target.sql
+if ! compare_dumps /tmp/source.sql /tmp/target.sql; then
+    echo 'error: before and after dumps differ'
+    exit 1
 fi
 
 echo 'Upgrade successful.'

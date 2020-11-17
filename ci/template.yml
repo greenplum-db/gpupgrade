@@ -424,9 +424,6 @@ jobs:
         {{- end}}
         {{- if .RetailDemo}}
         DIFF_FILE: retail_demo.diff
-        COMPARE_DIFF: 1
-        {{- else }}
-        COMPARE_DIFF: {{if ne (majorVersion .Source) "5"}}1{{else}}0{{end}}
         {{- end }}
     {{- if not .NoStandby -}}
     {{- if not .PrimariesOnly }}

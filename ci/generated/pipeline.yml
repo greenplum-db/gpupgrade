@@ -430,7 +430,6 @@ jobs:
         run:
           path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
       params:
-        COMPARE_DIFF: 1
     - task: validate_mirrors_and_standby
       config:
         platform: linux
@@ -527,7 +526,6 @@ jobs:
         run:
           path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
       params:
-        COMPARE_DIFF: 1
     - task: validate_mirrors_and_standby
       config:
         platform: linux
@@ -629,7 +627,6 @@ jobs:
           path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
       params:
         FILTER_DIFF: 1
-        COMPARE_DIFF: 0
     - task: validate_mirrors_and_standby
       config:
         platform: linux
@@ -731,7 +728,6 @@ jobs:
           path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
       params:
         FILTER_DIFF: 1
-        COMPARE_DIFF: 0
     - task: validate_mirrors_and_standby
       config:
         platform: linux
@@ -834,7 +830,6 @@ jobs:
       params:
         FILTER_DIFF: 1
         USE_LINK_MODE: 1
-        COMPARE_DIFF: 0
     - task: validate_mirrors_and_standby
       config:
         platform: linux
@@ -936,7 +931,6 @@ jobs:
           path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
       params:
         FILTER_DIFF: 1
-        COMPARE_DIFF: 0
   ensure:
     <<: *set_failed
   on_success:
@@ -1024,7 +1018,6 @@ jobs:
           path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
       params:
         FILTER_DIFF: 1
-        COMPARE_DIFF: 0
   ensure:
     <<: *set_failed
   on_success:
@@ -1124,7 +1117,6 @@ jobs:
       params:
         FILTER_DIFF: 1
         DIFF_FILE: retail_demo.diff
-        COMPARE_DIFF: 1
     - task: validate_mirrors_and_standby
       config:
         platform: linux
@@ -1227,7 +1219,6 @@ jobs:
       params:
         FILTER_DIFF: 1
         USE_LINK_MODE: 1
-        COMPARE_DIFF: 0
     - task: validate_mirrors_and_standby
       config:
         platform: linux
@@ -1329,7 +1320,6 @@ jobs:
           path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
       params:
         FILTER_DIFF: 1
-        COMPARE_DIFF: 0
   ensure:
     <<: *set_failed
   on_success:
@@ -1417,7 +1407,6 @@ jobs:
           path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
       params:
         FILTER_DIFF: 1
-        COMPARE_DIFF: 0
   ensure:
     <<: *set_failed
   on_success:
@@ -1517,7 +1506,6 @@ jobs:
       params:
         FILTER_DIFF: 1
         DIFF_FILE: retail_demo.diff
-        COMPARE_DIFF: 1
     - task: validate_mirrors_and_standby
       config:
         platform: linux
