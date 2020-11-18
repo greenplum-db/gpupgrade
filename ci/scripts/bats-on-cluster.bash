@@ -59,11 +59,12 @@ MASTER_PORT=5432
 # Cache our list of hosts to loop over below.
 mapfile -t hosts < cluster_env_files/hostfile_all
 
-# Install gpupgrade binary onto the cluster machines.
-chmod +x bin_gpupgrade/gpupgrade
+# Install rpm onto the cluster machines.
+# TODO: how to add gpupgrade in rpm installed location onto PATH?
 for host in "${hosts[@]}"; do
-    scp bin_gpupgrade/gpupgrade "gpadmin@$host:/tmp"
-    ssh centos@$host "sudo mv /tmp/gpupgrade /usr/local/bin"
+    scp rpm_enterprise/greenplum-upgrade*.rpm "gpadmin@$host:/tmp"
+    ssh centos@$host "sudo rpm -ivh /tmp/greenplum-upgrade*.rpm"
+    ssh centos@$host "sudo cp /usr/local/greenplum-upgrade/gpupgrade /usr/local/bin"
 done
 
 # Install gpupgrade_src on mdw

@@ -63,33 +63,33 @@ resources:
 {{- end }}
 {{end}}
 
-- name: bin_gpupgrade
+- name: rpm_oss
   type: gcs
   source:
     bucket: ((cm-intermediates-bucket))
     json_key: ((cm-gcs-service-account-key))
-    versioned_file: gpupgrade
+    versioned_file: oss/greenplum-upgrade.el7.x86_64.rpm
 
-- name: rpm_gpupgrade_oss
+- name: rpm_enterprise
   type: gcs
   source:
     bucket: ((cm-intermediates-bucket))
     json_key: ((cm-gcs-service-account-key))
-    regexp: oss/greenplum-upgrade-(.*).rpm
+    versioned_file: enterprise/greenplum-upgrade.el7.x86_64.rpm
 
-- name: rpm_gpupgrade_enterprise
-  type: gcs
-  source:
-    bucket: ((cm-intermediates-bucket))
-    json_key: ((cm-gcs-service-account-key))
-    regexp: enterprise/greenplum-upgrade-(.*).rpm
-
-- name: bin_gpupgrade_rc
+- name: rpm_oss_rc
   type: gcs
   source:
     bucket: ((cm-artifacts-bucket))
     json_key: ((cm-gcs-service-account-key))
-    regexp: release-candidates/gpupgrade-rc-(.*)-linux_x86_64
+    regexp: release-candidates/oss/greenplum-upgrade-(.*).rpm
+
+- name: rpm_enterprise_rc
+  type: gcs
+  source:
+    bucket: ((cm-artifacts-bucket))
+    json_key: ((cm-gcs-service-account-key))
+    regexp: release-candidates/enterprise/greenplum-upgrade-(.*).rpm
 
 - name: bats
   type: git
@@ -251,15 +251,12 @@ jobs:
   - task: build
     file: gpupgrade_src/ci/tasks/build.yml
   - in_parallel:
-    - put: bin_gpupgrade
+    - put: rpm_oss
       params:
-        file: build_artifacts/gpupgrade
-    - put: rpm_gpupgrade_oss
+        file: built_oss/greenplum-upgrade*.rpm
+    - put: rpm_enterprise
       params:
-        file: build_artifacts_oss/greenplum-upgrade*.rpm
-    - put: rpm_gpupgrade_enterprise
-      params:
-        file: build_artifacts_enterprise/greenplum-upgrade*.rpm
+        file: built_enterprise/greenplum-upgrade*.rpm
   on_failure:
     <<: *slack_alert
 
@@ -331,7 +328,7 @@ jobs:
   # will prevent concourse from becoming overloaded.
   plan:
     - in_parallel:
-        - get: bin_gpupgrade
+        - get: rpm_enterprise
           trigger: true
           passed: [ build ]
         - get: gpupgrade_src
@@ -434,7 +431,7 @@ jobs:
         - name: ccp_src
         - name: cluster_env_files
         - name: gpupgrade_src
-        - name: bin_gpupgrade
+        - name: rpm_enterprise
         run:
           path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
       params:
@@ -480,7 +477,7 @@ jobs:
   # will prevent concourse from becoming overloaded.
   plan:
     - in_parallel:
-        - get: bin_gpupgrade
+        - get: rpm_enterprise
           trigger: true
           passed: [ build ]
         - get: gpupgrade_src
@@ -548,7 +545,7 @@ jobs:
           - name: ccp_src
           - name: cluster_env_files
           - name: gpupgrade_src
-          - name: bin_gpupgrade
+          - name: rpm_enterprise
           - name: bats
         run:
           path: gpupgrade_src/ci/scripts/bats-on-cluster.bash
@@ -578,7 +575,7 @@ jobs:
           {{- range .MultihostBatsJobs}}
           - {{ .Name }}
           {{- end}}
-      - get: bin_gpupgrade
+      - get: rpm_enterprise
         passed:
           - build
           {{- range .UpgradeJobs}}
@@ -587,7 +584,10 @@ jobs:
           {{- range .MultihostBatsJobs}}
           - {{ .Name }}
           {{- end}}
-    - task: version-rc
+      - get: rpm_oss
+        passed:
+          - build
+    - task: add-semver
       config:
         platform: linux
         image_resource:
@@ -597,13 +597,19 @@ jobs:
             tag: '1.15'
         inputs:
           - name: gpupgrade_src
-          - name: bin_gpupgrade
+          - name: rpm_oss
+          - name: rpm_enterprise
         outputs:
-          - name: gpupgrade_bin_path
+          - name: renamed_rpm_oss
+          - name: renamed_rpm_enterprise
         run:
-          path: gpupgrade_src/ci/scripts/version-rc.sh
-    - put: bin_gpupgrade_rc
-      params:
-        file: gpupgrade_bin_path/gpupgrade-rc-*-linux_x86_64
+          path: gpupgrade_src/ci/scripts/add-semver.bash
+    - in_parallel:
+      - put: rpm_oss_rc
+        params:
+          file: renamed_rpm_oss/greenplum-upgrade*.rpm
+      - put: rpm_enterprise_rc
+        params:
+          file: renamed_rpm_enterprise/greenplum-upgrade*.rpm
   on_failure:
     <<: *slack_alert
