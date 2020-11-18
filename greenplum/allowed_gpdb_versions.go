@@ -1,14 +1,13 @@
-// Copyright (c) 2020 VMware, Inc. or its affiliates
-// SPDX-License-Identifier: Apache-2.0
+//  Copyright (c) 2017-2020 VMware, Inc. or its affiliates
+//  SPDX-License-Identifier: Apache-2.0
 
-package cli
+package greenplum
 
 import (
 	"fmt"
 
 	"github.com/blang/semver/v4"
 
-	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
@@ -83,9 +82,9 @@ func getMinVersion(version semver.Version, minVersions map[int]string) string {
 	return semver.MustParse(minVersions[lowest]).String()
 }
 
-var gpHomeVersion = greenplum.GPHomeVersion
+var gpHomeVersion = GPHomeVersion
 
-func ValidateVersions(sourceGPHome, targetGPHome string) error {
+func VerifyCompatibleGPDBVersions(sourceGPHome, targetGPHome string) error {
 	var err error
 
 	vErr := validateVersion(sourceGPHome, "source")

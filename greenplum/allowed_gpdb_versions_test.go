@@ -1,7 +1,7 @@
-// Copyright (c) 2020 VMware, Inc. or its affiliates
-// SPDX-License-Identifier: Apache-2.0
+//  Copyright (c) 2017-2020 VMware, Inc. or its affiliates
+//  SPDX-License-Identifier: Apache-2.0
 
-package cli
+package greenplum
 
 import (
 	"errors"
@@ -9,7 +9,6 @@ import (
 
 	"github.com/blang/semver/v4"
 
-	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
@@ -95,10 +94,10 @@ func TestValidateVersions(t *testing.T) {
 			return semver.MustParse("6.9.0"), nil
 		}
 		defer func() {
-			gpHomeVersion = greenplum.GPHomeVersion
+			gpHomeVersion = GPHomeVersion
 		}()
 
-		err := ValidateVersions("/does/not/matter", "/does/not/matter")
+		err := VerifyCompatibleGPDBVersions("/does/not/matter", "/does/not/matter")
 		if err != nil {
 			t.Errorf("got unexpected error %#v", err)
 		}
@@ -143,10 +142,10 @@ func TestValidateVersionsErrorCases(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			gpHomeVersion = c.mockFunction
 			defer func() {
-				gpHomeVersion = greenplum.GPHomeVersion
+				gpHomeVersion = GPHomeVersion
 			}()
 
-			err := ValidateVersions("/does/not/matter", "/does/not/matter")
+			err := VerifyCompatibleGPDBVersions("/does/not/matter", "/does/not/matter")
 
 			// make sure both source and target produce an error and that they match
 			// the expected error string

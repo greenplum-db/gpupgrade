@@ -17,6 +17,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/cli"
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
+	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
@@ -172,7 +173,7 @@ func initialize() *cobra.Command {
 					return nil
 				}
 
-				err := cli.ValidateVersions(sourceGPHome, targetGPHome)
+				err := greenplum.VerifyCompatibleGPDBVersions(sourceGPHome, targetGPHome)
 				if err != nil {
 					nextActions := fmt.Sprintf(`Please address the above issue and run "gpupgrade %s" again.`, strings.ToLower(idl.Step_INITIALIZE.String()))
 					return cli.NewNextActions(err, nextActions)
