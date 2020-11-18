@@ -3,17 +3,20 @@
 
 PLATFORM: linux
 
+# Use a Centos/RHEL image to build the rpms
 image_resource:
   type: docker-image
   source:
-    repository: golang
-    tag: '1.15'
+    repository: pivotaldata/gpdb6-centos7-test-golang
+    tag: "latest"
 
 inputs:
 - name: gpupgrade_src
 
 outputs:
 - name: build_artifacts
+- name: build_artifacts_oss
+- name: build_artifacts_enterprise
 
 run:
   path: bash
@@ -25,5 +28,15 @@ run:
     cd gpupgrade_src
     export GOFLAGS="-mod=readonly" # do not update dependencies during build
 
+    # TODO: when we switch to using rpms in tests, this can be removed
     make
     GOBIN=$(realpath ../build_artifacts) make install
+
+    make oss-package
+    ci/scripts/verify-rpm.bash greenplum-upgrade*.rpm "Open Source"
+    mv greenplum-upgrade*.rpm ../build_artifacts_oss
+
+    make enterprise-package
+    ci/scripts/verify-rpm.bash greenplum-upgrade*.rpm "Enterprise"
+    mv greenplum-upgrade*.rpm ../build_artifacts_enterprise
+

@@ -26,6 +26,7 @@ resources:
   source:
     uri: ((gpupgrade-git-remote))
     branch: ((gpupgrade-git-branch))
+    fetch_tags: true
 
 {{range .AllVersions}}
 - name: gpdb{{.}}_src
@@ -68,6 +69,20 @@ resources:
     bucket: ((cm-intermediates-bucket))
     json_key: ((cm-gcs-service-account-key))
     versioned_file: gpupgrade
+
+- name: rpm_gpupgrade_oss
+  type: gcs
+  source:
+    bucket: ((cm-intermediates-bucket))
+    json_key: ((cm-gcs-service-account-key))
+    regexp: oss/greenplum-upgrade-(.*).rpm
+
+- name: rpm_gpupgrade_enterprise
+  type: gcs
+  source:
+    bucket: ((cm-intermediates-bucket))
+    json_key: ((cm-gcs-service-account-key))
+    regexp: enterprise/greenplum-upgrade-(.*).rpm
 
 - name: bin_gpupgrade_rc
   type: gcs
@@ -235,9 +250,16 @@ jobs:
     trigger: true
   - task: build
     file: gpupgrade_src/ci/tasks/build.yml
-  - put: bin_gpupgrade
-    params:
-      file: build_artifacts/gpupgrade
+  - in_parallel:
+    - put: bin_gpupgrade
+      params:
+        file: build_artifacts/gpupgrade
+    - put: rpm_gpupgrade_oss
+      params:
+        file: build_artifacts_oss/greenplum-upgrade*.rpm
+    - put: rpm_gpupgrade_enterprise
+      params:
+        file: build_artifacts_enterprise/greenplum-upgrade*.rpm
   on_failure:
     <<: *slack_alert
 
