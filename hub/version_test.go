@@ -26,7 +26,7 @@ func init() {
 }
 
 func ResetGetVersion() {
-	hub.GetVersionFunc = hub.GetVersion
+	hub.GetGpupgradeVersionFunc = hub.GetGpupgradeVersion
 }
 
 func TestValidateGpupgradeVersion(t *testing.T) {
@@ -40,7 +40,7 @@ func TestValidateGpupgradeVersion(t *testing.T) {
 
 	agentError := errors.New("sdw2: bad agent connection")
 
-	t.Run("ValidateGpupgradeVersion successfully requests the version of gpupgrade on hub and agents", func(t *testing.T) {
+	t.Run("EnsureGpupgradeAndGPDBVersionsMatch successfully requests the version of gpupgrade on hub and agents", func(t *testing.T) {
 		var expectedArgs []string
 		for _, host := range append(agentHosts, hubHost) {
 			expectedArgs = append(expectedArgs, fmt.Sprintf(`%s bash -c "%s/gpupgrade version"`, host, mustGetExecutablePath(t)))
@@ -58,7 +58,7 @@ func TestValidateGpupgradeVersion(t *testing.T) {
 		hub.SetExecCommand(execCmd)
 		defer hub.ResetExecCommand()
 
-		err := hub.ValidateGpupgradeVersion(hubHost, agentHosts)
+		err := hub.EnsureGpupgradeAndGPDBVersionsMatch(agentHosts, hubHost)
 		if err != nil {
 			t.Errorf("unexpected errr %#v", err)
 		}
@@ -71,12 +71,12 @@ func TestValidateGpupgradeVersion(t *testing.T) {
 	})
 
 	t.Run("matches version information from host and agents", func(t *testing.T) {
-		hub.GetVersionFunc = func(host, path string) (string, error) {
+		hub.GetGpupgradeVersionFunc = func(host, path string) (string, error) {
 			return version_0_4_0, nil
 		}
 		defer ResetGetVersion()
 
-		err := hub.ValidateGpupgradeVersion(hubHost, agentHosts)
+		err := hub.EnsureGpupgradeAndGPDBVersionsMatch(agentHosts, hubHost)
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
@@ -86,14 +86,14 @@ func TestValidateGpupgradeVersion(t *testing.T) {
 		hub.SetExecCommand(exectest.NewCommand(hub.Failure))
 		defer hub.ResetExecCommand()
 
-		err := hub.ValidateGpupgradeVersion(hubHost, agentHosts)
+		err := hub.EnsureGpupgradeAndGPDBVersionsMatch(agentHosts, hubHost)
 		if err == nil {
 			t.Errorf("expected an error")
 		}
 	})
 
 	t.Run("errors when agent cannot retrieve version information", func(t *testing.T) {
-		hub.GetVersionFunc = func(host, path string) (string, error) {
+		hub.GetGpupgradeVersionFunc = func(host, path string) (string, error) {
 			if host != agentHosts[1] {
 				return version_0_4_0, nil
 			}
@@ -101,7 +101,7 @@ func TestValidateGpupgradeVersion(t *testing.T) {
 		}
 		defer ResetGetVersion()
 
-		err := hub.ValidateGpupgradeVersion(hubHost, agentHosts)
+		err := hub.EnsureGpupgradeAndGPDBVersionsMatch(agentHosts, hubHost)
 		if err == nil {
 			t.Errorf("expected an error")
 		}
@@ -112,7 +112,7 @@ func TestValidateGpupgradeVersion(t *testing.T) {
 	})
 
 	t.Run("reports version mismatch between hub and agent", func(t *testing.T) {
-		hub.GetVersionFunc = func(host, path string) (string, error) {
+		hub.GetGpupgradeVersionFunc = func(host, path string) (string, error) {
 			if host == hubHost {
 				return version_0_4_0, nil
 			}
@@ -120,7 +120,7 @@ func TestValidateGpupgradeVersion(t *testing.T) {
 		}
 		defer ResetGetVersion()
 
-		err := hub.ValidateGpupgradeVersion(hubHost, agentHosts)
+		err := hub.EnsureGpupgradeAndGPDBVersionsMatch(agentHosts, hubHost)
 		if err == nil {
 			t.Errorf("expected an error")
 		}

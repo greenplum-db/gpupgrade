@@ -15,17 +15,17 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-var GetVersionFunc = GetVersion
+var GetGpupgradeVersionFunc = GetGpupgradeVersion
 
 type agentVersion struct {
-	host    string
-	version string
-	err     error
+	host             string
+	gpupgradeVersion string
+	err              error
 }
 
-type agents map[string]string
+type hostToGpupgradeVersion map[string]string
 
-func (a agents) String() string {
+func (a hostToGpupgradeVersion) String() string {
 	hosts := make([]string, 0, len(a))
 	for h := range a {
 		hosts = append(hosts, h)
@@ -39,13 +39,13 @@ func (a agents) String() string {
 	return s
 }
 
-func ValidateGpupgradeVersion(hubHost string, agentHosts []string) error {
+func EnsureGpupgradeAndGPDBVersionsMatch(agentHosts []string, hubHost string) error {
 	gpupgradePath, err := utils.GetGpupgradePath()
 	if err != nil {
 		return xerrors.Errorf("getting gpupgrade binary path: %w", err)
 	}
 
-	hubVersion, err := GetVersionFunc(hubHost, gpupgradePath)
+	hubGpupgradeVersion, err := GetGpupgradeVersionFunc(hubHost, gpupgradePath)
 	if err != nil {
 		return xerrors.Errorf("getting hub version: %w", err)
 	}
@@ -57,8 +57,8 @@ func ValidateGpupgradeVersion(hubHost string, agentHosts []string) error {
 		wg.Add(1)
 		go func(host string) {
 			defer wg.Done()
-			version, err := GetVersionFunc(host, gpupgradePath)
-			agentChan <- agentVersion{host, version, err}
+			gpupgradeVersion, err := GetGpupgradeVersionFunc(host, gpupgradePath)
+			agentChan <- agentVersion{host: host, gpupgradeVersion: gpupgradeVersion, err: err}
 		}(host)
 	}
 
@@ -66,11 +66,12 @@ func ValidateGpupgradeVersion(hubHost string, agentHosts []string) error {
 	close(agentChan)
 
 	var errs error
-	mismatchedAgents := make(agents)
+	mismatchedGpupgradeVersions := make(hostToGpupgradeVersion)
 	for agent := range agentChan {
 		errs = errorlist.Append(errs, agent.err)
-		if hubVersion != agent.version {
-			mismatchedAgents[agent.host] = agent.version
+
+		if hubGpupgradeVersion != agent.gpupgradeVersion {
+			mismatchedGpupgradeVersions[agent.host] = agent.gpupgradeVersion
 		}
 	}
 
@@ -78,7 +79,7 @@ func ValidateGpupgradeVersion(hubHost string, agentHosts []string) error {
 		return errs
 	}
 
-	if len(mismatchedAgents) == 0 {
+	if len(mismatchedGpupgradeVersions) == 0 {
 		return nil
 	}
 
@@ -86,10 +87,10 @@ func ValidateGpupgradeVersion(hubHost string, agentHosts []string) error {
 Hub version: %s
 
 Mismatched Agents:
-%s`, hubVersion, mismatchedAgents.String())
+%s`, hubGpupgradeVersion, mismatchedGpupgradeVersions.String())
 }
 
-func GetVersion(host, path string) (string, error) {
+func GetGpupgradeVersion(host, path string) (string, error) {
 	cmd := execCommand("ssh", host, fmt.Sprintf(`bash -c "%s version"`, path))
 	gplog.Debug("running cmd %q", cmd.String())
 	output, err := cmd.CombinedOutput()
