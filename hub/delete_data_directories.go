@@ -97,6 +97,10 @@ func DeleteTargetTablespacesOnMaster(streams step.OutStreams, target *greenplum.
 
 func DeleteTargetTablespacesOnPrimaries(agentConns []*Connection, target *greenplum.Cluster, tablespaces greenplum.Tablespaces, catalogVersion string) error {
 	request := func(conn *Connection) error {
+		if target == nil {
+			return nil
+		}
+
 		primaries := target.SelectSegments(func(seg *greenplum.SegConfig) bool {
 			return seg.IsOnHost(conn.Hostname) && seg.IsPrimary() && !seg.IsMaster()
 		})

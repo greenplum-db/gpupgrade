@@ -350,6 +350,24 @@ func TestDeleteTablespaceDirectories(t *testing.T) {
 			t.Errorf("got error %#v, want %#v", err, expected)
 		}
 	})
+
+	t.Run("must not error out when target is not yet created", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		sdw1 := mock_idl.NewMockAgentClient(ctrl)
+		sdw2 := mock_idl.NewMockAgentClient(ctrl)
+
+		agentConns := []*hub.Connection{
+			{nil, sdw1, "sdw1", nil},
+			{nil, sdw2, "sdw2", nil},
+		}
+
+		err := hub.DeleteTargetTablespacesOnPrimaries(agentConns, nil, nil, "")
+		if err != nil {
+			t.Errorf("unexpected error %#v", err)
+		}
+	})
 }
 
 // equivalentRequest is a Matcher that can handle differences in order between

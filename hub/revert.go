@@ -165,7 +165,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 			return err
 		}
 
-		return ArchiveSegmentLogDirectories(s.agentConns, s.Config.Target.MasterHostname(), archiveDir)
+		return ArchiveSegmentLogDirectories(s.agentConns, s.Config.Source.MasterHostname(), archiveDir)
 	})
 
 	st.Run(idl.Substep_DELETE_SEGMENT_STATEDIRS, func(_ step.OutStreams) error {
