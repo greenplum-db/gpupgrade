@@ -5,7 +5,6 @@ package hub
 
 import (
 	"database/sql"
-	"os"
 	"path/filepath"
 	"sort"
 
@@ -187,13 +186,4 @@ func sanitize(ports []int) []int {
 	}
 
 	return dedupe
-}
-
-func getBinaryPath() (string, error) {
-	hubPath, err := os.Executable()
-	if err != nil {
-		return "", err
-	}
-
-	return filepath.Join(filepath.Dir(hubPath), "gpupgrade"), nil
 }

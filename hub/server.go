@@ -232,7 +232,7 @@ func RestartAgents(ctx context.Context,
 			gplog.Debug("failed to dial agent on %s: %+v", host, err)
 			gplog.Info("starting agent on %s", host)
 
-			path, err := getBinaryPath()
+			path, err := utils.GetGpupgradePath()
 			if err != nil {
 				errs <- err
 				return

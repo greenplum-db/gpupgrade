@@ -130,6 +130,15 @@ func GetJSONFile(stateDir string, fileName string) (path string, err error) {
 	return path, nil
 }
 
+func GetGpupgradePath() (string, error) {
+	hubPath, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(filepath.Dir(hubPath), "gpupgrade"), nil
+}
+
 // Calling os.Rename for a directory is allowed only when both the
 // source and the destination path are on the top layer of filesystem.
 // Otherwise, it returns EXDEV error ("cross-device link not permitted").

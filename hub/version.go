@@ -11,6 +11,7 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
@@ -39,12 +40,12 @@ func (a agents) String() string {
 }
 
 func ValidateGpupgradeVersion(hubHost string, agentHosts []string) error {
-	path, err := getBinaryPath()
+	gpupgradePath, err := utils.GetGpupgradePath()
 	if err != nil {
 		return xerrors.Errorf("getting gpupgrade binary path: %w", err)
 	}
 
-	hubVersion, err := GetVersionFunc(hubHost, path)
+	hubVersion, err := GetVersionFunc(hubHost, gpupgradePath)
 	if err != nil {
 		return xerrors.Errorf("getting hub version: %w", err)
 	}
@@ -56,7 +57,7 @@ func ValidateGpupgradeVersion(hubHost string, agentHosts []string) error {
 		wg.Add(1)
 		go func(host string) {
 			defer wg.Done()
-			version, err := GetVersionFunc(host, path)
+			version, err := GetVersionFunc(host, gpupgradePath)
 			agentChan <- agentVersion{host, version, err}
 		}(host)
 	}
