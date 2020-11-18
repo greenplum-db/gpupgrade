@@ -110,7 +110,7 @@ func (s *Server) CreateTargetCluster(stream step.OutStreams) error {
 }
 
 func (s *Server) InitTargetCluster(stream step.OutStreams) error {
-	version, err := greenplum.GPHomeVersion(s.TargetGPHome)
+	version, err := greenplum.GPDBVersion(s.TargetGPHome)
 	if err != nil {
 		return err
 	}

@@ -69,7 +69,7 @@ func TestGPHomeVersion(t *testing.T) {
 				Command(postgresPath, []string{"--gp-version"}).
 				Return(c.execMain)
 
-			version, err := GPHomeVersion(gphome)
+			version, err := GPDBVersion(gphome)
 			if err != nil {
 				t.Errorf("returned error: %+v", err)
 			}
@@ -114,7 +114,7 @@ func TestGPHomeVersion(t *testing.T) {
 			Command(postgresPath, []string{"--gp-version"}).
 			Return(exectest.Failure)
 
-		_, err := GPHomeVersion(gphome)
+		_, err := GPDBVersion(gphome)
 
 		var exitErr *exec.ExitError
 		if !errors.As(err, &exitErr) {

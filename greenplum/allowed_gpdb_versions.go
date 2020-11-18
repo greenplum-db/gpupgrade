@@ -82,7 +82,7 @@ func getMinVersion(version semver.Version, minVersions map[int]string) string {
 	return semver.MustParse(minVersions[lowest]).String()
 }
 
-var gpHomeVersion = GPHomeVersion
+var gpdbVersion = GPDBVersion
 
 func VerifyCompatibleGPDBVersions(sourceGPHome, targetGPHome string) error {
 	var err error
@@ -104,7 +104,7 @@ func validateVersion(gpHome string, context string) error {
 		minVersions = minTargetVersions
 	}
 
-	version, err := gpHomeVersion(gpHome)
+	version, err := gpdbVersion(gpHome)
 	if err == nil && !versionsAllowed(version) {
 		min := getMinVersion(version, minVersions)
 		errStr := fmt.Sprintf("%s cluster version %s is not supported.  "+

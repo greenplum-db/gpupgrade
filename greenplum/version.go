@@ -15,9 +15,9 @@ import (
 
 var ErrUnknownVersion = errors.New("unknown GPDB version")
 
-// GPHomeVersion returns the semantic version of a GPDB installation located at
+// GPDBVersion returns the semantic version of a GPDB installation located at
 // the given GPHOME.
-func GPHomeVersion(gphome string) (semver.Version, error) {
+func GPDBVersion(gphome string) (semver.Version, error) {
 	postgres := filepath.Join(gphome, "bin", "postgres")
 	cmd := execCommand(postgres, "--gp-version")
 

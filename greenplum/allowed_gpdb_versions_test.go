@@ -90,11 +90,11 @@ func TestAllowedVersions(t *testing.T) {
 
 func TestValidateVersions(t *testing.T) {
 	t.Run("passes when given supported versions", func(t *testing.T) {
-		gpHomeVersion = func(str string) (semver.Version, error) {
+		gpdbVersion = func(str string) (semver.Version, error) {
 			return semver.MustParse("6.9.0"), nil
 		}
 		defer func() {
-			gpHomeVersion = GPHomeVersion
+			gpdbVersion = GPDBVersion
 		}()
 
 		err := VerifyCompatibleGPDBVersions("/does/not/matter", "/does/not/matter")
@@ -113,7 +113,7 @@ func TestValidateVersionsErrorCases(t *testing.T) {
 		expectedTarget string
 	}{
 		{
-			"fails when gpHomeVersion returns an error",
+			"fails when gpdbVersion returns an error",
 			func(str string) (semver.Version, error) {
 				return semver.MustParse("1.2.3"), errors.New("some error")
 			},
@@ -140,9 +140,9 @@ func TestValidateVersionsErrorCases(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			gpHomeVersion = c.mockFunction
+			gpdbVersion = c.mockFunction
 			defer func() {
-				gpHomeVersion = GPHomeVersion
+				gpdbVersion = GPDBVersion
 			}()
 
 			err := VerifyCompatibleGPDBVersions("/does/not/matter", "/does/not/matter")
