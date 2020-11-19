@@ -105,7 +105,7 @@ func (s *Server) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest,
 		err := s.Target.Stop(stream)
 
 		if err != nil {
-			return xerrors.Errorf("failed to stop target cluster: %w", err)
+			return xerrors.Errorf("stop target cluster: %w", err)
 		}
 
 		return nil

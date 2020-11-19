@@ -38,9 +38,6 @@ type UpgradeMasterArgs struct {
 	UseLinkMode bool
 }
 
-// XXX this makes more sense as a Server method, but it's so difficult to stub a
-// Server that the parameters have been split out for testing. Revisit if/when the
-// Server monolith is broken up.
 func UpgradeMaster(args UpgradeMasterArgs) error {
 	wd := upgrade.MasterWorkingDirectory(args.StateDir)
 	err := utils.System.MkdirAll(wd, 0700)

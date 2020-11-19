@@ -53,7 +53,6 @@ import (
 )
 
 func BuildRootCommand() *cobra.Command {
-	// TODO: if called without a subcommand, the cli prints a help message with timestamp.  Remove the timestamp.
 	var shouldPrintVersion bool
 
 	root := &cobra.Command{
