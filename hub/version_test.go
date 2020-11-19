@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"regexp"
 	"sort"
 	"strings"
 	"testing"
@@ -71,7 +70,7 @@ func TestValidateGpupgradeVersion(t *testing.T) {
 	})
 
 	t.Run("matches version information from host and agents", func(t *testing.T) {
-		hub.GetGpupgradeVersionFunc = func(host, path string) (string, error) {
+		hub.GetGpupgradeVersionFunc = func(host string) (string, error) {
 			return version_0_4_0, nil
 		}
 		defer ResetGetVersion()
@@ -93,7 +92,7 @@ func TestValidateGpupgradeVersion(t *testing.T) {
 	})
 
 	t.Run("errors when agent cannot retrieve version information", func(t *testing.T) {
-		hub.GetGpupgradeVersionFunc = func(host, path string) (string, error) {
+		hub.GetGpupgradeVersionFunc = func(host string) (string, error) {
 			if host != agentHosts[1] {
 				return version_0_4_0, nil
 			}
@@ -112,7 +111,7 @@ func TestValidateGpupgradeVersion(t *testing.T) {
 	})
 
 	t.Run("reports version mismatch between hub and agent", func(t *testing.T) {
-		hub.GetGpupgradeVersionFunc = func(host, path string) (string, error) {
+		hub.GetGpupgradeVersionFunc = func(host string) (string, error) {
 			if host == hubHost {
 				return version_0_4_0, nil
 			}
@@ -125,9 +124,11 @@ func TestValidateGpupgradeVersion(t *testing.T) {
 			t.Errorf("expected an error")
 		}
 
-		expectedRegex := regexp.MustCompile(`Mismatched Agents:.*\nsdw1.*\nsdw2`)
-		if !expectedRegex.Match([]byte(err.Error())) {
-			t.Errorf("expected sdw1 and sdw2 in mismatched agents, got %s", err)
+		expected := hub.MismatchedVersions{version_0_3_0: agentHosts}
+		if strings.HasSuffix(err.Error(), expected.String()) {
+			t.Error("expected error to contain mismatched agents")
+			t.Logf("got err: %s", err)
+			t.Logf("want suffix: %s", expected)
 		}
 	})
 }
