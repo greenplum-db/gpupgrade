@@ -15,12 +15,27 @@ import (
 
 var ErrUnknownVersion = errors.New("unknown GPDB version")
 
+func GPDBVersion(gphome string) (semver.Version, error) {
+	return getGPDBVersion(gphome, "")
+}
+
+func GPDBVersionOnHost(gphome string, host string) (semver.Version, error) {
+	return getGPDBVersion(gphome, host)
+}
+
 // GPDBVersion returns the semantic version of a GPDB installation located at
 // the given GPHOME.
-func GPDBVersion(gphome string) (semver.Version, error) {
+func getGPDBVersion(gphome string, host string) (semver.Version, error) {
 	postgres := filepath.Join(gphome, "bin", "postgres")
-	cmd := execCommand(postgres, "--gp-version")
 
+	name := postgres
+	args := []string{"--gp-version"}
+	if host != "" {
+		name = "ssh"
+		args = []string{host, fmt.Sprintf(`bash -c "%s --gp-version"`, postgres)}
+	}
+
+	cmd := execCommand(name, args...)
 	cmd.Env = []string{} // explicitly clear the environment
 
 	stdout, err := cmd.Output()
