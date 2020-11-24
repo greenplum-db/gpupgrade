@@ -15,6 +15,7 @@ import (
 )
 
 var GpupgradeVersion = upgrade.GpupgradeVersion
+var GpupgradeVersionOnHost = upgrade.GpupgradeVersionOnHost
 
 type HostVersion struct {
 	host             string
@@ -32,8 +33,8 @@ func (m MismatchedVersions) String() string {
 	return text
 }
 
-func EnsureGpupgradeAndGPDBVersionsMatch(agentHosts []string, hubHost string) error {
-	hubGpupgradeVersion, err := GpupgradeVersion(hubHost)
+func EnsureGpupgradeAndGPDBVersionsMatch(agentHosts []string) error {
+	hubGpupgradeVersion, err := GpupgradeVersion()
 	if err != nil {
 		return xerrors.Errorf("getting hub version: %w", err)
 	}
@@ -47,7 +48,7 @@ func EnsureGpupgradeAndGPDBVersionsMatch(agentHosts []string, hubHost string) er
 		go func(host string) {
 			defer wg.Done()
 
-			gpupgradeVersion, err := GpupgradeVersion(host)
+			gpupgradeVersion, err := GpupgradeVersionOnHost(host)
 			versions <- HostVersion{host: host, gpupgradeVersion: gpupgradeVersion, err: err}
 		}(host)
 	}
