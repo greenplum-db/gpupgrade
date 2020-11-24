@@ -12,8 +12,10 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
@@ -52,7 +54,11 @@ func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initi
 	// we need the cluster information to determine what hosts to check, so we do this check
 	// as early as possible after that information is available
 	st.RunInternalSubstep(func() error {
-		return EnsureGpupgradeVersionsMatch(AgentHosts(s.Source))
+		if err := EnsureVersionsMatch(AgentHosts(s.Source), &upgrade.GpupgradeVersions{}); err != nil {
+			return err
+		}
+
+		return EnsureVersionsMatch(AgentHosts(s.Source), &greenplum.GPDBVersions{TargetGPHome: s.TargetGPHome})
 	})
 
 	st.Run(idl.Substep_START_AGENTS, func(_ step.OutStreams) error {

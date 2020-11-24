@@ -15,6 +15,28 @@ import (
 
 var ErrUnknownVersion = errors.New("unknown GPDB version")
 
+type GPDBVersions struct {
+	TargetGPHome string
+}
+
+func (g *GPDBVersions) HubVersion() (string, error) {
+	version, err := GPDBVersion(g.TargetGPHome)
+	if err != nil {
+		return "", err
+	}
+
+	return version.String(), err
+}
+
+func (g *GPDBVersions) AgentVersion(host string) (string, error) {
+	version, err := GPDBVersionOnHost(g.TargetGPHome, host)
+	if err != nil {
+		return "", err
+	}
+
+	return version.String(), err
+}
+
 func GPDBVersion(gphome string) (semver.Version, error) {
 	return getGPDBVersion(gphome, "")
 }
