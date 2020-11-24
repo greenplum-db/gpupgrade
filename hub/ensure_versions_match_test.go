@@ -5,7 +5,6 @@ package hub_test
 
 import (
 	"errors"
-	"fmt"
 	"reflect"
 	"sort"
 	"strings"
@@ -14,66 +13,48 @@ import (
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/testutils/testlog"
+	"github.com/greenplum-db/gpupgrade/upgrade"
 )
 
-func gpupgradeVersion() {}
-
-func init() {
-	exectest.RegisterMains(
-		gpupgradeVersion,
-	)
-}
-
-func ResetGetVersion() {
-	hub.GetGpupgradeVersionFunc = hub.GetGpupgradeVersion
+func ResetGpupgradeVersion() {
+	hub.GpupgradeVersion = upgrade.GpupgradeVersion
 }
 
 func TestValidateGpupgradeVersion(t *testing.T) {
 	testlog.SetupLogger()
 
-	agentHosts := []string{"sdw1", "sdw2"}
-	hubHost := "mdw"
+	agentHosts := []string{"sdw1", "sdw2"}hubHost := "mdw"
 
+	expectedHosts := append(agentHosts, hubHost)
+	sort.Strings(expectedHosts)
 	version_0_3_0 := "Version: 0.3.0 Commit: 35fae54 Release: Dev Build"
 	version_0_4_0 := "Version: 0.4.0 Commit: 21b66d7 Release: Dev Build"
 
 	agentError := errors.New("sdw2: bad agent connection")
 
 	t.Run("EnsureGpupgradeAndGPDBVersionsMatch successfully requests the version of gpupgrade on hub and agents", func(t *testing.T) {
-		var expectedArgs []string
-		for _, host := range append(agentHosts, hubHost) {
-			expectedArgs = append(expectedArgs, fmt.Sprintf(`%s bash -c "%s/gpupgrade version --format oneline"`, host, mustGetExecutablePath(t)))
+		var actualHosts []string
+		hub.GpupgradeVersion = func(host string) (string, error) {
+			actualHosts = append(actualHosts, host)
+			return "6.0.0", nil
 		}
-
-		var actualArgs []string
-		execCmd := exectest.NewCommandWithVerifier(gpupgradeVersion, func(name string, args ...string) {
-			if name != "ssh" {
-				t.Errorf("execCommand got %q want ssh", name)
-			}
-
-			actualArgs = append(actualArgs, strings.Join(args, " "))
-		})
-
-		hub.SetExecCommand(execCmd)
-		defer hub.ResetExecCommand()
 
 		err := hub.EnsureGpupgradeAndGPDBVersionsMatch(agentHosts, hubHost)
 		if err != nil {
 			t.Errorf("unexpected errr %#v", err)
 		}
 
-		sort.Strings(actualArgs)
-		sort.Strings(expectedArgs)
-		if !reflect.DeepEqual(actualArgs, expectedArgs) {
-			t.Errorf("got %q, want %q", actualArgs, expectedArgs)
+		sort.Strings(actualHosts)
+		if !reflect.DeepEqual(actualHosts, expectedHosts) {
+			t.Errorf("got %q want %q", actualHosts, expectedHosts)
 		}
 	})
 
 	t.Run("matches version information from host and agents", func(t *testing.T) {
-		hub.GetGpupgradeVersionFunc = func(host string) (string, error) {
+		hub.GpupgradeVersion = func(host string) (string, error) {
 			return version_0_4_0, nil
 		}
-		defer ResetGetVersion()
+		defer ResetGpupgradeVersion()
 
 		err := hub.EnsureGpupgradeAndGPDBVersionsMatch(agentHosts, hubHost)
 		if err != nil {
@@ -81,7 +62,7 @@ func TestValidateGpupgradeVersion(t *testing.T) {
 		}
 	})
 
-	t.Run("errors when execCommand fails", func(t *testing.T) {
+	t.Run("errors when failing to get gpupgrade version on the hub", func(t *testing.T) {
 		hub.SetExecCommand(exectest.NewCommand(hub.Failure))
 		defer hub.ResetExecCommand()
 
@@ -91,14 +72,14 @@ func TestValidateGpupgradeVersion(t *testing.T) {
 		}
 	})
 
-	t.Run("errors when agent cannot retrieve version information", func(t *testing.T) {
-		hub.GetGpupgradeVersionFunc = func(host string) (string, error) {
+	t.Run("errors when failing to get gpugprade version on the agents", func(t *testing.T) {
+		hub.GpupgradeVersion = func(host string) (string, error) {
 			if host != agentHosts[1] {
 				return version_0_4_0, nil
 			}
 			return "", agentError
 		}
-		defer ResetGetVersion()
+		defer ResetGpupgradeVersion()
 
 		err := hub.EnsureGpupgradeAndGPDBVersionsMatch(agentHosts, hubHost)
 		if err == nil {
@@ -111,13 +92,13 @@ func TestValidateGpupgradeVersion(t *testing.T) {
 	})
 
 	t.Run("reports version mismatch between hub and agent", func(t *testing.T) {
-		hub.GetGpupgradeVersionFunc = func(host string) (string, error) {
+		hub.GpupgradeVersion = func(host string) (string, error) {
 			if host == hubHost {
 				return version_0_4_0, nil
 			}
 			return version_0_3_0, nil
 		}
-		defer ResetGetVersion()
+		defer ResetGpupgradeVersion()
 
 		err := hub.EnsureGpupgradeAndGPDBVersionsMatch(agentHosts, hubHost)
 		if err == nil {

@@ -11,7 +11,6 @@ import (
 	"net"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -22,6 +21,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/agent"
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
@@ -145,7 +145,7 @@ func TestRestartAgent(t *testing.T) {
 				t.Errorf("RestartAgents invoked with %q want ssh", name)
 			}
 
-			cmd := fmt.Sprintf("bash -c \"%s/gpupgrade agent --daemonize --port %d --state-directory %s\"", mustGetExecutablePath(t), port, stateDir)
+			cmd := fmt.Sprintf("bash -c \"%s/gpupgrade agent --daemonize --port %d --state-directory %s\"", testutils.MustGetExecutablePath(t), port, stateDir)
 			expected := []string{host, cmd}
 			if !reflect.DeepEqual(args, expected) {
 				t.Errorf("got %q want %q", args, expected)
@@ -167,17 +167,6 @@ func TestRestartAgent(t *testing.T) {
 			t.Errorf("unexpected errr %#v", err)
 		}
 	})
-}
-
-func mustGetExecutablePath(t *testing.T) string {
-	t.Helper()
-
-	path, err := os.Executable()
-	if err != nil {
-		t.Fatalf("failed getting test executable path: %#v", err)
-	}
-
-	return filepath.Dir(path)
 }
 
 // immediateFailure is an error that is explicitly marked non-temporary for

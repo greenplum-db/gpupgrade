@@ -8,14 +8,13 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/xerrors"
 
-	"github.com/greenplum-db/gpupgrade/utils"
+	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-var GetGpupgradeVersionFunc = GetGpupgradeVersion
+var GpupgradeVersion = upgrade.GpupgradeVersion
 
 type HostVersion struct {
 	host             string
@@ -34,7 +33,7 @@ func (m MismatchedVersions) String() string {
 }
 
 func EnsureGpupgradeAndGPDBVersionsMatch(agentHosts []string, hubHost string) error {
-	hubGpupgradeVersion, err := GetGpupgradeVersionFunc(hubHost)
+	hubGpupgradeVersion, err := GpupgradeVersion(hubHost)
 	if err != nil {
 		return xerrors.Errorf("getting hub version: %w", err)
 	}
@@ -48,7 +47,7 @@ func EnsureGpupgradeAndGPDBVersionsMatch(agentHosts []string, hubHost string) er
 		go func(host string) {
 			defer wg.Done()
 
-			gpupgradeVersion, err := GetGpupgradeVersionFunc(host)
+			gpupgradeVersion, err := GpupgradeVersion(host)
 			versions <- HostVersion{host: host, gpupgradeVersion: gpupgradeVersion, err: err}
 		}(host)
 	}
@@ -79,22 +78,4 @@ Mismatched Agents:
 	}
 
 	return nil
-}
-
-func GetGpupgradeVersion(host string) (string, error) {
-	gpupgradePath, err := utils.GetGpupgradePath()
-	if err != nil {
-		return "", xerrors.Errorf("getting gpupgrade binary path: %w", err)
-	}
-
-	cmd := execCommand("ssh", host, fmt.Sprintf(`bash -c "%s version --format oneline"`, gpupgradePath))
-	gplog.Debug("running cmd %q", cmd.String())
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", xerrors.Errorf("%q failed with %q: %w", cmd.String(), string(output), err)
-	}
-
-	gplog.Debug("output: %q", output)
-
-	return string(output), nil
 }

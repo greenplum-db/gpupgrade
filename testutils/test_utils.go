@@ -282,3 +282,14 @@ func MustMake5XTablespaceDir(t *testing.T, tablespaceOID int) (string, string) {
 
 	return dbOID, location
 }
+
+func MustGetExecutablePath(t *testing.T) string {
+	t.Helper()
+
+	path, err := os.Executable()
+	if err != nil {
+		t.Fatalf("failed getting test executable path: %#v", err)
+	}
+
+	return filepath.Dir(path)
+}
