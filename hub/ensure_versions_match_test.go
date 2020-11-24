@@ -26,7 +26,7 @@ func ResetGpupgradeVersionOnHost() {
 	hub.GpupgradeVersionOnHost = upgrade.GpupgradeVersionOnHost
 }
 
-func TestValidateGpupgradeVersion(t *testing.T) {
+func TestEnsureGpupgradeVersionsMatch(t *testing.T) {
 	testlog.SetupLogger()
 
 	expectedHosts := []string{"sdw1", "sdw2"}
@@ -46,7 +46,7 @@ func TestValidateGpupgradeVersion(t *testing.T) {
 		}
 		defer ResetGpupgradeVersionOnHost()
 
-		err := hub.EnsureGpupgradeAndGPDBVersionsMatch(expectedHosts)
+		err := hub.EnsureGpupgradeVersionsMatch(expectedHosts)
 		if err != nil {
 			t.Errorf("unexpected errr %#v", err)
 		}
@@ -61,7 +61,7 @@ func TestValidateGpupgradeVersion(t *testing.T) {
 		hub.SetExecCommand(exectest.NewCommand(hub.Failure))
 		defer hub.ResetExecCommand()
 
-		err := hub.EnsureGpupgradeAndGPDBVersionsMatch(expectedHosts)
+		err := hub.EnsureGpupgradeVersionsMatch(expectedHosts)
 		if err == nil {
 			t.Errorf("expected an error")
 		}
@@ -82,7 +82,7 @@ func TestValidateGpupgradeVersion(t *testing.T) {
 		}
 		defer ResetGpupgradeVersionOnHost()
 
-		err := hub.EnsureGpupgradeAndGPDBVersionsMatch(expectedHosts)
+		err := hub.EnsureGpupgradeVersionsMatch(expectedHosts)
 		var errs errorlist.Errors
 		if !errors.As(err, &errs) {
 			t.Fatalf("got type %T, want type %T", err, errs)
@@ -104,7 +104,7 @@ func TestValidateGpupgradeVersion(t *testing.T) {
 		}
 		defer ResetGpupgradeVersionOnHost()
 
-		err := hub.EnsureGpupgradeAndGPDBVersionsMatch(expectedHosts)
+		err := hub.EnsureGpupgradeVersionsMatch(expectedHosts)
 		if err == nil {
 			t.Errorf("expected an error")
 		}
