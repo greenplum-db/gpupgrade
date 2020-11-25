@@ -100,7 +100,7 @@ enterprise-tarball: build tarball
 oss-tarball: RELEASE=Open Source
 oss-tarball: build tarball
 
-TARBALL_NAME=greenplum-upgrade.tar.gz
+TARBALL_NAME=gpupgrade.tar.gz
 
 tarball:
 	[ ! -d tarball ] && mkdir tarball
@@ -108,9 +108,7 @@ tarball:
 	cp gpupgrade tarball
 	cp cli/bash/gpupgrade.bash tarball
 	cp gpupgrade_config tarball
-	if [ "$(RELEASE)" = "Enterprise" ]; then \
-		cp open_source_licenses.txt tarball; \
-	fi
+	cp open_source_licenses.txt tarball
 	cp -r data-migration-scripts/ tarball/data-migration-scripts/
 	# remove test files
 	rm -r tarball/data-migration-scripts/test
@@ -133,7 +131,7 @@ package:
 	[ ! -d package ] && mkdir package
 	mkdir -p package/rpmbuild/{BUILD,RPMS,SOURCES,SPECS}
 	cp $(TARBALL_NAME) package/rpmbuild/SOURCES
-	cp greenplum-upgrade.spec package/rpmbuild/SPECS/
+	cp gpupgrade.spec package/rpmbuild/SPECS/
 	rpmbuild \
 	--define "_topdir $${PWD}/package/rpmbuild" \
 	--define "gpupgrade_version $(VERSION)" \
@@ -141,8 +139,8 @@ package:
 	--define "release_type $(RELEASE)" \
 	--define "license $(LICENSE)" \
 	--define "summary $(NAME)" \
-	-bb $${PWD}/package/rpmbuild/SPECS/greenplum-upgrade.spec
-	cp package/rpmbuild/RPMS/x86_64/greenplum-upgrade-$(VERSION)*.rpm .
+	-bb $${PWD}/package/rpmbuild/SPECS/gpupgrade.spec
+	cp package/rpmbuild/RPMS/x86_64/gpupgrade-$(VERSION)*.rpm .
 	rm -r package
 
 install:
@@ -177,7 +175,7 @@ clean:
 		rm -f $(TARBALL_NAME)
 		rm -f CHECKSUM
 		rm -rf package
-		rm -f greenplum-upgrade-$(VERSION)*.rpm
+		rm -f gpupgrade-$(VERSION)*.rpm
 
 # You can override these from the command line.
 BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
