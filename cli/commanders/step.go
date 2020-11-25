@@ -205,7 +205,7 @@ func (s *Step) Complete(completedText string) error {
 		return cli.NewNextActions(s.Err(), msg)
 	}
 
-	fmt.Print(completedText)
+	fmt.Println(completedText)
 	return nil
 }
 
