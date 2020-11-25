@@ -54,12 +54,13 @@ import (
 
 func BuildRootCommand() *cobra.Command {
 	var shouldPrintVersion bool
+	var format string
 
 	root := &cobra.Command{
 		Use: "gpupgrade",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if shouldPrintVersion {
-				printVersion()
+				printVersion(format)
 				return nil
 			}
 
@@ -78,6 +79,7 @@ func BuildRootCommand() *cobra.Command {
 	}
 
 	root.Flags().BoolVarP(&shouldPrintVersion, "version", "V", false, "prints version")
+	root.Flags().StringVar(&format, "format", "", `specify the output format as either "multiline", "oneline", or "json". Default is multiline.`)
 
 	root.AddCommand(config)
 	root.AddCommand(version())
@@ -160,14 +162,20 @@ func createConfigShowSubcommand() *cobra.Command {
 }
 
 func version() *cobra.Command {
-	return &cobra.Command{
+	var format string
+
+	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "Version of gpupgrade",
 		Long:  `Version of gpupgrade`,
 		Run: func(cmd *cobra.Command, args []string) {
-			printVersion()
+			printVersion(format)
 		},
 	}
+
+	cmd.Flags().StringVar(&format, "format", "", `specify the output format as either "multiline", "oneline", or "json". Default is multiline.`)
+
+	return cmd
 }
 
 var restartServices = &cobra.Command{

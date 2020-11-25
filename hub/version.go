@@ -87,7 +87,7 @@ func GetGpupgradeVersion(host string) (string, error) {
 		return "", xerrors.Errorf("getting gpupgrade binary path: %w", err)
 	}
 
-	cmd := execCommand("ssh", host, fmt.Sprintf(`bash -c "%s version"`, gpupgradePath))
+	cmd := execCommand("ssh", host, fmt.Sprintf(`bash -c "%s version --format oneline"`, gpupgradePath))
 	gplog.Debug("running cmd %q", cmd.String())
 	output, err := cmd.CombinedOutput()
 	if err != nil {

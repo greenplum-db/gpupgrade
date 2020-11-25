@@ -42,7 +42,7 @@ func TestValidateGpupgradeVersion(t *testing.T) {
 	t.Run("EnsureGpupgradeAndGPDBVersionsMatch successfully requests the version of gpupgrade on hub and agents", func(t *testing.T) {
 		var expectedArgs []string
 		for _, host := range append(agentHosts, hubHost) {
-			expectedArgs = append(expectedArgs, fmt.Sprintf(`%s bash -c "%s/gpupgrade version"`, host, mustGetExecutablePath(t)))
+			expectedArgs = append(expectedArgs, fmt.Sprintf(`%s bash -c "%s/gpupgrade version --format oneline"`, host, mustGetExecutablePath(t)))
 		}
 
 		var actualArgs []string
