@@ -18,7 +18,7 @@ function rename_rpm() {
 
 # "git describe" does not return a semver compatible version that can correctly be used with Concourse to
 # ensure pulling the correct artifact. So "0.4.0-32-g763a08e5" becomes "0.4.0+dev.32.g973669ba".
-IFS='- ' read -r -a parts <<< "$(git -C ./gpupgrade_src describe)"
+IFS='- ' read -r -a parts <<< "$(git -C ./gpupgrade_src describe --tags)"
 SEMVER="${parts[0]}+dev"
 if [ -n "${parts[1]}" ]; then
   SEMVER="${SEMVER}.${parts[1]}.${parts[2]}"
