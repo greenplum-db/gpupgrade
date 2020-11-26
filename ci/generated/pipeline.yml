@@ -89,28 +89,28 @@ resources:
   source:
     bucket: ((cm-intermediates-bucket))
     json_key: ((cm-gcs-service-account-key))
-    versioned_file: oss/greenplum-upgrade.el7.x86_64.rpm
+    versioned_file: oss/gpupgrade-intermediate.el7.x86_64.rpm
 
 - name: rpm_enterprise
   type: gcs
   source:
     bucket: ((cm-intermediates-bucket))
     json_key: ((cm-gcs-service-account-key))
-    versioned_file: enterprise/greenplum-upgrade.el7.x86_64.rpm
+    versioned_file: enterprise/gpupgrade-intermediate.el7.x86_64.rpm
 
 - name: rpm_oss_rc
   type: gcs
   source:
     bucket: ((cm-artifacts-bucket))
     json_key: ((cm-gcs-service-account-key))
-    regexp: release-candidates/oss/greenplum-upgrade-(.*).rpm
+    regexp: release-candidates/oss/gpupgrade-(.*).rpm
 
 - name: rpm_enterprise_rc
   type: gcs
   source:
     bucket: ((cm-artifacts-bucket))
     json_key: ((cm-gcs-service-account-key))
-    regexp: release-candidates/enterprise/greenplum-upgrade-(.*).rpm
+    regexp: release-candidates/enterprise/gpupgrade-(.*).rpm
 
 - name: bats
   type: git
@@ -285,10 +285,10 @@ jobs:
   - in_parallel:
     - put: rpm_oss
       params:
-        file: built_oss/greenplum-upgrade*.rpm
+        file: built_oss/gpupgrade-*.rpm
     - put: rpm_enterprise
       params:
-        file: built_enterprise/greenplum-upgrade*.rpm
+        file: built_enterprise/gpupgrade-*.rpm
   on_failure:
     <<: *slack_alert
 
@@ -1936,9 +1936,9 @@ jobs:
     - in_parallel:
       - put: rpm_oss_rc
         params:
-          file: renamed_rpm_oss/greenplum-upgrade*.rpm
+          file: renamed_rpm_oss/gpupgrade-*.rpm
       - put: rpm_enterprise_rc
         params:
-          file: renamed_rpm_enterprise/greenplum-upgrade*.rpm
+          file: renamed_rpm_enterprise/gpupgrade-*.rpm
   on_failure:
     <<: *slack_alert

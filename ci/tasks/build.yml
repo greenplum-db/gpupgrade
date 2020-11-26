@@ -28,10 +28,10 @@ run:
     export GOFLAGS="-mod=readonly" # do not update dependencies during build
 
     make oss-package
-    ci/scripts/verify-rpm.bash greenplum-upgrade*.rpm "Open Source"
-    mv greenplum-upgrade*.rpm ../built_oss
+    ci/scripts/verify-rpm.bash gpupgrade-*.rpm "Open Source"
+    mv gpupgrade-*.rpm ../built_oss
 
     make enterprise-package
-    ci/scripts/verify-rpm.bash greenplum-upgrade*.rpm "Enterprise"
-    mv greenplum-upgrade*.rpm ../built_enterprise
+    ci/scripts/verify-rpm.bash gpupgrade-*.rpm "Enterprise"
+    mv gpupgrade-*.rpm ../built_enterprise
 

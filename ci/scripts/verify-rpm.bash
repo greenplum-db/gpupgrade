@@ -10,16 +10,16 @@ RELEASE=$2
 VERSION=$(git describe --tags --abbrev=0)
 
 verify_gpugprade_version_output() {
-  [[ $(/usr/local/greenplum-upgrade/gpupgrade version) == *"Version: ${VERSION}"* ]]
-  [[ $(/usr/local/greenplum-upgrade/gpupgrade version) == *"Release: ${RELEASE}"* ]]
+  [[ $(/usr/local/bin/gpupgrade version) == *"Version: ${VERSION}"* ]]
+  [[ $(/usr/local/bin/gpupgrade version) == *"Release: ${RELEASE}"* ]]
 }
 
 verify_rpm_info() {
   local info="$1"
 
-  [[ $info == *"Name        : greenplum-upgrade"* ]]
+  [[ $info == *"Name        : gpupgrade"* ]]
   [[ $info == *"Architecture: x86_64"* ]]
-  [[ $info == *"Source RPM  : greenplum-upgrade-${VERSION}-1"* ]]
+  [[ $info == *"Source RPM  : gpupgrade-${VERSION}-1"* ]]
   [[ $info == *"URL         : https://github.com/greenplum-db/gpupgrade"* ]]
 
   if [ "$RELEASE" = "Open Source" ]; then
@@ -33,16 +33,7 @@ verify_rpm_info() {
 }
 
 verify_license_files() {
-  if [ "$RELEASE" = "Open Source" ]; then
-      [ ! -s "/usr/share/licenses/greenplum-upgrade*/open_source_licenses.txt" ]
-      [ ! -s "/usr/local/greenplum-upgrade/open_source_licenses.txt" ]
-      return
-  fi
-
-  # For ENTERPRISE release, sanity check the license file
-  [ -s "/usr/share/licenses/greenplum-upgrade-${VERSION}/open_source_licenses.txt" ]
-
-  local license_file="/usr/local/greenplum-upgrade/open_source_licenses.txt"
+  local license_file="/usr/share/licenses/gpupgrade-${VERSION}/open_source_licenses.txt"
   [ -s "$license_file" ]
 
   [[ $(head -1 "$license_file") =~ open_source_licenses.txt ]]
@@ -56,10 +47,10 @@ main() {
 
   rpm -ivh "$RPM"
   verify_gpugprade_version_output
-  verify_rpm_info "$(rpm -qi greenplum-upgrade)"
+  verify_rpm_info "$(rpm -qi gpupgrade)"
   verify_license_files
 
-  rpm -ev greenplum-upgrade
+  rpm -ev gpupgrade
 }
 
 main

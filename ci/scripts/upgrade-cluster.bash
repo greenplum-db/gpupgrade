@@ -105,11 +105,9 @@ mapfile -t hosts < cluster_env_files/hostfile_all
 export GPHOME_SOURCE=/usr/local/greenplum-db-source
 export GPHOME_TARGET=/usr/local/greenplum-db-target
 
-# TODO: how to add gpupgrade in rpm installed location onto PATH?
 for host in "${hosts[@]}"; do
-    scp rpm_enterprise/greenplum-upgrade*.rpm "gpadmin@$host:/tmp"
-    ssh centos@$host "sudo rpm -ivh /tmp/greenplum-upgrade*.rpm"
-    ssh centos@$host "sudo cp /usr/local/greenplum-upgrade/gpupgrade /usr/local/bin"
+    scp rpm_enterprise/gpupgrade-*.rpm "gpadmin@$host:/tmp"
+    ssh centos@$host "sudo rpm -ivh /tmp/gpupgrade-*.rpm"
 done
 
 # On GPDB version other than 5, set the gucs before taking dumps
