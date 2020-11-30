@@ -10,6 +10,7 @@ URL: https://github.com/greenplum-db/gpupgrade
 Source0: %{name}.tar.gz
 # Allow the RPM to be relocatable by setting prefix to "/".
 Prefix: /
+Requires: openssh rsync
 
 %description
 The gpupgrade package contains gpupgrade which performs in-place upgrades
