@@ -182,6 +182,8 @@ To update the generated pipeline edit `ci/template.yml` and run
 `make set-pipeline` or `go generate ./ci` which is automatically run as part of
  `make set-pipeline`. This will update `ci/generated/pipeline.yml`.
 
+To update the production pipeline: `PIPELINE_NAME=gpupgrade FLY_TARGET=prod make set-pipeline`
+
 To make the pipeline publicly visible run `make expose-pipeline`. This will 
 allow anyone to see the pipeline and its status. However, the task details will 
 not be visible unless one logs into Concourse.
