@@ -43,7 +43,7 @@ type Step struct {
 	err         error
 }
 
-func NewStep(currentStep idl.Step, streams *step.BufferedStreams, verbose bool, automatic bool, confirmationText string) (*Step, error) {
+func NewStep(currentStep idl.Step, streams *step.BufferedStreams, verbose bool, interactive bool, confirmationText string) (*Step, error) {
 	store, err := NewStepStore()
 	if err != nil {
 		gplog.Error("creating step store: %v", err)
@@ -57,7 +57,7 @@ func NewStep(currentStep idl.Step, streams *step.BufferedStreams, verbose bool, 
 		return nil, err
 	}
 
-	if !automatic {
+	if !interactive {
 		fmt.Println(confirmationText)
 
 		proceed, err := Prompt(bufio.NewReader(os.Stdin))

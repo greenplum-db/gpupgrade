@@ -38,7 +38,7 @@ you run "gpupgrade revert" now and take a backup of the cluster.
 
 func initialize() *cobra.Command {
 	var file string
-	var automatic bool
+	var nonInteractive bool
 	var sourceGPHome, targetGPHome string
 	var sourcePort int
 	var hubPort int
@@ -175,7 +175,7 @@ func initialize() *cobra.Command {
 			st, err := commanders.NewStep(idl.Step_INITIALIZE,
 				&step.BufferedStreams{},
 				verbose,
-				automatic,
+				nonInteractive,
 				confirmationText,
 			)
 			if err != nil {
@@ -267,7 +267,7 @@ To return the cluster to its original state, run "gpupgrade revert".`,
 	}
 
 	subInit.Flags().StringVarP(&file, "file", "f", "", "the configuration file to use")
-	subInit.Flags().BoolVarP(&automatic, "automatic", "a", false, "do not prompt for confirmation to proceed")
+	subInit.Flags().BoolVarP(&nonInteractive, "automatic", "a", false, "do not prompt for confirmation to proceed")
 	subInit.Flags().StringVar(&sourceGPHome, "source-gphome", "", "path for the source Greenplum installation")
 	subInit.Flags().StringVar(&targetGPHome, "target-gphome", "", "path for the target Greenplum installation")
 	subInit.Flags().IntVar(&sourcePort, "source-master-port", 5432, "master port for source gpdb cluster")
