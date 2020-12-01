@@ -126,7 +126,7 @@ count_primary_gp_dbids() {
         --disk-free-ratio=0 3>&-
     NEW_CLUSTER="$(gpupgrade config show --target-datadir)"
 
-    gpupgrade execute -a --verbose
+    gpupgrade execute --non-interactive --verbose
 
     local new_dbid_num=$(count_primary_gp_dbids $GPHOME_TARGET 6020)
 

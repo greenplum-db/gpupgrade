@@ -18,7 +18,7 @@ import (
 
 func finalize() *cobra.Command {
 	var verbose bool
-	var automatic bool
+	var nonInteractive bool
 
 	cmd := &cobra.Command{
 		Use:   "finalize",
@@ -37,7 +37,7 @@ func finalize() *cobra.Command {
 			st, err := commanders.NewStep(idl.Step_FINALIZE,
 				&step.BufferedStreams{},
 				verbose,
-				automatic,
+				nonInteractive,
 				confirmationText,
 			)
 			if err != nil {
@@ -101,8 +101,7 @@ indexes, and roles that were dropped or altered to resolve migration issues.`,
 	}
 
 	cmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print the output stream from all substeps")
-	cmd.Flags().BoolVarP(&automatic, "automatic", "a", false, "do not prompt for confirmation to proceed")
-	cmd.Flags().MarkHidden("automatic") //nolint
-
+	cmd.Flags().BoolVar(&nonInteractive, "non-interactive", false, "do not prompt for confirmation to proceed")
+	cmd.Flags().MarkHidden("non-interactive") //nolint
 	return addHelpToCommand(cmd, FinalizeHelp)
 }

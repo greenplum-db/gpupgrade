@@ -92,7 +92,7 @@ query_host_datadirs() {
     target_hosts_dirs=$(jq -r '.Target.Primaries[] | .Hostname + " " + .DataDir' "${GPUPGRADE_HOME}/config.json")
     upgradeID=$(gpupgrade config show --id)
 
-    gpupgrade revert -a --verbose
+    gpupgrade revert --non-interactive --verbose
 
     # gpupgrade processes are stopped
     ! process_is_running "[g]pupgrade hub" || fail 'expected hub to have been stopped'
@@ -168,7 +168,7 @@ test_revert_after_execute() {
         --mode "$mode" \
         --automatic \
         --verbose 3>&-
-    gpupgrade execute -a --verbose
+    gpupgrade execute --non-interactive --verbose
 
     # Modify the table on the target cluster
     $PSQL -p $target_master_port postgres -c "TRUNCATE ${TABLE}"
@@ -180,7 +180,7 @@ test_revert_after_execute() {
     fi
 
     # Revert
-    gpupgrade revert -a --verbose
+    gpupgrade revert --non-interactive --verbose
 
     # Verify the table modifications were reverted
     rows=$($PSQL postgres -Atc "SELECT COUNT(*) FROM ${TABLE}")
@@ -236,9 +236,9 @@ test_revert_after_execute() {
         --automatic \
         --verbose 3>&-
 
-    gpupgrade execute -a --verbose
+    gpupgrade execute --non-interactive --verbose
 
-    gpupgrade revert -a --verbose
+    gpupgrade revert --non-interactive --verbose
 
     gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
@@ -249,10 +249,10 @@ test_revert_after_execute() {
         --automatic \
         --verbose 3>&-
 
-    gpupgrade execute -a --verbose
+    gpupgrade execute --non-interactive --verbose
 
     # This last revert is used for test cleanup.
-    gpupgrade revert -a --verbose
+    gpupgrade revert --non-interactive --verbose
 }
 
 # gp_segment_configuration does not show us the status correctly. We must check that the
@@ -375,13 +375,13 @@ test_revert_after_execute_pg_upgrade_failure() {
         --verbose 3>&-
 
     # Execute should fail.
-    run gpupgrade execute -a --verbose
+    run gpupgrade execute --non-interactive --verbose
     echo "$output"   # run swallows the output...log it explicitly to allow debugging.
     [ "$status" -ne 0 ] || fail "expected execute to fail"
     [[ "$output" == *"$failed_substep"*"FAILED"* ]] || fail "expected output to contain $failed_substep as FAILED"
 
     # Revert
-    gpupgrade revert -a --verbose
+    gpupgrade revert --non-interactive --verbose
 
     # Verify the table is untouched
     rows=$($PSQL postgres -Atc "SELECT COUNT(*) FROM ${TABLE}")

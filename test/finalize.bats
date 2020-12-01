@@ -68,13 +68,13 @@ upgrade_cluster() {
             "$LINK_MODE" \
             "$HBA_HOSTNAMES" \
             --verbose 3>&-
-        gpupgrade execute -a --verbose
+        gpupgrade execute --non-interactive --verbose
 
         # do before gpupgrade finalize shuts down the hub
         local upgradeID new_datadir
         upgradeID=$(gpupgrade config show --id)
 
-        gpupgrade finalize -a --verbose
+        gpupgrade finalize --non-interactive --verbose
 
         if is_GPDB5 "$GPHOME_SOURCE"; then
             check_tablespace_data

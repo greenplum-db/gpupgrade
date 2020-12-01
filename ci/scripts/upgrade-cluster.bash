@@ -139,8 +139,8 @@ time ssh mdw bash <<EOF
     # TODO: rather than setting a temp port range, consider carving out an
     # ip_local_reserved_ports range during/after CCP provisioning.
 
-    gpupgrade execute -a
-    gpupgrade finalize -a
+    gpupgrade execute --non-interactive
+    gpupgrade finalize --non-interactive
 EOF
 
 # On GPDB version other than 5, set the gucs before taking dumps

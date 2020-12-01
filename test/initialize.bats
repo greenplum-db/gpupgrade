@@ -131,8 +131,8 @@ outputContains() {
 
     commands=(
         'config show'
-        'execute -a'
-        'revert -a'
+        'execute --non-interactive'
+        'revert --non-interactive'
     )
 
     # We don't want to have to wait for the default one-second timeout for all
@@ -356,7 +356,7 @@ wait_for_port_change() {
         --disk-free-ratio 0 \
         --automatic \
         --verbose 3>&-
-    register_teardown gpupgrade revert -a
+    register_teardown gpupgrade revert --non-interactive
 
     echo "$output"
     [[ $output != *"libxml2.so.2: no version information available"* ]] || \

@@ -17,7 +17,7 @@ import (
 
 func execute() *cobra.Command {
 	var verbose bool
-	var automatic bool
+	var nonInteractive bool
 
 	cmd := &cobra.Command{
 		Use:   "execute",
@@ -37,7 +37,7 @@ func execute() *cobra.Command {
 			st, err := commanders.NewStep(idl.Step_EXECUTE,
 				&step.BufferedStreams{},
 				verbose,
-				automatic,
+				nonInteractive,
 				confirmationText,
 			)
 			if err != nil {
@@ -85,8 +85,8 @@ To return the cluster to its original state, run "gpupgrade revert".`,
 	}
 
 	cmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print the output stream from all substeps")
-	cmd.Flags().BoolVarP(&automatic, "automatic", "a", false, "do not prompt for confirmation to proceed")
-	cmd.Flags().MarkHidden("automatic") //nolint
+	cmd.Flags().BoolVar(&nonInteractive, "non-interactive", false, "do not prompt for confirmation to proceed")
+	cmd.Flags().MarkHidden("non-interactive") //nolint
 
 	return addHelpToCommand(cmd, ExecuteHelp)
 }

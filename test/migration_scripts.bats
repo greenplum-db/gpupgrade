@@ -92,8 +92,8 @@ drop_unfixable_objects() {
         --disk-free-ratio 0 \
         --automatic \
         --verbose
-    gpupgrade execute -a --verbose
-    gpupgrade finalize -a --verbose
+    gpupgrade execute --non-interactive --verbose
+    gpupgrade finalize --non-interactive --verbose
 
     "$SCRIPTS_DIR"/migration_executor_sql.bash "$GPHOME_TARGET" "$PGPORT" "$MIGRATION_DIR"/post-finalize
 
@@ -138,8 +138,8 @@ drop_unfixable_objects() {
         --disk-free-ratio 0 \
         --automatic \
         --verbose
-    gpupgrade execute -a --verbose
-    gpupgrade revert -a --verbose
+    gpupgrade execute --non-interactive --verbose
+    gpupgrade revert --non-interactive --verbose
 
     $SCRIPTS_DIR/migration_executor_sql.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/post-revert
 
@@ -176,7 +176,7 @@ drop_unfixable_objects() {
         --disk-free-ratio 0 \
         --automatic \
         --verbose
-    gpupgrade revert -a --verbose
+    gpupgrade revert --non-interactive --verbose
 
     "$SCRIPTS_DIR"/migration_executor_sql.bash "$GPHOME_TARGET" "$PGPORT" "$MIGRATION_DIR"/post-revert
 }
