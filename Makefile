@@ -117,31 +117,31 @@ tarball:
 	sha256sum $(TARBALL_NAME) > CHECKSUM
 	rm -r tarball
 
-enterprise-package: RELEASE=Enterprise
-enterprise-package: NAME=VMware Tanzu Greenplum Upgrade
-enterprise-package: LICENSE=VMware Software EULA
-enterprise-package: enterprise-tarball package
+enterprise-rpm: RELEASE=Enterprise
+enterprise-rpm: NAME=VMware Tanzu Greenplum Upgrade
+enterprise-rpm: LICENSE=VMware Software EULA
+enterprise-rpm: enterprise-tarball rpm
 
-oss-package: RELEASE=Open Source
-oss-package: NAME=Greenplum Database Upgrade
-oss-package: LICENSE=Apache 2.0
-oss-package: oss-tarball package
+oss-rpm: RELEASE=Open Source
+oss-rpm: NAME=Greenplum Database Upgrade
+oss-rpm: LICENSE=Apache 2.0
+oss-rpm: oss-tarball rpm
 
-package:
-	[ ! -d package ] && mkdir package
-	mkdir -p package/rpmbuild/{BUILD,RPMS,SOURCES,SPECS}
-	cp $(TARBALL_NAME) package/rpmbuild/SOURCES
-	cp gpupgrade.spec package/rpmbuild/SPECS/
+rpm:
+	[ ! -d rpm ] && mkdir rpm
+	mkdir -p rpm/rpmbuild/{BUILD,RPMS,SOURCES,SPECS}
+	cp $(TARBALL_NAME) rpm/rpmbuild/SOURCES
+	cp gpupgrade.spec rpm/rpmbuild/SPECS/
 	rpmbuild \
-	--define "_topdir $${PWD}/package/rpmbuild" \
+	--define "_topdir $${PWD}/rpm/rpmbuild" \
 	--define "gpupgrade_version $(VERSION)" \
 	--define "gpupgrade_rpm_release 1" \
 	--define "release_type $(RELEASE)" \
 	--define "license $(LICENSE)" \
 	--define "summary $(NAME)" \
-	-bb $${PWD}/package/rpmbuild/SPECS/gpupgrade.spec
-	cp package/rpmbuild/RPMS/x86_64/gpupgrade-$(VERSION)*.rpm .
-	rm -r package
+	-bb $${PWD}/rpm/rpmbuild/SPECS/gpupgrade.spec
+	cp rpm/rpmbuild/RPMS/x86_64/gpupgrade-$(VERSION)*.rpm .
+	rm -r rpm
 
 install:
 	go install $(BUILD_FLAGS) github.com/greenplum-db/gpupgrade/cmd/gpupgrade
@@ -174,7 +174,7 @@ clean:
 		rm -rf tarball
 		rm -f $(TARBALL_NAME)
 		rm -f CHECKSUM
-		rm -rf package
+		rm -rf rpm
 		rm -f gpupgrade-$(VERSION)*.rpm
 
 # You can override these from the command line.
