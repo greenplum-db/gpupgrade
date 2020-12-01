@@ -32,7 +32,7 @@ The source cluster does not have %s.
 After "gpupgrade execute" has been run, there will be no way to
 return the cluster to its original state using "gpupgrade revert".
 
-If you do no already have a backup, we strongly recommend that
+If you do not already have a backup, we strongly recommend that
 you run "gpupgrade revert" now and take a backup of the cluster.
 `
 
