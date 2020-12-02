@@ -69,7 +69,7 @@ func TestGPHomeVersion(t *testing.T) {
 				Command(postgresPath, []string{"--gp-version"}).
 				Return(c.execMain)
 
-			version, err := GPDBVersion(gphome)
+			version, err := LocalVersion(gphome)
 			if err != nil {
 				t.Errorf("returned error: %+v", err)
 			}
@@ -91,7 +91,7 @@ func TestGPHomeVersion(t *testing.T) {
 
 	for _, c := range formatErrorCases {
 		t.Run(fmt.Sprintf("returns error with %s as input", c.name), func(t *testing.T) {
-			_, err := parseGPVersion(c.version)
+			_, err := parseVersion(c.version)
 			if !errors.Is(err, ErrUnknownVersion) {
 				t.Fatalf("returned error %+v, want %+v", err, ErrUnknownVersion)
 			}
@@ -114,7 +114,7 @@ func TestGPHomeVersion(t *testing.T) {
 			Command(postgresPath, []string{"--gp-version"}).
 			Return(exectest.Failure)
 
-		_, err := GPDBVersion(gphome)
+		_, err := LocalVersion(gphome)
 
 		var exitErr *exec.ExitError
 		if !errors.As(err, &exitErr) {

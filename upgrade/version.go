@@ -12,25 +12,21 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
-func GpupgradeVersion() (string, error) {
-	return getGpupgradeVersion("")
+type versions struct{}
+
+func NewVersions() *versions {
+	return &versions{}
 }
 
-func GpupgradeVersionOnHost(host string) (string, error) {
-	return getGpupgradeVersion(host)
+func (v *versions) Local() (string, error) {
+	return version("")
 }
 
-type GpupgradeVersions struct{}
-
-func (g *GpupgradeVersions) HubVersion() (string, error) {
-	return GpupgradeVersion()
+func (v *versions) Remote(host string) (string, error) {
+	return version(host)
 }
 
-func (g *GpupgradeVersions) AgentVersion(host string) (string, error) {
-	return GpupgradeVersionOnHost(host)
-}
-
-func getGpupgradeVersion(host string) (string, error) {
+func version(host string) (string, error) {
 	gpupgradePath, err := utils.GetGpupgradePath()
 	if err != nil {
 		return "", xerrors.Errorf("getting gpupgrade binary path: %w", err)

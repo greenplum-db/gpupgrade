@@ -14,15 +14,9 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-type HubAndAgentVersions interface {
-	HubVersion() (string, error)
-	AgentVersion(host string) (string, error)
-}
-
-type HostVersion struct {
-	host         string
-	agentVersion string
-	err          error
+type ObtainVersions interface {
+	Local() (string, error)
+	Remote(host string) (string, error)
 }
 
 type MismatchedVersions map[string][]string
@@ -36,41 +30,47 @@ func (m MismatchedVersions) String() string {
 	return text
 }
 
-func EnsureVersionsMatch(agentHosts []string, version HubAndAgentVersions) error {
-	hubVersion, err := version.HubVersion()
-	if err != nil {
-		return xerrors.Errorf("getting hub version: %w", err)
+func EnsureVersionsMatch(agentHosts []string, version ObtainVersions) error {
+	type agentVersion struct {
+		host    string
+		version string
+		err     error
 	}
 
+	hubVersion, err := version.Local()
+	if err != nil {
+		return xerrors.Errorf("hub version: %w", err)
+	}
+
+	agentVersions := make(chan agentVersion, len(agentHosts))
 	var wg sync.WaitGroup
-	hostVersions := make(chan HostVersion, len(agentHosts))
 
 	for _, host := range agentHosts {
-		wg.Add(1)
+		host := host
 
-		go func(host string) {
+		wg.Add(1)
+		go func() {
 			defer wg.Done()
 
-			agentVersion, err := version.AgentVersion(host)
-			hostVersions <- HostVersion{host: host, agentVersion: agentVersion, err: err}
-		}(host)
+			version, err := version.Remote(host)
+			agentVersions <- agentVersion{host: host, version: version, err: err}
+		}()
 	}
 
 	wg.Wait()
-	close(hostVersions)
+	close(agentVersions)
 
-	var errs error
 	mismatched := make(MismatchedVersions)
-	for hv := range hostVersions {
-		errs = errorlist.Append(errs, hv.err)
+	for agent := range agentVersions {
+		err = errorlist.Append(err, agent.err)
 
-		if hubVersion != hv.agentVersion {
-			mismatched[hv.agentVersion] = append(mismatched[hv.agentVersion], hv.host)
+		if hubVersion != agent.version {
+			mismatched[agent.version] = append(mismatched[agent.version], agent.host)
 		}
 	}
 
-	if errs != nil {
-		return errs
+	if err != nil {
+		return err
 	}
 
 	if len(mismatched) == 0 {

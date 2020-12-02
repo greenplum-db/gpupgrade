@@ -94,7 +94,7 @@ func TestValidateVersions(t *testing.T) {
 			return semver.MustParse("6.9.0"), nil
 		}
 		defer func() {
-			gpdbVersion = GPDBVersion
+			gpdbVersion = LocalVersion
 		}()
 
 		err := VerifyCompatibleGPDBVersions("/does/not/matter", "/does/not/matter")
@@ -106,15 +106,16 @@ func TestValidateVersions(t *testing.T) {
 }
 
 func TestValidateVersionsErrorCases(t *testing.T) {
+
 	cases := []struct {
-		name           string
-		mockFunction   func(string) (semver.Version, error)
-		expectedSource string
-		expectedTarget string
+		name             string
+		testLocalVersion func(string) (semver.Version, error)
+		expectedSource   string
+		expectedTarget   string
 	}{
 		{
 			"fails when gpdbVersion returns an error",
-			func(str string) (semver.Version, error) {
+			func(string) (semver.Version, error) {
 				return semver.MustParse("1.2.3"), errors.New("some error")
 			},
 			"could not determine source cluster version: some error",
@@ -122,7 +123,7 @@ func TestValidateVersionsErrorCases(t *testing.T) {
 		},
 		{
 			"fails when sourceVersion and targetVersion have unsupported minor versions",
-			func(str string) (semver.Version, error) {
+			func(string) (semver.Version, error) {
 				return semver.MustParse("6.8.0"), nil
 			},
 			"source cluster version 6.8.0 is not supported.  The minimum required version is 6.9.0. We recommend the latest version.",
@@ -130,7 +131,7 @@ func TestValidateVersionsErrorCases(t *testing.T) {
 		},
 		{
 			"fails when sourceVersion and targetVersion have unsupported major versions",
-			func(str string) (semver.Version, error) {
+			func(string) (semver.Version, error) {
 				return semver.MustParse("0.0.0"), nil
 			},
 			"source cluster version 0.0.0 is not supported.  The minimum required version is 5.28.0. We recommend the latest version.",
@@ -140,9 +141,9 @@ func TestValidateVersionsErrorCases(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			gpdbVersion = c.mockFunction
+			gpdbVersion = c.testLocalVersion
 			defer func() {
-				gpdbVersion = GPDBVersion
+				gpdbVersion = LocalVersion
 			}()
 
 			err := VerifyCompatibleGPDBVersions("/does/not/matter", "/does/not/matter")

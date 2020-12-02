@@ -82,7 +82,7 @@ func getMinVersion(version semver.Version, minVersions map[int]string) string {
 	return semver.MustParse(minVersions[lowest]).String()
 }
 
-var gpdbVersion = GPDBVersion
+var gpdbVersion = LocalVersion
 
 func VerifyCompatibleGPDBVersions(sourceGPHome, targetGPHome string) error {
 	var err error
@@ -96,7 +96,7 @@ func VerifyCompatibleGPDBVersions(sourceGPHome, targetGPHome string) error {
 	return err
 }
 
-func validateVersion(gpHome string, context string) error {
+func validateVersion(gphome, context string) error {
 	versionsAllowed := sourceVersionAllowed
 	minVersions := minSourceVersions
 	if context == "target" {
@@ -104,16 +104,18 @@ func validateVersion(gpHome string, context string) error {
 		minVersions = minTargetVersions
 	}
 
-	version, err := gpdbVersion(gpHome)
-	if err == nil && !versionsAllowed(version) {
+	version, err := gpdbVersion(gphome)
+	if err != nil {
+		return fmt.Errorf("could not determine %s cluster version: %w", context, err)
+	}
+
+	if !versionsAllowed(version) {
 		min := getMinVersion(version, minVersions)
-		errStr := fmt.Sprintf("%s cluster version %s is not supported.  "+
+		return fmt.Errorf("%s cluster version %s is not supported.  "+
 			"The minimum required version is %s. "+
 			"We recommend the latest version.",
 			context, version, min)
-		err = fmt.Errorf(errStr)
-	} else if err != nil {
-		err = fmt.Errorf("could not determine %s cluster version: %w", context, err)
 	}
-	return err
+
+	return nil
 }

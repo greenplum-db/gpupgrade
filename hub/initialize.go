@@ -54,11 +54,11 @@ func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initi
 	// we need the cluster information to determine what hosts to check, so we do this check
 	// as early as possible after that information is available
 	st.RunInternalSubstep(func() error {
-		if err := EnsureVersionsMatch(AgentHosts(s.Source), &upgrade.GpupgradeVersions{}); err != nil {
+		if err := EnsureVersionsMatch(AgentHosts(s.Source), upgrade.NewVersions()); err != nil {
 			return err
 		}
 
-		return EnsureVersionsMatch(AgentHosts(s.Source), &greenplum.GPDBVersions{TargetGPHome: s.TargetGPHome})
+		return EnsureVersionsMatch(AgentHosts(s.Source), greenplum.NewVersions(s.TargetGPHome))
 	})
 
 	st.Run(idl.Substep_START_AGENTS, func(_ step.OutStreams) error {

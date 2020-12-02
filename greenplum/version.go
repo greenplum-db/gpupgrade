@@ -15,12 +15,16 @@ import (
 
 var ErrUnknownVersion = errors.New("unknown GPDB version")
 
-type GPDBVersions struct {
-	TargetGPHome string
+type versions struct {
+	targetGPHome string
 }
 
-func (g *GPDBVersions) HubVersion() (string, error) {
-	version, err := GPDBVersion(g.TargetGPHome)
+func NewVersions(TargetGPHome string) *versions {
+	return &versions{targetGPHome: TargetGPHome}
+}
+
+func (v *versions) Local() (string, error) {
+	version, err := version(v.targetGPHome, "")
 	if err != nil {
 		return "", err
 	}
@@ -28,8 +32,8 @@ func (g *GPDBVersions) HubVersion() (string, error) {
 	return version.String(), err
 }
 
-func (g *GPDBVersions) AgentVersion(host string) (string, error) {
-	version, err := GPDBVersionOnHost(g.TargetGPHome, host)
+func (v *versions) Remote(host string) (string, error) {
+	version, err := version(v.targetGPHome, host)
 	if err != nil {
 		return "", err
 	}
@@ -37,17 +41,16 @@ func (g *GPDBVersions) AgentVersion(host string) (string, error) {
 	return version.String(), err
 }
 
-func GPDBVersion(gphome string) (semver.Version, error) {
-	return getGPDBVersion(gphome, "")
+func LocalVersion(gphome string) (semver.Version, error) {
+	version, err := version(gphome, "")
+	if err != nil {
+		return semver.Version{}, err
+	}
+
+	return version, err
 }
 
-func GPDBVersionOnHost(gphome string, host string) (semver.Version, error) {
-	return getGPDBVersion(gphome, host)
-}
-
-// GPDBVersion returns the semantic version of a GPDB installation located at
-// the given GPHOME.
-func getGPDBVersion(gphome string, host string) (semver.Version, error) {
+func version(gphome string, host string) (semver.Version, error) {
 	postgres := filepath.Join(gphome, "bin", "postgres")
 
 	name := postgres
@@ -66,12 +69,12 @@ func getGPDBVersion(gphome string, host string) (semver.Version, error) {
 	}
 
 	version := string(stdout)
-	return parseGPVersion(version)
+	return parseVersion(version)
 }
 
-// parseGPVersion takes the output from `postgres --gp-version` and returns the
+// parseVersion takes the output from `postgres --gp-version` and returns the
 // parsed dotted-triple semantic version.
-func parseGPVersion(gpversion string) (semver.Version, error) {
+func parseVersion(gpversion string) (semver.Version, error) {
 	// XXX The following logic is based on dbconn.InitializeVersion, in an
 	// attempt to minimize implementation differences between this and the
 	// version that is parsed from a live cluster. We can't use that logic
@@ -113,7 +116,7 @@ func parseGPVersion(gpversion string) (semver.Version, error) {
 	return semver.Parse(matches[0])
 }
 
-// unknownVersionError is returned when parseGPVersion fails. It's an instance
+// unknownVersionError is returned when parseVersion fails. It's an instance
 // of ErrUnknownVersion.
 type unknownVersionError struct {
 	input string

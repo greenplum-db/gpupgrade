@@ -60,7 +60,7 @@ func TestGpupgradeVersion(t *testing.T) {
 		upgrade.SetExecCommand(execCmd)
 		defer upgrade.ResetExecCommand()
 
-		version, err := upgrade.GpupgradeVersion()
+		version, err := upgrade.NewVersions().Local()
 		if err != nil {
 			t.Errorf("unexpected errr %#v", err)
 		}
@@ -74,7 +74,7 @@ func TestGpupgradeVersion(t *testing.T) {
 		upgrade.SetExecCommand(exectest.NewCommand(gpupgradeVersion_Errors))
 		defer upgrade.ResetExecCommand()
 
-		version, err := upgrade.GpupgradeVersion()
+		version, err := upgrade.NewVersions().Local()
 		var actual *exec.ExitError
 		if !errors.As(err, &actual) {
 			t.Fatalf("got %#v want ExitError", err)
@@ -117,7 +117,7 @@ func TestGpupgradeVersionOnHost(t *testing.T) {
 		upgrade.SetExecCommand(execCmd)
 		defer upgrade.ResetExecCommand()
 
-		version, err := upgrade.GpupgradeVersionOnHost(host)
+		version, err := upgrade.NewVersions().Remote(host)
 		if err != nil {
 			t.Errorf("unexpected errr %#v", err)
 		}
@@ -131,7 +131,7 @@ func TestGpupgradeVersionOnHost(t *testing.T) {
 		upgrade.SetExecCommand(exectest.NewCommand(gpupgradeVersion_Errors))
 		defer upgrade.ResetExecCommand()
 
-		version, err := upgrade.GpupgradeVersionOnHost(host)
+		version, err := upgrade.NewVersions().Remote(host)
 		var actual *exec.ExitError
 		if !errors.As(err, &actual) {
 			t.Fatalf("got %#v want ExitError", err)
