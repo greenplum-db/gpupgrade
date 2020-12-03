@@ -40,12 +40,16 @@ func init() {
 		PostgresGPVersion_6_7_1,
 		PostgresGPVersion_11_341_31,
 	)
+	postgresPath = filepath.Join(gphome, "bin", "postgres")
+	remotePostgresCmd = fmt.Sprintf(`bash -c "%s --gp-version"`, postgresPath)
 }
 
-func TestGPHomeVersion(t *testing.T) {
-	const gphome = "/usr/local/my-gpdb-home"
-	postgresPath := filepath.Join(gphome, "bin", "postgres")
+var postgresPath, remotePostgresCmd string
 
+const gphome = "/usr/local/my-gpdb-home"
+const remoteHost = "remote_host"
+
+func TestGPHomeVersion(t *testing.T) {
 	cases := []struct {
 		name     string
 		execMain exectest.Main // the postgres Main implementation to run
@@ -59,25 +63,9 @@ func TestGPHomeVersion(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			mock, cleanup := MockExecCommand(ctrl)
-			defer cleanup()
-
-			mock.EXPECT().
-				Command(postgresPath, []string{"--gp-version"}).
-				Return(c.execMain)
-
-			version, err := LocalVersion(gphome)
-			if err != nil {
-				t.Errorf("returned error: %+v", err)
-			}
-
-			expected := semver.MustParse(c.expected)
-			if !version.Equals(expected) {
-				t.Errorf("got version %v, want %v", version, expected)
-			}
+			runVersionTest(t, LocalVersion, false, c.execMain, c.expected)
+			runVersionTest(t, localFunction, false, c.execMain, c.expected)
+			runVersionTest(t, remoteFunction, true, c.execMain, c.expected)
 		})
 	}
 
@@ -121,4 +109,48 @@ func TestGPHomeVersion(t *testing.T) {
 			t.Errorf("returned error %#v, want type %T", err, exitErr)
 		}
 	})
+}
+
+func localFunction(ignore string) (semver.Version, error) {
+	str, err := NewVersions(gphome).Local()
+	if err != nil {
+		return semver.Version{}, nil
+	}
+	return semver.MustParse(str), nil
+}
+
+func remoteFunction(ignore string) (semver.Version, error) {
+	str, err := NewVersions(gphome).Remote(remoteHost)
+	if err != nil {
+		return semver.Version{}, nil
+	}
+	return semver.MustParse(str), nil
+}
+
+func runVersionTest(t *testing.T, versionFunc func(string) (semver.Version, error), isRemote bool, execMain exectest.Main, expected string) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mock, cleanup := MockExecCommand(ctrl)
+	defer cleanup()
+
+	if isRemote {
+		mock.EXPECT().
+			Command("ssh", []string{remoteHost, remotePostgresCmd}).
+			Return(execMain)
+	} else {
+		mock.EXPECT().
+			Command(postgresPath, []string{"--gp-version"}).
+			Return(execMain)
+	}
+
+	version, err := versionFunc(gphome)
+	if err != nil {
+		t.Errorf("returned error: %+v", err)
+	}
+
+	expectedVer := semver.MustParse(expected)
+	if !version.Equals(expectedVer) {
+		t.Errorf("got version %v, want %v", version, expectedVer)
+	}
 }
