@@ -33,7 +33,7 @@ verify_rpm_info() {
 }
 
 verify_license_files() {
-  local license_file="/usr/share/licenses/gpupgrade-${VERSION}/open_source_licenses.txt"
+  local license_file="/usr/local/bin/greenplum/gpupgrade/open_source_licenses.txt"
   [ -s "$license_file" ]
 
   [[ $(head -1 "$license_file") =~ open_source_licenses.txt ]]
