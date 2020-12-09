@@ -23,6 +23,10 @@ func NewVersions(TargetGPHome string) *versions {
 	return &versions{targetGPHome: TargetGPHome}
 }
 
+func (v *versions) Description() string {
+	return "Greenplum Database"
+}
+
 func (v *versions) Local() (string, error) {
 	version, err := version(v.targetGPHome, "")
 	if err != nil {

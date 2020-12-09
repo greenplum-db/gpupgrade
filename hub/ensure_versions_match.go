@@ -17,6 +17,7 @@ import (
 type ObtainVersions interface {
 	Local() (string, error)
 	Remote(host string) (string, error)
+	Description() string
 }
 
 type MismatchedVersions map[string][]string
@@ -77,9 +78,9 @@ func EnsureVersionsMatch(agentHosts []string, version ObtainVersions) error {
 		return nil
 	}
 
-	return xerrors.Errorf(`Version mismatch between gpupgrade hub and agent hosts. 
+	return xerrors.Errorf(`%s version mismatch between gpupgrade hub and agent hosts. 
     Hub version: %q
 
     Mismatched Agents:
-    %s`, hubVersion, mismatched)
+    %s`, version.Description(), hubVersion, mismatched)
 }

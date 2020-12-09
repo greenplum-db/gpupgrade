@@ -18,6 +18,10 @@ func NewVersions() *versions {
 	return &versions{}
 }
 
+func (v *versions) Description() string {
+	return "gpupgrade"
+}
+
 func (v *versions) Local() (string, error) {
 	return version("")
 }

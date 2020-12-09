@@ -27,6 +27,10 @@ type Versions struct {
 	agentErr     error
 }
 
+func (t *Versions) Description() string {
+	return "test"
+}
+
 func (t *Versions) Local() (string, error) {
 	return t.hubVersion, t.hubErr
 }
