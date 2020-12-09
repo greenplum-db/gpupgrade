@@ -90,7 +90,10 @@ func checkConfig(flags map[string]string) error {
 	var err error
 	for name, value := range flags {
 		if value == "" {
-			err = errorlist.Append(err,  xerrors.Errorf("no value found for parameter %q", name))
+			// To report the correct parameter to users use underscores when
+			// referencing config file parameters.
+			name = strings.ReplaceAll(name, "-", "_")
+			err = errorlist.Append(err, xerrors.Errorf("no value found for parameter %q", name))
 		}
 	}
 	return err
