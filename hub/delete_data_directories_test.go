@@ -370,6 +370,153 @@ func TestDeleteTablespaceDirectories(t *testing.T) {
 	})
 }
 
+func TestDeleteTablespacesOnMirrorsAndStandby(t *testing.T) {
+	source := hub.MustCreateCluster(t, []greenplum.SegConfig{
+		{DbID: 1, ContentID: -1, Hostname: "master", DataDir: "/data/qddir", Role: greenplum.PrimaryRole},
+		{DbID: 6, ContentID: -1, Hostname: "standby", DataDir: "/data/standby", Role: greenplum.MirrorRole},
+		{DbID: 2, ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
+		{DbID: 3, ContentID: 0, Hostname: "msdw1", DataDir: "/data/dbfast_mirror1/seg1", Role: greenplum.MirrorRole},
+		{DbID: 4, ContentID: 1, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
+		{DbID: 5, ContentID: 1, Hostname: "msdw2", DataDir: "/data/dbfast_mirror2/seg2", Role: greenplum.MirrorRole},
+	})
+
+	tablespaces := map[int]greenplum.SegmentTablespaces{
+		6: {
+			16386: {
+				Location:    "/tmp/testfs/standby/demoDataDir-1/16386",
+				UserDefined: 1,
+			},
+			16387: {
+				Location:    "/tmp/testfs/standby/demoDataDir-1/16387",
+				UserDefined: 1,
+			},
+			1663: {
+				Location:    "/data/standby/demoDataDir-1",
+				UserDefined: 0,
+			},
+		},
+		3: {
+			16386: {
+				Location:    "/tmp/testfs/mirror1/dbfast_mirror1/16386",
+				UserDefined: 1,
+			},
+			16387: {
+				Location:    "/tmp/testfs/mirror1/dbfast_mirror1/16387",
+				UserDefined: 1,
+			},
+			1663: {
+				Location:    "/data/dbfast_mirror1/seg1",
+				UserDefined: 0,
+			},
+		},
+		5: {
+			16386: {
+				Location:    "/tmp/testfs/mirror2/dbfast_mirror2/16386",
+				UserDefined: 1,
+			},
+			16387: {
+				Location:    "/tmp/testfs/mirror2/dbfast_mirror2/16387",
+				UserDefined: 1,
+			},
+			1663: {
+				Location:    "/data/dbfast_mirror2/seg2",
+				UserDefined: 0,
+			},
+		},
+	}
+
+	t.Run("deletes tablespace directories only on the mirrors and standby", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		standby := mock_idl.NewMockAgentClient(ctrl)
+		standby.EXPECT().DeleteSourceTablespaceDirectories(
+			gomock.Any(),
+			equivalentRequest(&idl.DeleteTablespaceRequest{
+				Dirs: []string{
+					"/tmp/testfs/standby/demoDataDir-1/16386",
+					"/tmp/testfs/standby/demoDataDir-1/16387",
+				}}),
+		).Return(&idl.DeleteTablespaceReply{}, nil)
+
+		msdw1 := mock_idl.NewMockAgentClient(ctrl)
+		msdw1.EXPECT().DeleteSourceTablespaceDirectories(
+			gomock.Any(),
+			equivalentRequest(&idl.DeleteTablespaceRequest{
+				Dirs: []string{
+					"/tmp/testfs/mirror1/dbfast_mirror1/16386",
+					"/tmp/testfs/mirror1/dbfast_mirror1/16387",
+				}}),
+		).Return(&idl.DeleteTablespaceReply{}, nil)
+
+		msdw2 := mock_idl.NewMockAgentClient(ctrl)
+		msdw2.EXPECT().DeleteSourceTablespaceDirectories(
+			gomock.Any(),
+			equivalentRequest(&idl.DeleteTablespaceRequest{
+				Dirs: []string{
+					"/tmp/testfs/mirror2/dbfast_mirror2/16386",
+					"/tmp/testfs/mirror2/dbfast_mirror2/16387",
+				}}),
+		).Return(&idl.DeleteTablespaceReply{}, nil)
+
+		master := mock_idl.NewMockAgentClient(ctrl)
+		sdw1 := mock_idl.NewMockAgentClient(ctrl)
+		sdw2 := mock_idl.NewMockAgentClient(ctrl)
+
+		agentConns := []*hub.Connection{
+			{nil, sdw1, "sdw1", nil},
+			{nil, msdw1, "msdw1", nil},
+			{nil, sdw2, "sdw2", nil},
+			{nil, msdw2, "msdw2", nil},
+			{nil, master, "master", nil},
+			{nil, standby, "standby", nil},
+		}
+
+		err := hub.DeleteSourceTablespacesOnMirrorsAndStandby(agentConns, source, tablespaces)
+		if err != nil {
+			t.Errorf("DeleteTablespacesOnMirrorsAndStandby returned error %+v", err)
+		}
+	})
+
+	t.Run("errors when failing to delete tablespace directories on the mirrors", func(t *testing.T) {
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		msdw1 := mock_idl.NewMockAgentClient(ctrl)
+		msdw1.EXPECT().DeleteSourceTablespaceDirectories(
+			gomock.Any(),
+			equivalentRequest(&idl.DeleteTablespaceRequest{
+				Dirs: []string{
+					"/tmp/testfs/mirror1/dbfast_mirror1/16386",
+					"/tmp/testfs/mirror1/dbfast_mirror1/16387",
+				}}),
+		).Return(&idl.DeleteTablespaceReply{}, nil)
+
+		expected := errors.New("permission denied")
+		failedClient := mock_idl.NewMockAgentClient(ctrl)
+		failedClient.EXPECT().DeleteSourceTablespaceDirectories(
+			gomock.Any(),
+			equivalentRequest(&idl.DeleteTablespaceRequest{
+				Dirs: []string{
+					"/tmp/testfs/mirror2/dbfast_mirror2/16386",
+					"/tmp/testfs/mirror2/dbfast_mirror2/16387",
+				}}),
+		).Return(nil, expected)
+
+		agentConns := []*hub.Connection{
+			{nil, msdw1, "msdw1", nil},
+			{nil, failedClient, "msdw2", nil},
+		}
+
+		err := hub.DeleteSourceTablespacesOnMirrorsAndStandby(agentConns, source, tablespaces)
+
+		if !errors.Is(err, expected) {
+			t.Errorf("got error %#v, want %#v", err, expected)
+		}
+	})
+}
+
 // equivalentRequest is a Matcher that can handle differences in order between
 // two instances of DeleteTablespaceRequest.Dirs
 func equivalentRequest(req *idl.DeleteTablespaceRequest) gomock.Matcher {

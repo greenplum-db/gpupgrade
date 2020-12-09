@@ -129,3 +129,38 @@ func DeleteTargetTablespacesOnPrimaries(agentConns []*Connection, target *greenp
 
 	return ExecuteRPC(agentConns, request)
 }
+
+func DeleteSourceTablespacesOnMirrorsAndStandby(agentConns []*Connection, source *greenplum.Cluster, tablespaces greenplum.Tablespaces) error {
+	request := func(conn *Connection) error {
+
+		segments := source.SelectSegments(func(seg *greenplum.SegConfig) bool {
+			return seg.IsOnHost(conn.Hostname) && (seg.IsMirror() || seg.IsStandby())
+		})
+
+		if len(segments) == 0 {
+			return nil
+		}
+
+		var dirs []string
+		for _, seg := range segments {
+			segTablespaces := tablespaces[seg.DbID]
+			for _, tsInfo := range segTablespaces {
+				if !tsInfo.IsUserDefined() {
+					continue
+				}
+
+				dirs = append(dirs, tsInfo.Location)
+			}
+		}
+
+		if len(dirs) == 0 {
+			return nil
+		}
+
+		req := &idl.DeleteTablespaceRequest{Dirs: dirs}
+		_, err := conn.AgentClient.DeleteSourceTablespaceDirectories(context.Background(), req)
+		return err
+	}
+
+	return ExecuteRPC(agentConns, request)
+}

@@ -54,8 +54,10 @@ upgrade_cluster() {
         no_mirrors=$(contents_without_mirror "${GPHOME_SOURCE}" "$(hostname)" "${PGPORT}")
 
         # upgrade on 6-6 does not work due to a bug in pg_upgrade
+        local tablespace_dirs
         if is_GPDB5 "$GPHOME_SOURCE"; then
             create_tablespace_with_tables
+            tablespace_dirs=($(query_tablespace_dirs $GPHOME_SOURCE $PGPORT))
         fi
 
         gpupgrade initialize \
@@ -84,8 +86,14 @@ upgrade_cluster() {
         if [ "$LINK_MODE" == "--mode=link" ]; then
             validate_data_directories "$upgradeID" "EXISTS" "$primary_datadirs"
             validate_data_directories "$upgradeID" "NOT_EXISTS" "$mirror_datadirs"
+            if is_GPDB5 "$GPHOME_SOURCE"; then
+                validate_tablespace_dirs "NOT_EXISTS" "$tablespace_dirs"
+            fi
         else
             validate_data_directories "$upgradeID" "EXISTS" "${datadirs}"
+            if is_GPDB5 "$GPHOME_SOURCE"; then
+                validate_tablespace_dirs "EXISTS" "$tablespace_dirs"
+            fi
         fi
 
         # ensure gpperfmon configuration file has been modified to reflect new data dir location
@@ -168,6 +176,19 @@ validate_data_directories() {
             [ -d "${datadir}/" ] || fail "expected target data directory to be located at $datadir"
             [ -f "${datadir}/postgresql.conf" ] || fail "expected postgresql.conf file to be in $datadir"
             [ ! -f "${datadir}/${marker_file}" ] || fail "unexpected ${marker_file} marker file in target datadir: $datadir"
+        done
+}
+
+validate_tablespace_dirs() {
+        CHECK_EXISTS=$1
+        shift
+        TABLESPACERDIRS=("$@")
+        for tablespaceDir in "${TABLESPACERDIRS[@]}"; do
+            if [ "$CHECK_EXISTS" == "NOT_EXISTS" ] ; then
+                [ ! -d "${tablespaceDir}" ] || fail "expected tablespace directory ${tablespaceDir} to not exist"
+            else
+                [ -d "${tablespaceDir}" ] || fail "expected tablespace directory to be located at $tablespaceDir"
+            fi
         done
 }
 

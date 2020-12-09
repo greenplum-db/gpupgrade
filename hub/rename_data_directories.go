@@ -34,6 +34,10 @@ func UpdateDataDirectories(conf *Config, agentConns []*Connection) error {
 		if err := DeleteMirrorAndStandbyDataDirectories(agentConns, conf.Source); err != nil {
 			return xerrors.Errorf("removing source cluster standby and mirror segment data directories: %w", err)
 		}
+
+		if err := DeleteSourceTablespacesOnMirrorsAndStandby(agentConns, conf.Source, conf.Tablespaces); err != nil {
+			return xerrors.Errorf("removing source cluster standby and mirror tablespace data directories: %w", err)
+		}
 	}
 
 	renameMap := getRenameMap(conf.Source, conf.TargetInitializeConfig, conf.UseLinkMode)

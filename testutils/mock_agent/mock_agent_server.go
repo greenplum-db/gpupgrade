@@ -143,3 +143,8 @@ func (m *MockAgentServer) NumberOfCalls() int {
 func (m *MockAgentServer) RestorePrimariesPgControl(ctx context.Context, in *idl.RestorePgControlRequest) (*idl.RestorePgControlReply, error) {
 	return &idl.RestorePgControlReply{}, nil
 }
+
+func (m *MockAgentServer) DeleteSourceTablespaceDirectories(context.Context, *idl.DeleteTablespaceRequest) (*idl.DeleteTablespaceReply, error) {
+	m.increaseCalls()
+	return &idl.DeleteTablespaceReply{}, nil
+}

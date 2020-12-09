@@ -207,6 +207,24 @@ query_datadirs() {
     echo "$output"
 }
 
+query_tablespace_dirs(){
+    local gphome=$1
+    local port=$2
+
+    sql="
+        SELECT e.fselocation || '/' || t.oid as datadir
+        FROM gp_segment_configuration s
+        JOIN pg_filespace_entry e ON s.dbid = e.fsedbid
+        JOIN pg_tablespace t ON e.fsefsoid = t.spcfsoid
+        WHERE t.spcname not in ('pg_default', 'pg_global') AND role='m'
+        ORDER BY s.content, s.role"
+
+    run "$gphome"/bin/psql -At -p "$port" postgres -c "$sql"
+    [ "$status" -eq 0 ] || fail "$output"
+
+    echo "$output"
+}
+
 # get_rsync_pairs maps the data directory of every standby/mirror with the
 # corresponding master/primary. The map will later be used to rsync the
 # contents of the mirror back to the primary.
