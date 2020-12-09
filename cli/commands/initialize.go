@@ -56,27 +56,46 @@ func initialize() *cobra.Command {
 		Short: "prepare the system for upgrade",
 		Long:  InitializeHelp,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			// mark the required flags when the file flag is not set
-			if !cmd.Flag("file").Changed {
-				cmd.MarkFlagRequired("source-gphome")      //nolint
-				cmd.MarkFlagRequired("target-gphome")      //nolint
-				cmd.MarkFlagRequired("source-master-port") //nolint
+			isAnyDevModeFlagSet := cmd.Flag("source-gphome").Changed ||
+				cmd.Flag("target-gphome").Changed ||
+				cmd.Flag("source-master-port").Changed
+
+			// If no required flags are set then return help.
+			if !cmd.Flag("file").Changed && !isAnyDevModeFlagSet {
+				fmt.Println(Help["initialize"])
+				cmd.SilenceErrors = true // silence UserCanceled error message below
+				return step.UserCanceled // exit early and don't call RunE
 			}
 
-			// If the file flag is set check that no other flags are specified
-			// other than verbose and automatic.
+			// If the file flag is set ensure no other flags are set except
+			// optionally verbose and automatic.
 			if cmd.Flag("file").Changed {
 				var err error
 				cmd.Flags().Visit(func(flag *pflag.Flag) {
 					if flag.Name != "file" && flag.Name != "verbose" && flag.Name != "automatic" {
-						err = errors.New("The file flag cannot be used with any other flag.")
+						err = errors.New("The file flag cannot be used with any other flag except verbose and automatic.")
 					}
 				})
 				return err
 			}
 
+			// In dev mode the file flag should not be set and ensure all dev
+			// mode flags are set by marking them required.
+			if !cmd.Flag("file").Changed && isAnyDevModeFlagSet {
+				devModeFlags := []string{
+					"source-gphome",
+					"target-gphome",
+					"source-master-port",
+				}
+
+				for _, f := range devModeFlags {
+					cmd.MarkFlagRequired(f) //nolint
+				}
+			}
+
 			return nil
 		},
+
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			if cmd.Flag("file").Changed {
 				configFile, err := os.Open(file)
@@ -246,6 +265,7 @@ To return the cluster to its original state, run "gpupgrade revert".`,
 				warningMessage))
 		},
 	}
+
 	subInit.Flags().StringVarP(&file, "file", "f", "", "the configuration file to use")
 	subInit.Flags().BoolVarP(&automatic, "automatic", "a", false, "do not prompt for confirmation to proceed")
 	subInit.Flags().StringVar(&sourceGPHome, "source-gphome", "", "path for the source Greenplum installation")

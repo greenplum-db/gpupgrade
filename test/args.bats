@@ -24,7 +24,7 @@ teardown() {
 @test "gpupgrade initialize fails when passed insufficient arguments" {
     run gpupgrade initialize -a
     [ "$status" -eq 1 ]
-    if ! [[ "$output" = *'required flag(s) "source-gphome", "source-master-port", "target-gphome" not set'* ]]; then
+    if ! [[ "$output" = *'Usage: gpupgrade initialize --file'* ]]; then
         fail "actual: $output"
     fi
 }
