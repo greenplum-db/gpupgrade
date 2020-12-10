@@ -19,8 +19,8 @@ The output directory structure is:
      + post-finalize   restore and recreate objects following "gpupgrade finalize"
      + post-revert     restore objects following "gpupgrade revert"
 
-After running migration_generator_sql.bash, run migration_executor_sql.bash.
-Run migration_executor_sql.bash -h for more information.'
+After running gpupgrade-migration-sql-generator.bash, run gpupgrade-migration-sql-executor.bash.
+Run gpupgrade-migration-sql-executor.bash -h for more information.'
 }
 
 if [ "$#" -eq 0 ] || ([ "$#" -eq 1 ] && ([ "$1" = -h ] || [ "$1" = --help ])) ; then
@@ -28,7 +28,7 @@ if [ "$#" -eq 0 ] || ([ "$#" -eq 1 ] && ([ "$1" = -h ] || [ "$1" = --help ])) ; 
     exit 0
 fi
 
-if [ "$#" -ne 3 ]; then
+if ! { [ "$#" -eq 3 ] || [ "$#" -eq 4 ]; } ; then
     echo ""
     echo "Error: Incorrect number of arguments"
     print_usage
@@ -38,6 +38,8 @@ fi
 GPHOME=$1
 PGPORT=$2
 OUTPUT_DIR=$3
+# INPUT_DIR is a hidden option used for internal testing or support
+INPUT_DIR=${4:-"$(dirname "$0")/greenplum/gpupgrade/data-migration-scripts"}
 APPLY_ONCE_FILES=("gen_alter_gphdfs_roles.sql")
 
 get_databases(){
@@ -93,7 +95,7 @@ execute_script_directory() {
     local dir=$1; shift
     local databases=( "$@" )
 
-    local paths=($(find "$(dirname "$0")/${dir}" -type f \( -name "*.sql" -o -name "*.sh" \) | sort -n))
+    local paths=($(find "${INPUT_DIR}/${dir}" -type f \( -name "*.sql" -o -name "*.sh" \) | sort -n))
     local output_dir="${OUTPUT_DIR}/${dir}"
 
     mkdir -p "$output_dir"

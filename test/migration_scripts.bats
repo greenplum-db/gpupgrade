@@ -75,7 +75,7 @@ drop_unfixable_objects() {
     MIGRATION_DIR=`mktemp -d /tmp/migration.XXXXXX`
     register_teardown rm -r "$MIGRATION_DIR"
 
-    "$SCRIPTS_DIR"/migration_generator_sql.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"
+    "$SCRIPTS_DIR"/migration_generator_sql.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR" "$SCRIPTS_DIR"
 
     drop_unfixable_objects
 
@@ -127,7 +127,7 @@ drop_unfixable_objects() {
     "$GPHOME_SOURCE"/bin/pg_dump --schema-only "$TEST_DBNAME" $EXCLUSIONS -f "$MIGRATION_DIR"/before.sql
 
 
-    $SCRIPTS_DIR/migration_generator_sql.bash $GPHOME_SOURCE $PGPORT $MIGRATION_DIR
+    $SCRIPTS_DIR/migration_generator_sql.bash $GPHOME_SOURCE $PGPORT $MIGRATION_DIR "$SCRIPTS_DIR"
     $SCRIPTS_DIR/migration_executor_sql.bash $GPHOME_SOURCE $PGPORT $MIGRATION_DIR/pre-initialize
 
     gpupgrade initialize \
@@ -164,7 +164,7 @@ drop_unfixable_objects() {
     export PSQLRC="$MIGRATION_DIR"/psqlrc
     printf '\! kill $PPID\n' > "$PSQLRC"
 
-    "$SCRIPTS_DIR"/migration_generator_sql.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"
+    "$SCRIPTS_DIR"/migration_generator_sql.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR" "$SCRIPTS_DIR"
     drop_unfixable_objects
     "$SCRIPTS_DIR"/migration_executor_sql.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/pre-initialize
 

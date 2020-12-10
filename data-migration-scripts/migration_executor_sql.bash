@@ -6,26 +6,26 @@
 function print_usage() {
 echo '
 Executes scripts addressing catalog inconsistencies between Greenplum versions.
-Before running this command, run migration_generator_sql.bash.
+Before running this command, run gpupgrade-migration-sql-generator.bash.
 This command should be run only during the downtime window.
 
 Usage: '$(basename $0)' <GPHOME> <PGPORT> <INPUT_DIR>
      <GPHOME>    : the path to the source Greenplum installation directory
      <PGPORT>    : the source Greenplum system port number
      <INPUT_DIR> : the directory containing the scripts to execute. This is the
-                   <OUTPUT_DIR> you specified earlier in migration_generator_sql.bash,
+                   <OUTPUT_DIR> you specified earlier in gpupgrade-migration-sql-generator.bash,
                    with a subdirectory appended as in the use cases below. The
                    subdirectories are pre-initialize, post-finalize, and post-revert.
 
 Use cases:
 - Before "gpupgrade initialize", drop and alter objects:
-migration_executor_sql.bash /path/to/gphome 5432 /path/to/output_dir/pre-initialize
+gpupgrade-migration-sql-executor.bash /path/to/gphome 5432 /path/to/output_dir/pre-initialize
 
 - Following "gpupgrade finalize", restore and recreate objects:
-migration_executor_sql.bash /path/to/gphome 5432 /path/to/output_dir/post-finalize
+gpupgrade-migration-sql-executor.bash /path/to/gphome 5432 /path/to/output_dir/post-finalize
 
 - Following "gpupgrade revert", restore objects:
-migration_executor_sql.bash /path/to/gphome 5432 /path/to/output_dir/post-revert
+gpupgrade-migration-sql-executor.bash /path/to/gphome 5432 /path/to/output_dir/post-revert
 
 Log files can be found in INPUT_DIR/data_migration.log'
 }
