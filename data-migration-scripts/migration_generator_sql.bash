@@ -116,8 +116,27 @@ main(){
     local dirs=(pre-initialize post-finalize post-revert stats)
     local databases=($(get_databases))
 
+    local current_timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    local user_input
     for dir in "${dirs[@]}"; do
-        execute_script_directory "$dir" "${databases[@]}"
+        if [ -d "${OUTPUT_DIR}/${dir}" ]; then
+            # if user already provided an input, don't ask again.
+            if [[ -z $user_input ]]; then
+                read -rp "Directories exists from a previous run, press 'Y' to archive them under ${OUTPUT_DIR}/archive and continue or 'N' to exit: " user_input
+            fi
+
+            if [[ "$user_input" == "Y" || "$user_input" == "y" ]]; then
+                mkdir -p "${OUTPUT_DIR}/archive"
+                mv "${OUTPUT_DIR}/${dir}" "${OUTPUT_DIR}/archive/${dir}_${current_timestamp}"
+            else
+                echo "You entered $user_input, exiting!"
+                exit 1
+            fi
+        fi
+    done
+
+    for dir in "${dirs[@]}"; do
+        execute_script_directory "${dir}" "${databases[@]}"
     done
 }
 
