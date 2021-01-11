@@ -138,10 +138,10 @@ func TestWriteSegmentArray(t *testing.T) {
 		}
 
 		test(t, config, []string{
-			"QD_PRIMARY_ARRAY=mdw~15433~/data/qddir_upgrade/seg-1~1~-1",
+			"QD_PRIMARY_ARRAY=mdw~mdw~15433~/data/qddir_upgrade/seg-1~1~-1",
 			"declare -a PRIMARY_ARRAY=(",
-			"\tsdw1~15434~/data/dbfast1_upgrade/seg1~2~0",
-			"\tsdw2~15434~/data/dbfast2_upgrade/seg2~3~1",
+			"\tsdw1~sdw1~15434~/data/dbfast1_upgrade/seg1~2~0",
+			"\tsdw2~sdw2~15434~/data/dbfast2_upgrade/seg2~3~1",
 			")",
 		})
 	})
