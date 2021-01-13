@@ -7,12 +7,16 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/blang/semver/v4"
+
 	"github.com/greenplum-db/gpupgrade/step"
 )
 
-func UpdateConfFiles(streams step.OutStreams, masterDataDir string, oldPort, newPort int) error {
-	if err := UpdateGpperfmonConf(streams, masterDataDir); err != nil {
-		return err
+func UpdateConfFiles(streams step.OutStreams, version semver.Version, masterDataDir string, oldPort, newPort int) error {
+	if version.Major < 7 {
+		if err := UpdateGpperfmonConf(streams, masterDataDir); err != nil {
+			return err
+		}
 	}
 
 	if err := UpdatePostgresqlConf(streams, masterDataDir, oldPort, newPort); err != nil {

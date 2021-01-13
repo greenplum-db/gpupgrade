@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/xerrors"
 
@@ -55,6 +56,7 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 
 	st.Run(idl.Substep_UPDATE_TARGET_CONF_FILES, func(streams step.OutStreams) error {
 		return UpdateConfFiles(streams,
+			semver.MustParse(s.Target.Version.SemVer.String()),
 			s.Target.MasterDataDir(),
 			s.TargetInitializeConfig.Master.Port,
 			s.Source.MasterPort(),
