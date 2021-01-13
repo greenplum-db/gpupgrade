@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/greenplum-db/gpupgrade/db/connURI"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/upgrade"
@@ -26,6 +27,7 @@ func TestConfig(t *testing.T) {
 		original := &Config{
 			source,
 			target,
+			&connURI.Conn{},
 			targetInitializeConfig,
 			12345,           // Port
 			54321,           // AgentPort

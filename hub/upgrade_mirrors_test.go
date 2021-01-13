@@ -16,7 +16,9 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/blang/semver/v4"
 
+	"github.com/greenplum-db/gpupgrade/db/connURI"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -321,6 +323,8 @@ func TestUpgradeMirrors(t *testing.T) {
 		},
 	}
 
+	conn := connURI.Connection(semver.MustParse("6.0.0"), semver.MustParse("7.0.0"))
+
 	t.Run("creates db connection with correct data source settings", func(t *testing.T) {
 		db, mock, err := sqlmock.New()
 		if err != nil {
@@ -341,7 +345,13 @@ func TestUpgradeMirrors(t *testing.T) {
 		expectMirrorsAndReturn(mock, "t")
 
 		utils.System.SqlOpen = func(driverName, dataSourceName string) (*sql.DB, error) {
-			expected := "postgresql://localhost:123/template1?gp_session_role=utility&search_path="
+			options := []connURI.Option{
+				connURI.ToTarget(),
+				connURI.Port(123),
+				connURI.UtilityMode(),
+			}
+
+			expected := conn.URI(options...)
 			if dataSourceName != expected {
 				t.Errorf("got: %q want: %q", dataSourceName, expected)
 			}
@@ -349,7 +359,7 @@ func TestUpgradeMirrors(t *testing.T) {
 			return db, nil
 		}
 
-		err = UpgradeMirrors("", 123, []greenplum.SegConfig{}, stub, false)
+		err = UpgradeMirrors("", conn, 123, []greenplum.SegConfig{}, stub, false)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -361,7 +371,7 @@ func TestUpgradeMirrors(t *testing.T) {
 			return nil, expected
 		}
 
-		err := UpgradeMirrors("", 123, []greenplum.SegConfig{}, stub, false)
+		err := UpgradeMirrors("", conn, 123, []greenplum.SegConfig{}, stub, false)
 		if !errors.Is(err, expected) {
 			t.Errorf("got: %#v want: %#v", err, expected)
 		}

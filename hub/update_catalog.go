@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/db/connURI"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
@@ -25,7 +26,7 @@ func (s *Server) UpdateCatalogAndClusterConfig(streams step.OutStreams) (err err
 		return xerrors.Errorf("failed to start target master: %w", err)
 	}
 
-	err = WithinDbConnection(s.Target.MasterPort(), func(conn *sql.DB) error {
+	err = WithinDbConnection(s.Connection, s.Target.MasterPort(), func(conn *sql.DB) error {
 		return s.UpdateGpSegmentConfiguration(conn)
 	})
 	if err != nil {
@@ -55,8 +56,15 @@ func (s *Server) UpdateCatalogAndClusterConfig(streams step.OutStreams) (err err
 	return nil
 }
 
-func WithinDbConnection(masterPort int, operation func(connection *sql.DB) error) (err error) {
-	connURI := fmt.Sprintf("postgresql://localhost:%d/template1?gp_session_role=utility&allow_system_table_mods=true&search_path=", masterPort)
+func WithinDbConnection(conn *connURI.Conn, masterPort int, operation func(connection *sql.DB) error) (err error) {
+	options := []connURI.Option{
+		connURI.ToTarget(),
+		connURI.Port(masterPort),
+		connURI.UtilityMode(),
+		connURI.AllowSystemTableMods(),
+	}
+
+	connURI := conn.URI(options...)
 	connection, err := sql.Open("pgx", connURI)
 	if err != nil {
 		return xerrors.Errorf("connecting to master on port %d in utility mode with connection URI '%s': %w", masterPort, connURI, err)
