@@ -15,11 +15,15 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/blang/semver/v4"
+
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 )
+
+var version = semver.MustParse("0.0.0")
 
 func Success() {}
 func Failure() { os.Exit(1) }
@@ -78,13 +82,13 @@ func TestRun(t *testing.T) {
 
 	// For our simplest tests, just call Run() with the desired options and fail
 	// if there's an error.
-	test := func(t *testing.T, cmd exectest.Command, opts ...upgrade.Option) {
+	test := func(t *testing.T, cmd exectest.Command, targetVersion semver.Version, opts ...upgrade.Option) {
 		t.Helper()
 
 		upgrade.SetExecCommand(cmd)
 		defer upgrade.ResetExecCommand()
 
-		err := upgrade.Run(pair, opts...)
+		err := upgrade.Run(pair, targetVersion, opts...)
 		if err != nil {
 			t.Errorf("Run() returned error %+v", err)
 		}
@@ -102,7 +106,7 @@ func TestRun(t *testing.T) {
 			}
 		})
 
-		test(t, cmd)
+		test(t, cmd, version)
 
 		if !called {
 			t.Errorf("pg_upgrade was not executed")
@@ -115,7 +119,7 @@ func TestRun(t *testing.T) {
 		stdout := new(bytes.Buffer)
 		stderr := new(bytes.Buffer)
 
-		test(t, cmd, upgrade.WithOutputStreams(stdout, stderr))
+		test(t, cmd, version, upgrade.WithOutputStreams(stdout, stderr))
 
 		actual := stdout.String()
 		if actual != "stdout" {
@@ -138,7 +142,7 @@ func TestRun(t *testing.T) {
 		wd := "/"
 		stdout := new(bytes.Buffer)
 
-		test(t, cmd,
+		test(t, cmd, version,
 			upgrade.WithOutputStreams(stdout, nil), upgrade.WithWorkDir(wd))
 
 		actual := stdout.String()
@@ -159,7 +163,7 @@ func TestRun(t *testing.T) {
 		cmd := exectest.NewCommand(EnvironmentMain)
 		stdout := new(bytes.Buffer)
 
-		test(t, cmd, upgrade.WithOutputStreams(stdout, nil))
+		test(t, cmd, version, upgrade.WithOutputStreams(stdout, nil))
 
 		scanner := bufio.NewScanner(stdout)
 		for scanner.Scan() {
@@ -187,7 +191,7 @@ func TestRun(t *testing.T) {
 		cmd := exectest.NewCommand(EnvironmentMain)
 		stdout := new(bytes.Buffer)
 
-		test(t, cmd, upgrade.WithOutputStreams(stdout, nil))
+		test(t, cmd, version, upgrade.WithOutputStreams(stdout, nil))
 		t.Logf("stdout was:\n%s", stdout)
 
 		// search for printTiming in the environment variables
@@ -216,14 +220,14 @@ func TestRun(t *testing.T) {
 		cmd := exectest.NewCommand(Failure)
 
 		// The test succeeds if upgrade.Run() doesn't return an error.
-		test(t, cmd, upgrade.WithExecCommand(exectest.NewCommand(Success)))
+		test(t, cmd, version, upgrade.WithExecCommand(exectest.NewCommand(Success)))
 	})
 
 	t.Run("bubbles up any errors", func(t *testing.T) {
 		upgrade.SetExecCommand(exectest.NewCommand(Failure))
 		defer upgrade.ResetExecCommand()
 
-		err := upgrade.Run(pair)
+		err := upgrade.Run(pair, version)
 
 		var exitErr *exec.ExitError
 		if !errors.As(err, &exitErr) {
@@ -236,7 +240,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("calls pg_upgrade with the correct arguments for", func(t *testing.T) {
-		argsTest := func(t *testing.T, opts ...upgrade.Option) {
+		argsTest := func(t *testing.T, targetVersion semver.Version, opts ...upgrade.Option) {
 			t.Helper()
 
 			options := upgrade.NewOptionList(opts)
@@ -253,8 +257,6 @@ func TestRun(t *testing.T) {
 
 				fs.String("old-bindir", "", "")
 				fs.String("new-bindir", "", "")
-				fs.Int("old-gp-dbid", -1, "")
-				fs.Int("new-gp-dbid", -1, "")
 				fs.String("old-datadir", "", "")
 				fs.String("new-datadir", "", "")
 				fs.Int("old-port", -1, "")
@@ -265,6 +267,10 @@ func TestRun(t *testing.T) {
 				fs.Bool("link", false, "")
 				fs.String("old-tablespaces-file", "", "")
 				fs.String("old-options", "", "")
+				if targetVersion.LT(semver.MustParse("7.0.0")) {
+					fs.Int("old-gp-dbid", -1, "")
+					fs.Int("new-gp-dbid", -1, "")
+				}
 
 				err := fs.Parse(args)
 				if err != nil {
@@ -274,8 +280,6 @@ func TestRun(t *testing.T) {
 				expected := map[string]interface{}{
 					"old-bindir":           pair.Source.BinDir,
 					"new-bindir":           pair.Target.BinDir,
-					"old-gp-dbid":          pair.Source.DBID,
-					"new-gp-dbid":          pair.Target.DBID,
 					"old-datadir":          pair.Source.DataDir,
 					"new-datadir":          pair.Target.DataDir,
 					"old-port":             pair.Source.Port,
@@ -286,6 +290,10 @@ func TestRun(t *testing.T) {
 					"link":                 options.UseLinkMode,
 					"old-tablespaces-file": options.TablespaceFilePath,
 					"old-options":          options.OldOptions,
+				}
+				if targetVersion.LT(semver.MustParse("7.0.0")) {
+					expected["old-gp-dbid"] = pair.Source.DBID
+					expected["new-gp-dbid"] = pair.Target.DBID
 				}
 
 				fs.VisitAll(func(f *flag.Flag) {
@@ -302,26 +310,63 @@ func TestRun(t *testing.T) {
 				}
 			})
 
-			test(t, cmd, opts...)
+			test(t, cmd, targetVersion, opts...)
 		}
 
 		cases := []struct {
-			name    string
-			options []upgrade.Option
+			name          string
+			targetVersion semver.Version
+			options       []upgrade.Option
 		}{
-			{"the master (default)", []upgrade.Option{}},
-			{"segments", []upgrade.Option{upgrade.WithSegmentMode()}},
-			{"--check mode on master", []upgrade.Option{upgrade.WithCheckOnly()}},
-			{"--check mode on segments", []upgrade.Option{upgrade.WithSegmentMode(), upgrade.WithCheckOnly()}},
-			{"--link mode on master", []upgrade.Option{upgrade.WithLinkMode()}},
-			{"--link mode on segments", []upgrade.Option{upgrade.WithSegmentMode(), upgrade.WithLinkMode()}},
-			{"--old-tablespaces-file flag on segments", []upgrade.Option{upgrade.WithTablespaceFile("tablespaceMappingFile.txt"), upgrade.WithSegmentMode()}},
-			{"--old-options on master", []upgrade.Option{upgrade.WithOldOptions("option value")}},
+			{
+				"the master (default)",
+				semver.MustParse("6.9.0"),
+				[]upgrade.Option{},
+			},
+			{
+				"the master for 7X (no dbids needed)",
+				semver.MustParse("7.0.0"),
+				[]upgrade.Option{},
+			},
+			{
+				"segments",
+				semver.MustParse("6.9.0"),
+				[]upgrade.Option{upgrade.WithSegmentMode()}},
+			{
+				"--check mode on master",
+				semver.MustParse("6.9.0"),
+				[]upgrade.Option{upgrade.WithCheckOnly()},
+			},
+			{
+				"--check mode on segments",
+				semver.MustParse("6.9.0"),
+				[]upgrade.Option{upgrade.WithSegmentMode(), upgrade.WithCheckOnly()},
+			},
+			{
+				"--link mode on master",
+				semver.MustParse("6.9.0"),
+				[]upgrade.Option{upgrade.WithLinkMode()},
+			},
+			{
+				"--link mode on segments",
+				semver.MustParse("6.9.0"),
+				[]upgrade.Option{upgrade.WithSegmentMode(), upgrade.WithLinkMode()},
+			},
+			{
+				"--old-tablespaces-file flag on segments",
+				semver.MustParse("6.9.0"),
+				[]upgrade.Option{upgrade.WithTablespaceFile("tablespaceMappingFile.txt"), upgrade.WithSegmentMode()},
+			},
+			{
+				"--old-options on master",
+				semver.MustParse("6.9.0"),
+				[]upgrade.Option{upgrade.WithOldOptions("option value")},
+			},
 		}
 
 		for _, c := range cases {
 			t.Run(c.name, func(t *testing.T) {
-				argsTest(t, c.options...)
+				argsTest(t, c.targetVersion, c.options...)
 			})
 		}
 	})

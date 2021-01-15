@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/blang/semver/v4"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 )
 
@@ -35,7 +36,7 @@ type SegmentPair struct {
 // Run executes pg_upgrade for the given pair of Segments. By default, a
 // standard master upgrade is performed; this can be changed by passing various
 // Options.
-func Run(p SegmentPair, options ...Option) error {
+func Run(p SegmentPair, targetVersion semver.Version, options ...Option) error {
 	opts := newOptionList(options)
 
 	mode := "dispatcher"
@@ -48,13 +49,17 @@ func Run(p SegmentPair, options ...Option) error {
 		"--retain", // always keep log files around
 		"--old-bindir", p.Source.BinDir,
 		"--new-bindir", p.Target.BinDir,
-		"--old-gp-dbid", strconv.Itoa(p.Source.DBID),
-		"--new-gp-dbid", strconv.Itoa(p.Target.DBID),
 		"--old-datadir", p.Source.DataDir,
 		"--new-datadir", p.Target.DataDir,
 		"--old-port", strconv.Itoa(p.Source.Port),
 		"--new-port", strconv.Itoa(p.Target.Port),
 		"--mode", mode,
+	}
+
+	// Below 7X, specify the dbid's for upgrading tablespaces.
+	if targetVersion.LT(semver.MustParse("7.0.0")) {
+		args = append(args, "--old-gp-dbid", strconv.Itoa(p.Source.DBID))
+		args = append(args, "--new-gp-dbid", strconv.Itoa(p.Target.DBID))
 	}
 
 	if opts.CheckOnly {

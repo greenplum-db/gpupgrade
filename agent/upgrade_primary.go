@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/blang/semver/v4"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
@@ -72,7 +73,7 @@ func performUpgrade(segment Segment, request *idl.UpgradePrimariesRequest) error
 		options = append(options, upgrade.WithLinkMode())
 	}
 
-	return upgrade.Run(segmentPair, options...)
+	return upgrade.Run(segmentPair, semver.MustParse(request.TargetVersion), options...)
 }
 
 func restoreBackup(request *idl.UpgradePrimariesRequest, segment Segment) error {

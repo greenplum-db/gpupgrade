@@ -85,11 +85,12 @@ func TestUpgradePrimary(t *testing.T) {
 		defer ResetCommands()
 
 		request := &idl.UpgradePrimariesRequest{
-			SourceBinDir: "/old/bin",
-			TargetBinDir: "/new/bin",
-			DataDirPairs: pairs,
-			CheckOnly:    true,
-			UseLinkMode:  false,
+			SourceBinDir:  "/old/bin",
+			TargetBinDir:  "/new/bin",
+			DataDirPairs:  pairs,
+			CheckOnly:     true,
+			UseLinkMode:   false,
+			TargetVersion: "6.9.0",
 		}
 		err := agent.UpgradePrimaries(tempDir, request)
 		if err == nil {
@@ -113,11 +114,12 @@ func TestUpgradePrimary(t *testing.T) {
 		defer ResetCommands()
 
 		request := &idl.UpgradePrimariesRequest{
-			SourceBinDir: "/old/bin",
-			TargetBinDir: "/new/bin",
-			DataDirPairs: pairs,
-			CheckOnly:    false,
-			UseLinkMode:  false}
+			SourceBinDir:  "/old/bin",
+			TargetBinDir:  "/new/bin",
+			DataDirPairs:  pairs,
+			CheckOnly:     false,
+			UseLinkMode:   false,
+			TargetVersion: "6.9.0"}
 		err := agent.UpgradePrimaries(tempDir, request)
 		if err == nil {
 			t.Fatal("UpgradeSegments() returned no error")
@@ -298,5 +300,6 @@ func buildRequest(pairs []*idl.DataDirPair) *idl.UpgradePrimariesRequest {
 		CheckOnly:       false,
 		UseLinkMode:     false,
 		MasterBackupDir: "/some/master/backup/dir",
+		TargetVersion:   "6.9.0",
 	}
 }
