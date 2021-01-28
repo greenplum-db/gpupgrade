@@ -20,6 +20,7 @@ import (
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/blang/semver/v4"
+	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
@@ -82,24 +83,80 @@ func TestCreateInitialInitsystemConfig(t *testing.T) {
 }
 
 func TestGetCheckpointSegmentsAndEncoding(t *testing.T) {
-	t.Run("successfully get the GUC values", func(t *testing.T) {
-		dbConn, sqlMock := testhelper.CreateAndConnectMockDB(1)
+	type mockQuery struct {
+		sql      string
+		result   string
+		expected string
+	}
 
-		checkpointRow := sqlmock.NewRows([]string{"string"}).AddRow(driver.Value("8"))
-		encodingRow := sqlmock.NewRows([]string{"string"}).AddRow(driver.Value("UNICODE"))
-		sqlMock.ExpectQuery("SELECT .*checkpoint.*").WillReturnRows(checkpointRow)
-		sqlMock.ExpectQuery("SELECT .*server.*").WillReturnRows(encodingRow)
+	// the mock query order must match the query order in GetCheckpointSegmentsAndEncoding
+	cases := []struct {
+		version dbconn.GPDBVersion
+		query   []mockQuery
+	}{
+		{
+			dbconn.NewVersion("5.0.0"),
+			[]mockQuery{
+				{
+					"SELECT .*server.*",
+					"UNICODE",
+					"ENCODING=UNICODE",
+				},
+				{
+					"SELECT .*checkpoint.*",
+					"8",
+					"CHECK_POINT_SEGMENTS=8",
+				},
+			},
+		},
+		{
+			dbconn.NewVersion("6.0.0"),
+			[]mockQuery{
+				{
+					"SELECT .*server.*",
+					"UNICODE",
+					"ENCODING=UNICODE",
+				},
+				{
+					"SELECT .*checkpoint.*",
+					"8",
+					"CHECK_POINT_SEGMENTS=8",
+				},
+			},
+		},
+		{
+			dbconn.NewVersion("7.0.0"),
+			[]mockQuery{
+				{
+					"SELECT .*server.*",
+					"UNICODE",
+					"ENCODING=UNICODE",
+				},
+			},
+		},
+	}
 
-		actualConfig, err := GetCheckpointSegmentsAndEncoding([]string{}, dbConn)
-		if err != nil {
-			t.Fatalf("got %#v, want nil", err)
-		}
+	for _, c := range cases {
+		t.Run(fmt.Sprintf("successfully get the GUC values for %s", c.version.VersionString), func(t *testing.T) {
+			dbConn, sqlMock := testhelper.CreateAndConnectMockDB(1)
 
-		expectedConfig := []string{"CHECK_POINT_SEGMENTS=8", "ENCODING=UNICODE"}
-		if !reflect.DeepEqual(actualConfig, expectedConfig) {
-			t.Errorf("got %v, want %v", actualConfig, expectedConfig)
-		}
-	})
+			var expected []string
+			for _, mock := range c.query {
+				mockRow := sqlmock.NewRows([]string{"string"}).AddRow(driver.Value(mock.result))
+				sqlMock.ExpectQuery(mock.sql).WillReturnRows(mockRow)
+				expected = append(expected, mock.expected)
+			}
+
+			actual, err := GetCheckpointSegmentsAndEncoding([]string{}, c.version, dbConn)
+			if err != nil {
+				t.Fatalf("got %#v, want nil", err)
+			}
+
+			if !reflect.DeepEqual(actual, expected) {
+				t.Errorf("got %v, want %v", actual, expected)
+			}
+		})
+	}
 }
 
 func TestWriteSegmentArray(t *testing.T) {
