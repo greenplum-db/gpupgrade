@@ -1,4 +1,4 @@
-//  Copyright (c) 2017-2020 VMware, Inc. or its affiliates
+//  Copyright (c) 2017-2021 VMware, Inc. or its affiliates
 //  SPDX-License-Identifier: Apache-2.0
 
 package commands
@@ -10,10 +10,10 @@ import (
 	"github.com/greenplum-db/gpupgrade/testutils"
 )
 
-const GPUPGRADE_CONFIG="../../gpupgrade_config"
+const GPUPGRADE_CONFIG = "../../gpupgrade_config"
 
 func TestInitializeConfirmationText(t *testing.T) {
-	t.Run("contains all names defined in the example config file", func(t *testing.T){
+	t.Run("contains all names defined in the example config file", func(t *testing.T) {
 		config := testutils.MustReadFile(t, GPUPGRADE_CONFIG)
 
 		names, err := parseParams(strings.NewReader(config))
@@ -24,7 +24,7 @@ func TestInitializeConfirmationText(t *testing.T) {
 		// Since the confirmation text is free-form, there's not much parsing we can do
 		// other than make sure "name:" appears in the file somewhere.
 		for name := range names {
-			if !strings.Contains(initializeConfirmationText, name+ ":") {
+			if !strings.Contains(initializeConfirmationText, name+":") {
 				t.Errorf("expected %q to contain %q", initializeConfirmationText, name)
 			}
 		}
