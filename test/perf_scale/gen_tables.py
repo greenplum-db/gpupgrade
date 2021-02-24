@@ -38,7 +38,11 @@ def genCreateStmt(tablePrefix, tableCount, numOfPartitions, colCount, dataType, 
     ddls = []
     tableStrings, insertIntos, indexStmt = createTable(tablePrefix, tableCount, indexes)
     colString = genColumns(colCount, dataType)
-    t = " DISTRIBUTED RANDOMLY "
+    t = ""
+    if tableType == "heap":
+        t = "DISTRIBUTED RANDOMLY"
+    if tableType == "partitionedHeap":
+        t = "{0} PARTITION BY RANGE(col1) (START(0) END({1}) EVERY(1))".format(t, numOfPartitions)
     if tableType == "partitionedAO":
         t = "WITH (APPENDONLY=true) {0} PARTITION BY RANGE(col1) (START(0) END({1}) EVERY(1))".format(t, numOfPartitions)
     elif tableType == "partitionedAOCO":
@@ -74,17 +78,25 @@ def genCreateStmt(tablePrefix, tableCount, numOfPartitions, colCount, dataType, 
 
 
 if __name__ == "__main__":
+    tableTypesToPrefix = {
+        "heap": "heap",
+        "partitionedHeap": "pheap",
+        "partitionedAO": "pao",
+        "partitionedAOCO": "paoco",
+    }
+
     parser = argparse.ArgumentParser(description='Generate Tables Schema')
+    parser.add_argument('-tableType', action="store", dest="tableType", type=str, choices=tableTypesToPrefix.keys(), default='partitionedAOCO', required=False)
     parser.add_argument('-numOfTables', action="store", dest="numOfTables", type=int, required=True)
+    parser.add_argument('-numOfPartitions', action="store", dest="numOfPartitions", type=int)
     parser.add_argument('-numOfCols', action="store", dest="numOfCols", type=int, required=True)
     parser.add_argument('-dataType', action="store", dest="dataType", type=str, required=True)
-    parser.add_argument('-numOfPartitions', action="store", dest="numOfPartitions", type=int)
+    parser.add_argument('-indexes', action="store_true", dest="indexes", default=False, required=False)
     parser.add_argument('-outputFile', action="store", dest="outputFile", type=str)
 
     args = parser.parse_args()
    
     with open(args.outputFile, "w") as fh:
         fh.truncate(0)
-    #genCreateStmt("heap", args.numOfTables, args.numOfPartitions, args.numOfCols, args.dataType, "", True, args.outputFile) 
-    genCreateStmt("paoco", args.numOfTables, args.numOfPartitions, args.numOfCols, args.dataType, "partitionedAOCO", False, args.outputFile) 
+    genCreateStmt(tableTypesToPrefix[args.tableType], args.numOfTables, args.numOfPartitions, args.numOfCols, args.dataType, args.tableType, args.indexes, args.outputFile) 
 
