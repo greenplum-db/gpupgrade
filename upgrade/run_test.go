@@ -320,7 +320,7 @@ func TestRun(t *testing.T) {
 		}{
 			{
 				"the master (default)",
-				semver.MustParse("6.9.0"),
+				semver.MustParse("6.15.0"),
 				[]upgrade.Option{},
 			},
 			{
@@ -330,36 +330,36 @@ func TestRun(t *testing.T) {
 			},
 			{
 				"segments",
-				semver.MustParse("6.9.0"),
+				semver.MustParse("6.15.0"),
 				[]upgrade.Option{upgrade.WithSegmentMode()}},
 			{
 				"--check mode on master",
-				semver.MustParse("6.9.0"),
+				semver.MustParse("6.15.0"),
 				[]upgrade.Option{upgrade.WithCheckOnly()},
 			},
 			{
 				"--check mode on segments",
-				semver.MustParse("6.9.0"),
+				semver.MustParse("6.15.0"),
 				[]upgrade.Option{upgrade.WithSegmentMode(), upgrade.WithCheckOnly()},
 			},
 			{
 				"--link mode on master",
-				semver.MustParse("6.9.0"),
+				semver.MustParse("6.15.0"),
 				[]upgrade.Option{upgrade.WithLinkMode()},
 			},
 			{
 				"--link mode on segments",
-				semver.MustParse("6.9.0"),
+				semver.MustParse("6.15.0"),
 				[]upgrade.Option{upgrade.WithSegmentMode(), upgrade.WithLinkMode()},
 			},
 			{
 				"--old-tablespaces-file flag on segments",
-				semver.MustParse("6.9.0"),
+				semver.MustParse("6.15.0"),
 				[]upgrade.Option{upgrade.WithTablespaceFile("tablespaceMappingFile.txt"), upgrade.WithSegmentMode()},
 			},
 			{
 				"--old-options on master",
-				semver.MustParse("6.9.0"),
+				semver.MustParse("6.15.0"),
 				[]upgrade.Option{upgrade.WithOldOptions("option value")},
 			},
 		}

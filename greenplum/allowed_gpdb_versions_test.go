@@ -23,11 +23,11 @@ func TestAllowedVersions(t *testing.T) {
 		{
 			"allowed source versions",
 			[]string{
-				"5.28.0",
-				"5.28.1",
+				"5.28.6",
+				"5.28.7",
 				"5.50.0",
-				"6.9.0",
-				"6.9.1",
+				"6.15.0",
+				"6.15.1",
 				"6.50.1",
 			},
 			sourceVersionAllowed,
@@ -38,9 +38,10 @@ func TestAllowedVersions(t *testing.T) {
 			[]string{
 				"4.3.0",
 				"5.0.0",
-				"5.27.0",
+				"5.28.0",
+				"5.28.5",
 				"6.0.0",
-				"6.8.9",
+				"6.14.9",
 				"7.0.0",
 			},
 			sourceVersionAllowed,
@@ -49,8 +50,8 @@ func TestAllowedVersions(t *testing.T) {
 		}, {
 			"allowed target versions",
 			[]string{
-				"6.9.0",
-				"6.9.1",
+				"6.15.0",
+				"6.15.1",
 				"6.50.1",
 			},
 			targetVersionAllowed,
@@ -65,7 +66,7 @@ func TestAllowedVersions(t *testing.T) {
 				"5.28.0",
 				"5.50.0",
 				"6.0.0",
-				"6.8.0",
+				"6.14.0",
 				"7.0.0",
 			},
 			targetVersionAllowed,
@@ -91,7 +92,7 @@ func TestAllowedVersions(t *testing.T) {
 func TestValidateVersions(t *testing.T) {
 	t.Run("passes when given supported versions", func(t *testing.T) {
 		gpdbVersion = func(str string) (semver.Version, error) {
-			return semver.MustParse("6.9.0"), nil
+			return semver.MustParse("6.15.0"), nil
 		}
 		defer func() {
 			gpdbVersion = LocalVersion
@@ -126,16 +127,16 @@ func TestValidateVersionsErrorCases(t *testing.T) {
 			func(string) (semver.Version, error) {
 				return semver.MustParse("6.8.0"), nil
 			},
-			"source cluster version 6.8.0 is not supported.  The minimum required version is 6.9.0. We recommend the latest version.",
-			"target cluster version 6.8.0 is not supported.  The minimum required version is 6.9.0. We recommend the latest version.",
+			"source cluster version 6.8.0 is not supported.  The minimum required version is 6.15.0. We recommend the latest version.",
+			"target cluster version 6.8.0 is not supported.  The minimum required version is 6.15.0. We recommend the latest version.",
 		},
 		{
 			"fails when sourceVersion and targetVersion have unsupported major versions",
 			func(string) (semver.Version, error) {
 				return semver.MustParse("0.0.0"), nil
 			},
-			"source cluster version 0.0.0 is not supported.  The minimum required version is 5.28.0. We recommend the latest version.",
-			"target cluster version 0.0.0 is not supported.  The minimum required version is 6.9.0. We recommend the latest version.",
+			"source cluster version 0.0.0 is not supported.  The minimum required version is 5.28.6. We recommend the latest version.",
+			"target cluster version 0.0.0 is not supported.  The minimum required version is 6.15.0. We recommend the latest version.",
 		},
 	}
 

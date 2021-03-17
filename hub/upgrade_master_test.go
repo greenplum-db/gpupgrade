@@ -169,7 +169,7 @@ func TestUpgradeMaster(t *testing.T) {
 		{ContentID: -1, Port: 5433, DataDir: "/data/new", DbID: 2, Role: "p"},
 	})
 	target.GPHome = "/usr/local/target"
-	target.Version = dbconn.NewVersion("6.9.0")
+	target.Version = dbconn.NewVersion("6.15.0")
 
 	// We need a real temporary directory to change to. Replace MkdirAll() so
 	// that we can make sure the directory is the correct one.
