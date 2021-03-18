@@ -2,8 +2,8 @@
 
 gpupgrade runs [pg_upgrade](https://www.postgresql.org/docs/current/static/pgupgrade.html)
 across all segments to upgrade a [Greenplum cluster](https://github.com/greenplum-db/gpdb)
-across major versions. For further details read the [Greenplum Database Upgrade blog post](https://greenplum.org/greenplum-database-upgrade/). Since it's still being actively developed it should not 
-be used in production at this time. We warmly welcome any feedback and 
+across major versions. For further details read the [Greenplum Database Upgrade blog post](https://greenplum.org/greenplum-database-upgrade/). 
+We warmly welcome any feedback and
 [contributions](https://github.com/greenplum-db/gpupgrade/blob/master/CONTRIBUTING.md).
 
 **Purpose:**
