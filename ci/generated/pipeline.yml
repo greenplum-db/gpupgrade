@@ -1923,7 +1923,7 @@ jobs:
           type: docker-image
           source:
             repository: golang
-            tag: '1.15'
+            tag: '1.16'
         inputs:
           - name: gpupgrade_src
           - name: rpm_oss

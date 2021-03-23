@@ -5,8 +5,8 @@
 
 load helpers
 
-@test "gpupupgrade is compiled with golang version 1.15.X" {
-    local EXPECTED="gpupgrade: go1.15."
+@test "gpupupgrade is compiled with golang version 1.16.X" {
+    local EXPECTED="gpupgrade: go1.16."
     run go version gpupgrade
     [ "$status" -eq 0 ]
     [[ "$output" =~ $EXPECTED ]] || fail "expected: $EXPECTED got: $output"
