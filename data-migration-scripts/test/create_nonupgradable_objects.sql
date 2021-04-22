@@ -149,3 +149,8 @@ INSERT INTO table_with_tsquery_datatype_columns
     VALUES  ('b & c'::tsquery, 'b & c'::tsquery, 'b & c'::tsquery, 1),
             ('e & f'::tsquery, 'e & f'::tsquery, 'e & f'::tsquery, 2),
             ('x & y'::tsquery, 'x & y'::tsquery, 'x & y'::tsquery, 3);
+
+-- create indexes on tables in non public schema
+CREATE SCHEMA gpupgrade;
+CREATE TABLE gpupgrade.p1 (a int, b int) PARTITION BY RANGE(b) (START(1) EVERY(3) EVERY(1));
+CREATE INDEX p1idx on gpupgrade.p1(b);
