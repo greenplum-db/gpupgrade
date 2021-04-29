@@ -128,6 +128,15 @@ resources:
       bucket: gpdb5-pipeline-dynamic-terraform
       bucket_path: clusters-google/
 
+- name: terraform.d
+  source:
+    access_key_id: ((bucket-access-key-id))
+    bucket: ccp-terraform-provider-plugins
+    region_name: ((aws-region))
+    secret_access_key: ((bucket-secret-access-key))
+    versioned_file: plugin-cache.tgz
+  type: s3
+
 - name: gpdb5_icw_planner_centos6_dump
   type: gcs
   source:
@@ -147,6 +156,7 @@ anchors:
     action: create
     delete_on_failure: true
     generate_random_name: true
+    plugin_dir: ../../terraform.d/plugin-cache/linux_amd64
     terraform_source: ccp_src/google/
 
   - &ccp_gen_cluster_default_params
@@ -161,6 +171,7 @@ anchors:
     put: terraform
     params:
       action: destroy
+      plugin_dir: ../../terraform.d/plugin-cache/linux_amd64
       env_name_file: terraform/name
       terraform_source: ccp_src/google/
       vars:
@@ -342,6 +353,9 @@ jobs:
           trigger: true
         {{- end }}
         - get: ccp_src
+        - get: terraform.d
+          params:
+            unpack: true
         {{- if .RetailDemo }}
         - get: retail_demo_src
         {{- else }}
@@ -491,6 +505,9 @@ jobs:
           trigger: true
         {{- end }}
         - get: ccp_src
+        - get: terraform.d
+          params:
+            unpack: true
         - get: bats
     - put: terraform
       params:
