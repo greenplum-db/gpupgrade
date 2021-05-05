@@ -19,6 +19,7 @@ setup() {
 
     backup_source_cluster "$STATE_DIR"/backup
 
+    TEST_SCHEMA=testschema # must match what is used in create_nonupgradable_objects.sql
     TEST_DBNAME=testdb
     DEFAULT_DBNAME=postgres
     GPHDFS_USER=gphdfs_user
@@ -39,18 +40,6 @@ teardown() {
     gpupgrade kill-services
 
     run_teardowns
-}
-
-drop_unfixable_objects() {
-    # the migration script should not remove primary / unique key constraints on partitioned tables, so
-    # remove them manually by dropping the table as they can't be dropped.
-    $GPHOME_SOURCE/bin/psql -d $TEST_DBNAME -p $PGPORT -c "DROP TABLE table_with_unique_constraint_p;"
-    $GPHOME_SOURCE/bin/psql -d $TEST_DBNAME -p $PGPORT -c "DROP TABLE table_with_primary_constraint_p;"
-    $GPHOME_SOURCE/bin/psql -d $TEST_DBNAME -p $PGPORT -c "DROP TABLE partition_table_partitioned_by_name_type;"
-    $GPHOME_SOURCE/bin/psql -d $TEST_DBNAME -p $PGPORT -c "DROP TABLE table_distributed_by_name_type;"
-    $GPHOME_SOURCE/bin/psql -d $TEST_DBNAME -p $PGPORT -c "DROP VIEW v2_on_t2_with_name;"
-    $GPHOME_SOURCE/bin/psql -d $TEST_DBNAME -p $PGPORT -c "DROP TABLE t2_with_name;"
-    $GPHOME_SOURCE/bin/psql -d $TEST_DBNAME -p $PGPORT -c "DROP TABLE multilevel_part_with_partition_col_name_datatype;"
 }
 
 @test "migration scripts generate sql to modify non-upgradeable objects and fix pg_upgrade check errors" {
@@ -77,7 +66,7 @@ drop_unfixable_objects() {
 
     "$SCRIPTS_DIR"/migration_generator_sql.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR" "$SCRIPTS_DIR"
 
-    drop_unfixable_objects
+    $PSQL -d $TEST_DBNAME -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
 
     root_child_indexes_before=$(get_indexes "$GPHOME_SOURCE")
     tsquery_datatype_objects_before=$(get_tsquery_datatypes "$GPHOME_SOURCE")
@@ -110,16 +99,16 @@ drop_unfixable_objects() {
     $PSQL -c "CREATE DATABASE $TEST_DBNAME;" -d $DEFAULT_DBNAME
     $PSQL -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql -d $TEST_DBNAME
 
-    drop_unfixable_objects # don't test what we won't fix
+    $PSQL -d $TEST_DBNAME -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
 
     # Ignore the test tables that break the diff for now.
     # XXX We don't properly handle index constraints after revert, yet.
     # XXX We don't properly handle name type columns after revert, yet.
-    EXCLUSIONS="-T table_with_primary_constraint "
-    EXCLUSIONS+="-T table_with_unique_constraint "
-    EXCLUSIONS+="-T pt_with_index "
-    EXCLUSIONS+="-T sales "
-    EXCLUSIONS+="-T table_with_name_as_second_column "
+    EXCLUSIONS=" -T ${TEST_SCHEMA}.table_with_primary_constraint "
+    EXCLUSIONS+="-T ${TEST_SCHEMA}.table_with_unique_constraint "
+    EXCLUSIONS+="-T ${TEST_SCHEMA}.pt_with_index "
+    EXCLUSIONS+="-T ${TEST_SCHEMA}.sales "
+    EXCLUSIONS+="-T ${TEST_SCHEMA}.table_with_name_as_second_column "
 
     MIGRATION_DIR=`mktemp -d /tmp/migration.XXXXXX`
     register_teardown rm -r "$MIGRATION_DIR"
@@ -165,7 +154,7 @@ drop_unfixable_objects() {
     printf '\! kill $PPID\n' > "$PSQLRC"
 
     "$SCRIPTS_DIR"/migration_generator_sql.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR" "$SCRIPTS_DIR"
-    drop_unfixable_objects
+    $PSQL -d $TEST_DBNAME -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
     "$SCRIPTS_DIR"/migration_executor_sql.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/pre-initialize
 
     gpupgrade initialize \

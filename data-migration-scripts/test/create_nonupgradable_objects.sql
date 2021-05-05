@@ -1,6 +1,12 @@
 -- Copyright (c) 2017-2021 VMware, Inc. or its affiliates
 -- SPDX-License-Identifier: Apache-2.0
 
+-- Ensure data migration scripts fully qualify objects by creating the
+-- non-upgradable objects in a custom schema.
+DROP SCHEMA IF EXISTS testschema CASCADE;
+CREATE SCHEMA testschema;
+SET search_path to testschema;
+
 DROP TABLE IF EXISTS regular CASCADE;
 CREATE TABLE regular (a int unique);
 
@@ -150,7 +156,5 @@ INSERT INTO table_with_tsquery_datatype_columns
             ('e & f'::tsquery, 'e & f'::tsquery, 'e & f'::tsquery, 2),
             ('x & y'::tsquery, 'x & y'::tsquery, 'x & y'::tsquery, 3);
 
--- create indexes on tables in non public schema
-CREATE SCHEMA gpupgrade;
-CREATE TABLE gpupgrade.p1 (a int, b int) PARTITION BY RANGE(b) (START(1) EVERY(3) EVERY(1));
-CREATE INDEX p1idx on gpupgrade.p1(b);
+
+RESET search_path;
