@@ -180,6 +180,21 @@ outputContains() {
     done
 }
 
+@test "initialize skips disk space check when --disk-free-ratio is 0" {
+    gpupgrade kill-services
+
+    run gpupgrade initialize \
+        --disk-free-ratio=0 \
+        --source-gphome="$GPHOME_SOURCE" \
+        --target-gphome="$GPHOME_TARGET" \
+        --source-master-port="${PGPORT}" \
+        --stop-before-cluster-creation \
+        --automatic \
+        --verbose 3>&-
+
+    [[ $output != *'CHECK_DISK_SPACE'* ]] || fail "Expected disk space check to have been skipped. $output"
+}
+
 wait_for_port_change() {
     local port=$1
     local ret=$2
