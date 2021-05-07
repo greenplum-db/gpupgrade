@@ -195,6 +195,24 @@ outputContains() {
     [[ $output != *'CHECK_DISK_SPACE'* ]] || fail "Expected disk space check to have been skipped. $output"
 }
 
+@test "fails when temp-port-range overlaps with source cluster ports" {
+    gpupgrade kill-services
+    rm -r "$GPUPGRADE_HOME"
+
+    run gpupgrade initialize \
+        --disk-free-ratio 0 \
+        --source-gphome "$GPHOME_SOURCE" \
+        --target-gphome "$GPHOME_TARGET" \
+        --source-master-port "${PGPORT}" \
+        --temp-port-range "${PGPORT}-$(($PGPORT + 20))" \
+        --automatic \
+        --verbose 3>&-
+
+    [ "$status" -eq 1 ] || fail
+    echo $output
+    [[ $output = *"temp_port_range contains port ${PGPORT} which overlaps with the source cluster ports. Specify a non-overlapping temp_port_range."* ]] || fail
+}
+
 wait_for_port_change() {
     local port=$1
     local ret=$2

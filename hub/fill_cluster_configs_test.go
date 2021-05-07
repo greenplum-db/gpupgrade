@@ -4,6 +4,7 @@
 package hub
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 
@@ -238,6 +239,125 @@ func TestAssignDataDirsAndPorts(t *testing.T) {
 			_, err := AssignDatadirsAndPorts(c.cluster, c.ports, 0)
 			if err == nil {
 				t.Errorf("AssignDatadirsAndPorts(<cluster>, %v) returned nil, want error", c.ports)
+			}
+		})
+	}
+}
+
+func TestEnsureTempPortRangeDoesNotOverlapWithSourceClusterPorts(t *testing.T) {
+	source := MustCreateCluster(t, []greenplum.SegConfig{
+		{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: "p", Port: 15432},
+		{ContentID: -1, DbID: 8, Hostname: "smdw", DataDir: "/data/qddir/seg-1", Role: "m", Port: 16432},
+		{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg0", Role: "p", Port: 25432},
+		{ContentID: 0, DbID: 5, Hostname: "sdw2", DataDir: "/data/dbfast_mirror1/seg0", Role: "m", Port: 25435},
+	})
+
+	target := InitializeConfig{
+		Master:  greenplum.SegConfig{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: "p", Port: 6000},
+		Standby: greenplum.SegConfig{ContentID: -1, DbID: 8, Hostname: "smdw", DataDir: "/data/qddir/seg-1", Role: "m", Port: 6001},
+		Primaries: []greenplum.SegConfig{
+			{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg0", Role: "p", Port: 6002},
+		},
+		Mirrors: []greenplum.SegConfig{
+			{ContentID: 0, DbID: 5, Hostname: "sdw2", DataDir: "/data/dbfast_mirror1/seg0", Role: "m", Port: 6005},
+		}}
+
+	t.Run("ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts succeeds", func(t *testing.T) {
+		err := ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(source, target)
+		if err != nil {
+			t.Errorf("expected error %#v got nil", err)
+		}
+	})
+
+	errCases := []struct {
+		name            string
+		source          *greenplum.Cluster
+		target          InitializeConfig
+		conflictingPort int
+	}{{
+		name: "errors when source master port overlaps with temp target cluster ports",
+		source: MustCreateCluster(t, []greenplum.SegConfig{
+			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: "p", Port: 15432},
+			{ContentID: -1, DbID: 8, Hostname: "smdw", DataDir: "/data/qddir/seg-1", Role: "m", Port: 16432},
+			{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg0", Role: "p", Port: 25432},
+			{ContentID: 0, DbID: 5, Hostname: "sdw2", DataDir: "/data/dbfast_mirror1/seg0", Role: "m", Port: 25435},
+		}),
+		target: InitializeConfig{
+			Master:  greenplum.SegConfig{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: "p", Port: 15432},
+			Standby: greenplum.SegConfig{ContentID: -1, DbID: 8, Hostname: "smdw", DataDir: "/data/qddir/seg-1", Role: "m", Port: 6001},
+			Primaries: []greenplum.SegConfig{
+				{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg0", Role: "p", Port: 6002},
+			},
+			Mirrors: []greenplum.SegConfig{
+				{ContentID: 0, DbID: 5, Hostname: "sdw2", DataDir: "/data/dbfast_mirror1/seg0", Role: "m", Port: 6005},
+			}},
+		conflictingPort: 15432,
+	}, {
+		name: "errors when source standby port overlaps with temp target cluster ports",
+		source: MustCreateCluster(t, []greenplum.SegConfig{
+			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: "p", Port: 15432},
+			{ContentID: -1, DbID: 8, Hostname: "smdw", DataDir: "/data/qddir/seg-1", Role: "m", Port: 16432},
+			{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg0", Role: "p", Port: 25432},
+			{ContentID: 0, DbID: 5, Hostname: "sdw2", DataDir: "/data/dbfast_mirror1/seg0", Role: "m", Port: 25435},
+		}),
+		target: InitializeConfig{
+			Master:  greenplum.SegConfig{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: "p", Port: 6000},
+			Standby: greenplum.SegConfig{ContentID: -1, DbID: 8, Hostname: "smdw", DataDir: "/data/qddir/seg-1", Role: "m", Port: 16432},
+			Primaries: []greenplum.SegConfig{
+				{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg0", Role: "p", Port: 6002},
+			},
+			Mirrors: []greenplum.SegConfig{
+				{ContentID: 0, DbID: 5, Hostname: "sdw2", DataDir: "/data/dbfast_mirror1/seg0", Role: "m", Port: 6005},
+			}},
+		conflictingPort: 16432,
+	}, {
+		name: "errors when source primary port overlaps with temp target cluster ports",
+		source: MustCreateCluster(t, []greenplum.SegConfig{
+			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: "p", Port: 15432},
+			{ContentID: -1, DbID: 8, Hostname: "smdw", DataDir: "/data/qddir/seg-1", Role: "m", Port: 16432},
+			{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg0", Role: "p", Port: 25432},
+			{ContentID: 0, DbID: 5, Hostname: "sdw2", DataDir: "/data/dbfast_mirror1/seg0", Role: "m", Port: 25435},
+		}),
+		target: InitializeConfig{
+			Master:  greenplum.SegConfig{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: "p", Port: 6000},
+			Standby: greenplum.SegConfig{ContentID: -1, DbID: 8, Hostname: "smdw", DataDir: "/data/qddir/seg-1", Role: "m", Port: 6001},
+			Primaries: []greenplum.SegConfig{
+				{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg0", Role: "p", Port: 25432},
+			},
+			Mirrors: []greenplum.SegConfig{
+				{ContentID: 0, DbID: 5, Hostname: "sdw2", DataDir: "/data/dbfast_mirror1/seg0", Role: "m", Port: 6005},
+			}},
+		conflictingPort: 25432,
+	}, {
+		name: "errors when source mirror port overlaps with temp target cluster ports",
+		source: MustCreateCluster(t, []greenplum.SegConfig{
+			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: "p", Port: 15432},
+			{ContentID: -1, DbID: 8, Hostname: "smdw", DataDir: "/data/qddir/seg-1", Role: "m", Port: 16432},
+			{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg0", Role: "p", Port: 25432},
+			{ContentID: 0, DbID: 5, Hostname: "sdw2", DataDir: "/data/dbfast_mirror1/seg0", Role: "m", Port: 25435},
+		}),
+		target: InitializeConfig{
+			Master:  greenplum.SegConfig{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: "p", Port: 6000},
+			Standby: greenplum.SegConfig{ContentID: -1, DbID: 8, Hostname: "smdw", DataDir: "/data/qddir/seg-1", Role: "m", Port: 6001},
+			Primaries: []greenplum.SegConfig{
+				{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg0", Role: "p", Port: 6002},
+			},
+			Mirrors: []greenplum.SegConfig{
+				{ContentID: 0, DbID: 5, Hostname: "sdw2", DataDir: "/data/dbfast_mirror1/seg0", Role: "m", Port: 25435},
+			}},
+		conflictingPort: 25435,
+	}}
+
+	for _, c := range errCases {
+		t.Run(c.name, func(t *testing.T) {
+			err := ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(c.source, c.target)
+			var invalidPortErr *InvalidTempPortRangeError
+			if !errors.As(err, &invalidPortErr) {
+				t.Fatalf("got %T, want %T", err, invalidPortErr)
+			}
+
+			if invalidPortErr.conflictingPort != c.conflictingPort {
+				t.Errorf("got conflicting port %d, want %d", invalidPortErr.conflictingPort, c.conflictingPort)
 			}
 		})
 	}

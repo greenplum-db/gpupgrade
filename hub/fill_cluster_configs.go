@@ -5,6 +5,7 @@ package hub
 
 import (
 	"database/sql"
+	"fmt"
 	"path/filepath"
 	"sort"
 
@@ -52,6 +53,10 @@ func FillConfiguration(config *Config, conn *sql.DB, _ step.OutStreams, request 
 
 	config.TargetInitializeConfig, err = AssignDatadirsAndPorts(config.Source, ports, config.UpgradeID)
 	if err != nil {
+		return err
+	}
+
+	if err := ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(config.Source, config.TargetInitializeConfig); err != nil {
 		return err
 	}
 
@@ -186,4 +191,48 @@ func sanitize(ports []int) []int {
 	}
 
 	return dedupe
+}
+
+func ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(source *greenplum.Cluster, target InitializeConfig) error {
+	// create a set of source cluster ports
+	sourcePorts := make(map[int]bool)
+	for _, seg := range source.Primaries {
+		sourcePorts[seg.Port] = true
+	}
+	for _, seg := range source.Mirrors {
+		sourcePorts[seg.Port] = true
+	}
+
+	// check if temp target ports overlap with source cluster ports
+	for _, seg := range append(target.Primaries, target.Master, target.Standby) {
+		if sourcePorts[seg.Port] {
+			return newInvalidTempPortRangeError(seg.Port)
+		}
+	}
+	for _, seg := range target.Mirrors {
+		if sourcePorts[seg.Port] {
+			return newInvalidTempPortRangeError(seg.Port)
+		}
+	}
+
+	return nil
+}
+
+var ErrInvalidTempPortRange = errors.New("invalid temp_port range")
+
+type InvalidTempPortRangeError struct {
+	conflictingPort int
+}
+
+func newInvalidTempPortRangeError(sourcePort int) *InvalidTempPortRangeError {
+	return &InvalidTempPortRangeError{conflictingPort: sourcePort}
+}
+
+func (i *InvalidTempPortRangeError) Error() string {
+	return fmt.Sprintf("temp_port_range contains port %d which overlaps with the source cluster ports. "+
+		"Specify a non-overlapping temp_port_range.", i.conflictingPort)
+}
+
+func (i *InvalidTempPortRangeError) Is(err error) bool {
+	return err == ErrInvalidTempPortRange
 }
