@@ -91,7 +91,7 @@ The gpupgrade logs can be found on the master and segment hosts in
 
 NEXT ACTIONS
 ------------
-Run the “complete” data migration scripts, and recreate any additional tables,
+Run the “post-finalize” data migration scripts, and recreate any additional tables,
 indexes, and roles that were dropped or altered to resolve migration issues.`,
 				response.GetTargetVersion(), response.GetTarget().GetPort(), response.GetTarget().GetMasterDataDirectory(),
 				fmt.Sprintf("%s.<contentID>%s", response.GetUpgradeID(), upgrade.OldSuffix),

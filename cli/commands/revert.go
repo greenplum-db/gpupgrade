@@ -87,7 +87,7 @@ The gpupgrade logs can be found on the master and segment hosts in
 
 NEXT ACTIONS
 ------------
-To use the reverted cluster, run the “revert” data migration scripts, and
+To use the reverted cluster, run the “post-revert” data migration scripts, and
 recreate any additional tables, indexes, and roles that were dropped or
 altered to resolve migration issues.
 
