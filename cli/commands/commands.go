@@ -157,6 +157,7 @@ func createConfigShowSubcommand() *cobra.Command {
 	subShow.Flags().Bool("source-gphome", false, "show path for the source Greenplum installation")
 	subShow.Flags().Bool("target-gphome", false, "show path for the target Greenplum installation")
 	subShow.Flags().Bool("target-datadir", false, "show temporary data directory for target gpdb cluster")
+	subShow.Flags().Bool("target-port", false, "show temporary master port for target cluster")
 
 	return subShow
 }

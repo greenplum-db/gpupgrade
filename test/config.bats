@@ -13,11 +13,14 @@ setup() {
 
     gpupgrade kill-services
 
+    TARGET_PGPORT=6020
+
     gpupgrade initialize \
         --automatic \
         --source-gphome "$GPHOME_SOURCE" \
         --target-gphome "$GPHOME_TARGET" \
         --source-master-port ${PGPORT} \
+        --temp-port-range "$TARGET_PGPORT"-6040 \
         --stop-before-cluster-creation \
         --disk-free-ratio 0 3>&-
 }
@@ -48,4 +51,5 @@ teardown() {
     [ "${lines[1]}" = "source-gphome - $GPHOME_SOURCE" ]
     [ "${lines[2]}" = "target-datadir - " ] # This isn't populated until cluster creation, but it's still displayed here
     [ "${lines[3]}" = "target-gphome - $GPHOME_TARGET" ]
+    [ "${lines[4]}" = "target-port - $TARGET_PGPORT" ]
 }

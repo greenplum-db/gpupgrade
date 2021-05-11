@@ -344,6 +344,8 @@ _gpupgrade_config_show()
     local_nonpersistent_flags+=("--target-datadir")
     flags+=("--target-gphome")
     local_nonpersistent_flags+=("--target-gphome")
+    flags+=("--target-port")
+    local_nonpersistent_flags+=("--target-port")
 
     must_have_one_flag=()
     must_have_one_noun=()

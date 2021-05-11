@@ -5,6 +5,7 @@ package hub
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 
@@ -27,6 +28,10 @@ func (s *Server) GetConfig(ctx context.Context, in *idl.GetConfigRequest) (*idl.
 	case "target-datadir":
 		if s.Target != nil {
 			resp.Value = s.Target.MasterDataDir()
+		}
+	case "target-port":
+		if s.TargetInitializeConfig.Master.Port != 0 {
+			resp.Value = strconv.Itoa(s.TargetInitializeConfig.Master.Port)
 		}
 	default:
 		return nil, status.Errorf(codes.NotFound, "%s is not a valid configuration key", in.Name)
