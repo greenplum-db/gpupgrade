@@ -6,7 +6,7 @@
 load helpers
 load teardown_helpers
 
-SCRIPTS_DIR=$BATS_TEST_DIRNAME/../data-migration-scripts
+SCRIPTS_DIR=$BATS_TEST_DIRNAME/../../../data-migration-scripts
 
 setup() {
     skip_if_no_gpdb

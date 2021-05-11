@@ -84,7 +84,7 @@ time ssh mdw bash <<EOF
     export PGPORT="$MASTER_PORT"
     export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
 
-    ./gpupgrade_src/test/revert.bats
+    ./gpupgrade_src/test/acceptance/gpupgrade/revert.bats
 EOF
 
 echo 'bats test successful.'

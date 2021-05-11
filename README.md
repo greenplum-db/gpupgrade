@@ -161,7 +161,8 @@ framework which can be installed on macOS with `brew install bats-core`.
 Please review the [integrations/README](https://github.com/greenplum-db/gpupgrade/blob/master/integrations/README.md).
 ```
 # Some tests require GPDB installed and running
-make check-bats
+make gpupgrade-tests
+make pg-upgrade-tests
 ```
 #### All local tests
 ```

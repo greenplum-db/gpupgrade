@@ -34,12 +34,12 @@ format:
 		gofmt -l -w agent/ cli/ db/ hub/ integrations/ testutils/ utils/
 
 
-.PHONY: check check-go check-bats unit integration test
+.PHONY: check check-go gpupgrade-tests unit integration test
 
 # check runs all tests against the locally built gpupgrade binaries. Use -k to
 # continue after failures.
-check: check-go check-bats
-check-go check-bats: export PATH := $(CURDIR):$(PATH)
+check: check-go gpupgrade-tests
+check-go gpupgrade-tests: export PATH := $(CURDIR):$(PATH)
 
 TEST_PACKAGES := ./...
 
@@ -50,8 +50,8 @@ TEST_PACKAGES := ./...
 check-go:
 	go test -count=1 $(TEST_PACKAGES)
 
-check-bats:
-	bats -r ./test
+gpupgrade-tests:
+	bats -r ./test/acceptance/gpupgrade
 
 unit: TEST_PACKAGES := $(shell go list ./... | grep -v integrations$$ )
 unit: check-go
