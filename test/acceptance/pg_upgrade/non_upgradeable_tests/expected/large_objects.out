@@ -1,0 +1,39 @@
+-- Copyright (c) 2017-2021 VMware, Inc. or its affiliates
+-- SPDX-License-Identifier: Apache-2.0
+
+-- Large objects are not supported GPDB6 onwards. They must be dropped before
+-- an upgrade.
+
+--------------------------------------------------------------------------------
+-- Create and setup non-upgradeable objects
+--------------------------------------------------------------------------------
+SELECT lo_create(1);
+ lo_create 
+-----------
+ 1         
+(1 row)
+SELECT count(*) FROM pg_largeobject;
+ count 
+-------
+ 1     
+(1 row)
+
+--------------------------------------------------------------------------------
+-- Assert that pg_upgrade --check correctly detects the non-upgradeable objects
+--------------------------------------------------------------------------------
+!\retcode gpupgrade initialize --source-gphome="${GPHOME_SOURCE}" --target-gphome=${GPHOME_TARGET} --source-master-port=${PGPORT} --disk-free-ratio 0 --automatic;
+-- start_ignore
+-- end_ignore
+(exited with code 1)
+! cat ${GPUPGRADE_HOME}/pg_upgrade/seg-1/pg_largeobject.txt;
+Database isolation2test contains large objects
+
+
+--------------------------------------------------------------------------------
+-- Workaround to unblock upgrade
+--------------------------------------------------------------------------------
+SELECT lo_unlink(loid) FROM pg_largeobject;
+ lo_unlink 
+-----------
+ 1         
+(1 row)

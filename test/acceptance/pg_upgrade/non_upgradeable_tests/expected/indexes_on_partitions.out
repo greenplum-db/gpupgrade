@@ -1,0 +1,88 @@
+-- Copyright (c) 2017-2021 VMware, Inc. or its affiliates
+-- SPDX-License-Identifier: Apache-2.0
+
+-- Indexes on partitioned table roots and child partitions are non-upgradebable.
+-- These indexes must be dropped before running an upgrade.
+
+--------------------------------------------------------------------------------
+-- Create and setup non-upgradeable objects
+--------------------------------------------------------------------------------
+
+-- 1. Heap partition table
+CREATE TABLE p_heap_table (id integer, first_name text) DISTRIBUTED BY (id) PARTITION BY RANGE(id) (START(1) END(3) EVERY(1));
+CREATE
+INSERT INTO p_heap_table VALUES (1, 'Jane');
+INSERT 1
+INSERT INTO p_heap_table VALUES (2, 'John');
+INSERT 1
+CREATE INDEX p_heap_first_name_index ON p_heap_table(first_name);
+CREATE
+
+-- 2. AO partition table
+CREATE TABLE p_ao_table (id integer, first_name text) WITH (appendonly=true) DISTRIBUTED BY (id) PARTITION BY RANGE(id) (START(1) END(3) EVERY(1));
+CREATE
+INSERT INTO p_ao_table VALUES (1, 'Jane');
+INSERT 1
+INSERT INTO p_ao_table VALUES (2, 'John');
+INSERT 1
+CREATE INDEX p_ao_first_name_index ON p_ao_table(first_name);
+CREATE
+
+-- 3. AOCO partition table
+CREATE TABLE p_aoco_table (id integer, first_name text) WITH (appendonly=true, orientation=column) DISTRIBUTED BY (id) PARTITION BY RANGE(id) (START(1) END(3) EVERY(1));
+CREATE
+INSERT INTO p_aoco_table VALUES (1, 'Jane');
+INSERT 1
+INSERT INTO p_aoco_table VALUES (2, 'John');
+INSERT 1
+CREATE INDEX p_aoco_first_name_index ON p_aoco_table(first_name);
+CREATE
+
+--------------------------------------------------------------------------------
+-- Assert that pg_upgrade --check correctly detects the non-upgradeable objects
+--------------------------------------------------------------------------------
+!\retcode gpupgrade initialize --source-gphome="${GPHOME_SOURCE}" --target-gphome=${GPHOME_TARGET} --source-master-port=${PGPORT} --disk-free-ratio 0 --automatic;
+-- start_ignore
+-- end_ignore
+(exited with code 1)
+! cat ${GPUPGRADE_HOME}/pg_upgrade/seg-1/partitioned_tables_indexes.txt | sort;
+  public.p_ao_table has 1 index(es)
+  public.p_ao_table_1_prt_1 has 1 index(es)
+  public.p_ao_table_1_prt_2 has 1 index(es)
+  public.p_aoco_table has 1 index(es)
+  public.p_aoco_table_1_prt_1 has 1 index(es)
+  public.p_aoco_table_1_prt_2 has 1 index(es)
+  public.p_heap_table has 1 index(es)
+  public.p_heap_table_1_prt_1 has 1 index(es)
+  public.p_heap_table_1_prt_2 has 1 index(es)
+Database:  isolation2test
+
+
+--------------------------------------------------------------------------------
+-- Workaround to unblock upgrade
+--------------------------------------------------------------------------------
+
+-- 1. Heap partition table
+DROP INDEX p_heap_first_name_index;
+DROP
+DROP INDEX p_heap_first_name_index_1_prt_1;
+DROP
+DROP INDEX p_heap_first_name_index_1_prt_2;
+DROP
+
+-- 2. AO partition table
+DROP INDEX p_ao_first_name_index;
+DROP
+DROP INDEX p_ao_first_name_index_1_prt_1;
+DROP
+DROP INDEX p_ao_first_name_index_1_prt_2;
+DROP
+
+-- 3. AOCO partition table
+DROP INDEX p_aoco_first_name_index;
+DROP
+DROP INDEX p_aoco_first_name_index_1_prt_1;
+DROP
+DROP INDEX p_aoco_first_name_index_1_prt_2;
+DROP
+

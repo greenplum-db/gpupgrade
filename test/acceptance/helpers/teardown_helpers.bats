@@ -3,8 +3,8 @@
 # Copyright (c) 2017-2021 VMware, Inc. or its affiliates
 # SPDX-License-Identifier: Apache-2.0
 
-load helpers
-load teardown_helpers
+load ../helpers/helpers
+load ../helpers/teardown_helpers
 
 # Prints the number of arguments passed, and the arguments themselves, on
 # separate lines.

@@ -1,0 +1,93 @@
+-- Copyright (c) 2017-2021 VMware, Inc. or its affiliates
+-- SPDX-License-Identifier: Apache-2.0
+
+--------------------------------------------------------------------------------
+-- Validate that the upgradeable objects have been disabled during the upgrade
+--------------------------------------------------------------------------------
+
+-- bpchar_pattern_ops index should be marked invalid on master and segments
+SELECT DISTINCT indisvalid FROM pg_index WHERE indexrelid = 'bpchar_idx'::regclass;
+ indisvalid 
+------------
+ f          
+(1 row)
+SELECT DISTINCT indisvalid FROM gp_dist_random('pg_index') WHERE indexrelid = 'bpchar_idx'::regclass;
+ indisvalid 
+------------
+ f          
+(1 row)
+
+-- bitmap index should be marked invalid on master and segments
+SELECT DISTINCT indisvalid FROM pg_index WHERE indexrelid = 'bitmap_idx'::regclass;
+ indisvalid 
+------------
+ f          
+(1 row)
+SELECT DISTINCT indisvalid FROM gp_dist_random('pg_index') WHERE indexrelid = 'bitmap_idx'::regclass;
+ indisvalid 
+------------
+ f          
+(1 row)
+
+--------------------------------------------------------------------------------
+-- Post-upgrade resolution to enable the upgradable objects
+--------------------------------------------------------------------------------
+REINDEX TABLE tbl_with_bpchar_pattern_ops_index;
+REINDEX
+REINDEX TABLE tbl_with_bitmap_index;
+REINDEX
+
+--------------------------------------------------------------------------------
+-- Validate that the upgradeable objects are functional post-upgrade
+--------------------------------------------------------------------------------
+
+-- bpchar_pattern_ops index scan can now be be used
+SET ENABLE_SEQSCAN=OFF;
+SET
+SET ENABLE_INDEXSCAN=OFF;
+SET
+EXPLAIN (COSTS OFF) SELECT * FROM tbl_with_bpchar_pattern_ops_index WHERE lower(b)::bpchar LIKE '1';
+ QUERY PLAN                                                           
+----------------------------------------------------------------------
+ Gather Motion 3:1  (slice1; segments: 3)                             
+   ->  Bitmap Heap Scan on tbl_with_bpchar_pattern_ops_index          
+         Filter: ((lower((b)::text))::bpchar ~~ '1'::text)            
+         ->  Bitmap Index Scan on bpchar_idx                          
+               Index Cond: ((lower((b)::text))::bpchar = '1'::bpchar) 
+ Optimizer: Postgres query optimizer                                  
+(6 rows)
+SELECT * FROM tbl_with_bpchar_pattern_ops_index WHERE lower(b)::bpchar LIKE '1';
+ a  | b | c 
+----+---+---
+ 3  | 1 | 1 
+ 5  | 1 | 1 
+ 7  | 1 | 1 
+ 19 | 1 | 1 
+ 9  | 1 | 1 
+ 11 | 1 | 1 
+ 1  | 1 | 1 
+ 13 | 1 | 1 
+ 15 | 1 | 1 
+ 17 | 1 | 1 
+(10 rows)
+
+-- bitmap index scan can now be used
+EXPLAIN (COSTS OFF) SELECT * FROM tbl_with_bitmap_index WHERE b = '1';
+ QUERY PLAN                                      
+-------------------------------------------------
+ Gather Motion 3:1  (slice1; segments: 3)        
+   ->  Bitmap Heap Scan on tbl_with_bitmap_index 
+         Recheck Cond: (b = 1)                   
+         ->  Bitmap Index Scan on bitmap_idx     
+               Index Cond: (b = 1)               
+ Optimizer: Postgres query optimizer             
+(6 rows)
+SELECT * FROM tbl_with_bitmap_index WHERE b = '1';
+ a | b 
+---+---
+ 3 | 1 
+ 5 | 1 
+ 7 | 1 
+ 9 | 1 
+ 1 | 1 
+(5 rows)

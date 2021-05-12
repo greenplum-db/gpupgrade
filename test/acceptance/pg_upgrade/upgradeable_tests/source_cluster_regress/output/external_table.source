@@ -1,0 +1,10 @@
+-- Copyright (c) 2017-2021 VMware, Inc. or its affiliates
+-- SPDX-License-Identifier: Apache-2.0
+
+-- Test to ensure that a simple external table can be upgraded.
+
+--------------------------------------------------------------------------------
+-- Create and setup upgradeable objects
+--------------------------------------------------------------------------------
+CREATE READABLE EXTERNAL TABLE r_t1 (a int, b int) LOCATION ('file://@hostname@/@abs_srcdir@/data/external_table_data.csv') FORMAT 'TEXT' (DELIMITER '|');
+CREATE

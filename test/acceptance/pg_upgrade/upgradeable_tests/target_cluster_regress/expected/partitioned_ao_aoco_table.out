@@ -1,0 +1,24 @@
+-- Copyright (c) 2017-2021 VMware, Inc. or its affiliates
+-- SPDX-License-Identifier: Apache-2.0
+
+--------------------------------------------------------------------------------
+-- Validate that the upgradeable objects are functional post-upgrade
+--------------------------------------------------------------------------------
+SELECT * FROM p_ao_table_with_multiple_segfiles;
+ id | name    
+----+---------
+ 4  | Carolyn 
+ 2  | Jane    
+ 2  | Jane    
+ 1  | Jane    
+ 1  | Jane    
+(5 rows)
+SELECT * FROM p_ao_table_with_multiple_segfiles;
+ id | name    
+----+---------
+ 2  | Jane    
+ 2  | Jane    
+ 1  | Jane    
+ 1  | Jane    
+ 4  | Carolyn 
+(5 rows)

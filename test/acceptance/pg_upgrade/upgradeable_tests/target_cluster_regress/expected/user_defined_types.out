@@ -1,0 +1,13 @@
+-- Copyright (c) 2017-2021 VMware, Inc. or its affiliates
+-- SPDX-License-Identifier: Apache-2.0
+
+--------------------------------------------------------------------------------
+-- Validate that the upgradeable objects are functional post-upgrade
+--------------------------------------------------------------------------------
+SELECT * FROM some_table ORDER BY id;
+ id | sc     | ss      
+----+--------+---------
+ 1  | 10-100 | warmup  
+ 2  | 20-200 | qualify 
+ 3  | 30-300 | race    
+(3 rows)

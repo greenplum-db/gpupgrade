@@ -1,0 +1,53 @@
+-- Copyright (c) 2017-2021 VMware, Inc. or its affiliates
+-- SPDX-License-Identifier: Apache-2.0
+
+-- GPDB5: In GPDB6, lead/lag functions with the second parameters as bigint are not
+-- supported. Only such functions with integer as the second parameter are
+-- supported. So, while upgrading, if there are such views schema restore will fail
+-- during upgrade. Thus, such views are non-upgradeable. They must be dropped
+-- before running an upgrade.
+
+--------------------------------------------------------------------------------
+-- Create and setup non-upgradeable objects
+--------------------------------------------------------------------------------
+CREATE TABLE lead_lag_tbl (a int, b text) DISTRIBUTED RANDOMLY;
+CREATE
+INSERT INTO lead_lag_tbl SELECT 1, 'a';
+INSERT 1
+
+CREATE VIEW lag_view_1 AS SELECT lag(b, 1::bigint, b) OVER (ORDER BY b) as lag FROM lead_lag_tbl;
+CREATE
+CREATE VIEW lag_view_2 AS SELECT lag(b, 1::bigint) OVER (ORDER BY b) as lag FROM lead_lag_tbl;
+CREATE
+
+CREATE VIEW lead_view_1 AS SELECT lead(b, 1::bigint, b) OVER (ORDER BY b) as lag FROM lead_lag_tbl;
+CREATE
+CREATE VIEW lead_view_2 AS SELECT lead(b, 1::bigint) OVER (ORDER BY b) as lag FROM lead_lag_tbl;
+CREATE
+
+--------------------------------------------------------------------------------
+-- Assert that pg_upgrade --check correctly detects the non-upgradeable objects
+--------------------------------------------------------------------------------
+!\retcode gpupgrade initialize --source-gphome="${GPHOME_SOURCE}" --target-gphome=${GPHOME_TARGET} --source-master-port=${PGPORT} --disk-free-ratio 0 --automatic;
+-- start_ignore
+-- end_ignore
+(exited with code 1)
+! cat ${GPUPGRADE_HOME}/pg_upgrade/seg-1/view_lead_lag_functions.txt | sort;
+  public.lag_view_1 
+  public.lag_view_2 
+  public.lead_view_1 
+  public.lead_view_2 
+Database: isolation2test
+
+
+--------------------------------------------------------------------------------
+-- Workaround to unblock upgrade
+--------------------------------------------------------------------------------
+DROP VIEW lag_view_1;
+DROP
+DROP VIEW lag_view_2;
+DROP
+DROP VIEW lead_view_1;
+DROP
+DROP VIEW lead_view_2;
+DROP

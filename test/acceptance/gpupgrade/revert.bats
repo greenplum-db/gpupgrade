@@ -3,9 +3,9 @@
 # Copyright (c) 2017-2021 VMware, Inc. or its affiliates
 # SPDX-License-Identifier: Apache-2.0
 
-load helpers
-load tablespace_helpers
-load teardown_helpers
+load ../helpers/helpers
+load ../helpers/tablespace_helpers
+load ../helpers/teardown_helpers
 
 setup() {
     skip_if_no_gpdb

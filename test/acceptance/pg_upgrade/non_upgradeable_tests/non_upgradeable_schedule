@@ -1,0 +1,13 @@
+test: different_name_index_backed_constraint
+test: exchange_partition_heap_table
+test: foreign_key_constraint
+test: gphdfs_user_roles
+test: indexes
+test: indexes_on_partitions
+test: large_objects
+test: mismatched_aopartition_indexes
+test: mismatched_partition_schemas
+test: name_col
+test: partitioned_heap_table_with_dropped_columns
+test: tsquery_col
+test: views_with_lag_lead_functions
