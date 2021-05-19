@@ -72,6 +72,22 @@ func (j *UpgradeJob) BaseName() string {
 	return fmt.Sprintf("%s-to-%s%s", j.Source, j.Target, suffix)
 }
 
+type PgUpgradeTests struct {
+	Source, Target string
+	CentosVersion  string
+}
+
+func (p *PgUpgradeTests) Name() string {
+	return fmt.Sprintf("%s-centos-%s", p.BaseName(), p.CentosVersion)
+}
+
+// BaseName returns the pipeline job name without the operating system.
+// This is used as a tag in Concourse's serial group to limit similar jobs
+// between operating systems from running at once to avoid overloading Concourse.
+func (p *PgUpgradeTests) BaseName() string {
+	return fmt.Sprintf("%s-to-%s-%s", p.Source, p.Target, "pg-upgrade-tests")
+}
+
 type MultihostBatsJob struct {
 	Source, Target string
 	CentosVersion  string
@@ -99,6 +115,7 @@ type Data struct {
 	LastTargetVersion string
 	Versions          []*Version
 	CheckJobs         []*CheckJob
+	PgUpgradeTests    []*PgUpgradeTests
 	MultihostBatsJobs []*MultihostBatsJob
 }
 
@@ -107,6 +124,7 @@ var data Data
 func init() {
 	var checkJobs []*CheckJob
 	var upgradeJobs []*UpgradeJob
+	var pgUpgradeTests []*PgUpgradeTests
 	var multihostBatsJobs []*MultihostBatsJob
 	for _, sourceVersion := range sourceVersions {
 		for _, targetVersion := range targetVersions {
@@ -120,6 +138,15 @@ func init() {
 					Target:        targetVersion,
 					CentosVersion: centosVersion,
 				})
+
+				// pgUpgradeTests are only needed for 5->6, 6->7, etc.
+				if sourceVersion != targetVersion {
+					pgUpgradeTests = append(pgUpgradeTests, &PgUpgradeTests{
+						Source:        sourceVersion,
+						Target:        targetVersion,
+						CentosVersion: centosVersion,
+					})
+				}
 				multihostBatsJobs = append(multihostBatsJobs, &MultihostBatsJob{
 					Source:        sourceVersion,
 					Target:        targetVersion,
@@ -164,6 +191,7 @@ func init() {
 		LastTargetVersion: targetVersions[len(targetVersions)-1],
 		Versions:          versions,
 		CheckJobs:         checkJobs,
+		PgUpgradeTests:    pgUpgradeTests,
 		MultihostBatsJobs: multihostBatsJobs,
 	}
 }

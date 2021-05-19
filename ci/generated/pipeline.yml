@@ -248,6 +248,8 @@ groups:
       - noinstall-tests
       - 6-to-6-install-tests
       - 5-to-6-install-tests
+      - 5-to-6-pg-upgrade-tests-centos-6
+      - 5-to-6-pg-upgrade-tests-centos-7
       - 6-to-6-multihost-bats-centos-6
       - 6-to-6-multihost-bats-centos-7
       - 5-to-6-multihost-bats-centos-6
@@ -265,7 +267,7 @@ groups:
       - 5-to-6-no-standby-centos-7
       - 5-to-6-retail-demo-centos-7
       - publish-release-candidate
-  - name: bats
+  - name: gpupgrade
     jobs:
       - 6-to-6-install-tests
       - 5-to-6-install-tests
@@ -273,6 +275,10 @@ groups:
       - 6-to-6-multihost-bats-centos-7
       - 5-to-6-multihost-bats-centos-6
       - 5-to-6-multihost-bats-centos-7
+  - name: pg_upgrade
+    jobs:
+      - 5-to-6-pg-upgrade-tests-centos-6
+      - 5-to-6-pg-upgrade-tests-centos-7
   - name: upgrade
     jobs:
       - build
@@ -345,6 +351,7 @@ jobs:
   on_failure:
     <<: *slack_alert
 
+# TODO: Rename CheckJobs to GpupgradeTests
 
 - name: 6-to-6-install-tests
   plan:
@@ -384,6 +391,100 @@ jobs:
       trigger: true
   - task: install-tests
     file: gpupgrade_src/ci/tasks/install-tests.yml
+    params:
+      SOURCE_PACKAGE: greenplum-db-5
+      TARGET_PACKAGE: greenplum-db-6
+  on_failure:
+    <<: *slack_alert
+
+- name: 5-to-6-pg-upgrade-tests-centos-6
+  plan:
+  - in_parallel:
+    - get: rpm_enterprise
+      trigger: true
+      passed: [ build ]
+    - get: gpupgrade_src
+      passed: [ build ]
+    - get: gpdb_src_source
+      resource: gpdb5_src
+    - get: gpdb_src_target
+      resource: gpdb6_src
+    - get: bats
+    - get: rpm_gpdb_source
+      resource: rpm_gpdb5_centos6
+      trigger: true
+    - get: rpm_gpdb_target
+      resource: rpm_gpdb6_centos6
+      trigger: true
+  - task: pg-upgrade-tests
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          # NOTE: Since we build isolation2 the build image OS needs to match
+          # the GPDB target version we are testing.
+          repository: pivotaldata/gpdb6-centos6-test
+          tag: "latest"
+      inputs:
+        - name: rpm_enterprise
+        - name: gpupgrade_src
+        - name: gpdb_src_source
+        # Rename gpdb_src_target to gpdb_src since external scripts used within rely on that.
+        - name: gpdb_src_target
+          path: gpdb_src
+        - name: bats
+        - name: rpm_gpdb_source
+        - name: rpm_gpdb_target
+      run:
+        path: gpupgrade_src/ci/scripts/pg-upgrade-tests.bash
+    params:
+      SOURCE_PACKAGE: greenplum-db-5
+      TARGET_PACKAGE: greenplum-db-6
+  on_failure:
+    <<: *slack_alert
+
+- name: 5-to-6-pg-upgrade-tests-centos-7
+  plan:
+  - in_parallel:
+    - get: rpm_enterprise
+      trigger: true
+      passed: [ build ]
+    - get: gpupgrade_src
+      passed: [ build ]
+    - get: gpdb_src_source
+      resource: gpdb5_src
+    - get: gpdb_src_target
+      resource: gpdb6_src
+    - get: bats
+    - get: rpm_gpdb_source
+      resource: rpm_gpdb5_centos7
+      trigger: true
+    - get: rpm_gpdb_target
+      resource: rpm_gpdb6_centos7
+      trigger: true
+  - task: pg-upgrade-tests
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          # NOTE: Since we build isolation2 the build image OS needs to match
+          # the GPDB target version we are testing.
+          repository: pivotaldata/gpdb6-centos7-test
+          tag: "latest"
+      inputs:
+        - name: rpm_enterprise
+        - name: gpupgrade_src
+        - name: gpdb_src_source
+        # Rename gpdb_src_target to gpdb_src since external scripts used within rely on that.
+        - name: gpdb_src_target
+          path: gpdb_src
+        - name: bats
+        - name: rpm_gpdb_source
+        - name: rpm_gpdb_target
+      run:
+        path: gpupgrade_src/ci/scripts/pg-upgrade-tests.bash
     params:
       SOURCE_PACKAGE: greenplum-db-5
       TARGET_PACKAGE: greenplum-db-6
@@ -1943,6 +2044,8 @@ jobs:
           - noinstall-tests
           - 6-to-6-install-tests
           - 5-to-6-install-tests
+          - 5-to-6-pg-upgrade-tests-centos-6
+          - 5-to-6-pg-upgrade-tests-centos-7
           - 6-to-6-centos-6
           - 6-to-6-centos-7
           - 5-to-6-centos-6
@@ -1974,6 +2077,8 @@ jobs:
           - 5-to-6-primaries-only-centos-7
           - 5-to-6-no-standby-centos-7
           - 5-to-6-retail-demo-centos-7
+          - 5-to-6-pg-upgrade-tests-centos-6
+          - 5-to-6-pg-upgrade-tests-centos-7
           - 6-to-6-multihost-bats-centos-6
           - 6-to-6-multihost-bats-centos-7
           - 5-to-6-multihost-bats-centos-6

@@ -53,6 +53,9 @@ check-go:
 gpupgrade-tests:
 	bats -r ./test/acceptance/gpupgrade
 
+pg-upgrade-tests:
+	bats -r ./test/acceptance/pg_upgrade
+
 unit: TEST_PACKAGES := $(shell go list ./... | grep -v integrations$$ )
 unit: check-go
 
