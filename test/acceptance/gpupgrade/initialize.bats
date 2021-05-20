@@ -210,7 +210,7 @@ outputContains() {
 
     [ "$status" -eq 1 ] || fail
     echo $output
-    [[ $output = *"temp_port_range contains port ${PGPORT} which overlaps with the source cluster ports. Specify a non-overlapping temp_port_range."* ]] || fail
+    [[ $output = *"temp_port_range contains port ${PGPORT} which overlaps with the source cluster ports on host $(hostname). Specify a non-overlapping temp_port_range."* ]] || fail
 }
 
 wait_for_port_change() {

@@ -265,7 +265,16 @@ func TestEnsureTempPortRangeDoesNotOverlapWithSourceClusterPorts(t *testing.T) {
 	t.Run("ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts succeeds", func(t *testing.T) {
 		err := ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(source, target)
 		if err != nil {
-			t.Errorf("expected error %#v got nil", err)
+			t.Errorf("unexpected error %#v", err)
+		}
+	})
+
+	t.Run("allow the same port on different hosts", func(t *testing.T) {
+		target.Standby.Port = source.MasterPort()
+
+		err := ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(source, target)
+		if err != nil {
+			t.Errorf("unexpected error %#v", err)
 		}
 	})
 
