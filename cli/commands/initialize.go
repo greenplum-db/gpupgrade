@@ -11,7 +11,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"golang.org/x/xerrors"
@@ -225,24 +224,15 @@ func initialize() *cobra.Command {
 					UseLinkMode:     linkMode,
 					UseHbaHostnames: useHbaHostnames,
 					Ports:           parsedPorts,
+					DiskFreeRatio:   diskFreeRatio,
 				}
 				err = commanders.Initialize(client, request, verbose)
 				if err != nil {
-					return xerrors.Errorf("initialize hub: %w", err)
+					return xerrors.Errorf("initialize: %w", err)
 				}
 
 				return nil
 			})
-
-			if diskFreeRatio > 0 {
-				st.RunCLISubstep(idl.Substep_CHECK_DISK_SPACE, func(streams step.OutStreams) error {
-					return commanders.CheckDiskSpace(client, diskFreeRatio)
-				})
-			}
-
-			if diskFreeRatio == 0 {
-				gplog.Debug("skipping %s since disk-free-ratio is %.1f", idl.Substep_CHECK_DISK_SPACE, diskFreeRatio)
-			}
 
 			var response idl.InitializeResponse
 			st.RunHubSubstep(func(streams step.OutStreams) error {

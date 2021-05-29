@@ -36,26 +36,6 @@ func (m *MockCliToHubClient) EXPECT() *MockCliToHubClientMockRecorder {
 	return m.recorder
 }
 
-// CheckDiskSpace mocks base method
-func (m *MockCliToHubClient) CheckDiskSpace(arg0 context.Context, arg1 *idl.CheckDiskSpaceRequest, arg2 ...grpc.CallOption) (*idl.CheckDiskSpaceReply, error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{arg0, arg1}
-	for _, a := range arg2 {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "CheckDiskSpace", varargs...)
-	ret0, _ := ret[0].(*idl.CheckDiskSpaceReply)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CheckDiskSpace indicates an expected call of CheckDiskSpace
-func (mr *MockCliToHubClientMockRecorder) CheckDiskSpace(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckDiskSpace", reflect.TypeOf((*MockCliToHubClient)(nil).CheckDiskSpace), varargs...)
-}
-
 // Execute mocks base method
 func (m *MockCliToHubClient) Execute(arg0 context.Context, arg1 *idl.ExecuteRequest, arg2 ...grpc.CallOption) (idl.CliToHub_ExecuteClient, error) {
 	m.ctrl.T.Helper()
@@ -237,21 +217,6 @@ func NewMockCliToHubServer(ctrl *gomock.Controller) *MockCliToHubServer {
 // EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockCliToHubServer) EXPECT() *MockCliToHubServerMockRecorder {
 	return m.recorder
-}
-
-// CheckDiskSpace mocks base method
-func (m *MockCliToHubServer) CheckDiskSpace(arg0 context.Context, arg1 *idl.CheckDiskSpaceRequest) (*idl.CheckDiskSpaceReply, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckDiskSpace", arg0, arg1)
-	ret0, _ := ret[0].(*idl.CheckDiskSpaceReply)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CheckDiskSpace indicates an expected call of CheckDiskSpace
-func (mr *MockCliToHubServerMockRecorder) CheckDiskSpace(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckDiskSpace", reflect.TypeOf((*MockCliToHubServer)(nil).CheckDiskSpace), arg0, arg1)
 }
 
 // Execute mocks base method

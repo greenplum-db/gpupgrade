@@ -11,21 +11,33 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
-// SpaceFailures maps a unique filesystem identifier to its disk usage. One
-// entry is created for each filesystem that doesn't have enough available disk.
-//
-// This type is assignable to idl.CheckDiskSpaceReply.Failed.
-type SpaceFailures = map[string]*idl.CheckDiskSpaceReply_DiskUsage
-
-// Disk provides the OS interfaces needed by CheckUsage(). It's here to allow
-// test double injection; production code should generally use the disk.Local
-// implementation.
 type Disk interface {
 	Filesystems() (sigar.FileSystemList, error)
 	Usage(string) (sigar.FileSystemUsage, error)
 	Stat(string) (*unix.Stat_t, error)
+}
+
+type FileSystemDiskUsage []*idl.CheckDiskSpaceReply_DiskUsage
+
+func (f FileSystemDiskUsage) Len() int {
+	return len(f)
+}
+
+func (f FileSystemDiskUsage) Less(i, j int) bool {
+	fi, fj := f[i], f[j]
+
+	if fi.GetHost() == fj.GetHost() {
+		return fi.GetFs() < fj.GetFs()
+	}
+	return fi.GetHost() < fj.GetHost()
+}
+
+func (f FileSystemDiskUsage) Swap(i, j int) {
+	f[i], f[j] = f[j], f[i]
 }
 
 // CheckUsage uses the given Disk to look up filesystem usage for each path, and
@@ -38,8 +50,13 @@ type Disk interface {
 // that space to be free for use, nor does it count that space against the total
 // disk size. For example, a disk with 25% avail space and 75% free space -- as
 // defined by statfs(2) -- would be considered 50% available by CheckUsage.
-func CheckUsage(d Disk, requiredRatio float64, paths ...string) (SpaceFailures, error) {
-	failures := make(SpaceFailures)
+func CheckUsage(streams step.OutStreams, d Disk, diskFreeRatio float64, paths ...string) (FileSystemDiskUsage, error) {
+	hostname, err := utils.System.Hostname()
+	if err != nil {
+		return nil, xerrors.Errorf("determining hostname: %w", err)
+	}
+
+	failures := make(map[string]*idl.CheckDiskSpaceReply_DiskUsage)
 
 	// Find the device ID for every filesystem. We'll use these to map data
 	// directories to filesystems later.
@@ -66,7 +83,7 @@ func CheckUsage(d Disk, requiredRatio float64, paths ...string) (SpaceFailures, 
 
 		// Exclude superuser-reserved space.
 		total := usage.Used + usage.Avail
-		required := uint64(requiredRatio * float64(total))
+		required := uint64(diskFreeRatio * float64(total))
 
 		gplog.Debug("%s: %d avail of %d required (%d used, %d total)",
 			path, usage.Avail, required, usage.Used, usage.Total)
@@ -78,21 +95,31 @@ func CheckUsage(d Disk, requiredRatio float64, paths ...string) (SpaceFailures, 
 				return nil, xerrors.Errorf("stat'ing %s: %w", path, err)
 			}
 
-			f, ok := fsByID[uint64(stat.Dev)]
+			fs, ok := fsByID[uint64(stat.Dev)]
 			if !ok {
 				// Rather than blow up if we can't associate a path with a
 				// filesystem, just use the path itself.
-				f = path
+				fs = path
 			}
 
-			failures[f] = &idl.CheckDiskSpaceReply_DiskUsage{
+			failures[fs] = &idl.CheckDiskSpaceReply_DiskUsage{
+				Fs:        fs,
+				Host:      hostname,
 				Required:  required,
 				Available: usage.Avail,
 			}
 		}
 	}
 
-	return failures, nil
+	// NOTE: Transform the failures map used to prevent duplicate filesystems
+	// into a list since protobuf can't handle maps with complex keys such as a
+	// struct of filesystem and host.
+	var usage FileSystemDiskUsage
+	for _, failure := range failures {
+		usage = append(usage, failure)
+	}
+
+	return usage, nil
 }
 
 // Local is a standard implementation of the Disk interface that uses gosigar

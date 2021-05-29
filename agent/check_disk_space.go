@@ -7,14 +7,15 @@ import (
 	"context"
 
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils/disk"
 )
 
 func (s *Server) CheckDiskSpace(ctx context.Context, in *idl.CheckSegmentDiskSpaceRequest) (*idl.CheckDiskSpaceReply, error) {
-	failed, err := disk.CheckUsage(disk.Local, in.Request.Ratio, in.Datadirs...)
+	usage, err := disk.CheckUsage(step.DevNullStream, disk.Local, in.GetDiskFreeRatio(), in.GetDirs()...)
 	if err != nil {
 		return nil, err
 	}
 
-	return &idl.CheckDiskSpaceReply{Failed: failed}, nil
+	return &idl.CheckDiskSpaceReply{Usage: usage}, nil
 }

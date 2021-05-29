@@ -7,11 +7,15 @@ import (
 	"errors"
 	"os"
 	"reflect"
+	"sort"
 	"strings"
 	"testing"
 
 	sigar "github.com/cloudfoundry/gosigar"
 	"golang.org/x/sys/unix"
+
+	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils/testlog"
@@ -20,6 +24,14 @@ import (
 
 func TestCheckUsage(t *testing.T) {
 	testlog.SetupLogger()
+
+	host := "localhost"
+	utils.System.Hostname = func() (string, error) {
+		return host, nil
+	}
+	defer func() {
+		utils.System.Hostname = os.Hostname
+	}()
 
 	// This test disk has two mount points:
 	//  - /, at 25% utilization
@@ -71,42 +83,57 @@ func TestCheckUsage(t *testing.T) {
 	}
 
 	cases := []struct {
-		name string
-
+		name     string
 		ratio    float64
 		paths    []string
-		expected disk.SpaceFailures
+		expected disk.FileSystemDiskUsage
 	}{
-		{"returns no failures with adequate space",
-			0.1, []string{"/test/path"},
-			disk.SpaceFailures{},
+		{
+			name:     "returns no failures with adequate space",
+			ratio:    0.1,
+			paths:    []string{"/test/path"},
+			expected: nil,
 		},
-		{"returns failures with inadequate space",
-			0.8, []string{"/test/path"},
-			disk.SpaceFailures{
-				"/": &idl.CheckDiskSpaceReply_DiskUsage{
+		{
+			name:  "returns failures with inadequate space",
+			ratio: 0.8,
+			paths: []string{"/test/path"},
+			expected: disk.FileSystemDiskUsage{
+				&idl.CheckDiskSpaceReply_DiskUsage{
+					Fs:        "/",
+					Host:      host,
 					Required:  scale(size, 0.8),
 					Available: scale(size, 0.75),
 				},
 			},
 		},
-		{"returns only one failure per filesystem",
-			0.8, []string{"/test/path", "/test/other/path", "/tmp/path"},
-			disk.SpaceFailures{
-				"/": &idl.CheckDiskSpaceReply_DiskUsage{
+		{
+			name:  "returns only one failure per filesystem",
+			ratio: 0.8,
+			paths: []string{"/test/path", "/test/other/path", "/tmp/path"},
+			expected: disk.FileSystemDiskUsage{
+				&idl.CheckDiskSpaceReply_DiskUsage{
+					Fs:        "/",
+					Host:      host,
 					Required:  scale(size, 0.8),
 					Available: scale(size, 0.75),
 				},
-				"/tmp": &idl.CheckDiskSpaceReply_DiskUsage{
+				&idl.CheckDiskSpaceReply_DiskUsage{
+					Fs:        "/tmp",
+					Host:      host,
 					Required:  scale(size, 0.8),
 					Available: scale(size, 0.25),
 				},
 			},
 		},
-		{"uses path directly if mount point is not found",
-			0.8, []string{"/unmounted/path"},
-			disk.SpaceFailures{
-				"/unmounted/path": &idl.CheckDiskSpaceReply_DiskUsage{
+		{
+			name:  "uses path directly if mount point is not found",
+			ratio: 0.8,
+			paths: []string{"/unmounted/path"},
+			expected: disk.FileSystemDiskUsage{
+				&idl.CheckDiskSpaceReply_DiskUsage{
+					Fs:        "/unmounted/path",
+					Host:      host,
 					Required:  scale(size, 0.8),
 					Available: scale(size, 0.75),
 				},
@@ -116,10 +143,12 @@ func TestCheckUsage(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			actual, err := disk.CheckUsage(d, c.ratio, c.paths...)
+			actual, err := disk.CheckUsage(step.DevNullStream, d, c.ratio, c.paths...)
 			if err != nil {
-				t.Errorf("returned error %#v", err)
+				t.Fatalf("returned error %#v", err)
 			}
+
+			sort.Sort(actual)
 			if !reflect.DeepEqual(actual, c.expected) {
 				t.Errorf("returned %v want %v", actual, c.expected)
 			}
@@ -143,7 +172,7 @@ func TestCheckUsage(t *testing.T) {
 		// assume that we have only 25% of the disk to use. In fact we have
 		// 50% of our available space, because we've only used half of the
 		// unreserved disk.
-		actual, err := disk.CheckUsage(d, 0.4, "/path")
+		actual, err := disk.CheckUsage(step.DevNullStream, d, 0.4, "/path")
 		if err != nil {
 			t.Errorf("returned error %#v", err)
 		}
@@ -152,13 +181,15 @@ func TestCheckUsage(t *testing.T) {
 		}
 
 		// Make sure the required disk count is correctly calculated as well.
-		actual, err = disk.CheckUsage(d, 0.6, "/path")
+		actual, err = disk.CheckUsage(step.DevNullStream, d, 0.6, "/path")
 		if err != nil {
 			t.Errorf("returned error %#v", err)
 		}
 
-		expected := disk.SpaceFailures{
-			"/": &idl.CheckDiskSpaceReply_DiskUsage{
+		expected := disk.FileSystemDiskUsage{
+			&idl.CheckDiskSpaceReply_DiskUsage{
+				Fs:        "/",
+				Host:      host,
 				Required:  scale(size/2, 0.6),
 				Available: scale(size/2, 0.5),
 			},
@@ -195,7 +226,7 @@ func TestCheckUsage(t *testing.T) {
 			},
 		}
 
-		actual, err := disk.CheckUsage(d, 0.6, "/path")
+		actual, err := disk.CheckUsage(step.DevNullStream, d, 0.6, "/path")
 		if err != nil {
 			t.Errorf("returned error %#v", err)
 		}
@@ -212,7 +243,7 @@ func TestCheckUsage(t *testing.T) {
 		checkError := func() {
 			t.Helper() // don't include this function in the stack trace
 
-			_, err := disk.CheckUsage(d, 0.5, "/test/path")
+			_, err := disk.CheckUsage(step.DevNullStream, d, 0.5, "/test/path")
 			if !errors.Is(err, d.err) {
 				t.Errorf("returned %#v want %#v", err, d.err)
 			}
@@ -252,7 +283,7 @@ func TestCheckUsage(t *testing.T) {
 
 		// At this point everything should work; otherwise we're missing
 		// coverage for a path.
-		_, err := disk.CheckUsage(d, 0.5, "/test/path")
+		_, err := disk.CheckUsage(step.DevNullStream, d, 0.5, "/test/path")
 		if err != nil {
 			t.Errorf("returned %#v after all error cases were removed", err)
 		}

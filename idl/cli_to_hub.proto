@@ -6,7 +6,6 @@ syntax = "proto3";
 package idl;
 
 service CliToHub {
-    rpc CheckDiskSpace (CheckDiskSpaceRequest) returns (CheckDiskSpaceReply) {}
     rpc Initialize(InitializeRequest) returns (stream Message) {}
     rpc InitializeCreateCluster(InitializeCreateClusterRequest) returns (stream Message) {}
     rpc Execute(ExecuteRequest) returns (stream Message) {}
@@ -25,6 +24,7 @@ message InitializeRequest {
     bool useLinkMode = 5;
     bool useHbaHostnames = 6;
     repeated uint32 ports = 7;
+    double diskFreeRatio = 8;
 }
 message InitializeCreateClusterRequest {}
 message ExecuteRequest {}
@@ -93,18 +93,6 @@ enum Status {
     COMPLETE = 2;
     FAILED = 3;
     SKIPPED = 4;
-}
-
-message CheckDiskSpaceRequest {
-  double ratio = 1;
-}
-
-message CheckDiskSpaceReply {
-  message DiskUsage {
-    uint64 available = 1;
-    uint64 required = 2;
-  }
-  map<string, DiskUsage> failed = 1;
 }
 
 message PrepareInitClusterRequest {}

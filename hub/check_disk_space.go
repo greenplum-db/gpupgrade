@@ -5,116 +5,96 @@ package hub
 
 import (
 	"context"
-	"fmt"
 	"sync"
-
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils/disk"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-func (s *Server) CheckDiskSpace(ctx context.Context, in *idl.CheckDiskSpaceRequest) (*idl.CheckDiskSpaceReply, error) {
-	reply := new(idl.CheckDiskSpaceReply)
+var CheckDiskUsageFunc = disk.CheckUsage
 
-	agents, err := s.AgentConns()
-	if err != nil {
-		return reply, err
-	}
-
-	reply.Failed, err = checkDiskSpace(ctx, s.Source, agents, disk.Local, in)
-	return reply, err
-}
-
-func checkDiskSpace(ctx context.Context, cluster *greenplum.Cluster, agents []*Connection, d disk.Disk, in *idl.CheckDiskSpaceRequest) (disk.SpaceFailures, error) {
+func CheckDiskSpace(streams step.OutStreams, agentConns []*Connection, diskFreeRatio float64, source *greenplum.Cluster) error {
 	var wg sync.WaitGroup
-	errs := make(chan error, len(agents)+1)
-	failures := make(chan disk.SpaceFailures, len(agents)+1)
+	errs := make(chan error, len(agentConns)+1)
+	usages := make(chan disk.FileSystemDiskUsage, len(agentConns)+1)
 
+	// check disk space on master
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 
-		failed, err := disk.CheckUsage(d, in.Ratio, cluster.MasterDataDir())
-		if err != nil {
-			errs <- xerrors.Errorf("check disk space on master host: %w", err)
-		}
-
-		if len(failed) > 0 {
-			masterHost := cluster.GetHostForContent(-1)
-			failures <- prefixWith(masterHost, failed)
-		}
+		usage, err := CheckDiskUsageFunc(streams, disk.Local, diskFreeRatio, source.MasterDataDir())
+		errs <- err
+		usages <- usage
 	}()
 
-	for i := range agents {
-		agent := agents[i]
-		wg.Add(1)
+	checkDiskSpaceOnStandbyAndSegments(agentConns, errs, usages, diskFreeRatio, source)
 
-		// We want to check disk space for the standby, primaries, and mirrors.
-		excludingMaster := func(seg *greenplum.SegConfig) bool {
-			return seg.IsOnHost(agent.Hostname) && !seg.IsMaster()
+	wg.Wait()
+	close(errs)
+	close(usages)
+
+	// consolidate errors
+	var err error
+	for e := range errs {
+		err = errorlist.Append(err, e)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	// combine disk space usage across all hosts and return an usage error
+	var totalUsage disk.FileSystemDiskUsage
+	for usage := range usages {
+		totalUsage = append(totalUsage, usage...)
+	}
+
+	if totalUsage != nil {
+		return disk.NewSpaceUsageError(totalUsage)
+	}
+
+	return nil
+}
+
+func checkDiskSpaceOnStandbyAndSegments(agentConns []*Connection, errs chan<- error, usages chan<- disk.FileSystemDiskUsage, diskFreeRatio float64, source *greenplum.Cluster) {
+	var wg sync.WaitGroup
+
+	for _, conn := range agentConns {
+		conn := conn
+
+		segmentsExcludingMaster := source.SelectSegments(func(seg *greenplum.SegConfig) bool {
+			return seg.IsOnHost(conn.Hostname) && !seg.IsMaster()
+		})
+
+		if len(segmentsExcludingMaster) == 0 {
+			return
 		}
 
+		var dirs []string
+		for _, seg := range segmentsExcludingMaster {
+			dirs = append(dirs, seg.DataDir)
+		}
+
+		wg.Add(1)
 		go func() {
 			defer wg.Done()
 
-			segments := cluster.SelectSegments(excludingMaster)
-			if len(segments) == 0 {
-				errs <- greenplum.UnknownHostError{Hostname: agent.Hostname}
-				return
-			}
-
 			req := &idl.CheckSegmentDiskSpaceRequest{
-				Request: in,
-			}
-			for _, s := range segments {
-				req.Datadirs = append(req.Datadirs, s.DataDir)
+				DiskFreeRatio: diskFreeRatio,
+				Dirs:          dirs,
 			}
 
-			reply, err := agent.AgentClient.CheckDiskSpace(ctx, req)
-			if err != nil {
-				errs <- xerrors.Errorf("check disk space on host %s: %w", agent.Hostname, err)
-				return
-			}
-
-			if len(reply.Failed) > 0 {
-				// Because different hosts can have identical paths for their
-				// data directories, make sure every failure is uniquely
-				// identified by its hostname.
-				failures <- prefixWith(agent.Hostname, reply.Failed)
+			reply, err := conn.AgentClient.CheckDiskSpace(context.Background(), req)
+			errs <- err
+			if reply != nil {
+				usages <- reply.GetUsage()
 			}
 		}()
 	}
 
 	wg.Wait()
-	close(errs)
-	close(failures)
-
-	var err error
-	for e := range errs {
-		err = errorlist.Append(err, e)
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	result := make(disk.SpaceFailures)
-	for failure := range failures {
-		for k, v := range failure {
-			result[k] = v
-		}
-	}
-	return result, nil
-}
-
-// prefixWith adds a string prefix to every key in the failure map.
-func prefixWith(prefix string, failures disk.SpaceFailures) disk.SpaceFailures {
-	prefixed := make(disk.SpaceFailures)
-	for k, v := range failures {
-		newKey := fmt.Sprintf("%s: %s", prefix, k)
-		prefixed[newKey] = v
-	}
-	return prefixed
 }
