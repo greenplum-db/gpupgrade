@@ -16,7 +16,7 @@ import (
 
 var CheckDiskUsageFunc = disk.CheckUsage
 
-func CheckDiskSpace(streams step.OutStreams, agentConns []*Connection, diskFreeRatio float64, source *greenplum.Cluster) error {
+func CheckDiskSpace(streams step.OutStreams, agentConns []*Connection, diskFreeRatio float64, source *greenplum.Cluster, sourceTablespaces greenplum.Tablespaces) error {
 	var wg sync.WaitGroup
 	errs := make(chan error, len(agentConns)+1)
 	usages := make(chan disk.FileSystemDiskUsage, len(agentConns)+1)
@@ -26,12 +26,15 @@ func CheckDiskSpace(streams step.OutStreams, agentConns []*Connection, diskFreeR
 	go func() {
 		defer wg.Done()
 
-		usage, err := CheckDiskUsageFunc(streams, disk.Local, diskFreeRatio, source.MasterDataDir())
+		masterDirs := []string{source.MasterDataDir()}
+		masterDirs = append(masterDirs, sourceTablespaces.GetMasterTablespaces().UserDefinedTablespacesLocations()...)
+
+		usage, err := CheckDiskUsageFunc(streams, disk.Local, diskFreeRatio, masterDirs...)
 		errs <- err
 		usages <- usage
 	}()
 
-	checkDiskSpaceOnStandbyAndSegments(agentConns, errs, usages, diskFreeRatio, source)
+	checkDiskSpaceOnStandbyAndSegments(agentConns, errs, usages, diskFreeRatio, source, sourceTablespaces)
 
 	wg.Wait()
 	close(errs)
@@ -60,7 +63,7 @@ func CheckDiskSpace(streams step.OutStreams, agentConns []*Connection, diskFreeR
 	return nil
 }
 
-func checkDiskSpaceOnStandbyAndSegments(agentConns []*Connection, errs chan<- error, usages chan<- disk.FileSystemDiskUsage, diskFreeRatio float64, source *greenplum.Cluster) {
+func checkDiskSpaceOnStandbyAndSegments(agentConns []*Connection, errs chan<- error, usages chan<- disk.FileSystemDiskUsage, diskFreeRatio float64, source *greenplum.Cluster, sourceTablespaces greenplum.Tablespaces) {
 	var wg sync.WaitGroup
 
 	for _, conn := range agentConns {
@@ -77,6 +80,7 @@ func checkDiskSpaceOnStandbyAndSegments(agentConns []*Connection, errs chan<- er
 		var dirs []string
 		for _, seg := range segmentsExcludingMaster {
 			dirs = append(dirs, seg.DataDir)
+			dirs = append(dirs, sourceTablespaces[seg.DbID].UserDefinedTablespacesLocations()...)
 		}
 
 		wg.Add(1)

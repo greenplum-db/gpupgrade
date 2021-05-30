@@ -9,11 +9,13 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils/disk"
 )
 
@@ -22,8 +24,10 @@ func TestCheckDiskSpace_OnMaster(t *testing.T) {
 		{ContentID: -1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: "p"},
 	})
 
+	tablespaces := greenplum.Tablespaces{}
+
 	t.Run("returns no error or usage when checking disk usage on master succeeds", func(t *testing.T) {
-		err := hub.CheckDiskSpace(step.DevNullStream, []*hub.Connection{}, 0, source)
+		err := hub.CheckDiskSpace(step.DevNullStream, []*hub.Connection{}, 0, source, tablespaces)
 		if err == nil {
 			t.Errorf("unexpected error %#v", err)
 		}
@@ -35,7 +39,7 @@ func TestCheckDiskSpace_OnMaster(t *testing.T) {
 			return nil, expected
 		}
 
-		err := hub.CheckDiskSpace(step.DevNullStream, []*hub.Connection{}, 0, source)
+		err := hub.CheckDiskSpace(step.DevNullStream, []*hub.Connection{}, 0, source, tablespaces)
 		if !errors.Is(err, expected) {
 			t.Errorf("got error %#v, want %#v", err, expected)
 		}
@@ -54,7 +58,7 @@ func TestCheckDiskSpace_OnMaster(t *testing.T) {
 			return usage, nil
 		}
 
-		err := hub.CheckDiskSpace(step.DevNullStream, []*hub.Connection{}, 0, source)
+		err := hub.CheckDiskSpace(step.DevNullStream, []*hub.Connection{}, 0, source, tablespaces)
 		expected := disk.NewSpaceUsageError(usage)
 		if !reflect.DeepEqual(err, expected) {
 			t.Errorf("returned %v want %v", err, expected)
@@ -64,13 +68,15 @@ func TestCheckDiskSpace_OnMaster(t *testing.T) {
 
 func TestCheckDiskSpace_OnSegments(t *testing.T) {
 	source := hub.MustCreateCluster(t, []greenplum.SegConfig{
-		{ContentID: -1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: "p"},
-		{ContentID: -1, Hostname: "smdw", DataDir: "/data/standby", Role: "m"},
-		{ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast/seg1", Role: "p"},
-		{ContentID: 0, Hostname: "sdw2", DataDir: "/data/dbfast_mirror1/seg1", Role: "m"},
-		{ContentID: 1, Hostname: "sdw2", DataDir: "/data/dbfast/seg2", Role: "p"},
-		{ContentID: 1, Hostname: "sdw1", DataDir: "/data/dbfast_mirror2/seg2", Role: "m"},
+		{DbID: 1, ContentID: -1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: "p"},
+		{DbID: 2, ContentID: -1, Hostname: "smdw", DataDir: "/data/standby", Role: "m"},
+		{DbID: 3, ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast/seg1", Role: "p"},
+		{DbID: 4, ContentID: 0, Hostname: "sdw2", DataDir: "/data/dbfast_mirror1/seg1", Role: "m"},
+		{DbID: 5, ContentID: 1, Hostname: "sdw2", DataDir: "/data/dbfast/seg2", Role: "p"},
+		{DbID: 6, ContentID: 1, Hostname: "sdw1", DataDir: "/data/dbfast_mirror2/seg2", Role: "m"},
 	})
+
+	tablespaces := testutils.CreateTablespaces()
 
 	hub.CheckDiskUsageFunc = func(streams step.OutStreams, d disk.Disk, requiredRatio float64, paths ...string) (disk.FileSystemDiskUsage, error) {
 		return nil, nil
@@ -87,7 +93,7 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 			gomock.Any(),
 			&idl.CheckSegmentDiskSpaceRequest{
 				DiskFreeRatio: diskFreeRatio,
-				Dirs:          []string{"/data/standby"},
+				Dirs:          []string{"/data/standby", "/tmp/user_ts/m/standby/16384"},
 			},
 		).Return(&idl.CheckDiskSpaceReply{}, nil)
 
@@ -96,7 +102,7 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 			gomock.Any(),
 			&idl.CheckSegmentDiskSpaceRequest{
 				DiskFreeRatio: diskFreeRatio,
-				Dirs:          []string{"/data/dbfast/seg1", "/data/dbfast_mirror2/seg2"},
+				Dirs:          []string{"/data/dbfast/seg1", "/tmp/user_ts/p1/16384", "/data/dbfast_mirror2/seg2", "/tmp/user_ts/m2/16384"},
 			},
 		).Return(&idl.CheckDiskSpaceReply{}, nil)
 
@@ -105,7 +111,7 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 			gomock.Any(),
 			&idl.CheckSegmentDiskSpaceRequest{
 				DiskFreeRatio: diskFreeRatio,
-				Dirs:          []string{"/data/dbfast_mirror1/seg1", "/data/dbfast/seg2"},
+				Dirs:          []string{"/data/dbfast_mirror1/seg1", "/tmp/user_ts/m1/16384", "/data/dbfast/seg2", "/tmp/user_ts/p2/16384"},
 			},
 		).Return(&idl.CheckDiskSpaceReply{}, nil)
 
@@ -115,7 +121,7 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 			{nil, sdw2, "sdw2", nil},
 		}
 
-		err := hub.CheckDiskSpace(step.DevNullStream, agentConns, diskFreeRatio, source)
+		err := hub.CheckDiskSpace(step.DevNullStream, agentConns, diskFreeRatio, source, tablespaces)
 		if err != nil {
 			t.Errorf("unexpected error %#v", err)
 		}
@@ -136,7 +142,7 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 			{nil, failedClient, "sdw1", nil},
 		}
 
-		err := hub.CheckDiskSpace(step.DevNullStream, agentConns, 0, source)
+		err := hub.CheckDiskSpace(step.DevNullStream, agentConns, 0, source, tablespaces)
 		if !errors.Is(err, expected) {
 			t.Errorf("got error %#v, want %#v", err, expected)
 		}
@@ -163,7 +169,7 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 			{nil, failedClient, "smdw", nil},
 		}
 
-		err := hub.CheckDiskSpace(step.DevNullStream, agentConns, 0, source)
+		err := hub.CheckDiskSpace(step.DevNullStream, agentConns, 0, source, tablespaces)
 		expected := disk.NewSpaceUsageError(usage)
 		if !reflect.DeepEqual(err, expected) {
 			t.Errorf("returned %v want %v", err, expected)
@@ -188,7 +194,7 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 			{ContentID: -1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: "p"},
 		})
 
-		err := hub.CheckDiskSpace(step.DevNullStream, agentConns, 0, masterOnlyCluster)
+		err := hub.CheckDiskSpace(step.DevNullStream, agentConns, 0, masterOnlyCluster, tablespaces)
 		if err != nil {
 			t.Errorf("unexpected error %#v", err)
 		}
