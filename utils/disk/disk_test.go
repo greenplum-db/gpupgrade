@@ -288,6 +288,63 @@ func TestCheckUsage(t *testing.T) {
 			t.Errorf("returned %#v after all error cases were removed", err)
 		}
 	})
+
+	t.Run("does not error when unable to access a filesystem due to permissions", func(t *testing.T) {
+		d.filesystems = func() (sigar.FileSystemList, error) {
+			return sigar.FileSystemList{List: []sigar.FileSystem{
+				{DirName: "/"},
+				{DirName: "/tmp"},
+				{DirName: "/data"},
+				{DirName: "/secret"}, // gpupgrade user does not have access to /secret
+			}}, nil
+		}
+
+		// Filesystem /data has 75% utilization
+		d.usage = func(path string) (sigar.FileSystemUsage, error) {
+			u := sigar.FileSystemUsage{Total: size}
+			if strings.HasPrefix(path, "/data") {
+				u.Avail = scale(u.Total, 0.25)
+				u.Free = u.Avail
+				u.Used = u.Total - u.Free
+			}
+
+			return u, nil
+		}
+
+		d.stat = func(path string) (*unix.Stat_t, error) {
+			stat := new(unix.Stat_t)
+			switch {
+			case path == "/":
+				stat.Dev = 1
+			case path == "/tmp":
+				stat.Dev = 2
+			case strings.HasPrefix(path, "/data"):
+				stat.Dev = 3
+			case path == "/secret":
+				return nil, os.ErrPermission
+			}
+
+			return stat, nil
+		}
+
+		actual, err := disk.CheckUsage(step.DevNullStream, d, 0.8, "/data/qddir/seg-1")
+		if err != nil {
+			t.Errorf("unexpected error %#v", err)
+		}
+
+		expected := disk.FileSystemDiskUsage{
+			&idl.CheckDiskSpaceReply_DiskUsage{
+				Fs:        "/data",
+				Host:      host,
+				Required:  scale(size, 0.8),
+				Available: scale(size, 0.25),
+			},
+		}
+
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("returned %v want %v", actual, expected)
+		}
+	})
 }
 
 func TestLocal(t *testing.T) {

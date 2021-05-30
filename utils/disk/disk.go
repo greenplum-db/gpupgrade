@@ -4,6 +4,8 @@
 package disk
 
 import (
+	"os"
+
 	"golang.org/x/sys/unix"
 	"golang.org/x/xerrors"
 
@@ -68,6 +70,11 @@ func CheckUsage(streams step.OutStreams, d Disk, diskFreeRatio float64, paths ..
 	fsByID := make(map[uint64]string)
 	for _, f := range fs.List {
 		stat, err := d.Stat(f.DirName)
+		if os.IsPermission(err) {
+			gplog.Warn("Ignoring filesystem %s on host %s when checking disk space. Unable to stat filesystem due to %v.", f.DirName, hostname, err)
+			continue
+		}
+
 		if err != nil {
 			return nil, xerrors.Errorf("stat'ing %s: %w", f.DirName, err)
 		}
