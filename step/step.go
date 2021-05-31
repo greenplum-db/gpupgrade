@@ -63,7 +63,7 @@ func Begin(stateDir string, step idl.Step, sender idl.MessageSender) (*Step, err
 
 	streams := newMultiplexedStream(sender, log)
 
-	return New(step, sender, NewFileStore(statusPath), streams), nil
+	return New(step, sender, NewSubstepFileStore(statusPath), streams), nil
 }
 
 func HasRun(step idl.Step, substep idl.Substep) (bool, error) {
@@ -72,7 +72,7 @@ func HasRun(step idl.Step, substep idl.Substep) (bool, error) {
 		return false, xerrors.Errorf("read %q: %w", SubstepsFileName, err)
 	}
 
-	substepStore := NewFileStore(path)
+	substepStore := NewSubstepFileStore(path)
 	status, err := substepStore.Read(step, substep)
 	if err != nil {
 		return false, err

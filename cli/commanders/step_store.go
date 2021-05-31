@@ -20,7 +20,7 @@ import (
 // file store as substeps.json. An internal substep enum STEP_STATUS is used to
 // track the overall step status and should not be used as a normal substep.
 type StepStore struct {
-	store *step.FileStore
+	store *step.SubstepFileStore
 }
 
 func NewStepStore() (*StepStore, error) {
@@ -30,7 +30,7 @@ func NewStepStore() (*StepStore, error) {
 	}
 
 	return &StepStore{
-		store: step.NewFileStore(path),
+		store: step.NewSubstepFileStore(path),
 	}, nil
 }
 

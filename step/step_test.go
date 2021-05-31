@@ -307,7 +307,7 @@ func TestHasRun(t *testing.T) {
 
 			path := filepath.Join(dir, step.SubstepsFileName)
 			testutils.MustWriteToFile(t, path, "{}")
-			store := step.NewFileStore(path)
+			store := step.NewSubstepFileStore(path)
 			err := store.Write(idl.Step_INITIALIZE, idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, c.status)
 			if err != nil {
 				t.Errorf("store.Write returned error %+v", err)

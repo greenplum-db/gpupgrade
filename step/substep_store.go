@@ -17,13 +17,13 @@ type SubstepStore interface {
 	Write(idl.Step, idl.Substep, idl.Status) error
 }
 
-// FileStore implements step.SubstepStore by providing persistent storage on disk.
-type FileStore struct {
+// SubstepFileStore implements SubstepStore by providing persistent storage on disk.
+type SubstepFileStore struct {
 	path string
 }
 
-func NewFileStore(path string) *FileStore {
-	return &FileStore{path}
+func NewSubstepFileStore(path string) *SubstepFileStore {
+	return &SubstepFileStore{path}
 }
 
 type prettyMap = map[string]map[string]PrettyStatus
@@ -50,7 +50,7 @@ func (p *PrettyStatus) UnmarshalText(buf []byte) error {
 	return nil
 }
 
-func (f *FileStore) load() (prettyMap, error) {
+func (f *SubstepFileStore) load() (prettyMap, error) {
 	data, err := ioutil.ReadFile(f.path)
 	if err != nil {
 		return nil, err
@@ -65,7 +65,7 @@ func (f *FileStore) load() (prettyMap, error) {
 	return substeps, nil
 }
 
-func (f *FileStore) Read(step idl.Step, substep idl.Substep) (idl.Status, error) {
+func (f *SubstepFileStore) Read(step idl.Step, substep idl.Substep) (idl.Status, error) {
 	steps, err := f.load()
 	if err != nil {
 		return idl.Status_UNKNOWN_STATUS, err
@@ -87,7 +87,7 @@ func (f *FileStore) Read(step idl.Step, substep idl.Substep) (idl.Status, error)
 // Write atomically updates the status file.
 // Load the latest values from the filesystem, rather than storing
 // in-memory on a struct to avoid having two sources of truth.
-func (f *FileStore) Write(step idl.Step, substep idl.Substep, status idl.Status) (err error) {
+func (f *SubstepFileStore) Write(step idl.Step, substep idl.Substep, status idl.Status) (err error) {
 	steps, err := f.load()
 	if err != nil {
 		return err

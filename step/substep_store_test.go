@@ -27,7 +27,7 @@ func TestFileStore(t *testing.T) {
 	}()
 
 	path := filepath.Join(tmpDir, step.SubstepsFileName)
-	fs := step.NewFileStore(path)
+	fs := step.NewSubstepFileStore(path)
 
 	const section = idl.Step_INITIALIZE
 
@@ -169,7 +169,7 @@ func TestFileStore(t *testing.T) {
 	})
 }
 
-// clear writes an empty JSON map to the given FileStore backing path.
+// clear writes an empty JSON map to the given SubstepFileStore backing path.
 func clear(t *testing.T, path string) {
 	t.Helper()
 
