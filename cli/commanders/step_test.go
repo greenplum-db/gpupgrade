@@ -461,7 +461,7 @@ func TestStepStatus(t *testing.T) {
 	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 	defer resetEnv()
 
-	store, err := commanders.NewStepStore()
+	stepStore, err := commanders.NewStepStore()
 	if err != nil {
 		t.Fatalf("NewStepStore failed: %v", err)
 	}
@@ -472,7 +472,7 @@ func TestStepStatus(t *testing.T) {
 			t.Errorf("unexpected err %#v", err)
 		}
 
-		status, err := store.Read(idl.Step_INITIALIZE)
+		status, err := stepStore.Read(idl.Step_INITIALIZE)
 		if err != nil {
 			t.Errorf("Read failed %#v", err)
 		}
@@ -483,7 +483,7 @@ func TestStepStatus(t *testing.T) {
 		}
 	})
 
-	t.Run("when the store is disabled step.Complete does not update the status", func(t *testing.T) {
+	t.Run("when the step store is disabled step.Complete does not update the status", func(t *testing.T) {
 		st, err := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, false, true, "")
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
@@ -496,7 +496,7 @@ func TestStepStatus(t *testing.T) {
 			t.Errorf("unexpected err %#v", err)
 		}
 
-		status, err := store.Read(idl.Step_INITIALIZE)
+		status, err := stepStore.Read(idl.Step_INITIALIZE)
 		if err != nil {
 			t.Errorf("Read failed %#v", err)
 		}
@@ -523,7 +523,7 @@ func TestStepStatus(t *testing.T) {
 			t.Errorf("got %T, want %T", err, nextActionsErr)
 		}
 
-		status, err := store.Read(idl.Step_INITIALIZE)
+		status, err := stepStore.Read(idl.Step_INITIALIZE)
 		if err != nil {
 			t.Errorf("Read failed %#v", err)
 		}
@@ -550,7 +550,7 @@ func TestStepStatus(t *testing.T) {
 			t.Errorf("got %T, want %T", err, nextActionsErr)
 		}
 
-		status, err := store.Read(idl.Step_INITIALIZE)
+		status, err := stepStore.Read(idl.Step_INITIALIZE)
 		if err != nil {
 			t.Errorf("Read failed %#v", err)
 		}
@@ -577,7 +577,7 @@ func TestStepStatus(t *testing.T) {
 			t.Errorf("got %T, want %T", err, nextActionsErr)
 		}
 
-		status, err := store.Read(idl.Step_INITIALIZE)
+		status, err := stepStore.Read(idl.Step_INITIALIZE)
 		if err != nil {
 			t.Errorf("Read failed %#v", err)
 		}

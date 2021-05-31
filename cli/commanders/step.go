@@ -35,7 +35,7 @@ var additionalNextActions = map[idl.Step]string{
 type Step struct {
 	stepName    string
 	step        idl.Step
-	store       *StepStore
+	stepStore   *StepStore
 	streams     *step.BufferedStreams
 	verbose     bool
 	timer       *stopwatch.Stopwatch
@@ -44,7 +44,7 @@ type Step struct {
 }
 
 func NewStep(currentStep idl.Step, streams *step.BufferedStreams, verbose bool, interactive bool, confirmationText string) (*Step, error) {
-	store, err := NewStepStore()
+	stepStore, err := NewStepStore()
 	if err != nil {
 		gplog.Error("creating step store: %v", err)
 		context := fmt.Sprintf("Note: If commands were issued in order, ensure gpupgrade can write to %s", utils.GetStateDir())
@@ -52,7 +52,7 @@ func NewStep(currentStep idl.Step, streams *step.BufferedStreams, verbose bool, 
 		return &Step{}, cli.NewNextActions(wrappedErr, RunInitialize)
 	}
 
-	err = store.ValidateStep(currentStep)
+	err = stepStore.ValidateStep(currentStep)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func NewStep(currentStep idl.Step, streams *step.BufferedStreams, verbose bool, 
 		}
 	}
 
-	err = store.Write(currentStep, idl.Status_RUNNING)
+	err = stepStore.Write(currentStep, idl.Status_RUNNING)
 	if err != nil {
 		return &Step{}, err
 	}
@@ -82,12 +82,12 @@ func NewStep(currentStep idl.Step, streams *step.BufferedStreams, verbose bool, 
 	fmt.Println()
 
 	return &Step{
-		stepName: stepName,
-		step:     currentStep,
-		store:    store,
-		streams:  streams,
-		verbose:  verbose,
-		timer:    stopwatch.Start(),
+		stepName:  stepName,
+		step:      currentStep,
+		stepStore: stepStore,
+		streams:   streams,
+		verbose:   verbose,
+		timer:     stopwatch.Start(),
 	}, nil
 }
 
@@ -175,7 +175,7 @@ func (s *Step) RunCLISubstep(substep idl.Substep, f func(streams step.OutStreams
 }
 
 func (s *Step) DisableStore() {
-	s.store = nil
+	s.stepStore = nil
 }
 
 func (s *Step) Complete(completedText string) error {
@@ -186,8 +186,8 @@ func (s *Step) Complete(completedText string) error {
 		status = idl.Status_FAILED
 	}
 
-	if s.store != nil {
-		if wErr := s.store.Write(s.step, status); wErr != nil {
+	if s.stepStore != nil {
+		if wErr := s.stepStore.Write(s.step, status); wErr != nil {
 			s.err = errorlist.Append(s.err, wErr)
 		}
 	}

@@ -32,19 +32,19 @@ func TestStepStore(t *testing.T) {
 	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 	defer resetEnv()
 
-	store, err := commanders.NewStepStore()
+	stepStore, err := commanders.NewStepStore()
 	if err != nil {
 		t.Fatalf("NewStepStore failed: %v", err)
 	}
 
 	t.Run("write persists the step status", func(t *testing.T) {
 		expected := idl.Status_RUNNING
-		err := store.Write(idl.Step_INITIALIZE, expected)
+		err := stepStore.Write(idl.Step_INITIALIZE, expected)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
 
-		status, err := store.Read(idl.Step_INITIALIZE)
+		status, err := stepStore.Read(idl.Step_INITIALIZE)
 		if err != nil {
 			t.Errorf("Read failed %#v", err)
 		}
@@ -58,15 +58,15 @@ func TestStepStore(t *testing.T) {
 		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", "/does/not/exist")
 		defer resetEnv()
 
-		store, err := commanders.NewStepStore()
+		stepStore, err := commanders.NewStepStore()
 		var pathErr *os.PathError
 		if !errors.As(err, &pathErr) {
 			t.Errorf("got %T, want %T", err, pathErr)
 		}
 
 		expected := &commanders.StepStore{}
-		if !reflect.DeepEqual(store, expected) {
-			t.Errorf("got %v want %v", store, expected)
+		if !reflect.DeepEqual(stepStore, expected) {
+			t.Errorf("got %v want %v", stepStore, expected)
 		}
 	})
 
@@ -84,7 +84,7 @@ func TestStepStore(t *testing.T) {
 		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 		defer resetEnv()
 
-		store, err := commanders.NewStepStore()
+		stepStore, err := commanders.NewStepStore()
 		if err != nil {
 			t.Fatalf("NewStepStore failed: %v", err)
 		}
@@ -94,13 +94,13 @@ func TestStepStore(t *testing.T) {
 			t.Fatalf("removing temp state directory: %v", err)
 		}
 
-		err = store.Write(idl.Step_INITIALIZE, idl.Status_RUNNING)
+		err = stepStore.Write(idl.Step_INITIALIZE, idl.Status_RUNNING)
 		var pathErr *os.PathError
 		if !errors.As(err, &pathErr) {
 			t.Errorf("returned error type %T want %T", err, pathErr)
 		}
 
-		status, err := store.Read(idl.Step_INITIALIZE)
+		status, err := stepStore.Read(idl.Step_INITIALIZE)
 		if !errors.As(err, &pathErr) {
 			t.Errorf("returned error type %T want %T", err, pathErr)
 		}
@@ -125,7 +125,7 @@ func TestStepStore(t *testing.T) {
 		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 		defer resetEnv()
 
-		store, err := commanders.NewStepStore()
+		stepStore, err := commanders.NewStepStore()
 		if err != nil {
 			t.Fatalf("NewStepStore failed: %v", err)
 		}
@@ -141,7 +141,7 @@ func TestStepStore(t *testing.T) {
 			return true
 		}
 
-		hasStatus, err := store.HasStatus(idl.Step_INITIALIZE, check)
+		hasStatus, err := stepStore.HasStatus(idl.Step_INITIALIZE, check)
 		var pathErr *os.PathError
 		if !errors.As(err, &pathErr) {
 			t.Errorf("returned error type %T want %T", err, pathErr)
@@ -159,12 +159,12 @@ func TestStepStore(t *testing.T) {
 	t.Run("HasStepStarted returns true if a step's status is running, complete, or failed", func(t *testing.T) {
 		statuses := []idl.Status{idl.Status_RUNNING, idl.Status_COMPLETE, idl.Status_FAILED}
 		for _, status := range statuses {
-			err := store.Write(idl.Step_INITIALIZE, status)
+			err := stepStore.Write(idl.Step_INITIALIZE, status)
 			if err != nil {
 				t.Errorf("Write failed %#v", err)
 			}
 
-			started, err := store.HasStepStarted(idl.Step_INITIALIZE)
+			started, err := stepStore.HasStepStarted(idl.Step_INITIALIZE)
 			if err != nil {
 				t.Errorf("HasStepStarted failed %#v", err)
 			}
@@ -176,7 +176,7 @@ func TestStepStore(t *testing.T) {
 	})
 
 	t.Run("HasStepStarted returns false if a step has not started", func(t *testing.T) {
-		started, err := store.HasStepStarted(idl.Step_UNKNOWN_STEP)
+		started, err := stepStore.HasStepStarted(idl.Step_UNKNOWN_STEP)
 		if err != nil {
 			t.Errorf("HasStepStarted failed %#v", err)
 		}
@@ -187,12 +187,12 @@ func TestStepStore(t *testing.T) {
 	})
 
 	t.Run("HasStepCompleted returns true if a step's status is complete", func(t *testing.T) {
-		err := store.Write(idl.Step_INITIALIZE, idl.Status_COMPLETE)
+		err := stepStore.Write(idl.Step_INITIALIZE, idl.Status_COMPLETE)
 		if err != nil {
 			t.Errorf("Write failed %#v", err)
 		}
 
-		completed, err := store.HasStepCompleted(idl.Step_INITIALIZE)
+		completed, err := stepStore.HasStepCompleted(idl.Step_INITIALIZE)
 		if err != nil {
 			t.Errorf("HasStepCompleted failed %#v", err)
 		}
@@ -205,12 +205,12 @@ func TestStepStore(t *testing.T) {
 	t.Run("HasStepCompleted returns false if a step's status is not complete", func(t *testing.T) {
 		statuses := []idl.Status{idl.Status_RUNNING, idl.Status_FAILED, idl.Status_SKIPPED, idl.Status_UNKNOWN_STATUS}
 		for _, status := range statuses {
-			err := store.Write(idl.Step_INITIALIZE, status)
+			err := stepStore.Write(idl.Step_INITIALIZE, status)
 			if err != nil {
 				t.Errorf("Write failed %#v", err)
 			}
 
-			completed, err := store.HasStepCompleted(idl.Step_INITIALIZE)
+			completed, err := stepStore.HasStepCompleted(idl.Step_INITIALIZE)
 			if err != nil {
 				t.Errorf("HasStepCompleted failed %#v", err)
 			}
@@ -236,7 +236,7 @@ func TestValidateStep(t *testing.T) {
 	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 	defer resetEnv()
 
-	store, err := commanders.NewStepStore()
+	stepStore, err := commanders.NewStepStore()
 	if err != nil {
 		t.Fatalf("NewStepStore failed: %v", err)
 	}
@@ -340,13 +340,13 @@ func TestValidateStep(t *testing.T) {
 
 	for _, c := range errorCases {
 		t.Run(c.name, func(t *testing.T) {
-			clearStore(t)
+			clearStepStore(t)
 
 			for _, condition := range c.preconditions {
-				mustWriteStatus(t, store, condition.step, condition.status)
+				mustWriteStatus(t, stepStore, condition.step, condition.status)
 			}
 
-			err = store.ValidateStep(c.currentStep)
+			err = stepStore.ValidateStep(c.currentStep)
 			var nextActionsErr cli.NextActions
 			if !errors.As(err, &nextActionsErr) {
 				t.Errorf("got %T, want %T", err, nextActionsErr)
@@ -439,13 +439,13 @@ func TestValidateStep(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			clearStore(t)
+			clearStepStore(t)
 
 			for _, condition := range c.preconditions {
-				mustWriteStatus(t, store, condition.step, condition.status)
+				mustWriteStatus(t, stepStore, condition.step, condition.status)
 			}
 
-			err = store.ValidateStep(c.currentStep)
+			err = stepStore.ValidateStep(c.currentStep)
 			if err != nil {
 				t.Errorf("unexpected err %#v", err)
 			}
@@ -453,18 +453,18 @@ func TestValidateStep(t *testing.T) {
 	}
 }
 
-func clearStore(t *testing.T) {
+func clearStepStore(t *testing.T) {
 	t.Helper()
 
 	path := filepath.Join(utils.GetStateDir(), commanders.StepsFileName)
 	testutils.MustWriteToFile(t, path, "{}")
 }
 
-func mustWriteStatus(t *testing.T, store *commanders.StepStore, step idl.Step, status idl.Status) {
+func mustWriteStatus(t *testing.T, stepStore *commanders.StepStore, step idl.Step, status idl.Status) {
 	t.Helper()
 
-	err := store.Write(step, status)
+	err := stepStore.Write(step, status)
 	if err != nil {
-		t.Errorf("store.Write returned error %+v", err)
+		t.Errorf("stepStore.Write returned error %+v", err)
 	}
 }
