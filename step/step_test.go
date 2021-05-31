@@ -34,7 +34,7 @@ func TestStepRun(t *testing.T) {
 				Status: idl.Status_COMPLETE,
 			}}})
 
-		s := step.New(idl.Step_INITIALIZE, server, &TestStore{}, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_INITIALIZE, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
 
 		var called bool
 		s.Run(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(streams step.OutStreams) error {
@@ -66,15 +66,15 @@ func TestStepRun(t *testing.T) {
 				}}}),
 		)
 
-		store := &TestStore{}
-		s := step.New(idl.Step_INITIALIZE, server, store, &testutils.DevNullWithClose{})
+		substepStore := &TestSubstepStore{}
+		s := step.New(idl.Step_INITIALIZE, server, substepStore, &testutils.DevNullWithClose{})
 
 		s.Run(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(streams step.OutStreams) error {
 			return step.Skip
 		})
 
-		if store.Status != idl.Status_COMPLETE {
-			t.Errorf("substep status was %s, want %s", store.Status, idl.Status_COMPLETE)
+		if substepStore.Status != idl.Status_COMPLETE {
+			t.Errorf("substep status was %s, want %s", substepStore.Status, idl.Status_COMPLETE)
 		}
 	})
 
@@ -94,13 +94,13 @@ func TestStepRun(t *testing.T) {
 				Status: idl.Status_COMPLETE,
 			}}})
 
-		store := &TestStore{}
-		s := step.New(idl.Step_INITIALIZE, server, store, &testutils.DevNullWithClose{})
+		substepStore := &TestSubstepStore{}
+		s := step.New(idl.Step_INITIALIZE, server, substepStore, &testutils.DevNullWithClose{})
 
 		var status idl.Status
 		s.Run(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(streams step.OutStreams) error {
 			// save off status to verify that it is running
-			status = store.Status
+			status = substepStore.Status
 			return nil
 		})
 
@@ -110,8 +110,8 @@ func TestStepRun(t *testing.T) {
 		}
 
 		expected = idl.Status_COMPLETE
-		if store.Status != expected {
-			t.Errorf("got %q want %q", store.Status, expected)
+		if substepStore.Status != expected {
+			t.Errorf("got %q want %q", substepStore.Status, expected)
 		}
 	})
 
@@ -131,8 +131,8 @@ func TestStepRun(t *testing.T) {
 				Status: idl.Status_COMPLETE,
 			}}})
 
-		store := &TestStore{Status: idl.Status_COMPLETE}
-		s := step.New(idl.Step_INITIALIZE, server, store, &testutils.DevNullWithClose{})
+		substepStore := &TestSubstepStore{Status: idl.Status_COMPLETE}
+		s := step.New(idl.Step_INITIALIZE, server, substepStore, &testutils.DevNullWithClose{})
 
 		var called bool
 		s.AlwaysRun(idl.Substep_CHECK_UPGRADE, func(streams step.OutStreams) error {
@@ -161,7 +161,7 @@ func TestStepRun(t *testing.T) {
 				Status: idl.Status_FAILED,
 			}}})
 
-		s := step.New(idl.Step_INITIALIZE, server, &TestStore{}, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_INITIALIZE, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
 
 		var called bool
 		s.Run(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(streams step.OutStreams) error {
@@ -180,8 +180,8 @@ func TestStepRun(t *testing.T) {
 
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 
-		failingStore := &TestStore{WriteErr: errors.New("oops")}
-		s := step.New(idl.Step_INITIALIZE, server, failingStore, &testutils.DevNullWithClose{})
+		failingSubstepStore := &TestSubstepStore{WriteErr: errors.New("oops")}
+		s := step.New(idl.Step_INITIALIZE, server, failingSubstepStore, &testutils.DevNullWithClose{})
 
 		var called bool
 		s.Run(idl.Substep_CHECK_UPGRADE, func(streams step.OutStreams) error {
@@ -189,8 +189,8 @@ func TestStepRun(t *testing.T) {
 			return nil
 		})
 
-		if !errors.Is(s.Err(), failingStore.WriteErr) {
-			t.Errorf("returned error %#v want %#v", s.Err(), failingStore.WriteErr)
+		if !errors.Is(s.Err(), failingSubstepStore.WriteErr) {
+			t.Errorf("returned error %#v want %#v", s.Err(), failingSubstepStore.WriteErr)
 		}
 
 		if called {
@@ -209,8 +209,8 @@ func TestStepRun(t *testing.T) {
 				Status: idl.Status_SKIPPED,
 			}}})
 
-		store := &TestStore{Status: idl.Status_COMPLETE}
-		s := step.New(idl.Step_INITIALIZE, server, store, &testutils.DevNullWithClose{})
+		substepStore := &TestSubstepStore{Status: idl.Status_COMPLETE}
+		s := step.New(idl.Step_INITIALIZE, server, substepStore, &testutils.DevNullWithClose{})
 
 		var called bool
 		s.Run(idl.Substep_CHECK_UPGRADE, func(streams step.OutStreams) error {
@@ -230,7 +230,7 @@ func TestStepRun(t *testing.T) {
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 		server.EXPECT().Send(gomock.Any()).AnyTimes()
 
-		s := step.New(idl.Step_INITIALIZE, server, &TestStore{}, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_INITIALIZE, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
 
 		expected := errors.New("oops")
 		s.Run(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(streams step.OutStreams) error {
@@ -259,8 +259,8 @@ func TestStepRun(t *testing.T) {
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 		server.EXPECT().Send(gomock.Any()).AnyTimes()
 
-		store := &TestStore{Status: idl.Status_RUNNING}
-		s := step.New(idl.Step_INITIALIZE, server, store, &testutils.DevNullWithClose{})
+		substepStore := &TestSubstepStore{Status: idl.Status_RUNNING}
+		s := step.New(idl.Step_INITIALIZE, server, substepStore, &testutils.DevNullWithClose{})
 
 		var called bool
 		s.Run(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(streams step.OutStreams) error {
@@ -339,7 +339,7 @@ func TestHasRun(t *testing.T) {
 		}
 	})
 
-	t.Run("returns an error when reading from the store fails", func(t *testing.T) {
+	t.Run("returns an error when reading from the substep store fails", func(t *testing.T) {
 		dir := testutils.GetTempDir(t, "")
 		defer testutils.MustRemoveAll(t, dir)
 
@@ -407,16 +407,16 @@ func TestStepFinish(t *testing.T) {
 	})
 }
 
-type TestStore struct {
+type TestSubstepStore struct {
 	Status   idl.Status
 	WriteErr error
 }
 
-func (t *TestStore) Read(_ idl.Step, substep idl.Substep) (idl.Status, error) {
+func (t *TestSubstepStore) Read(_ idl.Step, substep idl.Substep) (idl.Status, error) {
 	return t.Status, nil
 }
 
-func (t *TestStore) Write(_ idl.Step, substep idl.Substep, status idl.Status) (err error) {
+func (t *TestSubstepStore) Write(_ idl.Step, substep idl.Substep, status idl.Status) (err error) {
 	t.Status = status
 	return t.WriteErr
 }

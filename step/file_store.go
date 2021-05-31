@@ -12,12 +12,12 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
-type Store interface {
+type SubstepStore interface {
 	Read(idl.Step, idl.Substep) (idl.Status, error)
 	Write(idl.Step, idl.Substep, idl.Status) error
 }
 
-// FileStore implements step.Store by providing persistent storage on disk.
+// FileStore implements step.SubstepStore by providing persistent storage on disk.
 type FileStore struct {
 	path string
 }

@@ -22,19 +22,19 @@ import (
 const SubstepsFileName = "substeps.json"
 
 type Step struct {
-	name    idl.Step
-	sender  idl.MessageSender // sends substep status messages
-	store   Store             // persistent substep status storage
-	streams OutStreamsCloser  // writes substep stdout/err
-	err     error
+	name         idl.Step
+	sender       idl.MessageSender // sends substep status messages
+	substepStore SubstepStore      // persistent substep status storage
+	streams      OutStreamsCloser  // writes substep stdout/err
+	err          error
 }
 
-func New(name idl.Step, sender idl.MessageSender, store Store, streams OutStreamsCloser) *Step {
+func New(name idl.Step, sender idl.MessageSender, substepStore SubstepStore, streams OutStreamsCloser) *Step {
 	return &Step{
-		name:    name,
-		sender:  sender,
-		store:   store,
-		streams: streams,
+		name:         name,
+		sender:       sender,
+		substepStore: substepStore,
+		streams:      streams,
 	}
 }
 
@@ -72,8 +72,8 @@ func HasRun(step idl.Step, substep idl.Substep) (bool, error) {
 		return false, xerrors.Errorf("read %q: %w", SubstepsFileName, err)
 	}
 
-	store := NewFileStore(path)
-	status, err := store.Read(step, substep)
+	substepStore := NewFileStore(path)
+	status, err := substepStore.Read(step, substep)
 	if err != nil {
 		return false, err
 	}
@@ -132,7 +132,7 @@ func (s *Step) run(substep idl.Substep, f func(OutStreams) error, alwaysRun bool
 		return
 	}
 
-	status, err := s.store.Read(s.name, substep)
+	status, err := s.substepStore.Read(s.name, substep)
 	if err != nil {
 		return
 	}
@@ -194,7 +194,7 @@ func (s *Step) write(substep idl.Substep, status idl.Status) error {
 		storeStatus = idl.Status_COMPLETE
 	}
 
-	err := s.store.Write(s.name, substep, storeStatus)
+	err := s.substepStore.Write(s.name, substep, storeStatus)
 	if err != nil {
 		return err
 	}
