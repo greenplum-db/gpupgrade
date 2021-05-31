@@ -38,7 +38,7 @@ func New(name idl.Step, sender idl.MessageSender, substepStore SubstepStore, str
 	}
 }
 
-func Begin(stateDir string, step idl.Step, sender idl.MessageSender) (*Step, error) {
+func Begin(step idl.Step, sender idl.MessageSender) (*Step, error) {
 	logdir, err := utils.GetLogDir()
 	if err != nil {
 		return nil, err
@@ -56,23 +56,22 @@ func Begin(stateDir string, step idl.Step, sender idl.MessageSender) (*Step, err
 		return nil, xerrors.Errorf(`logging step "%s": %w`, step, err)
 	}
 
-	statusPath, err := utils.GetJSONFile(stateDir, SubstepsFileName)
+	substepStore, err := NewSubstepFileStore()
 	if err != nil {
-		return nil, xerrors.Errorf("read %q: %w", SubstepsFileName, err)
+		return nil, err
 	}
 
 	streams := newMultiplexedStream(sender, log)
 
-	return New(step, sender, NewSubstepFileStore(statusPath), streams), nil
+	return New(step, sender, substepStore, streams), nil
 }
 
 func HasRun(step idl.Step, substep idl.Substep) (bool, error) {
-	path, err := utils.GetJSONFile(utils.GetStateDir(), SubstepsFileName)
+	substepStore, err := NewSubstepFileStore()
 	if err != nil {
-		return false, xerrors.Errorf("read %q: %w", SubstepsFileName, err)
+		return false, err
 	}
 
-	substepStore := NewSubstepFileStore(path)
 	status, err := substepStore.Read(step, substep)
 	if err != nil {
 		return false, err

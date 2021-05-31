@@ -29,9 +29,7 @@ func NewStepStore() (*StepStore, error) {
 		return &StepStore{}, xerrors.Errorf("getting %q file: %w", StepsFileName, err)
 	}
 
-	return &StepStore{
-		store: step.NewSubstepFileStore(path),
-	}, nil
+	return &StepStore{store: step.NewSubstepStoreUsingFile(path)}, nil
 }
 
 func (s *StepStore) Write(stepName idl.Step, status idl.Status) error {

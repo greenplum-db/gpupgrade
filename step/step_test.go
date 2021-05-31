@@ -5,6 +5,7 @@ package step_test
 
 import (
 	"errors"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -279,6 +280,19 @@ func TestStepRun(t *testing.T) {
 }
 
 func TestHasRun(t *testing.T) {
+	stateDir, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := os.RemoveAll(stateDir); err != nil {
+			t.Errorf("removing temp directory: %v", err)
+		}
+	}()
+
+	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
+	defer resetEnv()
+
 	cases := []struct {
 		description string
 		status      idl.Status
@@ -299,16 +313,12 @@ func TestHasRun(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.description, func(t *testing.T) {
-			dir := testutils.GetTempDir(t, "")
-			defer testutils.MustRemoveAll(t, dir)
+			store, err := step.NewSubstepFileStore()
+			if err != nil {
+				t.Fatalf("step.NewSubstepStore returned error %+v", err)
+			}
 
-			resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", dir)
-			defer resetEnv()
-
-			path := filepath.Join(dir, step.SubstepsFileName)
-			testutils.MustWriteToFile(t, path, "{}")
-			store := step.NewSubstepFileStore(path)
-			err := store.Write(idl.Step_INITIALIZE, idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, c.status)
+			err = store.Write(idl.Step_INITIALIZE, idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, c.status)
 			if err != nil {
 				t.Errorf("store.Write returned error %+v", err)
 			}

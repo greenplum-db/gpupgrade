@@ -21,7 +21,7 @@ import (
 )
 
 func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_InitializeServer) (err error) {
-	st, err := step.Begin(s.StateDir, idl.Step_INITIALIZE, stream)
+	st, err := step.Begin(idl.Step_INITIALIZE, stream)
 	if err != nil {
 		return err
 	}
@@ -92,7 +92,7 @@ func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initi
 }
 
 func (s *Server) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest, stream idl.CliToHub_InitializeCreateClusterServer) (err error) {
-	st, err := step.Begin(s.StateDir, idl.Step_INITIALIZE, stream)
+	st, err := step.Begin(idl.Step_INITIALIZE, stream)
 	if err != nil {
 		return err
 	}

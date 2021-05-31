@@ -23,7 +23,7 @@ import (
 var ErrMissingMirrorsAndStandby = errors.New("Source cluster does not have mirrors and/or standby. Cannot restore source cluster. Please contact support.")
 
 func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) (err error) {
-	st, err := step.Begin(s.StateDir, idl.Step_REVERT, stream)
+	st, err := step.Begin(idl.Step_REVERT, stream)
 	if err != nil {
 		return err
 	}

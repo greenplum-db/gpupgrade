@@ -10,6 +10,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
+	"golang.org/x/xerrors"
 )
 
 type SubstepStore interface {
@@ -22,7 +23,16 @@ type SubstepFileStore struct {
 	path string
 }
 
-func NewSubstepFileStore(path string) *SubstepFileStore {
+func NewSubstepFileStore() (*SubstepFileStore, error) {
+	path, err := utils.GetJSONFile(utils.GetStateDir(), SubstepsFileName)
+	if err != nil {
+		return &SubstepFileStore{}, xerrors.Errorf("read %q: %w", SubstepsFileName, err)
+	}
+
+	return &SubstepFileStore{path}, nil
+}
+
+func NewSubstepStoreUsingFile(path string) *SubstepFileStore {
 	return &SubstepFileStore{path}
 }
 

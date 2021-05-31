@@ -27,7 +27,7 @@ func TestFileStore(t *testing.T) {
 	}()
 
 	path := filepath.Join(tmpDir, step.SubstepsFileName)
-	fs := step.NewSubstepFileStore(path)
+	fs := step.NewSubstepStoreUsingFile(path)
 
 	const section = idl.Step_INITIALIZE
 
