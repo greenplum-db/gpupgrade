@@ -10,4 +10,5 @@ test: mismatched_partition_schemas
 test: name_col
 test: partitioned_heap_table_with_dropped_columns
 test: tsquery_col
+test: views_referencing_deprecated_tables
 test: views_with_lag_lead_functions
