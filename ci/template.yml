@@ -194,8 +194,7 @@ anchors:
           image_resource:
             type: registry-image
             source:
-              repository: pivotaldata/ccp
-              tag: "7"
+              repository: gcr.io/data-gpdb-public-images/ccp
           inputs:
             - name: ccp_src
             - name: terraform
@@ -374,7 +373,7 @@ jobs:
         source:
           # NOTE: Since we build isolation2 the build image OS needs to match
           # the GPDB target version we are testing.
-          repository: pivotaldata/gpdb{{.Target}}-centos{{.CentosVersion}}-test
+          repository: gcr.io/data-gpdb-public-images/gpdb{{.Target}}-centos{{.CentosVersion}}-test
           tag: "latest"
       inputs:
         - name: rpm_enterprise
@@ -483,7 +482,7 @@ jobs:
         image_resource:
           type: registry-image
           source:
-            repository: pivotaldata/gpdb6-centos7-test
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test
             tag: latest
         inputs:
           - name: gpupgrade_src
@@ -502,7 +501,7 @@ jobs:
         image_resource:
           type: registry-image
           source:
-            repository: pivotaldata/gpdb6-centos7-test-golang
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
             tag: "latest"
         inputs:
         - name: terraform
@@ -530,7 +529,7 @@ jobs:
         image_resource:
           type: registry-image
           source:
-            repository: pivotaldata/gpdb6-centos7-test-golang
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
             tag: "latest"
         inputs:
           - name: gpupgrade_src
@@ -619,7 +618,7 @@ jobs:
         image_resource:
           type: registry-image
           source:
-            repository: pivotaldata/gpdb6-centos7-test-golang
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
             tag: "latest"
         inputs:
           - name: terraform
