@@ -5,18 +5,18 @@
 
 resource_types:
 - name: gcs
-  type: docker-image
+  type: registry-image
   source:
     repository: frodenas/gcs-resource
 
 - name: slack-notification
-  type: docker-image
+  type: registry-image
   source:
     repository: cfcommunity/slack-notification-resource
     tag: latest
 
 - name: terraform
-  type: docker-image
+  type: registry-image
   source:
     repository: ljfranklin/terraform-resource
     tag: 0.11.14
@@ -213,7 +213,7 @@ anchors:
         config:
           platform: linux
           image_resource:
-            type: docker-image
+            type: registry-image
             source:
               repository: pivotaldata/ccp
               tag: "7"
@@ -323,7 +323,7 @@ jobs:
     config:
       platform: linux
       image_resource:
-        type: docker-image
+        type: registry-image
         source:
           repository: golangci/golangci-lint
       inputs:
@@ -420,7 +420,7 @@ jobs:
     config:
       platform: linux
       image_resource:
-        type: docker-image
+        type: registry-image
         source:
           # NOTE: Since we build isolation2 the build image OS needs to match
           # the GPDB target version we are testing.
@@ -467,7 +467,7 @@ jobs:
     config:
       platform: linux
       image_resource:
-        type: docker-image
+        type: registry-image
         source:
           # NOTE: Since we build isolation2 the build image OS needs to match
           # the GPDB target version we are testing.
@@ -539,7 +539,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: alpine
             tag: latest
@@ -557,7 +557,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: pivotaldata/gpdb6-centos7-test-golang
             tag: "latest"
@@ -574,7 +574,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: pivotaldata/gpdb6-centos7-test-golang
             tag: "latest"
@@ -638,7 +638,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: alpine
             tag: latest
@@ -656,7 +656,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: pivotaldata/gpdb6-centos7-test-golang
             tag: "latest"
@@ -673,7 +673,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: pivotaldata/gpdb6-centos7-test-golang
             tag: "latest"
@@ -740,7 +740,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: alpine
             tag: latest
@@ -759,7 +759,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: pivotaldata/gpdb6-centos7-test-golang
             tag: "latest"
@@ -777,7 +777,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: pivotaldata/gpdb6-centos7-test-golang
             tag: "latest"
@@ -844,7 +844,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: alpine
             tag: latest
@@ -863,7 +863,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: pivotaldata/gpdb6-centos7-test-golang
             tag: "latest"
@@ -881,7 +881,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: pivotaldata/gpdb6-centos7-test-golang
             tag: "latest"
@@ -948,7 +948,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: alpine
             tag: latest
@@ -967,7 +967,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: pivotaldata/gpdb6-centos7-test-golang
             tag: "latest"
@@ -986,7 +986,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: pivotaldata/gpdb6-centos7-test-golang
             tag: "latest"
@@ -1053,7 +1053,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: alpine
             tag: latest
@@ -1072,7 +1072,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: pivotaldata/gpdb6-centos7-test-golang
             tag: "latest"
@@ -1143,7 +1143,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: alpine
             tag: latest
@@ -1162,7 +1162,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: pivotaldata/gpdb6-centos7-test-golang
             tag: "latest"
@@ -1231,7 +1231,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: alpine
             tag: latest
@@ -1248,7 +1248,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: pivotaldata/gpdb6-centos7-test
             tag: latest
@@ -1263,7 +1263,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: pivotaldata/gpdb6-centos7-test-golang
             tag: "latest"
@@ -1282,7 +1282,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: pivotaldata/gpdb6-centos7-test-golang
             tag: "latest"
@@ -1349,7 +1349,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: alpine
             tag: latest
@@ -1368,7 +1368,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: pivotaldata/gpdb6-centos7-test-golang
             tag: "latest"
@@ -1387,7 +1387,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: pivotaldata/gpdb6-centos7-test-golang
             tag: "latest"
@@ -1454,7 +1454,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: alpine
             tag: latest
@@ -1473,7 +1473,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: pivotaldata/gpdb6-centos7-test-golang
             tag: "latest"
@@ -1544,7 +1544,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: alpine
             tag: latest
@@ -1563,7 +1563,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: pivotaldata/gpdb6-centos7-test-golang
             tag: "latest"
@@ -1632,7 +1632,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: alpine
             tag: latest
@@ -1649,7 +1649,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: pivotaldata/gpdb6-centos7-test
             tag: latest
@@ -1664,7 +1664,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: pivotaldata/gpdb6-centos7-test-golang
             tag: "latest"
@@ -1683,7 +1683,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: pivotaldata/gpdb6-centos7-test-golang
             tag: "latest"
@@ -1744,7 +1744,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: alpine
             tag: latest
@@ -1760,7 +1760,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: pivotaldata/gpdb6-centos7-test-golang
             tag: "latest"
@@ -1826,7 +1826,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: alpine
             tag: latest
@@ -1842,7 +1842,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: pivotaldata/gpdb6-centos7-test-golang
             tag: "latest"
@@ -1911,7 +1911,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: alpine
             tag: latest
@@ -1928,7 +1928,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: pivotaldata/gpdb6-centos7-test-golang
             tag: "latest"
@@ -1997,7 +1997,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: alpine
             tag: latest
@@ -2014,7 +2014,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: pivotaldata/gpdb6-centos7-test-golang
             tag: "latest"
@@ -2090,7 +2090,7 @@ jobs:
       config:
         platform: linux
         image_resource:
-          type: docker-image
+          type: registry-image
           source:
             repository: golang
             tag: '1.16'
