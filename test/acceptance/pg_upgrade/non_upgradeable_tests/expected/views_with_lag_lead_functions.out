@@ -32,7 +32,7 @@ CREATE
 -- start_ignore
 -- end_ignore
 (exited with code 1)
-! cat ${GPUPGRADE_HOME}/pg_upgrade/seg-1/view_lead_lag_functions.txt | sort -b -d;
+! cat ${GPUPGRADE_HOME}/pg_upgrade/seg-1/view_lead_lag_functions.txt | LC_ALL=C sort -b;
 Database: isolation2test
   public.lag_view_1 
   public.lag_view_2 

@@ -32,7 +32,7 @@ ALTER
 -- start_ignore
 -- end_ignore
 (exited with code 1)
-! /bin/cat ${GPUPGRADE_HOME}/pg_upgrade/seg-1/mismatched_partition_schemas.txt | sort -b -d;
+! /bin/cat ${GPUPGRADE_HOME}/pg_upgrade/seg-1/mismatched_partition_schemas.txt | LC_ALL=C sort -b;
 Database: isolation2test
   public.multischema_partition contains child other_schema.multischema_partition_1_prt_1
   public.multischema_subpartition contains child other_schema.multischema_subpartition_1_prt_1_2_prt_2

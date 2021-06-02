@@ -37,7 +37,7 @@ INSERT INTO non_pt SELECT i FROM generate_series(1,2)i;
 -- Assert that pg_upgrade --check correctly detects the non-upgradeable objects
 --------------------------------------------------------------------------------
 !\retcode gpupgrade initialize --source-gphome="${GPHOME_SOURCE}" --target-gphome=${GPHOME_TARGET} --source-master-port=${PGPORT} --disk-free-ratio 0 --automatic;
-! cat ${GPUPGRADE_HOME}/pg_upgrade/seg-1/foreign_key_constraints.txt | sort -b -d;
+! cat ${GPUPGRADE_HOME}/pg_upgrade/seg-1/foreign_key_constraints.txt | LC_ALL=C sort -b;
 
 --------------------------------------------------------------------------------
 -- Workaround to unblock upgrade

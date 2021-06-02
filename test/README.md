@@ -123,7 +123,7 @@ they will skip many of the `gpupgrade initialize` substeps which were already ru
 from `SELECT` queries don't require an `ORDER BY` for deterministic output
 comparison. See atmsort.pl in the gpdb repo for details. However, the framework
 will *not* sort the output of shell commands such as `! cat .. ;`. Therefore, use
-`! cat .. | sort -b -d;` to sort results independent of platforms.
+`! cat .. | LC_ALL=C sort -b;` to sort results independent of platforms.
 
 ### pg_upgrade: upgradeable tests (positive tests)
 

@@ -72,7 +72,7 @@ ALTER
 -- start_ignore
 -- end_ignore
 (exited with code 1)
-! cat ${GPUPGRADE_HOME}/pg_upgrade/seg-1/heterogeneous_partitioned_tables.txt | sort -b -d;
+! cat ${GPUPGRADE_HOME}/pg_upgrade/seg-1/heterogeneous_partitioned_tables.txt | LC_ALL=C sort -b;
   column ........pg.dropped.2........ of parent table public.p_diff_aligned_varlena has type 0 of length -1 and alignment 'd', but it is type 0 of length -1 and alignment 'i' in child table public.p_diff_aligned_varlena_1_prt_varlena_2_prt_varlena_first
   column ........pg.dropped.2........ of parent table public.p_different_aligned_column has type 0 of length 12 and alignment 'i', but it is type 0 of length 12 and alignment 'd' in child table public.p_differen_1_prt_p_part_w_2_prt_subpart_differnt_aligned_column
   column ........pg.dropped.2........ of parent table public.p_different_size_column has type 0 of length 4 and alignment 'i', but it is type 0 of length -1 and alignment 'i' in child table public.p_different_s_1_prt_p_part_w_2_prt_subpart_differnt_size_column
