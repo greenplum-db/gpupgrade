@@ -1,0 +1,32 @@
+-- Copyright (c) 2017-2021 VMware, Inc. or its affiliates
+-- SPDX-License-Identifier: Apache-2.0
+
+--------------------------------------------------------------------------------
+-- Validate that the upgradeable objects are functional post-upgrade
+--------------------------------------------------------------------------------
+
+-- Validate attributes of resource queues
+SELECT rsqname, rsqcountlimit, rsqcostlimit, rsqovercommit, rsqignorecostlimit, resname, ressetting FROM pg_resqueue r, pg_resqueuecapability c, pg_resourcetype t WHERE r.oid=c.resqueueid AND c.restypid=t.restypid ORDER BY rsqname;
+ rsqname    | rsqcountlimit | rsqcostlimit | rsqovercommit | rsqignorecostlimit | resname      | ressetting 
+------------+---------------+--------------+---------------+--------------------+--------------+------------
+ pg_default | 2.0           | 2000.0       | f             | 1700.0             | memory_limit | 10MB       
+ pg_default | 2.0           | 2000.0       | f             | 1700.0             | priority     | min        
+ test_queue | 2.0           | 2000.0       | f             | 1700.0             | memory_limit | 10MB       
+ test_queue | 2.0           | 2000.0       | f             | 1700.0             | priority     | min        
+(4 rows)
+
+-- Validate attributes of resource groups
+SELECT groupname, concurrency, cpu_rate_limit, memory_limit, memory_shared_quota, memory_spill_ratio, memory_spill_ratio, memory_auditor, cpuset FROM gp_toolkit.gp_resgroup_config ORDER BY groupname;
+ groupname     | concurrency | cpu_rate_limit | memory_limit | memory_shared_quota | memory_spill_ratio | memory_spill_ratio | memory_auditor | cpuset 
+---------------+-------------+----------------+--------------+---------------------+--------------------+--------------------+----------------+--------
+ admin_group   | 5           | 5              | 5            | 5                   | 5                  | 5                  | vmtracker      | -1     
+ default_group | 20          | 5              | 5            | 5                   | 5                  | 5                  | vmtracker      | -1     
+ test_group    | 5           | 5              | 5            | 5                   | 5                  | 5                  | vmtracker      | -1     
+(3 rows)
+
+-- Validate resource queue and group assignment to test_role
+SELECT rolname, rsqname, rsgname FROM pg_roles, pg_resgroup, pg_resqueue WHERE pg_roles.rolresgroup=pg_resgroup.oid AND pg_roles.rolresqueue=pg_resqueue.oid AND rolname='test_role';
+ rolname   | rsqname    | rsgname    
+-----------+------------+------------
+ test_role | test_queue | test_group 
+(1 row)
