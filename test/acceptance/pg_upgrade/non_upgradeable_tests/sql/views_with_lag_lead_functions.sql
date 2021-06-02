@@ -23,7 +23,7 @@ CREATE VIEW lead_view_2 AS SELECT lead(b, 1::bigint) OVER (ORDER BY b) as lag FR
 -- Assert that pg_upgrade --check correctly detects the non-upgradeable objects
 --------------------------------------------------------------------------------
 !\retcode gpupgrade initialize --source-gphome="${GPHOME_SOURCE}" --target-gphome=${GPHOME_TARGET} --source-master-port=${PGPORT} --disk-free-ratio 0 --automatic;
-! cat ${GPUPGRADE_HOME}/pg_upgrade/seg-1/view_lead_lag_functions.txt | sort;
+! cat ${GPUPGRADE_HOME}/pg_upgrade/seg-1/view_lead_lag_functions.txt | sort -b -d;
 
 --------------------------------------------------------------------------------
 -- Workaround to unblock upgrade

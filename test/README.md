@@ -122,9 +122,8 @@ they will skip many of the `gpupgrade initialize` substeps which were already ru
 - Note, the pg_regress framework gives us smart diffs. Specifically, the output
 from `SELECT` queries don't require an `ORDER BY` for deterministic output
 comparison. See atmsort.pl in the gpdb repo for details. However, the framework
-will *not* sort the output of shell commands such as `! cat .. ;`. An explicit
-sort will have to be provided such as `! cat .. | sort ;`.
-
+will *not* sort the output of shell commands such as `! cat .. ;`. Therefore, use
+`! cat .. | sort -b -d;` to sort results independent of platforms.
 
 ### pg_upgrade: upgradeable tests (positive tests)
 

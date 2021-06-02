@@ -28,7 +28,7 @@ ALTER TABLE multischema_subpartition_1_prt_1_2_prt_other SET SCHEMA other_schema
 -- Assert that pg_upgrade --check correctly detects the non-upgradeable objects
 --------------------------------------------------------------------------------
 !\retcode gpupgrade initialize --source-gphome="${GPHOME_SOURCE}" --target-gphome=${GPHOME_TARGET} --source-master-port=${PGPORT} --disk-free-ratio 0 --automatic;
-! /bin/cat ${GPUPGRADE_HOME}/pg_upgrade/seg-1/mismatched_partition_schemas.txt | sort;
+! /bin/cat ${GPUPGRADE_HOME}/pg_upgrade/seg-1/mismatched_partition_schemas.txt | sort -b -d;
 
 --------------------------------------------------------------------------------
 -- Workaround to unblock upgrade

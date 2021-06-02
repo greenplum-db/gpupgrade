@@ -35,7 +35,7 @@ INSERT INTO table_with_primary_constraint VALUES(2, 2);
 -- Assert that pg_upgrade --check correctly detects the non-upgradeable objects
 --------------------------------------------------------------------------------
 !\retcode gpupgrade initialize --source-gphome="${GPHOME_SOURCE}" --target-gphome=${GPHOME_TARGET} --source-master-port=${PGPORT} --disk-free-ratio 0 --automatic;
-! cat ${GPUPGRADE_HOME}/pg_upgrade/seg-1/unique_primary_key_constraint.txt | sort;
+! cat ${GPUPGRADE_HOME}/pg_upgrade/seg-1/unique_primary_key_constraint.txt | sort -b -d;
 
 --------------------------------------------------------------------------------
 -- Workaround to unblock upgrade

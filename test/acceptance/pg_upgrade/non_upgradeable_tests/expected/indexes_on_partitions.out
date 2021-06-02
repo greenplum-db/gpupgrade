@@ -45,17 +45,17 @@ CREATE
 -- start_ignore
 -- end_ignore
 (exited with code 1)
-! cat ${GPUPGRADE_HOME}/pg_upgrade/seg-1/partitioned_tables_indexes.txt | sort;
-  public.p_ao_table has 1 index(es)
-  public.p_ao_table_1_prt_1 has 1 index(es)
-  public.p_ao_table_1_prt_2 has 1 index(es)
-  public.p_aoco_table has 1 index(es)
+! cat ${GPUPGRADE_HOME}/pg_upgrade/seg-1/partitioned_tables_indexes.txt | sort -b -d;
+Database:  isolation2test
   public.p_aoco_table_1_prt_1 has 1 index(es)
   public.p_aoco_table_1_prt_2 has 1 index(es)
-  public.p_heap_table has 1 index(es)
+  public.p_aoco_table has 1 index(es)
+  public.p_ao_table_1_prt_1 has 1 index(es)
+  public.p_ao_table_1_prt_2 has 1 index(es)
+  public.p_ao_table has 1 index(es)
   public.p_heap_table_1_prt_1 has 1 index(es)
   public.p_heap_table_1_prt_2 has 1 index(es)
-Database:  isolation2test
+  public.p_heap_table has 1 index(es)
 
 
 --------------------------------------------------------------------------------
