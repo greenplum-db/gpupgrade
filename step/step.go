@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/greenplum-db/gp-common-go-libs/operating"
 	"golang.org/x/xerrors"
 
@@ -113,6 +114,15 @@ func (s *Step) RunInternalSubstep(f func() error) {
 
 func (s *Step) AlwaysRun(substep idl.Substep, f func(OutStreams) error) {
 	s.run(substep, f, true)
+}
+
+func (s *Step) RunConditionally(substep idl.Substep, shouldRun bool, f func(OutStreams) error) {
+	if !shouldRun {
+		gplog.Debug("skipping %s", substep)
+		return
+	}
+
+	s.run(substep, f, false)
 }
 
 func (s *Step) Run(substep idl.Substep, f func(OutStreams) error) {

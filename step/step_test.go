@@ -8,9 +8,12 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/golang/mock/gomock"
+
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
@@ -19,6 +22,8 @@ import (
 )
 
 func TestStepRun(t *testing.T) {
+	_, _, log := testlog.SetupLogger()
+
 	t.Run("marks a successful substep as complete", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
@@ -137,6 +142,65 @@ func TestStepRun(t *testing.T) {
 
 		var called bool
 		s.AlwaysRun(idl.Substep_CHECK_UPGRADE, func(streams step.OutStreams) error {
+			called = true
+			return nil
+		})
+
+		if !called {
+			t.Error("expected substep to be called")
+		}
+	})
+
+	t.Run("RunConditionally logs and does not run substep when shouldRun is false", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
+		server.EXPECT().
+			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
+				Step:   idl.Substep_CHECK_UPGRADE,
+				Status: idl.Status_RUNNING,
+			}}}).Times(0)
+
+		s := step.New(idl.Step_INITIALIZE, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
+
+		var called bool
+		s.RunConditionally(idl.Substep_CHECK_UPGRADE, false, func(streams step.OutStreams) error {
+			called = true
+			return nil
+		})
+
+		if called {
+			t.Error("expected substep to not be called")
+		}
+
+		contents := string(log.Bytes())
+		expected := "skipping " + idl.Substep_CHECK_UPGRADE.String()
+		if !strings.Contains(contents, expected) {
+			t.Errorf("expected %q in log file: %q", expected, contents)
+		}
+	})
+
+	t.Run("RunConditionally runs substep when shouldRun is true", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
+		server.EXPECT().
+			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
+				Step:   idl.Substep_CHECK_UPGRADE,
+				Status: idl.Status_RUNNING,
+			}}})
+		server.EXPECT().
+			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
+				Step:   idl.Substep_CHECK_UPGRADE,
+				Status: idl.Status_COMPLETE,
+			}}})
+
+		s := step.New(idl.Step_INITIALIZE, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
+
+		var called bool
+		s.RunConditionally(idl.Substep_CHECK_UPGRADE, true, func(streams step.OutStreams) error {
 			called = true
 			return nil
 		})

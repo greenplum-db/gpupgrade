@@ -65,61 +65,54 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		})
 	}
 
-	if s.TargetInitializeConfig.Primaries != nil && s.TargetInitializeConfig.Master.DataDir != "" {
-		st.Run(idl.Substep_DELETE_TARGET_CLUSTER_DATADIRS, func(streams step.OutStreams) error {
+	st.RunConditionally(idl.Substep_DELETE_TARGET_CLUSTER_DATADIRS,
+		s.TargetInitializeConfig.Primaries != nil && s.TargetInitializeConfig.Master.DataDir != "",
+		func(streams step.OutStreams) error {
 			return DeleteMasterAndPrimaryDataDirectories(streams, s.agentConns, s.TargetInitializeConfig)
 		})
 
-		st.Run(idl.Substep_DELETE_TABLESPACES, func(streams step.OutStreams) error {
+	st.RunConditionally(idl.Substep_DELETE_TABLESPACES,
+		s.TargetInitializeConfig.Primaries != nil && s.TargetInitializeConfig.Master.DataDir != "",
+		func(streams step.OutStreams) error {
 			return DeleteTargetTablespaces(streams, s.agentConns, s.Config.Target, s.TargetCatalogVersion, s.Tablespaces)
 		})
+
+	// For any of the link-mode cases described in the "Reverting to old
+	// cluster" section of https://www.postgresql.org/docs/9.4/pgupgrade.html,
+	// it is correct to restore the pg_control file. Even in the case where
+	// we're going to perform a full rsync restoration, we rely on this
+	// substep to clean up the pg_control.old file, since the rsync will not
+	// remove it.
+	st.RunConditionally(idl.Substep_RESTORE_PGCONTROL, s.UseLinkMode, func(streams step.OutStreams) error {
+		return RestoreMasterAndPrimariesPgControl(streams, s.agentConns, s.Source)
+	})
+
+	// if the target cluster has been started at any point, we must restore the source
+	// cluster as its files could have been modified.
+	targetStarted, err := step.HasRun(idl.Step_EXECUTE, idl.Substep_START_TARGET_CLUSTER)
+	if err != nil {
+		return err
 	}
 
-	if s.UseLinkMode {
-		// For any of the link-mode cases described in the "Reverting to old
-		// cluster" section of https://www.postgresql.org/docs/9.4/pgupgrade.html,
-		// it is correct to restore the pg_control file. Even in the case where
-		// we're going to perform a full rsync restoration, we rely on this
-		// substep to clean up the pg_control.old file, since the rsync will not
-		// remove it.
-		st.Run(idl.Substep_RESTORE_PGCONTROL, func(streams step.OutStreams) error {
-			return RestoreMasterAndPrimariesPgControl(streams, s.agentConns, s.Source)
-		})
-
-		// if the target cluster has been started at any point, we must restore the source
-		// cluster as its files could have been modified.
-		targetStarted, err := step.HasRun(idl.Step_EXECUTE, idl.Substep_START_TARGET_CLUSTER)
-		if err != nil {
+	st.RunConditionally(idl.Substep_RESTORE_SOURCE_CLUSTER, s.UseLinkMode && targetStarted, func(stream step.OutStreams) error {
+		if err := RsyncMasterAndPrimaries(stream, s.agentConns, s.Source); err != nil {
 			return err
 		}
 
-		if targetStarted {
-			st.Run(idl.Substep_RESTORE_SOURCE_CLUSTER, func(stream step.OutStreams) error {
-				if err := RsyncMasterAndPrimaries(stream, s.agentConns, s.Source); err != nil {
-					return err
-				}
-
-				return RsyncMasterAndPrimariesTablespaces(stream, s.agentConns, s.Source, s.Tablespaces)
-			})
-		}
-	}
+		return RsyncMasterAndPrimariesTablespaces(stream, s.agentConns, s.Source, s.Tablespaces)
+	})
 
 	handleMirrorStartupFailure, err := s.expectMirrorFailure()
 	if err != nil {
 		return err
 	}
 
-	// If the source cluster is not running, it must be started.
-	st.AlwaysRun(idl.Substep_START_SOURCE_CLUSTER, func(streams step.OutStreams) error {
-		running, err := s.Source.IsMasterRunning(streams)
-		if err != nil {
-			return err
-		}
+	sourceClusterIsRunning, err := s.Source.IsMasterRunning(step.DevNullStream)
+	if err != nil {
+		return err
+	}
 
-		if running {
-			return step.Skip
-		}
-
+	st.RunConditionally(idl.Substep_START_SOURCE_CLUSTER, !sourceClusterIsRunning, func(streams step.OutStreams) error {
 		err = s.Source.Start(streams)
 		var exitErr *exec.ExitError
 		if xerrors.As(err, &exitErr) {
@@ -141,11 +134,9 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		return nil
 	})
 
-	if handleMirrorStartupFailure {
-		st.Run(idl.Substep_RECOVERSEG_SOURCE_CLUSTER, func(streams step.OutStreams) error {
-			return Recoverseg(streams, s.Source, s.UseHbaHostnames)
-		})
-	}
+	st.RunConditionally(idl.Substep_RECOVERSEG_SOURCE_CLUSTER, handleMirrorStartupFailure, func(streams step.OutStreams) error {
+		return Recoverseg(streams, s.Source, s.UseHbaHostnames)
+	})
 
 	logArchiveDir, err := s.GetLogArchiveDir()
 	if err != nil {

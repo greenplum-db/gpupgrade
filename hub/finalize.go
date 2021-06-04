@@ -71,38 +71,30 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 		return nil
 	})
 
-	// todo: we don't currently have a way to output nothing to the UI when there is no standby.
-	// If we did, this check would actually be in `UpgradeStandby`
-	if s.Source.HasStandby() {
-		st.Run(idl.Substep_UPGRADE_STANDBY, func(streams step.OutStreams) error {
-			// TODO: once the temporary standby upgrade is fixed, switch to
-			// using the TargetInitializeConfig's temporary assignments, and
-			// move this upgrade step back to before the target shutdown.
-			standby := s.Source.Mirrors[-1]
-			return UpgradeStandby(greenplum.NewRunner(s.Target, streams), StandbyConfig{
-				Port:            standby.Port,
-				Hostname:        standby.Hostname,
-				DataDirectory:   standby.DataDir,
-				UseHbaHostnames: s.UseHbaHostnames,
-			})
+	st.RunConditionally(idl.Substep_UPGRADE_STANDBY, s.Source.HasStandby(), func(streams step.OutStreams) error {
+		// TODO: once the temporary standby upgrade is fixed, switch to
+		// using the TargetInitializeConfig's temporary assignments, and
+		// move this upgrade step back to before the target shutdown.
+		standby := s.Source.Mirrors[-1]
+		return UpgradeStandby(greenplum.NewRunner(s.Target, streams), StandbyConfig{
+			Port:            standby.Port,
+			Hostname:        standby.Hostname,
+			DataDirectory:   standby.DataDir,
+			UseHbaHostnames: s.UseHbaHostnames,
 		})
-	}
+	})
 
-	// todo: we don't currently have a way to output nothing to the UI when there are no mirrors.
-	// If we did, this check would actually be in `UpgradeMirrors`
-	if s.Source.HasMirrors() {
-		st.Run(idl.Substep_UPGRADE_MIRRORS, func(streams step.OutStreams) error {
-			// TODO: once the temporary mirror upgrade is fixed, switch to using
-			// the TargetInitializeConfig's temporary assignments, and move this
-			// upgrade step back to before the target shutdown.
-			mirrors := func(seg *greenplum.SegConfig) bool {
-				return seg.IsMirror()
-			}
+	st.RunConditionally(idl.Substep_UPGRADE_MIRRORS, s.Source.HasMirrors(), func(streams step.OutStreams) error {
+		// TODO: once the temporary mirror upgrade is fixed, switch to using
+		// the TargetInitializeConfig's temporary assignments, and move this
+		// upgrade step back to before the target shutdown.
+		mirrors := func(seg *greenplum.SegConfig) bool {
+			return seg.IsMirror()
+		}
 
-			return UpgradeMirrors(s.StateDir, s.Connection, s.Target.MasterPort(),
-				s.Source.SelectSegments(mirrors), greenplum.NewRunner(s.Target, streams), s.UseHbaHostnames)
-		})
-	}
+		return UpgradeMirrors(s.StateDir, s.Connection, s.Target.MasterPort(),
+			s.Source.SelectSegments(mirrors), greenplum.NewRunner(s.Target, streams), s.UseHbaHostnames)
+	})
 
 	logArchiveDir, err := s.GetLogArchiveDir()
 	if err != nil {
