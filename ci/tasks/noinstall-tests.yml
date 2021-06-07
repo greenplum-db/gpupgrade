@@ -4,6 +4,13 @@
 PLATFORM: linux
 
 image_resource:
+  # Use docker-image instead of registry-image due to the following error.
+  # See: https://github.com/concourse/registry-image-resource/issues/283
+  #  --- FAIL: TestLocal (0.00s)
+  #    disk_test.go:269: Local.Filesystems() returned error &fs.PathError{Op:"open", Path:"/etc/mtab", Err:0x2}
+  #    disk_test.go:272: Local.Filesystems() returned no entries
+  #  FAIL
+  #  FAIL	github.com/greenplum-db/gpupgrade/utils/disk	0.030s
   type: docker-image
   source:
     repository: golang
