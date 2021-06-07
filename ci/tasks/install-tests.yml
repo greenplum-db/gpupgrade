@@ -4,9 +4,9 @@
 PLATFORM: linux
 
 image_resource:
-  type: docker-image
+  type: registry-image
   source:
-    repository: pivotaldata/gpdb6-centos7-test-golang
+    repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
     tag: "latest"
 
 inputs:
