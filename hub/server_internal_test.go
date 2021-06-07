@@ -25,6 +25,7 @@ func TestConfig(t *testing.T) {
 		// forget to add them to this test. Be kind and document those that are
 		// not clear with comments.
 		original := &Config{
+			"logArchiveDir",
 			source,
 			target,
 			&connURI.Conn{},

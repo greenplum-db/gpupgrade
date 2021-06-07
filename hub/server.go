@@ -11,6 +11,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -351,6 +352,8 @@ type InitializeConfig struct {
 // Config contains all the information that will be persisted to/loaded from
 // from disk during calls to Save() and Load().
 type Config struct {
+	LogArchiveDir string
+
 	// Source is the GPDB cluster that is being upgraded. It is populated during
 	// the generation of the cluster config in the initialize step; before that,
 	// it is nil.
@@ -402,6 +405,25 @@ func (s *Server) SaveConfig() (err error) {
 	}
 
 	return utils.AtomicallyWrite(upgrade.GetConfigFile(), buffer.Bytes())
+}
+
+func (s *Server) GetLogArchiveDir() (string, error) {
+	if s.LogArchiveDir != "" {
+		return s.LogArchiveDir, nil
+	}
+
+	logDir, err := utils.GetLogDir()
+	if err != nil {
+		return "", err
+	}
+
+	s.LogArchiveDir = filepath.Join(filepath.Dir(logDir), upgrade.GetArchiveDirectoryName(s.UpgradeID, time.Now()))
+	err = s.SaveConfig()
+	if err != nil {
+		return "", err
+	}
+
+	return s.LogArchiveDir, nil
 }
 
 func LoadConfig(conf *Config, path string) error {

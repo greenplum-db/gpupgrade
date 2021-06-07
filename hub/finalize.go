@@ -5,8 +5,6 @@ package hub
 
 import (
 	"fmt"
-	"path/filepath"
-	"time"
 
 	"github.com/blang/semver/v4"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -106,22 +104,24 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 		})
 	}
 
-	// FIXME: archiveDir is not set unless we actually run this substep; it must be persisted.
-	var archiveDir string
+	logArchiveDir, err := s.GetLogArchiveDir()
+	if err != nil {
+		return fmt.Errorf("getting archive directory: %w", err)
+	}
+
 	st.Run(idl.Substep_ARCHIVE_LOG_DIRECTORIES, func(_ step.OutStreams) error {
 		// Archive log directory on master
-		oldDir, err := utils.GetLogDir()
+		logDir, err := utils.GetLogDir()
 		if err != nil {
 			return err
 		}
-		archiveDir = filepath.Join(filepath.Dir(oldDir), upgrade.GetArchiveDirectoryName(s.UpgradeID, time.Now()))
 
-		gplog.Debug("moving directory %q to %q", oldDir, archiveDir)
-		if err = utils.Move(oldDir, archiveDir); err != nil {
+		gplog.Debug("archiving log directory %q to %q", logDir, logArchiveDir)
+		if err = utils.Move(logDir, logArchiveDir); err != nil {
 			return err
 		}
 
-		return ArchiveSegmentLogDirectories(s.agentConns, s.Config.Target.MasterHostname(), archiveDir)
+		return ArchiveSegmentLogDirectories(s.agentConns, s.Config.Target.MasterHostname(), logArchiveDir)
 	})
 
 	st.Run(idl.Substep_DELETE_SEGMENT_STATEDIRS, func(_ step.OutStreams) error {
@@ -131,7 +131,7 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_FinalizeResponse{
 		FinalizeResponse: &idl.FinalizeResponse{
 			TargetVersion:                     s.Target.Version.VersionString,
-			LogArchiveDirectory:               archiveDir,
+			LogArchiveDirectory:               logArchiveDir,
 			ArchivedSourceMasterDataDirectory: s.Config.TargetInitializeConfig.Master.DataDir + upgrade.OldSuffix,
 			UpgradeID:                         s.Config.UpgradeID.String(),
 			Target: &idl.Cluster{

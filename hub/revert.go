@@ -6,8 +6,6 @@ package hub
 import (
 	"fmt"
 	"os/exec"
-	"path/filepath"
-	"time"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/pkg/errors"
@@ -15,7 +13,6 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
-	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
@@ -150,22 +147,24 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		})
 	}
 
-	// FIXME: archiveDir is not set unless we actually run this substep; it must be persisted.
-	var archiveDir string
+	logArchiveDir, err := s.GetLogArchiveDir()
+	if err != nil {
+		return fmt.Errorf("getting archive directory: %w", err)
+	}
+
 	st.Run(idl.Substep_ARCHIVE_LOG_DIRECTORIES, func(_ step.OutStreams) error {
 		// Archive log directory on master
-		oldDir, err := utils.GetLogDir()
+		logDir, err := utils.GetLogDir()
 		if err != nil {
 			return err
 		}
-		archiveDir = filepath.Join(filepath.Dir(oldDir), upgrade.GetArchiveDirectoryName(s.UpgradeID, time.Now()))
 
-		gplog.Debug("moving directory %q to %q", oldDir, archiveDir)
-		if err = utils.Move(oldDir, archiveDir); err != nil {
+		gplog.Debug("archiving log directory %q to %q", logDir, logArchiveDir)
+		if err = utils.Move(logDir, logArchiveDir); err != nil {
 			return err
 		}
 
-		return ArchiveSegmentLogDirectories(s.agentConns, s.Config.Source.MasterHostname(), archiveDir)
+		return ArchiveSegmentLogDirectories(s.agentConns, s.Config.Source.MasterHostname(), logArchiveDir)
 	})
 
 	st.Run(idl.Substep_DELETE_SEGMENT_STATEDIRS, func(_ step.OutStreams) error {
@@ -175,7 +174,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_RevertResponse{
 		RevertResponse: &idl.RevertResponse{
 			SourceVersion:       s.Source.Version.VersionString,
-			LogArchiveDirectory: archiveDir,
+			LogArchiveDirectory: logArchiveDir,
 			Source: &idl.Cluster{
 				Port:                int32(s.Source.MasterPort()),
 				MasterDataDirectory: s.Source.MasterDataDir(),
