@@ -46,68 +46,7 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 	cluster.GPHome = "/usr/local/greenplum-db"
 	cluster.Version = dbconn.NewVersion("5.0.0")
 
-	tablespaces := greenplum.Tablespaces{
-		1: {
-			1663: {
-				Location:    "/tmp/m/qddir/1663",
-				UserDefined: 1,
-			},
-			1664: {
-				Location:    "/tmp/m/qddir",
-				UserDefined: 0,
-			},
-		},
-		2: {
-			1663: {
-				Location:    "/tmp/m/standby/1663",
-				UserDefined: 1,
-			},
-			1664: {
-				Location:    "/tmp/m/standby",
-				UserDefined: 0,
-			},
-		},
-		3: {
-			1663: {
-				Location:    "/tmp/p1/1663",
-				UserDefined: 1,
-			},
-			1664: {
-				Location:    "/tmp/p1",
-				UserDefined: 0,
-			},
-		},
-		4: {
-			1663: {
-				Location:    "/tmp/m1/1663",
-				UserDefined: 1,
-			},
-			1664: {
-				Location:    "/tmp/m1",
-				UserDefined: 0,
-			},
-		},
-		5: {
-			1663: {
-				Location:    "/tmp/p2/1663",
-				UserDefined: 1,
-			},
-			1664: {
-				Location:    "/tmp/p2",
-				UserDefined: 0,
-			},
-		},
-		6: {
-			1663: {
-				Location:    "/tmp/m2/1663",
-				UserDefined: 1,
-			},
-			1664: {
-				Location:    "/tmp/m2",
-				UserDefined: 0,
-			},
-		},
-	}
+	tablespaces := testutils.CreateTablespaces()
 
 	t.Run("restores master in link mode using correct rsync arguments", func(t *testing.T) {
 		defer rsync.ResetRsyncCommand()
@@ -173,13 +112,13 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 			}
 
 			source := args[3]
-			expected := "standby:/tmp/m/standby/1663/"
+			expected := "standby:/tmp/user_ts/m/standby/16384/"
 			if source != expected {
 				t.Errorf("got source %q want %q", source, expected)
 			}
 
 			destination := args[4]
-			expected = "/tmp/m/qddir/1663"
+			expected = "/tmp/user_ts/m/qddir/16384"
 			if destination != expected {
 				t.Errorf("got destination %q want %q", destination, expected)
 			}
@@ -291,9 +230,9 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 				Options:  hub.Options,
 				Excludes: hub.Excludes,
 				Pairs: []*idl.RsyncPair{{
-					Source:          "/tmp/m1/1663" + string(os.PathSeparator),
+					Source:          "/tmp/user_ts/m1/16384" + string(os.PathSeparator),
 					DestinationHost: "sdw1",
-					Destination:     "/tmp/p1/1663",
+					Destination:     "/tmp/user_ts/p1/16384",
 				}},
 			},
 		).Return(&idl.RsyncReply{}, nil)
@@ -305,9 +244,9 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 				Options:  hub.Options,
 				Excludes: hub.Excludes,
 				Pairs: []*idl.RsyncPair{{
-					Source:          "/tmp/m2/1663" + string(os.PathSeparator),
+					Source:          "/tmp/user_ts/m2/16384" + string(os.PathSeparator),
 					DestinationHost: "sdw2",
-					Destination:     "/tmp/p2/1663",
+					Destination:     "/tmp/user_ts/p2/16384",
 				}},
 			},
 		).Return(&idl.RsyncReply{}, nil)
