@@ -64,6 +64,19 @@ func (t Tablespaces) GetMasterTablespaces() SegmentTablespaces {
 	return t[MasterDbid]
 }
 
+func (s SegmentTablespaces) UserDefinedTablespacesLocations() []string {
+	var dirs []string
+	for _, tsInfo := range s {
+		if !tsInfo.IsUserDefined() {
+			continue
+		}
+
+		dirs = append(dirs, tsInfo.Location)
+	}
+
+	return dirs
+}
+
 func (t *TablespaceInfo) IsUserDefined() bool {
 	return t.UserDefined == 1
 }

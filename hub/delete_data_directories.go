@@ -143,14 +143,7 @@ func DeleteSourceTablespacesOnMirrorsAndStandby(agentConns []*Connection, source
 
 		var dirs []string
 		for _, seg := range segments {
-			segTablespaces := tablespaces[seg.DbID]
-			for _, tsInfo := range segTablespaces {
-				if !tsInfo.IsUserDefined() {
-					continue
-				}
-
-				dirs = append(dirs, tsInfo.Location)
-			}
+			dirs = append(dirs, tablespaces[seg.DbID].UserDefinedTablespacesLocations()...)
 		}
 
 		if len(dirs) == 0 {
