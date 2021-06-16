@@ -1,0 +1,36 @@
+-- Copyright (c) 2017-2021 VMware, Inc. or its affiliates
+-- SPDX-License-Identifier: Apache-2.0
+
+--------------------------------------------------------------------------------
+-- Validate that the upgradeable objects are functional post-upgrade
+--------------------------------------------------------------------------------
+
+SELECT pg_get_viewdef('non_dep_col_simple_join'::regclass);
+ pg_get_viewdef                                                                  
+---------------------------------------------------------------------------------
+  SELECT 1
+   FROM gp_segment_configuration s1,
+    gp_segment_configuration s2; 
+(1 row)
+SELECT pg_get_viewdef('non_dep_col_join_on'::regclass);
+ pg_get_viewdef                                                                                                  
+-----------------------------------------------------------------------------------------------------------------
+  SELECT 1
+   FROM (gp_segment_configuration s1
+     JOIN gp_segment_configuration s2 ON ((s1.dbid = s2.dbid))); 
+(1 row)
+SELECT pg_get_viewdef('non_dep_col_join_using'::regclass);
+ pg_get_viewdef                                                                                      
+-----------------------------------------------------------------------------------------------------
+  SELECT 1
+   FROM (gp_segment_configuration s1
+     JOIN gp_segment_configuration s2 USING (dbid)); 
+(1 row)
+SELECT pg_get_viewdef('non_dep_col_natural_join'::regclass);
+ pg_get_viewdef                                                                                                                                     
+----------------------------------------------------------------------------------------------------------------------------------------------------
+  SELECT 1
+   FROM (gp_segment_configuration s1
+     JOIN ( SELECT dbid.dbid
+           FROM generate_series(1, 8) dbid(dbid)) dbids USING (dbid)); 
+(1 row)
