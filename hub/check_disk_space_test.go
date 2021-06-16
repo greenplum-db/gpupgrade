@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
@@ -26,7 +27,7 @@ func TestCheckDiskSpace_OnMaster(t *testing.T) {
 
 	tablespaces := greenplum.Tablespaces{}
 
-	t.Run("returns no error or usage when checking disk usage on master succeeds", func(t *testing.T) {
+	t.Run("does not return disk usage or any errors when checking disk usage on master succeeds", func(t *testing.T) {
 		err := hub.CheckDiskSpace(step.DevNullStream, []*hub.Connection{}, 0, source, tablespaces)
 		if err == nil {
 			t.Errorf("unexpected error %#v", err)
@@ -173,6 +174,71 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 		expected := disk.NewSpaceUsageError(usage)
 		if !reflect.DeepEqual(err, expected) {
 			t.Errorf("returned %v want %v", err, expected)
+		}
+	})
+
+	t.Run("combines usage across hosts", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		smdwUsage := disk.FileSystemDiskUsage{
+			&idl.CheckDiskSpaceReply_DiskUsage{
+				Fs:        "/",
+				Host:      "smdw",
+				Available: 1024,
+				Required:  2048,
+			}}
+		smdw := mock_idl.NewMockAgentClient(ctrl)
+		smdw.EXPECT().CheckDiskSpace(
+			gomock.Any(),
+			gomock.Any(),
+		).Return(&idl.CheckDiskSpaceReply{Usage: smdwUsage}, nil)
+
+		sdw1Usage := disk.FileSystemDiskUsage{
+			&idl.CheckDiskSpaceReply_DiskUsage{
+				Fs:        "/data",
+				Host:      "sdw1",
+				Available: 2024,
+				Required:  4048,
+			}}
+		sdw1 := mock_idl.NewMockAgentClient(ctrl)
+		sdw1.EXPECT().CheckDiskSpace(
+			gomock.Any(),
+			gomock.Any(),
+		).Return(&idl.CheckDiskSpaceReply{Usage: sdw1Usage}, nil)
+
+		sdw2Usage := disk.FileSystemDiskUsage{
+			&idl.CheckDiskSpaceReply_DiskUsage{
+				Fs:        "/tmp",
+				Host:      "sdw2",
+				Available: 512,
+				Required:  1024,
+			}}
+		sdw2 := mock_idl.NewMockAgentClient(ctrl)
+		sdw2.EXPECT().CheckDiskSpace(
+			gomock.Any(),
+			gomock.Any(),
+		).Return(&idl.CheckDiskSpaceReply{Usage: sdw2Usage}, nil)
+
+		agentConns := []*hub.Connection{
+			{nil, smdw, "smdw", nil},
+			{nil, sdw1, "sdw1", nil},
+			{nil, sdw2, "sdw2", nil},
+		}
+
+		err := hub.CheckDiskSpace(step.DevNullStream, agentConns, 0, source, tablespaces)
+		expected := [][]string{
+			{"Hostname", "Filesystem", "Shortfall", "Available", "Required"},
+			{"sdw1", "/data", disk.FormatBytes(2024), disk.FormatBytes(2024), disk.FormatBytes(4048)},
+			{"sdw2", "/tmp", disk.FormatBytes(512), disk.FormatBytes(512), disk.FormatBytes(1024)},
+			{"smdw", "/", disk.FormatBytes(1024), disk.FormatBytes(1024), disk.FormatBytes(2048)},
+		}
+
+		var spaceUsageErr *disk.SpaceUsageErr
+		if xerrors.As(err, &spaceUsageErr) {
+			if !reflect.DeepEqual(spaceUsageErr.Table(), expected) {
+				t.Errorf("returned %v want %v", spaceUsageErr.Table(), expected)
+			}
 		}
 	})
 
