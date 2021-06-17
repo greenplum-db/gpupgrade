@@ -21,6 +21,10 @@ func MockExecCommand(ctrl *gomock.Controller) (mock *exectest.MockCommandSpy, cl
 	return mock, ResetExecCommand
 }
 
+func SetExecCommand(cmdFunc exectest.Command) {
+	execCommand = cmdFunc
+}
+
 func ResetExecCommand() {
 	execCommand = nil
 }

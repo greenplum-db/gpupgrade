@@ -40,7 +40,7 @@ func version(host string) (string, error) {
 	args := []string{"version", "--format", "oneline"}
 	if host != "" {
 		name = "ssh"
-		args = []string{host, fmt.Sprintf(`bash -c "%s version --format oneline"`, gpupgradePath)}
+		args = []string{"-q", host, fmt.Sprintf(`bash -c "%s version --format oneline"`, gpupgradePath)}
 	}
 
 	cmd := execCommand(name, args...)

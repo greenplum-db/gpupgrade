@@ -98,13 +98,14 @@ func TestGpupgradeVersionOnHost(t *testing.T) {
 	testlog.SetupLogger()
 	host := "sdw1"
 
-	t.Run("returns the version", func(t *testing.T) {
+	t.Run("returns remote version using -q to suppress motd banner messages from polluting the version output", func(t *testing.T) {
 		execCmd := exectest.NewCommandWithVerifier(gpupgradeVersion, func(cmd string, args ...string) {
 			if cmd != "ssh" {
 				t.Errorf("got cmd %q want ssh", cmd)
 			}
 
 			expected := []string{
+				"-q",
 				host,
 				fmt.Sprintf(`bash -c "%s/gpupgrade version --format oneline"`, testutils.MustGetExecutablePath(t)),
 			}

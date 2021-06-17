@@ -61,7 +61,7 @@ func version(gphome string, host string) (semver.Version, error) {
 	args := []string{"--gp-version"}
 	if host != "" {
 		name = "ssh"
-		args = []string{host, fmt.Sprintf(`bash -c "%s --gp-version"`, postgres)}
+		args = []string{"-q", host, fmt.Sprintf(`bash -c "%s --gp-version"`, postgres)}
 	}
 
 	cmd := execCommand(name, args...)

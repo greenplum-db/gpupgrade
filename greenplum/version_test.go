@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -136,7 +137,7 @@ func runVersionTest(t *testing.T, versionFunc func(string) (semver.Version, erro
 
 	if isRemote {
 		mock.EXPECT().
-			Command("ssh", []string{remoteHost, remotePostgresCmd}).
+			Command("ssh", []string{"-q", remoteHost, remotePostgresCmd}).
 			Return(execMain)
 	} else {
 		mock.EXPECT().
@@ -153,4 +154,39 @@ func runVersionTest(t *testing.T, versionFunc func(string) (semver.Version, erro
 	if !version.Equals(expectedVer) {
 		t.Errorf("got version %v, want %v", version, expectedVer)
 	}
+}
+
+func TestGPHomeVersion_OnRemoteHost(t *testing.T) {
+	host := "sdw1"
+
+	t.Run("returns remote version using -q to suppress motd banner messages from polluting the version output", func(t *testing.T) {
+		execCmd := exectest.NewCommandWithVerifier(PostgresGPVersion_11_341_31, func(cmd string, args ...string) {
+			if cmd != "ssh" {
+				t.Errorf("got cmd %q want ssh", cmd)
+			}
+
+			expected := []string{
+				"-q",
+				host,
+				`bash -c "/usr/local/my-gpdb-home/bin/postgres --gp-version"`,
+			}
+
+			if !reflect.DeepEqual(args, expected) {
+				t.Errorf("got args %q want %q", args, expected)
+			}
+		})
+
+		SetExecCommand(execCmd)
+		defer ResetExecCommand()
+
+		version, err := NewVersions(gphome).Remote(host)
+		if err != nil {
+			t.Errorf("unexpected errr %#v", err)
+		}
+
+		expected := "11.341.31"
+		if version != expected {
+			t.Errorf("got version %v, want %v", version, expected)
+		}
+	})
 }
