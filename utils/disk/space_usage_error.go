@@ -56,14 +56,14 @@ func (d SpaceUsageErr) Table() [][]string {
 
 func FormatBytes(kb uint64) string {
 	bytes := float64(kb)
-	units := []string{"KiB", "MiB", "GiB", "TiB", "PiB"}
+	units := []string{"KB", "MB", "GB", "TB", "PB"}
 	for _, unit := range units {
-		if bytes < 1024.0 {
+		if bytes < 1000.0 {
 			return fmt.Sprintf("%.4g %s", bytes, unit)
 		}
-		bytes /= 1024.0
+		bytes /= 1000.0
 	}
-	return fmt.Sprintf("%.4g %s", bytes, "EiB")
+	return fmt.Sprintf("%.4g %s", bytes, "EB")
 }
 
 // tableRows attaches sort.Interface to a slice of string slices.

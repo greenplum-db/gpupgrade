@@ -24,7 +24,7 @@ teardown() {
     archive_state_dir "$STATE_DIR"
 }
 
-# Writes the available disk space, in KiB, on the filesystem containing the
+# Writes the available disk space, in KB, on the filesystem containing the
 # given path. The STAT global must be set (see require_gnu_stat).
 avail_disk_space() {
     local path=$1
@@ -35,7 +35,7 @@ avail_disk_space() {
     echo $(( $bavail * $bsize / 1024 ))
 }
 
-# Writes the total disk space in KiB, not including reserved superuser blocks,
+# Writes the total disk space in KB, not including reserved superuser blocks,
 # on the filesystem containing the given path. The STAT global must be set (see
 # require_gnu_stat).
 total_disk_space() {
@@ -47,20 +47,20 @@ total_disk_space() {
     echo $(( ( $btotal - $bfree + $bavail ) * $bsize / 1024 ))
 }
 
-# Converts pretty-printed byte values to raw KiB for numerical comparison.
-convert_to_kib() {
+# Converts pretty-printed byte values to raw KB for numerical comparison.
+convert_to_kb() {
     local value=$1
     local unit=$2
 
-    # Map byte prefixes to factors of 1024 via string indexes.
-    # e.g. MiB -> 1024^1 KiB, PiB -> 1024^4 KiB, etc.
+    # Map byte prefixes to factors of 1000 via string indexes.
+    # e.g. MB -> 1000^1 KB, PB -> 1000^4 KB, etc.
     local indexstr="KMGTPE"
     local index=${indexstr%%$unit*}
     local exponent=${#index}
 
     # We use awk here because bc isn't available in all test environments and
     # Bash doesn't do floating-point math natively.
-    awk "BEGIN { printf \"%d\", $value * 1024^$exponent }"
+    awk "BEGIN { printf \"%d\", $value * 1000^$exponent }"
 }
 
 # Verify two numbers are within a specified percent tolerance.
@@ -96,16 +96,16 @@ are_equivalent_within_tolerance() {
     # XXX Currently, we assume a single-host demo cluster.
     pattern='You currently do not have enough disk space to run an upgrade\..+'
     pattern+='Hostname +Filesystem +Shortfall +Available +Required.+'
-    pattern+="$(hostname)"' +/[^ ]* +[.[:digit:]]+ [KMGTPE]iB +([.[:digit:]]+) ([KMGTPE])iB +([.[:digit:]]+) ([KMGTPE])iB'
+    pattern+="$(hostname)"' +/[^ ]* +[.[:digit:]]+ [KMGTPE]B +([.[:digit:]]+) ([KMGTPE])B +([.[:digit:]]+) ([KMGTPE])B'
 
     [[ $output =~ $pattern ]] || fail "actual output: $output"
 
     available="${BASH_REMATCH[1]}"
     available_unit="${BASH_REMATCH[2]}"
-    available_bytes=$(convert_to_kib $available $available_unit)
+    available_bytes=$(convert_to_kb $available $available_unit)
     required="${BASH_REMATCH[3]}"
     required_unit="${BASH_REMATCH[4]}"
-    required_bytes=$(convert_to_kib $required $required_unit)
+    required_bytes=$(convert_to_kb $required $required_unit)
 
     # Validating the shortfall is hard due to rounding errors from our
     # pretty-print code. Defer to unit tests for that and just check avail and
