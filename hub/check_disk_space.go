@@ -19,7 +19,7 @@ var checkDiskUsage = disk.CheckUsage
 func CheckDiskSpace(streams step.OutStreams, agentConns []*Connection, diskFreeRatio float64, source *greenplum.Cluster, sourceTablespaces greenplum.Tablespaces) error {
 	var wg sync.WaitGroup
 	errs := make(chan error, len(agentConns)+1)
-	usages := make(chan disk.FileSystemDiskUsage, len(agentConns)+1)
+	usagesChan := make(chan disk.FileSystemDiskUsage, len(agentConns)+1)
 
 	// check disk space on master
 	wg.Add(1)
@@ -31,14 +31,14 @@ func CheckDiskSpace(streams step.OutStreams, agentConns []*Connection, diskFreeR
 
 		usage, err := checkDiskUsage(streams, disk.Local, diskFreeRatio, masterDirs...)
 		errs <- err
-		usages <- usage
+		usagesChan <- usage
 	}()
 
-	checkDiskSpaceOnStandbyAndSegments(agentConns, errs, usages, diskFreeRatio, source, sourceTablespaces)
+	checkDiskSpaceOnStandbyAndSegments(agentConns, errs, usagesChan, diskFreeRatio, source, sourceTablespaces)
 
 	wg.Wait()
 	close(errs)
-	close(usages)
+	close(usagesChan)
 
 	// consolidate errors
 	var err error
@@ -51,12 +51,14 @@ func CheckDiskSpace(streams step.OutStreams, agentConns []*Connection, diskFreeR
 	}
 
 	// combine disk space usage across all hosts and return an usage error
-	var totalUsage disk.FileSystemDiskUsage
-	for usage := range usages {
-		totalUsage = append(totalUsage, usage...)
+	totalUsage := make(map[disk.FilesystemHost]*idl.CheckDiskSpaceReply_DiskUsage)
+	for usages := range usagesChan {
+		for _, usage := range usages {
+			totalUsage[disk.FilesystemHost{Filesystem: usage.GetFs(), Host: usage.GetHost()}] = usage
+		}
 	}
 
-	if totalUsage != nil {
+	if len(totalUsage) > 0 {
 		return disk.NewSpaceUsageError(totalUsage)
 	}
 

@@ -4,6 +4,7 @@
 package disk_test
 
 import (
+	"github.com/greenplum-db/gpupgrade/idl"
 	"reflect"
 	"testing"
 
@@ -40,20 +41,20 @@ func TestFormatBytes(t *testing.T) {
 }
 
 func TestDiskSpaceError(t *testing.T) {
-	err := disk.NewSpaceUsageError(disk.FileSystemDiskUsage{
-		{
+	err := disk.NewSpaceUsageError(map[disk.FilesystemHost]*idl.CheckDiskSpaceReply_DiskUsage {
+		disk.FilesystemHost{Filesystem: "/", Host: "sdw1"}: {
 			Fs:        "/",
 			Host:      "sdw1",
 			Available: 15,
 			Required:  20,
 		},
-		{
+		disk.FilesystemHost{Filesystem: "/proc", Host: "sdw1"}: {
 			Fs:        "/proc",
 			Host:      "sdw1",
 			Available: 15,
 			Required:  20,
 		},
-		{
+		disk.FilesystemHost{Filesystem: "/", Host: "mdw"}: {
 			Fs:        "/",
 			Host:      "mdw",
 			Available: 1024,

@@ -8,14 +8,22 @@ import (
 	"sort"
 	"strings"
 	"text/tabwriter"
+
+	"github.com/greenplum-db/gpupgrade/idl"
 )
 
 type SpaceUsageErr struct {
 	usage FileSystemDiskUsage
 }
 
-func NewSpaceUsageError(usage FileSystemDiskUsage) *SpaceUsageErr {
-	return &SpaceUsageErr{usage: usage}
+func NewSpaceUsageError(usageMap map[FilesystemHost]*idl.CheckDiskSpaceReply_DiskUsage) *SpaceUsageErr {
+	var totalUsage FileSystemDiskUsage
+
+	for _, usage := range usageMap {
+		totalUsage = append(totalUsage, usage)
+	}
+
+	return &SpaceUsageErr{usage: totalUsage}
 }
 
 func NewSpaceUsageErrorFromUsage(usage idl.CheckDiskSpaceReply_DiskUsage) *SpaceUsageErr {

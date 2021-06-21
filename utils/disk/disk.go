@@ -23,6 +23,11 @@ type Disk interface {
 	Stat(string) (*unix.Stat_t, error)
 }
 
+type FilesystemHost struct {
+	Filesystem string
+	Host       string
+}
+
 type FileSystemDiskUsage []*idl.CheckDiskSpaceReply_DiskUsage
 
 func (f FileSystemDiskUsage) Len() int {

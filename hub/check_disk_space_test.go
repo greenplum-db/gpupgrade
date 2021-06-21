@@ -191,61 +191,65 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 		}
 	})
 
-	t.Run("combines usage across hosts", func(t *testing.T) {
+	t.Run("combines usage across all hosts and removes duplicate usage between master and segments", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		smdwUsage := disk.FileSystemDiskUsage{
+		mdwUsage := disk.FileSystemDiskUsage{
 			&idl.CheckDiskSpaceReply_DiskUsage{
-				Fs:        "/",
-				Host:      "smdw",
+				Fs:        "/data",
+				Host:      "primary",
 				Available: 1024,
 				Required:  2048,
 			}}
-		smdw := mock_idl.NewMockAgentClient(ctrl)
-		smdw.EXPECT().CheckDiskSpace(
-			gomock.Any(),
-			gomock.Any(),
-		).Return(&idl.CheckDiskSpaceReply{Usage: smdwUsage}, nil)
+		hub.SetCheckDiskUsage(MasterHostReturnsUsage(mdwUsage))
+		defer hub.ResetCheckDiskUsage()
 
-		sdw1Usage := disk.FileSystemDiskUsage{
+		primaryUsage := disk.FileSystemDiskUsage{
 			&idl.CheckDiskSpaceReply_DiskUsage{
 				Fs:        "/data",
-				Host:      "sdw1",
+				Host:      "primary",
+				Available: 1024,
+				Required:  2048,
+			}}
+		primary := mock_idl.NewMockAgentClient(ctrl)
+		primary.EXPECT().CheckDiskSpace(
+			gomock.Any(),
+			gomock.Any(),
+		).Return(&idl.CheckDiskSpaceReply{Usage: primaryUsage}, nil)
+
+		mirrorUsage := disk.FileSystemDiskUsage{
+			&idl.CheckDiskSpaceReply_DiskUsage{
+				Fs:        "/data",
+				Host:      "mirror",
 				Available: 2024,
 				Required:  4048,
 			}}
-		sdw1 := mock_idl.NewMockAgentClient(ctrl)
-		sdw1.EXPECT().CheckDiskSpace(
+		mirror := mock_idl.NewMockAgentClient(ctrl)
+		mirror.EXPECT().CheckDiskSpace(
 			gomock.Any(),
 			gomock.Any(),
-		).Return(&idl.CheckDiskSpaceReply{Usage: sdw1Usage}, nil)
-
-		sdw2Usage := disk.FileSystemDiskUsage{
-			&idl.CheckDiskSpaceReply_DiskUsage{
-				Fs:        "/tmp",
-				Host:      "sdw2",
-				Available: 512,
-				Required:  1024,
-			}}
-		sdw2 := mock_idl.NewMockAgentClient(ctrl)
-		sdw2.EXPECT().CheckDiskSpace(
-			gomock.Any(),
-			gomock.Any(),
-		).Return(&idl.CheckDiskSpaceReply{Usage: sdw2Usage}, nil)
+		).Return(&idl.CheckDiskSpaceReply{Usage: mirrorUsage}, nil)
 
 		agentConns := []*hub.Connection{
-			{nil, smdw, "smdw", nil},
-			{nil, sdw1, "sdw1", nil},
-			{nil, sdw2, "sdw2", nil},
+			{AgentClient: primary, Hostname: "primary"},
+			{AgentClient: mirror, Hostname: "mirror"},
 		}
 
-		err := hub.CheckDiskSpace(step.DevNullStream, agentConns, 0, source, tablespaces)
+		sourceCluster := hub.MustCreateCluster(t, []greenplum.SegConfig{
+			{DbID: 1, ContentID: -1, Hostname: "primary", DataDir: "/data/qddir/seg-1", Role: "p"},
+			{DbID: 2, ContentID: -1, Hostname: "mirror", DataDir: "/data/standby", Role: "m"},
+			{DbID: 3, ContentID: 0, Hostname: "primary", DataDir: "/data/dbfast/seg1", Role: "p"},
+			{DbID: 4, ContentID: 0, Hostname: "mirror", DataDir: "/data/dbfast_mirror1/seg1", Role: "m"},
+			{DbID: 5, ContentID: 1, Hostname: "primary", DataDir: "/data/dbfast/seg2", Role: "p"},
+			{DbID: 6, ContentID: 1, Hostname: "mirror", DataDir: "/data/dbfast_mirror2/seg2", Role: "m"},
+		})
+
+		err := hub.CheckDiskSpace(step.DevNullStream, agentConns, 0, sourceCluster, tablespaces)
 		expected := [][]string{
 			{"Hostname", "Filesystem", "Shortfall", "Available", "Required"},
-			{"sdw1", "/data", disk.FormatBytes(2024), disk.FormatBytes(2024), disk.FormatBytes(4048)},
-			{"sdw2", "/tmp", disk.FormatBytes(512), disk.FormatBytes(512), disk.FormatBytes(1024)},
-			{"smdw", "/", disk.FormatBytes(1024), disk.FormatBytes(1024), disk.FormatBytes(2048)},
+			{"mirror", "/data", disk.FormatBytes(2024), disk.FormatBytes(2024), disk.FormatBytes(4048)},
+			{"primary", "/data", disk.FormatBytes(1024), disk.FormatBytes(1024), disk.FormatBytes(2048)},
 		}
 
 		var spaceUsageErr *disk.SpaceUsageErr
