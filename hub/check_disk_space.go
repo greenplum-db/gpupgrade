@@ -14,7 +14,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-var CheckDiskUsageFunc = disk.CheckUsage
+var checkDiskUsage = disk.CheckUsage
 
 func CheckDiskSpace(streams step.OutStreams, agentConns []*Connection, diskFreeRatio float64, source *greenplum.Cluster, sourceTablespaces greenplum.Tablespaces) error {
 	var wg sync.WaitGroup
@@ -29,7 +29,7 @@ func CheckDiskSpace(streams step.OutStreams, agentConns []*Connection, diskFreeR
 		masterDirs := []string{source.MasterDataDir()}
 		masterDirs = append(masterDirs, sourceTablespaces.GetMasterTablespaces().UserDefinedTablespacesLocations()...)
 
-		usage, err := CheckDiskUsageFunc(streams, disk.Local, diskFreeRatio, masterDirs...)
+		usage, err := checkDiskUsage(streams, disk.Local, diskFreeRatio, masterDirs...)
 		errs <- err
 		usages <- usage
 	}()

@@ -42,6 +42,8 @@ func (f FileSystemDiskUsage) Swap(i, j int) {
 	f[i], f[j] = f[j], f[i]
 }
 
+type CheckUsageType func(streams step.OutStreams, d Disk, diskFreeRatio float64, paths ...string) (FileSystemDiskUsage, error)
+
 // CheckUsage uses the given Disk to look up filesystem usage for each path, and
 // compares the available space to the required disk ratio. Any filesystems that
 // don't have enough space will be given an entry in the returned SpaceFailures

@@ -8,6 +8,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
+	"github.com/greenplum-db/gpupgrade/utils/disk"
 	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
 
@@ -15,6 +16,7 @@ import (
 func init() {
 	ResetExecCommand()
 	rsync.ResetRsyncCommand()
+	ResetCheckDiskUsage()
 }
 
 func SetExecCommand(cmdFunc exectest.Command) {
@@ -23,6 +25,14 @@ func SetExecCommand(cmdFunc exectest.Command) {
 
 func ResetExecCommand() {
 	execCommand = nil
+}
+
+func SetCheckDiskUsage(usageFunc disk.CheckUsageType) {
+	checkDiskUsage = usageFunc
+}
+
+func ResetCheckDiskUsage() {
+	checkDiskUsage = disk.CheckUsage
 }
 
 // MustCreateCluster creates a utils.Cluster and calls t.Fatalf() if there is

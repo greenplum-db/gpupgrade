@@ -18,6 +18,10 @@ func NewSpaceUsageError(usage FileSystemDiskUsage) *SpaceUsageErr {
 	return &SpaceUsageErr{usage: usage}
 }
 
+func NewSpaceUsageErrorFromUsage(usage idl.CheckDiskSpaceReply_DiskUsage) *SpaceUsageErr {
+	return &SpaceUsageErr{usage: FileSystemDiskUsage{&usage}}
+}
+
 func (d SpaceUsageErr) Error() string {
 	var b strings.Builder
 	b.WriteString("You currently do not have enough disk space to run an upgrade.\n\n")
