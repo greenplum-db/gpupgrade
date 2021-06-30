@@ -273,7 +273,20 @@ jobs:
   - get: gpupgrade_src
     trigger: true
   - task: build
-    file: gpupgrade_src/ci/tasks/build.yml
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source:
+          repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+          tag: latest
+      inputs:
+        - name: gpupgrade_src
+      outputs:
+        - name: built_oss
+        - name: built_enterprise
+      run:
+        path: gpupgrade_src/ci/scripts/build.bash
   - in_parallel:
     - put: rpm_oss
       params:
