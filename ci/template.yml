@@ -493,7 +493,19 @@ jobs:
           path: gpupgrade_src/ci/scripts/load-retail-data.bash
     {{- else }}
     - task: load_dump
-      file: gpupgrade_src/ci/tasks/load-dump.yml
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: alpine
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: sqldump
+          - name: cluster_env_files
+        run:
+          path: gpupgrade_src/ci/scripts/load-dump.sh
     {{- end }}
     - task: upgrade_cluster
       config:
