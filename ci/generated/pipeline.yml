@@ -367,7 +367,21 @@ jobs:
       resource: rpm_gpdb6_centos7
       trigger: true
   - task: install-tests
-    file: gpupgrade_src/ci/tasks/install-tests.yml
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source:
+          repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+          tag: latest
+      inputs:
+        - name: gpupgrade_src
+        - name: gpdb_src_source
+        - name: rpm_gpdb_source
+        - name: rpm_gpdb_target
+        - name: bats
+      run:
+        path: gpupgrade_src/ci/scripts/install-tests.bash
     params:
       SOURCE_PACKAGE: greenplum-db-6
       TARGET_PACKAGE: greenplum-db-6
@@ -389,7 +403,21 @@ jobs:
       resource: rpm_gpdb6_centos7
       trigger: true
   - task: install-tests
-    file: gpupgrade_src/ci/tasks/install-tests.yml
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source:
+          repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+          tag: latest
+      inputs:
+        - name: gpupgrade_src
+        - name: gpdb_src_source
+        - name: rpm_gpdb_source
+        - name: rpm_gpdb_target
+        - name: bats
+      run:
+        path: gpupgrade_src/ci/scripts/install-tests.bash
     params:
       SOURCE_PACKAGE: greenplum-db-5
       TARGET_PACKAGE: greenplum-db-6
