@@ -116,51 +116,17 @@ time ssh mdw <<EOF
 EOF
 
 # perform upgrade fixups:
-# - remove gphdfs from the source 5X cluster
-# - drop partition indices
-# - match root/child partition schemas
 ssh mdw "
     set -x
 
     source ${GPHOME_SOURCE}/greenplum_path.sh
     export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
 
+    gpupgrade-migration-sql-generator.bash "$GPHOME_SOURCE" "$PGPORT" /tmp/migration
+    gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" /tmp/migration/pre-initialize || true
+
+    # match root/child partition schemas
     psql -d gpdb_demo <<SQL_EOF
-        CREATE OR REPLACE FUNCTION drop_gphdfs() RETURNS VOID AS \\\$\\\$
-        DECLARE
-          rolerow RECORD;
-        BEGIN
-          RAISE NOTICE 'Dropping gphdfs users...';
-          FOR rolerow IN SELECT * FROM pg_catalog.pg_roles LOOP
-            EXECUTE 'alter role '
-              || quote_ident(rolerow.rolname) || ' '
-              || 'NOCREATEEXTTABLE(protocol=''gphdfs'',type=''readable'')';
-            EXECUTE 'alter role '
-              || quote_ident(rolerow.rolname) || ' '
-              || 'NOCREATEEXTTABLE(protocol=''gphdfs'',type=''writable'')';
-            RAISE NOTICE 'dropping gphdfs from role % ...', quote_ident(rolerow.rolname);
-          END LOOP;
-        END;
-        \\\$\\\$ LANGUAGE plpgsql;
-
-        SELECT drop_gphdfs();
-
-        DROP FUNCTION drop_gphdfs();
-
-        DROP INDEX retail_demo.order_lineitems_cust_id;
-        DROP INDEX retail_parts.order_lineitems_cust_id_1_prt_default_part;
-        DROP INDEX retail_parts.order_lineitems_cust_id_1_prt_today;
-        DROP INDEX retail_parts.order_lineitems_cust_id_1_prt_2;
-        DROP INDEX retail_parts.order_lineitems_cust_id_1_prt_3;
-        DROP INDEX retail_parts.order_lineitems_cust_id_1_prt_4;
-        DROP INDEX retail_parts.order_lineitems_cust_id_1_prt_5;
-        DROP INDEX retail_parts.order_lineitems_cust_id_1_prt_6;
-        DROP INDEX retail_parts.order_lineitems_cust_id_1_prt_7;
-        DROP INDEX retail_parts.order_lineitems_cust_id_1_prt_8;
-        DROP INDEX retail_parts.order_lineitems_cust_id_1_prt_9;
-        DROP INDEX retail_parts.order_lineitems_cust_id_1_prt_10;
-        DROP INDEX retail_parts.order_lineitems_cust_id_1_prt_11;
-
         ALTER TABLE retail_demo.order_lineitems SET SCHEMA retail_parts;
         ALTER TABLE retail_demo.shipment_lineitems SET SCHEMA retail_parts;
         ALTER TABLE retail_demo.orders SET SCHEMA retail_parts;

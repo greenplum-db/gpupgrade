@@ -49,33 +49,9 @@ pushd gpdb_src_source/gpAux/gpdemo
     source gpdemo-env.sh
 popd
 
-# Apply 5X fixups
-if is_GPDB5 "$GPHOME_SOURCE"; then
-    su gpadmin -c "
-        psql -d postgres <<SQL_EOF
-            CREATE OR REPLACE FUNCTION drop_gphdfs() RETURNS VOID AS \\\$\\\$
-            DECLARE
-              rolerow RECORD;
-            BEGIN
-              RAISE NOTICE 'Dropping gphdfs users...';
-              FOR rolerow IN SELECT * FROM pg_catalog.pg_roles LOOP
-                EXECUTE 'alter role '
-                  || quote_ident(rolerow.rolname) || ' '
-                  || 'NOCREATEEXTTABLE(protocol=''gphdfs'',type=''readable'')';
-                EXECUTE 'alter role '
-                  || quote_ident(rolerow.rolname) || ' '
-                  || 'NOCREATEEXTTABLE(protocol=''gphdfs'',type=''writable'')';
-                RAISE NOTICE 'dropping gphdfs from role % ...', quote_ident(rolerow.rolname);
-              END LOOP;
-            END;
-            \\\$\\\$ LANGUAGE plpgsql;
-
-            SELECT drop_gphdfs();
-
-            DROP FUNCTION drop_gphdfs();
-SQL_EOF
-    "
-fi
+echo 'Running data migration scripts to ensure clean cluster...'
+su gpadmin gpupgrade_src/data-migration-scripts/gpupgrade-migration-sql-generator.bash "$GPHOME_SOURCE" "$PGPORT" /tmp/migration gpupgrade_src/data-migration-scripts
+su gpadmin gpupgrade_src/data-migration-scripts/gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" /tmp/migration/pre-initialize || true
 
 # setup gpupgrade
 chown -R gpadmin:gpadmin gpupgrade_src
