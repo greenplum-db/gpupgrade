@@ -30,8 +30,8 @@ fi
 # executables
 mkdir -p %{buildroot}%{prefix}/usr/local/bin
 mv gpupgrade %{buildroot}%{prefix}/usr/local/bin
-mv data-migration-scripts/migration_generator_sql.bash  %{buildroot}%{prefix}/usr/local/bin/gpupgrade-migration-sql-generator.bash
-mv data-migration-scripts/migration_executor_sql.bash  %{buildroot}%{prefix}/usr/local/bin/gpupgrade-migration-sql-executor.bash
+mv data-migration-scripts/gpupgrade-migration-sql-generator.bash %{buildroot}%{prefix}/usr/local/bin/gpupgrade-migration-sql-generator.bash
+mv data-migration-scripts/gpupgrade-migration-sql-executor.bash %{buildroot}%{prefix}/usr/local/bin/gpupgrade-migration-sql-executor.bash
 
 # additional files
 mkdir -p %{buildroot}%{prefix}/usr/local/bin/greenplum/%{name}

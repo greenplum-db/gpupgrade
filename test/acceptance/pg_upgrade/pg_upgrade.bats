@@ -25,8 +25,8 @@ setup() {
     # Ensure that the cluster contains no non-upgradeable objects before the test
     # Note: This is especially important with a 5X demo cluster which contains
     # the gphdfs role by default.
-    "$DATA_MIGRATION_INPUT_DIR"/migration_generator_sql.bash "$GPHOME_SOURCE" "$PGPORT" "$DATA_MIGRATION_OUTPUT_DIR" "$DATA_MIGRATION_INPUT_DIR"
-    "$DATA_MIGRATION_INPUT_DIR"/migration_executor_sql.bash "$GPHOME_SOURCE" "$PGPORT" "$DATA_MIGRATION_OUTPUT_DIR"/pre-initialize || true
+    "$DATA_MIGRATION_INPUT_DIR"/gpupgrade-migration-sql-generator.bash "$GPHOME_SOURCE" "$PGPORT" "$DATA_MIGRATION_OUTPUT_DIR" "$DATA_MIGRATION_INPUT_DIR"
+    "$DATA_MIGRATION_INPUT_DIR"/gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" "$DATA_MIGRATION_OUTPUT_DIR"/pre-initialize || true
 }
 
 teardown() {
