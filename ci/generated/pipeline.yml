@@ -381,7 +381,6 @@ jobs:
   on_failure:
     <<: *slack_alert
 
-# TODO: Rename CheckJobs to GpupgradeTests
 
 - name: 6-to-6-install-tests
   plan:

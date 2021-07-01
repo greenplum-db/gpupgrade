@@ -31,11 +31,11 @@ var sourceVersions = []string{"6", "5"}
 var targetVersions = []string{"6"}
 var centosVersions = []string{"6", "7"}
 
-type CheckJob struct {
+type GpupgradeJob struct {
 	Source, Target string
 }
 
-func (j *CheckJob) Name() string {
+func (j *GpupgradeJob) Name() string {
 	return fmt.Sprintf("%s-to-%s-install-tests", j.Source, j.Target)
 }
 
@@ -114,7 +114,7 @@ type Data struct {
 	UpgradeJobs       []*UpgradeJob
 	LastTargetVersion string
 	Versions          []*Version
-	CheckJobs         []*CheckJob
+	GpupgradeJobs     []*GpupgradeJob
 	PgUpgradeTests    []*PgUpgradeTests
 	MultihostBatsJobs []*MultihostBatsJob
 }
@@ -122,13 +122,13 @@ type Data struct {
 var data Data
 
 func init() {
-	var checkJobs []*CheckJob
+	var checkJobs []*GpupgradeJob
 	var upgradeJobs []*UpgradeJob
 	var pgUpgradeTests []*PgUpgradeTests
 	var multihostBatsJobs []*MultihostBatsJob
 	for _, sourceVersion := range sourceVersions {
 		for _, targetVersion := range targetVersions {
-			checkJobs = append(checkJobs, &CheckJob{
+			checkJobs = append(checkJobs, &GpupgradeJob{
 				Source: sourceVersion,
 				Target: targetVersion,
 			})
@@ -190,7 +190,7 @@ func init() {
 		UpgradeJobs:       upgradeJobs,
 		LastTargetVersion: targetVersions[len(targetVersions)-1],
 		Versions:          versions,
-		CheckJobs:         checkJobs,
+		GpupgradeJobs:     checkJobs,
 		PgUpgradeTests:    pgUpgradeTests,
 		MultihostBatsJobs: multihostBatsJobs,
 	}

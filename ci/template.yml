@@ -224,7 +224,7 @@ groups:
       - build
       - lint
       - noinstall-tests
-      {{- range .CheckJobs}}
+      {{- range .GpupgradeJobs}}
       - {{.Name}}
       {{- end}}
       {{- range .PgUpgradeTests}}
@@ -239,7 +239,7 @@ groups:
       - publish-release-candidate
   - name: gpupgrade
     jobs:
-      {{- range .CheckJobs}}
+      {{- range .GpupgradeJobs}}
       - {{.Name}}
       {{- end}}
       {{- range .MultihostBatsJobs}}
@@ -351,8 +351,7 @@ jobs:
   on_failure:
     <<: *slack_alert
 
-# TODO: Rename CheckJobs to GpupgradeTests
-{{range .CheckJobs}}
+{{range .GpupgradeJobs}}
 - name: {{.Name}}
   plan:
   - in_parallel:
@@ -703,7 +702,7 @@ jobs:
         passed:
           - build
           - noinstall-tests
-          {{- range .CheckJobs}}
+          {{- range .GpupgradeJobs}}
           - {{ .Name }}
           {{- end}}
           {{- range .PgUpgradeTests}}
