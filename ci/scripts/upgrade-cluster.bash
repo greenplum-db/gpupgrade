@@ -105,11 +105,6 @@ mapfile -t hosts < cluster_env_files/hostfile_all
 export GPHOME_SOURCE=/usr/local/greenplum-db-source
 export GPHOME_TARGET=/usr/local/greenplum-db-target
 
-for host in "${hosts[@]}"; do
-    scp rpm_enterprise/gpupgrade-*.rpm "gpadmin@$host:/tmp"
-    ssh centos@$host "sudo rpm -ivh /tmp/gpupgrade-*.rpm"
-done
-
 # On GPDB version other than 5, set the gucs before taking dumps
 if ! is_GPDB5 ${GPHOME_SOURCE}; then
     configure_gpdb_gucs ${GPHOME_SOURCE}

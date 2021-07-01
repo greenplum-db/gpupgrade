@@ -500,7 +500,7 @@ jobs:
         gpdb_rpm: rpm_gpdb_source
     - task: gpinitsystem_source_cluster
       file: ccp_src/ci/tasks/gpinitsystem.yml
-    - task: prepare_source_and_target_installations
+    - task: prepare_installation
       config:
         platform: linux
         image_resource:
@@ -511,11 +511,12 @@ jobs:
         inputs:
           - name: gpupgrade_src
           - name: cluster_env_files
+          - name: rpm_enterprise
           {{- if ne .Source .Target }}
           - name: rpm_gpdb_target
           {{- end }}
         run:
-          path: gpupgrade_src/ci/scripts/prepare-source-and-target-installations.sh
+          path: gpupgrade_src/ci/scripts/prepare-installation.sh
           args:
             - greenplum-db-{{majorVersion .Source}}
             - greenplum-db-{{majorVersion .Target}}
@@ -564,7 +565,6 @@ jobs:
         - name: ccp_src
         - name: cluster_env_files
         - name: gpupgrade_src
-        - name: rpm_enterprise
         run:
           path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
       params:
@@ -649,7 +649,7 @@ jobs:
         gpdb_rpm: rpm_gpdb_source
     - task: gpinitsystem_source_cluster
       file: ccp_src/ci/tasks/gpinitsystem.yml
-    - task: prepare_source_and_target_installations
+    - task: prepare_installation
       config:
         platform: linux
         image_resource:
@@ -660,11 +660,12 @@ jobs:
         inputs:
           - name: gpupgrade_src
           - name: cluster_env_files
+          - name: rpm_enterprise
           {{- if ne .Source .Target }}
           - name: rpm_gpdb_target
           {{- end }}
         run:
-          path: gpupgrade_src/ci/scripts/prepare-source-and-target-installations.sh
+          path: gpupgrade_src/ci/scripts/prepare-installation.sh
           args:
             - greenplum-db-{{majorVersion .Source}}
             - greenplum-db-{{majorVersion .Target}}

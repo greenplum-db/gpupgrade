@@ -48,22 +48,11 @@ SQL_EOF
 # MAIN
 #
 
-# TODO: combine this or at least pull out common functions with upgrade-cluster.bash?
-
 # This port is selected by our CI pipeline
 MASTER_PORT=5432
 
 # We'll need this to transfer our built binaries over to the cluster hosts.
 ./ccp_src/scripts/setup_ssh_to_cluster.sh
-
-# Cache our list of hosts to loop over below.
-mapfile -t hosts < cluster_env_files/hostfile_all
-
-# Install rpm onto the cluster machines.
-for host in "${hosts[@]}"; do
-    scp rpm_enterprise/gpupgrade-*.rpm "gpadmin@$host:/tmp"
-    ssh centos@$host "sudo rpm -ivh /tmp/gpupgrade-*.rpm"
-done
 
 # Install gpupgrade_src on mdw
 scp -rpq gpupgrade_src gpadmin@mdw:/home/gpadmin

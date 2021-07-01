@@ -3,18 +3,13 @@
 # Copyright (c) 2017-2021 VMware, Inc. or its affiliates
 # SPDX-License-Identifier: Apache-2.0
 #
-# Usage: $0 SOURCE_PACKAGE_NAME TARGET_PACKAGE_NAME
-#
-# Performs pre-upgrade cluster fixups to prepare for upgrade. This includes the
-# installation of the target GPDB binary, if it is different from the source GPDB
-# binary, and the creation of -source and -target symlinks so that future pipeline
+# This script:
+# - Installs target GPDB rpm if different from source GPDB version.
+# - Creates source and target GPHOME symlinks, sot that that future pipeline
 # tasks don't have to know the exact versions in use.
+# - Installs gpugprade RPM so future tasks have data migration scripts installed.
 #
-# Expected pipeline inputs:
-# - cluster_env_files, for SSH setup
-# - rpm_gpdb_target, containing the target GPDB RPM to install IF the source and target
-#   packages are different
-#
+# Expected inputs are SOURCE_PACKAGE_NAME TARGET_PACKAGE_NAME
 
 set -eux
 
@@ -41,4 +36,8 @@ for host in `cat cluster_env_files/hostfile_all`; do
         version=\$(rpm -q --qf '%{version}' '$target_package')
         sudo ln -s /usr/local/greenplum-db-\${version} /usr/local/greenplum-db-target
     "
+
+    # Install gpupgrade RPM
+    scp rpm_enterprise/gpupgrade-*.rpm gpadmin@$host:/tmp
+    ssh centos@$host sudo rpm -ivh /tmp/gpupgrade-*.rpm
 done
