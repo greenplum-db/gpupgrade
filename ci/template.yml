@@ -227,7 +227,7 @@ groups:
       {{- range .GpupgradeJobs}}
       - {{.Name}}
       {{- end}}
-      {{- range .PgUpgradeTests}}
+      {{- range .PgupgradeJobs}}
       - {{.Name}}
       {{- end}}
       {{- range .MultihostBatsJobs}}
@@ -247,7 +247,7 @@ groups:
       {{- end}}
   - name: pg_upgrade
     jobs:
-      {{- range .PgUpgradeTests}}
+      {{- range .PgupgradeJobs}}
       - {{.Name}}
       {{- end }}
   - name: upgrade
@@ -389,7 +389,7 @@ jobs:
     <<: *slack_alert
 {{end -}}
 
-{{range .PgUpgradeTests}}
+{{range .PgupgradeJobs}}
 - name: {{.Name}}
   plan:
   - in_parallel:
@@ -705,7 +705,7 @@ jobs:
           {{- range .GpupgradeJobs}}
           - {{ .Name }}
           {{- end}}
-          {{- range .PgUpgradeTests}}
+          {{- range .PgupgradeJobs}}
           - {{.Name}}
           {{- end}}
           {{- range .UpgradeJobs}}
@@ -720,7 +720,7 @@ jobs:
           {{- range .UpgradeJobs}}
           - {{ .Name }}
           {{- end}}
-          {{- range .PgUpgradeTests}}
+          {{- range .PgupgradeJobs}}
           - {{.Name}}
           {{- end}}
           {{- range .MultihostBatsJobs}}

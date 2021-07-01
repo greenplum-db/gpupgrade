@@ -72,19 +72,19 @@ func (j *UpgradeJob) BaseName() string {
 	return fmt.Sprintf("%s-to-%s%s", j.Source, j.Target, suffix)
 }
 
-type PgUpgradeTests struct {
+type PgUpgradeJob struct {
 	Source, Target string
 	CentosVersion  string
 }
 
-func (p *PgUpgradeTests) Name() string {
+func (p *PgUpgradeJob) Name() string {
 	return fmt.Sprintf("%s-centos-%s", p.BaseName(), p.CentosVersion)
 }
 
 // BaseName returns the pipeline job name without the operating system.
 // This is used as a tag in Concourse's serial group to limit similar jobs
 // between operating systems from running at once to avoid overloading Concourse.
-func (p *PgUpgradeTests) BaseName() string {
+func (p *PgUpgradeJob) BaseName() string {
 	return fmt.Sprintf("%s-to-%s-%s", p.Source, p.Target, "pg-upgrade-tests")
 }
 
@@ -115,7 +115,7 @@ type Data struct {
 	LastTargetVersion string
 	Versions          []*Version
 	GpupgradeJobs     []*GpupgradeJob
-	PgUpgradeTests    []*PgUpgradeTests
+	PgupgradeJobs     []*PgUpgradeJob
 	MultihostBatsJobs []*MultihostBatsJob
 }
 
@@ -124,7 +124,7 @@ var data Data
 func init() {
 	var checkJobs []*GpupgradeJob
 	var upgradeJobs []*UpgradeJob
-	var pgUpgradeTests []*PgUpgradeTests
+	var pgupgradeJobs []*PgUpgradeJob
 	var multihostBatsJobs []*MultihostBatsJob
 	for _, sourceVersion := range sourceVersions {
 		for _, targetVersion := range targetVersions {
@@ -139,9 +139,9 @@ func init() {
 					CentosVersion: centosVersion,
 				})
 
-				// pgUpgradeTests are only needed for 5->6, 6->7, etc.
+				// pgupgradeJobs are only needed for 5->6, 6->7, etc.
 				if sourceVersion != targetVersion {
-					pgUpgradeTests = append(pgUpgradeTests, &PgUpgradeTests{
+					pgupgradeJobs = append(pgupgradeJobs, &PgUpgradeJob{
 						Source:        sourceVersion,
 						Target:        targetVersion,
 						CentosVersion: centosVersion,
@@ -191,7 +191,7 @@ func init() {
 		LastTargetVersion: targetVersions[len(targetVersions)-1],
 		Versions:          versions,
 		GpupgradeJobs:     checkJobs,
-		PgUpgradeTests:    pgUpgradeTests,
+		PgupgradeJobs:     pgupgradeJobs,
 		MultihostBatsJobs: multihostBatsJobs,
 	}
 }
