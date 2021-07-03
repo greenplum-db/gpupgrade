@@ -5,7 +5,7 @@
 
 set -eux -o pipefail
 
-# We'll need this to transfer our built binaries over to the cluster hosts.
+# Enable ssh to CCP cluster
 ./ccp_src/scripts/setup_ssh_to_cluster.sh
 
 # Install gpupgrade_src on mdw

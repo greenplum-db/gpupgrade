@@ -93,17 +93,12 @@ USE_LINK_MODE=${USE_LINK_MODE:-0}
 FILTER_DIFF=${FILTER_DIFF:-0}
 DIFF_FILE=${DIFF_FILE:-"icw.diff"}
 
-# This port is selected by our CI pipeline
-MASTER_PORT=5432
-
-# We'll need this to transfer our built binaries over to the cluster hosts.
-./ccp_src/scripts/setup_ssh_to_cluster.sh
-
-# Cache our list of hosts to loop over below.
-mapfile -t hosts < cluster_env_files/hostfile_all
-
 export GPHOME_SOURCE=/usr/local/greenplum-db-source
 export GPHOME_TARGET=/usr/local/greenplum-db-target
+export PGPORT=5432
+
+# Enable ssh to CCP cluster
+./ccp_src/scripts/setup_ssh_to_cluster.sh
 
 # On GPDB version other than 5, set the gucs before taking dumps
 if ! is_GPDB5 ${GPHOME_SOURCE}; then
@@ -111,7 +106,7 @@ if ! is_GPDB5 ${GPHOME_SOURCE}; then
 fi
 
 # Dump the old cluster for later comparison.
-dump_sql $MASTER_PORT /tmp/source.sql
+dump_sql $PGPORT /tmp/source.sql
 
 # Now do the upgrade.
 LINK_MODE=""
@@ -127,7 +122,7 @@ time ssh mdw bash <<EOF
               --automatic \
               --target-gphome ${GPHOME_TARGET} \
               --source-gphome ${GPHOME_SOURCE} \
-              --source-master-port $MASTER_PORT \
+              --source-master-port $PGPORT \
               --temp-port-range 6020-6040
     # TODO: rather than setting a temp port range, consider carving out an
     # ip_local_reserved_ports range during/after CCP provisioning.
@@ -145,11 +140,11 @@ if ! is_GPDB5 ${GPHOME_TARGET}; then
 fi
 
 # TODO: how do we know the cluster upgraded?  5 to 6 is a version check; 6 to 6 ?????
-#   currently, it's sleight of hand...source is on port $MASTER_PORT then target is!!!!
+#   currently, it's sleight of hand...source is on port $PGPORT then target is!!!!
 #   perhaps use the controldata("pg_controldata $MASTER_DATA_DIR") system identifier?
 
 # Dump the target cluster and compare.
-dump_sql ${MASTER_PORT} /tmp/target.sql
+dump_sql ${PGPORT} /tmp/target.sql
 if ! compare_dumps /tmp/source.sql /tmp/target.sql; then
     echo 'error: before and after dumps differ'
     exit 1

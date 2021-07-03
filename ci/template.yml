@@ -561,7 +561,6 @@ jobs:
             repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
             tag: "latest"
         inputs:
-        - name: terraform
         - name: ccp_src
         - name: cluster_env_files
         - name: gpupgrade_src
@@ -678,7 +677,6 @@ jobs:
             repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
             tag: "latest"
         inputs:
-          - name: terraform
           - name: ccp_src
           - name: cluster_env_files
           - name: gpupgrade_src
