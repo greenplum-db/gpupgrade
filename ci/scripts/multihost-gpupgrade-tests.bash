@@ -87,4 +87,4 @@ time ssh mdw bash <<EOF
     ./gpupgrade_src/test/acceptance/gpupgrade/revert.bats
 EOF
 
-echo 'bats test successful.'
+echo 'multihost gpupgrade acceptance tests successful.'

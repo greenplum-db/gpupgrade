@@ -88,20 +88,20 @@ func (p *PgUpgradeJob) BaseName() string {
 	return fmt.Sprintf("%s-to-%s-%s", p.Source, p.Target, "pg-upgrade-tests")
 }
 
-type MultihostBatsJob struct {
+type MultihostGpupgradeJob struct {
 	Source, Target string
 	CentosVersion  string
 }
 
-func (j *MultihostBatsJob) Name() string {
+func (j *MultihostGpupgradeJob) Name() string {
 	return fmt.Sprintf("%s-centos-%s", j.BaseName(), j.CentosVersion)
 }
 
 // BaseName returns the pipeline job name without the operating system.
 // This is used as a tag in Concourse's serial group to limit similar jobs
 // between operating systems from running at once to avoid overloading Concourse.
-func (j *MultihostBatsJob) BaseName() string {
-	return fmt.Sprintf("%s-to-%s-%s", j.Source, j.Target, "multihost-bats")
+func (j *MultihostGpupgradeJob) BaseName() string {
+	return fmt.Sprintf("%s-to-%s-%s", j.Source, j.Target, "multihost-gpupgrade")
 }
 
 type Version struct {
@@ -110,13 +110,13 @@ type Version struct {
 }
 
 type Data struct {
-	AllVersions       []string // combination of Source/Target
-	UpgradeJobs       []*UpgradeJob
-	LastTargetVersion string
-	Versions          []*Version
-	GpupgradeJobs     []*GpupgradeJob
-	PgupgradeJobs     []*PgUpgradeJob
-	MultihostBatsJobs []*MultihostBatsJob
+	AllVersions            []string // combination of Source/Target
+	UpgradeJobs            []*UpgradeJob
+	LastTargetVersion      string
+	Versions               []*Version
+	GpupgradeJobs          []*GpupgradeJob
+	PgupgradeJobs          []*PgUpgradeJob
+	MultihostGpupgradeJobs []*MultihostGpupgradeJob
 }
 
 var data Data
@@ -125,7 +125,7 @@ func init() {
 	var checkJobs []*GpupgradeJob
 	var upgradeJobs []*UpgradeJob
 	var pgupgradeJobs []*PgUpgradeJob
-	var multihostBatsJobs []*MultihostBatsJob
+	var multihostBatsJobs []*MultihostGpupgradeJob
 	for _, sourceVersion := range sourceVersions {
 		for _, targetVersion := range targetVersions {
 			checkJobs = append(checkJobs, &GpupgradeJob{
@@ -147,7 +147,7 @@ func init() {
 						CentosVersion: centosVersion,
 					})
 				}
-				multihostBatsJobs = append(multihostBatsJobs, &MultihostBatsJob{
+				multihostBatsJobs = append(multihostBatsJobs, &MultihostGpupgradeJob{
 					Source:        sourceVersion,
 					Target:        targetVersion,
 					CentosVersion: centosVersion,
@@ -186,13 +186,13 @@ func init() {
 	}
 
 	data = Data{
-		AllVersions:       deduplicate(sourceVersions, targetVersions),
-		UpgradeJobs:       upgradeJobs,
-		LastTargetVersion: targetVersions[len(targetVersions)-1],
-		Versions:          versions,
-		GpupgradeJobs:     checkJobs,
-		PgupgradeJobs:     pgupgradeJobs,
-		MultihostBatsJobs: multihostBatsJobs,
+		AllVersions:            deduplicate(sourceVersions, targetVersions),
+		UpgradeJobs:            upgradeJobs,
+		LastTargetVersion:      targetVersions[len(targetVersions)-1],
+		Versions:               versions,
+		GpupgradeJobs:          checkJobs,
+		PgupgradeJobs:          pgupgradeJobs,
+		MultihostGpupgradeJobs: multihostBatsJobs,
 	}
 }
 

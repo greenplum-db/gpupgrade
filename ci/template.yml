@@ -230,7 +230,7 @@ groups:
       {{- range .PgupgradeJobs}}
       - {{.Name}}
       {{- end}}
-      {{- range .MultihostBatsJobs}}
+      {{- range .MultihostGpupgradeJobs}}
       - {{.Name}}
       {{- end}}
       {{- range .UpgradeJobs}}
@@ -242,7 +242,7 @@ groups:
       {{- range .GpupgradeJobs}}
       - {{.Name}}
       {{- end}}
-      {{- range .MultihostBatsJobs}}
+      {{- range .MultihostGpupgradeJobs}}
       - {{.Name}}
       {{- end}}
   - name: pg_upgrade
@@ -602,7 +602,7 @@ jobs:
     <<: *slack_alert
 {{end -}}
 
-{{range .MultihostBatsJobs}}
+{{range .MultihostGpupgradeJobs}}
 - name: {{ .Name }}
   serial_groups: [{{ .BaseName }}]
   # Specifying serial groups so that only one platform runs at a time. For
@@ -668,7 +668,7 @@ jobs:
           args:
             - greenplum-db-{{majorVersion .Source}}
             - greenplum-db-{{majorVersion .Target}}
-    - task: run_bats
+    - task: multihost_gpupgrade_tests
       config:
         platform: linux
         image_resource:
@@ -684,7 +684,7 @@ jobs:
           - name: rpm_enterprise
           - name: bats
         run:
-          path: gpupgrade_src/ci/scripts/bats-on-cluster.bash
+          path: gpupgrade_src/ci/scripts/multihost-gpupgrade-tests.bash
       params:
   ensure:
     <<: *set_failed
@@ -711,7 +711,7 @@ jobs:
           {{- range .UpgradeJobs}}
           - {{ .Name }}
           {{- end}}
-          {{- range .MultihostBatsJobs}}
+          {{- range .MultihostGpupgradeJobs}}
           - {{ .Name }}
           {{- end}}
       - get: rpm_enterprise
@@ -723,7 +723,7 @@ jobs:
           {{- range .PgupgradeJobs}}
           - {{.Name}}
           {{- end}}
-          {{- range .MultihostBatsJobs}}
+          {{- range .MultihostGpupgradeJobs}}
           - {{ .Name }}
           {{- end}}
       - get: rpm_oss

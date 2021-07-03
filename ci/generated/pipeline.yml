@@ -249,10 +249,10 @@ groups:
       - 5-to-6-install-tests
       - 5-to-6-pg-upgrade-tests-centos-6
       - 5-to-6-pg-upgrade-tests-centos-7
-      - 6-to-6-multihost-bats-centos-6
-      - 6-to-6-multihost-bats-centos-7
-      - 5-to-6-multihost-bats-centos-6
-      - 5-to-6-multihost-bats-centos-7
+      - 6-to-6-multihost-gpupgrade-centos-6
+      - 6-to-6-multihost-gpupgrade-centos-7
+      - 5-to-6-multihost-gpupgrade-centos-6
+      - 5-to-6-multihost-gpupgrade-centos-7
       - 6-to-6-centos-6
       - 6-to-6-centos-7
       - 5-to-6-centos-6
@@ -270,10 +270,10 @@ groups:
     jobs:
       - 6-to-6-install-tests
       - 5-to-6-install-tests
-      - 6-to-6-multihost-bats-centos-6
-      - 6-to-6-multihost-bats-centos-7
-      - 5-to-6-multihost-bats-centos-6
-      - 5-to-6-multihost-bats-centos-7
+      - 6-to-6-multihost-gpupgrade-centos-6
+      - 6-to-6-multihost-gpupgrade-centos-7
+      - 5-to-6-multihost-gpupgrade-centos-6
+      - 5-to-6-multihost-gpupgrade-centos-7
   - name: pg_upgrade
     jobs:
       - 5-to-6-pg-upgrade-tests-centos-6
@@ -1876,8 +1876,8 @@ jobs:
   on_failure:
     <<: *slack_alert
 
-- name: 6-to-6-multihost-bats-centos-6
-  serial_groups: [6-to-6-multihost-bats]
+- name: 6-to-6-multihost-gpupgrade-centos-6
+  serial_groups: [6-to-6-multihost-gpupgrade]
   # Specifying serial groups so that only one platform runs at a time. For
   # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
   # will prevent concourse from becoming overloaded.
@@ -1933,7 +1933,7 @@ jobs:
           args:
             - greenplum-db-6
             - greenplum-db-6
-    - task: run_bats
+    - task: multihost_gpupgrade_tests
       config:
         platform: linux
         image_resource:
@@ -1949,7 +1949,7 @@ jobs:
           - name: rpm_enterprise
           - name: bats
         run:
-          path: gpupgrade_src/ci/scripts/bats-on-cluster.bash
+          path: gpupgrade_src/ci/scripts/multihost-gpupgrade-tests.bash
       params:
   ensure:
     <<: *set_failed
@@ -1958,8 +1958,8 @@ jobs:
   on_failure:
     <<: *slack_alert
 
-- name: 6-to-6-multihost-bats-centos-7
-  serial_groups: [6-to-6-multihost-bats]
+- name: 6-to-6-multihost-gpupgrade-centos-7
+  serial_groups: [6-to-6-multihost-gpupgrade]
   # Specifying serial groups so that only one platform runs at a time. For
   # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
   # will prevent concourse from becoming overloaded.
@@ -2015,7 +2015,7 @@ jobs:
           args:
             - greenplum-db-6
             - greenplum-db-6
-    - task: run_bats
+    - task: multihost_gpupgrade_tests
       config:
         platform: linux
         image_resource:
@@ -2031,7 +2031,7 @@ jobs:
           - name: rpm_enterprise
           - name: bats
         run:
-          path: gpupgrade_src/ci/scripts/bats-on-cluster.bash
+          path: gpupgrade_src/ci/scripts/multihost-gpupgrade-tests.bash
       params:
   ensure:
     <<: *set_failed
@@ -2040,8 +2040,8 @@ jobs:
   on_failure:
     <<: *slack_alert
 
-- name: 5-to-6-multihost-bats-centos-6
-  serial_groups: [5-to-6-multihost-bats]
+- name: 5-to-6-multihost-gpupgrade-centos-6
+  serial_groups: [5-to-6-multihost-gpupgrade]
   # Specifying serial groups so that only one platform runs at a time. For
   # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
   # will prevent concourse from becoming overloaded.
@@ -2101,7 +2101,7 @@ jobs:
           args:
             - greenplum-db-5
             - greenplum-db-6
-    - task: run_bats
+    - task: multihost_gpupgrade_tests
       config:
         platform: linux
         image_resource:
@@ -2117,7 +2117,7 @@ jobs:
           - name: rpm_enterprise
           - name: bats
         run:
-          path: gpupgrade_src/ci/scripts/bats-on-cluster.bash
+          path: gpupgrade_src/ci/scripts/multihost-gpupgrade-tests.bash
       params:
   ensure:
     <<: *set_failed
@@ -2126,8 +2126,8 @@ jobs:
   on_failure:
     <<: *slack_alert
 
-- name: 5-to-6-multihost-bats-centos-7
-  serial_groups: [5-to-6-multihost-bats]
+- name: 5-to-6-multihost-gpupgrade-centos-7
+  serial_groups: [5-to-6-multihost-gpupgrade]
   # Specifying serial groups so that only one platform runs at a time. For
   # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
   # will prevent concourse from becoming overloaded.
@@ -2187,7 +2187,7 @@ jobs:
           args:
             - greenplum-db-5
             - greenplum-db-6
-    - task: run_bats
+    - task: multihost_gpupgrade_tests
       config:
         platform: linux
         image_resource:
@@ -2203,7 +2203,7 @@ jobs:
           - name: rpm_enterprise
           - name: bats
         run:
-          path: gpupgrade_src/ci/scripts/bats-on-cluster.bash
+          path: gpupgrade_src/ci/scripts/multihost-gpupgrade-tests.bash
       params:
   ensure:
     <<: *set_failed
@@ -2235,10 +2235,10 @@ jobs:
           - 5-to-6-primaries-only-centos-7
           - 5-to-6-no-standby-centos-7
           - 5-to-6-retail-demo-centos-7
-          - 6-to-6-multihost-bats-centos-6
-          - 6-to-6-multihost-bats-centos-7
-          - 5-to-6-multihost-bats-centos-6
-          - 5-to-6-multihost-bats-centos-7
+          - 6-to-6-multihost-gpupgrade-centos-6
+          - 6-to-6-multihost-gpupgrade-centos-7
+          - 5-to-6-multihost-gpupgrade-centos-6
+          - 5-to-6-multihost-gpupgrade-centos-7
       - get: rpm_enterprise
         passed:
           - build
@@ -2256,10 +2256,10 @@ jobs:
           - 5-to-6-retail-demo-centos-7
           - 5-to-6-pg-upgrade-tests-centos-6
           - 5-to-6-pg-upgrade-tests-centos-7
-          - 6-to-6-multihost-bats-centos-6
-          - 6-to-6-multihost-bats-centos-7
-          - 5-to-6-multihost-bats-centos-6
-          - 5-to-6-multihost-bats-centos-7
+          - 6-to-6-multihost-gpupgrade-centos-6
+          - 6-to-6-multihost-gpupgrade-centos-7
+          - 5-to-6-multihost-gpupgrade-centos-6
+          - 5-to-6-multihost-gpupgrade-centos-7
       - get: rpm_oss
         passed:
           - build
