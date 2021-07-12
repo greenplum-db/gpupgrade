@@ -30,10 +30,10 @@ for host in `cat cluster_env_files/hostfile_all`; do
     ssh -n centos@"$host" "
         set -eux
 
-        version=\$(rpm -q --qf '%{version}' '$source_package')
+        version=\$(rpm -q --qf '%{version}' '$source_package' | tr _ -)
         sudo ln -s /usr/local/greenplum-db-\${version} /usr/local/greenplum-db-source
 
-        version=\$(rpm -q --qf '%{version}' '$target_package')
+        version=\$(rpm -q --qf '%{version}' '$target_package' | tr _ -)
         sudo ln -s /usr/local/greenplum-db-\${version} /usr/local/greenplum-db-target
     "
 

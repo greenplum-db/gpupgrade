@@ -3,6 +3,7 @@
 <!-- TOC -->
 - [Performance and Scale Testing](#performance-and-scale-testing)
 - [Acceptance Tests](#acceptance-tests)
+    - [Testing GPDB changes against gpupgrade](#testing-gpdb-changes-against-gpupgrade) 
     - [1) gpupgrade Acceptance Tests](#1-gpupgrade-acceptance-tests)
     - [2) pg_upgrade Acceptance Tests](#2-pg_upgrade-acceptance-tests)
         - [pg_upgrade non-upgradeable tests (negative tests)](#2a-pg_upgrade-non-upgradeable-tests-negative-tests)
@@ -21,6 +22,29 @@ Acceptance tests are "end-to-end" tests that exercise the binary of gpupgrade an
 the overall Greenplum upgrade process. There are two types of acceptance tests:
 1) gpupgrade, and 2) pg_upgrade. And within the pg_upgrade acceptance tests
 there are two sub-types: a) non-upgradeable, and b) upgradeable.
+
+---
+
+## Testing GPDB changes against gpupgrade
+
+1. Each developer will need to sync the latest origin tags with their remote. This will allow the GPDB test rpm to have 
+   the correct version number. For your GPDB branch run the following:
+
+```
+$ git fetch --tags origin
+$ git push --tags <yourRemoteName>
+```
+*Note:* If you already flew a pipeline *before* pushing tags you will likely need to delete it, push tags, and re-fly as 
+Concourse has some weird caching issues.
+
+2. Fly a GPDB test pipeline to build a test release candidate RPM based on your branch using the `--build-test-rc` flag.  
+Example gen_pipeline commands: 
+- For 5X: `./gen_pipeline.py -t cm --build-test-rc -o /tmp/5X_rc.yml`
+- For 6X: `./gen_pipeline.py -t cm --build-test-rc -O 'centos6' 'centos7' 'photon3' -o /tmp/6X_rc.yml`
+- For 7X: `./gen_pipeline.py -t cm --build-test-rc -O centos7 -o /tmp/7X_rc.yml`
+
+3. Finally, generate a gpupgrade pipeline to use those test GPDB RPMs using the appropriate environment variables.
+`make 5X_GIT_USER=alice 5X_GIT_BRANCH=5X_rc 6X_GIT_USER=bob 6X_GIT_BRANCH=6X_rc set-pipeline`
 
 ---
 

@@ -201,17 +201,23 @@ else
 endif
 
 .PHONY: set-pipeline expose-pipeline
-# TODO: Keep this in sync with the README at github.com/greenplum-db/continuous-integration
+set-pipeline: export 5X_GIT_USER=${5X_GIT_USER:-}
+set-pipeline: export 5X_GIT_BRANCH=${5X_GIT_BRANCH:-}
+set-pipeline: export 6X_GIT_USER=${6X_GIT_USER:-}
+set-pipeline: export 6X_GIT_BRANCH=${6X_GIT_BRANCH:-}
+set-pipeline: export 7X_GIT_USER=${7X_GIT_USER:-}
+set-pipeline: export 7X_GIT_BRANCH=${7X_GIT_BRANCH:-}
 set-pipeline:
 	# Keep pipeline.yml up to date
 	go generate ./ci
 	#NOTE-- make sure your gpupgrade-git-remote uses an https style git"
 	#NOTE-- such as https://github.com/greenplum-db/gpupgrade.git"
+	# TODO: Keep this in sync with the README at github.com/greenplum-db/continuous-integration
 	fly -t $(FLY_TARGET) set-pipeline -p $(PIPELINE_NAME) \
 		-c ci/generated/pipeline.yml \
 		-l ~/workspace/gp-continuous-integration/secrets/gpupgrade.$(TARGET).yml \
 		-l ~/workspace/gp-continuous-integration/secrets/gpdb_common-ci-secrets.yml \
-		-l ~/workspace/gp-continuous-integration/secrets/gpdb_master-ci-secrets.prod.yml \
+		-l ~/workspace/gp-continuous-integration/secrets/gpdb_master-ci-secrets.$(TARGET).yml \
 		-l ~/workspace/gp-continuous-integration/secrets/ccp_ci_secrets_$(FLY_TARGET).yml \
 		-l ~/workspace/gp-continuous-integration/secrets/gp-upgrade-packaging.dev.yml \
 		-v gpupgrade-git-remote=$(GIT_URI) \

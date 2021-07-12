@@ -167,14 +167,24 @@ resources:
 - name: gpdb5_icw_planner_centos6_dump
   type: gcs
   source:
-    bucket: ((gcs-bucket-intermediates))
+    # FIXME: When flying a dev or prod pipeline we use the -dev or -prod bucket
+    # based on ccp_ci_secrets_$(FLY_TARGET).yml. However, for dev pipelines the
+    # -dev bucket does not have this artifact, causing all jobs that use this
+    # resource to hang. So for now hardcode it to the bucket with the artifact.
+    # bucket: ((gcs-bucket-intermediates))
+    bucket: pivotal-gpdb-concourse-resources-intermediates-prod
     json_key: ((concourse-gcs-resources-service-account-key))
     versioned_file: 5X_STABLE/icw_planner_centos6_dump/dump.sql.xz
 
 - name: dump_gpdb6_icw_gporca_centos6
   type: gcs
   source:
-    bucket: ((gcs-bucket-intermediates))
+    # FIXME: When flying a dev or prod pipeline we use the -dev or -prod bucket
+    # based on ccp_ci_secrets_$(FLY_TARGET).yml. However, for dev pipelines the
+    # -dev bucket does not have this artifact, causing all jobs that use this
+    # resource to hang. So for now hardcode it to the bucket with the artifact.
+    # bucket: ((gcs-bucket-intermediates))
+    bucket: pivotal-gpdb-concourse-resources-intermediates-prod
     json_key: ((concourse-gcs-resources-service-account-key))
     versioned_file: 6X_STABLE/icw_gporca_centos6_dump/dump.sql.xz
 

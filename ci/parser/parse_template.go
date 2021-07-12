@@ -105,8 +105,9 @@ func (j *MultihostGpupgradeJob) BaseName() string {
 }
 
 type Version struct {
-	CentosVersion string
-	GPVersion     string
+	CentosVersion    string
+	GPVersion        string
+	TestRCIdentifier string
 }
 
 type Data struct {
@@ -160,8 +161,9 @@ func init() {
 	for _, sourceVersion := range sourceVersions {
 		for _, centosVersion := range centosVersions {
 			versions = append(versions, &Version{
-				CentosVersion: centosVersion,
-				GPVersion:     sourceVersion,
+				CentosVersion:    centosVersion,
+				GPVersion:        sourceVersion,
+				TestRCIdentifier: testRCIdentifier(sourceVersion),
 			})
 		}
 	}
@@ -194,6 +196,30 @@ func init() {
 		PgupgradeJobs:          pgupgradeJobs,
 		MultihostGpupgradeJobs: multihostBatsJobs,
 	}
+}
+
+// testRCIdentifier returns the unique identifier used when naming the test
+// release candidate RPMs. This is used to to prevent bucket filename collisions.
+func testRCIdentifier(verison string) string {
+	fmtString := "%s-%s-"
+	identifier := ""
+	switch verison {
+	case "5":
+		identifier = fmt.Sprintf(fmtString, os.Getenv("5X_GIT_USER"), os.Getenv("5X_GIT_BRANCH"))
+	case "6":
+		identifier = fmt.Sprintf(fmtString, os.Getenv("6X_GIT_USER"), os.Getenv("6X_GIT_BRANCH"))
+	case "7":
+		identifier = fmt.Sprintf(fmtString, os.Getenv("7X_GIT_USER"), os.Getenv("7X_GIT_BRANCH"))
+	default:
+		return ""
+	}
+
+	if identifier == fmt.Sprintf(fmtString, "", "") {
+		// If env variables are empty, return empty string rather than the empty fmtString of "--"
+		return ""
+	}
+
+	return identifier
 }
 
 // deduplicate combines, deduplicates, and sorts two string slices.
