@@ -123,6 +123,43 @@ system which can be installed on macOS with `brew install protobuf`.
 - Run `make && make depend-dev` to install other developer dependencies. Note 
 make needs to be run first.
 
+### Setting up your IDE
+
+For IntelliJ users set up the following:
+
+Imports:
+- Preferences > Editor > Code Style > Go > select "Imports" tab
+  - uncheck "Use back quotes for imports"
+  - uncheck "Add parentheses for a single import"
+  - uncheck "Remove redundant import aliases"
+  - Sorting type: gofmt
+  - check "Move all imports in a single declaration"
+  - check "Group stdlib imports"
+    - check "Move all stdlib imports in a single group"
+  - check "Group"
+    - check "Current project packages"
+
+Copyright:
+- Preferences > Editor > Copyright > Copyright Profiles
+  - Add new profile called "vmware" with the following text:
+    
+    ```
+    // Copyright (c) 2017-2021 VMware, Inc. or its affiliates
+    // SPDX-License-Identifier: Apache-2.0
+    ```
+- Preferences > Editor > Copyright > Formatting > Go
+  - select "Use custom formatting options"
+  - For Comment Type: check "Prefix each line" and select "use line comment"
+  - For Relative Location: select "Before other comments" and check "Add blank line after"
+
+Formatting:
+- Install the "File Watchers" plugin
+- Preferences > Tools > File Watchers
+  - Add a new file watcher choosing "go fmt"
+  - Depending on your personal preference check "Auto-save edited files to trigger the watcher"
+- Now saving the file (ctl+s) will format the file.
+- References: https://blog.jetbrains.com/go/2021/01/12/running-go-fmt-on-save/
+
 ### Build and Test
 
 ```
