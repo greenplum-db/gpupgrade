@@ -79,7 +79,7 @@ func TestDeleteSegmentDataDirs(t *testing.T) {
 				&idl.DeleteDataDirectoriesRequest{Datadirs: []string{"/data/standby"}},
 			).Return(&idl.DeleteDataDirectoriesReply{}, nil)
 
-			agentConns := []*hub.Connection{
+			agentConns := []*idl.Connection{
 				{nil, sdw1Client, "sdw1", nil},
 				{nil, sdw2Client, "sdw2", nil},
 				{nil, standbyClient, "standby", nil},
@@ -118,7 +118,7 @@ func TestDeleteSegmentDataDirs(t *testing.T) {
 			standbyClient := mock_idl.NewMockAgentClient(ctrl)
 			// NOTE: we expect no call to the standby
 
-			agentConns := []*hub.Connection{
+			agentConns := []*idl.Connection{
 				{nil, sdw1Client, "sdw1", nil},
 				{nil, sdw2Client, "sdw2", nil},
 				{nil, standbyClient, "standby", nil},
@@ -152,7 +152,7 @@ func TestDeleteSegmentDataDirs(t *testing.T) {
 				gomock.Any(),
 			).Return(nil, expected)
 
-			agentConns := []*hub.Connection{
+			agentConns := []*idl.Connection{
 				{nil, sdw1Client, "sdw1", nil},
 				{nil, sdw2ClientFailed, "sdw2", nil},
 			}
@@ -309,7 +309,7 @@ func TestDeleteTablespaceDirectories(t *testing.T) {
 		master := mock_idl.NewMockAgentClient(ctrl)
 		standby := mock_idl.NewMockAgentClient(ctrl)
 
-		agentConns := []*hub.Connection{
+		agentConns := []*idl.Connection{
 			{nil, sdw1, "sdw1", nil},
 			{nil, sdw2, "sdw2", nil},
 			{nil, master, "master", nil},
@@ -339,7 +339,7 @@ func TestDeleteTablespaceDirectories(t *testing.T) {
 			gomock.Any(),
 		).Return(nil, expected)
 
-		agentConns := []*hub.Connection{
+		agentConns := []*idl.Connection{
 			{nil, sdw1, "sdw1", nil},
 			{nil, failedClient, "sdw2", nil},
 		}
@@ -358,7 +358,7 @@ func TestDeleteTablespaceDirectories(t *testing.T) {
 		sdw1 := mock_idl.NewMockAgentClient(ctrl)
 		sdw2 := mock_idl.NewMockAgentClient(ctrl)
 
-		agentConns := []*hub.Connection{
+		agentConns := []*idl.Connection{
 			{nil, sdw1, "sdw1", nil},
 			{nil, sdw2, "sdw2", nil},
 		}
@@ -463,7 +463,7 @@ func TestDeleteTablespacesOnMirrorsAndStandby(t *testing.T) {
 		sdw1 := mock_idl.NewMockAgentClient(ctrl)
 		sdw2 := mock_idl.NewMockAgentClient(ctrl)
 
-		agentConns := []*hub.Connection{
+		agentConns := []*idl.Connection{
 			{nil, sdw1, "sdw1", nil},
 			{nil, msdw1, "msdw1", nil},
 			{nil, sdw2, "sdw2", nil},
@@ -504,7 +504,7 @@ func TestDeleteTablespacesOnMirrorsAndStandby(t *testing.T) {
 				}}),
 		).Return(nil, expected)
 
-		agentConns := []*hub.Connection{
+		agentConns := []*idl.Connection{
 			{nil, msdw1, "msdw1", nil},
 			{nil, failedClient, "msdw2", nil},
 		}

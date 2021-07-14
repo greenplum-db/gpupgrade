@@ -9,8 +9,8 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 )
 
-func DeleteStateDirectories(agentConns []*Connection, excludeHostname string) error {
-	request := func(conn *Connection) error {
+func DeleteStateDirectories(agentConns []*idl.Connection, excludeHostname string) error {
+	request := func(conn *idl.Connection) error {
 		if conn.Hostname == excludeHostname {
 			return nil
 		}

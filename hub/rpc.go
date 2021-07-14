@@ -6,10 +6,11 @@ package hub
 import (
 	"sync"
 
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-func ExecuteRPC(agentConns []*Connection, executeRequest func(conn *Connection) error) error {
+func ExecuteRPC(agentConns []*idl.Connection, executeRequest func(conn *idl.Connection) error) error {
 	var wg sync.WaitGroup
 	errs := make(chan error, len(agentConns))
 

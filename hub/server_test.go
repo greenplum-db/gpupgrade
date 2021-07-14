@@ -22,6 +22,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/mock_agent"
 	"github.com/greenplum-db/gpupgrade/testutils/testlog"
@@ -287,7 +288,7 @@ func TestAgentConns(t *testing.T) {
 	})
 }
 
-func ensureAgentConnsReachState(t *testing.T, agentConns []*hub.Connection, state connectivity.State) {
+func ensureAgentConnsReachState(t *testing.T, agentConns []*idl.Connection, state connectivity.State) {
 	t.Helper()
 
 	for _, conn := range agentConns {

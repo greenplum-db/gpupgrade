@@ -93,7 +93,7 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 			{ContentID: 1, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 		})
 
-		err := hub.RsyncMasterAndPrimariesTablespaces(&testutils.DevNullWithClose{}, []*hub.Connection{}, cluster, nil)
+		err := hub.RsyncMasterAndPrimariesTablespaces(&testutils.DevNullWithClose{}, []*idl.Connection{}, cluster, nil)
 		if !errors.Is(err, hub.ErrMissingMirrorsAndStandby) {
 			t.Errorf("got error %#v want %#v", err, hub.ErrMissingMirrorsAndStandby)
 		}
@@ -207,7 +207,7 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 
 		standby := mock_idl.NewMockAgentClient(ctrl)
 
-		agentConns := []*hub.Connection{
+		agentConns := []*idl.Connection{
 			{nil, msdw1, "msdw1", nil},
 			{nil, msdw2, "msdw2", nil},
 			{nil, standby, "standby", nil},
@@ -253,7 +253,7 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 
 		standby := mock_idl.NewMockAgentClient(ctrl)
 
-		agentConns := []*hub.Connection{
+		agentConns := []*idl.Connection{
 			{nil, msdw1, "msdw1", nil},
 			{nil, msdw2, "msdw2", nil},
 			{nil, standby, "standby", nil},
@@ -273,7 +273,7 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 			{ContentID: 1, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 		})
 
-		err := hub.RsyncMasterAndPrimaries(&testutils.DevNullWithClose{}, []*hub.Connection{}, cluster)
+		err := hub.RsyncMasterAndPrimaries(&testutils.DevNullWithClose{}, []*idl.Connection{}, cluster)
 		if err == nil {
 			t.Error("unexpected nil error")
 		}
@@ -327,7 +327,7 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 			gomock.Any(),
 		).Return(nil, expected)
 
-		agentConns := []*hub.Connection{
+		agentConns := []*idl.Connection{
 			{nil, msdw1, "msdw1", nil},
 			{nil, failedClient, "msdw2", nil},
 		}
@@ -356,7 +356,7 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 			gomock.Any(),
 		).Return(nil, expected)
 
-		agentConns := []*hub.Connection{
+		agentConns := []*idl.Connection{
 			{nil, msdw1, "msdw1", nil},
 			{nil, failedClient, "msdw2", nil},
 		}
@@ -405,7 +405,7 @@ func TestRestoreMasterAndPrimariesPgControl(t *testing.T) {
 			gomock.Any(),
 		).Return(nil, expectedError)
 
-		agentConns := []*hub.Connection{
+		agentConns := []*idl.Connection{
 			{nil, sdw1, "sdw1", nil},
 			{nil, failedClient, "sdw2", nil},
 		}
@@ -474,7 +474,7 @@ func TestRestoreMasterAndPrimariesPgControl(t *testing.T) {
 			},
 		).Return(&idl.RestorePgControlReply{}, nil)
 
-		agentConns := []*hub.Connection{
+		agentConns := []*idl.Connection{
 			{nil, sdw1, "sdw1", nil},
 			{nil, sdw2, "sdw2", nil},
 		}

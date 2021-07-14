@@ -30,7 +30,7 @@ var Excludes = []string{
 	"gp_dbid", "postgresql.conf", "backup_label.old", "postmaster.pid", "recovery.conf",
 }
 
-func RsyncMasterAndPrimaries(stream step.OutStreams, agentConns []*Connection, source *greenplum.Cluster) error {
+func RsyncMasterAndPrimaries(stream step.OutStreams, agentConns []*idl.Connection, source *greenplum.Cluster) error {
 	if !source.HasAllMirrorsAndStandby() {
 		return errors.New("Source cluster does not have mirrors and/or standby. Cannot restore source cluster. Please contact support.")
 	}
@@ -57,7 +57,7 @@ func RsyncMasterAndPrimaries(stream step.OutStreams, agentConns []*Connection, s
 	return err
 }
 
-func RsyncMasterAndPrimariesTablespaces(stream step.OutStreams, agentConns []*Connection, source *greenplum.Cluster, tablespaces greenplum.Tablespaces) error {
+func RsyncMasterAndPrimariesTablespaces(stream step.OutStreams, agentConns []*idl.Connection, source *greenplum.Cluster, tablespaces greenplum.Tablespaces) error {
 	if !source.HasAllMirrorsAndStandby() {
 		return ErrMissingMirrorsAndStandby
 	}
@@ -145,8 +145,8 @@ func RsyncMasterTablespaces(stream step.OutStreams, standbyHostname string, mast
 	return nil
 }
 
-func RsyncPrimaries(agentConns []*Connection, source *greenplum.Cluster) error {
-	request := func(conn *Connection) error {
+func RsyncPrimaries(agentConns []*idl.Connection, source *greenplum.Cluster) error {
+	request := func(conn *idl.Connection) error {
 		mirrors := source.SelectSegments(func(seg *greenplum.SegConfig) bool {
 			return seg.IsOnHost(conn.Hostname) && !seg.IsStandby() && seg.IsMirror()
 		})
@@ -178,8 +178,8 @@ func RsyncPrimaries(agentConns []*Connection, source *greenplum.Cluster) error {
 	return ExecuteRPC(agentConns, request)
 }
 
-func RsyncPrimariesTablespaces(agentConns []*Connection, source *greenplum.Cluster, tablespaces greenplum.Tablespaces) error {
-	request := func(conn *Connection) error {
+func RsyncPrimariesTablespaces(agentConns []*idl.Connection, source *greenplum.Cluster, tablespaces greenplum.Tablespaces) error {
+	request := func(conn *idl.Connection) error {
 		mirrors := source.SelectSegments(func(seg *greenplum.SegConfig) bool {
 			return seg.IsOnHost(conn.Hostname) && !seg.IsStandby() && seg.IsMirror()
 		})
@@ -221,7 +221,7 @@ func RsyncPrimariesTablespaces(agentConns []*Connection, source *greenplum.Clust
 	return ExecuteRPC(agentConns, request)
 }
 
-func RestoreMasterAndPrimariesPgControl(streams step.OutStreams, agentConns []*Connection, source *greenplum.Cluster) error {
+func RestoreMasterAndPrimariesPgControl(streams step.OutStreams, agentConns []*idl.Connection, source *greenplum.Cluster) error {
 	var wg sync.WaitGroup
 	errs := make(chan error, 2)
 
@@ -244,8 +244,8 @@ func RestoreMasterAndPrimariesPgControl(streams step.OutStreams, agentConns []*C
 	return err
 }
 
-func restorePrimariesPgControl(agentConns []*Connection, source *greenplum.Cluster) error {
-	request := func(conn *Connection) error {
+func restorePrimariesPgControl(agentConns []*idl.Connection, source *greenplum.Cluster) error {
+	request := func(conn *idl.Connection) error {
 		primaries := source.SelectSegments(func(seg *greenplum.SegConfig) bool {
 			return seg.IsOnHost(conn.Hostname) && !seg.IsStandby() && seg.IsPrimary()
 		})

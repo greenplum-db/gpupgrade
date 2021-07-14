@@ -21,7 +21,7 @@ func (s *Server) UpdateDataDirectories() error {
 	return UpdateDataDirectories(s.Config, s.agentConns)
 }
 
-func UpdateDataDirectories(conf *Config, agentConns []*Connection) error {
+func UpdateDataDirectories(conf *Config, agentConns []*idl.Connection) error {
 	source := conf.Source.MasterDataDir()
 	target := conf.TargetInitializeConfig.Master.DataDir
 	if err := ArchiveSource(source, target, true); err != nil {
@@ -84,8 +84,8 @@ func getRenameMap(source *greenplum.Cluster, target InitializeConfig, onlyRename
 
 // e.g. for source /data/dbfast1/demoDataDir0 becomes /data/dbfast1/demoDataDir0_old
 // e.g. for target /data/dbfast1/demoDataDir0_123ABC becomes /data/dbfast1/demoDataDir0
-func RenameSegmentDataDirs(agentConns []*Connection, renames RenameMap) error {
-	request := func(conn *Connection) error {
+func RenameSegmentDataDirs(agentConns []*idl.Connection, renames RenameMap) error {
+	request := func(conn *idl.Connection) error {
 		if len(renames[conn.Hostname]) == 0 {
 			return nil
 		}

@@ -19,7 +19,7 @@ import (
 type UpgradePrimaryArgs struct {
 	CheckOnly              bool
 	MasterBackupDir        string
-	AgentConns             []*Connection
+	AgentConns             []*idl.Connection
 	DataDirPairMap         map[string][]*idl.DataDirPair
 	Source                 *greenplum.Cluster
 	Target                 *greenplum.Cluster
@@ -28,7 +28,7 @@ type UpgradePrimaryArgs struct {
 }
 
 func UpgradePrimaries(args UpgradePrimaryArgs) error {
-	request := func(conn *Connection) error {
+	request := func(conn *idl.Connection) error {
 		_, err := conn.AgentClient.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{
 			SourceBinDir:               filepath.Join(args.Source.GPHome, "bin"),
 			TargetBinDir:               filepath.Join(args.Target.GPHome, "bin"),

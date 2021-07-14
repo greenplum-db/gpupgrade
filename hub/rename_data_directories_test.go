@@ -79,7 +79,7 @@ func TestRenameSegmentDataDirs(t *testing.T) {
 		client3 := mock_idl.NewMockAgentClient(ctrl)
 		// NOTE: we expect no call to the standby
 
-		agentConns := []*hub.Connection{
+		agentConns := []*idl.Connection{
 			{nil, client1, "sdw1", nil},
 			{nil, client2, "sdw2", nil},
 			{nil, client3, "standby", nil},
@@ -108,7 +108,7 @@ func TestRenameSegmentDataDirs(t *testing.T) {
 			gomock.Any(),
 		).Return(nil, expected)
 
-		agentConns := []*hub.Connection{
+		agentConns := []*idl.Connection{
 			{nil, client, "sdw1", nil},
 			{nil, failedClient, "sdw2", nil},
 		}
@@ -271,7 +271,7 @@ func TestUpdateDataDirectories(t *testing.T) {
 			RenameTarget: false,
 		}})
 
-		agentConns := []*hub.Connection{
+		agentConns := []*idl.Connection{
 			{nil, sdw1, "sdw1", nil},
 			{nil, sdw2, "sdw2", nil},
 			{nil, standby, "standby", nil},
@@ -326,7 +326,7 @@ func TestUpdateDataDirectories(t *testing.T) {
 			"/data/standby",
 		})
 
-		agentConns := []*hub.Connection{
+		agentConns := []*idl.Connection{
 			{nil, sdw1, "sdw1", nil},
 			{nil, sdw2, "sdw2", nil},
 			{nil, standby, "standby", nil},
