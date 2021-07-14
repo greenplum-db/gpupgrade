@@ -22,7 +22,7 @@ const executeMasterBackupName = "upgraded-master.bak"
 func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_ExecuteServer) (err error) {
 	upgradedMasterBackupDir := filepath.Join(s.StateDir, executeMasterBackupName)
 
-	st, err := step.Begin(idl.Step_EXECUTE, stream)
+	st, err := step.Begin(idl.Step_EXECUTE, stream, s.AgentConns)
 	if err != nil {
 		return err
 	}
@@ -74,12 +74,6 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 	})
 
 	st.Run(idl.Substep_UPGRADE_PRIMARIES, func(_ step.OutStreams) error {
-		agentConns, err := s.AgentConns()
-
-		if err != nil {
-			return xerrors.Errorf("connect to gpupgrade agent: %w", err)
-		}
-
 		dataDirPair, err := s.GetDataDirPairs()
 
 		if err != nil {
@@ -89,7 +83,7 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 		return UpgradePrimaries(UpgradePrimaryArgs{
 			CheckOnly:              false,
 			MasterBackupDir:        upgradedMasterBackupDir,
-			AgentConns:             agentConns,
+			AgentConns:             s.agentConns,
 			DataDirPairMap:         dataDirPair,
 			Source:                 s.Source,
 			Target:                 s.Target,

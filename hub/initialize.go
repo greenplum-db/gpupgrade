@@ -21,7 +21,7 @@ import (
 )
 
 func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_InitializeServer) (err error) {
-	st, err := step.Begin(idl.Step_INITIALIZE, stream)
+	st, err := step.Begin(idl.Step_INITIALIZE, stream, s.AgentConns)
 	if err != nil {
 		return err
 	}
@@ -89,19 +89,14 @@ func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initi
 	})
 
 	st.RunConditionally(idl.Substep_CHECK_DISK_SPACE, in.GetDiskFreeRatio() > 0, func(streams step.OutStreams) error {
-		conns, err := s.AgentConns()
-		if err != nil {
-			return err
-		}
-
-		return CheckDiskSpace(streams, conns, in.GetDiskFreeRatio(), s.Source, s.Tablespaces)
+		return CheckDiskSpace(streams, s.agentConns, in.GetDiskFreeRatio(), s.Source, s.Tablespaces)
 	})
 
 	return st.Err()
 }
 
 func (s *Server) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest, stream idl.CliToHub_InitializeCreateClusterServer) (err error) {
-	st, err := step.Begin(idl.Step_INITIALIZE, stream)
+	st, err := step.Begin(idl.Step_INITIALIZE, stream, s.AgentConns)
 	if err != nil {
 		return err
 	}
@@ -160,13 +155,7 @@ func (s *Server) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest,
 	})
 
 	st.AlwaysRun(idl.Substep_CHECK_UPGRADE, func(stream step.OutStreams) error {
-		conns, err := s.AgentConns()
-
-		if err != nil {
-			return err
-		}
-
-		return s.CheckUpgrade(stream, conns)
+		return s.CheckUpgrade(stream, s.agentConns)
 	})
 
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_InitializeResponse{

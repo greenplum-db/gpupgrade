@@ -186,6 +186,15 @@ func (s *Server) Stop(closeAgentConns bool) {
 
 func (s *Server) RestartAgents(ctx context.Context, in *idl.RestartAgentsRequest) (*idl.RestartAgentsReply, error) {
 	restartedHosts, err := RestartAgents(ctx, nil, AgentHosts(s.Source), s.AgentPort, s.StateDir)
+	if err != nil {
+		return &idl.RestartAgentsReply{}, err
+	}
+
+	_, err = s.AgentConns()
+	if err != nil {
+		return &idl.RestartAgentsReply{}, xerrors.Errorf("ensuring agent connections are ready: %w", err)
+	}
+
 	return &idl.RestartAgentsReply{AgentHosts: restartedHosts}, err
 }
 
