@@ -14,14 +14,14 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-func DeleteMirrorAndStandbyDataDirectories(agentConns []*Connection, cluster *greenplum.Cluster) error {
+func DeleteMirrorAndStandbyDataDirectories(agentConns []*idl.Connection, cluster *greenplum.Cluster) error {
 	segs := cluster.SelectSegments(func(seg *greenplum.SegConfig) bool {
 		return seg.Role == greenplum.MirrorRole
 	})
 	return deleteDataDirectories(agentConns, segs)
 }
 
-func DeleteMasterAndPrimaryDataDirectories(streams step.OutStreams, agentConns []*Connection, source InitializeConfig) error {
+func DeleteMasterAndPrimaryDataDirectories(streams step.OutStreams, agentConns []*idl.Connection, source InitializeConfig) error {
 	masterErr := make(chan error)
 	go func() {
 		masterErr <- upgrade.DeleteDirectories([]string{source.Master.DataDir}, upgrade.PostgresFiles, streams)
@@ -33,8 +33,8 @@ func DeleteMasterAndPrimaryDataDirectories(streams step.OutStreams, agentConns [
 	return err
 }
 
-func deleteDataDirectories(agentConns []*Connection, segConfigs greenplum.SegConfigs) error {
-	request := func(conn *Connection) error {
+func deleteDataDirectories(agentConns []*idl.Connection, segConfigs greenplum.SegConfigs) error {
+	request := func(conn *idl.Connection) error {
 
 		segs := segConfigs.Select(func(seg *greenplum.SegConfig) bool {
 			return seg.Hostname == conn.Hostname
@@ -58,7 +58,7 @@ func deleteDataDirectories(agentConns []*Connection, segConfigs greenplum.SegCon
 	return ExecuteRPC(agentConns, request)
 }
 
-func DeleteTargetTablespaces(streams step.OutStreams, agentConns []*Connection, target *greenplum.Cluster, targetCatalogVersion string, sourceTablespaces greenplum.Tablespaces) error {
+func DeleteTargetTablespaces(streams step.OutStreams, agentConns []*idl.Connection, target *greenplum.Cluster, targetCatalogVersion string, sourceTablespaces greenplum.Tablespaces) error {
 	var wg sync.WaitGroup
 	errs := make(chan error, 2)
 
@@ -95,8 +95,8 @@ func DeleteTargetTablespacesOnMaster(streams step.OutStreams, target *greenplum.
 	return upgrade.DeleteNewTablespaceDirectories(streams, dirs)
 }
 
-func DeleteTargetTablespacesOnPrimaries(agentConns []*Connection, target *greenplum.Cluster, tablespaces greenplum.Tablespaces, catalogVersion string) error {
-	request := func(conn *Connection) error {
+func DeleteTargetTablespacesOnPrimaries(agentConns []*idl.Connection, target *greenplum.Cluster, tablespaces greenplum.Tablespaces, catalogVersion string) error {
+	request := func(conn *idl.Connection) error {
 		if target == nil {
 			return nil
 		}
@@ -130,8 +130,8 @@ func DeleteTargetTablespacesOnPrimaries(agentConns []*Connection, target *greenp
 	return ExecuteRPC(agentConns, request)
 }
 
-func DeleteSourceTablespacesOnMirrorsAndStandby(agentConns []*Connection, source *greenplum.Cluster, tablespaces greenplum.Tablespaces) error {
-	request := func(conn *Connection) error {
+func DeleteSourceTablespacesOnMirrorsAndStandby(agentConns []*idl.Connection, source *greenplum.Cluster, tablespaces greenplum.Tablespaces) error {
+	request := func(conn *idl.Connection) error {
 
 		segments := source.SelectSegments(func(seg *greenplum.SegConfig) bool {
 			return seg.IsOnHost(conn.Hostname) && (seg.IsMirror() || seg.IsStandby())

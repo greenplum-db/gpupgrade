@@ -48,7 +48,7 @@ type Server struct {
 
 	StateDir string
 
-	agentConns []*Connection
+	agentConns []*idl.Connection
 	grpcDialer Dialer
 
 	mu     sync.Mutex
@@ -65,13 +65,6 @@ type Server struct {
 
 	stopped chan struct{}
 	daemon  bool
-}
-
-type Connection struct {
-	Conn          *grpc.ClientConn
-	AgentClient   idl.AgentClient
-	Hostname      string
-	CancelContext func()
 }
 
 func New(conf *Config, grpcDialer Dialer, stateDir string) *Server {
@@ -147,7 +140,7 @@ func (s *Server) StopServices(ctx context.Context, in *idl.StopServicesRequest) 
 // TODO: add unit tests for this; this is currently tricky due to h.AgentConns()
 //    mutating global state
 func (s *Server) StopAgents() error {
-	request := func(conn *Connection) error {
+	request := func(conn *idl.Connection) error {
 		_, err := conn.AgentClient.StopAgent(context.Background(), &idl.StopAgentRequest{})
 		if err == nil { // no error means the agent did not terminate as expected
 			return xerrors.Errorf("failed to stop agent on host: %s", conn.Hostname)
@@ -269,7 +262,7 @@ func RestartAgents(ctx context.Context,
 	return hosts, err
 }
 
-func (s *Server) AgentConns() ([]*Connection, error) {
+func (s *Server) AgentConns() ([]*idl.Connection, error) {
 	// Lock the mutex to protect against races with Server.Stop().
 	// XXX This is a *ridiculously* broad lock. Have fun waiting for the dial
 	// timeout when calling Stop() and AgentConns() at the same time, for
@@ -300,7 +293,7 @@ func (s *Server) AgentConns() ([]*Connection, error) {
 			cancelFunc()
 			return nil, err
 		}
-		s.agentConns = append(s.agentConns, &Connection{
+		s.agentConns = append(s.agentConns, &idl.Connection{
 			Conn:          conn,
 			AgentClient:   idl.NewAgentClient(conn),
 			Hostname:      host,
@@ -311,7 +304,7 @@ func (s *Server) AgentConns() ([]*Connection, error) {
 	return s.agentConns, nil
 }
 
-func EnsureConnsAreReady(agentConns []*Connection) error {
+func EnsureConnsAreReady(agentConns []*idl.Connection) error {
 	hostnames := []string{}
 	for _, conn := range agentConns {
 		if conn.Conn.GetState() != connectivity.Ready {

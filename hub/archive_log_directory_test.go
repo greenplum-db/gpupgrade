@@ -30,7 +30,7 @@ func TestArchiveLogDirectories(t *testing.T) {
 			&idl.ArchiveLogDirectoryRequest{NewDir: newDir},
 		).Return(&idl.ArchiveLogDirectoryReply{}, nil).Times(1)
 
-		agentConns := []*hub.Connection{
+		agentConns := []*idl.Connection{
 			{nil, sdwClient, "sdw", nil},
 		}
 
@@ -51,7 +51,7 @@ func TestArchiveLogDirectories(t *testing.T) {
 			gomock.Any(),
 		).Return(nil, expected).Times(1)
 
-		agentConns := []*hub.Connection{
+		agentConns := []*idl.Connection{
 			{nil, failedClient, "sdw", nil},
 		}
 

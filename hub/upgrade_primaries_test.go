@@ -99,7 +99,7 @@ func TestUpgradePrimaries(t *testing.T) {
 			},
 		).Return(&idl.UpgradePrimariesReply{}, nil)
 
-		agentConns := []*hub.Connection{
+		agentConns := []*idl.Connection{
 			{nil, client1, "sdw1", nil},
 			{nil, client2, "sdw2", nil},
 		}
@@ -172,7 +172,7 @@ func TestUpgradePrimaries(t *testing.T) {
 					},
 				).Return(&idl.UpgradePrimariesReply{}, expected)
 
-				agentConns := []*hub.Connection{
+				agentConns := []*idl.Connection{
 					{nil, client1, "sdw1", nil},
 					{nil, failedClient, "sdw2", nil},
 				}

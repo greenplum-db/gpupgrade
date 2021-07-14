@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/idl"
 )
 
 type upgraderMock struct {
@@ -25,7 +26,7 @@ func (u upgraderMock) UpgradePrimaries(args UpgradePrimaryArgs) error {
 	return UpgradePrimariesMock(args, u.s)
 }
 
-var connections = []*Connection{{Conn: nil, Hostname: "bengie"}}
+var connections = []*idl.Connection{{Conn: nil, Hostname: "bengie"}}
 
 func setUpgrader(updated UpgradeChecker) {
 	upgrader = updated

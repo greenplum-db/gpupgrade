@@ -10,17 +10,18 @@ import (
 	"testing"
 
 	"github.com/greenplum-db/gpupgrade/hub"
+	"github.com/greenplum-db/gpupgrade/idl"
 )
 
 func TestExecuteRPC(t *testing.T) {
 	t.Run("executes multiple requests", func(t *testing.T) {
-		agentConns := []*hub.Connection{
+		agentConns := []*idl.Connection{
 			{nil, nil, "mdw", nil},
 			{nil, nil, "sdw", nil},
 		}
 
 		hosts := make(chan string, len(agentConns))
-		request := func(conn *hub.Connection) error {
+		request := func(conn *idl.Connection) error {
 			hosts <- conn.Hostname
 			return nil
 		}
@@ -45,13 +46,13 @@ func TestExecuteRPC(t *testing.T) {
 	})
 
 	t.Run("bubbles up errors", func(t *testing.T) {
-		agentConns := []*hub.Connection{
+		agentConns := []*idl.Connection{
 			{nil, nil, "mdw", nil},
 			{nil, nil, "sdw", nil},
 		}
 
 		expected := errors.New("permission denied")
-		request := func(conn *hub.Connection) error {
+		request := func(conn *idl.Connection) error {
 			if conn.Hostname == "mdw" {
 				return expected
 			}

@@ -16,7 +16,7 @@ import (
 
 var checkDiskUsage = disk.CheckUsage
 
-func CheckDiskSpace(streams step.OutStreams, agentConns []*Connection, diskFreeRatio float64, source *greenplum.Cluster, sourceTablespaces greenplum.Tablespaces) error {
+func CheckDiskSpace(streams step.OutStreams, agentConns []*idl.Connection, diskFreeRatio float64, source *greenplum.Cluster, sourceTablespaces greenplum.Tablespaces) error {
 	var wg sync.WaitGroup
 	errs := make(chan error, len(agentConns)+1)
 	usagesChan := make(chan disk.FileSystemDiskUsage, len(agentConns)+1)
@@ -65,7 +65,7 @@ func CheckDiskSpace(streams step.OutStreams, agentConns []*Connection, diskFreeR
 	return nil
 }
 
-func checkDiskSpaceOnStandbyAndSegments(agentConns []*Connection, errs chan<- error, usages chan<- disk.FileSystemDiskUsage, diskFreeRatio float64, source *greenplum.Cluster, sourceTablespaces greenplum.Tablespaces) {
+func checkDiskSpaceOnStandbyAndSegments(agentConns []*idl.Connection, errs chan<- error, usages chan<- disk.FileSystemDiskUsage, diskFreeRatio float64, source *greenplum.Cluster, sourceTablespaces greenplum.Tablespaces) {
 	var wg sync.WaitGroup
 
 	for _, conn := range agentConns {

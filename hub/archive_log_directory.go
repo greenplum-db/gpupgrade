@@ -9,8 +9,8 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 )
 
-func ArchiveSegmentLogDirectories(agentConns []*Connection, excludeHostname, newDir string) error {
-	request := func(conn *Connection) error {
+func ArchiveSegmentLogDirectories(agentConns []*idl.Connection, excludeHostname, newDir string) error {
+	request := func(conn *idl.Connection) error {
 		if conn.Hostname == excludeHostname {
 			return nil
 		}

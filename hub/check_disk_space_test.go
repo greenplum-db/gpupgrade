@@ -47,7 +47,7 @@ func TestCheckDiskSpace_OnMaster(t *testing.T) {
 		hub.SetCheckDiskUsage(MasterHostCheckDiskUsagePasses)
 		defer hub.ResetCheckDiskUsage()
 
-		err := hub.CheckDiskSpace(step.DevNullStream, []*hub.Connection{}, 0, source, tablespaces)
+		err := hub.CheckDiskSpace(step.DevNullStream, []*idl.Connection{}, 0, source, tablespaces)
 		if err != nil {
 			t.Errorf("unexpected error %#v", err)
 		}
@@ -58,7 +58,7 @@ func TestCheckDiskSpace_OnMaster(t *testing.T) {
 		hub.SetCheckDiskUsage(MasterHostErrorsWith(expected))
 		defer hub.ResetCheckDiskUsage()
 
-		err := hub.CheckDiskSpace(step.DevNullStream, []*hub.Connection{}, 0, source, tablespaces)
+		err := hub.CheckDiskSpace(step.DevNullStream, []*idl.Connection{}, 0, source, tablespaces)
 		if !errors.Is(err, expected) {
 			t.Errorf("got error %#v, want %#v", err, expected)
 		}
@@ -74,7 +74,7 @@ func TestCheckDiskSpace_OnMaster(t *testing.T) {
 		hub.SetCheckDiskUsage(MasterHostReturnsUsage(disk.FileSystemDiskUsage{&usage}))
 		defer hub.ResetCheckDiskUsage()
 
-		err := hub.CheckDiskSpace(step.DevNullStream, []*hub.Connection{}, 0, source, tablespaces)
+		err := hub.CheckDiskSpace(step.DevNullStream, []*idl.Connection{}, 0, source, tablespaces)
 		expected := disk.NewSpaceUsageErrorFromUsage(usage)
 		if !reflect.DeepEqual(err, expected) {
 			t.Errorf("returned %v want %v", err, expected)
@@ -130,7 +130,7 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 			},
 		).Return(&idl.CheckDiskSpaceReply{}, nil)
 
-		agentConns := []*hub.Connection{
+		agentConns := []*idl.Connection{
 			{nil, smdw, "smdw", nil},
 			{nil, sdw1, "sdw1", nil},
 			{nil, sdw2, "sdw2", nil},
@@ -153,7 +153,7 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 			gomock.Any(),
 		).Return(nil, expected)
 
-		agentConns := []*hub.Connection{
+		agentConns := []*idl.Connection{
 			{nil, failedClient, "sdw1", nil},
 		}
 
@@ -180,7 +180,7 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 			gomock.Any(),
 		).Return(&idl.CheckDiskSpaceReply{Usage: disk.FileSystemDiskUsage{&usage}}, nil)
 
-		agentConns := []*hub.Connection{
+		agentConns := []*idl.Connection{
 			{nil, failedClient, "smdw", nil},
 		}
 
@@ -231,7 +231,7 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 			gomock.Any(),
 		).Return(&idl.CheckDiskSpaceReply{Usage: mirrorUsage}, nil)
 
-		agentConns := []*hub.Connection{
+		agentConns := []*idl.Connection{
 			{AgentClient: primary, Hostname: "primary"},
 			{AgentClient: mirror, Hostname: "mirror"},
 		}
@@ -273,7 +273,7 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 			gomock.Any(),
 		).Times(0) // expected to not be called for cluster with no segments
 
-		agentConns := []*hub.Connection{
+		agentConns := []*idl.Connection{
 			{nil, sdw2, "sdw2", nil},
 		}
 

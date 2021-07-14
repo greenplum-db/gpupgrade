@@ -8,6 +8,7 @@ import (
 
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
@@ -29,7 +30,7 @@ func (upgradeChecker) UpgradePrimaries(args UpgradePrimaryArgs) error {
 
 var upgrader UpgradeChecker = upgradeChecker{}
 
-func (s *Server) CheckUpgrade(stream step.OutStreams, conns []*Connection) error {
+func (s *Server) CheckUpgrade(stream step.OutStreams, conns []*idl.Connection) error {
 	var wg sync.WaitGroup
 	checkErrs := make(chan error, 2)
 

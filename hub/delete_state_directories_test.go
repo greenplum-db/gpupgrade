@@ -39,7 +39,7 @@ func TestDeleteStateDirectories(t *testing.T) {
 			masterHostClient := mock_idl.NewMockAgentClient(ctrl)
 			// NOTE: we expect no call to the master
 
-			agentConns := []*hub.Connection{
+			agentConns := []*idl.Connection{
 				{nil, sdw1Client, "sdw1", nil},
 				{nil, standbyClient, "standby", nil},
 				{nil, masterHostClient, excludeHostname, nil},
@@ -68,7 +68,7 @@ func TestDeleteStateDirectories(t *testing.T) {
 				gomock.Any(),
 			).Return(nil, expected)
 
-			agentConns := []*hub.Connection{
+			agentConns := []*idl.Connection{
 				{nil, sdw1Client, "sdw1", nil},
 				{nil, sdw2ClientFailed, "sdw2", nil},
 			}
