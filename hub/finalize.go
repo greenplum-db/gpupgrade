@@ -19,7 +19,7 @@ import (
 )
 
 func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeServer) (err error) {
-	st, err := step.Begin(idl.Step_FINALIZE, stream)
+	st, err := step.Begin(idl.Step_FINALIZE, stream, s.AgentConns)
 	if err != nil {
 		return err
 	}

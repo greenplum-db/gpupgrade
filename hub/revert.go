@@ -20,7 +20,7 @@ import (
 var ErrMissingMirrorsAndStandby = errors.New("Source cluster does not have mirrors and/or standby. Cannot restore source cluster. Please contact support.")
 
 func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) (err error) {
-	st, err := step.Begin(idl.Step_REVERT, stream)
+	st, err := step.Begin(idl.Step_REVERT, stream, s.AgentConns)
 	if err != nil {
 		return err
 	}
@@ -37,12 +37,6 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 
 	if !s.Source.HasAllMirrorsAndStandby() {
 		return errors.New("Source cluster does not have mirrors and/or standby. Cannot restore source cluster. Please contact support.")
-	}
-
-	// ensure that agentConns is populated
-	_, err = s.AgentConns()
-	if err != nil {
-		return xerrors.Errorf("connect to gpupgrade agent: %w", err)
 	}
 
 	// If the target cluster is started, it must be stopped.
