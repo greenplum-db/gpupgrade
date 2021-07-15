@@ -80,9 +80,9 @@ func TestRenameSegmentDataDirs(t *testing.T) {
 		// NOTE: we expect no call to the standby
 
 		agentConns := []*idl.Connection{
-			{nil, client1, "sdw1", nil},
-			{nil, client2, "sdw2", nil},
-			{nil, client3, "standby", nil},
+			{AgentClient: client1, Hostname: "sdw1"},
+			{AgentClient: client2, Hostname: "sdw2"},
+			{AgentClient: client3, Hostname: "standby"},
 		}
 
 		err := hub.RenameSegmentDataDirs(agentConns, m)
@@ -109,8 +109,8 @@ func TestRenameSegmentDataDirs(t *testing.T) {
 		).Return(nil, expected)
 
 		agentConns := []*idl.Connection{
-			{nil, client, "sdw1", nil},
-			{nil, failedClient, "sdw2", nil},
+			{AgentClient: client, Hostname: "sdw1"},
+			{AgentClient: failedClient, Hostname: "sdw2"},
 		}
 
 		err := hub.RenameSegmentDataDirs(agentConns, m)
@@ -272,9 +272,9 @@ func TestUpdateDataDirectories(t *testing.T) {
 		}})
 
 		agentConns := []*idl.Connection{
-			{nil, sdw1, "sdw1", nil},
-			{nil, sdw2, "sdw2", nil},
-			{nil, standby, "standby", nil},
+			{AgentClient: sdw1, Hostname: "sdw1"},
+			{AgentClient: sdw2, Hostname: "sdw2"},
+			{AgentClient: standby, Hostname: "standby"},
 		}
 
 		err := hub.UpdateDataDirectories(conf, agentConns)
@@ -327,9 +327,9 @@ func TestUpdateDataDirectories(t *testing.T) {
 		})
 
 		agentConns := []*idl.Connection{
-			{nil, sdw1, "sdw1", nil},
-			{nil, sdw2, "sdw2", nil},
-			{nil, standby, "standby", nil},
+			{AgentClient: sdw1, Hostname: "sdw1"},
+			{AgentClient: sdw2, Hostname: "sdw2"},
+			{AgentClient: standby, Hostname: "standby"},
 		}
 
 		err := hub.UpdateDataDirectories(conf, agentConns)

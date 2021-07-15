@@ -40,9 +40,9 @@ func TestDeleteStateDirectories(t *testing.T) {
 			// NOTE: we expect no call to the master
 
 			agentConns := []*idl.Connection{
-				{nil, sdw1Client, "sdw1", nil},
-				{nil, standbyClient, "standby", nil},
-				{nil, masterHostClient, excludeHostname, nil},
+				{AgentClient: sdw1Client, Hostname: "sdw1"},
+				{AgentClient: standbyClient, Hostname: "standby"},
+				{AgentClient: masterHostClient, Hostname: excludeHostname},
 			}
 
 			err := hub.DeleteStateDirectories(agentConns, excludeHostname)
@@ -69,8 +69,8 @@ func TestDeleteStateDirectories(t *testing.T) {
 			).Return(nil, expected)
 
 			agentConns := []*idl.Connection{
-				{nil, sdw1Client, "sdw1", nil},
-				{nil, sdw2ClientFailed, "sdw2", nil},
+				{AgentClient: sdw1Client, Hostname: "sdw1"},
+				{AgentClient: sdw2ClientFailed, Hostname: "sdw2"},
 			}
 
 			err := hub.DeleteStateDirectories(agentConns, "")

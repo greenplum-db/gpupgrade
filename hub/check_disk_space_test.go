@@ -131,9 +131,9 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 		).Return(&idl.CheckDiskSpaceReply{}, nil)
 
 		agentConns := []*idl.Connection{
-			{nil, smdw, "smdw", nil},
-			{nil, sdw1, "sdw1", nil},
-			{nil, sdw2, "sdw2", nil},
+			{AgentClient: smdw, Hostname: "smdw"},
+			{AgentClient: sdw1, Hostname: "sdw1"},
+			{AgentClient: sdw2, Hostname: "sdw2"},
 		}
 
 		err := hub.CheckDiskSpace(step.DevNullStream, agentConns, diskFreeRatio, source, tablespaces)
@@ -154,7 +154,7 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 		).Return(nil, expected)
 
 		agentConns := []*idl.Connection{
-			{nil, failedClient, "sdw1", nil},
+			{AgentClient: failedClient, Hostname: "sdw1"},
 		}
 
 		err := hub.CheckDiskSpace(step.DevNullStream, agentConns, 0, source, tablespaces)
@@ -181,7 +181,7 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 		).Return(&idl.CheckDiskSpaceReply{Usage: disk.FileSystemDiskUsage{&usage}}, nil)
 
 		agentConns := []*idl.Connection{
-			{nil, failedClient, "smdw", nil},
+			{AgentClient: failedClient, Hostname: "smdw"},
 		}
 
 		err := hub.CheckDiskSpace(step.DevNullStream, agentConns, 0, source, tablespaces)
@@ -274,7 +274,7 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 		).Times(0) // expected to not be called for cluster with no segments
 
 		agentConns := []*idl.Connection{
-			{nil, sdw2, "sdw2", nil},
+			{AgentClient: sdw2, Hostname: "sdw2"},
 		}
 
 		masterOnlyCluster := hub.MustCreateCluster(t, []greenplum.SegConfig{

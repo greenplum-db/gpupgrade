@@ -80,9 +80,9 @@ func TestDeleteSegmentDataDirs(t *testing.T) {
 			).Return(&idl.DeleteDataDirectoriesReply{}, nil)
 
 			agentConns := []*idl.Connection{
-				{nil, sdw1Client, "sdw1", nil},
-				{nil, sdw2Client, "sdw2", nil},
-				{nil, standbyClient, "standby", nil},
+				{AgentClient: sdw1Client, Hostname: "sdw1"},
+				{AgentClient: sdw2Client, Hostname: "sdw2"},
+				{AgentClient: standbyClient, Hostname: "standby"},
 			}
 
 			err := hub.DeleteMirrorAndStandbyDataDirectories(agentConns, c)
@@ -119,9 +119,9 @@ func TestDeleteSegmentDataDirs(t *testing.T) {
 			// NOTE: we expect no call to the standby
 
 			agentConns := []*idl.Connection{
-				{nil, sdw1Client, "sdw1", nil},
-				{nil, sdw2Client, "sdw2", nil},
-				{nil, standbyClient, "standby", nil},
+				{AgentClient: sdw1Client, Hostname: "sdw1"},
+				{AgentClient: sdw2Client, Hostname: "sdw2"},
+				{AgentClient: standbyClient, Hostname: "standby"},
 			}
 
 			source := hub.InitializeConfig{
@@ -153,8 +153,8 @@ func TestDeleteSegmentDataDirs(t *testing.T) {
 			).Return(nil, expected)
 
 			agentConns := []*idl.Connection{
-				{nil, sdw1Client, "sdw1", nil},
-				{nil, sdw2ClientFailed, "sdw2", nil},
+				{AgentClient: sdw1Client, Hostname: "sdw1"},
+				{AgentClient: sdw2ClientFailed, Hostname: "sdw2"},
 			}
 
 			source := hub.InitializeConfig{
@@ -310,10 +310,10 @@ func TestDeleteTablespaceDirectories(t *testing.T) {
 		standby := mock_idl.NewMockAgentClient(ctrl)
 
 		agentConns := []*idl.Connection{
-			{nil, sdw1, "sdw1", nil},
-			{nil, sdw2, "sdw2", nil},
-			{nil, master, "master", nil},
-			{nil, standby, "standby", nil},
+			{AgentClient: sdw1, Hostname: "sdw1"},
+			{AgentClient: sdw2, Hostname: "sdw2"},
+			{AgentClient: master, Hostname: "master"},
+			{AgentClient: standby, Hostname: "standby"},
 		}
 
 		err := hub.DeleteTargetTablespacesOnPrimaries(agentConns, target, tablespaces, "301908232")
@@ -340,8 +340,8 @@ func TestDeleteTablespaceDirectories(t *testing.T) {
 		).Return(nil, expected)
 
 		agentConns := []*idl.Connection{
-			{nil, sdw1, "sdw1", nil},
-			{nil, failedClient, "sdw2", nil},
+			{AgentClient: sdw1, Hostname: "sdw1"},
+			{AgentClient: failedClient, Hostname: "sdw2"},
 		}
 
 		err := hub.DeleteTargetTablespacesOnPrimaries(agentConns, target, nil, "")
@@ -359,8 +359,8 @@ func TestDeleteTablespaceDirectories(t *testing.T) {
 		sdw2 := mock_idl.NewMockAgentClient(ctrl)
 
 		agentConns := []*idl.Connection{
-			{nil, sdw1, "sdw1", nil},
-			{nil, sdw2, "sdw2", nil},
+			{AgentClient: sdw1, Hostname: "sdw1"},
+			{AgentClient: sdw2, Hostname: "sdw2"},
 		}
 
 		err := hub.DeleteTargetTablespacesOnPrimaries(agentConns, nil, nil, "")
@@ -464,12 +464,12 @@ func TestDeleteTablespacesOnMirrorsAndStandby(t *testing.T) {
 		sdw2 := mock_idl.NewMockAgentClient(ctrl)
 
 		agentConns := []*idl.Connection{
-			{nil, sdw1, "sdw1", nil},
-			{nil, msdw1, "msdw1", nil},
-			{nil, sdw2, "sdw2", nil},
-			{nil, msdw2, "msdw2", nil},
-			{nil, master, "master", nil},
-			{nil, standby, "standby", nil},
+			{AgentClient: sdw1, Hostname: "sdw1"},
+			{AgentClient: msdw1, Hostname: "msdw1"},
+			{AgentClient: sdw2, Hostname: "sdw2"},
+			{AgentClient: msdw2, Hostname: "msdw2"},
+			{AgentClient: master, Hostname: "master"},
+			{AgentClient: standby, Hostname: "standby"},
 		}
 
 		err := hub.DeleteSourceTablespacesOnMirrorsAndStandby(agentConns, source, tablespaces)
@@ -505,8 +505,8 @@ func TestDeleteTablespacesOnMirrorsAndStandby(t *testing.T) {
 		).Return(nil, expected)
 
 		agentConns := []*idl.Connection{
-			{nil, msdw1, "msdw1", nil},
-			{nil, failedClient, "msdw2", nil},
+			{AgentClient: msdw1, Hostname: "msdw1"},
+			{AgentClient: failedClient, Hostname: "msdw2"},
 		}
 
 		err := hub.DeleteSourceTablespacesOnMirrorsAndStandby(agentConns, source, tablespaces)
