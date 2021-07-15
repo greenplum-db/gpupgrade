@@ -208,9 +208,9 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 		standby := mock_idl.NewMockAgentClient(ctrl)
 
 		agentConns := []*idl.Connection{
-			{nil, msdw1, "msdw1", nil},
-			{nil, msdw2, "msdw2", nil},
-			{nil, standby, "standby", nil},
+			{AgentClient: msdw1, Hostname: "msdw1"},
+			{AgentClient: msdw2, Hostname: "msdw2"},
+			{AgentClient: standby, Hostname: "standby"},
 		}
 
 		err := hub.RsyncPrimaries(agentConns, cluster)
@@ -254,9 +254,9 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 		standby := mock_idl.NewMockAgentClient(ctrl)
 
 		agentConns := []*idl.Connection{
-			{nil, msdw1, "msdw1", nil},
-			{nil, msdw2, "msdw2", nil},
-			{nil, standby, "standby", nil},
+			{AgentClient: msdw1, Hostname: "msdw1"},
+			{AgentClient: msdw2, Hostname: "msdw2"},
+			{AgentClient: standby, Hostname: "standby"},
 		}
 
 		err := hub.RsyncPrimariesTablespaces(agentConns, cluster, tablespaces)
@@ -328,8 +328,8 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 		).Return(nil, expected)
 
 		agentConns := []*idl.Connection{
-			{nil, msdw1, "msdw1", nil},
-			{nil, failedClient, "msdw2", nil},
+			{AgentClient: msdw1, Hostname: "msdw1"},
+			{AgentClient: failedClient, Hostname: "msdw2"},
 		}
 
 		err := hub.RsyncPrimaries(agentConns, cluster)
@@ -357,8 +357,8 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 		).Return(nil, expected)
 
 		agentConns := []*idl.Connection{
-			{nil, msdw1, "msdw1", nil},
-			{nil, failedClient, "msdw2", nil},
+			{AgentClient: msdw1, Hostname: "msdw1"},
+			{AgentClient: failedClient, Hostname: "msdw2"},
 		}
 
 		err := hub.RsyncPrimariesTablespaces(agentConns, cluster, tablespaces)
@@ -406,8 +406,8 @@ func TestRestoreMasterAndPrimariesPgControl(t *testing.T) {
 		).Return(nil, expectedError)
 
 		agentConns := []*idl.Connection{
-			{nil, sdw1, "sdw1", nil},
-			{nil, failedClient, "sdw2", nil},
+			{AgentClient: sdw1, Hostname: "sdw1"},
+			{AgentClient: failedClient, Hostname: "sdw2"},
 		}
 
 		err := hub.RestoreMasterAndPrimariesPgControl(step.DevNullStream, agentConns, cluster)
@@ -475,8 +475,8 @@ func TestRestoreMasterAndPrimariesPgControl(t *testing.T) {
 		).Return(&idl.RestorePgControlReply{}, nil)
 
 		agentConns := []*idl.Connection{
-			{nil, sdw1, "sdw1", nil},
-			{nil, sdw2, "sdw2", nil},
+			{AgentClient: sdw1, Hostname: "sdw1"},
+			{AgentClient: sdw2, Hostname: "sdw2"},
 		}
 
 		err = hub.RestoreMasterAndPrimariesPgControl(step.DevNullStream, agentConns, cluster)

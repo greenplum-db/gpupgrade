@@ -31,7 +31,7 @@ func TestArchiveLogDirectories(t *testing.T) {
 		).Return(&idl.ArchiveLogDirectoryReply{}, nil).Times(1)
 
 		agentConns := []*idl.Connection{
-			{nil, sdwClient, "sdw", nil},
+			{AgentClient: sdwClient, Hostname: "sdw"},
 		}
 
 		err := hub.ArchiveSegmentLogDirectories(agentConns, "", newDir)
@@ -52,7 +52,7 @@ func TestArchiveLogDirectories(t *testing.T) {
 		).Return(nil, expected).Times(1)
 
 		agentConns := []*idl.Connection{
-			{nil, failedClient, "sdw", nil},
+			{AgentClient: failedClient, Hostname: "sdw"},
 		}
 
 		err := hub.ArchiveSegmentLogDirectories(agentConns, "", newDir)

@@ -16,8 +16,8 @@ import (
 func TestExecuteRPC(t *testing.T) {
 	t.Run("executes multiple requests", func(t *testing.T) {
 		agentConns := []*idl.Connection{
-			{nil, nil, "mdw", nil},
-			{nil, nil, "sdw", nil},
+			{Hostname: "mdw"},
+			{Hostname: "sdw"},
 		}
 
 		hosts := make(chan string, len(agentConns))
@@ -47,8 +47,8 @@ func TestExecuteRPC(t *testing.T) {
 
 	t.Run("bubbles up errors", func(t *testing.T) {
 		agentConns := []*idl.Connection{
-			{nil, nil, "mdw", nil},
-			{nil, nil, "sdw", nil},
+			{Hostname: "mdw"},
+			{Hostname: "sdw"},
 		}
 
 		expected := errors.New("permission denied")
