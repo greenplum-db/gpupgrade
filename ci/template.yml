@@ -595,12 +595,25 @@ jobs:
           type: registry-image
           source:
             repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: "latest"
+            tag: latest
         inputs:
           - name: gpupgrade_src
+          - name: ccp_src
           - name: cluster_env_files
         run:
-          path: gpupgrade_src/ci/scripts/validate-mirrors-and-standby.bash
+          path: bash
+          args:
+            - -c
+            - |
+              set -eux
+
+              ./ccp_src/scripts/setup_ssh_to_cluster.sh
+
+              # Load the finalize test library.
+              source gpupgrade_src/test/acceptance/helpers/finalize_checks.bash
+
+              echo 'Doing failover tests of mirrors and standby...'
+              validate_mirrors_and_standby /usr/local/greenplum-db-target mdw 5432
     {{- end -}}
     {{- end }}
   ensure:
