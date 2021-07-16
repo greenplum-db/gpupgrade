@@ -553,14 +553,15 @@ jobs:
         image_resource:
           type: registry-image
           source:
-            repository: alpine
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
             tag: latest
         inputs:
+          - name: ccp_src
+          - name: cluster_env_files
           - name: gpupgrade_src
           - name: sqldump
-          - name: cluster_env_files
         run:
-          path: gpupgrade_src/ci/scripts/load-dump.sh
+          path: gpupgrade_src/ci/scripts/load-dump.bash
     {{- end }}
     - task: upgrade_cluster
       config:

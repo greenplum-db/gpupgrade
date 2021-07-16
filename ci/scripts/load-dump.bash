@@ -1,12 +1,12 @@
-#! /bin/sh
+#! /bin/bash
 #
 # Copyright (c) 2017-2021 VMware, Inc. or its affiliates
 # SPDX-License-Identifier: Apache-2.0
 
 set -ex
 
-apk add --no-progress openssh-client
-cp -R cluster_env_files/.ssh /root/.ssh
+# Enable ssh to CCP cluster
+./ccp_src/scripts/setup_ssh_to_cluster.sh
 
 scp sqldump/dump.sql.xz gpadmin@mdw:/tmp/
 
