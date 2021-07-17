@@ -3,7 +3,7 @@
 # Copyright (c) 2017-2021 VMware, Inc. or its affiliates
 # SPDX-License-Identifier: Apache-2.0
 
-set -ex
+set -eux -o pipefail
 
 apt update
 apt install -y rsync
@@ -16,7 +16,7 @@ adduser  --disabled-password --gecos "" --ingroup tty --shell /bin/bash gpadmin
 chmod -R a+w gpupgrade_src
 
 su gpadmin -c '
-  set -ex
+  set -eux -o pipefail
 
   export TERM=linux
   export GOFLAGS="-mod=readonly" # do not update dependencies during build

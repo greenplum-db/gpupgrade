@@ -3,7 +3,7 @@
 # Copyright (c) 2017-2021 VMware, Inc. or its affiliates
 # SPDX-License-Identifier: Apache-2.0
 
-set -ex
+set -eux -o pipefail
 
 # NOTE: All these steps need to be done in the same task since each task is run
 # in its own isolated container with no shared state. Thus, installing the RPM,
@@ -57,10 +57,12 @@ chown -R gpadmin:gpadmin "$GPHOME_TARGET"
 # Alternatively, refactor common.bash to use $GPHOME. However, due to unforeseen
 # consequences and stability concerns we cannot do that.
 ln -s "$GPHOME_TARGET" /usr/local/greenplum-db-devel
+set +u
 source gpdb_src/concourse/scripts/common.bash
 setup_configure_vars
 export LDFLAGS="-L$GPHOME_TARGET/ext/python/lib $LDFLAGS"
 configure
+set -u
 
 source "${GPHOME_TARGET}"/greenplum_path.sh
 make -j "$(nproc)" -C gpdb_src
@@ -81,7 +83,7 @@ source gpdb_src_source/gpAux/gpdemo/gpdemo-env.sh
 chown -R gpadmin:gpadmin gpupgrade_src
 
 su gpadmin -c "
-    set -ex
+    set -eux -o pipefail
 
     export TERM=linux
     export ISOLATION2_PATH=$(readlink -e gpdb_src/src/test/isolation2)

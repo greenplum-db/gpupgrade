@@ -3,7 +3,7 @@
 # Copyright (c) 2017-2021 VMware, Inc. or its affiliates
 # SPDX-License-Identifier: Apache-2.0
 
-set -ex
+set -eux -o pipefail
 
 cd gpupgrade_src
 export GOFLAGS="-mod=readonly" # do not update dependencies during build

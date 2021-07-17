@@ -70,7 +70,7 @@ for host in "${hosts[@]}"; do
     scp -qr retail_demo_src/demo_data/ $host:/data/
 
     ssh -n $host "
-        set -x
+        set -eux -o pipefail
 
         source ${GPHOME_SOURCE}/greenplum_path.sh
         gpfdist -d /data/demo_data -p 8081 -l /data/demo_data/gpfdist.8081.log &
@@ -80,7 +80,7 @@ done
 
 # prepare and generate data
 time ssh mdw <<EOF
-    set -x
+    set -eux -o pipefail
 
     source ${GPHOME_SOURCE}/greenplum_path.sh
     export PGPORT=${PGPORT}
@@ -117,7 +117,7 @@ EOF
 
 # perform upgrade fixups:
 ssh mdw "
-    set -x
+    set -eux -o pipefail
 
     source ${GPHOME_SOURCE}/greenplum_path.sh
     export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1

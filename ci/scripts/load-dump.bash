@@ -3,7 +3,7 @@
 # Copyright (c) 2017-2021 VMware, Inc. or its affiliates
 # SPDX-License-Identifier: Apache-2.0
 
-set -ex
+set -eux -o pipefail
 
 ./ccp_src/scripts/setup_ssh_to_cluster.sh
 
@@ -47,6 +47,8 @@ SQL_EOF
 
 echo "Dropping views referencing deprecated objects..."
 ssh -n mdw "
+    set -eux -o pipefail
+
     source /usr/local/greenplum-db-source/greenplum_path.sh
     export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
 
@@ -56,7 +58,7 @@ ssh -n mdw "
 
 echo "Dropping columns with abstime, reltime, tinterval user data types..."
 columns=$(ssh -n mdw "
-    set -x
+    set -eux -o pipefail
 
     source /usr/local/greenplum-db-source/greenplum_path.sh
     export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
@@ -83,6 +85,8 @@ SQL_EOF
 echo "${columns}" | while read -r schema table column; do
     if [ -n "${column}" ]; then
         ssh -n mdw "
+            set -eux -o pipefail
+
             source /usr/local/greenplum-db-source/greenplum_path.sh
             export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
 
@@ -93,7 +97,7 @@ done
 
 echo "Dropping gp_inject_fault extension used only for regression tests and not shipped..."
 databases=$(ssh -n mdw "
-    set -x
+    set -eux -o pipefail
 
     source /usr/local/greenplum-db-source/greenplum_path.sh
     export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
@@ -108,6 +112,8 @@ SQL_EOF
 echo "${databases}" | while read -r database; do
     if [[ -n "${database}" ]]; then
         ssh -n mdw "
+            set -eux -o pipefail
+
             source /usr/local/greenplum-db-source/greenplum_path.sh
             export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
             psql -d ${database} -c 'DROP EXTENSION IF EXISTS gp_inject_fault';
@@ -117,6 +123,8 @@ done
 
 echo "Dropping unsupported functions..."
 ssh -n mdw "
+    set -eux -o pipefail
+
     source /usr/local/greenplum-db-source/greenplum_path.sh
     psql -d regression -c 'DROP FUNCTION public.myfunc(integer);
     DROP AGGREGATE public.newavg(integer);'

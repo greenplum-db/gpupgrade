@@ -3,7 +3,7 @@
 # Copyright (c) 2017-2021 VMware, Inc. or its affiliates
 # SPDX-License-Identifier: Apache-2.0
 
-set -ex
+set -eux -o pipefail
 
 # Rename the pipeline-local rpms to be unique per git SHA.
 # gpupgrade-intermediate.el7.x86_64.rpm -> gpupgrade-0.4.0+dev.32.g763a08e5-1.el7.x86_64.rpm

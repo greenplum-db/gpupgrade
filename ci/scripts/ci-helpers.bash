@@ -44,6 +44,8 @@ dump_sql() {
     echo "Dumping cluster contents from port ${port} to ${dumpfile}..."
 
     ssh -n mdw "
+        set -eux -o pipefail
+
         source ${GPHOME_TARGET}/greenplum_path.sh
         pg_dumpall -p ${port} -f '$dumpfile'
     "

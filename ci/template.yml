@@ -325,7 +325,7 @@ jobs:
         args:
           - -c
           - |
-            set -ex
+            set -eux -o pipefail
 
             cd gpupgrade_src
             make lint
@@ -606,7 +606,7 @@ jobs:
           args:
             - -c
             - |
-              set -eux
+              set -eux -o pipefail
 
               ./ccp_src/scripts/setup_ssh_to_cluster.sh
 

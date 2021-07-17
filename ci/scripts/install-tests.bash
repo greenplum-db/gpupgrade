@@ -3,7 +3,7 @@
 # Copyright (c) 2017-2021 VMware, Inc. or its affiliates
 # SPDX-License-Identifier: Apache-2.0
 
-set -ex
+set -eux -o pipefail
 
 # Install BATS
 ./bats/install.sh /usr/local
@@ -55,7 +55,7 @@ su gpadmin gpupgrade_src/data-migration-scripts/gpupgrade-migration-sql-executor
 chown -R gpadmin:gpadmin gpupgrade_src
 
 su gpadmin -c '
-    set -ex
+    set -eux -o pipefail
 
     export TERM=linux
     export GOFLAGS="-mod=readonly" # do not update dependencies during build
