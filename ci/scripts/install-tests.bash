@@ -22,7 +22,7 @@ time ./gpdb_src_source/concourse/scripts/setup_gpadmin_user.bash "centos"
 # install source packages
 yum install -y rpm_gpdb_source/*.rpm
 
-version=$(rpm -q --qf '%{version}' "$SOURCE_PACKAGE")
+version=$(rpm -q --qf '%{version}' "$SOURCE_PACKAGE" | tr _ -)
 sudo ln -s /usr/local/greenplum-db-${version} "$GPHOME_SOURCE"
 
 chown -R gpadmin:gpadmin "$GPHOME_SOURCE"
@@ -35,7 +35,7 @@ if [ "$SOURCE_PACKAGE" != "$TARGET_PACKAGE" ]; then
     yum install -y rpm_gpdb_target/*.rpm
 fi
 
-version=$(rpm -q --qf '%{version}' "$TARGET_PACKAGE")
+version=$(rpm -q --qf '%{version}' "$TARGET_PACKAGE" | tr _ -)
 sudo ln -s /usr/local/greenplum-db-${version} "$GPHOME_TARGET"
 
 chown -R gpadmin:gpadmin "$GPHOME_TARGET"
