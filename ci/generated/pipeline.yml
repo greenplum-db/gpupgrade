@@ -230,7 +230,7 @@ anchors:
             - name: ccp_src
             - name: terraform
           run:
-            path: 'ccp_src/google/ccp_failed_test.sh'
+            path: ccp_src/google/ccp_failed_test.sh
           params:
             GOOGLE_CREDENTIALS: ((google-service-account-key))
             GOOGLE_PROJECT_ID: ((google-project-id))
@@ -492,7 +492,7 @@ jobs:
           # NOTE: Since we build isolation2 the build image OS needs to match
           # the GPDB target version we are testing.
           repository: gcr.io/data-gpdb-public-images/gpdb6-centos6-test
-          tag: "latest"
+          tag: latest
       inputs:
         - name: rpm_enterprise
         - name: gpupgrade_src
@@ -539,7 +539,7 @@ jobs:
           # NOTE: Since we build isolation2 the build image OS needs to match
           # the GPDB target version we are testing.
           repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test
-          tag: "latest"
+          tag: latest
       inputs:
         - name: rpm_enterprise
         - name: gpupgrade_src
@@ -641,7 +641,7 @@ jobs:
           type: registry-image
           source:
             repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: "latest"
+            tag: latest
         inputs:
         - name: ccp_src
         - name: cluster_env_files
@@ -765,7 +765,7 @@ jobs:
           type: registry-image
           source:
             repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: "latest"
+            tag: latest
         inputs:
         - name: ccp_src
         - name: cluster_env_files
@@ -893,7 +893,7 @@ jobs:
           type: registry-image
           source:
             repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: "latest"
+            tag: latest
         inputs:
         - name: ccp_src
         - name: cluster_env_files
@@ -1022,7 +1022,7 @@ jobs:
           type: registry-image
           source:
             repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: "latest"
+            tag: latest
         inputs:
         - name: ccp_src
         - name: cluster_env_files
@@ -1151,7 +1151,7 @@ jobs:
           type: registry-image
           source:
             repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: "latest"
+            tag: latest
         inputs:
         - name: ccp_src
         - name: cluster_env_files
@@ -1281,7 +1281,7 @@ jobs:
           type: registry-image
           source:
             repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: "latest"
+            tag: latest
         inputs:
         - name: ccp_src
         - name: cluster_env_files
@@ -1383,7 +1383,7 @@ jobs:
           type: registry-image
           source:
             repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: "latest"
+            tag: latest
         inputs:
         - name: ccp_src
         - name: cluster_env_files
@@ -1483,7 +1483,7 @@ jobs:
           type: registry-image
           source:
             repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: "latest"
+            tag: latest
         inputs:
         - name: ccp_src
         - name: cluster_env_files
@@ -1613,7 +1613,7 @@ jobs:
           type: registry-image
           source:
             repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: "latest"
+            tag: latest
         inputs:
         - name: ccp_src
         - name: cluster_env_files
@@ -1743,7 +1743,7 @@ jobs:
           type: registry-image
           source:
             repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: "latest"
+            tag: latest
         inputs:
         - name: ccp_src
         - name: cluster_env_files
@@ -1845,7 +1845,7 @@ jobs:
           type: registry-image
           source:
             repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: "latest"
+            tag: latest
         inputs:
         - name: ccp_src
         - name: cluster_env_files
@@ -1945,7 +1945,7 @@ jobs:
           type: registry-image
           source:
             repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: "latest"
+            tag: latest
         inputs:
         - name: ccp_src
         - name: cluster_env_files
@@ -2053,7 +2053,7 @@ jobs:
           type: registry-image
           source:
             repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: "latest"
+            tag: latest
         inputs:
           - name: ccp_src
           - name: cluster_env_files
@@ -2135,7 +2135,7 @@ jobs:
           type: registry-image
           source:
             repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: "latest"
+            tag: latest
         inputs:
           - name: ccp_src
           - name: cluster_env_files
@@ -2221,7 +2221,7 @@ jobs:
           type: registry-image
           source:
             repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: "latest"
+            tag: latest
         inputs:
           - name: ccp_src
           - name: cluster_env_files
@@ -2307,7 +2307,7 @@ jobs:
           type: registry-image
           source:
             repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: "latest"
+            tag: latest
         inputs:
           - name: ccp_src
           - name: cluster_env_files
@@ -2382,7 +2382,7 @@ jobs:
           type: registry-image
           source:
             repository: golang
-            tag: '1.16'
+            tag: 1.16
         inputs:
           - name: gpupgrade_src
           - name: rpm_oss
