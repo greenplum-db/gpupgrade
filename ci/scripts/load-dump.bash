@@ -5,12 +5,11 @@
 
 set -ex
 
-# Enable ssh to CCP cluster
 ./ccp_src/scripts/setup_ssh_to_cluster.sh
 
 scp sqldump/dump.sql.xz gpadmin@mdw:/tmp/
 
-echo 'Loading SQL dump into source cluster...'
+echo "Loading the SQL dump into the source cluster..."
 time ssh -n gpadmin@mdw "
     set -eux -o pipefail
 
@@ -19,8 +18,8 @@ time ssh -n gpadmin@mdw "
     unxz < /tmp/dump.sql.xz | psql -f - postgres
 "
 
-echo 'Run data migration scripts and workarounds on source cluster...'
-ssh mdw '
+echo "Running the data migration scripts and workarounds on the source cluster..."
+time ssh mdw '
     set -eux -o pipefail
 
     source /usr/local/greenplum-db-source/greenplum_path.sh
@@ -46,16 +45,16 @@ SQL_EOF
     gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" /tmp/migration/pre-initialize || true
 '
 
-echo 'Fixing remaining non-upgradeable objects...'
-# this is the only view that contains a column of type name, so hardcoding for now
+echo "Dropping views referencing deprecated objects..."
 ssh -n mdw "
     source /usr/local/greenplum-db-source/greenplum_path.sh
     export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
 
+    # Hardcode this view since it's the only one containing a column with type name.
     psql regression -c 'DROP VIEW IF EXISTS redundantly_named_part;'
 "
 
-echo 'Dropping columns with abstime, reltime, tinterval user data types...'
+echo "Dropping columns with abstime, reltime, tinterval user data types..."
 columns=$(ssh -n mdw "
     set -x
 
@@ -92,8 +91,7 @@ echo "${columns}" | while read -r schema table column; do
     fi
 done
 
-echo 'Dropping gp_inject_fault extension...'
-# gp_inject_fault is used only for regression tests and is not shipped to customers.
+echo "Dropping gp_inject_fault extension used only for regression tests and not shipped..."
 databases=$(ssh -n mdw "
     set -x
 
@@ -117,9 +115,9 @@ echo "${databases}" | while read -r database; do
     fi
 done
 
-echo "Dropping unsupported functions"
+echo "Dropping unsupported functions..."
 ssh -n mdw "
     source /usr/local/greenplum-db-source/greenplum_path.sh
     psql -d regression -c 'DROP FUNCTION public.myfunc(integer);
     DROP AGGREGATE public.newavg(integer);'
-    " || echo "Dropping unsupported functions failed. Continuing..."
+" || echo "Dropping unsupported functions failed. Continuing..."

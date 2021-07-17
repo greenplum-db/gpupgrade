@@ -4,12 +4,13 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # This script:
-# - Installs target GPDB rpm if different from source GPDB version.
-# - Creates source and target GPHOME symlinks, sot that that future pipeline
-# tasks don't have to know the exact versions in use.
+# - Installs the target GPDB rpm if different from source GPDB version.
+# - Creates source and target GPHOME symlinks, to abstract the source and target
+#   locations for future tasks to not need to know the exact versions being used.
 # - Installs gpugprade RPM so future tasks have data migration scripts installed.
 #
-# Expected inputs are SOURCE_PACKAGE_NAME TARGET_PACKAGE_NAME
+# Expected inputs are SOURCE_PACKAGE_NAME TARGET_PACKAGE_NAME such as
+# greenplum-db-5, or greenplum-db-6.
 
 set -eux
 
@@ -17,16 +18,18 @@ source_package=$1
 target_package=$2
 
 apk add --no-progress openssh-client
+
+echo "Enabling ssh to the ccp cluster..."
 cp -R cluster_env_files/.ssh /root/.ssh
 
 for host in `cat cluster_env_files/hostfile_all`; do
     if [ "$source_package" != "$target_package" ]; then
-        # Install the target binary.
+        echo "Installing the target version rpm on ${host}..."
         scp rpm_gpdb_target/*.rpm "${host}:/tmp/bin_gpdb_target.rpm"
         ssh -ttn centos@"$host" sudo yum install -y /tmp/bin_gpdb_target.rpm
     fi
 
-    # Install source/target symlinks.
+    echo "Creating the source and target symlinks on ${host}..."
     ssh -n centos@"$host" "
         set -eux
 
@@ -37,7 +40,7 @@ for host in `cat cluster_env_files/hostfile_all`; do
         sudo ln -s /usr/local/greenplum-db-\${version} /usr/local/greenplum-db-target
     "
 
-    # Install gpupgrade RPM
+    echo "Installing the gpupgrade rpm on host ${host}..."
     scp rpm_enterprise/gpupgrade-*.rpm gpadmin@$host:/tmp
     ssh centos@$host sudo rpm -ivh /tmp/gpupgrade-*.rpm
 done

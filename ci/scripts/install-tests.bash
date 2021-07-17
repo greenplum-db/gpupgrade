@@ -8,8 +8,6 @@ set -ex
 # Install BATS
 ./bats/install.sh /usr/local
 
-source gpupgrade_src/test/acceptance/helpers/helpers.bash
-
 export GPHOME_SOURCE=/usr/local/greenplum-db-source
 export GPHOME_TARGET=/usr/local/greenplum-db-target
 
