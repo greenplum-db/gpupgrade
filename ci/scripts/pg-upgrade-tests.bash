@@ -12,28 +12,7 @@ set -eux -o pipefail
 export GPHOME_SOURCE=/usr/local/greenplum-db-source
 export GPHOME_TARGET=/usr/local/greenplum-db-target
 
-install_source_GPDB_rpm_and_symlink() {
-    yum install -y rpm_gpdb_source/*.rpm
-
-    version=$(rpm -q --qf '%{version}' "$SOURCE_PACKAGE" | tr _ -)
-    ln -s /usr/local/greenplum-db-${version} "$GPHOME_SOURCE"
-
-    chown -R gpadmin:gpadmin "$GPHOME_SOURCE"
-}
-
-# XXX: Setup target cluster before sourcing greenplum_path otherwise there are
-# yum errors due to python issues.
-# XXX: When source equals target then yum will fail when trying to re-install.
-install_target_GPDB_rpm_and_symlink() {
-    if [ "$SOURCE_PACKAGE" != "$TARGET_PACKAGE" ]; then
-      yum install -y rpm_gpdb_target/*.rpm
-    fi
-
-    version=$(rpm -q --qf '%{version}' "$TARGET_PACKAGE" | tr _ -)
-    ln -s /usr/local/greenplum-db-${version} "$GPHOME_TARGET"
-
-    chown -R gpadmin:gpadmin "$GPHOME_TARGET"
-}
+source gpupgrade_src/ci/scripts/ci-helpers.bash
 
 make_pg_isolation2_regress_for_the_target_GPDB_version() {
     # setup_configure_vars and configure expect GPHOME=/usr/local/greenplum-db-devel
@@ -51,14 +30,6 @@ make_pg_isolation2_regress_for_the_target_GPDB_version() {
     source "${GPHOME_TARGET}"/greenplum_path.sh
     make -j "$(nproc)" -C gpdb_src
     make -j "$(nproc)" -C gpdb_src/src/test/isolation2 install
-}
-
-create_source_cluster() {
-    source "$GPHOME_SOURCE"/greenplum_path.sh
-
-    chown -R gpadmin:gpadmin gpdb_src_source/gpAux/gpdemo
-    su gpadmin -c "make -j $(nproc) -C gpdb_src_source/gpAux/gpdemo create-demo-cluster"
-    source gpdb_src_source/gpAux/gpdemo/gpdemo-env.sh
 }
 
 run_pg_upgrade_tests() {
