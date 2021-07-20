@@ -5,29 +5,37 @@
 
 set -eux -o pipefail
 
-./ccp_src/scripts/setup_ssh_to_cluster.sh
+function run_migration_scripts_and_tests() {
+    time ssh mdw '
+        set -eux -o pipefail
 
-# Install gpupgrade_src on mdw
-scp -rpq gpupgrade_src gpadmin@mdw:/home/gpadmin
+        export GPHOME_SOURCE=/usr/local/greenplum-db-source
+        export GPHOME_TARGET=/usr/local/greenplum-db-target
+        source "${GPHOME_SOURCE}"/greenplum_path.sh
+        export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
+        export PGPORT=5432
 
-# Install bats on mdw
-scp -rpq bats centos@mdw:~
-ssh centos@mdw sudo ./bats/install.sh /usr/local
+        echo "Running data migration scripts to ensure a clean cluster..."
+        gpupgrade-migration-sql-generator.bash "$GPHOME_SOURCE" "$PGPORT" /tmp/migration gpupgrade_src/data-migration-scripts
+        gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" /tmp/migration/pre-initialize || true
 
-time ssh mdw '
-    set -eux -o pipefail
+        ./gpupgrade_src/test/acceptance/gpupgrade/revert.bats
+  '
+}
 
-    export GPHOME_SOURCE=/usr/local/greenplum-db-source
-    export GPHOME_TARGET=/usr/local/greenplum-db-target
-    source "${GPHOME_SOURCE}"/greenplum_path.sh
-    export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
-    export PGPORT=5432
+main() {
+    echo "Enabling ssh to cluster..."
+    ./ccp_src/scripts/setup_ssh_to_cluster.sh
 
-    echo "Running data migration scripts to ensure a clean cluster..."
-    gpupgrade-migration-sql-generator.bash "$GPHOME_SOURCE" "$PGPORT" /tmp/migration gpupgrade_src/data-migration-scripts
-    gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" /tmp/migration/pre-initialize || true
+    echo "Installing gpupgrade_src on mdw..."
+    scp -rpq gpupgrade_src gpadmin@mdw:/home/gpadmin
 
-    ./gpupgrade_src/test/acceptance/gpupgrade/revert.bats
-'
+    echo "Installing BATS..."
+    scp -rpq bats centos@mdw:~
+    ssh centos@mdw sudo ./bats/install.sh /usr/local
 
-echo 'multihost gpupgrade acceptance tests successful.'
+    echo "Running data migration scripts and tests..."
+    run_migration_scripts_and_tests
+}
+
+main
