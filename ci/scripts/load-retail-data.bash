@@ -5,15 +5,14 @@
 
 set -eux -o pipefail
 
+export GPHOME_SOURCE=/usr/local/greenplum-db-source
+export GPHOME_TARGET=/usr/local/greenplum-db-target
+export PGPORT=5432
+
 ./ccp_src/scripts/setup_ssh_to_cluster.sh
 
 # Cache our list of hosts to loop over below.
 mapfile -t hosts < cluster_env_files/hostfile_all
-
-export GPHOME_SOURCE=/usr/local/greenplum-db-source
-export GPHOME_TARGET=/usr/local/greenplum-db-target
-
-export PGPORT=5432
 
 # Copy binaries to test runner container to help compile bm.so
 scp -qr mdw:${GPHOME_SOURCE} ${GPHOME_SOURCE}
