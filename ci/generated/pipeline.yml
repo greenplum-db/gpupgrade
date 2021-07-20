@@ -368,24 +368,20 @@ jobs:
     - get: gpupgrade_src
       trigger: true
     - get: bats
+    - get: gpdb_src_source
+      resource: gpdb5_src
   - task: noinstall-tests
     config:
       platform: linux
       image_resource:
-        # Use docker-image instead of registry-image due to the following error.
-        # See: https://github.com/concourse/registry-image-resource/issues/283
-        #  --- FAIL: TestLocal (0.00s)
-        #    disk_test.go:269: Local.Filesystems() returned error &fs.PathError{Op:"open", Path:"/etc/mtab", Err:0x2}
-        #    disk_test.go:272: Local.Filesystems() returned no entries
-        #  FAIL
-        #  FAIL	github.com/greenplum-db/gpupgrade/utils/disk	0.030s
-        type: docker-image
+        type: registry-image
         source:
-          repository: golang
-          tag: 1.16
+          repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+          tag: latest
       inputs:
         - name: gpupgrade_src
         - name: bats
+        - name: gpdb_src_source
       run:
         path: gpupgrade_src/ci/scripts/noinstall-tests.bash
   on_failure:

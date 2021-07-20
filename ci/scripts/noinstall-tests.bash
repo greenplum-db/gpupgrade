@@ -5,23 +5,30 @@
 
 set -eux -o pipefail
 
-apt update
-apt install -y rsync
+function run_tests() {
+    chown -R gpadmin:gpadmin gpupgrade_src
+    su gpadmin -c '
+        set -eux -o pipefail
 
-./bats/install.sh /usr/local
+        export TERM=linux
+        export GOFLAGS="-mod=readonly" # do not update dependencies during build
 
-# Run unit tests as a non-root user since some tests rely on specifying file
-# permissions which are overridden by root.
-adduser  --disabled-password --gecos "" --ingroup tty --shell /bin/bash gpadmin
-chmod -R a+w gpupgrade_src
+        cd gpupgrade_src
+        make
+        make check --keep-going
+    '
+}
 
-su gpadmin -c '
-  set -eux -o pipefail
+main() {
+    echo "Installing BATS..."
+    ./bats/install.sh /usr/local
 
-  export TERM=linux
-  export GOFLAGS="-mod=readonly" # do not update dependencies during build
+    echo "Setting up gpadmin user..."
+    mkdir -p gpdb_src
+    ./gpdb_src_source/concourse/scripts/setup_gpadmin_user.bash "centos"
 
-  cd gpupgrade_src
-  make
-  make check --keep-going
-'
+    echo "Running data migration scripts and tests..."
+    run_tests
+}
+
+main
