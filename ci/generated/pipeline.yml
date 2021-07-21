@@ -306,1681 +306,249 @@ groups:
       - build
       - 5-to-6-retail-demo-centos-6
       - 5-to-6-retail-demo-centos-7
-
 jobs:
 - name: build
   plan:
-  - get: gpupgrade_src
-    trigger: true
-  - task: build
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source:
-          repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-          tag: latest
-      inputs:
-        - name: gpupgrade_src
-      outputs:
-        - name: built_oss
-        - name: built_enterprise
-      run:
-        path: gpupgrade_src/ci/scripts/build.bash
-  - in_parallel:
-    - put: rpm_oss
-      params:
-        file: built_oss/gpupgrade-*.rpm
-    - put: rpm_enterprise
-      params:
-        file: built_enterprise/gpupgrade-*.rpm
+    - get: gpupgrade_src
+      trigger: true
+    - task: build
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+        outputs:
+          - name: built_oss
+          - name: built_enterprise
+        run:
+          path: gpupgrade_src/ci/scripts/build.bash
+    - in_parallel:
+        - put: rpm_oss
+          params:
+            file: built_oss/gpupgrade-*.rpm
+        - put: rpm_enterprise
+          params:
+            file: built_enterprise/gpupgrade-*.rpm
   on_failure:
     <<: *slack_alert
 
 - name: lint
   plan:
-  - get: gpupgrade_src
-    trigger: true
-  - task: lint
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source:
-          repository: golangci/golangci-lint
-      inputs:
-        - name: gpupgrade_src
-      run:
-        path: bash
-        args:
-          - -c
-          - |
-            set -eux -o pipefail
-
-            cd gpupgrade_src
-            make lint
-  on_failure:
-    <<: *slack_alert
-
-- name: noinstall-tests
-  plan:
-  - in_parallel:
     - get: gpupgrade_src
       trigger: true
-    - get: bats
-    - get: gpdb_src_source
-      resource: gpdb5_src
-  - task: noinstall-tests
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source:
-          repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-          tag: latest
-      inputs:
-        - name: gpupgrade_src
-        - name: bats
-        - name: gpdb_src_source
-      run:
-        path: gpupgrade_src/ci/scripts/noinstall-tests.bash
+    - task: lint
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: golangci/golangci-lint
+        inputs:
+          - name: gpupgrade_src
+        run:
+          path: bash
+          args:
+            - -c
+            - |
+              set -eux -o pipefail
+
+              cd gpupgrade_src
+              make lint
+  on_failure:
+    <<: *slack_alert
+- name: noinstall-tests
+  plan:
+    - in_parallel:
+        - get: gpupgrade_src
+          trigger: true
+        - get: bats
+        - get: gpdb_src_source
+          resource: gpdb5_src
+    - task: noinstall-tests
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: bats
+          - name: gpdb_src_source
+        run:
+          path: gpupgrade_src/ci/scripts/noinstall-tests.bash
   on_failure:
     <<: *slack_alert
 
 
 - name: 6-to-6-install-tests
   plan:
-  - in_parallel:
-    - get: gpupgrade_src
-      trigger: true
-    - get: gpdb_src_source
-      resource: gpdb6_src
-    - get: bats
-    - get: rpm_gpdb_source
-      resource: rpm_gpdb6_centos7
-      trigger: true
-    - get: rpm_gpdb_target
-      resource: rpm_gpdb6_centos7
-      trigger: true
-  - task: install-tests
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source:
-          repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-          tag: latest
-      inputs:
-        - name: gpupgrade_src
-        - name: gpdb_src_source
-        - name: rpm_gpdb_source
-        - name: rpm_gpdb_target
-        - name: bats
-      run:
-        path: gpupgrade_src/ci/scripts/install-tests.bash
-    params:
-      SOURCE_PACKAGE: greenplum-db-6
-      TARGET_PACKAGE: greenplum-db-6
+    - in_parallel:
+        - get: gpupgrade_src
+          trigger: true
+        - get: gpdb_src_source
+          resource: gpdb6_src
+        - get: bats
+        - get: rpm_gpdb_source
+          resource: rpm_gpdb6_centos7
+          trigger: true
+        - get: rpm_gpdb_target
+          resource: rpm_gpdb6_centos7
+          trigger: true
+    - task: install-tests
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: gpdb_src_source
+          - name: rpm_gpdb_source
+          - name: rpm_gpdb_target
+          - name: bats
+        run:
+          path: gpupgrade_src/ci/scripts/install-tests.bash
+      params:
+        SOURCE_PACKAGE: greenplum-db-6
+        TARGET_PACKAGE: greenplum-db-6
   on_failure:
     <<: *slack_alert
 
 - name: 5-to-6-install-tests
   plan:
-  - in_parallel:
-    - get: gpupgrade_src
-      trigger: true
-    - get: gpdb_src_source
-      resource: gpdb5_src
-    - get: bats
-    - get: rpm_gpdb_source
-      resource: rpm_gpdb5_centos7
-      trigger: true
-    - get: rpm_gpdb_target
-      resource: rpm_gpdb6_centos7
-      trigger: true
-  - task: install-tests
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source:
-          repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-          tag: latest
-      inputs:
-        - name: gpupgrade_src
-        - name: gpdb_src_source
-        - name: rpm_gpdb_source
-        - name: rpm_gpdb_target
-        - name: bats
-      run:
-        path: gpupgrade_src/ci/scripts/install-tests.bash
-    params:
-      SOURCE_PACKAGE: greenplum-db-5
-      TARGET_PACKAGE: greenplum-db-6
+    - in_parallel:
+        - get: gpupgrade_src
+          trigger: true
+        - get: gpdb_src_source
+          resource: gpdb5_src
+        - get: bats
+        - get: rpm_gpdb_source
+          resource: rpm_gpdb5_centos7
+          trigger: true
+        - get: rpm_gpdb_target
+          resource: rpm_gpdb6_centos7
+          trigger: true
+    - task: install-tests
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: gpdb_src_source
+          - name: rpm_gpdb_source
+          - name: rpm_gpdb_target
+          - name: bats
+        run:
+          path: gpupgrade_src/ci/scripts/install-tests.bash
+      params:
+        SOURCE_PACKAGE: greenplum-db-5
+        TARGET_PACKAGE: greenplum-db-6
   on_failure:
     <<: *slack_alert
 
 - name: 5-to-6-pg-upgrade-tests-centos-6
   plan:
-  - in_parallel:
-    - get: rpm_enterprise
-      trigger: true
-      passed: [ build ]
-    - get: gpupgrade_src
-      passed: [ build ]
-    - get: gpdb_src_source
-      resource: gpdb5_src
-    - get: gpdb_src_target
-      resource: gpdb6_src
-    - get: bats
-    - get: rpm_gpdb_source
-      resource: rpm_gpdb5_centos6
-      trigger: true
-    - get: rpm_gpdb_target
-      resource: rpm_gpdb6_centos6
-      trigger: true
-  - task: pg-upgrade-tests
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source:
-          # NOTE: Since we build isolation2 the build image OS needs to match
-          # the GPDB target version we are testing.
-          repository: gcr.io/data-gpdb-public-images/gpdb6-centos6-test
-          tag: latest
-      inputs:
-        - name: rpm_enterprise
-        - name: gpupgrade_src
-        - name: gpdb_src_source
-        # Rename gpdb_src_target to gpdb_src since external scripts used within rely on that.
-        - name: gpdb_src_target
-          path: gpdb_src
-        - name: bats
-        - name: rpm_gpdb_source
-        - name: rpm_gpdb_target
-      run:
-        path: gpupgrade_src/ci/scripts/pg-upgrade-tests.bash
-    params:
-      SOURCE_PACKAGE: greenplum-db-5
-      TARGET_PACKAGE: greenplum-db-6
+    - in_parallel:
+        - get: rpm_enterprise
+          trigger: true
+          passed: [ build ]
+        - get: gpupgrade_src
+          passed: [ build ]
+        - get: gpdb_src_source
+          resource: gpdb5_src
+        - get: gpdb_src_target
+          resource: gpdb6_src
+        - get: bats
+        - get: rpm_gpdb_source
+          resource: rpm_gpdb5_centos6
+          trigger: true
+        - get: rpm_gpdb_target
+          resource: rpm_gpdb6_centos6
+          trigger: true
+    - task: pg-upgrade-tests
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            # NOTE: Since we build isolation2 the build image OS needs to match
+            # the GPDB target version we are testing.
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos6-test
+            tag: latest
+        inputs:
+          - name: rpm_enterprise
+          - name: gpupgrade_src
+          - name: gpdb_src_source
+          # Rename gpdb_src_target to gpdb_src since external scripts used within rely on that.
+          - name: gpdb_src_target
+            path: gpdb_src
+          - name: bats
+          - name: rpm_gpdb_source
+          - name: rpm_gpdb_target
+        run:
+          path: gpupgrade_src/ci/scripts/pg-upgrade-tests.bash
+      params:
+        SOURCE_PACKAGE: greenplum-db-5
+        TARGET_PACKAGE: greenplum-db-6
   on_failure:
     <<: *slack_alert
 
 - name: 5-to-6-pg-upgrade-tests-centos-7
   plan:
-  - in_parallel:
-    - get: rpm_enterprise
-      trigger: true
-      passed: [ build ]
-    - get: gpupgrade_src
-      passed: [ build ]
-    - get: gpdb_src_source
-      resource: gpdb5_src
-    - get: gpdb_src_target
-      resource: gpdb6_src
-    - get: bats
-    - get: rpm_gpdb_source
-      resource: rpm_gpdb5_centos7
-      trigger: true
-    - get: rpm_gpdb_target
-      resource: rpm_gpdb6_centos7
-      trigger: true
-  - task: pg-upgrade-tests
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source:
-          # NOTE: Since we build isolation2 the build image OS needs to match
-          # the GPDB target version we are testing.
-          repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test
-          tag: latest
-      inputs:
-        - name: rpm_enterprise
-        - name: gpupgrade_src
-        - name: gpdb_src_source
-        # Rename gpdb_src_target to gpdb_src since external scripts used within rely on that.
-        - name: gpdb_src_target
-          path: gpdb_src
-        - name: bats
-        - name: rpm_gpdb_source
-        - name: rpm_gpdb_target
-      run:
-        path: gpupgrade_src/ci/scripts/pg-upgrade-tests.bash
-    params:
-      SOURCE_PACKAGE: greenplum-db-5
-      TARGET_PACKAGE: greenplum-db-6
-  on_failure:
-    <<: *slack_alert
-
-- name: 6-to-6-centos-6
-  serial_groups: [6-to-6]
-  # Specifying serial groups so that only one platform runs at a time. For
-  # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
-  # will prevent concourse from becoming overloaded.
-  plan:
     - in_parallel:
         - get: rpm_enterprise
           trigger: true
           passed: [ build ]
         - get: gpupgrade_src
           passed: [ build ]
-        - get: rpm_gpdb_source
-          resource: rpm_gpdb6_centos6
-          trigger: true
-        - get: ccp_src
-        - get: terraform.d
-          params:
-            unpack: true
-        # FIXME: this is not guaranteed to be the same dump generated by the
-        # above binary...
-        - get: sqldump
-          resource: dump_gpdb6_icw_gporca_centos6
-    - put: terraform
-      params:
-        <<: *ccp_default_params
-        vars:
-          standby_master: true
-          instance_type: n1-standard-2
-          number_of_nodes: 4
-          PLATFORM: centos6
-          # Decrease the reap time from the default of 8 hours now that there are
-          # both centos6 and centos7 jobs in order to not overload concourse.
-          ccp_reap_minutes: 180
-    - task: gen_source_cluster
-      file: ccp_src/ci/tasks/gen_cluster.yml
-      params:
-        <<: *ccp_gen_cluster_default_params
-        PLATFORM: centos6
-        GPDB_RPM: true
-      input_mapping:
-        gpdb_rpm: rpm_gpdb_source
-    - task: gpinitsystem_source_cluster
-      file: ccp_src/ci/tasks/gpinitsystem.yml
-    - task: prepare_installation
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: alpine
-            tag: latest
-        inputs:
-          - name: gpupgrade_src
-          - name: cluster_env_files
-          - name: rpm_enterprise
-        run:
-          path: gpupgrade_src/ci/scripts/prepare-installation.sh
-          args:
-            - greenplum-db-6
-            - greenplum-db-6
-    - task: load_dump
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-          - name: ccp_src
-          - name: cluster_env_files
-          - name: gpupgrade_src
-          - name: sqldump
-        run:
-          path: gpupgrade_src/ci/scripts/load-dump.bash
-    - task: upgrade_cluster
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-        - name: ccp_src
-        - name: cluster_env_files
-        - name: gpupgrade_src
-        run:
-          path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
-      params:
-    - task: validate_mirrors_and_standby
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-          - name: gpupgrade_src
-          - name: ccp_src
-          - name: cluster_env_files
-        run:
-          path: bash
-          args:
-            - -c
-            - |
-              set -eux -o pipefail
-
-              ./ccp_src/scripts/setup_ssh_to_cluster.sh
-
-              # Load the finalize test library.
-              source gpupgrade_src/test/acceptance/helpers/finalize_checks.bash
-
-              echo 'Doing failover tests of mirrors and standby...'
-              validate_mirrors_and_standby /usr/local/greenplum-db-target mdw 5432
-  ensure:
-    <<: *set_failed
-  on_success:
-    <<: *ccp_destroy
-  on_failure:
-    <<: *slack_alert
-
-- name: 6-to-6-centos-7
-  serial_groups: [6-to-6]
-  # Specifying serial groups so that only one platform runs at a time. For
-  # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
-  # will prevent concourse from becoming overloaded.
-  plan:
-    - in_parallel:
-        - get: rpm_enterprise
-          trigger: true
-          passed: [ build ]
-        - get: gpupgrade_src
-          passed: [ build ]
-        - get: rpm_gpdb_source
-          resource: rpm_gpdb6_centos7
-          trigger: true
-        - get: ccp_src
-        - get: terraform.d
-          params:
-            unpack: true
-        # FIXME: this is not guaranteed to be the same dump generated by the
-        # above binary...
-        - get: sqldump
-          resource: dump_gpdb6_icw_gporca_centos6
-    - put: terraform
-      params:
-        <<: *ccp_default_params
-        vars:
-          standby_master: true
-          instance_type: n1-standard-2
-          number_of_nodes: 4
-          PLATFORM: centos7
-          # Decrease the reap time from the default of 8 hours now that there are
-          # both centos6 and centos7 jobs in order to not overload concourse.
-          ccp_reap_minutes: 180
-    - task: gen_source_cluster
-      file: ccp_src/ci/tasks/gen_cluster.yml
-      params:
-        <<: *ccp_gen_cluster_default_params
-        PLATFORM: centos7
-        GPDB_RPM: true
-      input_mapping:
-        gpdb_rpm: rpm_gpdb_source
-    - task: gpinitsystem_source_cluster
-      file: ccp_src/ci/tasks/gpinitsystem.yml
-    - task: prepare_installation
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: alpine
-            tag: latest
-        inputs:
-          - name: gpupgrade_src
-          - name: cluster_env_files
-          - name: rpm_enterprise
-        run:
-          path: gpupgrade_src/ci/scripts/prepare-installation.sh
-          args:
-            - greenplum-db-6
-            - greenplum-db-6
-    - task: load_dump
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-          - name: ccp_src
-          - name: cluster_env_files
-          - name: gpupgrade_src
-          - name: sqldump
-        run:
-          path: gpupgrade_src/ci/scripts/load-dump.bash
-    - task: upgrade_cluster
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-        - name: ccp_src
-        - name: cluster_env_files
-        - name: gpupgrade_src
-        run:
-          path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
-      params:
-    - task: validate_mirrors_and_standby
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-          - name: gpupgrade_src
-          - name: ccp_src
-          - name: cluster_env_files
-        run:
-          path: bash
-          args:
-            - -c
-            - |
-              set -eux -o pipefail
-
-              ./ccp_src/scripts/setup_ssh_to_cluster.sh
-
-              # Load the finalize test library.
-              source gpupgrade_src/test/acceptance/helpers/finalize_checks.bash
-
-              echo 'Doing failover tests of mirrors and standby...'
-              validate_mirrors_and_standby /usr/local/greenplum-db-target mdw 5432
-  ensure:
-    <<: *set_failed
-  on_success:
-    <<: *ccp_destroy
-  on_failure:
-    <<: *slack_alert
-
-- name: 5-to-6-centos-6
-  serial_groups: [5-to-6]
-  # Specifying serial groups so that only one platform runs at a time. For
-  # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
-  # will prevent concourse from becoming overloaded.
-  plan:
-    - in_parallel:
-        - get: rpm_enterprise
-          trigger: true
-          passed: [ build ]
-        - get: gpupgrade_src
-          passed: [ build ]
-        - get: rpm_gpdb_source
-          resource: rpm_gpdb5_centos6
-          trigger: true
-        - get: rpm_gpdb_target
-          resource: rpm_gpdb6_centos6
-          trigger: true
-        - get: ccp_src
-        - get: terraform.d
-          params:
-            unpack: true
-        # FIXME: this is not guaranteed to be the same dump generated by the
-        # above binary...
-        - get: sqldump
-          resource: gpdb5_icw_planner_centos6_dump
-    - put: terraform
-      params:
-        <<: *ccp_default_params
-        vars:
-          standby_master: true
-          instance_type: n1-standard-2
-          number_of_nodes: 4
-          PLATFORM: centos6
-          # Decrease the reap time from the default of 8 hours now that there are
-          # both centos6 and centos7 jobs in order to not overload concourse.
-          ccp_reap_minutes: 180
-    - task: gen_source_cluster
-      file: ccp_src/ci/tasks/gen_cluster.yml
-      params:
-        <<: *ccp_gen_cluster_default_params
-        PLATFORM: centos6
-        GPDB_RPM: true
-      input_mapping:
-        gpdb_rpm: rpm_gpdb_source
-    - task: gpinitsystem_source_cluster
-      file: ccp_src/ci/tasks/gpinitsystem.yml
-    - task: prepare_installation
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: alpine
-            tag: latest
-        inputs:
-          - name: gpupgrade_src
-          - name: cluster_env_files
-          - name: rpm_enterprise
-          - name: rpm_gpdb_target
-        run:
-          path: gpupgrade_src/ci/scripts/prepare-installation.sh
-          args:
-            - greenplum-db-5
-            - greenplum-db-6
-    - task: load_dump
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-          - name: ccp_src
-          - name: cluster_env_files
-          - name: gpupgrade_src
-          - name: sqldump
-        run:
-          path: gpupgrade_src/ci/scripts/load-dump.bash
-    - task: upgrade_cluster
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-        - name: ccp_src
-        - name: cluster_env_files
-        - name: gpupgrade_src
-        run:
-          path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
-      params:
-        FILTER_DIFF: 1
-    - task: validate_mirrors_and_standby
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-          - name: gpupgrade_src
-          - name: ccp_src
-          - name: cluster_env_files
-        run:
-          path: bash
-          args:
-            - -c
-            - |
-              set -eux -o pipefail
-
-              ./ccp_src/scripts/setup_ssh_to_cluster.sh
-
-              # Load the finalize test library.
-              source gpupgrade_src/test/acceptance/helpers/finalize_checks.bash
-
-              echo 'Doing failover tests of mirrors and standby...'
-              validate_mirrors_and_standby /usr/local/greenplum-db-target mdw 5432
-  ensure:
-    <<: *set_failed
-  on_success:
-    <<: *ccp_destroy
-  on_failure:
-    <<: *slack_alert
-
-- name: 5-to-6-centos-7
-  serial_groups: [5-to-6]
-  # Specifying serial groups so that only one platform runs at a time. For
-  # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
-  # will prevent concourse from becoming overloaded.
-  plan:
-    - in_parallel:
-        - get: rpm_enterprise
-          trigger: true
-          passed: [ build ]
-        - get: gpupgrade_src
-          passed: [ build ]
+        - get: gpdb_src_source
+          resource: gpdb5_src
+        - get: gpdb_src_target
+          resource: gpdb6_src
+        - get: bats
         - get: rpm_gpdb_source
           resource: rpm_gpdb5_centos7
           trigger: true
         - get: rpm_gpdb_target
           resource: rpm_gpdb6_centos7
           trigger: true
-        - get: ccp_src
-        - get: terraform.d
-          params:
-            unpack: true
-        # FIXME: this is not guaranteed to be the same dump generated by the
-        # above binary...
-        - get: sqldump
-          resource: gpdb5_icw_planner_centos6_dump
-    - put: terraform
-      params:
-        <<: *ccp_default_params
-        vars:
-          standby_master: true
-          instance_type: n1-standard-2
-          number_of_nodes: 4
-          PLATFORM: centos7
-          # Decrease the reap time from the default of 8 hours now that there are
-          # both centos6 and centos7 jobs in order to not overload concourse.
-          ccp_reap_minutes: 180
-    - task: gen_source_cluster
-      file: ccp_src/ci/tasks/gen_cluster.yml
-      params:
-        <<: *ccp_gen_cluster_default_params
-        PLATFORM: centos7
-        GPDB_RPM: true
-      input_mapping:
-        gpdb_rpm: rpm_gpdb_source
-    - task: gpinitsystem_source_cluster
-      file: ccp_src/ci/tasks/gpinitsystem.yml
-    - task: prepare_installation
+    - task: pg-upgrade-tests
       config:
         platform: linux
         image_resource:
           type: registry-image
           source:
-            repository: alpine
-            tag: latest
-        inputs:
-          - name: gpupgrade_src
-          - name: cluster_env_files
-          - name: rpm_enterprise
-          - name: rpm_gpdb_target
-        run:
-          path: gpupgrade_src/ci/scripts/prepare-installation.sh
-          args:
-            - greenplum-db-5
-            - greenplum-db-6
-    - task: load_dump
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-          - name: ccp_src
-          - name: cluster_env_files
-          - name: gpupgrade_src
-          - name: sqldump
-        run:
-          path: gpupgrade_src/ci/scripts/load-dump.bash
-    - task: upgrade_cluster
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-        - name: ccp_src
-        - name: cluster_env_files
-        - name: gpupgrade_src
-        run:
-          path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
-      params:
-        FILTER_DIFF: 1
-    - task: validate_mirrors_and_standby
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-          - name: gpupgrade_src
-          - name: ccp_src
-          - name: cluster_env_files
-        run:
-          path: bash
-          args:
-            - -c
-            - |
-              set -eux -o pipefail
-
-              ./ccp_src/scripts/setup_ssh_to_cluster.sh
-
-              # Load the finalize test library.
-              source gpupgrade_src/test/acceptance/helpers/finalize_checks.bash
-
-              echo 'Doing failover tests of mirrors and standby...'
-              validate_mirrors_and_standby /usr/local/greenplum-db-target mdw 5432
-  ensure:
-    <<: *set_failed
-  on_success:
-    <<: *ccp_destroy
-  on_failure:
-    <<: *slack_alert
-
-- name: 5-to-6-link-mode-centos-6
-  serial_groups: [5-to-6-link-mode]
-  # Specifying serial groups so that only one platform runs at a time. For
-  # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
-  # will prevent concourse from becoming overloaded.
-  plan:
-    - in_parallel:
-        - get: rpm_enterprise
-          trigger: true
-          passed: [ build ]
-        - get: gpupgrade_src
-          passed: [ build ]
-        - get: rpm_gpdb_source
-          resource: rpm_gpdb5_centos6
-          trigger: true
-        - get: rpm_gpdb_target
-          resource: rpm_gpdb6_centos6
-          trigger: true
-        - get: ccp_src
-        - get: terraform.d
-          params:
-            unpack: true
-        # FIXME: this is not guaranteed to be the same dump generated by the
-        # above binary...
-        - get: sqldump
-          resource: gpdb5_icw_planner_centos6_dump
-    - put: terraform
-      params:
-        <<: *ccp_default_params
-        vars:
-          standby_master: true
-          instance_type: n1-standard-2
-          number_of_nodes: 4
-          PLATFORM: centos6
-          # Decrease the reap time from the default of 8 hours now that there are
-          # both centos6 and centos7 jobs in order to not overload concourse.
-          ccp_reap_minutes: 180
-    - task: gen_source_cluster
-      file: ccp_src/ci/tasks/gen_cluster.yml
-      params:
-        <<: *ccp_gen_cluster_default_params
-        PLATFORM: centos6
-        GPDB_RPM: true
-      input_mapping:
-        gpdb_rpm: rpm_gpdb_source
-    - task: gpinitsystem_source_cluster
-      file: ccp_src/ci/tasks/gpinitsystem.yml
-    - task: prepare_installation
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: alpine
-            tag: latest
-        inputs:
-          - name: gpupgrade_src
-          - name: cluster_env_files
-          - name: rpm_enterprise
-          - name: rpm_gpdb_target
-        run:
-          path: gpupgrade_src/ci/scripts/prepare-installation.sh
-          args:
-            - greenplum-db-5
-            - greenplum-db-6
-    - task: load_dump
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-          - name: ccp_src
-          - name: cluster_env_files
-          - name: gpupgrade_src
-          - name: sqldump
-        run:
-          path: gpupgrade_src/ci/scripts/load-dump.bash
-    - task: upgrade_cluster
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-        - name: ccp_src
-        - name: cluster_env_files
-        - name: gpupgrade_src
-        run:
-          path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
-      params:
-        FILTER_DIFF: 1
-        USE_LINK_MODE: 1
-    - task: validate_mirrors_and_standby
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-          - name: gpupgrade_src
-          - name: ccp_src
-          - name: cluster_env_files
-        run:
-          path: bash
-          args:
-            - -c
-            - |
-              set -eux -o pipefail
-
-              ./ccp_src/scripts/setup_ssh_to_cluster.sh
-
-              # Load the finalize test library.
-              source gpupgrade_src/test/acceptance/helpers/finalize_checks.bash
-
-              echo 'Doing failover tests of mirrors and standby...'
-              validate_mirrors_and_standby /usr/local/greenplum-db-target mdw 5432
-  ensure:
-    <<: *set_failed
-  on_success:
-    <<: *ccp_destroy
-  on_failure:
-    <<: *slack_alert
-
-- name: 5-to-6-primaries-only-centos-6
-  serial_groups: [5-to-6-primaries-only]
-  # Specifying serial groups so that only one platform runs at a time. For
-  # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
-  # will prevent concourse from becoming overloaded.
-  plan:
-    - in_parallel:
-        - get: rpm_enterprise
-          trigger: true
-          passed: [ build ]
-        - get: gpupgrade_src
-          passed: [ build ]
-        - get: rpm_gpdb_source
-          resource: rpm_gpdb5_centos6
-          trigger: true
-        - get: rpm_gpdb_target
-          resource: rpm_gpdb6_centos6
-          trigger: true
-        - get: ccp_src
-        - get: terraform.d
-          params:
-            unpack: true
-        # FIXME: this is not guaranteed to be the same dump generated by the
-        # above binary...
-        - get: sqldump
-          resource: gpdb5_icw_planner_centos6_dump
-    - put: terraform
-      params:
-        <<: *ccp_default_params
-        vars:
-          mirrors: false
-          instance_type: n1-standard-2
-          number_of_nodes: 4
-          PLATFORM: centos6
-          # Decrease the reap time from the default of 8 hours now that there are
-          # both centos6 and centos7 jobs in order to not overload concourse.
-          ccp_reap_minutes: 180
-    - task: gen_source_cluster
-      file: ccp_src/ci/tasks/gen_cluster.yml
-      params:
-        <<: *ccp_gen_cluster_default_params
-        PLATFORM: centos6
-        GPDB_RPM: true
-      input_mapping:
-        gpdb_rpm: rpm_gpdb_source
-    - task: gpinitsystem_source_cluster
-      file: ccp_src/ci/tasks/gpinitsystem.yml
-    - task: prepare_installation
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: alpine
-            tag: latest
-        inputs:
-          - name: gpupgrade_src
-          - name: cluster_env_files
-          - name: rpm_enterprise
-          - name: rpm_gpdb_target
-        run:
-          path: gpupgrade_src/ci/scripts/prepare-installation.sh
-          args:
-            - greenplum-db-5
-            - greenplum-db-6
-    - task: load_dump
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-          - name: ccp_src
-          - name: cluster_env_files
-          - name: gpupgrade_src
-          - name: sqldump
-        run:
-          path: gpupgrade_src/ci/scripts/load-dump.bash
-    - task: upgrade_cluster
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-        - name: ccp_src
-        - name: cluster_env_files
-        - name: gpupgrade_src
-        run:
-          path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
-      params:
-        FILTER_DIFF: 1
-  ensure:
-    <<: *set_failed
-  on_success:
-    <<: *ccp_destroy
-  on_failure:
-    <<: *slack_alert
-
-- name: 5-to-6-no-standby-centos-6
-  serial_groups: [5-to-6-no-standby]
-  # Specifying serial groups so that only one platform runs at a time. For
-  # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
-  # will prevent concourse from becoming overloaded.
-  plan:
-    - in_parallel:
-        - get: rpm_enterprise
-          trigger: true
-          passed: [ build ]
-        - get: gpupgrade_src
-          passed: [ build ]
-        - get: rpm_gpdb_source
-          resource: rpm_gpdb5_centos6
-          trigger: true
-        - get: rpm_gpdb_target
-          resource: rpm_gpdb6_centos6
-          trigger: true
-        - get: ccp_src
-        - get: terraform.d
-          params:
-            unpack: true
-        # FIXME: this is not guaranteed to be the same dump generated by the
-        # above binary...
-        - get: sqldump
-          resource: gpdb5_icw_planner_centos6_dump
-    - put: terraform
-      params:
-        <<: *ccp_default_params
-        vars:
-          instance_type: n1-standard-2
-          number_of_nodes: 4
-          PLATFORM: centos6
-          # Decrease the reap time from the default of 8 hours now that there are
-          # both centos6 and centos7 jobs in order to not overload concourse.
-          ccp_reap_minutes: 180
-    - task: gen_source_cluster
-      file: ccp_src/ci/tasks/gen_cluster.yml
-      params:
-        <<: *ccp_gen_cluster_default_params
-        PLATFORM: centos6
-        GPDB_RPM: true
-      input_mapping:
-        gpdb_rpm: rpm_gpdb_source
-    - task: gpinitsystem_source_cluster
-      file: ccp_src/ci/tasks/gpinitsystem.yml
-    - task: prepare_installation
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: alpine
-            tag: latest
-        inputs:
-          - name: gpupgrade_src
-          - name: cluster_env_files
-          - name: rpm_enterprise
-          - name: rpm_gpdb_target
-        run:
-          path: gpupgrade_src/ci/scripts/prepare-installation.sh
-          args:
-            - greenplum-db-5
-            - greenplum-db-6
-    - task: load_dump
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-          - name: ccp_src
-          - name: cluster_env_files
-          - name: gpupgrade_src
-          - name: sqldump
-        run:
-          path: gpupgrade_src/ci/scripts/load-dump.bash
-    - task: upgrade_cluster
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-        - name: ccp_src
-        - name: cluster_env_files
-        - name: gpupgrade_src
-        run:
-          path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
-      params:
-        FILTER_DIFF: 1
-  ensure:
-    <<: *set_failed
-  on_success:
-    <<: *ccp_destroy
-  on_failure:
-    <<: *slack_alert
-
-- name: 5-to-6-retail-demo-centos-6
-  serial_groups: [5-to-6-retail-demo]
-  # Specifying serial groups so that only one platform runs at a time. For
-  # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
-  # will prevent concourse from becoming overloaded.
-  plan:
-    - in_parallel:
-        - get: rpm_enterprise
-          trigger: true
-          passed: [ build ]
-        - get: gpupgrade_src
-          passed: [ build ]
-        - get: rpm_gpdb_source
-          resource: rpm_gpdb5_centos6
-          trigger: true
-        - get: rpm_gpdb_target
-          resource: rpm_gpdb6_centos6
-          trigger: true
-        - get: ccp_src
-        - get: terraform.d
-          params:
-            unpack: true
-        - get: retail_demo_src
-    - put: terraform
-      params:
-        <<: *ccp_default_params
-        vars:
-          standby_master: true
-          instance_type: n1-standard-2
-          number_of_nodes: 4
-          PLATFORM: centos6
-          # Decrease the reap time from the default of 8 hours now that there are
-          # both centos6 and centos7 jobs in order to not overload concourse.
-          ccp_reap_minutes: 180
-    - task: gen_source_cluster
-      file: ccp_src/ci/tasks/gen_cluster.yml
-      params:
-        <<: *ccp_gen_cluster_default_params
-        PLATFORM: centos6
-        GPDB_RPM: true
-      input_mapping:
-        gpdb_rpm: rpm_gpdb_source
-    - task: gpinitsystem_source_cluster
-      file: ccp_src/ci/tasks/gpinitsystem.yml
-    - task: prepare_installation
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: alpine
-            tag: latest
-        inputs:
-          - name: gpupgrade_src
-          - name: cluster_env_files
-          - name: rpm_enterprise
-          - name: rpm_gpdb_target
-        run:
-          path: gpupgrade_src/ci/scripts/prepare-installation.sh
-          args:
-            - greenplum-db-5
-            - greenplum-db-6
-    - task: load_retail_data
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
+            # NOTE: Since we build isolation2 the build image OS needs to match
+            # the GPDB target version we are testing.
             repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test
             tag: latest
         inputs:
-          - name: gpupgrade_src
-          - name: retail_demo_src
-          - name: ccp_src
-          - name: cluster_env_files
-        run:
-          path: gpupgrade_src/ci/scripts/load-retail-data.bash
-    - task: upgrade_cluster
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-        - name: ccp_src
-        - name: cluster_env_files
-        - name: gpupgrade_src
-        run:
-          path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
-      params:
-        FILTER_DIFF: 1
-        DIFF_FILE: retail_demo.diff
-    - task: validate_mirrors_and_standby
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-          - name: gpupgrade_src
-          - name: ccp_src
-          - name: cluster_env_files
-        run:
-          path: bash
-          args:
-            - -c
-            - |
-              set -eux -o pipefail
-
-              ./ccp_src/scripts/setup_ssh_to_cluster.sh
-
-              # Load the finalize test library.
-              source gpupgrade_src/test/acceptance/helpers/finalize_checks.bash
-
-              echo 'Doing failover tests of mirrors and standby...'
-              validate_mirrors_and_standby /usr/local/greenplum-db-target mdw 5432
-  ensure:
-    <<: *set_failed
-  on_success:
-    <<: *ccp_destroy
-  on_failure:
-    <<: *slack_alert
-
-- name: 5-to-6-link-mode-centos-7
-  serial_groups: [5-to-6-link-mode]
-  # Specifying serial groups so that only one platform runs at a time. For
-  # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
-  # will prevent concourse from becoming overloaded.
-  plan:
-    - in_parallel:
-        - get: rpm_enterprise
-          trigger: true
-          passed: [ build ]
-        - get: gpupgrade_src
-          passed: [ build ]
-        - get: rpm_gpdb_source
-          resource: rpm_gpdb5_centos7
-          trigger: true
-        - get: rpm_gpdb_target
-          resource: rpm_gpdb6_centos7
-          trigger: true
-        - get: ccp_src
-        - get: terraform.d
-          params:
-            unpack: true
-        # FIXME: this is not guaranteed to be the same dump generated by the
-        # above binary...
-        - get: sqldump
-          resource: gpdb5_icw_planner_centos6_dump
-    - put: terraform
-      params:
-        <<: *ccp_default_params
-        vars:
-          standby_master: true
-          instance_type: n1-standard-2
-          number_of_nodes: 4
-          PLATFORM: centos7
-          # Decrease the reap time from the default of 8 hours now that there are
-          # both centos6 and centos7 jobs in order to not overload concourse.
-          ccp_reap_minutes: 180
-    - task: gen_source_cluster
-      file: ccp_src/ci/tasks/gen_cluster.yml
-      params:
-        <<: *ccp_gen_cluster_default_params
-        PLATFORM: centos7
-        GPDB_RPM: true
-      input_mapping:
-        gpdb_rpm: rpm_gpdb_source
-    - task: gpinitsystem_source_cluster
-      file: ccp_src/ci/tasks/gpinitsystem.yml
-    - task: prepare_installation
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: alpine
-            tag: latest
-        inputs:
-          - name: gpupgrade_src
-          - name: cluster_env_files
           - name: rpm_enterprise
+          - name: gpupgrade_src
+          - name: gpdb_src_source
+          # Rename gpdb_src_target to gpdb_src since external scripts used within rely on that.
+          - name: gpdb_src_target
+            path: gpdb_src
+          - name: bats
+          - name: rpm_gpdb_source
           - name: rpm_gpdb_target
         run:
-          path: gpupgrade_src/ci/scripts/prepare-installation.sh
-          args:
-            - greenplum-db-5
-            - greenplum-db-6
-    - task: load_dump
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-          - name: ccp_src
-          - name: cluster_env_files
-          - name: gpupgrade_src
-          - name: sqldump
-        run:
-          path: gpupgrade_src/ci/scripts/load-dump.bash
-    - task: upgrade_cluster
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-        - name: ccp_src
-        - name: cluster_env_files
-        - name: gpupgrade_src
-        run:
-          path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
+          path: gpupgrade_src/ci/scripts/pg-upgrade-tests.bash
       params:
-        FILTER_DIFF: 1
-        USE_LINK_MODE: 1
-    - task: validate_mirrors_and_standby
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-          - name: gpupgrade_src
-          - name: ccp_src
-          - name: cluster_env_files
-        run:
-          path: bash
-          args:
-            - -c
-            - |
-              set -eux -o pipefail
-
-              ./ccp_src/scripts/setup_ssh_to_cluster.sh
-
-              # Load the finalize test library.
-              source gpupgrade_src/test/acceptance/helpers/finalize_checks.bash
-
-              echo 'Doing failover tests of mirrors and standby...'
-              validate_mirrors_and_standby /usr/local/greenplum-db-target mdw 5432
-  ensure:
-    <<: *set_failed
-  on_success:
-    <<: *ccp_destroy
-  on_failure:
-    <<: *slack_alert
-
-- name: 5-to-6-primaries-only-centos-7
-  serial_groups: [5-to-6-primaries-only]
-  # Specifying serial groups so that only one platform runs at a time. For
-  # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
-  # will prevent concourse from becoming overloaded.
-  plan:
-    - in_parallel:
-        - get: rpm_enterprise
-          trigger: true
-          passed: [ build ]
-        - get: gpupgrade_src
-          passed: [ build ]
-        - get: rpm_gpdb_source
-          resource: rpm_gpdb5_centos7
-          trigger: true
-        - get: rpm_gpdb_target
-          resource: rpm_gpdb6_centos7
-          trigger: true
-        - get: ccp_src
-        - get: terraform.d
-          params:
-            unpack: true
-        # FIXME: this is not guaranteed to be the same dump generated by the
-        # above binary...
-        - get: sqldump
-          resource: gpdb5_icw_planner_centos6_dump
-    - put: terraform
-      params:
-        <<: *ccp_default_params
-        vars:
-          mirrors: false
-          instance_type: n1-standard-2
-          number_of_nodes: 4
-          PLATFORM: centos7
-          # Decrease the reap time from the default of 8 hours now that there are
-          # both centos6 and centos7 jobs in order to not overload concourse.
-          ccp_reap_minutes: 180
-    - task: gen_source_cluster
-      file: ccp_src/ci/tasks/gen_cluster.yml
-      params:
-        <<: *ccp_gen_cluster_default_params
-        PLATFORM: centos7
-        GPDB_RPM: true
-      input_mapping:
-        gpdb_rpm: rpm_gpdb_source
-    - task: gpinitsystem_source_cluster
-      file: ccp_src/ci/tasks/gpinitsystem.yml
-    - task: prepare_installation
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: alpine
-            tag: latest
-        inputs:
-          - name: gpupgrade_src
-          - name: cluster_env_files
-          - name: rpm_enterprise
-          - name: rpm_gpdb_target
-        run:
-          path: gpupgrade_src/ci/scripts/prepare-installation.sh
-          args:
-            - greenplum-db-5
-            - greenplum-db-6
-    - task: load_dump
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-          - name: ccp_src
-          - name: cluster_env_files
-          - name: gpupgrade_src
-          - name: sqldump
-        run:
-          path: gpupgrade_src/ci/scripts/load-dump.bash
-    - task: upgrade_cluster
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-        - name: ccp_src
-        - name: cluster_env_files
-        - name: gpupgrade_src
-        run:
-          path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
-      params:
-        FILTER_DIFF: 1
-  ensure:
-    <<: *set_failed
-  on_success:
-    <<: *ccp_destroy
-  on_failure:
-    <<: *slack_alert
-
-- name: 5-to-6-no-standby-centos-7
-  serial_groups: [5-to-6-no-standby]
-  # Specifying serial groups so that only one platform runs at a time. For
-  # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
-  # will prevent concourse from becoming overloaded.
-  plan:
-    - in_parallel:
-        - get: rpm_enterprise
-          trigger: true
-          passed: [ build ]
-        - get: gpupgrade_src
-          passed: [ build ]
-        - get: rpm_gpdb_source
-          resource: rpm_gpdb5_centos7
-          trigger: true
-        - get: rpm_gpdb_target
-          resource: rpm_gpdb6_centos7
-          trigger: true
-        - get: ccp_src
-        - get: terraform.d
-          params:
-            unpack: true
-        # FIXME: this is not guaranteed to be the same dump generated by the
-        # above binary...
-        - get: sqldump
-          resource: gpdb5_icw_planner_centos6_dump
-    - put: terraform
-      params:
-        <<: *ccp_default_params
-        vars:
-          instance_type: n1-standard-2
-          number_of_nodes: 4
-          PLATFORM: centos7
-          # Decrease the reap time from the default of 8 hours now that there are
-          # both centos6 and centos7 jobs in order to not overload concourse.
-          ccp_reap_minutes: 180
-    - task: gen_source_cluster
-      file: ccp_src/ci/tasks/gen_cluster.yml
-      params:
-        <<: *ccp_gen_cluster_default_params
-        PLATFORM: centos7
-        GPDB_RPM: true
-      input_mapping:
-        gpdb_rpm: rpm_gpdb_source
-    - task: gpinitsystem_source_cluster
-      file: ccp_src/ci/tasks/gpinitsystem.yml
-    - task: prepare_installation
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: alpine
-            tag: latest
-        inputs:
-          - name: gpupgrade_src
-          - name: cluster_env_files
-          - name: rpm_enterprise
-          - name: rpm_gpdb_target
-        run:
-          path: gpupgrade_src/ci/scripts/prepare-installation.sh
-          args:
-            - greenplum-db-5
-            - greenplum-db-6
-    - task: load_dump
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-          - name: ccp_src
-          - name: cluster_env_files
-          - name: gpupgrade_src
-          - name: sqldump
-        run:
-          path: gpupgrade_src/ci/scripts/load-dump.bash
-    - task: upgrade_cluster
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-        - name: ccp_src
-        - name: cluster_env_files
-        - name: gpupgrade_src
-        run:
-          path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
-      params:
-        FILTER_DIFF: 1
-  ensure:
-    <<: *set_failed
-  on_success:
-    <<: *ccp_destroy
-  on_failure:
-    <<: *slack_alert
-
-- name: 5-to-6-retail-demo-centos-7
-  serial_groups: [5-to-6-retail-demo]
-  # Specifying serial groups so that only one platform runs at a time. For
-  # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
-  # will prevent concourse from becoming overloaded.
-  plan:
-    - in_parallel:
-        - get: rpm_enterprise
-          trigger: true
-          passed: [ build ]
-        - get: gpupgrade_src
-          passed: [ build ]
-        - get: rpm_gpdb_source
-          resource: rpm_gpdb5_centos7
-          trigger: true
-        - get: rpm_gpdb_target
-          resource: rpm_gpdb6_centos7
-          trigger: true
-        - get: ccp_src
-        - get: terraform.d
-          params:
-            unpack: true
-        - get: retail_demo_src
-    - put: terraform
-      params:
-        <<: *ccp_default_params
-        vars:
-          standby_master: true
-          instance_type: n1-standard-2
-          number_of_nodes: 4
-          PLATFORM: centos7
-          # Decrease the reap time from the default of 8 hours now that there are
-          # both centos6 and centos7 jobs in order to not overload concourse.
-          ccp_reap_minutes: 180
-    - task: gen_source_cluster
-      file: ccp_src/ci/tasks/gen_cluster.yml
-      params:
-        <<: *ccp_gen_cluster_default_params
-        PLATFORM: centos7
-        GPDB_RPM: true
-      input_mapping:
-        gpdb_rpm: rpm_gpdb_source
-    - task: gpinitsystem_source_cluster
-      file: ccp_src/ci/tasks/gpinitsystem.yml
-    - task: prepare_installation
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: alpine
-            tag: latest
-        inputs:
-          - name: gpupgrade_src
-          - name: cluster_env_files
-          - name: rpm_enterprise
-          - name: rpm_gpdb_target
-        run:
-          path: gpupgrade_src/ci/scripts/prepare-installation.sh
-          args:
-            - greenplum-db-5
-            - greenplum-db-6
-    - task: load_retail_data
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test
-            tag: latest
-        inputs:
-          - name: gpupgrade_src
-          - name: retail_demo_src
-          - name: ccp_src
-          - name: cluster_env_files
-        run:
-          path: gpupgrade_src/ci/scripts/load-retail-data.bash
-    - task: upgrade_cluster
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-        - name: ccp_src
-        - name: cluster_env_files
-        - name: gpupgrade_src
-        run:
-          path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
-      params:
-        FILTER_DIFF: 1
-        DIFF_FILE: retail_demo.diff
-    - task: validate_mirrors_and_standby
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-          - name: gpupgrade_src
-          - name: ccp_src
-          - name: cluster_env_files
-        run:
-          path: bash
-          args:
-            - -c
-            - |
-              set -eux -o pipefail
-
-              ./ccp_src/scripts/setup_ssh_to_cluster.sh
-
-              # Load the finalize test library.
-              source gpupgrade_src/test/acceptance/helpers/finalize_checks.bash
-
-              echo 'Doing failover tests of mirrors and standby...'
-              validate_mirrors_and_standby /usr/local/greenplum-db-target mdw 5432
-  ensure:
-    <<: *set_failed
-  on_success:
-    <<: *ccp_destroy
+        SOURCE_PACKAGE: greenplum-db-5
+        TARGET_PACKAGE: greenplum-db-6
   on_failure:
     <<: *slack_alert
 
@@ -2319,58 +887,1488 @@ jobs:
     <<: *ccp_destroy
   on_failure:
     <<: *slack_alert
+
+- name: 6-to-6-centos-6
+  serial_groups: [6-to-6]
+  # Specifying serial groups so that only one platform runs at a time. For
+  # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
+  # will prevent concourse from becoming overloaded.
+  plan:
+    - in_parallel:
+        - get: rpm_enterprise
+          trigger: true
+          passed: [ build ]
+        - get: gpupgrade_src
+          passed: [ build ]
+        - get: rpm_gpdb_source
+          resource: rpm_gpdb6_centos6
+          trigger: true
+        - get: ccp_src
+        - get: terraform.d
+          params:
+            unpack: true
+        # FIXME: this is not guaranteed to be the same dump generated by the
+        # above binary...
+        - get: sqldump
+          resource: dump_gpdb6_icw_gporca_centos6
+    - put: terraform
+      params:
+        <<: *ccp_default_params
+        vars:
+          standby_master: true
+          instance_type: n1-standard-2
+          number_of_nodes: 4
+          PLATFORM: centos6
+          # Decrease the reap time from the default of 8 hours now that there are
+          # both centos6 and centos7 jobs in order to not overload concourse.
+          ccp_reap_minutes: 180
+    - task: gen_source_cluster
+      file: ccp_src/ci/tasks/gen_cluster.yml
+      params:
+        <<: *ccp_gen_cluster_default_params
+        PLATFORM: centos6
+        GPDB_RPM: true
+      input_mapping:
+        gpdb_rpm: rpm_gpdb_source
+    - task: gpinitsystem_source_cluster
+      file: ccp_src/ci/tasks/gpinitsystem.yml
+    - task: prepare_installation
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: alpine
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: cluster_env_files
+          - name: rpm_enterprise
+        run:
+          path: gpupgrade_src/ci/scripts/prepare-installation.sh
+          args:
+            - greenplum-db-6
+            - greenplum-db-6
+    - task: load_dump
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: ccp_src
+          - name: cluster_env_files
+          - name: gpupgrade_src
+          - name: sqldump
+        run:
+          path: gpupgrade_src/ci/scripts/load-dump.bash
+    - task: upgrade_cluster
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: ccp_src
+          - name: cluster_env_files
+          - name: gpupgrade_src
+        run:
+          path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
+      params:
+    - task: validate_mirrors_and_standby
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: ccp_src
+          - name: cluster_env_files
+        run:
+          path: bash
+          args:
+            - -c
+            - |
+              set -eux -o pipefail
+
+              ./ccp_src/scripts/setup_ssh_to_cluster.sh
+
+              # Load the finalize test library.
+              source gpupgrade_src/test/acceptance/helpers/finalize_checks.bash
+
+              echo 'Doing failover tests of mirrors and standby...'
+              validate_mirrors_and_standby /usr/local/greenplum-db-target mdw 5432
+  ensure:
+    <<: *set_failed
+  on_success:
+    <<: *ccp_destroy
+  on_failure:
+    <<: *slack_alert
+
+- name: 6-to-6-centos-7
+  serial_groups: [6-to-6]
+  # Specifying serial groups so that only one platform runs at a time. For
+  # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
+  # will prevent concourse from becoming overloaded.
+  plan:
+    - in_parallel:
+        - get: rpm_enterprise
+          trigger: true
+          passed: [ build ]
+        - get: gpupgrade_src
+          passed: [ build ]
+        - get: rpm_gpdb_source
+          resource: rpm_gpdb6_centos7
+          trigger: true
+        - get: ccp_src
+        - get: terraform.d
+          params:
+            unpack: true
+        # FIXME: this is not guaranteed to be the same dump generated by the
+        # above binary...
+        - get: sqldump
+          resource: dump_gpdb6_icw_gporca_centos6
+    - put: terraform
+      params:
+        <<: *ccp_default_params
+        vars:
+          standby_master: true
+          instance_type: n1-standard-2
+          number_of_nodes: 4
+          PLATFORM: centos7
+          # Decrease the reap time from the default of 8 hours now that there are
+          # both centos6 and centos7 jobs in order to not overload concourse.
+          ccp_reap_minutes: 180
+    - task: gen_source_cluster
+      file: ccp_src/ci/tasks/gen_cluster.yml
+      params:
+        <<: *ccp_gen_cluster_default_params
+        PLATFORM: centos7
+        GPDB_RPM: true
+      input_mapping:
+        gpdb_rpm: rpm_gpdb_source
+    - task: gpinitsystem_source_cluster
+      file: ccp_src/ci/tasks/gpinitsystem.yml
+    - task: prepare_installation
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: alpine
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: cluster_env_files
+          - name: rpm_enterprise
+        run:
+          path: gpupgrade_src/ci/scripts/prepare-installation.sh
+          args:
+            - greenplum-db-6
+            - greenplum-db-6
+    - task: load_dump
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: ccp_src
+          - name: cluster_env_files
+          - name: gpupgrade_src
+          - name: sqldump
+        run:
+          path: gpupgrade_src/ci/scripts/load-dump.bash
+    - task: upgrade_cluster
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: ccp_src
+          - name: cluster_env_files
+          - name: gpupgrade_src
+        run:
+          path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
+      params:
+    - task: validate_mirrors_and_standby
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: ccp_src
+          - name: cluster_env_files
+        run:
+          path: bash
+          args:
+            - -c
+            - |
+              set -eux -o pipefail
+
+              ./ccp_src/scripts/setup_ssh_to_cluster.sh
+
+              # Load the finalize test library.
+              source gpupgrade_src/test/acceptance/helpers/finalize_checks.bash
+
+              echo 'Doing failover tests of mirrors and standby...'
+              validate_mirrors_and_standby /usr/local/greenplum-db-target mdw 5432
+  ensure:
+    <<: *set_failed
+  on_success:
+    <<: *ccp_destroy
+  on_failure:
+    <<: *slack_alert
+
+- name: 5-to-6-centos-6
+  serial_groups: [5-to-6]
+  # Specifying serial groups so that only one platform runs at a time. For
+  # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
+  # will prevent concourse from becoming overloaded.
+  plan:
+    - in_parallel:
+        - get: rpm_enterprise
+          trigger: true
+          passed: [ build ]
+        - get: gpupgrade_src
+          passed: [ build ]
+        - get: rpm_gpdb_source
+          resource: rpm_gpdb5_centos6
+          trigger: true
+        - get: rpm_gpdb_target
+          resource: rpm_gpdb6_centos6
+          trigger: true
+        - get: ccp_src
+        - get: terraform.d
+          params:
+            unpack: true
+        # FIXME: this is not guaranteed to be the same dump generated by the
+        # above binary...
+        - get: sqldump
+          resource: gpdb5_icw_planner_centos6_dump
+    - put: terraform
+      params:
+        <<: *ccp_default_params
+        vars:
+          standby_master: true
+          instance_type: n1-standard-2
+          number_of_nodes: 4
+          PLATFORM: centos6
+          # Decrease the reap time from the default of 8 hours now that there are
+          # both centos6 and centos7 jobs in order to not overload concourse.
+          ccp_reap_minutes: 180
+    - task: gen_source_cluster
+      file: ccp_src/ci/tasks/gen_cluster.yml
+      params:
+        <<: *ccp_gen_cluster_default_params
+        PLATFORM: centos6
+        GPDB_RPM: true
+      input_mapping:
+        gpdb_rpm: rpm_gpdb_source
+    - task: gpinitsystem_source_cluster
+      file: ccp_src/ci/tasks/gpinitsystem.yml
+    - task: prepare_installation
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: alpine
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: cluster_env_files
+          - name: rpm_enterprise
+          - name: rpm_gpdb_target
+        run:
+          path: gpupgrade_src/ci/scripts/prepare-installation.sh
+          args:
+            - greenplum-db-5
+            - greenplum-db-6
+    - task: load_dump
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: ccp_src
+          - name: cluster_env_files
+          - name: gpupgrade_src
+          - name: sqldump
+        run:
+          path: gpupgrade_src/ci/scripts/load-dump.bash
+    - task: upgrade_cluster
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: ccp_src
+          - name: cluster_env_files
+          - name: gpupgrade_src
+        run:
+          path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
+      params:
+        FILTER_DIFF: 1
+    - task: validate_mirrors_and_standby
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: ccp_src
+          - name: cluster_env_files
+        run:
+          path: bash
+          args:
+            - -c
+            - |
+              set -eux -o pipefail
+
+              ./ccp_src/scripts/setup_ssh_to_cluster.sh
+
+              # Load the finalize test library.
+              source gpupgrade_src/test/acceptance/helpers/finalize_checks.bash
+
+              echo 'Doing failover tests of mirrors and standby...'
+              validate_mirrors_and_standby /usr/local/greenplum-db-target mdw 5432
+  ensure:
+    <<: *set_failed
+  on_success:
+    <<: *ccp_destroy
+  on_failure:
+    <<: *slack_alert
+
+- name: 5-to-6-centos-7
+  serial_groups: [5-to-6]
+  # Specifying serial groups so that only one platform runs at a time. For
+  # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
+  # will prevent concourse from becoming overloaded.
+  plan:
+    - in_parallel:
+        - get: rpm_enterprise
+          trigger: true
+          passed: [ build ]
+        - get: gpupgrade_src
+          passed: [ build ]
+        - get: rpm_gpdb_source
+          resource: rpm_gpdb5_centos7
+          trigger: true
+        - get: rpm_gpdb_target
+          resource: rpm_gpdb6_centos7
+          trigger: true
+        - get: ccp_src
+        - get: terraform.d
+          params:
+            unpack: true
+        # FIXME: this is not guaranteed to be the same dump generated by the
+        # above binary...
+        - get: sqldump
+          resource: gpdb5_icw_planner_centos6_dump
+    - put: terraform
+      params:
+        <<: *ccp_default_params
+        vars:
+          standby_master: true
+          instance_type: n1-standard-2
+          number_of_nodes: 4
+          PLATFORM: centos7
+          # Decrease the reap time from the default of 8 hours now that there are
+          # both centos6 and centos7 jobs in order to not overload concourse.
+          ccp_reap_minutes: 180
+    - task: gen_source_cluster
+      file: ccp_src/ci/tasks/gen_cluster.yml
+      params:
+        <<: *ccp_gen_cluster_default_params
+        PLATFORM: centos7
+        GPDB_RPM: true
+      input_mapping:
+        gpdb_rpm: rpm_gpdb_source
+    - task: gpinitsystem_source_cluster
+      file: ccp_src/ci/tasks/gpinitsystem.yml
+    - task: prepare_installation
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: alpine
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: cluster_env_files
+          - name: rpm_enterprise
+          - name: rpm_gpdb_target
+        run:
+          path: gpupgrade_src/ci/scripts/prepare-installation.sh
+          args:
+            - greenplum-db-5
+            - greenplum-db-6
+    - task: load_dump
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: ccp_src
+          - name: cluster_env_files
+          - name: gpupgrade_src
+          - name: sqldump
+        run:
+          path: gpupgrade_src/ci/scripts/load-dump.bash
+    - task: upgrade_cluster
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: ccp_src
+          - name: cluster_env_files
+          - name: gpupgrade_src
+        run:
+          path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
+      params:
+        FILTER_DIFF: 1
+    - task: validate_mirrors_and_standby
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: ccp_src
+          - name: cluster_env_files
+        run:
+          path: bash
+          args:
+            - -c
+            - |
+              set -eux -o pipefail
+
+              ./ccp_src/scripts/setup_ssh_to_cluster.sh
+
+              # Load the finalize test library.
+              source gpupgrade_src/test/acceptance/helpers/finalize_checks.bash
+
+              echo 'Doing failover tests of mirrors and standby...'
+              validate_mirrors_and_standby /usr/local/greenplum-db-target mdw 5432
+  ensure:
+    <<: *set_failed
+  on_success:
+    <<: *ccp_destroy
+  on_failure:
+    <<: *slack_alert
+
+- name: 5-to-6-link-mode-centos-6
+  serial_groups: [5-to-6-link-mode]
+  # Specifying serial groups so that only one platform runs at a time. For
+  # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
+  # will prevent concourse from becoming overloaded.
+  plan:
+    - in_parallel:
+        - get: rpm_enterprise
+          trigger: true
+          passed: [ build ]
+        - get: gpupgrade_src
+          passed: [ build ]
+        - get: rpm_gpdb_source
+          resource: rpm_gpdb5_centos6
+          trigger: true
+        - get: rpm_gpdb_target
+          resource: rpm_gpdb6_centos6
+          trigger: true
+        - get: ccp_src
+        - get: terraform.d
+          params:
+            unpack: true
+        # FIXME: this is not guaranteed to be the same dump generated by the
+        # above binary...
+        - get: sqldump
+          resource: gpdb5_icw_planner_centos6_dump
+    - put: terraform
+      params:
+        <<: *ccp_default_params
+        vars:
+          standby_master: true
+          instance_type: n1-standard-2
+          number_of_nodes: 4
+          PLATFORM: centos6
+          # Decrease the reap time from the default of 8 hours now that there are
+          # both centos6 and centos7 jobs in order to not overload concourse.
+          ccp_reap_minutes: 180
+    - task: gen_source_cluster
+      file: ccp_src/ci/tasks/gen_cluster.yml
+      params:
+        <<: *ccp_gen_cluster_default_params
+        PLATFORM: centos6
+        GPDB_RPM: true
+      input_mapping:
+        gpdb_rpm: rpm_gpdb_source
+    - task: gpinitsystem_source_cluster
+      file: ccp_src/ci/tasks/gpinitsystem.yml
+    - task: prepare_installation
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: alpine
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: cluster_env_files
+          - name: rpm_enterprise
+          - name: rpm_gpdb_target
+        run:
+          path: gpupgrade_src/ci/scripts/prepare-installation.sh
+          args:
+            - greenplum-db-5
+            - greenplum-db-6
+    - task: load_dump
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: ccp_src
+          - name: cluster_env_files
+          - name: gpupgrade_src
+          - name: sqldump
+        run:
+          path: gpupgrade_src/ci/scripts/load-dump.bash
+    - task: upgrade_cluster
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: ccp_src
+          - name: cluster_env_files
+          - name: gpupgrade_src
+        run:
+          path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
+      params:
+        FILTER_DIFF: 1
+        USE_LINK_MODE: 1
+    - task: validate_mirrors_and_standby
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: ccp_src
+          - name: cluster_env_files
+        run:
+          path: bash
+          args:
+            - -c
+            - |
+              set -eux -o pipefail
+
+              ./ccp_src/scripts/setup_ssh_to_cluster.sh
+
+              # Load the finalize test library.
+              source gpupgrade_src/test/acceptance/helpers/finalize_checks.bash
+
+              echo 'Doing failover tests of mirrors and standby...'
+              validate_mirrors_and_standby /usr/local/greenplum-db-target mdw 5432
+  ensure:
+    <<: *set_failed
+  on_success:
+    <<: *ccp_destroy
+  on_failure:
+    <<: *slack_alert
+
+- name: 5-to-6-primaries-only-centos-6
+  serial_groups: [5-to-6-primaries-only]
+  # Specifying serial groups so that only one platform runs at a time. For
+  # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
+  # will prevent concourse from becoming overloaded.
+  plan:
+    - in_parallel:
+        - get: rpm_enterprise
+          trigger: true
+          passed: [ build ]
+        - get: gpupgrade_src
+          passed: [ build ]
+        - get: rpm_gpdb_source
+          resource: rpm_gpdb5_centos6
+          trigger: true
+        - get: rpm_gpdb_target
+          resource: rpm_gpdb6_centos6
+          trigger: true
+        - get: ccp_src
+        - get: terraform.d
+          params:
+            unpack: true
+        # FIXME: this is not guaranteed to be the same dump generated by the
+        # above binary...
+        - get: sqldump
+          resource: gpdb5_icw_planner_centos6_dump
+    - put: terraform
+      params:
+        <<: *ccp_default_params
+        vars:
+          mirrors: false
+          instance_type: n1-standard-2
+          number_of_nodes: 4
+          PLATFORM: centos6
+          # Decrease the reap time from the default of 8 hours now that there are
+          # both centos6 and centos7 jobs in order to not overload concourse.
+          ccp_reap_minutes: 180
+    - task: gen_source_cluster
+      file: ccp_src/ci/tasks/gen_cluster.yml
+      params:
+        <<: *ccp_gen_cluster_default_params
+        PLATFORM: centos6
+        GPDB_RPM: true
+      input_mapping:
+        gpdb_rpm: rpm_gpdb_source
+    - task: gpinitsystem_source_cluster
+      file: ccp_src/ci/tasks/gpinitsystem.yml
+    - task: prepare_installation
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: alpine
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: cluster_env_files
+          - name: rpm_enterprise
+          - name: rpm_gpdb_target
+        run:
+          path: gpupgrade_src/ci/scripts/prepare-installation.sh
+          args:
+            - greenplum-db-5
+            - greenplum-db-6
+    - task: load_dump
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: ccp_src
+          - name: cluster_env_files
+          - name: gpupgrade_src
+          - name: sqldump
+        run:
+          path: gpupgrade_src/ci/scripts/load-dump.bash
+    - task: upgrade_cluster
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: ccp_src
+          - name: cluster_env_files
+          - name: gpupgrade_src
+        run:
+          path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
+      params:
+        FILTER_DIFF: 1
+  ensure:
+    <<: *set_failed
+  on_success:
+    <<: *ccp_destroy
+  on_failure:
+    <<: *slack_alert
+
+- name: 5-to-6-no-standby-centos-6
+  serial_groups: [5-to-6-no-standby]
+  # Specifying serial groups so that only one platform runs at a time. For
+  # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
+  # will prevent concourse from becoming overloaded.
+  plan:
+    - in_parallel:
+        - get: rpm_enterprise
+          trigger: true
+          passed: [ build ]
+        - get: gpupgrade_src
+          passed: [ build ]
+        - get: rpm_gpdb_source
+          resource: rpm_gpdb5_centos6
+          trigger: true
+        - get: rpm_gpdb_target
+          resource: rpm_gpdb6_centos6
+          trigger: true
+        - get: ccp_src
+        - get: terraform.d
+          params:
+            unpack: true
+        # FIXME: this is not guaranteed to be the same dump generated by the
+        # above binary...
+        - get: sqldump
+          resource: gpdb5_icw_planner_centos6_dump
+    - put: terraform
+      params:
+        <<: *ccp_default_params
+        vars:
+          instance_type: n1-standard-2
+          number_of_nodes: 4
+          PLATFORM: centos6
+          # Decrease the reap time from the default of 8 hours now that there are
+          # both centos6 and centos7 jobs in order to not overload concourse.
+          ccp_reap_minutes: 180
+    - task: gen_source_cluster
+      file: ccp_src/ci/tasks/gen_cluster.yml
+      params:
+        <<: *ccp_gen_cluster_default_params
+        PLATFORM: centos6
+        GPDB_RPM: true
+      input_mapping:
+        gpdb_rpm: rpm_gpdb_source
+    - task: gpinitsystem_source_cluster
+      file: ccp_src/ci/tasks/gpinitsystem.yml
+    - task: prepare_installation
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: alpine
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: cluster_env_files
+          - name: rpm_enterprise
+          - name: rpm_gpdb_target
+        run:
+          path: gpupgrade_src/ci/scripts/prepare-installation.sh
+          args:
+            - greenplum-db-5
+            - greenplum-db-6
+    - task: load_dump
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: ccp_src
+          - name: cluster_env_files
+          - name: gpupgrade_src
+          - name: sqldump
+        run:
+          path: gpupgrade_src/ci/scripts/load-dump.bash
+    - task: upgrade_cluster
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: ccp_src
+          - name: cluster_env_files
+          - name: gpupgrade_src
+        run:
+          path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
+      params:
+        FILTER_DIFF: 1
+  ensure:
+    <<: *set_failed
+  on_success:
+    <<: *ccp_destroy
+  on_failure:
+    <<: *slack_alert
+
+- name: 5-to-6-retail-demo-centos-6
+  serial_groups: [5-to-6-retail-demo]
+  # Specifying serial groups so that only one platform runs at a time. For
+  # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
+  # will prevent concourse from becoming overloaded.
+  plan:
+    - in_parallel:
+        - get: rpm_enterprise
+          trigger: true
+          passed: [ build ]
+        - get: gpupgrade_src
+          passed: [ build ]
+        - get: rpm_gpdb_source
+          resource: rpm_gpdb5_centos6
+          trigger: true
+        - get: rpm_gpdb_target
+          resource: rpm_gpdb6_centos6
+          trigger: true
+        - get: ccp_src
+        - get: terraform.d
+          params:
+            unpack: true
+        - get: retail_demo_src
+    - put: terraform
+      params:
+        <<: *ccp_default_params
+        vars:
+          standby_master: true
+          instance_type: n1-standard-2
+          number_of_nodes: 4
+          PLATFORM: centos6
+          # Decrease the reap time from the default of 8 hours now that there are
+          # both centos6 and centos7 jobs in order to not overload concourse.
+          ccp_reap_minutes: 180
+    - task: gen_source_cluster
+      file: ccp_src/ci/tasks/gen_cluster.yml
+      params:
+        <<: *ccp_gen_cluster_default_params
+        PLATFORM: centos6
+        GPDB_RPM: true
+      input_mapping:
+        gpdb_rpm: rpm_gpdb_source
+    - task: gpinitsystem_source_cluster
+      file: ccp_src/ci/tasks/gpinitsystem.yml
+    - task: prepare_installation
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: alpine
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: cluster_env_files
+          - name: rpm_enterprise
+          - name: rpm_gpdb_target
+        run:
+          path: gpupgrade_src/ci/scripts/prepare-installation.sh
+          args:
+            - greenplum-db-5
+            - greenplum-db-6
+    - task: load_retail_data
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: retail_demo_src
+          - name: ccp_src
+          - name: cluster_env_files
+        run:
+          path: gpupgrade_src/ci/scripts/load-retail-data.bash
+    - task: upgrade_cluster
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: ccp_src
+          - name: cluster_env_files
+          - name: gpupgrade_src
+        run:
+          path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
+      params:
+        FILTER_DIFF: 1
+        DIFF_FILE: retail_demo.diff
+    - task: validate_mirrors_and_standby
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: ccp_src
+          - name: cluster_env_files
+        run:
+          path: bash
+          args:
+            - -c
+            - |
+              set -eux -o pipefail
+
+              ./ccp_src/scripts/setup_ssh_to_cluster.sh
+
+              # Load the finalize test library.
+              source gpupgrade_src/test/acceptance/helpers/finalize_checks.bash
+
+              echo 'Doing failover tests of mirrors and standby...'
+              validate_mirrors_and_standby /usr/local/greenplum-db-target mdw 5432
+  ensure:
+    <<: *set_failed
+  on_success:
+    <<: *ccp_destroy
+  on_failure:
+    <<: *slack_alert
+
+- name: 5-to-6-link-mode-centos-7
+  serial_groups: [5-to-6-link-mode]
+  # Specifying serial groups so that only one platform runs at a time. For
+  # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
+  # will prevent concourse from becoming overloaded.
+  plan:
+    - in_parallel:
+        - get: rpm_enterprise
+          trigger: true
+          passed: [ build ]
+        - get: gpupgrade_src
+          passed: [ build ]
+        - get: rpm_gpdb_source
+          resource: rpm_gpdb5_centos7
+          trigger: true
+        - get: rpm_gpdb_target
+          resource: rpm_gpdb6_centos7
+          trigger: true
+        - get: ccp_src
+        - get: terraform.d
+          params:
+            unpack: true
+        # FIXME: this is not guaranteed to be the same dump generated by the
+        # above binary...
+        - get: sqldump
+          resource: gpdb5_icw_planner_centos6_dump
+    - put: terraform
+      params:
+        <<: *ccp_default_params
+        vars:
+          standby_master: true
+          instance_type: n1-standard-2
+          number_of_nodes: 4
+          PLATFORM: centos7
+          # Decrease the reap time from the default of 8 hours now that there are
+          # both centos6 and centos7 jobs in order to not overload concourse.
+          ccp_reap_minutes: 180
+    - task: gen_source_cluster
+      file: ccp_src/ci/tasks/gen_cluster.yml
+      params:
+        <<: *ccp_gen_cluster_default_params
+        PLATFORM: centos7
+        GPDB_RPM: true
+      input_mapping:
+        gpdb_rpm: rpm_gpdb_source
+    - task: gpinitsystem_source_cluster
+      file: ccp_src/ci/tasks/gpinitsystem.yml
+    - task: prepare_installation
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: alpine
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: cluster_env_files
+          - name: rpm_enterprise
+          - name: rpm_gpdb_target
+        run:
+          path: gpupgrade_src/ci/scripts/prepare-installation.sh
+          args:
+            - greenplum-db-5
+            - greenplum-db-6
+    - task: load_dump
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: ccp_src
+          - name: cluster_env_files
+          - name: gpupgrade_src
+          - name: sqldump
+        run:
+          path: gpupgrade_src/ci/scripts/load-dump.bash
+    - task: upgrade_cluster
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: ccp_src
+          - name: cluster_env_files
+          - name: gpupgrade_src
+        run:
+          path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
+      params:
+        FILTER_DIFF: 1
+        USE_LINK_MODE: 1
+    - task: validate_mirrors_and_standby
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: ccp_src
+          - name: cluster_env_files
+        run:
+          path: bash
+          args:
+            - -c
+            - |
+              set -eux -o pipefail
+
+              ./ccp_src/scripts/setup_ssh_to_cluster.sh
+
+              # Load the finalize test library.
+              source gpupgrade_src/test/acceptance/helpers/finalize_checks.bash
+
+              echo 'Doing failover tests of mirrors and standby...'
+              validate_mirrors_and_standby /usr/local/greenplum-db-target mdw 5432
+  ensure:
+    <<: *set_failed
+  on_success:
+    <<: *ccp_destroy
+  on_failure:
+    <<: *slack_alert
+
+- name: 5-to-6-primaries-only-centos-7
+  serial_groups: [5-to-6-primaries-only]
+  # Specifying serial groups so that only one platform runs at a time. For
+  # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
+  # will prevent concourse from becoming overloaded.
+  plan:
+    - in_parallel:
+        - get: rpm_enterprise
+          trigger: true
+          passed: [ build ]
+        - get: gpupgrade_src
+          passed: [ build ]
+        - get: rpm_gpdb_source
+          resource: rpm_gpdb5_centos7
+          trigger: true
+        - get: rpm_gpdb_target
+          resource: rpm_gpdb6_centos7
+          trigger: true
+        - get: ccp_src
+        - get: terraform.d
+          params:
+            unpack: true
+        # FIXME: this is not guaranteed to be the same dump generated by the
+        # above binary...
+        - get: sqldump
+          resource: gpdb5_icw_planner_centos6_dump
+    - put: terraform
+      params:
+        <<: *ccp_default_params
+        vars:
+          mirrors: false
+          instance_type: n1-standard-2
+          number_of_nodes: 4
+          PLATFORM: centos7
+          # Decrease the reap time from the default of 8 hours now that there are
+          # both centos6 and centos7 jobs in order to not overload concourse.
+          ccp_reap_minutes: 180
+    - task: gen_source_cluster
+      file: ccp_src/ci/tasks/gen_cluster.yml
+      params:
+        <<: *ccp_gen_cluster_default_params
+        PLATFORM: centos7
+        GPDB_RPM: true
+      input_mapping:
+        gpdb_rpm: rpm_gpdb_source
+    - task: gpinitsystem_source_cluster
+      file: ccp_src/ci/tasks/gpinitsystem.yml
+    - task: prepare_installation
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: alpine
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: cluster_env_files
+          - name: rpm_enterprise
+          - name: rpm_gpdb_target
+        run:
+          path: gpupgrade_src/ci/scripts/prepare-installation.sh
+          args:
+            - greenplum-db-5
+            - greenplum-db-6
+    - task: load_dump
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: ccp_src
+          - name: cluster_env_files
+          - name: gpupgrade_src
+          - name: sqldump
+        run:
+          path: gpupgrade_src/ci/scripts/load-dump.bash
+    - task: upgrade_cluster
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: ccp_src
+          - name: cluster_env_files
+          - name: gpupgrade_src
+        run:
+          path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
+      params:
+        FILTER_DIFF: 1
+  ensure:
+    <<: *set_failed
+  on_success:
+    <<: *ccp_destroy
+  on_failure:
+    <<: *slack_alert
+
+- name: 5-to-6-no-standby-centos-7
+  serial_groups: [5-to-6-no-standby]
+  # Specifying serial groups so that only one platform runs at a time. For
+  # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
+  # will prevent concourse from becoming overloaded.
+  plan:
+    - in_parallel:
+        - get: rpm_enterprise
+          trigger: true
+          passed: [ build ]
+        - get: gpupgrade_src
+          passed: [ build ]
+        - get: rpm_gpdb_source
+          resource: rpm_gpdb5_centos7
+          trigger: true
+        - get: rpm_gpdb_target
+          resource: rpm_gpdb6_centos7
+          trigger: true
+        - get: ccp_src
+        - get: terraform.d
+          params:
+            unpack: true
+        # FIXME: this is not guaranteed to be the same dump generated by the
+        # above binary...
+        - get: sqldump
+          resource: gpdb5_icw_planner_centos6_dump
+    - put: terraform
+      params:
+        <<: *ccp_default_params
+        vars:
+          instance_type: n1-standard-2
+          number_of_nodes: 4
+          PLATFORM: centos7
+          # Decrease the reap time from the default of 8 hours now that there are
+          # both centos6 and centos7 jobs in order to not overload concourse.
+          ccp_reap_minutes: 180
+    - task: gen_source_cluster
+      file: ccp_src/ci/tasks/gen_cluster.yml
+      params:
+        <<: *ccp_gen_cluster_default_params
+        PLATFORM: centos7
+        GPDB_RPM: true
+      input_mapping:
+        gpdb_rpm: rpm_gpdb_source
+    - task: gpinitsystem_source_cluster
+      file: ccp_src/ci/tasks/gpinitsystem.yml
+    - task: prepare_installation
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: alpine
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: cluster_env_files
+          - name: rpm_enterprise
+          - name: rpm_gpdb_target
+        run:
+          path: gpupgrade_src/ci/scripts/prepare-installation.sh
+          args:
+            - greenplum-db-5
+            - greenplum-db-6
+    - task: load_dump
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: ccp_src
+          - name: cluster_env_files
+          - name: gpupgrade_src
+          - name: sqldump
+        run:
+          path: gpupgrade_src/ci/scripts/load-dump.bash
+    - task: upgrade_cluster
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: ccp_src
+          - name: cluster_env_files
+          - name: gpupgrade_src
+        run:
+          path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
+      params:
+        FILTER_DIFF: 1
+  ensure:
+    <<: *set_failed
+  on_success:
+    <<: *ccp_destroy
+  on_failure:
+    <<: *slack_alert
+
+- name: 5-to-6-retail-demo-centos-7
+  serial_groups: [5-to-6-retail-demo]
+  # Specifying serial groups so that only one platform runs at a time. For
+  # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
+  # will prevent concourse from becoming overloaded.
+  plan:
+    - in_parallel:
+        - get: rpm_enterprise
+          trigger: true
+          passed: [ build ]
+        - get: gpupgrade_src
+          passed: [ build ]
+        - get: rpm_gpdb_source
+          resource: rpm_gpdb5_centos7
+          trigger: true
+        - get: rpm_gpdb_target
+          resource: rpm_gpdb6_centos7
+          trigger: true
+        - get: ccp_src
+        - get: terraform.d
+          params:
+            unpack: true
+        - get: retail_demo_src
+    - put: terraform
+      params:
+        <<: *ccp_default_params
+        vars:
+          standby_master: true
+          instance_type: n1-standard-2
+          number_of_nodes: 4
+          PLATFORM: centos7
+          # Decrease the reap time from the default of 8 hours now that there are
+          # both centos6 and centos7 jobs in order to not overload concourse.
+          ccp_reap_minutes: 180
+    - task: gen_source_cluster
+      file: ccp_src/ci/tasks/gen_cluster.yml
+      params:
+        <<: *ccp_gen_cluster_default_params
+        PLATFORM: centos7
+        GPDB_RPM: true
+      input_mapping:
+        gpdb_rpm: rpm_gpdb_source
+    - task: gpinitsystem_source_cluster
+      file: ccp_src/ci/tasks/gpinitsystem.yml
+    - task: prepare_installation
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: alpine
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: cluster_env_files
+          - name: rpm_enterprise
+          - name: rpm_gpdb_target
+        run:
+          path: gpupgrade_src/ci/scripts/prepare-installation.sh
+          args:
+            - greenplum-db-5
+            - greenplum-db-6
+    - task: load_retail_data
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: retail_demo_src
+          - name: ccp_src
+          - name: cluster_env_files
+        run:
+          path: gpupgrade_src/ci/scripts/load-retail-data.bash
+    - task: upgrade_cluster
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: ccp_src
+          - name: cluster_env_files
+          - name: gpupgrade_src
+        run:
+          path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
+      params:
+        FILTER_DIFF: 1
+        DIFF_FILE: retail_demo.diff
+    - task: validate_mirrors_and_standby
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: ccp_src
+          - name: cluster_env_files
+        run:
+          path: bash
+          args:
+            - -c
+            - |
+              set -eux -o pipefail
+
+              ./ccp_src/scripts/setup_ssh_to_cluster.sh
+
+              # Load the finalize test library.
+              source gpupgrade_src/test/acceptance/helpers/finalize_checks.bash
+
+              echo 'Doing failover tests of mirrors and standby...'
+              validate_mirrors_and_standby /usr/local/greenplum-db-target mdw 5432
+  ensure:
+    <<: *set_failed
+  on_success:
+    <<: *ccp_destroy
+  on_failure:
+    <<: *slack_alert
 - name: publish-release-candidate
   plan:
     - in_parallel:
-      - get: gpupgrade_src
-        trigger: true
-        passed:
-          - build
-          - noinstall-tests
-          - 6-to-6-install-tests
-          - 5-to-6-install-tests
-          - 5-to-6-pg-upgrade-tests-centos-6
-          - 5-to-6-pg-upgrade-tests-centos-7
-          - 6-to-6-centos-6
-          - 6-to-6-centos-7
-          - 5-to-6-centos-6
-          - 5-to-6-centos-7
-          - 5-to-6-link-mode-centos-6
-          - 5-to-6-primaries-only-centos-6
-          - 5-to-6-no-standby-centos-6
-          - 5-to-6-retail-demo-centos-6
-          - 5-to-6-link-mode-centos-7
-          - 5-to-6-primaries-only-centos-7
-          - 5-to-6-no-standby-centos-7
-          - 5-to-6-retail-demo-centos-7
-          - 6-to-6-multihost-gpupgrade-centos-6
-          - 6-to-6-multihost-gpupgrade-centos-7
-          - 5-to-6-multihost-gpupgrade-centos-6
-          - 5-to-6-multihost-gpupgrade-centos-7
-      - get: rpm_enterprise
-        passed:
-          - build
-          - 6-to-6-centos-6
-          - 6-to-6-centos-7
-          - 5-to-6-centos-6
-          - 5-to-6-centos-7
-          - 5-to-6-link-mode-centos-6
-          - 5-to-6-primaries-only-centos-6
-          - 5-to-6-no-standby-centos-6
-          - 5-to-6-retail-demo-centos-6
-          - 5-to-6-link-mode-centos-7
-          - 5-to-6-primaries-only-centos-7
-          - 5-to-6-no-standby-centos-7
-          - 5-to-6-retail-demo-centos-7
-          - 5-to-6-pg-upgrade-tests-centos-6
-          - 5-to-6-pg-upgrade-tests-centos-7
-          - 6-to-6-multihost-gpupgrade-centos-6
-          - 6-to-6-multihost-gpupgrade-centos-7
-          - 5-to-6-multihost-gpupgrade-centos-6
-          - 5-to-6-multihost-gpupgrade-centos-7
-      - get: rpm_oss
-        passed:
-          - build
+        - get: gpupgrade_src
+          trigger: true
+          passed:
+            - build
+            - noinstall-tests
+            - 6-to-6-install-tests
+            - 5-to-6-install-tests
+            - 5-to-6-pg-upgrade-tests-centos-6
+            - 5-to-6-pg-upgrade-tests-centos-7
+            - 6-to-6-centos-6
+            - 6-to-6-centos-7
+            - 5-to-6-centos-6
+            - 5-to-6-centos-7
+            - 5-to-6-link-mode-centos-6
+            - 5-to-6-primaries-only-centos-6
+            - 5-to-6-no-standby-centos-6
+            - 5-to-6-retail-demo-centos-6
+            - 5-to-6-link-mode-centos-7
+            - 5-to-6-primaries-only-centos-7
+            - 5-to-6-no-standby-centos-7
+            - 5-to-6-retail-demo-centos-7
+            - 6-to-6-multihost-gpupgrade-centos-6
+            - 6-to-6-multihost-gpupgrade-centos-7
+            - 5-to-6-multihost-gpupgrade-centos-6
+            - 5-to-6-multihost-gpupgrade-centos-7
+        - get: rpm_enterprise
+          passed:
+            - build
+            - 6-to-6-centos-6
+            - 6-to-6-centos-7
+            - 5-to-6-centos-6
+            - 5-to-6-centos-7
+            - 5-to-6-link-mode-centos-6
+            - 5-to-6-primaries-only-centos-6
+            - 5-to-6-no-standby-centos-6
+            - 5-to-6-retail-demo-centos-6
+            - 5-to-6-link-mode-centos-7
+            - 5-to-6-primaries-only-centos-7
+            - 5-to-6-no-standby-centos-7
+            - 5-to-6-retail-demo-centos-7
+            - 5-to-6-pg-upgrade-tests-centos-6
+            - 5-to-6-pg-upgrade-tests-centos-7
+            - 6-to-6-multihost-gpupgrade-centos-6
+            - 6-to-6-multihost-gpupgrade-centos-7
+            - 5-to-6-multihost-gpupgrade-centos-6
+            - 5-to-6-multihost-gpupgrade-centos-7
+        - get: rpm_oss
+          passed:
+            - build
     - task: add-semver
       config:
         platform: linux
@@ -2389,11 +2387,11 @@ jobs:
         run:
           path: gpupgrade_src/ci/scripts/add-semver.bash
     - in_parallel:
-      - put: rpm_oss_rc
-        params:
-          file: renamed_rpm_oss/gpupgrade-*.rpm
-      - put: rpm_enterprise_rc
-        params:
-          file: renamed_rpm_enterprise/gpupgrade-*.rpm
+        - put: rpm_oss_rc
+          params:
+            file: renamed_rpm_oss/gpupgrade-*.rpm
+        - put: rpm_enterprise_rc
+          params:
+            file: renamed_rpm_enterprise/gpupgrade-*.rpm
   on_failure:
     <<: *slack_alert

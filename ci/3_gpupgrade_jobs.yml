@@ -1,0 +1,62 @@
+- name: noinstall-tests
+  plan:
+    - in_parallel:
+        - get: gpupgrade_src
+          trigger: true
+        - get: bats
+        - get: gpdb_src_source
+          resource: gpdb5_src
+    - task: noinstall-tests
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: bats
+          - name: gpdb_src_source
+        run:
+          path: gpupgrade_src/ci/scripts/noinstall-tests.bash
+  on_failure:
+    <<: *slack_alert
+
+{{range .GpupgradeJobs}}
+- name: {{.Name}}
+  plan:
+    - in_parallel:
+        - get: gpupgrade_src
+          trigger: true
+        - get: gpdb_src_source
+          resource: gpdb{{.Source}}_src
+        - get: bats
+        - get: rpm_gpdb_source
+          resource: rpm_gpdb{{.Source}}_centos7
+          trigger: true
+        - get: rpm_gpdb_target
+          resource: rpm_gpdb{{.Target}}_centos7
+          trigger: true
+    - task: install-tests
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: gpdb_src_source
+          - name: rpm_gpdb_source
+          - name: rpm_gpdb_target
+          - name: bats
+        run:
+          path: gpupgrade_src/ci/scripts/install-tests.bash
+      params:
+        SOURCE_PACKAGE: greenplum-db-{{.Source}}
+        TARGET_PACKAGE: greenplum-db-{{.Target}}
+  on_failure:
+    <<: *slack_alert
+{{end -}}

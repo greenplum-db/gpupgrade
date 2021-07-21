@@ -208,7 +208,13 @@ set-pipeline: export 6X_GIT_BRANCH=${6X_GIT_BRANCH:-}
 set-pipeline: export 7X_GIT_USER=${7X_GIT_USER:-}
 set-pipeline: export 7X_GIT_BRANCH=${7X_GIT_BRANCH:-}
 set-pipeline:
-	# Keep pipeline.yml up to date
+	cat ci/1_resources_anchors_groups.yml \
+		ci/2_build_lint.yml \
+		ci/3_gpupgrade_jobs.yml  \
+		ci/4_pg_upgrade_jobs.yml  \
+		ci/5_multi_host_gpupgrade_jobs.yml \
+		ci/6_upgrade_and_functional_jobs.yml \
+		ci/7_publish_rc.yml > ci/generated/template.yml
 	go generate ./ci
 	#NOTE-- make sure your gpupgrade-git-remote uses an https style git"
 	#NOTE-- such as https://github.com/greenplum-db/gpupgrade.git"

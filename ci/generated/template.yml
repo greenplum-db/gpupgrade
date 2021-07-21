@@ -271,174 +271,261 @@ groups:
       - {{.Name}}
       {{- end}}
       {{- end}}
-
 jobs:
 - name: build
   plan:
-  - get: gpupgrade_src
-    trigger: true
-  - task: build
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source:
-          repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-          tag: latest
-      inputs:
-        - name: gpupgrade_src
-      outputs:
-        - name: built_oss
-        - name: built_enterprise
-      run:
-        path: gpupgrade_src/ci/scripts/build.bash
-  - in_parallel:
-    - put: rpm_oss
-      params:
-        file: built_oss/gpupgrade-*.rpm
-    - put: rpm_enterprise
-      params:
-        file: built_enterprise/gpupgrade-*.rpm
+    - get: gpupgrade_src
+      trigger: true
+    - task: build
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+        outputs:
+          - name: built_oss
+          - name: built_enterprise
+        run:
+          path: gpupgrade_src/ci/scripts/build.bash
+    - in_parallel:
+        - put: rpm_oss
+          params:
+            file: built_oss/gpupgrade-*.rpm
+        - put: rpm_enterprise
+          params:
+            file: built_enterprise/gpupgrade-*.rpm
   on_failure:
     <<: *slack_alert
 
 - name: lint
   plan:
-  - get: gpupgrade_src
-    trigger: true
-  - task: lint
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source:
-          repository: golangci/golangci-lint
-      inputs:
-        - name: gpupgrade_src
-      run:
-        path: bash
-        args:
-          - -c
-          - |
-            set -eux -o pipefail
-
-            cd gpupgrade_src
-            make lint
-  on_failure:
-    <<: *slack_alert
-
-- name: noinstall-tests
-  plan:
-  - in_parallel:
     - get: gpupgrade_src
       trigger: true
-    - get: bats
-    - get: gpdb_src_source
-      resource: gpdb5_src
-  - task: noinstall-tests
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source:
-          repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-          tag: latest
-      inputs:
-        - name: gpupgrade_src
-        - name: bats
-        - name: gpdb_src_source
-      run:
-        path: gpupgrade_src/ci/scripts/noinstall-tests.bash
+    - task: lint
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: golangci/golangci-lint
+        inputs:
+          - name: gpupgrade_src
+        run:
+          path: bash
+          args:
+            - -c
+            - |
+              set -eux -o pipefail
+
+              cd gpupgrade_src
+              make lint
+  on_failure:
+    <<: *slack_alert
+- name: noinstall-tests
+  plan:
+    - in_parallel:
+        - get: gpupgrade_src
+          trigger: true
+        - get: bats
+        - get: gpdb_src_source
+          resource: gpdb5_src
+    - task: noinstall-tests
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: bats
+          - name: gpdb_src_source
+        run:
+          path: gpupgrade_src/ci/scripts/noinstall-tests.bash
   on_failure:
     <<: *slack_alert
 
 {{range .GpupgradeJobs}}
 - name: {{.Name}}
   plan:
-  - in_parallel:
-    - get: gpupgrade_src
-      trigger: true
-    - get: gpdb_src_source
-      resource: gpdb{{.Source}}_src
-    - get: bats
-    - get: rpm_gpdb_source
-      resource: rpm_gpdb{{.Source}}_centos7
-      trigger: true
-    - get: rpm_gpdb_target
-      resource: rpm_gpdb{{.Target}}_centos7
-      trigger: true
-  - task: install-tests
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source:
-          repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-          tag: latest
-      inputs:
-        - name: gpupgrade_src
-        - name: gpdb_src_source
-        - name: rpm_gpdb_source
-        - name: rpm_gpdb_target
-        - name: bats
-      run:
-        path: gpupgrade_src/ci/scripts/install-tests.bash
-    params:
-      SOURCE_PACKAGE: greenplum-db-{{.Source}}
-      TARGET_PACKAGE: greenplum-db-{{.Target}}
+    - in_parallel:
+        - get: gpupgrade_src
+          trigger: true
+        - get: gpdb_src_source
+          resource: gpdb{{.Source}}_src
+        - get: bats
+        - get: rpm_gpdb_source
+          resource: rpm_gpdb{{.Source}}_centos7
+          trigger: true
+        - get: rpm_gpdb_target
+          resource: rpm_gpdb{{.Target}}_centos7
+          trigger: true
+    - task: install-tests
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: gpdb_src_source
+          - name: rpm_gpdb_source
+          - name: rpm_gpdb_target
+          - name: bats
+        run:
+          path: gpupgrade_src/ci/scripts/install-tests.bash
+      params:
+        SOURCE_PACKAGE: greenplum-db-{{.Source}}
+        TARGET_PACKAGE: greenplum-db-{{.Target}}
   on_failure:
     <<: *slack_alert
 {{end -}}
-
 {{range .PgupgradeJobs}}
 - name: {{.Name}}
   plan:
-  - in_parallel:
-    - get: rpm_enterprise
-      trigger: true
-      passed: [ build ]
-    - get: gpupgrade_src
-      passed: [ build ]
-    - get: gpdb_src_source
-      resource: gpdb{{.Source}}_src
-    - get: gpdb_src_target
-      resource: gpdb{{.Target}}_src
-    - get: bats
-    - get: rpm_gpdb_source
-      resource: rpm_gpdb{{.Source}}_centos{{.CentosVersion}}
-      trigger: true
-    - get: rpm_gpdb_target
-      resource: rpm_gpdb{{.Target}}_centos{{.CentosVersion}}
-      trigger: true
-  - task: pg-upgrade-tests
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source:
-          # NOTE: Since we build isolation2 the build image OS needs to match
-          # the GPDB target version we are testing.
-          repository: gcr.io/data-gpdb-public-images/gpdb{{.Target}}-centos{{.CentosVersion}}-test
-          tag: latest
-      inputs:
-        - name: rpm_enterprise
-        - name: gpupgrade_src
-        - name: gpdb_src_source
-        # Rename gpdb_src_target to gpdb_src since external scripts used within rely on that.
-        - name: gpdb_src_target
-          path: gpdb_src
-        - name: bats
-        - name: rpm_gpdb_source
-        - name: rpm_gpdb_target
-      run:
-        path: gpupgrade_src/ci/scripts/pg-upgrade-tests.bash
-    params:
-      SOURCE_PACKAGE: greenplum-db-{{.Source}}
-      TARGET_PACKAGE: greenplum-db-{{.Target}}
+    - in_parallel:
+        - get: rpm_enterprise
+          trigger: true
+          passed: [ build ]
+        - get: gpupgrade_src
+          passed: [ build ]
+        - get: gpdb_src_source
+          resource: gpdb{{.Source}}_src
+        - get: gpdb_src_target
+          resource: gpdb{{.Target}}_src
+        - get: bats
+        - get: rpm_gpdb_source
+          resource: rpm_gpdb{{.Source}}_centos{{.CentosVersion}}
+          trigger: true
+        - get: rpm_gpdb_target
+          resource: rpm_gpdb{{.Target}}_centos{{.CentosVersion}}
+          trigger: true
+    - task: pg-upgrade-tests
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            # NOTE: Since we build isolation2 the build image OS needs to match
+            # the GPDB target version we are testing.
+            repository: gcr.io/data-gpdb-public-images/gpdb{{.Target}}-centos{{.CentosVersion}}-test
+            tag: latest
+        inputs:
+          - name: rpm_enterprise
+          - name: gpupgrade_src
+          - name: gpdb_src_source
+          # Rename gpdb_src_target to gpdb_src since external scripts used within rely on that.
+          - name: gpdb_src_target
+            path: gpdb_src
+          - name: bats
+          - name: rpm_gpdb_source
+          - name: rpm_gpdb_target
+        run:
+          path: gpupgrade_src/ci/scripts/pg-upgrade-tests.bash
+      params:
+        SOURCE_PACKAGE: greenplum-db-{{.Source}}
+        TARGET_PACKAGE: greenplum-db-{{.Target}}
   on_failure:
     <<: *slack_alert
 {{end -}}
-
+{{range .MultihostGpupgradeJobs}}
+- name: {{ .Name }}
+  serial_groups: [{{ .BaseName }}]
+  # Specifying serial groups so that only one platform runs at a time. For
+  # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
+  # will prevent concourse from becoming overloaded.
+  plan:
+    - in_parallel:
+        - get: rpm_enterprise
+          trigger: true
+          passed: [ build ]
+        - get: gpupgrade_src
+          passed: [ build ]
+        - get: rpm_gpdb_source
+          resource: rpm_gpdb{{.Source}}_centos{{.CentosVersion}}
+          trigger: true
+        {{- if ne .Source .Target }}
+        - get: rpm_gpdb_target
+          resource: rpm_gpdb{{.Target}}_centos{{.CentosVersion}}
+          trigger: true
+        {{- end }}
+        - get: ccp_src
+        - get: terraform.d
+          params:
+            unpack: true
+        - get: bats
+    - put: terraform
+      params:
+        <<: *ccp_default_params
+        vars:
+          standby_master: true
+          instance_type: n1-standard-2
+          number_of_nodes: 4
+          PLATFORM: centos{{.CentosVersion}}
+          # Decrease the reap time from the default of 8 hours now that there are
+          # both centos6 and centos7 jobs in order to not overload concourse.
+          ccp_reap_minutes: 180
+    - task: gen_source_cluster
+      file: ccp_src/ci/tasks/gen_cluster.yml
+      params:
+        <<: *ccp_gen_cluster_default_params
+        PLATFORM: centos{{.CentosVersion}}
+        GPDB_RPM: true
+      input_mapping:
+        gpdb_rpm: rpm_gpdb_source
+    - task: gpinitsystem_source_cluster
+      file: ccp_src/ci/tasks/gpinitsystem.yml
+    - task: prepare_installation
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: alpine
+            tag: latest
+        inputs:
+          - name: gpupgrade_src
+          - name: cluster_env_files
+          - name: rpm_enterprise
+          {{- if ne .Source .Target }}
+          - name: rpm_gpdb_target
+          {{- end }}
+        run:
+          path: gpupgrade_src/ci/scripts/prepare-installation.sh
+          args:
+            - greenplum-db-{{majorVersion .Source}}
+            - greenplum-db-{{majorVersion .Target}}
+    - task: multihost_gpupgrade_tests
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            tag: latest
+        inputs:
+          - name: ccp_src
+          - name: cluster_env_files
+          - name: gpupgrade_src
+          - name: rpm_enterprise
+          - name: bats
+        run:
+          path: gpupgrade_src/ci/scripts/multihost-gpupgrade-tests.bash
+      params:
+  ensure:
+    <<: *set_failed
+  on_success:
+    <<: *ccp_destroy
+  on_failure:
+    <<: *slack_alert
+{{end -}}
 {{range .UpgradeJobs}}
 - name: {{ .Name }}
   serial_groups: [{{ .BaseName }}]
@@ -563,9 +650,9 @@ jobs:
             repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
             tag: latest
         inputs:
-        - name: ccp_src
-        - name: cluster_env_files
-        - name: gpupgrade_src
+          - name: ccp_src
+          - name: cluster_env_files
+          - name: gpupgrade_src
         run:
           path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
       params:
@@ -615,134 +702,41 @@ jobs:
   on_failure:
     <<: *slack_alert
 {{end -}}
-
-{{range .MultihostGpupgradeJobs}}
-- name: {{ .Name }}
-  serial_groups: [{{ .BaseName }}]
-  # Specifying serial groups so that only one platform runs at a time. For
-  # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
-  # will prevent concourse from becoming overloaded.
-  plan:
-    - in_parallel:
-        - get: rpm_enterprise
-          trigger: true
-          passed: [ build ]
-        - get: gpupgrade_src
-          passed: [ build ]
-        - get: rpm_gpdb_source
-          resource: rpm_gpdb{{.Source}}_centos{{.CentosVersion}}
-          trigger: true
-        {{- if ne .Source .Target }}
-        - get: rpm_gpdb_target
-          resource: rpm_gpdb{{.Target}}_centos{{.CentosVersion}}
-          trigger: true
-        {{- end }}
-        - get: ccp_src
-        - get: terraform.d
-          params:
-            unpack: true
-        - get: bats
-    - put: terraform
-      params:
-        <<: *ccp_default_params
-        vars:
-          standby_master: true
-          instance_type: n1-standard-2
-          number_of_nodes: 4
-          PLATFORM: centos{{.CentosVersion}}
-          # Decrease the reap time from the default of 8 hours now that there are
-          # both centos6 and centos7 jobs in order to not overload concourse.
-          ccp_reap_minutes: 180
-    - task: gen_source_cluster
-      file: ccp_src/ci/tasks/gen_cluster.yml
-      params:
-        <<: *ccp_gen_cluster_default_params
-        PLATFORM: centos{{.CentosVersion}}
-        GPDB_RPM: true
-      input_mapping:
-        gpdb_rpm: rpm_gpdb_source
-    - task: gpinitsystem_source_cluster
-      file: ccp_src/ci/tasks/gpinitsystem.yml
-    - task: prepare_installation
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: alpine
-            tag: latest
-        inputs:
-          - name: gpupgrade_src
-          - name: cluster_env_files
-          - name: rpm_enterprise
-          {{- if ne .Source .Target }}
-          - name: rpm_gpdb_target
-          {{- end }}
-        run:
-          path: gpupgrade_src/ci/scripts/prepare-installation.sh
-          args:
-            - greenplum-db-{{majorVersion .Source}}
-            - greenplum-db-{{majorVersion .Target}}
-    - task: multihost_gpupgrade_tests
-      config:
-        platform: linux
-        image_resource:
-          type: registry-image
-          source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
-            tag: latest
-        inputs:
-          - name: ccp_src
-          - name: cluster_env_files
-          - name: gpupgrade_src
-          - name: rpm_enterprise
-          - name: bats
-        run:
-          path: gpupgrade_src/ci/scripts/multihost-gpupgrade-tests.bash
-      params:
-  ensure:
-    <<: *set_failed
-  on_success:
-    <<: *ccp_destroy
-  on_failure:
-    <<: *slack_alert
-{{end -}}
-
 - name: publish-release-candidate
   plan:
     - in_parallel:
-      - get: gpupgrade_src
-        trigger: true
-        passed:
-          - build
-          - noinstall-tests
-          {{- range .GpupgradeJobs}}
-          - {{ .Name }}
-          {{- end}}
-          {{- range .PgupgradeJobs}}
-          - {{.Name}}
-          {{- end}}
-          {{- range .UpgradeJobs}}
-          - {{ .Name }}
-          {{- end}}
-          {{- range .MultihostGpupgradeJobs}}
-          - {{ .Name }}
-          {{- end}}
-      - get: rpm_enterprise
-        passed:
-          - build
-          {{- range .UpgradeJobs}}
-          - {{ .Name }}
-          {{- end}}
-          {{- range .PgupgradeJobs}}
-          - {{.Name}}
-          {{- end}}
-          {{- range .MultihostGpupgradeJobs}}
-          - {{ .Name }}
-          {{- end}}
-      - get: rpm_oss
-        passed:
-          - build
+        - get: gpupgrade_src
+          trigger: true
+          passed:
+            - build
+            - noinstall-tests
+            {{- range .GpupgradeJobs}}
+            - {{ .Name }}
+            {{- end}}
+            {{- range .PgupgradeJobs}}
+            - {{.Name}}
+            {{- end}}
+            {{- range .UpgradeJobs}}
+            - {{ .Name }}
+            {{- end}}
+            {{- range .MultihostGpupgradeJobs}}
+            - {{ .Name }}
+            {{- end}}
+        - get: rpm_enterprise
+          passed:
+            - build
+            {{- range .UpgradeJobs}}
+            - {{ .Name }}
+            {{- end}}
+            {{- range .PgupgradeJobs}}
+            - {{.Name}}
+            {{- end}}
+            {{- range .MultihostGpupgradeJobs}}
+            - {{ .Name }}
+            {{- end}}
+        - get: rpm_oss
+          passed:
+            - build
     - task: add-semver
       config:
         platform: linux
@@ -761,11 +755,11 @@ jobs:
         run:
           path: gpupgrade_src/ci/scripts/add-semver.bash
     - in_parallel:
-      - put: rpm_oss_rc
-        params:
-          file: renamed_rpm_oss/gpupgrade-*.rpm
-      - put: rpm_enterprise_rc
-        params:
-          file: renamed_rpm_enterprise/gpupgrade-*.rpm
+        - put: rpm_oss_rc
+          params:
+            file: renamed_rpm_oss/gpupgrade-*.rpm
+        - put: rpm_enterprise_rc
+          params:
+            file: renamed_rpm_enterprise/gpupgrade-*.rpm
   on_failure:
     <<: *slack_alert

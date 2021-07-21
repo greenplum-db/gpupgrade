@@ -1,0 +1,48 @@
+{{range .PgupgradeJobs}}
+- name: {{.Name}}
+  plan:
+    - in_parallel:
+        - get: rpm_enterprise
+          trigger: true
+          passed: [ build ]
+        - get: gpupgrade_src
+          passed: [ build ]
+        - get: gpdb_src_source
+          resource: gpdb{{.Source}}_src
+        - get: gpdb_src_target
+          resource: gpdb{{.Target}}_src
+        - get: bats
+        - get: rpm_gpdb_source
+          resource: rpm_gpdb{{.Source}}_centos{{.CentosVersion}}
+          trigger: true
+        - get: rpm_gpdb_target
+          resource: rpm_gpdb{{.Target}}_centos{{.CentosVersion}}
+          trigger: true
+    - task: pg-upgrade-tests
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            # NOTE: Since we build isolation2 the build image OS needs to match
+            # the GPDB target version we are testing.
+            repository: gcr.io/data-gpdb-public-images/gpdb{{.Target}}-centos{{.CentosVersion}}-test
+            tag: latest
+        inputs:
+          - name: rpm_enterprise
+          - name: gpupgrade_src
+          - name: gpdb_src_source
+          # Rename gpdb_src_target to gpdb_src since external scripts used within rely on that.
+          - name: gpdb_src_target
+            path: gpdb_src
+          - name: bats
+          - name: rpm_gpdb_source
+          - name: rpm_gpdb_target
+        run:
+          path: gpupgrade_src/ci/scripts/pg-upgrade-tests.bash
+      params:
+        SOURCE_PACKAGE: greenplum-db-{{.Source}}
+        TARGET_PACKAGE: greenplum-db-{{.Target}}
+  on_failure:
+    <<: *slack_alert
+{{end -}}

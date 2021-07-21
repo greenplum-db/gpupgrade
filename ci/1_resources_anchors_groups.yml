@@ -1,0 +1,273 @@
+---
+# Copyright (c) 2017-2021 VMware, Inc. or its affiliates
+# SPDX-License-Identifier: Apache-2.0
+
+resource_types:
+- name: gcs
+  type: registry-image
+  source:
+    repository: frodenas/gcs-resource
+
+- name: slack-notification
+  type: registry-image
+  source:
+    repository: cfcommunity/slack-notification-resource
+    tag: latest
+
+- name: terraform
+  type: registry-image
+  source:
+    repository: ljfranklin/terraform-resource
+    tag: 0.11.14
+
+resources:
+- name: gpupgrade_src
+  type: git
+  source:
+    uri: ((gpupgrade-git-remote))
+    branch: ((gpupgrade-git-branch))
+    fetch_tags: true
+
+{{range .AllVersions}}
+- name: gpdb{{.}}_src
+  type: git
+  source:
+    uri: https://github.com/greenplum-db/gpdb
+    branch: {{.}}X_STABLE
+{{end}}
+
+- name: retail_demo_src
+  type: git
+  source:
+    uri: ((retail-demo-git-remote))
+    private_key: ((retail-demo-git-key))
+    branch: ((retail-demo-git-branch))
+
+# gpupgrade tests with release candidates for the source and target version.
+# This allows for faster feedback for example when changes are made to
+# pg_upgrade. Specifically, the following scenario has occurred where a
+# pg_upgrade check was added requiring a function to be installed in both the
+# source and target clusters. In order to test this scenario release candidate
+# builds are needed.
+{{range .Versions}}
+- name: rpm_gpdb{{.GPVersion}}_centos{{.CentosVersion}}
+  type: gcs
+  source:
+    {{- if .TestRCIdentifier }}
+    # Test release candidate rpms built with --build-test-rc are published to the -dev bucket.
+    bucket: pivotal-gpdb-concourse-resources-dev
+    {{- else }}
+    # Test release candidate rpms built from production pipelines are published to the -prod bucket.
+    bucket: pivotal-gpdb-concourse-resources-prod
+    {{- end }}
+    json_key: ((concourse-gcs-resources-service-account-key))
+    regexp: server/published/gpdb{{ majorVersion .GPVersion }}/greenplum-db-{{.TestRCIdentifier}}({{escapeVersion .GPVersion}}.*)-rhel{{.CentosVersion}}-x86_64.debug.rpm
+{{end}}
+
+- name: rpm_oss
+  type: gcs
+  source:
+    bucket: ((cm-intermediates-bucket))
+    json_key: ((cm-gcs-service-account-key))
+    versioned_file: oss/gpupgrade-intermediate.el7.x86_64.rpm
+
+- name: rpm_enterprise
+  type: gcs
+  source:
+    bucket: ((cm-intermediates-bucket))
+    json_key: ((cm-gcs-service-account-key))
+    versioned_file: enterprise/gpupgrade-intermediate.el7.x86_64.rpm
+
+- name: rpm_oss_rc
+  type: gcs
+  source:
+    bucket: ((cm-artifacts-bucket))
+    json_key: ((cm-gcs-service-account-key))
+    regexp: release-candidates/oss/gpupgrade-(.*).rpm
+
+- name: rpm_enterprise_rc
+  type: gcs
+  source:
+    bucket: ((cm-artifacts-bucket))
+    json_key: ((cm-gcs-service-account-key))
+    regexp: release-candidates/enterprise/gpupgrade-(.*).rpm
+
+- name: bats
+  type: git
+  source:
+    uri: https://github.com/bats-core/bats-core
+    branch: master
+    tag_filter: v1.*
+
+- name: slack-alert
+  type: slack-notification
+  source:
+    url: ((cm_webhook_url))
+
+- name: ccp_src
+  type: git
+  source:
+    branch: ((ccp-git-branch))
+    private_key: ((ccp-git-key))
+    uri: ((ccp-git-remote))
+
+- name: terraform
+  type: terraform
+  source:
+    env:
+      AWS_ACCESS_KEY_ID: ((tf-machine-access-key-id))
+      AWS_SECRET_ACCESS_KEY: ((tf-machine-secret-access-key))
+      GOOGLE_CREDENTIALS: ((google-service-account-key))
+    vars:
+      project_id: ((google-project-id))
+    storage:
+      access_key_id: ((tf-machine-access-key-id))
+      secret_access_key: ((tf-machine-secret-access-key))
+      region_name: ((aws-region))
+      # This is not parameterized, on purpose. All tfstates will go to this spot,
+      # and different teams will place there clusters' tfstate files under different paths
+      bucket: gpdb5-pipeline-dynamic-terraform
+      bucket_path: clusters-google/
+
+- name: terraform.d
+  source:
+    access_key_id: ((bucket-access-key-id))
+    bucket: ccp-terraform-provider-plugins
+    region_name: ((aws-region))
+    secret_access_key: ((bucket-secret-access-key))
+    versioned_file: plugin-cache.tgz
+  type: s3
+
+- name: gpdb5_icw_planner_centos6_dump
+  type: gcs
+  source:
+    # FIXME: When flying a dev or prod pipeline we use the -dev or -prod bucket
+    # based on ccp_ci_secrets_$(FLY_TARGET).yml. However, for dev pipelines the
+    # -dev bucket does not have this artifact, causing all jobs that use this
+    # resource to hang. So for now hardcode it to the bucket with the artifact.
+    # bucket: ((gcs-bucket-intermediates))
+    bucket: pivotal-gpdb-concourse-resources-intermediates-prod
+    json_key: ((concourse-gcs-resources-service-account-key))
+    versioned_file: 5X_STABLE/icw_planner_centos6_dump/dump.sql.xz
+
+- name: dump_gpdb6_icw_gporca_centos6
+  type: gcs
+  source:
+    # FIXME: When flying a dev or prod pipeline we use the -dev or -prod bucket
+    # based on ccp_ci_secrets_$(FLY_TARGET).yml. However, for dev pipelines the
+    # -dev bucket does not have this artifact, causing all jobs that use this
+    # resource to hang. So for now hardcode it to the bucket with the artifact.
+    # bucket: ((gcs-bucket-intermediates))
+    bucket: pivotal-gpdb-concourse-resources-intermediates-prod
+    json_key: ((concourse-gcs-resources-service-account-key))
+    versioned_file: 6X_STABLE/icw_gporca_centos6_dump/dump.sql.xz
+
+anchors:
+  - &ccp_default_params
+    action: create
+    delete_on_failure: true
+    generate_random_name: true
+    plugin_dir: ../../terraform.d/plugin-cache/linux_amd64
+    terraform_source: ccp_src/google/
+
+  - &ccp_gen_cluster_default_params
+    AWS_ACCESS_KEY_ID: ((tf-machine-access-key-id))
+    AWS_SECRET_ACCESS_KEY: ((tf-machine-secret-access-key))
+    AWS_DEFAULT_REGION: ((aws-region))
+    BUCKET_PATH: clusters-google/
+    BUCKET_NAME: ((tf-bucket-name))
+    CLOUD_PROVIDER: google
+
+  - &ccp_destroy
+    put: terraform
+    params:
+      action: destroy
+      plugin_dir: ../../terraform.d/plugin-cache/linux_amd64
+      env_name_file: terraform/name
+      terraform_source: ccp_src/google/
+      vars:
+        aws_instance-node-instance_type: t2.micro #t2.micro is ignored in destroy, but aws_instance-node-instance_type is required.
+        aws_ebs_volume_type: standard
+    get_params:
+      action: destroy
+
+  - &set_failed
+    do:
+      - task: on_failure_set_failed
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: gcr.io/data-gpdb-public-images/ccp
+          inputs:
+            - name: ccp_src
+            - name: terraform
+          run:
+            path: ccp_src/google/ccp_failed_test.sh
+          params:
+            GOOGLE_CREDENTIALS: ((google-service-account-key))
+            GOOGLE_PROJECT_ID: ((google-project-id))
+            GOOGLE_ZONE: ((google-zone))
+            GOOGLE_SERVICE_ACCOUNT: ((google-service-account))
+            AWS_ACCESS_KEY_ID: ((tf-machine-access-key-id))
+            AWS_SECRET_ACCESS_KEY: ((tf-machine-secret-access-key))
+            AWS_DEFAULT_REGION: ((tf-machine-region))
+            BUCKET_PATH: clusters-google/
+            BUCKET_NAME: ((tf-bucket-name))
+
+  - &slack_alert
+    do:
+      - put: slack-alert
+        params:
+          text: |
+            Hey team, <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|gpupgrade/$BUILD_JOB_NAME> failed.
+
+groups:
+  - name: all
+    jobs:
+      - build
+      - lint
+      - noinstall-tests
+      {{- range .GpupgradeJobs}}
+      - {{.Name}}
+      {{- end}}
+      {{- range .PgupgradeJobs}}
+      - {{.Name}}
+      {{- end}}
+      {{- range .MultihostGpupgradeJobs}}
+      - {{.Name}}
+      {{- end}}
+      {{- range .UpgradeJobs}}
+      - {{.Name}}
+      {{- end}}
+      - publish-release-candidate
+  - name: gpupgrade
+    jobs:
+      {{- range .GpupgradeJobs}}
+      - {{.Name}}
+      {{- end}}
+      {{- range .MultihostGpupgradeJobs}}
+      - {{.Name}}
+      {{- end}}
+  - name: pg_upgrade
+    jobs:
+      {{- range .PgupgradeJobs}}
+      - {{.Name}}
+      {{- end }}
+  - name: upgrade
+    jobs:
+      - build
+      {{- range .UpgradeJobs}}
+      {{- if not .RetailDemo}}
+      - {{.Name}}
+      {{- end}}
+      {{- end}}
+  - name: functional
+    jobs:
+      - build
+      {{- range .UpgradeJobs}}
+      {{- if .RetailDemo}}
+      - {{.Name}}
+      {{- end}}
+      {{- end}}
