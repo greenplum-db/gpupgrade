@@ -50,23 +50,12 @@ resources:
 # source and target clusters. In order to test this scenario release candidate
 # builds are needed.
 {{range .Versions}}
-{{- if eq (majorVersion .GPVersion) "5" }}
-- name: rpm_gpdb{{.GPVersion}}_centos{{.CentosVersion}}
-  type: s3
-  source:
-    access_key_id: ((bucket-access-key-id))
-    bucket: ((gpdb-stable-builds-bucket-name))
-    region_name: ((aws-region))
-    secret_access_key: ((bucket-secret-access-key))
-    regexp: release_candidates/gpdb_rpm_installer_centos{{.CentosVersion}}/gpdb{{ majorVersion .GPVersion }}/greenplum-db-{{.TestRCIdentifier}}({{escapeVersion .GPVersion}}.*)-rhel{{.CentosVersion}}-x86_64.rpm
-{{- else }}
 - name: rpm_gpdb{{.GPVersion}}_centos{{.CentosVersion}}
   type: gcs
   source:
     bucket: ((gcs-bucket))
     json_key: ((concourse-gcs-resources-service-account-key))
     regexp: server/published/gpdb{{ majorVersion .GPVersion }}/greenplum-db-{{.TestRCIdentifier}}({{escapeVersion .GPVersion}}.*)-rhel{{.CentosVersion}}-x86_64.debug.rpm
-{{- end }}
 {{end}}
 
 - name: rpm_oss
