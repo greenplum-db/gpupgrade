@@ -60,28 +60,32 @@ resources:
 - name: rpm_gpdb6_centos6
   type: gcs
   source:
-    bucket: ((gcs-bucket))
+    # Test release candidate rpms built from production pipelines are published to the -prod bucket.
+    bucket: pivotal-gpdb-concourse-resources-prod
     json_key: ((concourse-gcs-resources-service-account-key))
     regexp: server/published/gpdb6/greenplum-db-(6.*)-rhel6-x86_64.debug.rpm
 
 - name: rpm_gpdb6_centos7
   type: gcs
   source:
-    bucket: ((gcs-bucket))
+    # Test release candidate rpms built from production pipelines are published to the -prod bucket.
+    bucket: pivotal-gpdb-concourse-resources-prod
     json_key: ((concourse-gcs-resources-service-account-key))
     regexp: server/published/gpdb6/greenplum-db-(6.*)-rhel7-x86_64.debug.rpm
 
 - name: rpm_gpdb5_centos6
   type: gcs
   source:
-    bucket: ((gcs-bucket))
+    # Test release candidate rpms built from production pipelines are published to the -prod bucket.
+    bucket: pivotal-gpdb-concourse-resources-prod
     json_key: ((concourse-gcs-resources-service-account-key))
     regexp: server/published/gpdb5/greenplum-db-(5.*)-rhel6-x86_64.debug.rpm
 
 - name: rpm_gpdb5_centos7
   type: gcs
   source:
-    bucket: ((gcs-bucket))
+    # Test release candidate rpms built from production pipelines are published to the -prod bucket.
+    bucket: pivotal-gpdb-concourse-resources-prod
     json_key: ((concourse-gcs-resources-service-account-key))
     regexp: server/published/gpdb5/greenplum-db-(5.*)-rhel7-x86_64.debug.rpm
 
