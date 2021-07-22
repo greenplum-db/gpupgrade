@@ -162,6 +162,27 @@ resources:
     json_key: ((concourse-gcs-resources-service-account-key))
     versioned_file: 6X_STABLE/icw_gporca_centos6_dump/dump.sql.xz
 
+# The postgis dump is a static file that was created by taking objects from the
+# postgis regression tests and "not" dropping the databases associated with
+# them to preserve the objects.
+- name: postgis215_dump
+  type: gcs
+  source:
+    json_key: ((cm-gcs-service-account-key))
+    bucket: ((cm-intermediates-bucket))
+    versioned_file: extensions/postgis215_dump.sql
+
+{{range .Versions}}
+- name: postgis215_gppkg_gpdb{{.GPVersion}}_centos{{.CentosVersion}}
+  type: s3
+  source:
+    access_key_id: ((madlib-s3-access_key_id))
+    bucket: ((postgis-gppkg-bucket))
+    region_name: us-west-2
+    secret_access_key: ((madlib-s3-secret_access_key))
+    versioned_file: postgis-2.1.5+pivotal.3-gp{{.GPVersion}}-rhel{{.CentosVersion}}-x86_64.gppkg
+{{end}}
+
 anchors:
   - &ccp_default_params
     action: create
@@ -260,6 +281,14 @@ groups:
       - build
       {{- range .UpgradeJobs}}
       {{- if not .RetailDemo}}
+      - {{.Name}}
+      {{- end}}
+      {{- end}}
+  - name: extensions
+    jobs:
+      - build
+      {{- range .UpgradeJobs}}
+      {{- if .ExtensionsJob}}
       - {{.Name}}
       {{- end}}
       {{- end}}

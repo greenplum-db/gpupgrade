@@ -45,6 +45,7 @@ type UpgradeJob struct {
 	NoStandby      bool
 	UseLinkMode    bool
 	RetailDemo     bool
+	ExtensionsJob  bool
 	CentosVersion  string
 }
 
@@ -67,6 +68,8 @@ func (j *UpgradeJob) BaseName() string {
 		suffix = "-link-mode"
 	case j.RetailDemo:
 		suffix = "-retail-demo"
+	case j.ExtensionsJob:
+		suffix = "-extensions"
 	}
 
 	return fmt.Sprintf("%s-to-%s%s", j.Source, j.Target, suffix)
@@ -176,6 +179,7 @@ func init() {
 			{PrimariesOnly: true},
 			{NoStandby: true},
 			{RetailDemo: true},
+			{ExtensionsJob: true},
 		}
 
 		for _, job := range special {

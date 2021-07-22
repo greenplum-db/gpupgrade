@@ -1,0 +1,84 @@
+--- /tmp/source.sql.filtered	2021-07-26 19:40:51.115414541 +0000
++++ /tmp/target.sql.filtered	2021-07-26 19:40:36.176064733 +0000
+@@ -21817,32 +21818,32 @@
+ --
+
+ CREATE OPERATOR public.&& (
+-    PROCEDURE = public.geometry_raster_overlap,
+-    LEFTARG = public.geometry,
+-    RIGHTARG = public.raster,
++    PROCEDURE = public.raster_geometry_overlap,
++    LEFTARG = public.raster,
++    RIGHTARG = public.geometry,
+     COMMUTATOR = OPERATOR(public.&&),
+     RESTRICT = contsel,
+     JOIN = contjoinsel
+ );
+
+
+-ALTER OPERATOR public.&& (public.geometry, public.raster) OWNER TO gpadmin;
++ALTER OPERATOR public.&& (public.raster, public.geometry) OWNER TO gpadmin;
+
+ --
+ -- Name: &&; Type: OPERATOR; Schema: public; Owner: gpadmin
+ --
+
+ CREATE OPERATOR public.&& (
+-    PROCEDURE = public.raster_geometry_overlap,
+-    LEFTARG = public.raster,
+-    RIGHTARG = public.geometry,
++    PROCEDURE = public.geometry_raster_overlap,
++    LEFTARG = public.geometry,
++    RIGHTARG = public.raster,
+     COMMUTATOR = OPERATOR(public.&&),
+     RESTRICT = contsel,
+     JOIN = contjoinsel
+ );
+
+
+-ALTER OPERATOR public.&& (public.raster, public.geometry) OWNER TO gpadmin;
++ALTER OPERATOR public.&& (public.geometry, public.raster) OWNER TO gpadmin;
+
+ --
+ -- Name: &&&; Type: OPERATOR; Schema: public; Owner: gpadmin
+@@ -22401,31 +22402,31 @@
+ --
+
+ CREATE OPERATOR public.~ (
+-    PROCEDURE = public.raster_geometry_contain,
+-    LEFTARG = public.raster,
+-    RIGHTARG = public.geometry,
+-    COMMUTATOR = OPERATOR(public.@),
++    PROCEDURE = public.geometry_raster_contain,
++    LEFTARG = public.geometry,
++    RIGHTARG = public.raster,
+     RESTRICT = contsel,
+     JOIN = contjoinsel
+ );
+
+
+-ALTER OPERATOR public.~ (public.raster, public.geometry) OWNER TO gpadmin;
++ALTER OPERATOR public.~ (public.geometry, public.raster) OWNER TO gpadmin;
+
+ --
+ -- Name: ~; Type: OPERATOR; Schema: public; Owner: gpadmin
+ --
+
+ CREATE OPERATOR public.~ (
+-    PROCEDURE = public.geometry_raster_contain,
+-    LEFTARG = public.geometry,
+-    RIGHTARG = public.raster,
++    PROCEDURE = public.raster_geometry_contain,
++    LEFTARG = public.raster,
++    RIGHTARG = public.geometry,
++    COMMUTATOR = OPERATOR(public.@),
+     RESTRICT = contsel,
+     JOIN = contjoinsel
+ );
+
+
+-ALTER OPERATOR public.~ (public.geometry, public.raster) OWNER TO gpadmin;
++ALTER OPERATOR public.~ (public.raster, public.geometry) OWNER TO gpadmin;
+
+ --
+ -- Name: ~=; Type: OPERATOR; Schema: public; Owner: gpadmin
