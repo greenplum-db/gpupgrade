@@ -26,7 +26,20 @@ func InitReplacementRegex(patterns map[string]string) []*Replacer {
 	return replacer
 }
 
-func Replacements(line string) string {
+func Replacements5X(line string) string {
+	patterns := map[string]string{
+		`(.*)double precision DEFAULT (\d+(\.\d+)?)::numeric`: `${1}double precision DEFAULT (${2})::numeric`,
+	}
+
+	replacer := InitReplacementRegex(patterns)
+	for _, r := range replacer {
+		line = r.replace(line)
+	}
+
+	return line
+}
+
+func Replacements6X(line string) string {
 	patterns := map[string]string{
 		`(DEFAULT.*[^B])('\d+')::"bit"`: `${1}B${2}::"bit"`,
 	}

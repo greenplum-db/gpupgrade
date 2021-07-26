@@ -6,5 +6,6 @@ package filters
 func Init5x() {
 	ReplacementFuncs = []ReplacementFunc{
 		ReplacePrecision,
+		Replacements5X,
 	}
 }
