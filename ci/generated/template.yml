@@ -174,13 +174,11 @@ resources:
 
 {{range .Versions}}
 - name: postgis215_gppkg_gpdb{{.GPVersion}}_centos{{.CentosVersion}}
-  type: s3
+  type: gcs
   source:
-    access_key_id: ((madlib-s3-access_key_id))
-    bucket: ((postgis-gppkg-bucket))
-    region_name: us-west-2
-    secret_access_key: ((madlib-s3-secret_access_key))
-    versioned_file: postgis-2.1.5+pivotal.3-gp{{.GPVersion}}-rhel{{.CentosVersion}}-x86_64.gppkg
+    json_key: ((concourse-gcs-resources-service-account-key))
+    bucket: pivotal-gpdb-concourse-resources-prod
+    regexp: postgis/released/gpdb{{.GPVersion}}/postgis-2.1.5\+(.*)-gp{{.GPVersion}}-rhel{{.CentosVersion}}-x86_64.gppkg
 {{end}}
 
 anchors:

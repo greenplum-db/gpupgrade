@@ -200,40 +200,32 @@ resources:
 
 
 - name: postgis215_gppkg_gpdb6_centos6
-  type: s3
+  type: gcs
   source:
-    access_key_id: ((madlib-s3-access_key_id))
-    bucket: ((postgis-gppkg-bucket))
-    region_name: us-west-2
-    secret_access_key: ((madlib-s3-secret_access_key))
-    versioned_file: postgis-2.1.5+pivotal.3-gp6-rhel6-x86_64.gppkg
+    json_key: ((concourse-gcs-resources-service-account-key))
+    bucket: pivotal-gpdb-concourse-resources-prod
+    regexp: postgis/released/gpdb6/postgis-2.1.5\+(.*)-gp6-rhel6-x86_64.gppkg
 
 - name: postgis215_gppkg_gpdb6_centos7
-  type: s3
+  type: gcs
   source:
-    access_key_id: ((madlib-s3-access_key_id))
-    bucket: ((postgis-gppkg-bucket))
-    region_name: us-west-2
-    secret_access_key: ((madlib-s3-secret_access_key))
-    versioned_file: postgis-2.1.5+pivotal.3-gp6-rhel7-x86_64.gppkg
+    json_key: ((concourse-gcs-resources-service-account-key))
+    bucket: pivotal-gpdb-concourse-resources-prod
+    regexp: postgis/released/gpdb6/postgis-2.1.5\+(.*)-gp6-rhel7-x86_64.gppkg
 
 - name: postgis215_gppkg_gpdb5_centos6
-  type: s3
+  type: gcs
   source:
-    access_key_id: ((madlib-s3-access_key_id))
-    bucket: ((postgis-gppkg-bucket))
-    region_name: us-west-2
-    secret_access_key: ((madlib-s3-secret_access_key))
-    versioned_file: postgis-2.1.5+pivotal.3-gp5-rhel6-x86_64.gppkg
+    json_key: ((concourse-gcs-resources-service-account-key))
+    bucket: pivotal-gpdb-concourse-resources-prod
+    regexp: postgis/released/gpdb5/postgis-2.1.5\+(.*)-gp5-rhel6-x86_64.gppkg
 
 - name: postgis215_gppkg_gpdb5_centos7
-  type: s3
+  type: gcs
   source:
-    access_key_id: ((madlib-s3-access_key_id))
-    bucket: ((postgis-gppkg-bucket))
-    region_name: us-west-2
-    secret_access_key: ((madlib-s3-secret_access_key))
-    versioned_file: postgis-2.1.5+pivotal.3-gp5-rhel7-x86_64.gppkg
+    json_key: ((concourse-gcs-resources-service-account-key))
+    bucket: pivotal-gpdb-concourse-resources-prod
+    regexp: postgis/released/gpdb5/postgis-2.1.5\+(.*)-gp5-rhel7-x86_64.gppkg
 
 
 anchors:
