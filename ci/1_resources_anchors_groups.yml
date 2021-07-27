@@ -179,6 +179,15 @@ resources:
     json_key: ((concourse-gcs-resources-service-account-key))
     bucket: pivotal-gpdb-concourse-resources-prod
     regexp: postgis/released/gpdb{{.GPVersion}}/postgis-2.1.5\+(.*)-gp{{.GPVersion}}-rhel{{.CentosVersion}}-x86_64.gppkg
+
+- name: madlib1190_gppkg_gpdb{{.GPVersion}}_centos{{.CentosVersion}}
+  type: s3
+  source:
+    access_key_id: ((madlib-s3-access_key_id))
+    secret_access_key: ((madlib-s3-secret_access_key))
+    region_name: us-west-2
+    bucket: madlib-artifacts  # FIXME: update to prod bucket once MADlib is released.
+    versioned_file: bin_madlib_artifacts_centos{{.CentosVersion}}/madlib-master-gp{{.GPVersion}}-rhel{{.CentosVersion}}-x86_64.gppkg
 {{end}}
 
 anchors:

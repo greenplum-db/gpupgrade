@@ -19,6 +19,7 @@ export PGPORT=5432
 
 echo "Copying extensions to the target cluster..."
 scp postgis_gppkg_target/postgis*.gppkg gpadmin@mdw:/tmp/postgis_target.gppkg
+scp madlib_gppkg_target/madlib*.gppkg gpadmin@mdw:/tmp/madlib_target.gppkg
 
 if ! is_GPDB5 ${GPHOME_SOURCE}; then
     echo "Configuring GUCs before dumping the source cluster..."
@@ -60,6 +61,7 @@ time ssh -n mdw '
 
     gpstart -a
     gppkg -i /tmp/postgis_target.gppkg
+    gppkg -i /tmp/madlib_target.gppkg
     gpstop -a
 
     echo "Finishing the upgrade..."

@@ -42,6 +42,10 @@
           resource: postgis215_gppkg_gpdb{{.Source}}_centos{{.CentosVersion}}
         - get: postgis_gppkg_target
           resource: postgis215_gppkg_gpdb{{.Target}}_centos{{.CentosVersion}}
+        - get: madlib_gppkg_source
+          resource: madlib1190_gppkg_gpdb{{.Source}}_centos{{.CentosVersion}}
+        - get: madlib_gppkg_target
+          resource: madlib1190_gppkg_gpdb{{.Target}}_centos{{.CentosVersion}}
         {{- end }}
     - put: terraform
       params:
@@ -118,6 +122,7 @@
           - name: cluster_env_files
           - name: gpupgrade_src
           - name: postgis_gppkg_source
+          - name: madlib_gppkg_source
           - name: sqldump
         run:
           path: gpupgrade_src/ci/scripts/load-extensions.bash
@@ -152,6 +157,7 @@
           - name: cluster_env_files
           - name: gpupgrade_src
           - name: postgis_gppkg_target
+          - name: madlib_gppkg_target
         run:
           path: gpupgrade_src/ci/scripts/upgrade-extensions.bash
       params:

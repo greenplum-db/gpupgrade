@@ -206,12 +206,30 @@ resources:
     bucket: pivotal-gpdb-concourse-resources-prod
     regexp: postgis/released/gpdb6/postgis-2.1.5\+(.*)-gp6-rhel6-x86_64.gppkg
 
+- name: madlib1190_gppkg_gpdb6_centos6
+  type: s3
+  source:
+    access_key_id: ((madlib-s3-access_key_id))
+    secret_access_key: ((madlib-s3-secret_access_key))
+    region_name: us-west-2
+    bucket: madlib-artifacts  # FIXME: update to prod bucket once MADlib is released.
+    versioned_file: bin_madlib_artifacts_centos6/madlib-master-gp6-rhel6-x86_64.gppkg
+
 - name: postgis215_gppkg_gpdb6_centos7
   type: gcs
   source:
     json_key: ((concourse-gcs-resources-service-account-key))
     bucket: pivotal-gpdb-concourse-resources-prod
     regexp: postgis/released/gpdb6/postgis-2.1.5\+(.*)-gp6-rhel7-x86_64.gppkg
+
+- name: madlib1190_gppkg_gpdb6_centos7
+  type: s3
+  source:
+    access_key_id: ((madlib-s3-access_key_id))
+    secret_access_key: ((madlib-s3-secret_access_key))
+    region_name: us-west-2
+    bucket: madlib-artifacts  # FIXME: update to prod bucket once MADlib is released.
+    versioned_file: bin_madlib_artifacts_centos7/madlib-master-gp6-rhel7-x86_64.gppkg
 
 - name: postgis215_gppkg_gpdb5_centos6
   type: gcs
@@ -220,12 +238,30 @@ resources:
     bucket: pivotal-gpdb-concourse-resources-prod
     regexp: postgis/released/gpdb5/postgis-2.1.5\+(.*)-gp5-rhel6-x86_64.gppkg
 
+- name: madlib1190_gppkg_gpdb5_centos6
+  type: s3
+  source:
+    access_key_id: ((madlib-s3-access_key_id))
+    secret_access_key: ((madlib-s3-secret_access_key))
+    region_name: us-west-2
+    bucket: madlib-artifacts  # FIXME: update to prod bucket once MADlib is released.
+    versioned_file: bin_madlib_artifacts_centos6/madlib-master-gp5-rhel6-x86_64.gppkg
+
 - name: postgis215_gppkg_gpdb5_centos7
   type: gcs
   source:
     json_key: ((concourse-gcs-resources-service-account-key))
     bucket: pivotal-gpdb-concourse-resources-prod
     regexp: postgis/released/gpdb5/postgis-2.1.5\+(.*)-gp5-rhel7-x86_64.gppkg
+
+- name: madlib1190_gppkg_gpdb5_centos7
+  type: s3
+  source:
+    access_key_id: ((madlib-s3-access_key_id))
+    secret_access_key: ((madlib-s3-secret_access_key))
+    region_name: us-west-2
+    bucket: madlib-artifacts  # FIXME: update to prod bucket once MADlib is released.
+    versioned_file: bin_madlib_artifacts_centos7/madlib-master-gp5-rhel7-x86_64.gppkg
 
 
 anchors:
@@ -1935,6 +1971,10 @@ jobs:
           resource: postgis215_gppkg_gpdb5_centos6
         - get: postgis_gppkg_target
           resource: postgis215_gppkg_gpdb6_centos6
+        - get: madlib_gppkg_source
+          resource: madlib1190_gppkg_gpdb5_centos6
+        - get: madlib_gppkg_target
+          resource: madlib1190_gppkg_gpdb6_centos6
     - put: terraform
       params:
         <<: *ccp_default_params
@@ -1987,6 +2027,7 @@ jobs:
           - name: cluster_env_files
           - name: gpupgrade_src
           - name: postgis_gppkg_source
+          - name: madlib_gppkg_source
           - name: sqldump
         run:
           path: gpupgrade_src/ci/scripts/load-extensions.bash
@@ -2003,6 +2044,7 @@ jobs:
           - name: cluster_env_files
           - name: gpupgrade_src
           - name: postgis_gppkg_target
+          - name: madlib_gppkg_target
         run:
           path: gpupgrade_src/ci/scripts/upgrade-extensions.bash
       params:
@@ -2534,6 +2576,10 @@ jobs:
           resource: postgis215_gppkg_gpdb5_centos7
         - get: postgis_gppkg_target
           resource: postgis215_gppkg_gpdb6_centos7
+        - get: madlib_gppkg_source
+          resource: madlib1190_gppkg_gpdb5_centos7
+        - get: madlib_gppkg_target
+          resource: madlib1190_gppkg_gpdb6_centos7
     - put: terraform
       params:
         <<: *ccp_default_params
@@ -2586,6 +2632,7 @@ jobs:
           - name: cluster_env_files
           - name: gpupgrade_src
           - name: postgis_gppkg_source
+          - name: madlib_gppkg_source
           - name: sqldump
         run:
           path: gpupgrade_src/ci/scripts/load-extensions.bash
@@ -2602,6 +2649,7 @@ jobs:
           - name: cluster_env_files
           - name: gpupgrade_src
           - name: postgis_gppkg_target
+          - name: madlib_gppkg_target
         run:
           path: gpupgrade_src/ci/scripts/upgrade-extensions.bash
       params:
