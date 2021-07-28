@@ -22,6 +22,20 @@ echo "Copying extensions to the target cluster..."
 scp postgis_gppkg_target/postgis*.gppkg gpadmin@mdw:/tmp/postgis_target.gppkg
 scp madlib_gppkg_target/madlib*.gppkg gpadmin@mdw:/tmp/madlib_target.gppkg
 
+if test_pxf "$OS_VERSION"; then
+    mapfile -t hosts < cluster_env_files/hostfile_all
+    for host in "${hosts[@]}"; do
+        scp pxf_rpm_target/*.rpm "gpadmin@${host}":/tmp/pxf_target.rpm
+
+        ssh -n "centos@${host}" "
+            set -eux -o pipefail
+
+            sudo rpm -ivh /tmp/pxf_target.rpm
+            sudo chown -R gpadmin:gpadmin /usr/local/pxf*
+        "
+    done
+fi
+
 if ! is_GPDB5 ${GPHOME_SOURCE}; then
     echo "Configuring GUCs before dumping the source cluster..."
     configure_gpdb_gucs ${GPHOME_SOURCE}
@@ -60,7 +74,17 @@ time ssh -n mdw "
 
     gppkg -i /tmp/postgis_target.gppkg
     gppkg -i /tmp/madlib_target.gppkg
-    
+
+    $(typeset -f test_pxf) # allow local function on remote host
+    if test_pxf '$OS_VERSION'; then
+        echo 'Initialize PXF on target cluster...'
+        export PXF_CONF=/home/gpadmin/pxf
+        export JAVA_HOME=/usr/lib/jvm/jre
+
+        /usr/local/pxf-gp6/bin/pxf cluster init
+        psql -d postgres -c 'CREATE EXTENSION pxf;'
+    fi
+
     gpstop -a
 
     echo 'Finishing the upgrade...'
@@ -105,6 +129,11 @@ ssh -n mdw "
     echo 'Dropping operator dependent objects in order to successfully drop and recreate postgis operators...'
     psql -d postgres -c 'DROP INDEX wmstest_geomidx CASCADE;'
     psql -d postgres -f /usr/local/greenplum-db-target/share/postgresql/contrib/postgis-*/postgis_enable_operators.sql
+
+    if test_pxf '$OS_VERSION'; then
+        echo 'Starting pxf...'
+        /usr/local/pxf-gp6/bin/pxf cluster start
+    fi
 "
 
 echo "Upgrade successful..."

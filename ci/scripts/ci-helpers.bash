@@ -11,6 +11,12 @@ is_GPDB5() {
     [[ $version =~ ^"postgres (Greenplum Database) 5." ]]
 }
 
+# Only test pxf when not centos6 since pxf5 for GPDB6 on centos6 is not supported.
+test_pxf() {
+    local os_version=$1
+    [ "$os_version" != "centos6" ]
+}
+
 # set the database gucs
 # 1. bytea_output: by default for bytea the output format is hex on GPDB 6,
 #    so change it to escape to match GPDB 5 representation

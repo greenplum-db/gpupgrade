@@ -46,6 +46,12 @@
           resource: madlib1190_gppkg_gpdb{{.Source}}_centos{{.CentosVersion}}
         - get: madlib_gppkg_target
           resource: madlib1190_gppkg_gpdb{{.Target}}_centos{{.CentosVersion}}
+        {{- if ne .CentosVersion "6" }}
+        - get: pxf_rpm_source
+          resource: pxf5_gp{{.Source}}_centos{{.CentosVersion}}_rpm
+        - get: pxf_rpm_target
+          resource: pxf5_gp{{.Target}}_centos{{.CentosVersion}}_rpm
+        {{- end }}
         {{- end }}
     - put: terraform
       params:
@@ -117,6 +123,9 @@
           source:
             repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
             tag: latest
+        params:
+          GOOGLE_CREDENTIALS: ((cm-gcs-service-account-key))
+          OS_VERSION: centos{{.CentosVersion}}
         inputs:
           - name: ccp_src
           - name: cluster_env_files
@@ -124,6 +133,9 @@
           - name: postgis_gppkg_source
           - name: madlib_gppkg_source
           - name: sqldump
+          {{- if ne .CentosVersion "6" }}
+          - name: pxf_rpm_source
+          {{- end }}
         run:
           path: gpupgrade_src/ci/scripts/load-extensions.bash
     {{- else }}
@@ -152,12 +164,17 @@
           source:
             repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
             tag: latest
+        params:
+          OS_VERSION: centos{{.CentosVersion}}
         inputs:
           - name: ccp_src
           - name: cluster_env_files
           - name: gpupgrade_src
           - name: postgis_gppkg_target
           - name: madlib_gppkg_target
+          {{- if ne .CentosVersion "6" }}
+          - name: pxf_rpm_target
+          {{- end }}
         run:
           path: gpupgrade_src/ci/scripts/upgrade-extensions.bash
       params:
