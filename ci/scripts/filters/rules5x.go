@@ -8,4 +8,9 @@ func Init5x() {
 		ReplacePrecision,
 		Replacements5X,
 	}
+
+	// patten matching functions and corresponding formatting functions
+	Formatters = []formatter{
+		{shouldFormat: IsViewOrRuleDdl, format: FormatViewOrRuleDdl},
+	}
 }
