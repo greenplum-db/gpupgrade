@@ -29,6 +29,8 @@ func InitReplacementRegex(patterns map[string]string) []*Replacer {
 func Replacements5X(line string) string {
 	patterns := map[string]string{
 		`(.*)double precision DEFAULT (\d+(\.\d+)?)::numeric`: `${1}double precision DEFAULT (${2})::numeric`,
+		// Needed for hstore extension testing.
+		`OPERATOR (\d+)(.*) RECHECK(.*)`: `OPERATOR ${1}${2}${3}`,
 	}
 
 	replacer := InitReplacementRegex(patterns)

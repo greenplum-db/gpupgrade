@@ -7,7 +7,47 @@ import (
 	"testing"
 )
 
-func TestReplacements5X(t *testing.T) {
+func TestReplacements5X_RemoveOperatorRecheck(t *testing.T) {
+	cases := []struct {
+		name     string
+		line     string
+		expected string
+	}{
+		{
+			name:     "does not remove RECHECK if there is none to remove",
+			line:     "OPERATOR 9 public.?(public.hstore,text) ,",
+			expected: "OPERATOR 9 public.?(public.hstore,text) ,",
+		},
+		{
+			name:     "does not remove RECHECK if it is a function name",
+			line:     "SELECT * FROM RECHECK(public.hstore, text)",
+			expected: "SELECT * FROM RECHECK(public.hstore, text)",
+		},
+		{
+			name:     "removes @> operator RECHECK",
+			line:     "OPERATOR 7 public.@>(public.hstore,public.hstore) RECHECK ,",
+			expected: "OPERATOR 7 public.@>(public.hstore,public.hstore) ,",
+		},
+		{
+			name:     "removes ? operator RECHECK",
+			line:     "OPERATOR 9 public.?(public.hstore,text) RECHECK ,",
+			expected: "OPERATOR 9 public.?(public.hstore,text) ,",
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got := Replacements5X(c.line)
+			if got != c.expected {
+				t.Errorf("got %v want %v", got, c.expected)
+				t.Logf("actual:   %s", got)
+				t.Logf("expected: %s", c.expected)
+			}
+		})
+	}
+}
+
+func TestReplacements5X_CastingParenthesis(t *testing.T) {
 	cases := []struct {
 		name     string
 		line     string

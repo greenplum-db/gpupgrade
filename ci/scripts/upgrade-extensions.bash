@@ -72,6 +72,14 @@ time ssh -n mdw "
 
     gpstart -a
 
+    psql -d postgres <<SQL_EOF
+        CREATE EXTENSION amcheck;
+        CREATE EXTENSION dblink;
+        CREATE EXTENSION hstore;
+        CREATE EXTENSION pgcrypto;
+        CREATE EXTENSION orafce;
+SQL_EOF
+
     gppkg -i /tmp/postgis_target.gppkg
     gppkg -i /tmp/madlib_target.gppkg
 

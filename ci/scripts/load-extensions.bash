@@ -52,6 +52,66 @@ SQL_EOF
 SQL_EOF
 "
 
+echo "Installing postgres native extensions and sample data on source cluster..."
+time ssh -n mdw "
+    set -eux -o pipefail
+
+    source /usr/local/greenplum-db-source/greenplum_path.sh
+
+    echo 'Installing amcheck...'
+    psql -d postgres <<SQL_EOF
+        CREATE EXTENSION amcheck;
+
+        CREATE VIEW amcheck_test_view AS
+          SELECT bt_index_check(c.oid)::TEXT, c.relpages
+          FROM pg_index i
+          JOIN pg_opclass op ON i.indclass[0] = op.oid
+          JOIN pg_am am ON op.opcmethod = am.oid
+          JOIN pg_class c ON i.indexrelid = c.oid
+          JOIN pg_namespace n ON c.relnamespace = n.oid
+          WHERE am.amname = 'btree' AND n.nspname = 'pg_catalog'
+            -- Function may throw an error when this is omitted:
+            AND i.indisready AND i.indisvalid
+          ORDER BY c.relpages DESC LIMIT 10;
+SQL_EOF
+
+    echo 'Installing dblink...'
+    psql -d postgres <<SQL_EOF
+        \i /usr/local/greenplum-db-source/share/postgresql/contrib/dblink.sql
+
+        CREATE TABLE foo(f1 int, f2 text, primary key (f1,f2));
+        INSERT INTO foo VALUES (0,'a');
+        INSERT INTO foo VALUES (1,'b');
+        INSERT INTO foo VALUES (2,'c');
+        CREATE VIEW dblink_test_view AS SELECT * FROM dblink('dbname=postgres', 'SELECT * FROM foo') AS t(a int, b text) WHERE t.a > 7;
+SQL_EOF
+
+    echo 'Installing hstore...'
+    psql -d postgres <<SQL_EOF
+        \i /usr/local/greenplum-db-source/share/postgresql/contrib/hstore.sql
+
+        CREATE TABLE hstore_test_type AS
+        SELECT 'a=>1,a=>2'::hstore as c1;
+        CREATE VIEW hstore_test_view AS SELECT c1 -> 'a' as c2 FROM foo;
+SQL_EOF
+
+    echo 'Installing pgcrypto...'
+    psql -d postgres <<SQL_EOF
+        CREATE EXTENSION pgcrypto;
+
+        CREATE VIEW pgcrypto_test_view AS SELECT crypt('new password', gen_salt('md5'));
+SQL_EOF
+
+    echo 'Installing orafce...'
+    psql -d postgres <<SQL_EOF
+        CREATE EXTENSION orafce;
+
+        CREATE TABLE orafce_test_type (a VARCHAR2(5), b NVARCHAR2(5));
+        INSERT INTO orafce_test_type VALUES ('abc'::VARCHAR2(5), 'abcdef'::NVARCHAR2(5));
+        CREATE VIEW orafce_test_view AS SELECT add_months('2003-08-01', 3);
+SQL_EOF
+"
+
 install_pxf() {
     local PXF_CONF=/home/gpadmin/pxf
 
