@@ -16,25 +16,25 @@ is_GPDB5() {
 #    so change it to escape to match GPDB 5 representation
 configure_gpdb_gucs() {
     local gphome=$1
-    ssh mdw bash <<EOF
+    ssh -n mdw "
         set -eux -o pipefail
 
         source ${gphome}/greenplum_path.sh
         export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
         gpconfig -c bytea_output -v escape
         gpstop -u
-EOF
+"
 }
 
 reindex_all_dbs() {
     local gphome=$1
-    ssh mdw bash <<EOF
+    ssh -n mdw "
         set -eux -o pipefail
 
         source ${gphome}/greenplum_path.sh
         export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
         reindexdb -a
-EOF
+"
 }
 
 dump_sql() {
@@ -73,7 +73,7 @@ compare_dumps() {
             target_dump="$target_dump.filtered"
 
             # Run the filter on the source dump
-            ssh mdw "
+            ssh -n mdw "
                 /tmp/filter -version=5 -inputFile='$source_dump' > '$source_dump.filtered'
             "
 

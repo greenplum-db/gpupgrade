@@ -31,20 +31,20 @@ if [ "${USE_LINK_MODE}" = "1" ]; then
     LINK_MODE="--mode=link"
 fi
 
-time ssh mdw bash <<EOF
+time ssh -n mdw "
     set -eux -o pipefail
 
     gpupgrade initialize \
               $LINK_MODE \
               --automatic \
-              --target-gphome ${GPHOME_TARGET} \
-              --source-gphome ${GPHOME_SOURCE} \
+              --target-gphome $GPHOME_TARGET \
+              --source-gphome $GPHOME_SOURCE \
               --source-master-port $PGPORT \
               --temp-port-range 6020-6040
 
     gpupgrade execute --non-interactive
     gpupgrade finalize --non-interactive
-EOF
+"
 
 if ! is_GPDB5 ${GPHOME_TARGET}; then
     echo "Configuring GUCs before dumping the target cluster..."
@@ -59,7 +59,7 @@ dump_sql ${PGPORT} /tmp/target.sql
 
 echo "Comparing the source and target dumps..."
 if ! compare_dumps /tmp/source.sql /tmp/target.sql; then
-    echo 'error: before and after dumps differ'
+    echo "error: before and after dumps differ"
     exit 1
 fi
 
@@ -67,4 +67,4 @@ fi
 # since after finalize the source and target cluster appear identical such as
 # data directories getting renmaed and PGPORT. Perhaps fields in pg_controldata?
 
-echo 'Upgrade successful...'
+echo "Upgrade successful..."

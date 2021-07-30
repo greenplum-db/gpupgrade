@@ -5,6 +5,11 @@
 
 set -eux -o pipefail
 
+export GPHOME_SOURCE=/usr/local/greenplum-db-source
+export GPHOME_TARGET=/usr/local/greenplum-db-target
+export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
+export PGPORT=5432
+
 ./ccp_src/scripts/setup_ssh_to_cluster.sh
 
 scp sqldump/dump.sql.xz gpadmin@mdw:/tmp/
@@ -19,14 +24,12 @@ time ssh -n gpadmin@mdw "
 "
 
 echo "Running the data migration scripts and workarounds on the source cluster..."
-time ssh mdw '
+time ssh -n mdw "
     set -eux -o pipefail
 
     source /usr/local/greenplum-db-source/greenplum_path.sh
-    export GPHOME_SOURCE=/usr/local/greenplum-db-source
-    export PGPORT=5432
 
-    echo "Running data migration script workarounds..."
+    echo 'Running data migration script workarounds...'
     psql -d regression  <<SQL_EOF
         -- gen_alter_tsquery_to_text.sql cant alter columns with indexes, so drop them first.
         DROP INDEX bt_tsq CASCADE;
@@ -41,16 +44,15 @@ time ssh mdw '
         DROP INDEX onek2_u2_prtl CASCADE;
 SQL_EOF
 
-    gpupgrade-migration-sql-generator.bash "$GPHOME_SOURCE" "$PGPORT" /tmp/migration
-    gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" /tmp/migration/pre-initialize || true
-'
+    gpupgrade-migration-sql-generator.bash $GPHOME_SOURCE $PGPORT /tmp/migration
+    gpupgrade-migration-sql-executor.bash $GPHOME_SOURCE $PGPORT /tmp/migration/pre-initialize || true
+"
 
 echo "Dropping views referencing deprecated objects..."
 ssh -n mdw "
     set -eux -o pipefail
 
     source /usr/local/greenplum-db-source/greenplum_path.sh
-    export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
 
     # Hardcode this view since it's the only one containing a column with type name.
     psql regression -c 'DROP VIEW IF EXISTS redundantly_named_part;'
@@ -61,7 +63,6 @@ columns=$(ssh -n mdw "
     set -eux -o pipefail
 
     source /usr/local/greenplum-db-source/greenplum_path.sh
-    export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
 
     psql -d regression --tuples-only --no-align --field-separator ' ' <<SQL_EOF
         SELECT nspname, relname, attname
@@ -88,7 +89,6 @@ echo "${columns}" | while read -r schema table column; do
             set -eux -o pipefail
 
             source /usr/local/greenplum-db-source/greenplum_path.sh
-            export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
 
             psql regression -c 'SET SEARCH_PATH TO ${schema}; ALTER TABLE ${table} DROP COLUMN ${column} CASCADE;'
         " || echo "Drop columns with abstime, reltime, tinterval user data types failed. Continuing..."
@@ -100,7 +100,6 @@ databases=$(ssh -n mdw "
     set -eux -o pipefail
 
     source /usr/local/greenplum-db-source/greenplum_path.sh
-    export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
 
     psql -d regression --tuples-only --no-align --field-separator ' ' <<SQL_EOF
         SELECT datname
@@ -115,7 +114,7 @@ echo "${databases}" | while read -r database; do
             set -eux -o pipefail
 
             source /usr/local/greenplum-db-source/greenplum_path.sh
-            export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
+
             psql -d ${database} -c 'DROP EXTENSION IF EXISTS gp_inject_fault';
         " || echo "dropping gp_inject_fault extension failed. Continuing..."
     fi
@@ -126,6 +125,7 @@ ssh -n mdw "
     set -eux -o pipefail
 
     source /usr/local/greenplum-db-source/greenplum_path.sh
+
     psql -d regression -c 'DROP FUNCTION public.myfunc(integer);
     DROP AGGREGATE public.newavg(integer);'
 " || echo "Dropping unsupported functions failed. Continuing..."

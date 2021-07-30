@@ -5,6 +5,11 @@
 
 set -eux -o pipefail
 
+export GPHOME_SOURCE=/usr/local/greenplum-db-source
+export GPHOME_TARGET=/usr/local/greenplum-db-target
+export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
+export PGPORT=5432
+
 ./ccp_src/scripts/setup_ssh_to_cluster.sh
 
 echo "Copying extensions to the source cluster..."
@@ -17,8 +22,7 @@ time ssh -n mdw "
     set -eux -o pipefail
 
     source /usr/local/greenplum-db-source/greenplum_path.sh
-    export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
-    export PGPORT=5432
+    export MASTER_DATA_DIRECTORY=$MASTER_DATA_DIRECTORY
 
     echo 'Installing PostGIS...'
     gppkg -i /tmp/postgis_source.gppkg
@@ -40,19 +44,18 @@ SQL_EOF
         INSERT INTO madlib_test_type VALUES(1, '{1,2,3}'::float8[]::madlib.svec);
         INSERT INTO madlib_test_type VALUES(2, '{4,5,6}'::float8[]::madlib.svec);
         INSERT INTO madlib_test_type VALUES(3, '{7,8,9}'::float8[]::madlib.svec);
+
         CREATE VIEW madlib_test_view AS SELECT madlib.normal_quantile(0.5, 0, 1);
         CREATE VIEW madlib_test_agg AS SELECT madlib.mean(value) FROM madlib_test_type;
 SQL_EOF
 "
 
 echo "Running the data migration scripts on the source cluster..."
-time ssh -n mdw '
+ssh -n mdw "
     set -eux -o pipefail
 
     source /usr/local/greenplum-db-source/greenplum_path.sh
-    export GPHOME_SOURCE=/usr/local/greenplum-db-source
-    export PGPORT=5432
 
-    gpupgrade-migration-sql-generator.bash "$GPHOME_SOURCE" "$PGPORT" /tmp/migration
-    gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" /tmp/migration/pre-initialize || true
-'
+    gpupgrade-migration-sql-generator.bash $GPHOME_SOURCE $PGPORT /tmp/migration
+    gpupgrade-migration-sql-executor.bash $GPHOME_SOURCE $PGPORT /tmp/migration/pre-initialize || true
+"
