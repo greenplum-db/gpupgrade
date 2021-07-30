@@ -138,6 +138,7 @@ ssh -n mdw "
     psql -d postgres -c 'DROP INDEX wmstest_geomidx CASCADE;'
     psql -d postgres -f /usr/local/greenplum-db-target/share/postgresql/contrib/postgis-*/postgis_enable_operators.sql
 
+    $(typeset -f test_pxf) # allow local function on remote host
     if test_pxf '$OS_VERSION'; then
         echo 'Starting pxf...'
         /usr/local/pxf-gp6/bin/pxf cluster start

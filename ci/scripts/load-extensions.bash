@@ -134,6 +134,10 @@ install_pxf() {
     done
 
     ssh -n mdw "
+        set -eux -o pipefail
+
+        source /usr/local/greenplum-db-source/greenplum_path.sh
+
         echo 'Initialize pxf...'
         export GPHOME=$GPHOME_SOURCE
         export PXF_CONF=$PXF_CONF
