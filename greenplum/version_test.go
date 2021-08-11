@@ -16,6 +16,7 @@ import (
 	"github.com/golang/mock/gomock"
 
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 )
 
 func PostgresGPVersion_5_27_0_beta() {
@@ -51,6 +52,8 @@ const gphome = "/usr/local/my-gpdb-home"
 const remoteHost = "remote_host"
 
 func TestGPHomeVersion(t *testing.T) {
+	testlog.SetupLogger()
+
 	cases := []struct {
 		name     string
 		execMain exectest.Main // the postgres Main implementation to run

@@ -11,6 +11,9 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
+	"golang.org/x/xerrors"
+
+	"github.com/greenplum-db/gp-common-go-libs/gplog"
 )
 
 var ErrUnknownVersion = errors.New("unknown GPDB version")
@@ -67,12 +70,14 @@ func version(gphome string, host string) (semver.Version, error) {
 	cmd := execCommand(name, args...)
 	cmd.Env = []string{} // explicitly clear the environment
 
-	stdout, err := cmd.Output()
+	gplog.Debug("running cmd %q", cmd.String())
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return semver.Version{}, err
+		return semver.Version{}, xerrors.Errorf("%q failed with %q: %w", cmd.String(), string(output), err)
 	}
 
-	version := string(stdout)
+	version := string(output)
+	gplog.Debug("version: %q", version)
 	return parseVersion(version)
 }
 
