@@ -201,6 +201,17 @@ resources:
 {{- end }}
 {{end}}
 
+# gptext3.7 supports centos 6/7 and gpdb 5/6
+- name: gptext-3.7.0
+  type: s3
+  source:
+    access_key_id: ((gptext-s3-access-key-id))
+    secret_access_key: ((gptext-s3-secret-access-key))
+    region_name: us-west-2
+    bucket: gptext-artifacts
+    versioned_file: greenplum-text-3.7.0-rhel6_x86_64.tar.gz
+
+
 anchors:
   - &ccp_default_params
     action: create

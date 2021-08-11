@@ -46,6 +46,10 @@
           resource: madlib1190_gppkg_gpdb{{.Source}}_centos{{.CentosVersion}}
         - get: madlib_gppkg_target
           resource: madlib1190_gppkg_gpdb{{.Target}}_centos{{.CentosVersion}}
+        - get: gptext_pkg_source
+          resource: gptext-3.7.0
+        - get: gptext_pkg_target
+          resource: gptext-3.7.0
         {{- if ne .CentosVersion "6" }}
         - get: pxf_rpm_source
           resource: pxf5_gp{{.Source}}_centos{{.CentosVersion}}_rpm
@@ -132,6 +136,7 @@
           - name: gpupgrade_src
           - name: postgis_gppkg_source
           - name: madlib_gppkg_source
+          - name: gptext_pkg_source
           - name: sqldump
           {{- if ne .CentosVersion "6" }}
           - name: pxf_rpm_source
@@ -172,6 +177,7 @@
           - name: gpupgrade_src
           - name: postgis_gppkg_target
           - name: madlib_gppkg_target
+          - name: gptext_pkg_target
           {{- if ne .CentosVersion "6" }}
           - name: pxf_rpm_target
           {{- end }}

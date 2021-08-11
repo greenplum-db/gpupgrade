@@ -21,6 +21,7 @@ export PGPORT=5432
 echo "Copying extensions to the target cluster..."
 scp postgis_gppkg_target/postgis*.gppkg gpadmin@mdw:/tmp/postgis_target.gppkg
 scp madlib_gppkg_target/madlib*.gppkg gpadmin@mdw:/tmp/madlib_target.gppkg
+scp gptext_pkg_source/greenplum-text-3.7.0-rhel6_x86_64.tar.gz gpadmin@mdw:/tmp/greenplum-text-3.7.0-rhel6_x86_64.tar.gz
 
 if test_pxf "$OS_VERSION"; then
     mapfile -t hosts < cluster_env_files/hostfile_all
@@ -91,6 +92,21 @@ SQL_EOF
 
         /usr/local/pxf-gp6/bin/pxf cluster init
         psql -d postgres -c 'CREATE EXTENSION pxf;'
+    fi
+
+    echo 'Migrating gptext 3.7.0 to target cluster...'
+    echo 'gptext: check gpdb version compatibility...'
+    echo 'gptext: migrate gptext library...'
+    gptext_config=$MASTER_DATA_DIRECTORY/gptxtenvs.conf
+    mounted_binary=\$(grep MOUNTED_BINARY \$(gptext_config) | awk -F ',' '{print \$NF}')
+    if [ \$(mounted_binary) \eq 'False' ] then
+        cp $GPHOME_SOURCE/lib/postgresql/gptext-*.so $GPHOME_TARGET/lib/postgresql/
+    fi
+
+    echo 'gptext: copy config files...'
+    cp $MASTER_DATA_DIRECTORY/{gptext.conf,gptxtenvs.conf,zoo_cluster.conf} \$MASTER_DATA_DIRECTORY/
+    if [ -e $MASTER_DATA_DIRECTORY/gptxtauth.conf ] then
+        cp $MASTER_DATA_DIRECTORY/gptxtauth.conf \$MASTER_DATA_DIRECTORY/
     fi
 
     gpstop -a

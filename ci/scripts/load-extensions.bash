@@ -18,6 +18,7 @@ echo "Copying extensions to the source cluster..."
 scp postgis_gppkg_source/postgis*.gppkg gpadmin@mdw:/tmp/postgis_source.gppkg
 scp sqldump/*.sql gpadmin@mdw:/tmp/postgis_dump.sql
 scp madlib_gppkg_source/madlib*.gppkg gpadmin@mdw:/tmp/madlib_source.gppkg
+scp gptext_pkg_source/greenplum-text-3.7.0-rhel6_x86_64.tar.gz gpadmin@mdw:/tmp/greenplum-text-3.7.0-rhel6_x86_64.tar.gz
 
 echo "Installing extensions and sample data on source cluster..."
 time ssh -n mdw "
@@ -110,6 +111,27 @@ SQL_EOF
         INSERT INTO orafce_test_type VALUES ('abc'::VARCHAR2(5), 'abcdef'::NVARCHAR2(5));
         CREATE VIEW orafce_test_view AS SELECT add_months('2003-08-01', 3);
 SQL_EOF
+"
+
+echo "Installing gptext 3.7.0 on source cluster..."
+time ssh -n mdw "
+source /usr/local/greenplum-db-source/greenplum_path.sh
+
+tar zxvf /tmp/greenplum-text-3.7.0-rhel6_x86_64.tar.gz -C /tmp/
+chmod +x /tmp/greenplum-text-3.7.0-rhel6_x86_64.bin
+sed -i -r 's/GPTEXT_HOSTS\=\(localhost\)/GPTEXT_HOSTS\=\"ALLSEGHOSTS\"/' /tmp/gptext_install_config
+sed -i -r 's/ZOO_HOSTS.*/ZOO_HOSTS\=\(mdw sdw1 sdw1\)/' /tmp/gptext_install_config
+
+sudo mkdir /usr/local/greenplum-text-3.7.0
+sudo mkdir /usr/local/greenplum-solr
+sudo chown gpadmin:gpadmin /usr/local/greenplum-text-3.7.0
+sudo chown gpadmin:gpadmin /usr/local/greenplum-solr
+
+/tmp/greenplum-text-3.7.0-rhel6_x86_64.bin -c /tmp/gptext_install_config -d /usr/local/greenplum-text-3.7.0
+createdb demo
+source /usr/local/greenplum-text-3.7.0/greenplum-text_path.sh
+gptext-installsql demo
+gptext-start
 "
 
 install_pxf() {
