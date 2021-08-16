@@ -95,7 +95,12 @@ SQL_EOF
     fi
 
     echo 'Migrating gptext 3.7.0 to target cluster...'
+    source /usr/local/greenplum-text-3.7.0/greenplum-text_path.sh
     echo 'gptext: check gpdb version compatibility...'
+    if [ ! -f \$GPTXTHOME/lib/gptext-gpdb6-* ] then
+        echo 'This version of gptext does not support gpdb6'
+        exit
+    fi
     echo 'gptext: migrate gptext library...'
     gptext_config=$MASTER_DATA_DIRECTORY/gptxtenvs.conf
     mounted_binary=\$(grep MOUNTED_BINARY \$(gptext_config) | awk -F ',' '{print \$NF}')
@@ -108,6 +113,12 @@ SQL_EOF
     if [ -e $MASTER_DATA_DIRECTORY/gptxtauth.conf ] then
         cp $MASTER_DATA_DIRECTORY/gptxtauth.conf \$MASTER_DATA_DIRECTORY/
     fi
+
+    echo 'gptext: restart gptext...'
+    gptext-restart
+
+    echo 'gptext: stop gptext...'
+    gptext-stop
 
     gpstop -a
 
@@ -159,6 +170,10 @@ ssh -n mdw "
         echo 'Starting pxf...'
         /usr/local/pxf-gp6/bin/pxf cluster start
     fi
+
+    source /usr/local/greenplum-text-3.7.0/greenplum-text_path.sh
+    echo 'gptext: start gptext...'
+    gptext-start
 "
 
 echo "Upgrade successful..."
