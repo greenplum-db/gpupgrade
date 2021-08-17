@@ -115,6 +115,7 @@ SQL_EOF
 
 echo "Installing gptext 3.7.0 on source cluster..."
 time ssh -n mdw "
+export MASTER_DATA_DIRECTORY=$MASTER_DATA_DIRECTORY
 source /usr/local/greenplum-db-source/greenplum_path.sh
 
 tar zxvf /tmp/greenplum-text-3.7.0-rhel6_x86_64.tar.gz -C /tmp/
