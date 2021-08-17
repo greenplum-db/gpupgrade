@@ -184,7 +184,7 @@ echo "Installing gptext 3.7.0 on source cluster..."
 mapfile -t hosts < cluster_env_files/hostfile_all
 for host in "${hosts[@]}"; do
     ssh -n "centos@${host}" "
-        sudo yum install java-1.8.0-openjdk
+        sudo yum install -y java-1.8.0-openjdk
         sudo mkdir /usr/local/greenplum-db-text-3.7.0
         sudo mkdir /usr/local/greenplum-solr
         sudo chown gpadmin:gpadmin /usr/local/greenplum-db-text-3.7.0
