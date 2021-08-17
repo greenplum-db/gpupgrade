@@ -122,14 +122,12 @@ chmod +x /tmp/greenplum-text-3.7.0-rhel6_x86_64.bin
 sed -i -r 's/GPTEXT_HOSTS\=\(localhost\)/GPTEXT_HOSTS\=\"ALLSEGHOSTS\"/' /tmp/gptext_install_config
 sed -i -r 's/ZOO_HOSTS.*/ZOO_HOSTS\=\(mdw sdw1 sdw1\)/' /tmp/gptext_install_config
 
-sudo mkdir /usr/local/greenplum-text-3.7.0
-sudo mkdir /usr/local/greenplum-solr
-sudo chown gpadmin:gpadmin /usr/local/greenplum-text-3.7.0
-sudo chown gpadmin:gpadmin /usr/local/greenplum-solr
+mkdir ~/greenplum-text-3.7.0
+mkdir ~/greenplum-solr
 
-/tmp/greenplum-text-3.7.0-rhel6_x86_64.bin -c /tmp/gptext_install_config -d /usr/local/greenplum-text-3.7.0
+/tmp/greenplum-text-3.7.0-rhel6_x86_64.bin -c /tmp/gptext_install_config -d ~/greenplum-text-3.7.0
 createdb demo
-source /usr/local/greenplum-text-3.7.0/greenplum-text_path.sh
+source ~/greenplum-text-3.7.0/greenplum-text_path.sh
 gptext-installsql demo
 gptext-start
 "
