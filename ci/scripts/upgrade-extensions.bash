@@ -21,7 +21,7 @@ export PGPORT=5432
 echo "Copying extensions to the target cluster..."
 scp postgis_gppkg_target/postgis*.gppkg gpadmin@mdw:/tmp/postgis_target.gppkg
 scp madlib_gppkg_target/madlib*.gppkg gpadmin@mdw:/tmp/madlib_target.gppkg
-scp gptext_pkg_source/greenplum-text-3.7.0-rhel6_x86_64.tar.gz gpadmin@mdw:/tmp/greenplum-text-3.7.0-rhel6_x86_64.tar.gz
+scp gptext_pkg_target/greenplum-text-3.7.0-rhel6_x86_64.tar.gz gpadmin@mdw:/tmp/greenplum-text-3.7.0-rhel6_x86_64.tar.gz
 
 if test_pxf "$OS_VERSION"; then
     mapfile -t hosts < cluster_env_files/hostfile_all
