@@ -181,9 +181,11 @@ SQL_EOF
 test_pxf "$OS_VERSION" && install_pxf || echo "Skipping pxf for centos6 since pxf5 for GPDB6 on centos6 is not supported..."
 
 echo "Installing gptext 3.7.0 on source cluster..."
-ssh -n "centos@${host}" "
-sudo yum install java-1.8.0-openjdk
-"
+for host in "${hosts[@]}"; do
+    ssh -n "centos@${host}" "
+        sudo yum install java-1.8.0-openjdk
+    "
+done
 time ssh -n mdw "
 export MASTER_DATA_DIRECTORY=$MASTER_DATA_DIRECTORY
 source /usr/local/greenplum-db-source/greenplum_path.sh
