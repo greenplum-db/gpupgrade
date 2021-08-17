@@ -221,11 +221,12 @@ set-pipeline:
 	# TODO: Keep this in sync with the README at github.com/greenplum-db/continuous-integration
 	fly -t $(FLY_TARGET) set-pipeline -p $(PIPELINE_NAME) \
 		-c ci/generated/pipeline.yml \
-		-l ~/workspace/gp-continuous-integration/secrets/gpupgrade.$(TARGET).yml \
-		-l ~/workspace/gp-continuous-integration/secrets/gpdb_common-ci-secrets.yml \
-		-l ~/workspace/gp-continuous-integration/secrets/gpdb_master-ci-secrets.$(TARGET).yml \
-		-l ~/workspace/gp-continuous-integration/secrets/ccp_ci_secrets_$(FLY_TARGET).yml \
-		-l ~/workspace/gp-continuous-integration/secrets/gp-upgrade-packaging.dev.yml \
+		-l ~/Projects/gp-continuous-integration/secrets/gpupgrade.$(TARGET).yml \
+		-l ~/Projects/gp-continuous-integration/secrets/gpdb_common-ci-secrets.yml \
+		-l ~/Projects/gp-continuous-integration/secrets/gpdb_master-ci-secrets.$(TARGET).yml \
+		-l ~/Projects/gp-continuous-integration/secrets/ccp_ci_secrets_dev.yml \
+		-l ~/Projects/gp-continuous-integration/secrets/gp-upgrade-packaging.dev.yml \
+		-l ~/Projects/gp-continuous-integration/secrets/gptext-secrets.yml \
 		-v gpupgrade-git-remote=$(GIT_URI) \
 		-v gpupgrade-git-branch=$(BRANCH)
 
