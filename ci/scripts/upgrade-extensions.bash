@@ -115,7 +115,8 @@ SQL_EOF
     fi
 
     echo 'gptext: restart gptext...'
-    gptext-restart
+    gptext-stop
+    gptext-start
 
     echo 'gptext: stop gptext...'
     gptext-stop
