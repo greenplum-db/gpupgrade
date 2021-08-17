@@ -95,7 +95,7 @@ SQL_EOF
     fi
 
     echo 'Migrating gptext 3.7.0 to target cluster...'
-    source ~/greenplum-text-3.7.0/greenplum-text_path.sh
+    source /usr/local/greenplum-db-text-3.7.0/greenplum-text_path.sh
     echo 'gptext: check gpdb version compatibility...'
     if [ ! -f \$GPTXTHOME/lib/gptext-gpdb6-* ] then
         echo 'This version of gptext does not support gpdb6'
@@ -172,7 +172,7 @@ ssh -n mdw "
         /usr/local/pxf-gp6/bin/pxf cluster start
     fi
 
-    source ~/greenplum-text-3.7.0/greenplum-text_path.sh
+    source /usr/local/greenplum-db-text-3.7.0/greenplum-text_path.sh
     echo 'gptext: start gptext...'
     gptext-start
 "

@@ -184,6 +184,10 @@ echo "Installing gptext 3.7.0 on source cluster..."
 for host in "${hosts[@]}"; do
     ssh -n "centos@${host}" "
         sudo yum install java-1.8.0-openjdk
+        sudo mkdir /usr/local/greenplum-db-text-3.7.0
+        sudo mkdir /usr/local/greenplum-solr
+        sudo chown gpadmin:gpadmin /usr/local/greenplum-db-text-3.7.0
+        sudo chown gpadmin:gpadmin /usr/local/greenplum-solr
     "
 done
 time ssh -n mdw "
@@ -195,12 +199,9 @@ chmod +x /tmp/greenplum-text-3.7.0-rhel6_x86_64.bin
 sed -i -r 's/GPTEXT_HOSTS\=\(localhost\)/GPTEXT_HOSTS\=\"ALLSEGHOSTS\"/' /tmp/gptext_install_config
 sed -i -r 's/ZOO_HOSTS.*/ZOO_HOSTS\=\(mdw sdw1 sdw1\)/' /tmp/gptext_install_config
 
-mkdir ~/greenplum-text-3.7.0
-mkdir ~/greenplum-solr
-
-/tmp/greenplum-text-3.7.0-rhel6_x86_64.bin -c /tmp/gptext_install_config -d ~/greenplum-text-3.7.0
+/tmp/greenplum-text-3.7.0-rhel6_x86_64.bin -c /tmp/gptext_install_config -d /usr/local/greenplum-db-text-3.7.0
 createdb demo
-source ~/greenplum-text-3.7.0/greenplum-text_path.sh
+source /usr/local/greenplum-db-text-3.7.0/greenplum-text_path.sh
 gptext-installsql demo
 gptext-start
 "
