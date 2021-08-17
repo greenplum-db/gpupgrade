@@ -113,26 +113,6 @@ SQL_EOF
 SQL_EOF
 "
 
-echo "Installing gptext 3.7.0 on source cluster..."
-time ssh -n mdw "
-export MASTER_DATA_DIRECTORY=$MASTER_DATA_DIRECTORY
-source /usr/local/greenplum-db-source/greenplum_path.sh
-
-tar zxvf /tmp/greenplum-text-3.7.0-rhel6_x86_64.tar.gz -C /tmp/
-chmod +x /tmp/greenplum-text-3.7.0-rhel6_x86_64.bin
-sed -i -r 's/GPTEXT_HOSTS\=\(localhost\)/GPTEXT_HOSTS\=\"ALLSEGHOSTS\"/' /tmp/gptext_install_config
-sed -i -r 's/ZOO_HOSTS.*/ZOO_HOSTS\=\(mdw sdw1 sdw1\)/' /tmp/gptext_install_config
-
-mkdir ~/greenplum-text-3.7.0
-mkdir ~/greenplum-solr
-
-/tmp/greenplum-text-3.7.0-rhel6_x86_64.bin -c /tmp/gptext_install_config -d ~/greenplum-text-3.7.0
-createdb demo
-source ~/greenplum-text-3.7.0/greenplum-text_path.sh
-gptext-installsql demo
-gptext-start
-"
-
 install_pxf() {
     local PXF_CONF=/home/gpadmin/pxf
 
@@ -199,6 +179,26 @@ SQL_EOF
 }
 
 test_pxf "$OS_VERSION" && install_pxf || echo "Skipping pxf for centos6 since pxf5 for GPDB6 on centos6 is not supported..."
+
+echo "Installing gptext 3.7.0 on source cluster..."
+time ssh -n mdw "
+export MASTER_DATA_DIRECTORY=$MASTER_DATA_DIRECTORY
+source /usr/local/greenplum-db-source/greenplum_path.sh
+
+tar zxvf /tmp/greenplum-text-3.7.0-rhel6_x86_64.tar.gz -C /tmp/
+chmod +x /tmp/greenplum-text-3.7.0-rhel6_x86_64.bin
+sed -i -r 's/GPTEXT_HOSTS\=\(localhost\)/GPTEXT_HOSTS\=\"ALLSEGHOSTS\"/' /tmp/gptext_install_config
+sed -i -r 's/ZOO_HOSTS.*/ZOO_HOSTS\=\(mdw sdw1 sdw1\)/' /tmp/gptext_install_config
+
+mkdir ~/greenplum-text-3.7.0
+mkdir ~/greenplum-solr
+
+/tmp/greenplum-text-3.7.0-rhel6_x86_64.bin -c /tmp/gptext_install_config -d ~/greenplum-text-3.7.0
+createdb demo
+source ~/greenplum-text-3.7.0/greenplum-text_path.sh
+gptext-installsql demo
+gptext-start
+"
 
 echo "Running the data migration scripts on the source cluster..."
 ssh -n mdw "
