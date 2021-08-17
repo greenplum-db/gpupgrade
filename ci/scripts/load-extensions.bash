@@ -181,6 +181,7 @@ SQL_EOF
 test_pxf "$OS_VERSION" && install_pxf || echo "Skipping pxf for centos6 since pxf5 for GPDB6 on centos6 is not supported..."
 
 echo "Installing gptext 3.7.0 on source cluster..."
+mapfile -t hosts < cluster_env_files/hostfile_all
 for host in "${hosts[@]}"; do
     ssh -n "centos@${host}" "
         sudo yum install java-1.8.0-openjdk
