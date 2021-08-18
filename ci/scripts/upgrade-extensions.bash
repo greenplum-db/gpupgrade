@@ -104,14 +104,16 @@ SQL_EOF
     fi
     echo 'gptext: migrate gptext library...'
     gptext_config=$MASTER_DATA_DIRECTORY/gptxtenvs.conf
-    mounted_binary=\$(grep MOUNTED_BINARY \$(gptext_config) | awk -F ',' '{print \$NF}')
-    if [ \$(mounted_binary) \eq 'False' ] then
+    mounted_binary=\$(grep MOUNTED_BINARY \$gptext_config | awk -F ',' '{print \$NF}')
+    if [ \$(mounted_binary) \eq 'False' ]
+    then
         cp $GPHOME_SOURCE/lib/postgresql/gptext-*.so $GPHOME_TARGET/lib/postgresql/
     fi
 
     echo 'gptext: copy config files...'
     cp $MASTER_DATA_DIRECTORY/{gptext.conf,gptxtenvs.conf,zoo_cluster.conf} \$MASTER_DATA_DIRECTORY/
-    if [ -e $MASTER_DATA_DIRECTORY/gptxtauth.conf ] then
+    if [ -e $MASTER_DATA_DIRECTORY/gptxtauth.conf ]
+    then
         cp $MASTER_DATA_DIRECTORY/gptxtauth.conf \$MASTER_DATA_DIRECTORY/
     fi
 
