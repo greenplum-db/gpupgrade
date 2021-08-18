@@ -226,6 +226,18 @@ To make the pipeline publicly visible run `make expose-pipeline`. This will
 allow anyone to see the pipeline and its status. However, the task details will 
 not be visible unless one logs into Concourse.
 
+*Note:* If your dev pipeline is failing in the build job while verifying the rpm 
+then the most likely cause needing to sync the latest tags on origin with your 
+remote. This allows the GPDB test rpm to have the correct version number. 
+On your GPDB branch run the following:
+```
+$ git fetch --tags origin
+$ git push --tags <yourRemoteName>
+```
+If you already flew a pipeline *before* pushing tags you will likely 
+need to delete it, push tags, and re-fly as Concourse has some weird caching 
+issues.
+
 
 ## Generating gRPC code
 
