@@ -157,12 +157,14 @@ func (i *InvalidDataDirectoryError) Is(err error) bool {
 	return err == ErrInvalidDataDirectory
 }
 
-func VerifyDataDirectory(path string) error {
+func VerifyDataDirectory(path ...string) error {
 	var err error
 
 	for _, f := range PostgresFiles {
-		if !PathExists(filepath.Join(path, f)) {
-			err = errorlist.Append(err, &InvalidDataDirectoryError{path, f})
+		for _, p := range path {
+			if !PathExists(filepath.Join(p, f)) {
+				err = errorlist.Append(err, &InvalidDataDirectoryError{p, f})
+			}
 		}
 	}
 

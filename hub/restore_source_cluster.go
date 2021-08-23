@@ -155,22 +155,19 @@ func RsyncPrimaries(agentConns []*idl.Connection, source *greenplum.Cluster) err
 			return nil
 		}
 
-		var pairs []*idl.RsyncPair
+		var opts []*idl.RsyncRequest_RsyncOptions
 		for _, mirror := range mirrors {
-			pair := &idl.RsyncPair{
-				Source:          mirror.DataDir + string(os.PathSeparator),
+			opt := &idl.RsyncRequest_RsyncOptions{
+				Sources:         []string{mirror.DataDir + string(os.PathSeparator)},
 				DestinationHost: source.Primaries[mirror.ContentID].Hostname,
 				Destination:     source.Primaries[mirror.ContentID].DataDir,
+				Options:         Options,
+				ExcludedFiles:   Excludes,
 			}
-			pairs = append(pairs, pair)
+			opts = append(opts, opt)
 		}
 
-		req := &idl.RsyncRequest{
-			Options:  Options,
-			Excludes: Excludes,
-			Pairs:    pairs,
-		}
-
+		req := &idl.RsyncRequest{Options: opts}
 		_, err := conn.AgentClient.RsyncDataDirectories(context.Background(), req)
 		return err
 	}
@@ -188,7 +185,7 @@ func RsyncPrimariesTablespaces(agentConns []*idl.Connection, source *greenplum.C
 			return nil
 		}
 
-		var pairs []*idl.RsyncPair
+		var opts []*idl.RsyncRequest_RsyncOptions
 		for _, mirror := range mirrors {
 			primary := source.Primaries[mirror.ContentID]
 
@@ -199,21 +196,18 @@ func RsyncPrimariesTablespaces(agentConns []*idl.Connection, source *greenplum.C
 					continue
 				}
 
-				pair := &idl.RsyncPair{
-					Source:          mirrorTsInfo.Location + string(os.PathSeparator),
+				opt := &idl.RsyncRequest_RsyncOptions{
+					Sources:         []string{mirrorTsInfo.Location + string(os.PathSeparator)},
 					DestinationHost: primary.Hostname,
 					Destination:     primaryTablespaces[oid].Location,
+					Options:         Options,
+					ExcludedFiles:   Excludes,
 				}
-				pairs = append(pairs, pair)
+				opts = append(opts, opt)
 			}
 		}
 
-		req := &idl.RsyncRequest{
-			Options:  Options,
-			Excludes: Excludes,
-			Pairs:    pairs,
-		}
-
+		req := &idl.RsyncRequest{Options: opts}
 		_, err := conn.AgentClient.RsyncTablespaceDirectories(context.Background(), req)
 		return err
 	}

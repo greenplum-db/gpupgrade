@@ -98,16 +98,16 @@ message CheckDiskSpaceReply {
     repeated DiskUsage usage = 1;
 }
 
-message RsyncPair {
-    string Source = 1;
-    string DestinationHost = 2;
-    string Destination = 3;
-}
-
 message RsyncRequest {
-    repeated string Options = 1;
-    repeated string Excludes = 2;
-    repeated RsyncPair Pairs = 3;
+    message RsyncOptions {
+      repeated string sources = 1;
+      string destinationHost = 2;
+      string destination = 3;
+      repeated string options = 4;
+      repeated string excludedFiles = 5;
+    }
+
+    repeated RsyncOptions options = 1;
 }
 
 message RsyncReply {}

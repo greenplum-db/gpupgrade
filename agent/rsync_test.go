@@ -77,13 +77,13 @@ func TestRsync(t *testing.T) {
 		}))
 
 		request := &idl.RsyncRequest{
-			Pairs: []*idl.RsyncPair{{
-				Source:          source,
+			Options: []*idl.RsyncRequest_RsyncOptions{{
+				Sources:         []string{source + string(os.PathSeparator)},
 				DestinationHost: "sdw1",
 				Destination:     destination,
+				Options:         options,
+				ExcludedFiles:   excludes,
 			}},
-			Options:  options,
-			Excludes: excludes,
 		}
 
 		_, err := server.RsyncDataDirectories(context.Background(), request)
@@ -99,8 +99,8 @@ func TestRsync(t *testing.T) {
 		source := testutils.GetTempDir(t, "")
 		defer testutils.MustRemoveAll(t, source)
 
-		request := &idl.RsyncRequest{Pairs: []*idl.RsyncPair{
-			{Source: source, Destination: destination},
+		request := &idl.RsyncRequest{Options: []*idl.RsyncRequest_RsyncOptions{
+			{Sources: []string{source}, Destination: destination},
 		}}
 
 		_, err := server.RsyncDataDirectories(context.Background(), request)
@@ -128,8 +128,8 @@ func TestRsync(t *testing.T) {
 			t.Fatalf("creating bar directory: %v", err)
 		}
 
-		request := &idl.RsyncRequest{Pairs: []*idl.RsyncPair{
-			{Source: dir, Destination: destination},
+		request := &idl.RsyncRequest{Options: []*idl.RsyncRequest_RsyncOptions{
+			{Sources: []string{dir}, Destination: destination},
 		}}
 
 		_, err = server.RsyncDataDirectories(context.Background(), request)
@@ -147,9 +147,9 @@ func TestRsync(t *testing.T) {
 		rsync.SetRsyncCommand(exectest.NewCommand(agent.FailedRsync))
 		defer rsync.ResetRsyncCommand()
 
-		request := &idl.RsyncRequest{Pairs: []*idl.RsyncPair{
-			{Source: source, Destination: destination},
-			{Source: source, Destination: destination},
+		request := &idl.RsyncRequest{Options: []*idl.RsyncRequest_RsyncOptions{
+			{Sources: []string{source}, Destination: destination},
+			{Sources: []string{source}, Destination: destination},
 		}}
 
 		_, err := server.RsyncDataDirectories(context.Background(), request)
@@ -220,13 +220,13 @@ func TestRsyncTablespaceDirectories(t *testing.T) {
 		}))
 
 		request := &idl.RsyncRequest{
-			Pairs: []*idl.RsyncPair{{
-				Source:          sourceTsLocationDir,
+			Options: []*idl.RsyncRequest_RsyncOptions{{
+				Sources:         []string{sourceTsLocationDir + string(os.PathSeparator)},
 				DestinationHost: "sdw1",
 				Destination:     destination,
+				Options:         options,
+				ExcludedFiles:   excludes,
 			}},
-			Options:  options,
-			Excludes: excludes,
 		}
 
 		_, err := server.RsyncTablespaceDirectories(context.Background(), request)
@@ -251,8 +251,8 @@ func TestRsyncTablespaceDirectories(t *testing.T) {
 			t.Fatalf("removing PG_VERSION from %q: %v", dbOidDir, err)
 		}
 
-		request := &idl.RsyncRequest{Pairs: []*idl.RsyncPair{
-			{Source: invalidTablespaceDir, Destination: destination},
+		request := &idl.RsyncRequest{Options: []*idl.RsyncRequest_RsyncOptions{
+			{Sources: []string{invalidTablespaceDir}, Destination: destination},
 		}}
 
 		_, err = server.RsyncTablespaceDirectories(context.Background(), request)

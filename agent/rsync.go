@@ -5,7 +5,6 @@ package agent
 
 import (
 	"context"
-	"os"
 	"sync"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -21,8 +20,8 @@ func (s *Server) RsyncDataDirectories(ctx context.Context, in *idl.RsyncRequest)
 
 	// verify source data directories
 	var mErr error
-	for _, pair := range in.Pairs {
-		err := upgrade.VerifyDataDirectory(pair.GetSource())
+	for _, opts := range in.GetOptions() {
+		err := upgrade.VerifyDataDirectory(opts.GetSources()...)
 		if err != nil {
 			mErr = errorlist.Append(mErr, err)
 		}
@@ -39,13 +38,13 @@ func (s *Server) RsyncTablespaceDirectories(ctx context.Context, in *idl.RsyncRe
 
 	// We can only verify the source directories since the destination
 	// directories are on another host.
-	var sourceDirs []string
-	for _, pair := range in.Pairs {
-		sourceDirs = append(sourceDirs, pair.GetSource())
+	var sources []string
+	for _, opts := range in.GetOptions() {
+		sources = append(sources, opts.GetSources()...)
 	}
 
 	// NOTE: Rsync will still be called if a given sourceDir is empty.
-	if err := upgrade.Verify5XTablespaceDirectories(sourceDirs); err != nil {
+	if err := upgrade.Verify5XTablespaceDirectories(sources); err != nil {
 		return &idl.RsyncReply{}, err
 	}
 
@@ -54,21 +53,21 @@ func (s *Server) RsyncTablespaceDirectories(ctx context.Context, in *idl.RsyncRe
 
 func rsyncRequestDirs(in *idl.RsyncRequest) error {
 	var wg sync.WaitGroup
-	errs := make(chan error, len(in.Pairs))
+	errs := make(chan error, len(in.GetOptions()))
 
-	for _, pair := range in.Pairs {
-		pair := pair
+	for _, opts := range in.GetOptions() {
+		opts := opts
 
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 
 			opts := []rsync.Option{
-				rsync.WithSources(pair.GetSource() + string(os.PathSeparator)),
-				rsync.WithDestinationHost(pair.GetDestinationHost()),
-				rsync.WithDestination(pair.GetDestination()),
-				rsync.WithOptions(in.GetOptions()...),
-				rsync.WithExcludedFiles(in.GetExcludes()...),
+				rsync.WithSources(opts.GetSources()...),
+				rsync.WithDestinationHost(opts.GetDestinationHost()),
+				rsync.WithDestination(opts.GetDestination()),
+				rsync.WithOptions(opts.GetOptions()...),
+				rsync.WithExcludedFiles(opts.GetExcludedFiles()...),
 			}
 			errs <- rsync.Rsync(opts...)
 		}()

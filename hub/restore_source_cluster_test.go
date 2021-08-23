@@ -181,12 +181,12 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 		msdw1.EXPECT().RsyncDataDirectories(
 			gomock.Any(),
 			&idl.RsyncRequest{
-				Options:  hub.Options,
-				Excludes: hub.Excludes,
-				Pairs: []*idl.RsyncPair{{
-					Source:          "/data/dbfast_mirror1/seg1" + string(os.PathSeparator),
+				Options: []*idl.RsyncRequest_RsyncOptions{{
+					Sources:         []string{"/data/dbfast_mirror1/seg1" + string(os.PathSeparator)},
 					DestinationHost: "sdw1",
 					Destination:     "/data/dbfast1/seg1",
+					Options:         hub.Options,
+					ExcludedFiles:   hub.Excludes,
 				}},
 			},
 		).Return(&idl.RsyncReply{}, nil)
@@ -195,12 +195,12 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 		msdw2.EXPECT().RsyncDataDirectories(
 			gomock.Any(),
 			&idl.RsyncRequest{
-				Options:  hub.Options,
-				Excludes: hub.Excludes,
-				Pairs: []*idl.RsyncPair{{
-					Source:          "/data/dbfast_mirror2/seg2" + string(os.PathSeparator),
+				Options: []*idl.RsyncRequest_RsyncOptions{{
+					Sources:         []string{"/data/dbfast_mirror2/seg2" + string(os.PathSeparator)},
 					DestinationHost: "sdw2",
 					Destination:     "/data/dbfast2/seg2",
+					Options:         hub.Options,
+					ExcludedFiles:   hub.Excludes,
 				}},
 			},
 		).Return(&idl.RsyncReply{}, nil)
@@ -227,12 +227,12 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 		msdw1.EXPECT().RsyncTablespaceDirectories(
 			gomock.Any(),
 			&idl.RsyncRequest{
-				Options:  hub.Options,
-				Excludes: hub.Excludes,
-				Pairs: []*idl.RsyncPair{{
-					Source:          "/tmp/user_ts/m1/16384" + string(os.PathSeparator),
+				Options: []*idl.RsyncRequest_RsyncOptions{{
+					Sources:         []string{"/tmp/user_ts/m1/16384" + string(os.PathSeparator)},
 					DestinationHost: "sdw1",
 					Destination:     "/tmp/user_ts/p1/16384",
+					Options:         hub.Options,
+					ExcludedFiles:   hub.Excludes,
 				}},
 			},
 		).Return(&idl.RsyncReply{}, nil)
@@ -241,12 +241,12 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 		msdw2.EXPECT().RsyncTablespaceDirectories(
 			gomock.Any(),
 			&idl.RsyncRequest{
-				Options:  hub.Options,
-				Excludes: hub.Excludes,
-				Pairs: []*idl.RsyncPair{{
-					Source:          "/tmp/user_ts/m2/16384" + string(os.PathSeparator),
+				Options: []*idl.RsyncRequest_RsyncOptions{{
+					Sources:         []string{"/tmp/user_ts/m2/16384" + string(os.PathSeparator)},
 					DestinationHost: "sdw2",
 					Destination:     "/tmp/user_ts/p2/16384",
+					Options:         hub.Options,
+					ExcludedFiles:   hub.Excludes,
 				}},
 			},
 		).Return(&idl.RsyncReply{}, nil)
