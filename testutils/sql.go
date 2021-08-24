@@ -56,7 +56,7 @@ func MockCluster() *greenplum.Cluster {
 		panic(fmt.Sprintf("unexpected error %+v", err))
 	}
 
-	return c
+	return &c
 }
 
 // CreateMockDBConn is just like testhelper.CreateAndConnectMockDB(), but it

@@ -85,30 +85,6 @@ func (s *Server) RemoveTargetCluster(streams step.OutStreams) error {
 	return nil
 }
 
-// CreateTargetCluster runs gpinitsystem using the server's
-// TargetInitializeConfig, then fills in the Target cluster and persists it to
-// disk.
-func (s *Server) CreateTargetCluster(stream step.OutStreams) error {
-	err := s.InitTargetCluster(stream)
-	if err != nil {
-		return err
-	}
-
-	conn := db.NewDBConn("localhost", s.TargetInitializeConfig.Master.Port, "template1")
-	defer conn.Close()
-
-	s.Target, err = greenplum.ClusterFromDB(conn, s.TargetGPHome)
-	if err != nil {
-		return xerrors.Errorf("retrieve target configuration: %w", err)
-	}
-
-	if err := s.SaveConfig(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (s *Server) InitTargetCluster(stream step.OutStreams) error {
 	version, err := greenplum.LocalVersion(s.TargetGPHome)
 	if err != nil {

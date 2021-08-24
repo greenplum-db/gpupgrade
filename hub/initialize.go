@@ -121,7 +121,7 @@ func (s *Server) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest,
 			return err
 		}
 
-		err = s.CreateTargetCluster(stream)
+		err = s.InitTargetCluster(stream)
 		if err != nil {
 			return err
 		}

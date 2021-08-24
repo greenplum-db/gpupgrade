@@ -28,7 +28,7 @@ var (
 )
 
 func TestUpdateCatalog(t *testing.T) {
-	src, err := greenplum.NewCluster([]greenplum.SegConfig{
+	src := MustCreateCluster(t, []greenplum.SegConfig{
 		{ContentID: -1, Port: 123, Role: greenplum.PrimaryRole},
 		{ContentID: -1, Port: 789, Role: greenplum.MirrorRole},
 		{ContentID: 0, Port: 234, Role: greenplum.PrimaryRole},
@@ -38,10 +38,6 @@ func TestUpdateCatalog(t *testing.T) {
 		{ContentID: 2, Port: 456, Role: greenplum.PrimaryRole},
 		{ContentID: 2, Port: 333, Role: greenplum.MirrorRole},
 	})
-
-	if err != nil {
-		t.Fatalf("constructing test cluster: %+v", err)
-	}
 
 	tempDir, err := ioutil.TempDir("", "gpupgrade")
 	if err != nil {

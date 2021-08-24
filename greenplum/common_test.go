@@ -42,5 +42,5 @@ func MustCreateCluster(t *testing.T, segs []SegConfig) *Cluster {
 		t.Fatalf("%+v", err)
 	}
 
-	return cluster
+	return &cluster
 }

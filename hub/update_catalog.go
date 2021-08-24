@@ -187,25 +187,6 @@ func (s *Server) UpdateGpSegmentConfiguration(db *sql.DB) (err error) {
 	}
 	defer func() {
 		err = commitOrRollback(tx, err)
-		if err == nil {
-			// After successfully changing the catalog, update the source and
-			// target cluster objects to match the catalog and persist to
-			// disk.
-			origConf := &Config{}
-			err = LoadConfig(origConf, upgrade.GetConfigFile())
-			if err != nil {
-				err = xerrors.Errorf("loading config: %w", err)
-				return
-			}
-
-			// TODO: this is out of sync now, as the standby/mirrors are added later.
-			//   replace with one without standby/mirrors
-			s.Target = origConf.Source
-			s.Target.GPHome = origConf.Target.GPHome
-			s.Target.Version = origConf.Target.Version
-
-			err = s.SaveConfig()
-		}
 	}()
 
 	// Make sure the content IDs in gp_segment_configuration match the source

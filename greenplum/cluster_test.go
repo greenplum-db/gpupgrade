@@ -278,8 +278,8 @@ func TestClusterFromDB(t *testing.T) {
 		if err == nil {
 			t.Errorf("Expected an error, but got nil")
 		}
-		if actualCluster != nil {
-			t.Errorf("Expected cluster to be nil, but got %#v", actualCluster)
+		if !reflect.DeepEqual(actualCluster, greenplum.Cluster{}) {
+			t.Errorf("got: %#v want empty cluster: %#v", actualCluster, &greenplum.Cluster{})
 		}
 		if !strings.Contains(err.Error(), connErr.Error()) {
 			t.Errorf("Expected error: %+v got: %+v", connErr.Error(), err.Error())
@@ -298,8 +298,8 @@ func TestClusterFromDB(t *testing.T) {
 		if err == nil {
 			t.Errorf("Expected an error, but got nil")
 		}
-		if actualCluster != nil {
-			t.Errorf("Expected cluster to be nil, but got %#v", actualCluster)
+		if !reflect.DeepEqual(actualCluster, greenplum.Cluster{}) {
+			t.Errorf("Expected cluster to be empty, but got %#v", actualCluster)
 		}
 		if !strings.Contains(err.Error(), queryErr.Error()) {
 			t.Errorf("Expected error: %+v got: %+v", queryErr.Error(), err.Error())
@@ -323,8 +323,8 @@ func TestClusterFromDB(t *testing.T) {
 		expectedCluster.Version = dbconn.NewVersion("5.3.4")
 		expectedCluster.GPHome = gphome
 
-		if !reflect.DeepEqual(actualCluster, expectedCluster) {
-			t.Errorf("expected: %#v got: %#v", expectedCluster, actualCluster)
+		if !reflect.DeepEqual(&actualCluster, expectedCluster) {
+			t.Errorf("got: %#v want: %#v ", &actualCluster, expectedCluster)
 		}
 	})
 }

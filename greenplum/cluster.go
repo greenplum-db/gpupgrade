@@ -41,21 +41,21 @@ type Cluster struct {
 // ClusterFromDB will create a Cluster by querying the passed DBConn for
 // information. You must pass the cluster's gphome, since it cannot be
 // divined from the database.
-func ClusterFromDB(conn *dbconn.DBConn, gphome string) (*Cluster, error) {
+func ClusterFromDB(conn *dbconn.DBConn, gphome string) (Cluster, error) {
 	err := conn.Connect(1)
 	if err != nil {
-		return nil, xerrors.Errorf("connect to cluster: %w", err)
+		return Cluster{}, xerrors.Errorf("connect to cluster: %w", err)
 	}
 	defer conn.Close()
 
 	segments, err := GetSegmentConfiguration(conn)
 	if err != nil {
-		return nil, xerrors.Errorf("retrieve segment configuration: %w", err)
+		return Cluster{}, xerrors.Errorf("retrieve segment configuration: %w", err)
 	}
 
 	c, err := NewCluster(segments)
 	if err != nil {
-		return nil, err
+		return Cluster{}, err
 	}
 
 	c.Version = conn.Version
@@ -206,7 +206,7 @@ var ErrInvalidSegments = errors.New("invalid segment configuration")
  * Base cluster functions
  */
 
-func NewCluster(segConfigs []SegConfig) (*Cluster, error) {
+func NewCluster(segConfigs []SegConfig) (Cluster, error) {
 	cluster := Cluster{}
 
 	cluster.Primaries = make(map[int]SegConfig)
@@ -219,7 +219,7 @@ func NewCluster(segConfigs []SegConfig) (*Cluster, error) {
 		case PrimaryRole:
 			// Check for duplication.
 			if _, ok := cluster.Primaries[content]; ok {
-				return nil, newInvalidSegmentsError(seg, "multiple primaries with content ID %d", content)
+				return Cluster{}, newInvalidSegmentsError(seg, "multiple primaries with content ID %d", content)
 			}
 
 			cluster.ContentIDs = append(cluster.ContentIDs, content)
@@ -228,13 +228,13 @@ func NewCluster(segConfigs []SegConfig) (*Cluster, error) {
 		case MirrorRole:
 			// Check for duplication.
 			if _, ok := cluster.Mirrors[content]; ok {
-				return nil, newInvalidSegmentsError(seg, "multiple mirrors with content ID %d", content)
+				return Cluster{}, newInvalidSegmentsError(seg, "multiple mirrors with content ID %d", content)
 			}
 
 			cluster.Mirrors[content] = seg
 
 		default:
-			return nil, newInvalidSegmentsError(seg, "unknown role %q", seg.Role)
+			return Cluster{}, newInvalidSegmentsError(seg, "unknown role %q", seg.Role)
 		}
 	}
 
@@ -243,11 +243,11 @@ func NewCluster(segConfigs []SegConfig) (*Cluster, error) {
 		content := seg.ContentID
 
 		if _, ok := cluster.Primaries[content]; !ok {
-			return nil, newInvalidSegmentsError(seg, "mirror with content ID %d has no primary", content)
+			return Cluster{}, newInvalidSegmentsError(seg, "mirror with content ID %d has no primary", content)
 		}
 	}
 
-	return &cluster, nil
+	return cluster, nil
 }
 
 // InvalidSegmentsError is the backing error type for ErrInvalidSegments. It

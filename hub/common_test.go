@@ -45,5 +45,5 @@ func MustCreateCluster(t *testing.T, segs []greenplum.SegConfig) *greenplum.Clus
 		t.Fatalf("%+v", err)
 	}
 
-	return cluster
+	return &cluster
 }

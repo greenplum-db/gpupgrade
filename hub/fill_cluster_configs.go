@@ -42,7 +42,9 @@ func FillConfiguration(config *Config, conn *sql.DB, _ step.OutStreams, request 
 		return xerrors.Errorf("retrieve source configuration: %w", err)
 	}
 
-	config.Source = source
+	target := source // create target cluster based off source cluster
+	config.Source = &source
+	config.Target = &target
 	config.TargetGPHome = request.TargetGPHome
 	config.UseLinkMode = request.UseLinkMode
 
