@@ -361,6 +361,11 @@ type Config struct {
 	// it is nil.
 	Source *greenplum.Cluster
 
+	// IntermediateTarget represents the initialized target cluster that is
+	// upgraded based on the source and later renamed to match the source
+	// cluster.
+	IntermediateTarget InitializeConfig
+
 	// Target is the upgraded GPDB cluster. It is populated during the target
 	// gpinitsystem execution in the initialize step; before that, it is nil.
 	Target *greenplum.Cluster
@@ -369,10 +374,6 @@ type Config struct {
 	// source or target databases.  It also contains the Source.Version and
 	// Target.Version internally.
 	Connection *connURI.Conn
-
-	// TargetInitializeConfig contains all the info needed to initialize the
-	// target cluster's master, standby, primaries and mirrors.
-	TargetInitializeConfig InitializeConfig
 
 	Port            int
 	AgentPort       int

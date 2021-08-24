@@ -23,7 +23,7 @@ func (s *Server) UpdateDataDirectories() error {
 
 func UpdateDataDirectories(conf *Config, agentConns []*idl.Connection) error {
 	source := conf.Source.MasterDataDir()
-	target := conf.TargetInitializeConfig.Master.DataDir
+	target := conf.IntermediateTarget.Master.DataDir
 	if err := ArchiveSource(source, target, true); err != nil {
 		return xerrors.Errorf("renaming master data directories: %w", err)
 	}
@@ -40,7 +40,7 @@ func UpdateDataDirectories(conf *Config, agentConns []*idl.Connection) error {
 		}
 	}
 
-	renameMap := getRenameMap(conf.Source, conf.TargetInitializeConfig, conf.UseLinkMode)
+	renameMap := getRenameMap(conf.Source, conf.IntermediateTarget, conf.UseLinkMode)
 	if err := RenameSegmentDataDirs(agentConns, renameMap); err != nil {
 		return xerrors.Errorf("renaming segment data directories: %w", err)
 	}

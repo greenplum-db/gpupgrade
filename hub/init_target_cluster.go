@@ -43,7 +43,7 @@ func (s *Server) writeConf(sourceDBConn *dbconn.DBConn) error {
 	}
 	defer sourceDBConn.Close()
 
-	gpinitsystemConfig, err := CreateInitialInitsystemConfig(s.TargetInitializeConfig.Master.DataDir, s.UseHbaHostnames)
+	gpinitsystemConfig, err := CreateInitialInitsystemConfig(s.IntermediateTarget.Master.DataDir, s.UseHbaHostnames)
 	if err != nil {
 		return err
 	}
@@ -53,7 +53,7 @@ func (s *Server) writeConf(sourceDBConn *dbconn.DBConn) error {
 		return err
 	}
 
-	gpinitsystemConfig, err = WriteSegmentArray(gpinitsystemConfig, s.TargetInitializeConfig)
+	gpinitsystemConfig, err = WriteSegmentArray(gpinitsystemConfig, s.IntermediateTarget)
 	if err != nil {
 		return xerrors.Errorf("generating segment array: %w", err)
 	}
@@ -77,7 +77,7 @@ func (s *Server) RemoveTargetCluster(streams step.OutStreams) error {
 		}
 	}
 
-	err = DeleteMasterAndPrimaryDataDirectories(streams, s.agentConns, s.TargetInitializeConfig)
+	err = DeleteMasterAndPrimaryDataDirectories(streams, s.agentConns, s.IntermediateTarget)
 	if err != nil {
 		return xerrors.Errorf("deleting target cluster data directories: %w", err)
 	}

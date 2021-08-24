@@ -56,7 +56,7 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 		return UpdateConfFiles(streams,
 			semver.MustParse(s.Target.Version.SemVer.String()),
 			s.Target.MasterDataDir(),
-			s.TargetInitializeConfig.Master.Port,
+			s.IntermediateTarget.Master.Port,
 			s.Source.MasterPort(),
 		)
 	})
@@ -73,7 +73,7 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 
 	st.RunConditionally(idl.Substep_UPGRADE_STANDBY, s.Source.HasStandby(), func(streams step.OutStreams) error {
 		// TODO: once the temporary standby upgrade is fixed, switch to
-		// using the TargetInitializeConfig's temporary assignments, and
+		// using the IntermediateTarget's temporary assignments, and
 		// move this upgrade step back to before the target shutdown.
 		standby := s.Source.Mirrors[-1]
 		return UpgradeStandby(greenplum.NewRunner(s.Target, streams), StandbyConfig{
@@ -86,7 +86,7 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 
 	st.RunConditionally(idl.Substep_UPGRADE_MIRRORS, s.Source.HasMirrors(), func(streams step.OutStreams) error {
 		// TODO: once the temporary mirror upgrade is fixed, switch to using
-		// the TargetInitializeConfig's temporary assignments, and move this
+		// the IntermediateTarget's temporary assignments, and move this
 		// upgrade step back to before the target shutdown.
 		mirrors := func(seg *greenplum.SegConfig) bool {
 			return seg.IsMirror()
@@ -124,7 +124,7 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 		FinalizeResponse: &idl.FinalizeResponse{
 			TargetVersion:                     s.Target.Version.VersionString,
 			LogArchiveDirectory:               logArchiveDir,
-			ArchivedSourceMasterDataDirectory: s.Config.TargetInitializeConfig.Master.DataDir + upgrade.OldSuffix,
+			ArchivedSourceMasterDataDirectory: s.Config.IntermediateTarget.Master.DataDir + upgrade.OldSuffix,
 			UpgradeID:                         s.Config.UpgradeID.String(),
 			Target: &idl.Cluster{
 				Port:                int32(s.Target.MasterPort()),

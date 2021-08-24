@@ -8,10 +8,13 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 )
 
 func TestGetHubPort(t *testing.T) {
+	testlog.SetupLogger()
+
 	t.Run("correctly pulls the port from the stored config", func(t *testing.T) {
 		stateDir := testutils.GetTempDir(t, "")
 		defer testutils.MustRemoveAll(t, stateDir)

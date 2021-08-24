@@ -53,12 +53,12 @@ func FillConfiguration(config *Config, conn *sql.DB, _ step.OutStreams, request 
 		ports = append(ports, int(p))
 	}
 
-	config.TargetInitializeConfig, err = AssignDatadirsAndPorts(config.Source, ports, config.UpgradeID)
+	config.IntermediateTarget, err = AssignDatadirsAndPorts(config.Source, ports, config.UpgradeID)
 	if err != nil {
 		return err
 	}
 
-	if err := ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(config.Source, config.TargetInitializeConfig); err != nil {
+	if err := ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(config.Source, config.IntermediateTarget); err != nil {
 		return err
 	}
 

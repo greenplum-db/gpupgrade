@@ -124,7 +124,7 @@ func TestRenameSegmentDataDirs(t *testing.T) {
 func TestUpdateDataDirectories(t *testing.T) {
 	// Prerequisites:
 	// - a valid Source cluster
-	// - a valid TargetInitializeConfig (XXX should be Target once we fix it)
+	// - a valid IntermediateTarget (XXX should be Target once we fix it)
 	// - agentConns pointing to each host (set up per test)
 
 	conf := new(hub.Config)
@@ -144,7 +144,7 @@ func TestUpdateDataDirectories(t *testing.T) {
 		{ContentID: 3, Hostname: "sdw2", DataDir: "/data/dbfast_mirror2/seg4", Role: greenplum.MirrorRole},
 	})
 
-	conf.TargetInitializeConfig = hub.InitializeConfig{
+	conf.IntermediateTarget = hub.InitializeConfig{
 		Master: greenplum.SegConfig{
 			ContentID: -1, Hostname: "sdw1", DataDir: "/data/qddir/seg-1_123ABC-1", Role: greenplum.PrimaryRole,
 		},
@@ -179,7 +179,7 @@ func TestUpdateDataDirectories(t *testing.T) {
 			{ContentID: -1, Hostname: "sdw1", DataDir: sourceDataDir, Role: greenplum.PrimaryRole},
 		})
 
-		conf.TargetInitializeConfig = hub.InitializeConfig{
+		conf.IntermediateTarget = hub.InitializeConfig{
 			Master: greenplum.SegConfig{
 				ContentID: -1, Hostname: "sdw1", DataDir: targetDataDir, Role: greenplum.PrimaryRole,
 			},

@@ -27,9 +27,9 @@ func TestConfig(t *testing.T) {
 		original := &Config{
 			"logArchiveDir",
 			source,
+			targetInitializeConfig,
 			target,
 			&connURI.Conn{},
-			targetInitializeConfig,
 			12345,           // Port
 			54321,           // AgentPort
 			false,           // UseLinkMode

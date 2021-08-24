@@ -30,8 +30,8 @@ func (s *Server) GetConfig(ctx context.Context, in *idl.GetConfigRequest) (*idl.
 			resp.Value = s.Target.MasterDataDir()
 		}
 	case "target-port":
-		if s.TargetInitializeConfig.Master.Port != 0 {
-			resp.Value = strconv.Itoa(s.TargetInitializeConfig.Master.Port)
+		if s.IntermediateTarget.Master.Port != 0 {
+			resp.Value = strconv.Itoa(s.IntermediateTarget.Master.Port)
 		}
 	default:
 		return nil, status.Errorf(codes.NotFound, "%s is not a valid configuration key", in.Name)

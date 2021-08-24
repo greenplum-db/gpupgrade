@@ -89,7 +89,7 @@ query_host_datadirs() {
         --verbose 3>&-
 
     # grab cluster data before revert destroys it
-    target_hosts_dirs=$(jq -r '.Target.Primaries[] | .Hostname + " " + .DataDir' "${GPUPGRADE_HOME}/config.json")
+    target_hosts_dirs=$(jq -r '.IntermediateTarget.Primaries[] | .Hostname + " " + .DataDir' "${GPUPGRADE_HOME}/config.json")
     upgradeID=$(gpupgrade config show --id)
 
     gpupgrade revert --non-interactive --verbose

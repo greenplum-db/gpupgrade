@@ -46,13 +46,13 @@ func TestHubStart(t *testing.T) {
 	})
 
 	conf := &hub.Config{
-		Source:                 source,
-		Target:                 target,
-		TargetInitializeConfig: hub.InitializeConfig{},
-		Port:                   testutils.MustGetPort(t),
-		AgentPort:              testutils.MustGetPort(t),
-		UseLinkMode:            false,
-		UpgradeID:              0,
+		Source:             source,
+		Target:             target,
+		IntermediateTarget: hub.InitializeConfig{},
+		Port:               testutils.MustGetPort(t),
+		AgentPort:          testutils.MustGetPort(t),
+		UseLinkMode:        false,
+		UpgradeID:          0,
 	}
 
 	t.Run("start correctly errors if stop is called first", func(t *testing.T) {
@@ -174,13 +174,13 @@ func TestAgentConns(t *testing.T) {
 	defer agentServer.Stop()
 
 	conf := &hub.Config{
-		Source:                 source,
-		Target:                 target,
-		TargetInitializeConfig: hub.InitializeConfig{},
-		Port:                   testutils.MustGetPort(t),
-		AgentPort:              agentPort,
-		UseLinkMode:            false,
-		UpgradeID:              0,
+		Source:             source,
+		Target:             target,
+		IntermediateTarget: hub.InitializeConfig{},
+		Port:               testutils.MustGetPort(t),
+		AgentPort:          agentPort,
+		UseLinkMode:        false,
+		UpgradeID:          0,
 	}
 
 	testlog.SetupLogger()
@@ -322,13 +322,13 @@ func doesStateEventuallyReach(conn *grpc.ClientConn, state connectivity.State) (
 func TestHubSaveConfig(t *testing.T) {
 	source, target := testutils.CreateMultinodeSampleClusterPair("/tmp")
 	conf := &hub.Config{
-		Source:                 source,
-		Target:                 target,
-		TargetInitializeConfig: hub.InitializeConfig{},
-		Port:                   12345,
-		AgentPort:              54321,
-		UseLinkMode:            false,
-		UpgradeID:              0,
+		Source:             source,
+		Target:             target,
+		IntermediateTarget: hub.InitializeConfig{},
+		Port:               12345,
+		AgentPort:          54321,
+		UseLinkMode:        false,
+		UpgradeID:          0,
 	}
 
 	h := hub.New(conf, nil, "")
@@ -372,13 +372,13 @@ func TestGetArchiveDir(t *testing.T) {
 
 	source, target := testutils.CreateMultinodeSampleClusterPair("/data")
 	conf := &hub.Config{
-		Source:                 source,
-		Target:                 target,
-		TargetInitializeConfig: hub.InitializeConfig{},
-		Port:                   12345,
-		AgentPort:              54321,
-		UseLinkMode:            false,
-		UpgradeID:              0,
+		Source:             source,
+		Target:             target,
+		IntermediateTarget: hub.InitializeConfig{},
+		Port:               12345,
+		AgentPort:          54321,
+		UseLinkMode:        false,
+		UpgradeID:          0,
 	}
 
 	server := hub.New(conf, nil, "")
