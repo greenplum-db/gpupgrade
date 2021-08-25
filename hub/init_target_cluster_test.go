@@ -160,10 +160,10 @@ func TestGetCheckpointSegmentsAndEncoding(t *testing.T) {
 }
 
 func TestWriteSegmentArray(t *testing.T) {
-	test := func(t *testing.T, initializeConfig InitializeConfig, expected []string) {
+	test := func(t *testing.T, intermediateTarget *greenplum.Cluster, expected []string) {
 		t.Helper()
 
-		actual, err := WriteSegmentArray([]string{}, initializeConfig)
+		actual, err := WriteSegmentArray([]string{}, intermediateTarget)
 		if err != nil {
 			t.Errorf("got %#v", err)
 		}
@@ -186,13 +186,11 @@ func TestWriteSegmentArray(t *testing.T) {
 	}
 
 	t.Run("renders the config file as expected", func(t *testing.T) {
-		config := InitializeConfig{
-			Master: greenplum.SegConfig{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir_upgrade/seg-1", Role: "p", Port: 15433},
-			Primaries: []greenplum.SegConfig{
-				{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1_upgrade/seg1", Role: "p", Port: 15434},
-				{ContentID: 1, DbID: 3, Hostname: "sdw2", DataDir: "/data/dbfast2_upgrade/seg2", Role: "p", Port: 15434},
-			},
-		}
+		config := MustCreateCluster(t, []greenplum.SegConfig{
+			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir_upgrade/seg-1", Role: "p", Port: 15433},
+			{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1_upgrade/seg1", Role: "p", Port: 15434},
+			{ContentID: 1, DbID: 3, Hostname: "sdw2", DataDir: "/data/dbfast2_upgrade/seg2", Role: "p", Port: 15434},
+		})
 
 		test(t, config, []string{
 			"QD_PRIMARY_ARRAY=mdw~mdw~15433~/data/qddir_upgrade/seg-1~1~-1",
@@ -201,14 +199,6 @@ func TestWriteSegmentArray(t *testing.T) {
 			"\tsdw2~sdw2~15434~/data/dbfast2_upgrade/seg2~3~1",
 			")",
 		})
-	})
-
-	t.Run("errors when source cluster contains no master segment", func(t *testing.T) {
-		_, err := WriteSegmentArray([]string{}, InitializeConfig{})
-
-		if err == nil {
-			t.Errorf("expected error got nil")
-		}
 	})
 }
 

@@ -344,13 +344,6 @@ func (s *Server) closeAgentConns() {
 	}
 }
 
-type InitializeConfig struct {
-	Standby   greenplum.SegConfig
-	Master    greenplum.SegConfig
-	Primaries []greenplum.SegConfig
-	Mirrors   []greenplum.SegConfig
-}
-
 // Config contains all the information that will be persisted to/loaded from
 // from disk during calls to Save() and Load().
 type Config struct {
@@ -364,7 +357,7 @@ type Config struct {
 	// IntermediateTarget represents the initialized target cluster that is
 	// upgraded based on the source and later renamed to match the source
 	// cluster.
-	IntermediateTarget InitializeConfig
+	IntermediateTarget *greenplum.Cluster
 
 	// Target is the upgraded GPDB cluster. It is populated during the target
 	// gpinitsystem execution in the initialize step; before that, it is nil.

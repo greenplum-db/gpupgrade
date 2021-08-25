@@ -48,7 +48,7 @@ func TestHubStart(t *testing.T) {
 	conf := &hub.Config{
 		Source:             source,
 		Target:             target,
-		IntermediateTarget: hub.InitializeConfig{},
+		IntermediateTarget: &greenplum.Cluster{},
 		Port:               testutils.MustGetPort(t),
 		AgentPort:          testutils.MustGetPort(t),
 		UseLinkMode:        false,
@@ -176,7 +176,7 @@ func TestAgentConns(t *testing.T) {
 	conf := &hub.Config{
 		Source:             source,
 		Target:             target,
-		IntermediateTarget: hub.InitializeConfig{},
+		IntermediateTarget: &greenplum.Cluster{},
 		Port:               testutils.MustGetPort(t),
 		AgentPort:          agentPort,
 		UseLinkMode:        false,
@@ -324,7 +324,7 @@ func TestHubSaveConfig(t *testing.T) {
 	conf := &hub.Config{
 		Source:             source,
 		Target:             target,
-		IntermediateTarget: hub.InitializeConfig{},
+		IntermediateTarget: &greenplum.Cluster{},
 		Port:               12345,
 		AgentPort:          54321,
 		UseLinkMode:        false,
@@ -374,7 +374,7 @@ func TestGetArchiveDir(t *testing.T) {
 	conf := &hub.Config{
 		Source:             source,
 		Target:             target,
-		IntermediateTarget: hub.InitializeConfig{},
+		IntermediateTarget: &greenplum.Cluster{},
 		Port:               12345,
 		AgentPort:          54321,
 		UseLinkMode:        false,

@@ -124,12 +124,9 @@ func TestDeleteSegmentDataDirs(t *testing.T) {
 				{AgentClient: standbyClient, Hostname: "standby"},
 			}
 
-			source := hub.InitializeConfig{
-				Master:    greenplum.SegConfig{ContentID: -1, DbID: 0, Port: 25431, Hostname: "master", DataDir: "/data/qddir", Role: greenplum.PrimaryRole},
-				Primaries: primarySegConfigs,
-			}
+			intermediateTarget := hub.MustCreateCluster(t, append(primarySegConfigs, greenplum.SegConfig{ContentID: -1, DbID: 0, Port: 25431, Hostname: "master", DataDir: "/data/qddir", Role: greenplum.PrimaryRole}))
 
-			err := hub.DeleteMasterAndPrimaryDataDirectories(step.DevNullStream, agentConns, source)
+			err := hub.DeleteMasterAndPrimaryDataDirectories(step.DevNullStream, agentConns, intermediateTarget)
 			if err != nil {
 				t.Errorf("unexpected err %#v", err)
 			}
@@ -157,12 +154,9 @@ func TestDeleteSegmentDataDirs(t *testing.T) {
 				{AgentClient: sdw2ClientFailed, Hostname: "sdw2"},
 			}
 
-			source := hub.InitializeConfig{
-				Master:    greenplum.SegConfig{ContentID: -1, DbID: 0, Port: 25431, Hostname: "master", DataDir: "/data/qddir", Role: greenplum.PrimaryRole},
-				Primaries: primarySegConfigs,
-			}
+			intermediateTarget := hub.MustCreateCluster(t, append(primarySegConfigs, greenplum.SegConfig{ContentID: -1, DbID: 0, Port: 25431, Hostname: "master", DataDir: "/data/qddir", Role: greenplum.PrimaryRole}))
 
-			err := hub.DeleteMasterAndPrimaryDataDirectories(step.DevNullStream, agentConns, source)
+			err := hub.DeleteMasterAndPrimaryDataDirectories(step.DevNullStream, agentConns, intermediateTarget)
 
 			if !errors.Is(err, expected) {
 				t.Errorf("got error %#v, want %#v", err, expected)

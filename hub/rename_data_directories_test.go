@@ -5,6 +5,9 @@ package hub_test
 
 import (
 	"errors"
+	"fmt"
+	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -124,7 +127,7 @@ func TestRenameSegmentDataDirs(t *testing.T) {
 func TestUpdateDataDirectories(t *testing.T) {
 	// Prerequisites:
 	// - a valid Source cluster
-	// - a valid IntermediateTarget (XXX should be Target once we fix it)
+	// - a valid IntermediateTarget cluster
 	// - agentConns pointing to each host (set up per test)
 
 	conf := new(hub.Config)
@@ -144,26 +147,20 @@ func TestUpdateDataDirectories(t *testing.T) {
 		{ContentID: 3, Hostname: "sdw2", DataDir: "/data/dbfast_mirror2/seg4", Role: greenplum.MirrorRole},
 	})
 
-	conf.IntermediateTarget = hub.InitializeConfig{
-		Master: greenplum.SegConfig{
-			ContentID: -1, Hostname: "sdw1", DataDir: "/data/qddir/seg-1_123ABC-1", Role: greenplum.PrimaryRole,
-		},
-		Standby: greenplum.SegConfig{
-			ContentID: -1, Hostname: "standby", DataDir: "/data/standby_123ABC", Role: greenplum.MirrorRole,
-		},
-		Primaries: []greenplum.SegConfig{
-			{ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1_123ABC", Role: greenplum.PrimaryRole},
-			{ContentID: 1, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2_123ABC", Role: greenplum.PrimaryRole},
-			{ContentID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg3_123ABC", Role: greenplum.PrimaryRole},
-			{ContentID: 3, Hostname: "sdw2", DataDir: "/data/dbfast2/seg4_123ABC", Role: greenplum.PrimaryRole},
-		},
-		Mirrors: []greenplum.SegConfig{
-			{ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast_mirror1/seg1_123ABC", Role: greenplum.MirrorRole},
-			{ContentID: 1, Hostname: "sdw2", DataDir: "/data/dbfast_mirror2/seg2_123ABC", Role: greenplum.MirrorRole},
-			{ContentID: 2, Hostname: "sdw1", DataDir: "/data/dbfast_mirror1/seg3_123ABC", Role: greenplum.MirrorRole},
-			{ContentID: 3, Hostname: "sdw2", DataDir: "/data/dbfast_mirror2/seg4_123ABC", Role: greenplum.MirrorRole},
-		},
-	}
+	conf.IntermediateTarget = hub.MustCreateCluster(t, []greenplum.SegConfig{
+		{ContentID: -1, Hostname: "sdw1", DataDir: "/data/qddir/seg-1_123ABC-1", Role: greenplum.PrimaryRole},
+		{ContentID: -1, Hostname: "standby", DataDir: "/data/standby_123ABC", Role: greenplum.MirrorRole},
+
+		{ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1_123ABC", Role: greenplum.PrimaryRole},
+		{ContentID: 1, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2_123ABC", Role: greenplum.PrimaryRole},
+		{ContentID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg3_123ABC", Role: greenplum.PrimaryRole},
+		{ContentID: 3, Hostname: "sdw2", DataDir: "/data/dbfast2/seg4_123ABC", Role: greenplum.PrimaryRole},
+
+		{ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast_mirror1/seg1_123ABC", Role: greenplum.MirrorRole},
+		{ContentID: 1, Hostname: "sdw2", DataDir: "/data/dbfast_mirror2/seg2_123ABC", Role: greenplum.MirrorRole},
+		{ContentID: 2, Hostname: "sdw1", DataDir: "/data/dbfast_mirror1/seg3_123ABC", Role: greenplum.MirrorRole},
+		{ContentID: 3, Hostname: "sdw2", DataDir: "/data/dbfast_mirror2/seg4_123ABC", Role: greenplum.MirrorRole},
+	})
 
 	hub.ArchiveSource = func(source, target string, renameTarget bool) error {
 		return nil
@@ -179,11 +176,9 @@ func TestUpdateDataDirectories(t *testing.T) {
 			{ContentID: -1, Hostname: "sdw1", DataDir: sourceDataDir, Role: greenplum.PrimaryRole},
 		})
 
-		conf.IntermediateTarget = hub.InitializeConfig{
-			Master: greenplum.SegConfig{
-				ContentID: -1, Hostname: "sdw1", DataDir: targetDataDir, Role: greenplum.PrimaryRole,
-			},
-		}
+		conf.IntermediateTarget = hub.MustCreateCluster(t, []greenplum.SegConfig{
+			{ContentID: -1, Hostname: "sdw1", DataDir: targetDataDir, Role: greenplum.PrimaryRole},
+		})
 
 		hub.ArchiveSource = upgrade.ArchiveSource
 		defer func() {
@@ -344,7 +339,7 @@ func TestUpdateDataDirectories(t *testing.T) {
 func expectRenames(client *mock_idl.MockAgentClient, pairs []*idl.RenameDirectories) {
 	client.EXPECT().RenameDirectories(
 		gomock.Any(),
-		&idl.RenameDirectoriesRequest{Dirs: pairs},
+		equivalentRenameDirsRequest(&idl.RenameDirectoriesRequest{Dirs: pairs}),
 	).Return(&idl.RenameDirectoriesReply{}, nil)
 }
 
@@ -355,4 +350,46 @@ func expectDeletes(client *mock_idl.MockAgentClient, datadirs []string) {
 		gomock.Any(),
 		&idl.DeleteDataDirectoriesRequest{Datadirs: datadirs},
 	).Return(&idl.DeleteDataDirectoriesReply{}, nil)
+}
+
+// equivalentRequest is a Matcher that can handle differences in order between
+// two instances of DeleteTablespaceRequest.Dirs
+func equivalentRenameDirsRequest(req *idl.RenameDirectoriesRequest) gomock.Matcher {
+	return renameDirsReqMatcher{req}
+}
+
+type renameDirsReqMatcher struct {
+	expected *idl.RenameDirectoriesRequest
+}
+
+func (r renameDirsReqMatcher) Matches(x interface{}) bool {
+	actual, ok := x.(*idl.RenameDirectoriesRequest)
+	if !ok {
+		return false
+	}
+
+	// The key here is that Datadirs can be in any order. Sort them before
+	// comparison.
+	sort.Sort(renameDirectories(r.expected.GetDirs()))
+	sort.Sort(renameDirectories(actual.GetDirs()))
+
+	return reflect.DeepEqual(r.expected, actual)
+}
+
+func (r renameDirsReqMatcher) String() string {
+	return fmt.Sprintf("is equivalent to %v", r.expected)
+}
+
+type renameDirectories []*idl.RenameDirectories
+
+func (r renameDirectories) Len() int {
+	return len(r)
+}
+
+func (r renameDirectories) Less(i, j int) bool {
+	return r[i].Source > r[j].Source
+}
+
+func (r renameDirectories) Swap(i, j int) {
+	r[i], r[j] = r[j], r[i]
 }

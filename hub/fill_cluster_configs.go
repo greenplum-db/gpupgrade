@@ -81,10 +81,14 @@ func FillConfiguration(config *Config, conn *sql.DB, _ step.OutStreams, request 
 	return nil
 }
 
-func AssignDatadirsAndPorts(source *greenplum.Cluster, ports []int, upgradeID upgrade.ID) (InitializeConfig, error) {
+func AssignDatadirsAndPorts(source *greenplum.Cluster, ports []int, upgradeID upgrade.ID) (*greenplum.Cluster, error) {
 	ports = sanitize(ports)
 
-	targetInitializeConfig := InitializeConfig{}
+	var targetContentIDs []int
+	target, err := greenplum.NewCluster([]greenplum.SegConfig{})
+	if err != nil {
+		return &greenplum.Cluster{}, err
+	}
 
 	var segPrefix string
 	nextPortIndex := 0
@@ -94,30 +98,32 @@ func AssignDatadirsAndPorts(source *greenplum.Cluster, ports []int, upgradeID up
 	if master, ok := source.Primaries[-1]; ok {
 		// Reserve a port for the master.
 		if nextPortIndex > len(ports)-1 {
-			return InitializeConfig{}, errors.New("not enough ports")
+			return &greenplum.Cluster{}, errors.New("not enough ports")
 		}
 
 		// Save the segment prefix for later.
 		var err error
 		segPrefix, err = GetMasterSegPrefix(master.DataDir)
 		if err != nil {
-			return InitializeConfig{}, err
+			return &greenplum.Cluster{}, err
 		}
 
 		master.Port = ports[nextPortIndex]
 		master.DataDir = upgrade.TempDataDir(master.DataDir, segPrefix, upgradeID)
-		targetInitializeConfig.Master = master
+		target.Primaries[-1] = master
+		targetContentIDs = append(targetContentIDs, -1)
 		nextPortIndex++
 	}
 
 	if standby, ok := source.Mirrors[-1]; ok {
 		// Reserve a port for the standby.
 		if nextPortIndex > len(ports)-1 {
-			return InitializeConfig{}, errors.New("not enough ports")
+			return &greenplum.Cluster{}, errors.New("not enough ports")
 		}
 		standby.Port = ports[nextPortIndex]
 		standby.DataDir = upgrade.TempDataDir(standby.DataDir, segPrefix, upgradeID)
-		targetInitializeConfig.Standby = standby
+		target.Mirrors[-1] = standby
+		targetContentIDs = append(targetContentIDs, -1)
 		nextPortIndex++
 	}
 
@@ -133,20 +139,21 @@ func AssignDatadirsAndPorts(source *greenplum.Cluster, ports []int, upgradeID up
 
 		if portIndex, ok := portIndexByHost[segment.Hostname]; ok {
 			if portIndex > len(ports)-1 {
-				return InitializeConfig{}, errors.New("not enough ports")
+				return &greenplum.Cluster{}, errors.New("not enough ports")
 			}
 			segment.Port = ports[portIndex]
 			portIndexByHost[segment.Hostname]++
 		} else {
 			if nextPortIndex > len(ports)-1 {
-				return InitializeConfig{}, errors.New("not enough ports")
+				return &greenplum.Cluster{}, errors.New("not enough ports")
 			}
 			segment.Port = ports[nextPortIndex]
 			portIndexByHost[segment.Hostname] = nextPortIndex + 1
 		}
 		segment.DataDir = upgrade.TempDataDir(segment.DataDir, segPrefix, upgradeID)
 
-		targetInitializeConfig.Primaries = append(targetInitializeConfig.Primaries, segment)
+		target.Primaries[content] = segment
+		targetContentIDs = append(targetContentIDs, content)
 	}
 
 	for _, content := range source.ContentIDs {
@@ -158,24 +165,27 @@ func AssignDatadirsAndPorts(source *greenplum.Cluster, ports []int, upgradeID up
 		if segment, ok := source.Mirrors[content]; ok {
 			if portIndex, ok := portIndexByHost[segment.Hostname]; ok {
 				if portIndex > len(ports)-1 {
-					return InitializeConfig{}, errors.New("not enough ports")
+					return &greenplum.Cluster{}, errors.New("not enough ports")
 				}
 				segment.Port = ports[portIndex]
 				portIndexByHost[segment.Hostname]++
 			} else {
 				if nextPortIndex > len(ports)-1 {
-					return InitializeConfig{}, errors.New("not enough ports")
+					return &greenplum.Cluster{}, errors.New("not enough ports")
 				}
 				segment.Port = ports[nextPortIndex]
 				portIndexByHost[segment.Hostname] = nextPortIndex + 1
 			}
 			segment.DataDir = upgrade.TempDataDir(segment.DataDir, segPrefix, upgradeID)
 
-			targetInitializeConfig.Mirrors = append(targetInitializeConfig.Mirrors, segment)
+			target.Mirrors[content] = segment
+			targetContentIDs = append(targetContentIDs, content)
 		}
 	}
 
-	return targetInitializeConfig, nil
+	target.ContentIDs = sanitize(targetContentIDs)
+
+	return &target, nil
 }
 
 // sanitize sorts and deduplicates a slice of port numbers.
@@ -195,7 +205,7 @@ func sanitize(ports []int) []int {
 	return dedupe
 }
 
-func ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(source *greenplum.Cluster, target InitializeConfig) error {
+func ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(source *greenplum.Cluster, intermediateTarget *greenplum.Cluster) error {
 	type HostPort struct {
 		Host string
 		Port int
@@ -210,16 +220,13 @@ func ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(source *greenplum.C
 		sourcePorts[HostPort{Host: seg.Hostname, Port: seg.Port}] = true
 	}
 
-	// check if temp target ports overlap with source cluster ports on a particular host
-	targetPorts := []greenplum.SegConfig{target.Master, target.Standby}
-	targetPorts = append(targetPorts, target.Primaries...)
-
-	for _, seg := range targetPorts {
+	// check if intermediate target cluster ports overlap with source cluster ports on a particular host
+	for _, seg := range intermediateTarget.Primaries {
 		if sourcePorts[HostPort{Host: seg.Hostname, Port: seg.Port}] {
 			return newInvalidTempPortRangeError(seg.Hostname, seg.Port)
 		}
 	}
-	for _, seg := range target.Mirrors {
+	for _, seg := range intermediateTarget.Mirrors {
 		if sourcePorts[HostPort{Host: seg.Hostname, Port: seg.Port}] {
 			return newInvalidTempPortRangeError(seg.Hostname, seg.Port)
 		}

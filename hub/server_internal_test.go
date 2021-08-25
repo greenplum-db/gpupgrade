@@ -18,7 +18,7 @@ func TestConfig(t *testing.T) {
 	// "stream" refers to the io.Writer/Reader interfaces.
 	t.Run("saves itself to the provided stream", func(t *testing.T) {
 		source, target := testutils.CreateMultinodeSampleClusterPair("/tmp")
-		targetInitializeConfig := InitializeConfig{Master: greenplum.SegConfig{Hostname: "mdw"}}
+		intermediateTarget := source
 
 		// NOTE: we explicitly do not name the struct members here, to ensure
 		// that the test fails to compile if you add new members to Config but
@@ -27,7 +27,7 @@ func TestConfig(t *testing.T) {
 		original := &Config{
 			"logArchiveDir",
 			source,
-			targetInitializeConfig,
+			intermediateTarget,
 			target,
 			&connURI.Conn{},
 			12345,           // Port

@@ -21,13 +21,16 @@ func DeleteMirrorAndStandbyDataDirectories(agentConns []*idl.Connection, cluster
 	return deleteDataDirectories(agentConns, segs)
 }
 
-func DeleteMasterAndPrimaryDataDirectories(streams step.OutStreams, agentConns []*idl.Connection, source InitializeConfig) error {
+func DeleteMasterAndPrimaryDataDirectories(streams step.OutStreams, agentConns []*idl.Connection, intermediateTarget *greenplum.Cluster) error {
 	masterErr := make(chan error)
 	go func() {
-		masterErr <- upgrade.DeleteDirectories([]string{source.Master.DataDir}, upgrade.PostgresFiles, streams)
+		masterErr <- upgrade.DeleteDirectories([]string{intermediateTarget.MasterDataDir()}, upgrade.PostgresFiles, streams)
 	}()
 
-	err := deleteDataDirectories(agentConns, source.Primaries)
+	intermediateSegs := intermediateTarget.SelectSegments(func(seg *greenplum.SegConfig) bool {
+		return seg.Role == greenplum.PrimaryRole
+	})
+	err := deleteDataDirectories(agentConns, intermediateSegs)
 	err = errorlist.Append(err, <-masterErr)
 
 	return err

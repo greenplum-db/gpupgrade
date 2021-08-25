@@ -60,13 +60,13 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 	}
 
 	st.RunConditionally(idl.Substep_DELETE_TARGET_CLUSTER_DATADIRS,
-		s.IntermediateTarget.Primaries != nil && s.IntermediateTarget.Master.DataDir != "",
+		s.IntermediateTarget.Primaries != nil && s.IntermediateTarget.MasterDataDir() != "",
 		func(streams step.OutStreams) error {
 			return DeleteMasterAndPrimaryDataDirectories(streams, s.agentConns, s.IntermediateTarget)
 		})
 
 	st.RunConditionally(idl.Substep_DELETE_TABLESPACES,
-		s.IntermediateTarget.Primaries != nil && s.IntermediateTarget.Master.DataDir != "",
+		s.IntermediateTarget.Primaries != nil && s.IntermediateTarget.MasterDataDir() != "",
 		func(streams step.OutStreams) error {
 			return DeleteTargetTablespaces(streams, s.agentConns, s.Config.Target, s.TargetCatalogVersion, s.Tablespaces)
 		})

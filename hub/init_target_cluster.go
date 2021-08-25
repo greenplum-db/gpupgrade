@@ -12,6 +12,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"github.com/blang/semver/v4"
@@ -43,7 +44,7 @@ func (s *Server) writeConf(sourceDBConn *dbconn.DBConn) error {
 	}
 	defer sourceDBConn.Close()
 
-	gpinitsystemConfig, err := CreateInitialInitsystemConfig(s.IntermediateTarget.Master.DataDir, s.UseHbaHostnames)
+	gpinitsystemConfig, err := CreateInitialInitsystemConfig(s.IntermediateTarget.MasterDataDir(), s.UseHbaHostnames)
 	if err != nil {
 		return err
 	}
@@ -61,8 +62,8 @@ func (s *Server) writeConf(sourceDBConn *dbconn.DBConn) error {
 	return WriteInitsystemFile(gpinitsystemConfig, s.initsystemConfPath())
 }
 
-func (s *Server) RemoveTargetCluster(streams step.OutStreams) error {
-	if s.Target == nil {
+func (s *Server) RemoveIntermediateTargetCluster(streams step.OutStreams) error {
+	if reflect.DeepEqual(s.IntermediateTarget, greenplum.Cluster{}) {
 		return nil
 	}
 
@@ -142,13 +143,8 @@ func WriteInitsystemFile(gpinitsystemConfig []string, gpinitsystemFilepath strin
 	return nil
 }
 
-func WriteSegmentArray(config []string, targetInitializeConfig InitializeConfig) ([]string, error) {
-	//Partition segments by host in order to correctly assign ports.
-	if targetInitializeConfig.Master == (greenplum.SegConfig{}) {
-		return nil, errors.New("source cluster contains no master segment")
-	}
-
-	master := targetInitializeConfig.Master
+func WriteSegmentArray(config []string, intermediateTarget *greenplum.Cluster) ([]string, error) {
+	master := intermediateTarget.Master()
 	config = append(config,
 		fmt.Sprintf("QD_PRIMARY_ARRAY=%s~%s~%d~%s~%d~%d",
 			master.Hostname,
@@ -161,7 +157,11 @@ func WriteSegmentArray(config []string, targetInitializeConfig InitializeConfig)
 	)
 
 	config = append(config, "declare -a PRIMARY_ARRAY=(")
-	for _, segment := range targetInitializeConfig.Primaries {
+	for _, segment := range intermediateTarget.Primaries {
+		if segment.ContentID == -1 {
+			continue
+		}
+
 		config = append(config,
 			fmt.Sprintf("\t%s~%s~%d~%s~%d~%d",
 				segment.Hostname,

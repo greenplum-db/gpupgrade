@@ -23,7 +23,7 @@ func (s *Server) UpdateDataDirectories() error {
 
 func UpdateDataDirectories(conf *Config, agentConns []*idl.Connection) error {
 	source := conf.Source.MasterDataDir()
-	target := conf.IntermediateTarget.Master.DataDir
+	target := conf.IntermediateTarget.MasterDataDir()
 	if err := ArchiveSource(source, target, true); err != nil {
 		return xerrors.Errorf("renaming master data directories: %w", err)
 	}
@@ -53,10 +53,14 @@ func UpdateDataDirectories(conf *Config, agentConns []*idl.Connection) error {
 // the mirrors have been deleted to save disk space, so exclude them from the map.
 // Since the upgraded mirrors will be added later to the correct directory there
 // is no need to rename target to source, so only archive the source directory.
-func getRenameMap(source *greenplum.Cluster, target InitializeConfig, onlyRenamePrimaries bool) RenameMap {
+func getRenameMap(source *greenplum.Cluster, intermediateTarget *greenplum.Cluster, onlyRenamePrimaries bool) RenameMap {
 	m := make(RenameMap)
 
-	for _, seg := range target.Primaries {
+	for _, seg := range intermediateTarget.Primaries {
+		if seg.IsMaster() {
+			continue
+		}
+
 		m[seg.Hostname] = append(m[seg.Hostname], &idl.RenameDirectories{
 			Source:       source.Primaries[seg.ContentID].DataDir,
 			Target:       seg.DataDir,
@@ -70,8 +74,7 @@ func getRenameMap(source *greenplum.Cluster, target InitializeConfig, onlyRename
 		return m
 	}
 
-	targetMirrors := append(target.Mirrors, target.Standby)
-	for _, seg := range targetMirrors {
+	for _, seg := range intermediateTarget.Mirrors {
 		m[seg.Hostname] = append(m[seg.Hostname], &idl.RenameDirectories{
 			Source:       source.Mirrors[seg.ContentID].DataDir,
 			Target:       seg.DataDir,

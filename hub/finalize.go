@@ -56,7 +56,7 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 		return UpdateConfFiles(streams,
 			semver.MustParse(s.Target.Version.SemVer.String()),
 			s.Target.MasterDataDir(),
-			s.IntermediateTarget.Master.Port,
+			s.IntermediateTarget.MasterPort(),
 			s.Source.MasterPort(),
 		)
 	})
@@ -124,7 +124,7 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 		FinalizeResponse: &idl.FinalizeResponse{
 			TargetVersion:                     s.Target.Version.VersionString,
 			LogArchiveDirectory:               logArchiveDir,
-			ArchivedSourceMasterDataDirectory: s.Config.IntermediateTarget.Master.DataDir + upgrade.OldSuffix,
+			ArchivedSourceMasterDataDirectory: s.Config.IntermediateTarget.MasterDataDir() + upgrade.OldSuffix,
 			UpgradeID:                         s.Config.UpgradeID.String(),
 			Target: &idl.Cluster{
 				Port:                int32(s.Target.MasterPort()),
