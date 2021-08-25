@@ -35,8 +35,7 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 	}()
 
 	st.Run(idl.Substep_SHUTDOWN_TARGET_CLUSTER, func(streams step.OutStreams) error {
-		err := s.Target.Stop(streams)
-
+		err := s.IntermediateTarget.Stop(streams)
 		if err != nil {
 			return xerrors.Errorf("failed to stop target cluster: %w", err)
 		}
@@ -57,13 +56,12 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 			semver.MustParse(s.Target.Version.SemVer.String()),
 			s.Target.MasterDataDir(),
 			s.IntermediateTarget.MasterPort(),
-			s.Source.MasterPort(),
+			s.Target.MasterPort(),
 		)
 	})
 
 	st.Run(idl.Substep_START_TARGET_CLUSTER, func(streams step.OutStreams) error {
 		err := s.Target.Start(streams)
-
 		if err != nil {
 			return xerrors.Errorf("failed to start target cluster: %w", err)
 		}
@@ -75,7 +73,7 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 		// TODO: once the temporary standby upgrade is fixed, switch to
 		// using the IntermediateTarget's temporary assignments, and
 		// move this upgrade step back to before the target shutdown.
-		standby := s.Source.Mirrors[-1]
+		standby := s.Source.Standby()
 		return UpgradeStandby(greenplum.NewRunner(s.Target, streams), StandbyConfig{
 			Port:            standby.Port,
 			Hostname:        standby.Hostname,

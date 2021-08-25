@@ -168,6 +168,8 @@ func TestWriteSegmentArray(t *testing.T) {
 			t.Errorf("got %#v", err)
 		}
 
+		sort.Strings(actual)
+		sort.Strings(expected)
 		if !reflect.DeepEqual(actual, expected) {
 			// Help developers see differences between the lines.
 			pretty := func(lines []string) string {

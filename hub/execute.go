@@ -50,12 +50,12 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 	st.Run(idl.Substep_UPGRADE_MASTER, func(streams step.OutStreams) error {
 		stateDir := s.StateDir
 		return UpgradeMaster(UpgradeMasterArgs{
-			Source:      s.Source,
-			Target:      s.Target,
-			StateDir:    stateDir,
-			Stream:      streams,
-			CheckOnly:   false,
-			UseLinkMode: s.UseLinkMode,
+			Source:             s.Source,
+			IntermediateTarget: s.IntermediateTarget,
+			StateDir:           stateDir,
+			Stream:             streams,
+			CheckOnly:          false,
+			UseLinkMode:        s.UseLinkMode,
 		})
 	})
 
@@ -86,14 +86,14 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 			AgentConns:             s.agentConns,
 			DataDirPairMap:         dataDirPair,
 			Source:                 s.Source,
-			Target:                 s.Target,
+			IntermediateTarget:     s.IntermediateTarget,
 			UseLinkMode:            s.UseLinkMode,
 			TablespacesMappingFile: s.TablespacesMappingFilePath,
 		})
 	})
 
 	st.Run(idl.Substep_START_TARGET_CLUSTER, func(streams step.OutStreams) error {
-		err := s.Target.Start(streams)
+		err := s.IntermediateTarget.Start(streams)
 
 		if err != nil {
 			return xerrors.Errorf("failed to start target cluster: %w", err)
@@ -105,8 +105,8 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_ExecuteResponse{
 		ExecuteResponse: &idl.ExecuteResponse{
 			Target: &idl.Cluster{
-				Port:                int32(s.Target.MasterPort()),
-				MasterDataDirectory: s.Target.MasterDataDir(),
+				Port:                int32(s.IntermediateTarget.MasterPort()),
+				MasterDataDirectory: s.IntermediateTarget.MasterDataDir(),
 			}},
 	}}}}
 

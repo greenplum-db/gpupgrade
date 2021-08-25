@@ -80,7 +80,7 @@ func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initi
 			return err
 		}
 
-		return EnsureVersionsMatch(AgentHosts(s.Source), greenplum.NewVersions(s.TargetGPHome))
+		return EnsureVersionsMatch(AgentHosts(s.Source), greenplum.NewVersions(s.Target.GPHome))
 	})
 
 	st.Run(idl.Substep_START_AGENTS, func(_ step.OutStreams) error {
@@ -116,7 +116,7 @@ func (s *Server) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest,
 	})
 
 	st.Run(idl.Substep_INIT_TARGET_CLUSTER, func(stream step.OutStreams) error {
-		err := s.RemoveTargetCluster(stream)
+		err := s.RemoveIntermediateTargetCluster(stream)
 		if err != nil {
 			return err
 		}
@@ -129,18 +129,17 @@ func (s *Server) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest,
 		// Persist target catalog version which is needed to revert tablespaces.
 		// We do this right after target cluster creation since during revert the
 		// state of the cluster is unknown.
-		version, err := GetCatalogVersion(stream, s.Target.GPHome, s.Target.MasterDataDir())
+		targetCatalogVersion, err := GetCatalogVersion(stream, s.IntermediateTarget.GPHome, s.IntermediateTarget.MasterDataDir())
 		if err != nil {
 			return err
 		}
 
-		s.TargetCatalogVersion = version
+		s.TargetCatalogVersion = targetCatalogVersion
 		return s.SaveConfig()
 	})
 
 	st.Run(idl.Substep_SHUTDOWN_TARGET_CLUSTER, func(stream step.OutStreams) error {
-		err := s.Target.Stop(stream)
-
+		err := s.IntermediateTarget.Stop(stream)
 		if err != nil {
 			return xerrors.Errorf("stop target cluster: %w", err)
 		}
@@ -149,7 +148,7 @@ func (s *Server) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest,
 	})
 
 	st.Run(idl.Substep_BACKUP_TARGET_MASTER, func(stream step.OutStreams) error {
-		sourceDir := s.Target.MasterDataDir()
+		sourceDir := s.IntermediateTarget.MasterDataDir()
 		targetDir := filepath.Join(s.StateDir, originalMasterBackupName)
 		return RsyncMasterDataDir(stream, sourceDir, targetDir)
 	})

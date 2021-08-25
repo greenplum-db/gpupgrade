@@ -36,12 +36,12 @@ func resetUpgrader() {
 }
 
 func TestMasterIsCheckedLinkModeTrue(t *testing.T) {
-	sourceCluster := MustCreateCluster(t, []greenplum.SegConfig{
+	source := MustCreateCluster(t, []greenplum.SegConfig{
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: "p"},
 		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: "/data/dbfast1/seg1", Role: "p"},
 		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: "p"},
 	})
-	targetCluster := MustCreateCluster(t, []greenplum.SegConfig{
+	intermediateTarget := MustCreateCluster(t, []greenplum.SegConfig{
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: "p"},
 		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: "/data/dbfast1/seg1", Role: "p"},
 		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: "p"},
@@ -51,9 +51,9 @@ func TestMasterIsCheckedLinkModeTrue(t *testing.T) {
 	for _, linkMode := range []bool{true, false} {
 		t.Run(fmt.Sprintf("check upgrade correctly passes useLinkMode is %v", linkMode), func(t *testing.T) {
 			conf := &Config{
-				Source:      sourceCluster,
-				Target:      targetCluster,
-				UseLinkMode: linkMode,
+				Source:             source,
+				IntermediateTarget: intermediateTarget,
+				UseLinkMode:        linkMode,
 			}
 			s := New(conf, grpc.DialContext, stateDirExpected)
 			testUpgraderMock := upgraderMock{s}
@@ -74,8 +74,8 @@ func UpgradeMasterMock(result UpgradeMasterArgs, expected *Server) error {
 	if !reflect.DeepEqual(result.Source, expected.Source) {
 		return fmt.Errorf("got %#v, expected %#v", result.Source, expected.Source)
 	}
-	if !reflect.DeepEqual(result.Target, expected.Target) {
-		return fmt.Errorf("got %#v, expected %#v", result.Target, expected.Target)
+	if !reflect.DeepEqual(result.IntermediateTarget, expected.IntermediateTarget) {
+		return fmt.Errorf("got %#v, expected %#v", result.IntermediateTarget, expected.IntermediateTarget)
 	}
 	if result.StateDir != expected.StateDir {
 		return fmt.Errorf("got %#v expected %#v", result.StateDir, expected.StateDir)
@@ -107,8 +107,8 @@ func UpgradePrimariesMock(result UpgradePrimaryArgs, expected *Server) error {
 	if !reflect.DeepEqual(result.Source, expected.Source) {
 		return fmt.Errorf("got %#v, expected %#v", result.Source, expected.Source)
 	}
-	if !reflect.DeepEqual(result.Target, expected.Target) {
-		return fmt.Errorf("got %#v, expected %#v", result.Target, expected.Target)
+	if !reflect.DeepEqual(result.IntermediateTarget, expected.IntermediateTarget) {
+		return fmt.Errorf("got %#v, expected %#v", result.IntermediateTarget, expected.IntermediateTarget)
 	}
 	if result.UseLinkMode != expected.UseLinkMode {
 		return fmt.Errorf("got %#v expected %#v", result.UseLinkMode, expected.UseLinkMode)

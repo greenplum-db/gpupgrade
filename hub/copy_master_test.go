@@ -13,6 +13,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"google.golang.org/grpc"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
@@ -162,21 +163,23 @@ func TestCopy(t *testing.T) {
 }
 
 func TestCopyMasterDataDir(t *testing.T) {
-	targetCluster := MustCreateCluster(t, []greenplum.SegConfig{
+	testhelper.SetupTestLogger()
+
+	intermediateTarget := MustCreateCluster(t, []greenplum.SegConfig{
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: "p"},
 		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: "/data/dbfast1/seg1", Role: "p"},
 		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: "p"},
 	})
 
 	conf := &Config{
-		Target: targetCluster,
+		IntermediateTarget: intermediateTarget,
 	}
 	hub := New(conf, grpc.DialContext, ".gpupgrade")
 
 	t.Run("copies the master data directory to each primary host", func(t *testing.T) {
 		// The verifier function can be called in parallel, so use a channel to
 		// communicate which hosts were actually used.
-		hosts := make(chan string, len(targetCluster.PrimaryHostnames()))
+		hosts := make(chan string, len(intermediateTarget.PrimaryHostnames()))
 
 		expectedArgs := []string{
 			"--archive", "--compress", "--delete", "--stats",
@@ -198,7 +201,9 @@ func TestCopyMasterDataDir(t *testing.T) {
 }
 
 func TestCopyMasterTablespaces(t *testing.T) {
-	targetCluster := MustCreateCluster(t, []greenplum.SegConfig{
+	testhelper.SetupTestLogger()
+
+	intermediateTarget := MustCreateCluster(t, []greenplum.SegConfig{
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: "p"},
 		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: "/data/dbfast1/seg1", Role: "p"},
 		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: "p"},
@@ -206,7 +211,7 @@ func TestCopyMasterTablespaces(t *testing.T) {
 
 	t.Run("copies tablespace mapping file and master tablespace directory to each primary host", func(t *testing.T) {
 		conf := &Config{
-			Target: targetCluster,
+			IntermediateTarget: intermediateTarget,
 			Tablespaces: greenplum.Tablespaces{
 				1: greenplum.SegmentTablespaces{
 					1663: greenplum.TablespaceInfo{
@@ -239,7 +244,7 @@ func TestCopyMasterTablespaces(t *testing.T) {
 
 		// The verifier function can be called in parallel, so use a channel to
 		// communicate which hosts were actually used.
-		hosts := make(chan string, len(targetCluster.PrimaryHostnames()))
+		hosts := make(chan string, len(intermediateTarget.PrimaryHostnames()))
 
 		expectedArgs := []string{
 			"--archive", "--compress", "--delete", "--stats",
@@ -260,13 +265,13 @@ func TestCopyMasterTablespaces(t *testing.T) {
 
 	t.Run("CopyMasterTablespaces returns nil if there is no tablespaces", func(t *testing.T) {
 		conf := &Config{
-			Target: targetCluster,
+			Target: intermediateTarget,
 		}
 		hub := New(conf, grpc.DialContext, ".gpupgrade")
 		// The verifier function can be called in parallel, so use a channel to
 		// communicate which hosts were actually used.
 
-		hosts := make(chan string, len(targetCluster.PrimaryHostnames()))
+		hosts := make(chan string, len(intermediateTarget.PrimaryHostnames()))
 
 		var expectedArgs []string
 		execCommandVerifier(t, hosts, expectedArgs)

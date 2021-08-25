@@ -16,7 +16,7 @@ import (
 
 func DeleteMirrorAndStandbyDataDirectories(agentConns []*idl.Connection, cluster *greenplum.Cluster) error {
 	segs := cluster.SelectSegments(func(seg *greenplum.SegConfig) bool {
-		return seg.Role == greenplum.MirrorRole
+		return seg.IsMirror() || seg.IsStandby()
 	})
 	return deleteDataDirectories(agentConns, segs)
 }

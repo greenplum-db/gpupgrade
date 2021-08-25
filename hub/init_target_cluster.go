@@ -29,7 +29,7 @@ import (
 var ErrUnknownCatalogVersion = errors.New("pg_controldata output is missing catalog version")
 
 func (s *Server) GenerateInitsystemConfig() error {
-	sourceDBConn := db.NewDBConn("localhost", int(s.Source.MasterPort()), "template1")
+	sourceDBConn := db.NewDBConn("localhost", s.Source.MasterPort(), "template1")
 	return s.writeConf(sourceDBConn)
 }
 
@@ -67,13 +67,13 @@ func (s *Server) RemoveIntermediateTargetCluster(streams step.OutStreams) error 
 		return nil
 	}
 
-	running, err := s.Target.IsMasterRunning(streams)
+	running, err := s.IntermediateTarget.IsMasterRunning(streams)
 	if err != nil {
 		return err
 	}
 
 	if running {
-		if err := s.Target.Stop(streams); err != nil {
+		if err := s.IntermediateTarget.Stop(streams); err != nil {
 			return xerrors.Errorf("stopping target cluster: %w", err)
 		}
 	}

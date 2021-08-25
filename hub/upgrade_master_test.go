@@ -203,12 +203,12 @@ func TestUpgradeMaster(t *testing.T) {
 		defer rsync.ResetRsyncCommand()
 
 		err := UpgradeMaster(UpgradeMasterArgs{
-			Source:      source,
-			Target:      target,
-			StateDir:    tempDir,
-			Stream:      step.DevNullStream,
-			CheckOnly:   false,
-			UseLinkMode: false,
+			Source:             source,
+			IntermediateTarget: target,
+			StateDir:           tempDir,
+			Stream:             step.DevNullStream,
+			CheckOnly:          false,
+			UseLinkMode:        false,
 		})
 		if err != nil {
 			t.Errorf("returned error %+v", err)
@@ -228,12 +228,12 @@ func TestUpgradeMaster(t *testing.T) {
 		defer ResetExecCommand()
 
 		err := UpgradeMaster(UpgradeMasterArgs{
-			Source:      source,
-			Target:      target,
-			StateDir:    tempDir,
-			Stream:      new(step.BufferedStreams),
-			CheckOnly:   false,
-			UseLinkMode: false,
+			Source:             source,
+			IntermediateTarget: target,
+			StateDir:           tempDir,
+			Stream:             new(step.BufferedStreams),
+			CheckOnly:          false,
+			UseLinkMode:        false,
 		})
 		if err == nil {
 			t.Errorf("expected error, returned nil")
@@ -259,12 +259,12 @@ func TestUpgradeMaster(t *testing.T) {
 		stream := new(step.BufferedStreams)
 
 		err := UpgradeMaster(UpgradeMasterArgs{
-			Source:      source,
-			Target:      target,
-			StateDir:    tempDir,
-			Stream:      stream,
-			CheckOnly:   false,
-			UseLinkMode: false,
+			Source:             source,
+			IntermediateTarget: target,
+			StateDir:           tempDir,
+			Stream:             stream,
+			CheckOnly:          false,
+			UseLinkMode:        false,
 		})
 		if err != nil {
 			t.Errorf("returned error %+v", err)
@@ -297,12 +297,12 @@ func TestUpgradeMaster(t *testing.T) {
 		source.Version = dbconn.NewVersion("5.28.0")
 
 		err := UpgradeMaster(UpgradeMasterArgs{
-			Source:      source,
-			Target:      target,
-			StateDir:    tempDir,
-			Stream:      step.DevNullStream,
-			CheckOnly:   false,
-			UseLinkMode: false,
+			Source:             source,
+			IntermediateTarget: target,
+			StateDir:           tempDir,
+			Stream:             step.DevNullStream,
+			CheckOnly:          false,
+			UseLinkMode:        false,
 		})
 		if err != nil {
 			t.Errorf("returned error %+v", err)
@@ -326,12 +326,12 @@ func TestUpgradeMaster(t *testing.T) {
 		source.Version = dbconn.NewVersion("6.10.0")
 
 		err := UpgradeMaster(UpgradeMasterArgs{
-			Source:      source,
-			Target:      target,
-			StateDir:    tempDir,
-			Stream:      step.DevNullStream,
-			CheckOnly:   false,
-			UseLinkMode: false,
+			Source:             source,
+			IntermediateTarget: target,
+			StateDir:           tempDir,
+			Stream:             step.DevNullStream,
+			CheckOnly:          false,
+			UseLinkMode:        false,
 		})
 		if err != nil {
 			t.Errorf("returned error %+v", err)
@@ -348,12 +348,12 @@ func TestUpgradeMaster(t *testing.T) {
 
 		expectedErr := errors.New("write failed!")
 		err := UpgradeMaster(UpgradeMasterArgs{
-			Source:      source,
-			Target:      target,
-			StateDir:    tempDir,
-			Stream:      testutils.FailingStreams{Err: expectedErr},
-			CheckOnly:   false,
-			UseLinkMode: false,
+			Source:             source,
+			IntermediateTarget: target,
+			StateDir:           tempDir,
+			Stream:             testutils.FailingStreams{Err: expectedErr},
+			CheckOnly:          false,
+			UseLinkMode:        false,
 		})
 		if !errors.Is(err, expectedErr) {
 			t.Errorf("returned error %+v, want %+v", err, expectedErr)
@@ -370,12 +370,12 @@ func TestUpgradeMaster(t *testing.T) {
 		stream := new(step.BufferedStreams)
 
 		err := UpgradeMaster(UpgradeMasterArgs{
-			Source:      source,
-			Target:      target,
-			StateDir:    tempDir,
-			Stream:      stream,
-			CheckOnly:   false,
-			UseLinkMode: false,
+			Source:             source,
+			IntermediateTarget: target,
+			StateDir:           tempDir,
+			Stream:             stream,
+			CheckOnly:          false,
+			UseLinkMode:        false,
 		})
 		if err == nil {
 			t.Errorf("expected error, returned nil")
@@ -437,12 +437,12 @@ Failure, exiting
 					})
 
 				err := UpgradeMaster(UpgradeMasterArgs{
-					Source:      source,
-					Target:      target,
-					StateDir:    tempDir,
-					Stream:      stream,
-					CheckOnly:   true,
-					UseLinkMode: false,
+					Source:             source,
+					IntermediateTarget: target,
+					StateDir:           tempDir,
+					Stream:             stream,
+					CheckOnly:          true,
+					UseLinkMode:        false,
 				})
 				if err == nil {
 					t.Errorf("expected error, returned nil")

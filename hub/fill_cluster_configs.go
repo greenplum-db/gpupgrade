@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sort"
 
+	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
@@ -36,16 +37,19 @@ func FillConfiguration(config *Config, conn *sql.DB, _ step.OutStreams, request 
 
 	// XXX ugly; we should just use the conn we're passed, but our DbConn
 	// concept (which isn't really used) gets in the way
-	dbconn := db.NewDBConn("localhost", int(request.SourcePort), "template1")
-	source, err := greenplum.ClusterFromDB(dbconn, request.SourceGPHome)
+	sourceConn := db.NewDBConn("localhost", int(request.SourcePort), "template1")
+	source, err := greenplum.ClusterFromDB(sourceConn, request.SourceGPHome)
 	if err != nil {
 		return xerrors.Errorf("retrieve source configuration: %w", err)
 	}
 
+	// FIXME: Reorder this function so it makes more sense. Especially with the order or intermediateTarget
+
 	target := source // create target cluster based off source cluster
 	config.Source = &source
 	config.Target = &target
-	config.TargetGPHome = request.TargetGPHome
+	config.TargetGPHome = request.TargetGPHome // delete me in favor of config.Target.GPHome
+	config.Target.GPHome = request.TargetGPHome
 	config.UseLinkMode = request.UseLinkMode
 
 	var ports []int
@@ -58,17 +62,26 @@ func FillConfiguration(config *Config, conn *sql.DB, _ step.OutStreams, request 
 		return err
 	}
 
+	config.IntermediateTarget.GPHome = request.TargetGPHome // this needs to be set before getting the version...
+	targetVersion, err := greenplum.LocalVersion(config.IntermediateTarget.GPHome)
+	if err != nil {
+		return err
+	}
+
+	config.IntermediateTarget.Version = dbconn.NewVersion(targetVersion.String())
+	config.Target.Version = dbconn.NewVersion(targetVersion.String())
+
 	if err := ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(config.Source, config.IntermediateTarget); err != nil {
 		return err
 	}
 
 	// major version upgrade requires upgrading tablespaces
-	if dbconn.Version.Is("5") {
+	if sourceConn.Version.Is("5") {
 		if err := utils.System.MkdirAll(utils.GetTablespaceDir(), 0700); err != nil {
 			return xerrors.Errorf("create tablespace directory %q: %w", utils.GetTablespaceDir(), err)
 		}
 		config.TablespacesMappingFilePath = filepath.Join(utils.GetTablespaceDir(), greenplum.TablespacesMappingFile)
-		config.Tablespaces, err = greenplum.TablespacesFromDB(dbconn, config.TablespacesMappingFilePath)
+		config.Tablespaces, err = greenplum.TablespacesFromDB(sourceConn, config.TablespacesMappingFilePath)
 		if err != nil {
 			return xerrors.Errorf("extract tablespace information: %w", err)
 		}

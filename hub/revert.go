@@ -39,10 +39,10 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		return errors.New("Source cluster does not have mirrors and/or standby. Cannot restore source cluster. Please contact support.")
 	}
 
-	// If the target cluster is started, it must be stopped.
-	if s.Target != nil {
+	// If the intermediate target cluster is started, it must be stopped.
+	if s.IntermediateTarget != nil {
 		st.AlwaysRun(idl.Substep_SHUTDOWN_TARGET_CLUSTER, func(streams step.OutStreams) error {
-			running, err := s.Target.IsMasterRunning(streams)
+			running, err := s.IntermediateTarget.IsMasterRunning(streams)
 			if err != nil {
 				return err
 			}
@@ -51,7 +51,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 				return step.Skip
 			}
 
-			if err := s.Target.Stop(streams); err != nil {
+			if err := s.IntermediateTarget.Stop(streams); err != nil {
 				return xerrors.Errorf("stopping target cluster: %w", err)
 			}
 
@@ -68,7 +68,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 	st.RunConditionally(idl.Substep_DELETE_TABLESPACES,
 		s.IntermediateTarget.Primaries != nil && s.IntermediateTarget.MasterDataDir() != "",
 		func(streams step.OutStreams) error {
-			return DeleteTargetTablespaces(streams, s.agentConns, s.Config.Target, s.TargetCatalogVersion, s.Tablespaces)
+			return DeleteTargetTablespaces(streams, s.agentConns, s.Config.IntermediateTarget, s.TargetCatalogVersion, s.Tablespaces)
 		})
 
 	// For any of the link-mode cases described in the "Reverting to old

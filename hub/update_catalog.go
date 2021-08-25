@@ -14,41 +14,25 @@ import (
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
-	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
 // TODO: When in copy mode should we update the catalog and in-memory object of
 //  the source cluster?
 func (s *Server) UpdateCatalogAndClusterConfig(streams step.OutStreams) (err error) {
-	err = s.Target.StartMasterOnly(streams)
+	err = s.IntermediateTarget.StartMasterOnly(streams)
 	if err != nil {
 		return xerrors.Errorf("failed to start target master: %w", err)
 	}
 
-	err = WithinDbConnection(s.Connection, s.Target.MasterPort(), func(conn *sql.DB) error {
+	err = WithinDbConnection(s.Connection, s.IntermediateTarget.MasterPort(), func(conn *sql.DB) error {
 		return s.UpdateGpSegmentConfiguration(conn)
 	})
 	if err != nil {
 		return xerrors.Errorf("%s: %w", idl.Substep_UPDATE_TARGET_CATALOG_AND_CLUSTER_CONFIG, err)
 	}
 
-	// Create an oldTarget cluster to pass to StopMasterOnly since
-	// UpdateCatalogAndClusterConfig mutates the target cluster with the new
-	// data directories which have yet to be reflected on disk in a later substep.
-	master := s.Target.Primaries[-1]
-
-	// XXX We should not have to do this. Put Target back the way it was.
-	segPrefix, err := GetMasterSegPrefix(master.DataDir)
-	if err != nil {
-		return err
-	}
-	master.DataDir = upgrade.TempDataDir(master.DataDir, segPrefix, s.Config.UpgradeID)
-
-	segs := map[int]greenplum.SegConfig{-1: master}
-	oldTarget := &greenplum.Cluster{Primaries: segs, GPHome: s.Target.GPHome}
-
-	err = oldTarget.StopMasterOnly(streams)
+	err = s.IntermediateTarget.StopMasterOnly(streams)
 	if err != nil {
 		return xerrors.Errorf("failed to stop target master: %w", err)
 	}

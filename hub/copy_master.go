@@ -81,8 +81,8 @@ func Copy(streams step.OutStreams, destinationDir string, sourceDirs, hosts []st
 func (s *Server) CopyMasterDataDir(streams step.OutStreams, destination string) error {
 	// Make sure sourceDir ends with a trailing slash so that rsync will
 	// transfer the directory contents and not the directory itself.
-	source := []string{filepath.Clean(s.Target.MasterDataDir()) + string(filepath.Separator)}
-	return Copy(streams, destination, source, s.Target.PrimaryHostnames())
+	source := []string{filepath.Clean(s.IntermediateTarget.MasterDataDir()) + string(filepath.Separator)}
+	return Copy(streams, destination, source, s.IntermediateTarget.PrimaryHostnames())
 }
 
 func (s *Server) CopyMasterTablespaces(streams step.OutStreams, destinationDir string) error {
@@ -94,5 +94,5 @@ func (s *Server) CopyMasterTablespaces(streams step.OutStreams, destinationDir s
 	sourcePaths := []string{s.TablespacesMappingFilePath}
 	sourcePaths = append(sourcePaths, s.Tablespaces.GetMasterTablespaces().UserDefinedTablespacesLocations()...)
 
-	return Copy(streams, destinationDir, sourcePaths, s.Target.PrimaryHostnames())
+	return Copy(streams, destinationDir, sourcePaths, s.IntermediateTarget.PrimaryHostnames())
 }

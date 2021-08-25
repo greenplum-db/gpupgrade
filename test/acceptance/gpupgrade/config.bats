@@ -19,7 +19,7 @@ setup() {
         --automatic \
         --source-gphome "$GPHOME_SOURCE" \
         --target-gphome "$GPHOME_TARGET" \
-        --source-master-port ${PGPORT} \
+        --source-master-port "$PGPORT" \
         --temp-port-range "$TARGET_PGPORT"-6040 \
         --stop-before-cluster-creation \
         --disk-free-ratio 0 3>&-
@@ -49,7 +49,7 @@ teardown() {
     [ "$status" -eq 0 ]
     [[ "${lines[0]}" = "id - "* ]] # this is randomly generated; we could replace * with a base64 regex matcher
     [ "${lines[1]}" = "source-gphome - $GPHOME_SOURCE" ]
-    [ "${lines[2]}" = "target-datadir - " ] # This isn't populated until cluster creation, but it's still displayed here
+    [[ "${lines[2]}" = "target-datadir - "* ]]
     [ "${lines[3]}" = "target-gphome - $GPHOME_TARGET" ]
     [ "${lines[4]}" = "target-port - $TARGET_PGPORT" ]
 }

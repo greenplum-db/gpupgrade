@@ -22,7 +22,7 @@ type UpgradePrimaryArgs struct {
 	AgentConns             []*idl.Connection
 	DataDirPairMap         map[string][]*idl.DataDirPair
 	Source                 *greenplum.Cluster
-	Target                 *greenplum.Cluster
+	IntermediateTarget     *greenplum.Cluster
 	UseLinkMode            bool
 	TablespacesMappingFile string
 }
@@ -31,8 +31,8 @@ func UpgradePrimaries(args UpgradePrimaryArgs) error {
 	request := func(conn *idl.Connection) error {
 		_, err := conn.AgentClient.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{
 			SourceBinDir:               filepath.Join(args.Source.GPHome, "bin"),
-			TargetBinDir:               filepath.Join(args.Target.GPHome, "bin"),
-			TargetVersion:              args.Target.Version.SemVer.String(),
+			TargetBinDir:               filepath.Join(args.IntermediateTarget.GPHome, "bin"),
+			TargetVersion:              args.IntermediateTarget.Version.SemVer.String(),
 			DataDirPairs:               args.DataDirPairMap[conn.Hostname],
 			CheckOnly:                  args.CheckOnly,
 			UseLinkMode:                args.UseLinkMode,
@@ -61,7 +61,7 @@ func (s *Server) GetDataDirPairs() (map[string][]*idl.DataDirPair, error) {
 	dataDirPairMap := make(map[string][]*idl.DataDirPair)
 
 	sourceContents := s.Source.ContentIDs
-	targetContents := s.Target.ContentIDs
+	targetContents := s.IntermediateTarget.ContentIDs
 	if len(sourceContents) != len(targetContents) {
 		return nil, newInvalidClusterError("Source cluster has %d segments, and target cluster has %d segments.", len(sourceContents), len(targetContents))
 	}
@@ -78,7 +78,7 @@ func (s *Server) GetDataDirPairs() (map[string][]*idl.DataDirPair, error) {
 			continue
 		}
 		sourceSeg := s.Source.Primaries[contentID]
-		targetSeg := s.Target.Primaries[contentID]
+		targetSeg := s.IntermediateTarget.Primaries[contentID]
 		if sourceSeg.Hostname != targetSeg.Hostname {
 			return nil, newInvalidClusterError(
 				"hostnames do not match between source and target cluster with content ID %d. "+

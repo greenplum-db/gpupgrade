@@ -27,7 +27,7 @@ func (s *Server) GetConfig(ctx context.Context, in *idl.GetConfigRequest) (*idl.
 		resp.Value = s.TargetGPHome
 	case "target-datadir":
 		if s.Target != nil {
-			resp.Value = s.Target.MasterDataDir()
+			resp.Value = s.IntermediateTarget.MasterDataDir()
 		}
 	case "target-port":
 		if s.IntermediateTarget.MasterPort() != 0 {

@@ -110,7 +110,7 @@ func TestUpgradePrimaries(t *testing.T) {
 			AgentConns:             agentConns,
 			DataDirPairMap:         pairs,
 			Source:                 source,
-			Target:                 target,
+			IntermediateTarget:     target,
 			UseLinkMode:            false,
 			TablespacesMappingFile: "/tmp/tablespaces_mapping.txt",
 		})
@@ -183,7 +183,7 @@ func TestUpgradePrimaries(t *testing.T) {
 					AgentConns:             agentConns,
 					DataDirPairMap:         pairs,
 					Source:                 source,
-					Target:                 target,
+					IntermediateTarget:     target,
 					UseLinkMode:            false,
 					TablespacesMappingFile: "",
 				})
@@ -211,13 +211,13 @@ func TestGetDataDirPairs(t *testing.T) {
 			{ContentID: 1, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 		})
 
-		target := hub.MustCreateCluster(t, []greenplum.SegConfig{
+		intermediateTarget := hub.MustCreateCluster(t, []greenplum.SegConfig{
 			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
 		})
 
 		conf := &hub.Config{
-			Source: source,
-			Target: target,
+			Source:             source,
+			IntermediateTarget: intermediateTarget,
 		}
 		server := hub.New(conf, nil, "")
 
@@ -234,15 +234,15 @@ func TestGetDataDirPairs(t *testing.T) {
 			{ContentID: 1, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 		})
 
-		target := hub.MustCreateCluster(t, []greenplum.SegConfig{
+		interemediateTarget := hub.MustCreateCluster(t, []greenplum.SegConfig{
 			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
 			{ContentID: 0, DbID: 2, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
 			{ContentID: 2, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 		})
 
 		conf := &hub.Config{
-			Source: source,
-			Target: target,
+			Source:             source,
+			IntermediateTarget: interemediateTarget,
 		}
 		server := hub.New(conf, nil, "")
 
@@ -259,15 +259,15 @@ func TestGetDataDirPairs(t *testing.T) {
 			{ContentID: 1, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 		})
 
-		target := hub.MustCreateCluster(t, []greenplum.SegConfig{
+		intermedaiteTarget := hub.MustCreateCluster(t, []greenplum.SegConfig{
 			{ContentID: -1, DbID: 1, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
 			{ContentID: 0, DbID: 2, Hostname: "localhost", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
 			{ContentID: 1, DbID: 3, Hostname: "localhost", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 		})
 
 		conf := &hub.Config{
-			Source: source,
-			Target: target,
+			Source:             source,
+			IntermediateTarget: intermedaiteTarget,
 		}
 		server := hub.New(conf, nil, "")
 

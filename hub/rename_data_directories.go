@@ -23,13 +23,13 @@ func (s *Server) UpdateDataDirectories() error {
 
 func UpdateDataDirectories(conf *Config, agentConns []*idl.Connection) error {
 	source := conf.Source.MasterDataDir()
-	target := conf.IntermediateTarget.MasterDataDir()
-	if err := ArchiveSource(source, target, true); err != nil {
+	intermediateTarget := conf.IntermediateTarget.MasterDataDir()
+	if err := ArchiveSource(source, intermediateTarget, true); err != nil {
 		return xerrors.Errorf("renaming master data directories: %w", err)
 	}
 
 	// in link mode, remove the source mirror and standby data directories; otherwise we create a second copy
-	//  of them for the target cluster. That might take too much disk space.
+	//  of them for the intermediate target cluster. That might take too much disk space.
 	if conf.UseLinkMode {
 		if err := DeleteMirrorAndStandbyDataDirectories(agentConns, conf.Source); err != nil {
 			return xerrors.Errorf("removing source cluster standby and mirror segment data directories: %w", err)
@@ -56,14 +56,14 @@ func UpdateDataDirectories(conf *Config, agentConns []*idl.Connection) error {
 func getRenameMap(source *greenplum.Cluster, intermediateTarget *greenplum.Cluster, onlyRenamePrimaries bool) RenameMap {
 	m := make(RenameMap)
 
-	for _, seg := range intermediateTarget.Primaries {
+	for _, seg := range source.Primaries {
 		if seg.IsMaster() {
 			continue
 		}
 
 		m[seg.Hostname] = append(m[seg.Hostname], &idl.RenameDirectories{
-			Source:       source.Primaries[seg.ContentID].DataDir,
-			Target:       seg.DataDir,
+			Source:       seg.DataDir,
+			Target:       intermediateTarget.Primaries[seg.ContentID].DataDir,
 			RenameTarget: true,
 		})
 	}
@@ -74,10 +74,10 @@ func getRenameMap(source *greenplum.Cluster, intermediateTarget *greenplum.Clust
 		return m
 	}
 
-	for _, seg := range intermediateTarget.Mirrors {
+	for _, seg := range source.Mirrors {
 		m[seg.Hostname] = append(m[seg.Hostname], &idl.RenameDirectories{
-			Source:       source.Mirrors[seg.ContentID].DataDir,
-			Target:       seg.DataDir,
+			Source:       seg.DataDir,
+			Target:       intermediateTarget.Mirrors[seg.ContentID].DataDir,
 			RenameTarget: false,
 		})
 	}
