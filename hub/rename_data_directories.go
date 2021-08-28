@@ -17,18 +17,14 @@ var ArchiveSource = upgrade.ArchiveSource
 
 type RenameMap = map[string][]*idl.RenameDirectories
 
-func (s *Server) UpdateDataDirectories() error {
-	return UpdateDataDirectories(s.Config, s.agentConns)
-}
-
-func UpdateDataDirectories(conf *Config, agentConns []*idl.Connection) error {
-	source := conf.Source.MasterDataDir()
-	intermediateTarget := conf.IntermediateTarget.MasterDataDir()
-	if err := ArchiveSource(source, intermediateTarget, true); err != nil {
+func RenameDataDirectories(agentConns []*idl.Connection, source *greenplum.Cluster, intermediateTarget *greenplum.Cluster, linkMode bool) error {
+	src := source.MasterDataDir()
+	dst := intermediateTarget.MasterDataDir()
+	if err := ArchiveSource(src, dst, true); err != nil {
 		return xerrors.Errorf("renaming master data directories: %w", err)
 	}
 
-	renameMap := getRenameMap(conf.Source, conf.IntermediateTarget, conf.UseLinkMode)
+	renameMap := getRenameMap(source, intermediateTarget, linkMode)
 	if err := RenameSegmentDataDirs(agentConns, renameMap); err != nil {
 		return xerrors.Errorf("renaming segment data directories: %w", err)
 	}

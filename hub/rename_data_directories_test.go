@@ -187,7 +187,7 @@ func TestUpdateDataDirectories(t *testing.T) {
 			}
 		}()
 
-		err := hub.UpdateDataDirectories(conf, nil)
+		err := hub.RenameDataDirectories(nil, conf.Source, conf.IntermediateTarget, conf.UseLinkMode)
 		if err != nil {
 			t.Errorf("UpdateDataDirectories() returned error: %+v", err)
 		}
@@ -206,7 +206,7 @@ func TestUpdateDataDirectories(t *testing.T) {
 			}
 		}()
 
-		err := hub.UpdateDataDirectories(conf, nil)
+		err := hub.RenameDataDirectories(nil, conf.Source, conf.IntermediateTarget, conf.UseLinkMode)
 		if !errors.Is(err, expected) {
 			t.Errorf("got %#v want %#v", err, expected)
 		}
@@ -272,9 +272,9 @@ func TestUpdateDataDirectories(t *testing.T) {
 			{AgentClient: standby, Hostname: "standby"},
 		}
 
-		err := hub.UpdateDataDirectories(conf, agentConns)
+		err := hub.RenameDataDirectories(agentConns, conf.Source, conf.IntermediateTarget, conf.UseLinkMode)
 		if err != nil {
-			t.Errorf("UpdateDataDirectories() returned error: %+v", err)
+			t.Errorf("RenameDataDirectories() returned error: %+v", err)
 		}
 	})
 
@@ -313,9 +313,9 @@ func TestUpdateDataDirectories(t *testing.T) {
 			{AgentClient: sdw2, Hostname: "sdw2"},
 		}
 
-		err := hub.UpdateDataDirectories(conf, agentConns)
+		err := hub.RenameDataDirectories(agentConns, conf.Source, conf.IntermediateTarget, conf.UseLinkMode)
 		if err != nil {
-			t.Errorf("UpdateDataDirectories() returned error: %+v", err)
+			t.Errorf("RenameDataDirectories() returned error: %+v", err)
 		}
 	})
 }
