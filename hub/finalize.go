@@ -48,6 +48,18 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 	})
 
 	st.Run(idl.Substep_UPDATE_DATA_DIRECTORIES, func(_ step.OutStreams) error {
+		// in link mode, remove the source mirror and standby data directories; otherwise we create a second copy
+		// of them for the intermediate target cluster. That might take too much disk space.
+		if s.UseLinkMode {
+			if err := DeleteMirrorAndStandbyDataDirectories(s.agentConns, s.Source); err != nil {
+				return xerrors.Errorf("removing source cluster standby and mirror segment data directories: %w", err)
+			}
+
+			if err := DeleteSourceTablespacesOnMirrorsAndStandby(s.agentConns, s.Source, s.Tablespaces); err != nil {
+				return xerrors.Errorf("removing source cluster standby and mirror tablespace data directories: %w", err)
+			}
+		}
+
 		return s.UpdateDataDirectories()
 	})
 

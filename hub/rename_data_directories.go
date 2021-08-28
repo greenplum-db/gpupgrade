@@ -28,18 +28,6 @@ func UpdateDataDirectories(conf *Config, agentConns []*idl.Connection) error {
 		return xerrors.Errorf("renaming master data directories: %w", err)
 	}
 
-	// in link mode, remove the source mirror and standby data directories; otherwise we create a second copy
-	//  of them for the intermediate target cluster. That might take too much disk space.
-	if conf.UseLinkMode {
-		if err := DeleteMirrorAndStandbyDataDirectories(agentConns, conf.Source); err != nil {
-			return xerrors.Errorf("removing source cluster standby and mirror segment data directories: %w", err)
-		}
-
-		if err := DeleteSourceTablespacesOnMirrorsAndStandby(agentConns, conf.Source, conf.Tablespaces); err != nil {
-			return xerrors.Errorf("removing source cluster standby and mirror tablespace data directories: %w", err)
-		}
-	}
-
 	renameMap := getRenameMap(conf.Source, conf.IntermediateTarget, conf.UseLinkMode)
 	if err := RenameSegmentDataDirs(agentConns, renameMap); err != nil {
 		return xerrors.Errorf("renaming segment data directories: %w", err)

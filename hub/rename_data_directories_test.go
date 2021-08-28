@@ -287,10 +287,6 @@ func TestUpdateDataDirectories(t *testing.T) {
 		// Similar to copy mode, but we want deletion requests on the mirrors
 		// and standby as opposed to archive requests.
 		sdw1 := mock_idl.NewMockAgentClient(ctrl)
-		expectDeletes(sdw1, []string{
-			"/data/dbfast_mirror1/seg1",
-			"/data/dbfast_mirror1/seg3",
-		})
 		expectRenames(sdw1, []*idl.RenameDirectories{{
 			Source:       "/data/dbfast1/seg1",
 			Target:       "/data/dbfast1/seg1_123ABC",
@@ -302,10 +298,6 @@ func TestUpdateDataDirectories(t *testing.T) {
 		}})
 
 		sdw2 := mock_idl.NewMockAgentClient(ctrl)
-		expectDeletes(sdw2, []string{
-			"/data/dbfast_mirror2/seg2",
-			"/data/dbfast_mirror2/seg4",
-		})
 		expectRenames(sdw2, []*idl.RenameDirectories{{
 			Source:       "/data/dbfast2/seg2",
 			Target:       "/data/dbfast2/seg2_123ABC",
@@ -316,15 +308,9 @@ func TestUpdateDataDirectories(t *testing.T) {
 			RenameTarget: true,
 		}})
 
-		standby := mock_idl.NewMockAgentClient(ctrl)
-		expectDeletes(standby, []string{
-			"/data/standby",
-		})
-
 		agentConns := []*idl.Connection{
 			{AgentClient: sdw1, Hostname: "sdw1"},
 			{AgentClient: sdw2, Hostname: "sdw2"},
-			{AgentClient: standby, Hostname: "standby"},
 		}
 
 		err := hub.UpdateDataDirectories(conf, agentConns)
@@ -341,15 +327,6 @@ func expectRenames(client *mock_idl.MockAgentClient, pairs []*idl.RenameDirector
 		gomock.Any(),
 		equivalentRenameDirsRequest(&idl.RenameDirectoriesRequest{Dirs: pairs}),
 	).Return(&idl.RenameDirectoriesReply{}, nil)
-}
-
-// expectDeletes is syntactic sugar for setting up an expectation on
-// AgentClient.DeleteDirectories().
-func expectDeletes(client *mock_idl.MockAgentClient, datadirs []string) {
-	client.EXPECT().DeleteDataDirectories(
-		gomock.Any(),
-		&idl.DeleteDataDirectoriesRequest{Datadirs: datadirs},
-	).Return(&idl.DeleteDataDirectoriesReply{}, nil)
 }
 
 // equivalentRequest is a Matcher that can handle differences in order between
