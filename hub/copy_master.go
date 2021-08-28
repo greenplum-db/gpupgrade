@@ -6,11 +6,13 @@ package hub
 import (
 	"bytes"
 	"io"
+	"os"
 	"path/filepath"
 	"sync"
 
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 	"github.com/greenplum-db/gpupgrade/utils/rsync"
@@ -78,21 +80,21 @@ func Copy(streams step.OutStreams, destinationDir string, sourceDirs, hosts []st
 	return errs
 }
 
-func (s *Server) CopyMasterDataDir(streams step.OutStreams, destination string) error {
+func CopyMasterDataDir(streams step.OutStreams, masterDataDir string, destination string, hosts []string) error {
 	// Make sure sourceDir ends with a trailing slash so that rsync will
 	// transfer the directory contents and not the directory itself.
-	source := []string{filepath.Clean(s.IntermediateTarget.MasterDataDir()) + string(filepath.Separator)}
-	return Copy(streams, destination, source, s.IntermediateTarget.PrimaryHostnames())
+	source := []string{filepath.Clean(masterDataDir) + string(filepath.Separator)}
+	return Copy(streams, destination, source, hosts)
 }
 
-func (s *Server) CopyMasterTablespaces(streams step.OutStreams, destinationDir string) error {
-	if s.Tablespaces == nil {
+func CopyMasterTablespaces(streams step.OutStreams, TablespacesMappingFilePath string, tablespaces greenplum.Tablespaces, destinationDir string, hosts []string) error {
+	if tablespaces == nil {
 		return nil
 	}
 
 	// include tablespace mapping file which is used as a parameter to pg_upgrade
-	sourcePaths := []string{s.TablespacesMappingFilePath}
-	sourcePaths = append(sourcePaths, s.Tablespaces.GetMasterTablespaces().UserDefinedTablespacesLocations()...)
+	sourcePaths := []string{TablespacesMappingFilePath}
+	sourcePaths = append(sourcePaths, tablespaces.GetMasterTablespaces().UserDefinedTablespacesLocations()...)
 
-	return Copy(streams, destinationDir, sourcePaths, s.IntermediateTarget.PrimaryHostnames())
+	return Copy(streams, destinationDir+string(os.PathSeparator), sourcePaths, hosts)
 }

@@ -5,7 +5,6 @@ package hub
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -60,17 +59,12 @@ func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_Execut
 	})
 
 	st.Run(idl.Substep_COPY_MASTER, func(streams step.OutStreams) error {
-		err := s.CopyMasterDataDir(streams, upgradedMasterBackupDir)
+		err := CopyMasterDataDir(streams, s.IntermediateTarget.MasterDataDir(), upgradedMasterBackupDir, s.IntermediateTarget.PrimaryHostnames())
 		if err != nil {
 			return err
 		}
 
-		err = s.CopyMasterTablespaces(streams, utils.GetTablespaceDir()+string(os.PathSeparator))
-		if err != nil {
-			return err
-		}
-
-		return nil
+		return CopyMasterTablespaces(streams, s.TablespacesMappingFilePath, s.Tablespaces, utils.GetTablespaceDir(), s.IntermediateTarget.PrimaryHostnames())
 	})
 
 	st.Run(idl.Substep_UPGRADE_PRIMARIES, func(_ step.OutStreams) error {

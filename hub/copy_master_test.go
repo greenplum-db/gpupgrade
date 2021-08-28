@@ -14,7 +14,6 @@ import (
 	"testing"
 
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-	"google.golang.org/grpc"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/step"
@@ -48,7 +47,6 @@ func TestCopy(t *testing.T) {
 	testlog.SetupLogger()
 
 	t.Run("copies the directory only once per host", func(t *testing.T) {
-
 		sourceDir := []string{"/data/qddir/seg-1/"}
 		targetHosts := []string{"localhost"}
 
@@ -171,11 +169,6 @@ func TestCopyMasterDataDir(t *testing.T) {
 		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: "p"},
 	})
 
-	conf := &Config{
-		IntermediateTarget: intermediateTarget,
-	}
-	hub := New(conf, grpc.DialContext, ".gpupgrade")
-
 	t.Run("copies the master data directory to each primary host", func(t *testing.T) {
 		// The verifier function can be called in parallel, so use a channel to
 		// communicate which hosts were actually used.
@@ -188,7 +181,7 @@ func TestCopyMasterDataDir(t *testing.T) {
 
 		execCommandVerifier(t, hosts, expectedArgs)
 
-		err := hub.CopyMasterDataDir(step.DevNullStream, "foobar/path")
+		err := CopyMasterDataDir(step.DevNullStream, intermediateTarget.MasterDataDir(), "foobar/path", intermediateTarget.PrimaryHostnames())
 		if err != nil {
 			t.Errorf("copying master data directory: %+v", err)
 		}
@@ -209,50 +202,47 @@ func TestCopyMasterTablespaces(t *testing.T) {
 		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: "p"},
 	})
 
-	t.Run("copies tablespace mapping file and master tablespace directory to each primary host", func(t *testing.T) {
-		conf := &Config{
-			IntermediateTarget: intermediateTarget,
-			Tablespaces: greenplum.Tablespaces{
-				1: greenplum.SegmentTablespaces{
-					1663: greenplum.TablespaceInfo{
-						Location:    "/tmp/tblspc1",
-						UserDefined: 0},
-					1664: greenplum.TablespaceInfo{
-						Location:    "/tmp/tblspc2",
-						UserDefined: 1},
-				},
-				2: greenplum.SegmentTablespaces{
-					1663: greenplum.TablespaceInfo{
-						Location:    "/tmp/primary1/tblspc1",
-						UserDefined: 0},
-					1664: greenplum.TablespaceInfo{
-						Location:    "/tmp/primary1/tblspc2",
-						UserDefined: 1},
-				},
-				3: greenplum.SegmentTablespaces{
-					1663: greenplum.TablespaceInfo{
-						Location:    "/tmp/primary2/tblspc1",
-						UserDefined: 0},
-					1664: greenplum.TablespaceInfo{
-						Location:    "/tmp/primary2/tblspc2",
-						UserDefined: 1},
-				},
-			},
-			TablespacesMappingFilePath: "/tmp/mapping.txt",
-		}
-		hub := New(conf, grpc.DialContext, ".gpupgrade")
+	TablespacesMappingFilePath := "/tmp/mapping.txt"
 
+	Tablespaces := greenplum.Tablespaces{
+		1: greenplum.SegmentTablespaces{
+			1663: greenplum.TablespaceInfo{
+				Location:    "/tmp/tblspc1",
+				UserDefined: 0},
+			1664: greenplum.TablespaceInfo{
+				Location:    "/tmp/tblspc2",
+				UserDefined: 1},
+		},
+		2: greenplum.SegmentTablespaces{
+			1663: greenplum.TablespaceInfo{
+				Location:    "/tmp/primary1/tblspc1",
+				UserDefined: 0},
+			1664: greenplum.TablespaceInfo{
+				Location:    "/tmp/primary1/tblspc2",
+				UserDefined: 1},
+		},
+		3: greenplum.SegmentTablespaces{
+			1663: greenplum.TablespaceInfo{
+				Location:    "/tmp/primary2/tblspc1",
+				UserDefined: 0},
+			1664: greenplum.TablespaceInfo{
+				Location:    "/tmp/primary2/tblspc2",
+				UserDefined: 1},
+		},
+	}
+
+	t.Run("copies tablespace mapping file and master tablespace directory to each primary host", func(t *testing.T) {
 		// The verifier function can be called in parallel, so use a channel to
 		// communicate which hosts were actually used.
 		hosts := make(chan string, len(intermediateTarget.PrimaryHostnames()))
 
 		expectedArgs := []string{
 			"--archive", "--compress", "--delete", "--stats",
-			"/tmp/mapping.txt", "/tmp/tblspc2", "foobar/path",
+			"/tmp/mapping.txt", "/tmp/tblspc2", "foobar/path/",
 		}
 		execCommandVerifier(t, hosts, expectedArgs)
 
-		err := hub.CopyMasterTablespaces(step.DevNullStream, "foobar/path")
+		err := CopyMasterTablespaces(step.DevNullStream, TablespacesMappingFilePath, Tablespaces, "foobar/path", intermediateTarget.PrimaryHostnames())
 		if err != nil {
 			t.Errorf("copying master tablespace directories and mapping file: %+v", err)
 		}
@@ -264,19 +254,14 @@ func TestCopyMasterTablespaces(t *testing.T) {
 	})
 
 	t.Run("CopyMasterTablespaces returns nil if there is no tablespaces", func(t *testing.T) {
-		conf := &Config{
-			Target: intermediateTarget,
-		}
-		hub := New(conf, grpc.DialContext, ".gpupgrade")
 		// The verifier function can be called in parallel, so use a channel to
 		// communicate which hosts were actually used.
-
 		hosts := make(chan string, len(intermediateTarget.PrimaryHostnames()))
 
 		var expectedArgs []string
 		execCommandVerifier(t, hosts, expectedArgs)
 
-		err := hub.CopyMasterTablespaces(step.DevNullStream, "foobar/path")
+		err := CopyMasterTablespaces(step.DevNullStream, TablespacesMappingFilePath, nil, "foobar/path", intermediateTarget.PrimaryHostnames())
 		if err != nil {
 			t.Errorf("got %+v, want nil", err)
 		}
