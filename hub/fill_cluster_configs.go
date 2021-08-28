@@ -48,7 +48,6 @@ func FillConfiguration(config *Config, conn *sql.DB, _ step.OutStreams, request 
 	target := source // create target cluster based off source cluster
 	config.Source = &source
 	config.Target = &target
-	config.TargetGPHome = request.TargetGPHome // delete me in favor of config.Target.GPHome
 	config.Target.GPHome = request.TargetGPHome
 	config.UseLinkMode = request.UseLinkMode
 

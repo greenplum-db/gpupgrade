@@ -87,13 +87,13 @@ func (s *Server) RemoveIntermediateTargetCluster(streams step.OutStreams) error 
 }
 
 func (s *Server) InitTargetCluster(stream step.OutStreams) error {
-	version, err := greenplum.LocalVersion(s.TargetGPHome)
+	version, err := greenplum.LocalVersion(s.IntermediateTarget.GPHome)
 	if err != nil {
 		return err
 	}
 
 	return RunInitsystemForTargetCluster(stream,
-		s.TargetGPHome, s.initsystemConfPath(), version)
+		s.IntermediateTarget.GPHome, s.initsystemConfPath(), version)
 }
 
 func GetCheckpointSegmentsAndEncoding(gpinitsystemConfig []string, version dbconn.GPDBVersion, dbConnector *dbconn.DBConn) ([]string, error) {
