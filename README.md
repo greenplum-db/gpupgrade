@@ -216,9 +216,14 @@ make set-pipeline
 
 ## Concourse Pipeline
 
-To update the generated pipeline edit `ci/template.yml` and run 
-`make set-pipeline` or `go generate ./ci` which is automatically run as part of
- `make set-pipeline`. This will update `ci/generated/pipeline.yml`.
+To update the pipeline edit the yaml files in the `ci` directory and run 
+`make set-pipeline`. 
+
+The yaml files in the `ci` directory are concatenated to 
+create `ci/generated/template.yml`. Next, `go generate ./ci` is executed which 
+runs `go run ./parser/parse_template.go generated/template.yml generated/pipeline.yml`
+to create `ci/generated/pipeline.yml`. None of the generated files `template.yml` 
+or `pipeline.yml` are checked in.
 
 To update the production pipeline: `PIPELINE_NAME=gpupgrade FLY_TARGET=prod make set-pipeline`
 
@@ -226,9 +231,9 @@ To make the pipeline publicly visible run `make expose-pipeline`. This will
 allow anyone to see the pipeline and its status. However, the task details will 
 not be visible unless one logs into Concourse.
 
-*Note:* If your dev pipeline is failing in the build job while verifying the rpm 
-then the most likely cause needing to sync the latest tags on origin with your 
-remote. This allows the GPDB test rpm to have the correct version number. 
+*Note:* If your dev pipeline is failing on the build job while verifying the rpm 
+then the most likely cause is needing to sync the latest tags on origin with 
+your remote. This allows the GPDB test rpm to have the correct version number. 
 On your GPDB branch run the following:
 ```
 $ git fetch --tags origin
