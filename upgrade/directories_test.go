@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/testlog"
@@ -85,7 +86,7 @@ func TestArchiveSource(t *testing.T) {
 		source, target, cleanup := testutils.MustCreateDataDirs(t)
 		defer cleanup(t)
 
-		err := upgrade.ArchiveSource(source, target, true)
+		err := upgrade.RenameDirectories(source, target, idl.RenameDirectory_ArchiveSourceAndRenameTarget)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -115,7 +116,7 @@ func TestArchiveSource(t *testing.T) {
 
 		testutils.VerifyRename(t, source, target)
 
-		err = upgrade.ArchiveSource(source, target, true)
+		err = upgrade.RenameDirectories(source, target, idl.RenameDirectory_ArchiveSourceAndRenameTarget)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -137,7 +138,7 @@ func TestArchiveSource(t *testing.T) {
 			utils.System.Rename = os.Rename
 		}()
 
-		err := upgrade.ArchiveSource(source, target, true)
+		err := upgrade.RenameDirectories(source, target, idl.RenameDirectory_ArchiveSourceAndRenameTarget)
 		if !errors.Is(err, expected) {
 			t.Errorf("got %#v want %#v", err, expected)
 		}
@@ -150,7 +151,7 @@ func TestArchiveSource(t *testing.T) {
 		target := testutils.GetTempDir(t, "target")
 		defer testutils.MustRemoveAll(t, target)
 
-		err := upgrade.ArchiveSource(source, target, true)
+		err := upgrade.RenameDirectories(source, target, idl.RenameDirectory_ArchiveSourceAndRenameTarget)
 
 		var errs errorlist.Errors
 		if !errors.As(err, &errs) {
@@ -165,22 +166,21 @@ func TestArchiveSource(t *testing.T) {
 		}
 	})
 
-	t.Run("only renames source to archive when renameTarget is false", func(t *testing.T) {
+	t.Run("only renames target when renameDirectory is OnlyRenameTarget", func(t *testing.T) {
 		source, target, cleanup := testutils.MustCreateDataDirs(t)
 		defer cleanup(t)
-
-		archive := target + upgrade.OldSuffix
+		testutils.MustRemoveAll(t, source) // source does not exist when only renaming the target
 
 		calls := 0
 		utils.System.Rename = func(old, new string) error {
 			calls++
 
-			if old != source {
-				t.Errorf("got %q want %q", old, source)
+			if old != target {
+				t.Errorf("got %q want %q", old, target)
 			}
 
-			if new != archive {
-				t.Errorf("got %q want %q", new, archive)
+			if new != source {
+				t.Errorf("got %q want %q", new, source)
 			}
 
 			return os.Rename(old, new)
@@ -189,7 +189,7 @@ func TestArchiveSource(t *testing.T) {
 			utils.System.Rename = os.Rename
 		}()
 
-		err := upgrade.ArchiveSource(source, target, false)
+		err := upgrade.RenameDirectories(source, target, idl.RenameDirectory_OnlyRenameTarget)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -197,22 +197,23 @@ func TestArchiveSource(t *testing.T) {
 		if calls != 1 {
 			t.Errorf("expected rename to be called once")
 		}
-		testutils.PathMustNotExist(t, source)
-		testutils.PathMustExist(t, archive)
+
+		testutils.PathMustExist(t, source)
+		testutils.PathMustNotExist(t, target)
 	})
 
 	t.Run("when renaming succeeds then a re-run succeeds", func(t *testing.T) {
 		source, target, cleanup := testutils.MustCreateDataDirs(t)
 		defer cleanup(t)
 
-		err := upgrade.ArchiveSource(source, target, true)
+		err := upgrade.RenameDirectories(source, target, idl.RenameDirectory_ArchiveSourceAndRenameTarget)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
 
 		testutils.VerifyRename(t, source, target)
 
-		err = upgrade.ArchiveSource(source, target, true)
+		err = upgrade.RenameDirectories(source, target, idl.RenameDirectory_ArchiveSourceAndRenameTarget)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -234,7 +235,7 @@ func TestArchiveSource(t *testing.T) {
 			return os.Rename(old, new)
 		}
 
-		err := upgrade.ArchiveSource(source, target, true)
+		err := upgrade.RenameDirectories(source, target, idl.RenameDirectory_ArchiveSourceAndRenameTarget)
 		if !errors.Is(err, expected) {
 			t.Errorf("got %#v want %#v", err, expected)
 		}
@@ -247,7 +248,7 @@ func TestArchiveSource(t *testing.T) {
 
 		utils.System.Rename = os.Rename
 
-		err = upgrade.ArchiveSource(source, target, true)
+		err = upgrade.RenameDirectories(source, target, idl.RenameDirectory_ArchiveSourceAndRenameTarget)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -269,7 +270,7 @@ func TestArchiveSource(t *testing.T) {
 			return os.Rename(old, new)
 		}
 
-		err := upgrade.ArchiveSource(source, target, true)
+		err := upgrade.RenameDirectories(source, target, idl.RenameDirectory_ArchiveSourceAndRenameTarget)
 		if !errors.Is(err, expected) {
 			t.Errorf("got %#v want %#v", err, expected)
 		}
@@ -282,7 +283,7 @@ func TestArchiveSource(t *testing.T) {
 
 		utils.System.Rename = os.Rename
 
-		err = upgrade.ArchiveSource(source, target, true)
+		err = upgrade.RenameDirectories(source, target, idl.RenameDirectory_ArchiveSourceAndRenameTarget)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}

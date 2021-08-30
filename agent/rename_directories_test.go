@@ -19,7 +19,7 @@ func TestRenameDirectories(t *testing.T) {
 
 	t.Run("bubbles up errors", func(t *testing.T) {
 		expected := errors.New("permission denied")
-		agent.ArchiveSource = func(source, target string, renameTarget bool) error {
+		agent.RenameDirectories = func(source, target string, renameDirectory idl.RenameDirectory) error {
 			return expected
 		}
 

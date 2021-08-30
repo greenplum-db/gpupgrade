@@ -69,10 +69,16 @@ message ArchiveLogDirectoryRequest {
 }
 message ArchiveLogDirectoryReply {}
 
+enum RenameDirectory {
+  UNKNOWN_RENAME = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
+  OnlyRenameTarget = 1;
+  ArchiveSourceAndRenameTarget = 2;
+}
+
 message RenameDirectories {
   string Source = 1;
   string Target = 2;
-  bool RenameTarget = 3;
+  RenameDirectory RenameDirectory = 3;
 }
 
 message RenameDirectoriesRequest {

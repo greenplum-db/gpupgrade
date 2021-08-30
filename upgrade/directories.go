@@ -16,6 +16,7 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
@@ -89,7 +90,7 @@ func GetArchiveDirectoryName(id ID, t time.Time) string {
 	return fmt.Sprintf("gpupgrade-%s-%s", id.String(), t.Format("2006-01-02T15:04"))
 }
 
-// ArchiveSource archives the source directory, and renames
+// RenameDirectories archives the source directory, and renames
 // source to target. For example:
 //   source '/data/dbfast1/demoDataDir0' becomes archive '/data/dbfast1/demoDataDir.123ABC.0.old'
 //   target '/data/dbfast1/demoDataDir.123ABC.0' becomes source '/data/dbfast1/demoDataDir0'
@@ -97,13 +98,12 @@ func GetArchiveDirectoryName(id ID, t time.Time) string {
 // useful in link mode when the mirrors have been deleted to save disk space and
 // will upgraded later to their correct location. Thus, renameTarget is false in
 // link mode when there is only the source directory to archive.
-func ArchiveSource(source, target string, renameTarget bool) error {
+func RenameDirectories(source, target string, renameDirectory idl.RenameDirectory) error {
 	// Instead of manipulating the source to create the archive we append the
 	// old suffix to the target to achieve the same result.
 	archive := target + OldSuffix
 
 	alreadyRenamed, err := AlreadyRenamed(target, archive)
-
 	if err != nil {
 		return err
 	}
@@ -112,23 +112,21 @@ func ArchiveSource(source, target string, renameTarget bool) error {
 		return nil
 	}
 
-	sourceExist, err := PathExist(source)
-	if err != nil {
-		return err
-	}
-
-	if sourceExist {
-		if err := renameDataDirectory(source, archive); err != nil {
+	if renameDirectory != idl.RenameDirectory_OnlyRenameTarget {
+		sourceExist, err := PathExist(source)
+		if err != nil {
 			return err
 		}
-	} else {
-		gplog.Debug("Source directory not found when renaming %q to %q. It was already renamed from a previous run.", source, archive)
-	}
 
-	// In link mode mirrors have been deleted to save disk space, so there is
-	// no target to rename. Only archiving the source is needed.
-	if !renameTarget {
-		return nil
+		if sourceExist {
+			if err := renameDataDirectory(source, archive); err != nil {
+				return err
+			}
+		}
+
+		if !sourceExist {
+			gplog.Debug("Source directory not found when renaming %q to %q. It was already renamed from a previous run.", source, archive)
+		}
 	}
 
 	if err := renameDataDirectory(target, source); err != nil {
