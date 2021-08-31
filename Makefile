@@ -208,6 +208,7 @@ set-pipeline: export 6X_GIT_BRANCH=${6X_GIT_BRANCH:-}
 set-pipeline: export 7X_GIT_USER=${7X_GIT_USER:-}
 set-pipeline: export 7X_GIT_BRANCH=${7X_GIT_BRANCH:-}
 set-pipeline:
+	mkdir -p ci/generated
 	cat ci/1_resources_anchors_groups.yml \
 		ci/2_build_lint.yml \
 		ci/3_gpupgrade_jobs.yml  \
