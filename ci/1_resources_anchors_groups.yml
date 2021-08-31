@@ -50,7 +50,7 @@ resources:
 # source and target clusters. In order to test this scenario release candidate
 # builds are needed.
 {{range .Versions}}
-- name: rpm_gpdb{{.GPVersion}}_centos{{.CentosVersion}}
+- name: gpdb{{.GPVersion}}_centos{{.CentosVersion}}_rpm
   type: gcs
   source:
     {{- if .TestRCIdentifier }}
@@ -64,28 +64,28 @@ resources:
     regexp: server/published/gpdb{{ majorVersion .GPVersion }}/greenplum-db-{{.TestRCIdentifier}}({{escapeVersion .GPVersion}}.*)-rhel{{.CentosVersion}}-x86_64.debug.rpm
 {{end}}
 
-- name: rpm_oss
+- name: oss_rpm
   type: gcs
   source:
     bucket: ((cm-intermediates-bucket))
     json_key: ((cm-gcs-service-account-key))
     versioned_file: oss/gpupgrade-intermediate.el7.x86_64.rpm
 
-- name: rpm_enterprise
+- name: enterprise_rpm
   type: gcs
   source:
     bucket: ((cm-intermediates-bucket))
     json_key: ((cm-gcs-service-account-key))
     versioned_file: enterprise/gpupgrade-intermediate.el7.x86_64.rpm
 
-- name: rpm_oss_rc
+- name: oss_rc_rpm
   type: gcs
   source:
     bucket: ((cm-artifacts-bucket))
     json_key: ((cm-gcs-service-account-key))
     regexp: release-candidates/oss/gpupgrade-(.*).rpm
 
-- name: rpm_enterprise_rc
+- name: enterprise_rc_rpm
   type: gcs
   source:
     bucket: ((cm-artifacts-bucket))
@@ -138,7 +138,7 @@ resources:
     versioned_file: plugin-cache.tgz
   type: s3
 
-- name: gpdb5_icw_planner_centos6_dump
+- name: icw_planner_gpdb5_centos6_dump
   type: gcs
   source:
     # FIXME: When flying a dev or prod pipeline we use the -dev or -prod bucket
@@ -150,7 +150,7 @@ resources:
     json_key: ((concourse-gcs-resources-service-account-key))
     versioned_file: 5X_STABLE/icw_planner_centos6_dump/dump.sql.xz
 
-- name: dump_gpdb6_icw_gporca_centos6
+- name: icw_gporca_gpdb6_centos6_dump
   type: gcs
   source:
     # FIXME: When flying a dev or prod pipeline we use the -dev or -prod bucket
@@ -165,7 +165,7 @@ resources:
 # The postgis dump is a static file that was created by taking objects from the
 # postgis regression tests and "not" dropping the databases associated with
 # them to preserve the objects.
-- name: postgis215_dump
+- name: postgis_2.1.5_dump
   type: gcs
   source:
     json_key: ((cm-gcs-service-account-key))
@@ -173,14 +173,14 @@ resources:
     versioned_file: extensions/postgis215_dump.sql
 
 {{range .Versions}}
-- name: postgis215_gppkg_gpdb{{.GPVersion}}_centos{{.CentosVersion}}
+- name: postgis_2.1.5_gpdb{{.GPVersion}}_centos{{.CentosVersion}}_gppkg
   type: gcs
   source:
     json_key: ((concourse-gcs-resources-service-account-key))
     bucket: pivotal-gpdb-concourse-resources-prod
     regexp: postgis/released/gpdb{{.GPVersion}}/postgis-2.1.5\+(.*)-gp{{.GPVersion}}-rhel{{.CentosVersion}}-x86_64.gppkg
 
-- name: madlib1190_gppkg_gpdb{{.GPVersion}}_centos{{.CentosVersion}}
+- name: madlib_1.19.0_gpdb{{.GPVersion}}_centos{{.CentosVersion}}_gppkg
   type: s3
   source:
     access_key_id: ((madlib-s3-access_key_id))
@@ -192,7 +192,7 @@ resources:
 # NOTE: Skip creating the pxf resources for centos6 since pxf5 gpdb6 is not supported for centos6. Thus, we can only
 # test pxf upgrades on centos7.
 {{- if ne .CentosVersion "6" }}
-- name: pxf5_gp{{.GPVersion}}_centos{{.CentosVersion}}_rpm
+- name: pxf_5_gpdb{{.GPVersion}}_centos{{.CentosVersion}}_rpm
   type: gcs
   source:
     json_key: ((concourse-gcs-resources-service-account-key))

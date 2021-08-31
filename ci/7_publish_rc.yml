@@ -18,7 +18,7 @@
             {{- range .MultihostGpupgradeJobs}}
             - {{ .Name }}
             {{- end}}
-        - get: rpm_enterprise
+        - get: enterprise_rpm
           passed:
             - build
             {{- range .UpgradeJobs}}
@@ -30,7 +30,7 @@
             {{- range .MultihostGpupgradeJobs}}
             - {{ .Name }}
             {{- end}}
-        - get: rpm_oss
+        - get: oss_rpm
           passed:
             - build
     - task: add-semver
@@ -43,19 +43,19 @@
             tag: 1.16
         inputs:
           - name: gpupgrade_src
-          - name: rpm_oss
-          - name: rpm_enterprise
+          - name: oss_rpm
+          - name: enterprise_rpm
         outputs:
-          - name: renamed_rpm_oss
-          - name: renamed_rpm_enterprise
+          - name: renamed_oss_rpm
+          - name: renamed_enterprise_rpm
         run:
           path: gpupgrade_src/ci/scripts/add-semver.bash
     - in_parallel:
-        - put: rpm_oss_rc
+        - put: oss_rc_rpm
           params:
-            file: renamed_rpm_oss/gpupgrade-*.rpm
-        - put: rpm_enterprise_rc
+            file: renamed_oss_rpm/gpupgrade-*.rpm
+        - put: enterprise_rc_rpm
           params:
-            file: renamed_rpm_enterprise/gpupgrade-*.rpm
+            file: renamed_enterprise_rpm/gpupgrade-*.rpm
   on_failure:
     <<: *slack_alert

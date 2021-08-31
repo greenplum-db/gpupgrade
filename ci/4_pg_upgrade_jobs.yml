@@ -2,7 +2,7 @@
 - name: {{.Name}}
   plan:
     - in_parallel:
-        - get: rpm_enterprise
+        - get: enterprise_rpm
           trigger: true
           passed: [ build ]
         - get: gpupgrade_src
@@ -13,10 +13,10 @@
           resource: gpdb{{.Target}}_src
         - get: bats
         - get: rpm_gpdb_source
-          resource: rpm_gpdb{{.Source}}_centos{{.CentosVersion}}
+          resource: gpdb{{.Source}}_centos{{.CentosVersion}}_rpm
           trigger: true
         - get: rpm_gpdb_target
-          resource: rpm_gpdb{{.Target}}_centos{{.CentosVersion}}
+          resource: gpdb{{.Target}}_centos{{.CentosVersion}}_rpm
           trigger: true
     - task: pg-upgrade-tests
       config:
@@ -29,7 +29,7 @@
             repository: gcr.io/data-gpdb-public-images/gpdb{{.Target}}-centos{{.CentosVersion}}-test
             tag: latest
         inputs:
-          - name: rpm_enterprise
+          - name: enterprise_rpm
           - name: gpupgrade_src
           - name: gpdb_src_source
           # Rename gpdb_src_target to gpdb_src since external scripts used within rely on that.

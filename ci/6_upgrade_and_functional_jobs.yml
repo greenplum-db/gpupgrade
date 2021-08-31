@@ -6,17 +6,17 @@
   # will prevent concourse from becoming overloaded.
   plan:
     - in_parallel:
-        - get: rpm_enterprise
+        - get: enterprise_rpm
           trigger: true
           passed: [ build ]
         - get: gpupgrade_src
           passed: [ build ]
         - get: rpm_gpdb_source
-          resource: rpm_gpdb{{.Source}}_centos{{.CentosVersion}}
+          resource: gpdb{{.Source}}_centos{{.CentosVersion}}_rpm
           trigger: true
         {{- if ne .Source .Target }}
         - get: rpm_gpdb_target
-          resource: rpm_gpdb{{.Target}}_centos{{.CentosVersion}}
+          resource: gpdb{{.Target}}_centos{{.CentosVersion}}_rpm
           trigger: true
         {{- end }}
         - get: ccp_src
@@ -30,27 +30,27 @@
         # above binary...
         - get: sqldump
           {{- if .ExtensionsJob }}
-          resource: postgis215_dump
+          resource: postgis_2.1.5_dump
           {{- else if eq (majorVersion .Source) "5" }}
-          resource: gpdb5_icw_planner_centos6_dump
+          resource: icw_planner_gpdb5_centos6_dump
           {{- else }}
-          resource: dump_gpdb6_icw_gporca_centos6
+          resource: icw_gporca_gpdb6_centos6_dump
           {{- end }}
         {{- end }}
         {{- if .ExtensionsJob }}
         - get: postgis_gppkg_source
-          resource: postgis215_gppkg_gpdb{{.Source}}_centos{{.CentosVersion}}
+          resource: postgis_2.1.5_gpdb{{.Source}}_centos{{.CentosVersion}}_gppkg
         - get: postgis_gppkg_target
-          resource: postgis215_gppkg_gpdb{{.Target}}_centos{{.CentosVersion}}
+          resource: postgis_2.1.5_gpdb{{.Target}}_centos{{.CentosVersion}}_gppkg
         - get: madlib_gppkg_source
-          resource: madlib1190_gppkg_gpdb{{.Source}}_centos{{.CentosVersion}}
+          resource: madlib_1.19.0_gpdb{{.Source}}_centos{{.CentosVersion}}_gppkg
         - get: madlib_gppkg_target
-          resource: madlib1190_gppkg_gpdb{{.Target}}_centos{{.CentosVersion}}
+          resource: madlib_1.19.0_gpdb{{.Target}}_centos{{.CentosVersion}}_gppkg
         {{- if ne .CentosVersion "6" }}
         - get: pxf_rpm_source
-          resource: pxf5_gp{{.Source}}_centos{{.CentosVersion}}_rpm
+          resource: pxf_5_gpdb{{.Source}}_centos{{.CentosVersion}}_rpm
         - get: pxf_rpm_target
-          resource: pxf5_gp{{.Target}}_centos{{.CentosVersion}}_rpm
+          resource: pxf_5_gpdb{{.Target}}_centos{{.CentosVersion}}_rpm
         {{- end }}
         {{- end }}
     - put: terraform
@@ -89,7 +89,7 @@
         inputs:
           - name: gpupgrade_src
           - name: cluster_env_files
-          - name: rpm_enterprise
+          - name: enterprise_rpm
           {{- if ne .Source .Target }}
           - name: rpm_gpdb_target
           {{- end }}

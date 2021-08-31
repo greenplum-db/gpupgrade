@@ -6,17 +6,17 @@
   # will prevent concourse from becoming overloaded.
   plan:
     - in_parallel:
-        - get: rpm_enterprise
+        - get: enterprise_rpm
           trigger: true
           passed: [ build ]
         - get: gpupgrade_src
           passed: [ build ]
         - get: rpm_gpdb_source
-          resource: rpm_gpdb{{.Source}}_centos{{.CentosVersion}}
+          resource: gpdb{{.Source}}_centos{{.CentosVersion}}_rpm
           trigger: true
         {{- if ne .Source .Target }}
         - get: rpm_gpdb_target
-          resource: rpm_gpdb{{.Target}}_centos{{.CentosVersion}}
+          resource: gpdb{{.Target}}_centos{{.CentosVersion}}_rpm
           trigger: true
         {{- end }}
         - get: ccp_src
@@ -56,7 +56,7 @@
         inputs:
           - name: gpupgrade_src
           - name: cluster_env_files
-          - name: rpm_enterprise
+          - name: enterprise_rpm
           {{- if ne .Source .Target }}
           - name: rpm_gpdb_target
           {{- end }}
@@ -77,7 +77,7 @@
           - name: ccp_src
           - name: cluster_env_files
           - name: gpupgrade_src
-          - name: rpm_enterprise
+          - name: enterprise_rpm
           - name: bats
         run:
           path: gpupgrade_src/ci/scripts/multihost-gpupgrade-tests.bash

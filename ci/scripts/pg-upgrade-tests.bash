@@ -50,7 +50,7 @@ main() {
     ./bats/install.sh /usr/local
 
     echo "Installing gpupgrade rpm..."
-    yum install -y rpm_enterprise/gpupgrade-*.rpm
+    yum install -y enterprise_rpm/gpupgrade-*.rpm
 
     echo "Setting up gpadmin user..."
     mkdir -p gpdb_src

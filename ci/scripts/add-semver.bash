@@ -11,7 +11,7 @@ set -eux -o pipefail
 function rename_rpm() {
     local release=$1
 
-    rpm=$(basename "rpm_${release}"/gpupgrade-*.rpm)
+    rpm=$(basename "${release}_rpm"/gpupgrade-*.rpm)
     # shellcheck disable=2001
     sed s/gpupgrade-intermediate/gpupgrade-"${SEMVER}-1"/ <<< "$rpm"
 }
@@ -24,5 +24,5 @@ if [ -n "${parts[1]}" ]; then
   SEMVER="${SEMVER}.${parts[1]}.${parts[2]}"
 fi
 
-cp rpm_oss/gpupgrade-*.rpm renamed_rpm_oss/"$(rename_rpm oss)"
-cp rpm_enterprise/gpupgrade-*.rpm renamed_rpm_enterprise/"$(rename_rpm enterprise)"
+cp oss_rpm/gpupgrade-*.rpm renamed_oss_rpm/"$(rename_rpm oss)"
+cp enterprise_rpm/gpupgrade-*.rpm renamed_enterprise_rpm/"$(rename_rpm enterprise)"

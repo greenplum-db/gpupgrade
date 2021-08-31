@@ -43,6 +43,6 @@ for host in `cat cluster_env_files/hostfile_all`; do
     "
 
     echo "Installing the gpupgrade rpm on host ${host}..."
-    scp rpm_enterprise/gpupgrade-*.rpm gpadmin@$host:/tmp
+    scp enterprise_rpm/gpupgrade-*.rpm gpadmin@$host:/tmp
     ssh centos@$host sudo rpm -ivh /tmp/gpupgrade-*.rpm
 done

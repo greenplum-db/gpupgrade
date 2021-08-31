@@ -33,10 +33,10 @@
           resource: gpdb{{.Source}}_src
         - get: bats
         - get: rpm_gpdb_source
-          resource: rpm_gpdb{{.Source}}_centos7
+          resource: gpdb{{.Source}}_centos7_rpm
           trigger: true
         - get: rpm_gpdb_target
-          resource: rpm_gpdb{{.Target}}_centos7
+          resource: gpdb{{.Target}}_centos7_rpm
           trigger: true
     - task: install-tests
       config:
