@@ -31,6 +31,10 @@ func UpdateConfFiles(agentConns []*idl.Connection, _ step.OutStreams, version se
 		return err
 	}
 
+	if err := UpdateRecoveryConfiguration(agentConns, version, intermediateTarget, target); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -87,6 +91,49 @@ func UpdatePostgresqlConfOnSegments(agentConns []*idl.Connection, intermediateCl
 	return ExecuteRPC(agentConns, request)
 }
 
+func UpdateRecoveryConfiguration(agentConns []*idl.Connection, version semver.Version, intermediateCluster *greenplum.Cluster, target *greenplum.Cluster) error {
+	file := "postgresql.auto.conf"
+	if version.Major == 6 {
+		file = "recovery.conf"
+	}
+
+	request := func(conn *idl.Connection) error {
+		var opts []*idl.UpdateFileConfOptions
+
+		// add standby
+		if target.Standby().Hostname == conn.Hostname {
+			opt := &idl.UpdateFileConfOptions{
+				Path:    filepath.Join(target.StandbyDataDirectory(), file),
+				OldPort: int32(intermediateCluster.MasterPort()),
+				NewPort: int32(target.MasterPort()),
+			}
+
+			opts = append(opts, opt)
+		}
+
+		// add mirrors
+		mirrors := target.SelectSegments(func(seg *greenplum.SegConfig) bool {
+			return seg.IsOnHost(conn.Hostname) && seg.IsMirror()
+		})
+
+		for _, mirror := range mirrors {
+			opt := &idl.UpdateFileConfOptions{
+				Path:    filepath.Join(mirror.DataDir, file),
+				OldPort: int32(intermediateCluster.Primaries[mirror.ContentID].Port),
+				NewPort: int32(target.Primaries[mirror.ContentID].Port),
+			}
+
+			opts = append(opts, opt)
+		}
+
+		req := &idl.UpdateRecoveryConfRequest{Options: opts}
+		_, err := conn.AgentClient.UpdateRecoveryConf(context.Background(), req)
+		return err
+	}
+
+	return ExecuteRPC(agentConns, request)
+}
+
 func UpdateGpperfmonConf(masterDataDir string) error {
 	path := filepath.Join(masterDataDir, "gpperfmon", "conf", "gpperfmon.conf")
 	pattern := `^log_location = .*$` // TODO: allow arbitrary whitespace around the = sign?
@@ -97,6 +144,13 @@ func UpdateGpperfmonConf(masterDataDir string) error {
 
 func UpdatePostgresqlConf(path string, oldPort, newPort int) error {
 	pattern := fmt.Sprintf(`(^port[ \t]*=[ \t]*)%d([^0-9]|$)`, oldPort)
+	replacement := fmt.Sprintf(`\1%d\2`, newPort)
+
+	return updateConfigurationFile(path, pattern, replacement)
+}
+
+func UpdateRecoveryConf(path string, oldPort, newPort int) error {
+	pattern := fmt.Sprintf(`(primary_conninfo .* port[ \t]*=[ \t]*)%d([^0-9]|$)`, oldPort)
 	replacement := fmt.Sprintf(`\1%d\2`, newPort)
 
 	return updateConfigurationFile(path, pattern, replacement)

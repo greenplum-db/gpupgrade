@@ -153,3 +153,7 @@ func (m *MockAgentServer) UpdatePostgresqlConf(context.Context, *idl.UpdatePostg
 	m.increaseCalls()
 	return &idl.UpdatePostgresqlConfReply{}, nil
 }
+
+func (m *MockAgentServer) UpdateRecoveryConf(context context.Context, in *idl.UpdateRecoveryConfRequest) (*idl.UpdateRecoveryConfReply, error) {
+	return &idl.UpdateRecoveryConfReply{}, nil
+}

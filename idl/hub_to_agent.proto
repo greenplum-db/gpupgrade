@@ -19,6 +19,7 @@ service Agent {
   rpc RsyncTablespaceDirectories (RsyncRequest) returns (RsyncReply) {}
   rpc RestorePrimariesPgControl (RestorePgControlRequest) returns (RestorePgControlReply) {}
   rpc UpdatePostgresqlConf (UpdatePostgresqlConfRequest) returns (UpdatePostgresqlConfReply) {}
+  rpc UpdateRecoveryConf (UpdateRecoveryConfRequest) returns (UpdateRecoveryConfReply) {}
 }
 
 message TablespaceInfo {
@@ -130,3 +131,9 @@ message UpdatePostgresqlConfRequest {
 }
 
 message UpdatePostgresqlConfReply {}
+
+message UpdateRecoveryConfRequest {
+  repeated UpdateFileConfOptions options = 1;
+}
+
+message UpdateRecoveryConfReply {}
