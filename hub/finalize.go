@@ -33,6 +33,38 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 		}
 	}()
 
+	// In link mode to reduce disk space remove the source mirror and standby data directories and tablespaces.
+	st.RunConditionally(idl.Substep_REMOVE_SOURCE_MIRRORS, s.UseLinkMode, func(streams step.OutStreams) error {
+		if err := DeleteMirrorAndStandbyDataDirectories(s.agentConns, s.Source); err != nil {
+			return xerrors.Errorf("removing source cluster standby and mirror segment data directories: %w", err)
+		}
+
+		if err := DeleteSourceTablespacesOnMirrorsAndStandby(s.agentConns, s.Source, s.Tablespaces); err != nil {
+			return xerrors.Errorf("removing source cluster standby and mirror tablespace data directories: %w", err)
+		}
+
+		return nil
+	})
+
+	st.RunConditionally(idl.Substep_UPGRADE_MIRRORS, s.Source.HasMirrors(), func(streams step.OutStreams) error {
+		mirrors := s.IntermediateTarget.SelectSegments(func(seg *greenplum.SegConfig) bool {
+			return seg.IsMirror()
+		})
+
+		return UpgradeMirrors(s.StateDir, s.Connection, s.IntermediateTarget.MasterPort(),
+			mirrors, greenplum.NewRunner(s.IntermediateTarget, streams), s.UseHbaHostnames)
+	})
+
+	st.RunConditionally(idl.Substep_UPGRADE_STANDBY, s.Source.HasStandby(), func(streams step.OutStreams) error {
+		return UpgradeStandby(greenplum.NewRunner(s.IntermediateTarget, streams),
+			StandbyConfig{
+				Port:            s.IntermediateTarget.Standby().Port,
+				Hostname:        s.IntermediateTarget.Standby().Hostname,
+				DataDirectory:   s.IntermediateTarget.Standby().DataDir,
+				UseHbaHostnames: s.UseHbaHostnames,
+			})
+	})
+
 	st.Run(idl.Substep_SHUTDOWN_TARGET_CLUSTER, func(streams step.OutStreams) error {
 		err := s.IntermediateTarget.Stop(streams)
 		if err != nil {
@@ -55,18 +87,6 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 	})
 
 	st.Run(idl.Substep_UPDATE_DATA_DIRECTORIES, func(_ step.OutStreams) error {
-		// in link mode, remove the source mirror and standby data directories; otherwise we create a second copy
-		// of them for the intermediate target cluster. That might take too much disk space.
-		if s.UseLinkMode {
-			if err := DeleteMirrorAndStandbyDataDirectories(s.agentConns, s.Source); err != nil {
-				return xerrors.Errorf("removing source cluster standby and mirror segment data directories: %w", err)
-			}
-
-			if err := DeleteSourceTablespacesOnMirrorsAndStandby(s.agentConns, s.Source, s.Tablespaces); err != nil {
-				return xerrors.Errorf("removing source cluster standby and mirror tablespace data directories: %w", err)
-			}
-		}
-
 		return RenameDataDirectories(s.agentConns, s.Source, s.IntermediateTarget, s.UseLinkMode)
 	})
 
@@ -86,31 +106,6 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 		}
 
 		return nil
-	})
-
-	st.RunConditionally(idl.Substep_UPGRADE_STANDBY, s.Source.HasStandby(), func(streams step.OutStreams) error {
-		// TODO: once the temporary standby upgrade is fixed, switch to
-		// using the IntermediateTarget's temporary assignments, and
-		// move this upgrade step back to before the target shutdown.
-		standby := s.Source.Standby()
-		return UpgradeStandby(greenplum.NewRunner(s.Target, streams), StandbyConfig{
-			Port:            standby.Port,
-			Hostname:        standby.Hostname,
-			DataDirectory:   standby.DataDir,
-			UseHbaHostnames: s.UseHbaHostnames,
-		})
-	})
-
-	st.RunConditionally(idl.Substep_UPGRADE_MIRRORS, s.Source.HasMirrors(), func(streams step.OutStreams) error {
-		// TODO: once the temporary mirror upgrade is fixed, switch to using
-		// the IntermediateTarget's temporary assignments, and move this
-		// upgrade step back to before the target shutdown.
-		mirrors := func(seg *greenplum.SegConfig) bool {
-			return seg.IsMirror()
-		}
-
-		return UpgradeMirrors(s.StateDir, s.Connection, s.Target.MasterPort(),
-			s.Source.SelectSegments(mirrors), greenplum.NewRunner(s.Target, streams), s.UseHbaHostnames)
 	})
 
 	logArchiveDir, err := s.GetLogArchiveDir()

@@ -85,6 +85,7 @@ enum Substep {
     RESTORE_PGCONTROL = 28;
     RECOVERSEG_SOURCE_CLUSTER = 29;
     STEP_STATUS = 30;
+    REMOVE_SOURCE_MIRRORS = 31;
 }
 
 enum Status {

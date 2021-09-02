@@ -42,4 +42,5 @@ var SubstepDescriptions = map[idl.Substep]substepText{
 	idl.Substep_START_SOURCE_CLUSTER:           substepText{"Starting source cluster...", "Start source cluster"},
 	idl.Substep_RESTORE_PGCONTROL:              substepText{"Re-enabling source cluster...", "Re-enable source cluster"},
 	idl.Substep_RECOVERSEG_SOURCE_CLUSTER:      substepText{"Recovering source cluster mirrors...", "Recover source cluster mirrors"},
+	idl.Substep_REMOVE_SOURCE_MIRRORS:          substepText{"Removing source cluster data directories and tablespaces to save space...", "Remove source cluster data directories and tablespaces to save space..."},
 }
