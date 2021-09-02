@@ -148,3 +148,8 @@ func (m *MockAgentServer) DeleteSourceTablespaceDirectories(context.Context, *id
 	m.increaseCalls()
 	return &idl.DeleteTablespaceReply{}, nil
 }
+
+func (m *MockAgentServer) UpdatePostgresqlConf(context.Context, *idl.UpdatePostgresqlConfRequest) (*idl.UpdatePostgresqlConfReply, error) {
+	m.increaseCalls()
+	return &idl.UpdatePostgresqlConfReply{}, nil
+}

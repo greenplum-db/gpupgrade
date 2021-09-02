@@ -4,6 +4,7 @@
 package hub_test
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -11,10 +12,152 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/golang/mock/gomock"
+	"golang.org/x/xerrors"
+
+	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
-	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
+
+func TestUpdatePostgresqlConfOnSegments(t *testing.T) {
+	intermediate := hub.MustCreateCluster(t, []greenplum.SegConfig{
+		{DbID: 1, ContentID: -1, Hostname: "master", DataDir: "/data/qddir/seg.HqtFHX54y0o.-1", Port: 50432, Role: greenplum.PrimaryRole},
+		{DbID: 2, ContentID: -1, Hostname: "standby", DataDir: "/data/standby.HqtFHX54y0o", Port: 50433, Role: greenplum.MirrorRole},
+		{DbID: 3, ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg.HqtFHX54y0o.1", Port: 50434, Role: greenplum.PrimaryRole},
+		{DbID: 4, ContentID: 0, Hostname: "sdw2", DataDir: "/data/dbfast_mirror1/seg.HqtFHX54y0o.1", Port: 50435, Role: greenplum.MirrorRole},
+		{DbID: 5, ContentID: 1, Hostname: "sdw2", DataDir: "/data/dbfast2/seg.HqtFHX54y0o.2", Port: 50436, Role: greenplum.PrimaryRole},
+		{DbID: 6, ContentID: 1, Hostname: "sdw1", DataDir: "/data/dbfast_mirror2/seg.HqtFHX54y0o.2", Port: 50437, Role: greenplum.MirrorRole},
+	})
+
+	target := hub.MustCreateCluster(t, []greenplum.SegConfig{
+		{DbID: 1, ContentID: -1, Hostname: "master", DataDir: "/data/qddir/seg-1", Port: 15432, Role: greenplum.PrimaryRole},
+		{DbID: 2, ContentID: -1, Hostname: "standby", DataDir: "/data/standby", Port: 16432, Role: greenplum.MirrorRole},
+		{DbID: 3, ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Port: 25433, Role: greenplum.PrimaryRole},
+		{DbID: 4, ContentID: 0, Hostname: "sdw2", DataDir: "/data/dbfast_mirror1/seg1", Port: 25434, Role: greenplum.MirrorRole},
+		{DbID: 5, ContentID: 1, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Port: 25435, Role: greenplum.PrimaryRole},
+		{DbID: 6, ContentID: 1, Hostname: "sdw1", DataDir: "/data/dbfast_mirror2/seg2", Port: 25436, Role: greenplum.MirrorRole},
+	})
+
+	t.Run("updates postgresql.conf on segments", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		standby := mock_idl.NewMockAgentClient(ctrl)
+		standby.EXPECT().UpdatePostgresqlConf(
+			gomock.Any(),
+			&idl.UpdatePostgresqlConfRequest{
+				Options: []*idl.UpdateFileConfOptions{{
+					Path:    "/data/standby/postgresql.conf",
+					OldPort: 50433,
+					NewPort: 16432,
+				}},
+			},
+		).Return(&idl.UpdatePostgresqlConfReply{}, nil)
+
+		sdw1 := mock_idl.NewMockAgentClient(ctrl)
+		sdw1.EXPECT().UpdatePostgresqlConf(
+			gomock.Any(),
+			&idl.UpdatePostgresqlConfRequest{
+				Options: []*idl.UpdateFileConfOptions{
+					{
+						Path:    "/data/dbfast_mirror2/seg2/postgresql.conf",
+						OldPort: 50436,
+						NewPort: 25436,
+					},
+					{
+						Path:    "/data/dbfast1/seg1/postgresql.conf",
+						OldPort: 50434,
+						NewPort: 25433,
+					}},
+			},
+		).Return(&idl.UpdatePostgresqlConfReply{}, nil)
+
+		sdw2 := mock_idl.NewMockAgentClient(ctrl)
+		sdw2.EXPECT().UpdatePostgresqlConf(
+			gomock.Any(),
+			&idl.UpdatePostgresqlConfRequest{
+				Options: []*idl.UpdateFileConfOptions{
+					{
+						Path:    "/data/dbfast_mirror1/seg1/postgresql.conf",
+						OldPort: 50434,
+						NewPort: 25434,
+					},
+					{
+						Path:    "/data/dbfast2/seg2/postgresql.conf",
+						OldPort: 50436,
+						NewPort: 25435,
+					}},
+			},
+		).Return(&idl.UpdatePostgresqlConfReply{}, nil)
+
+		agentConns := []*idl.Connection{
+			{AgentClient: standby, Hostname: "standby"},
+			{AgentClient: sdw1, Hostname: "sdw1"},
+			{AgentClient: sdw2, Hostname: "sdw2"},
+		}
+
+		err := hub.UpdatePostgresqlConfOnSegments(agentConns, intermediate, target)
+		if err != nil {
+			t.Errorf("unexpected err %#v", err)
+		}
+	})
+
+	t.Run("returns errors when failing to update postgresql.conf on segments", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		standby := mock_idl.NewMockAgentClient(ctrl)
+		standby.EXPECT().UpdatePostgresqlConf(
+			gomock.Any(),
+			&idl.UpdatePostgresqlConfRequest{
+				Options: []*idl.UpdateFileConfOptions{{
+					Path:    "/data/standby/postgresql.conf",
+					OldPort: 50433,
+					NewPort: 16432,
+				}},
+			},
+		).Return(&idl.UpdatePostgresqlConfReply{}, nil)
+
+		expected := errors.New("permission denied")
+		sdw1 := mock_idl.NewMockAgentClient(ctrl)
+		sdw1.EXPECT().UpdatePostgresqlConf(
+			gomock.Any(),
+			gomock.Any(),
+		).Return(nil, expected)
+
+		sdw2 := mock_idl.NewMockAgentClient(ctrl)
+		sdw2.EXPECT().UpdatePostgresqlConf(
+			gomock.Any(),
+			gomock.Any(),
+		).Return(nil, expected)
+
+		agentConns := []*idl.Connection{
+			{AgentClient: standby, Hostname: "standby"},
+			{AgentClient: sdw1, Hostname: "sdw1"},
+			{AgentClient: sdw2, Hostname: "sdw2"},
+		}
+
+		err := hub.UpdatePostgresqlConfOnSegments(agentConns, intermediate, target)
+		var errs errorlist.Errors
+		if !xerrors.As(err, &errs) {
+			t.Fatalf("error %#v does not contain type %T", err, errs)
+		}
+
+		if len(errs) != 2 {
+			t.Fatalf("got error count %d, want %d", len(errs), 2)
+		}
+
+		for _, err := range errs {
+			if !errors.Is(err, expected) {
+				t.Errorf("got error %#v, want %#v", err, expected)
+			}
+		}
+	})
+}
 
 // TODO: this is an integration test; move it
 func TestUpdateConfFiles(t *testing.T) {
@@ -44,7 +187,7 @@ other_log_location = /some/directory
 `)
 
 		// Perform the replacement.
-		err = hub.UpdateGpperfmonConf(step.DevNullStream, dir)
+		err = hub.UpdateGpperfmonConf(dir)
 		if err != nil {
 			t.Errorf("UpdateGpperfmonConf() returned error %+v", err)
 		}
@@ -77,7 +220,7 @@ port=50000
 `)
 
 		// Perform the replacement.
-		err = hub.UpdatePostgresqlConf(step.DevNullStream, dir, 5000, 6000)
+		err = hub.UpdatePostgresqlConf(path, 5000, 6000)
 		if err != nil {
 			t.Errorf("UpdatePostgresqlConf() returned error %+v", err)
 		}

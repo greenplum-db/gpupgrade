@@ -91,11 +91,10 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 	})
 
 	st.Run(idl.Substep_UPDATE_TARGET_CONF_FILES, func(streams step.OutStreams) error {
-		return UpdateConfFiles(streams,
+		return UpdateConfFiles(s.agentConns, streams,
 			s.Target.Version,
-			s.Target.MasterDataDir(),
-			s.IntermediateTarget.MasterPort(),
-			s.Target.MasterPort(),
+			s.IntermediateTarget,
+			s.Target,
 		)
 	})
 
