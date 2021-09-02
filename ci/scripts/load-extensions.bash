@@ -30,7 +30,7 @@ time ssh -n mdw "
     gppkg -i /tmp/postgis_source.gppkg
     /usr/local/greenplum-db-source/share/postgresql/contrib/postgis-*/postgis_manager.sh postgres install
     psql postgres -f /tmp/postgis_dump.sql
-    psql -d postgres <<SQL_EOF
+    psql -v ON_ERROR_STOP=1 -d postgres <<SQL_EOF
         -- Drop postgis views containing deprecated name datatypes
         DROP VIEW geography_columns;
         DROP VIEW raster_columns;
@@ -40,7 +40,7 @@ SQL_EOF
     echo 'Installing MADlib...'
     gppkg -i /tmp/madlib_source.gppkg
     /usr/local/greenplum-db-source/madlib/bin/madpack -p greenplum -c /postgres install
-    psql -d postgres <<SQL_EOF
+    psql -v ON_ERROR_STOP=1 -d postgres <<SQL_EOF
         DROP TABLE IF EXISTS madlib_test_type;
         CREATE TABLE madlib_test_type(id int, value madlib.svec);
         INSERT INTO madlib_test_type VALUES(1, '{1,2,3}'::float8[]::madlib.svec);
@@ -59,7 +59,7 @@ time ssh -n mdw "
     source /usr/local/greenplum-db-source/greenplum_path.sh
 
     echo 'Installing amcheck...'
-    psql -d postgres <<SQL_EOF
+    psql -v ON_ERROR_STOP=1 -d postgres <<SQL_EOF
         CREATE EXTENSION amcheck;
 
         CREATE VIEW amcheck_test_view AS
@@ -76,7 +76,7 @@ time ssh -n mdw "
 SQL_EOF
 
     echo 'Installing dblink...'
-    psql -d postgres <<SQL_EOF
+    psql -v ON_ERROR_STOP=1 -d postgres <<SQL_EOF
         \i /usr/local/greenplum-db-source/share/postgresql/contrib/dblink.sql
 
         CREATE TABLE foo(f1 int, f2 text, primary key (f1,f2));
@@ -143,7 +143,7 @@ install_pxf() {
         /usr/local/pxf-*/bin/pxf cluster start
 
         echo 'Load PXF data...'
-        psql -d postgres <<SQL_EOF
+        psql -v ON_ERROR_STOP=1 -d postgres <<SQL_EOF
             CREATE EXTENSION pxf;
 
             CREATE EXTERNAL TABLE pxf_read_test (a TEXT, b TEXT, c TEXT)

@@ -72,7 +72,7 @@ time ssh -n mdw "
 
     gpstart -a
 
-    psql -d postgres <<SQL_EOF
+    psql -v ON_ERROR_STOP=1 -d postgres <<SQL_EOF
         CREATE EXTENSION amcheck;
         CREATE EXTENSION dblink;
         CREATE EXTENSION hstore;
@@ -89,7 +89,7 @@ SQL_EOF
         export JAVA_HOME=/usr/lib/jvm/jre
 
         /usr/local/pxf-gp6/bin/pxf cluster init
-        psql -d postgres -c 'CREATE EXTENSION pxf;'
+        psql -v ON_ERROR_STOP=1 -d postgres -c 'CREATE EXTENSION pxf;'
     fi
 
     gpstop -a
@@ -131,11 +131,11 @@ ssh -n mdw "
     source /usr/local/greenplum-db-source/greenplum_path.sh
 
     echo 'Recreating dropped views that contained the deprecated name datatype...'
-    psql -d postgres -f /usr/local/greenplum-db-target/share/postgresql/contrib/postgis-*/postgis_replace_views.sql
+    psql -v ON_ERROR_STOP=1 -d postgres -f /usr/local/greenplum-db-target/share/postgresql/contrib/postgis-*/postgis_replace_views.sql
 
     echo 'Dropping operator dependent objects in order to successfully drop and recreate postgis operators...'
-    psql -d postgres -c 'DROP INDEX wmstest_geomidx CASCADE;'
-    psql -d postgres -f /usr/local/greenplum-db-target/share/postgresql/contrib/postgis-*/postgis_enable_operators.sql
+    psql -v ON_ERROR_STOP=1 -d postgres -c 'DROP INDEX wmstest_geomidx CASCADE;'
+    psql -v ON_ERROR_STOP=1 -d postgres -f /usr/local/greenplum-db-target/share/postgresql/contrib/postgis-*/postgis_enable_operators.sql
 
     $(typeset -f test_pxf) # allow local function on remote host
     if test_pxf '$OS_VERSION'; then
