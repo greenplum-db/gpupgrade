@@ -87,29 +87,20 @@ SQL_EOF
 SQL_EOF
 
     echo 'Installing hstore...'
-    psql -d postgres <<SQL_EOF
+    psql -v ON_ERROR_STOP=1 -d postgres <<SQL_EOF
         \i /usr/local/greenplum-db-source/share/postgresql/contrib/hstore.sql
 
-        CREATE TABLE hstore_test_type AS
-        SELECT 'a=>1,a=>2'::hstore as c1;
-        CREATE VIEW hstore_test_view AS SELECT c1 -> 'a' as c2 FROM foo;
+        CREATE TABLE hstore_test_type AS SELECT 'a=>1,a=>2'::hstore as c1;
+        CREATE VIEW hstore_test_view AS SELECT c1 -> 'a' as c2 FROM hstore_test_type;
 SQL_EOF
 
     echo 'Installing pgcrypto...'
-    psql -d postgres <<SQL_EOF
+    psql -v ON_ERROR_STOP=1 -d postgres <<SQL_EOF
         CREATE EXTENSION pgcrypto;
 
         CREATE VIEW pgcrypto_test_view AS SELECT crypt('new password', gen_salt('md5'));
 SQL_EOF
 
-    echo 'Installing orafce...'
-    psql -d postgres <<SQL_EOF
-        CREATE EXTENSION orafce;
-
-        CREATE TABLE orafce_test_type (a VARCHAR2(5), b NVARCHAR2(5));
-        INSERT INTO orafce_test_type VALUES ('abc'::VARCHAR2(5), 'abcdef'::NVARCHAR2(5));
-        CREATE VIEW orafce_test_view AS SELECT add_months('2003-08-01', 3);
-SQL_EOF
 "
 
 install_pxf() {

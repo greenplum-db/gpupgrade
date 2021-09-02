@@ -77,7 +77,6 @@ time ssh -n mdw "
         CREATE EXTENSION dblink;
         CREATE EXTENSION hstore;
         CREATE EXTENSION pgcrypto;
-        CREATE EXTENSION orafce;
 SQL_EOF
 
     gppkg -i /tmp/postgis_target.gppkg
