@@ -31,16 +31,9 @@ time ssh -n mdw "
 
     echo 'Running data migration script workarounds...'
     psql -d regression  <<SQL_EOF
-        -- gen_alter_tsquery_to_text.sql cant alter columns with indexes, so drop them first.
-        DROP INDEX bt_tsq CASCADE;
-        DROP INDEX qq CASCADE;
 
-        -- gen_alter_name_type_columns.sql cant alter inherited columns, so alter the parent.
-        ALTER TABLE emp ALTER COLUMN manager TYPE VARCHAR(63);
-
-        -- gen_alter_name_type_columns.sql cant alter columns with indexes, so drop them first.
-        DROP INDEX onek_stringu1 CASCADE;
-        DROP INDEX onek2_stu1_prtl CASCADE;
+        -- gen_alter_name_type_columns.sql cannot drop the following index because
+        -- its definition uses cast to deprecated name type but evaluates to integer
         DROP INDEX onek2_u2_prtl CASCADE;
 SQL_EOF
 

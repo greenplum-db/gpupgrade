@@ -60,7 +60,7 @@ exec_script(){
 
     local records
     if [[ $path == *".sql" ]]; then
-        records=$("$GPHOME"/bin/psql -X -d "$database" -p "$PGPORT" -Atf "$path")
+        records=$("$GPHOME"/bin/psql -X -q -d "$database" -p "$PGPORT" -Atf "$path")
     else
         records=$("$path" "$GPHOME" "$PGPORT" "$database")
     fi

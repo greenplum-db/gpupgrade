@@ -73,4 +73,15 @@ WHERE
          AND d.classid = 'pg_rewrite'::regclass
          AND d.refclassid = 'pg_class'::regclass
          AND d.deptype = 'n'
-   );
+   )
+  AND NOT EXISTS (
+    SELECT 1
+    FROM
+    pg_inherits AS i
+    JOIN
+    pg_attribute AS a2
+    ON i.inhparent = a2.attrelid
+    WHERE
+    i.inhrelid = a.attrelid
+  AND a.attname = a2.attname
+    );

@@ -156,5 +156,42 @@ INSERT INTO table_with_tsquery_datatype_columns
             ('e & f'::tsquery, 'e & f'::tsquery, 'e & f'::tsquery, 2),
             ('x & y'::tsquery, 'x & y'::tsquery, 'x & y'::tsquery, 3);
 
+--composite index
+DROP TABLE IF EXISTS tsquery_composite;
+CREATE TABLE tsquery_composite(i int, j tsquery, k tsquery);
+CREATE INDEX tsquery_composite_idx ON tsquery_composite(j, k);
+--gist index
+DROP TABLE IF EXISTS tsquery_gist;
+CREATE TABLE tsquery_gist(i int, j tsquery, k tsquery);
+CREATE INDEX tsquery_gist_idx ON tsquery_gist using gist(j) ;
+--clustered index
+DROP TABLE IF EXISTS tsquery_cluster;
+CREATE TABLE tsquery_cluster(i int, j tsquery);
+CREATE INDEX tsquery_cluster_idx ON tsquery_cluster(j);
+ALTER TABLE tsquery_cluster CLUSTER ON tsquery_cluster_idx;
+--index with comment
+DROP TABLE IF EXISTS tsquery_comment;
+CREATE TABLE tsquery_comment(i int, j tsquery);
+CREATE INDEX tsquery_comment_idx ON tsquery_comment(j);
+COMMENT ON INDEX tsquery_comment_idx IS 'hello world';
+
+-- inherits with tsquery column
+DROP TABLE IF EXISTS tsquery_inherits;
+CREATE TABLE tsquery_inherits (
+    e      tsquery
+) INHERITS (table_with_tsquery_datatype_columns);
+
+-- inherits with name column
+DROP TABLE IF EXISTS table_with_name_column;
+CREATE TABLE table_with_name_column (
+    name       text,
+    population name,
+    altitude   tsquery
+);
+
+DROP TABLE IF EXISTS name_inherits;
+CREATE TABLE name_inherits (
+    state      char(2)
+) INHERITS (table_with_name_column);
 
 RESET search_path;
