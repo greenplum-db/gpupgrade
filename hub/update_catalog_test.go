@@ -6,325 +6,211 @@ package hub_test
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
-	. "github.com/greenplum-db/gpupgrade/hub"
+	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/testutils"
-	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-// Sentinel error values to make error case testing easier.
-var (
-	ErrSentinel = fmt.Errorf("sentinel error")
-	ErrRollback = fmt.Errorf("rollback failed")
-)
-
-func TestUpdateCatalog(t *testing.T) {
-	src := MustCreateCluster(t, []greenplum.SegConfig{
-		{ContentID: -1, Port: 123, Role: greenplum.PrimaryRole},
-		{ContentID: -1, Port: 789, Role: greenplum.MirrorRole},
-		{ContentID: 0, Port: 234, Role: greenplum.PrimaryRole},
-		{ContentID: 0, Port: 111, Role: greenplum.MirrorRole},
-		{ContentID: 1, Port: 345, Role: greenplum.PrimaryRole},
-		{ContentID: 1, Port: 222, Role: greenplum.MirrorRole},
-		{ContentID: 2, Port: 456, Role: greenplum.PrimaryRole},
-		{ContentID: 2, Port: 333, Role: greenplum.MirrorRole},
-	})
-
-	tempDir, err := ioutil.TempDir("", "gpupgrade")
-	if err != nil {
-		t.Fatalf("creating temporary directory: %#v", err)
-	}
-	defer os.RemoveAll(tempDir)
-
-	oldStateDir, isSet := os.LookupEnv("GPUGRADE_HOME")
-	defer func() {
-		if isSet {
-			os.Setenv("GPUPGRADE_HOME", oldStateDir)
-		}
-	}()
-
-	err = os.Setenv("GPUPGRADE_HOME", tempDir)
-	if err != nil {
-		t.Fatalf("failed to set GPUPGRADE_HOME %#v", err)
-	}
-
-	config := filepath.Join(tempDir, upgrade.ConfigFileName)
-	data := `{
-	"Source": {
-		"GPHome": "/usr/local/gpdb5",
-			"Version": {
-			  "VersionString": "5.0.0",
-			  "SemVer": "5.0.0"
-			}
+func TestUpdateGpSegmentConfiguration(t *testing.T) {
+	// success cases
+	cases := []struct {
+		name   string
+		target *greenplum.Cluster
+	}{
+		{
+			name: "updates ports for every segment",
+			target: hub.MustCreateCluster(t, []greenplum.SegConfig{
+				{DbID: 1, ContentID: -1, Port: 123, Role: greenplum.PrimaryRole},
+				{DbID: 8, ContentID: -1, Port: 789, Role: greenplum.MirrorRole},
+				{DbID: 2, ContentID: 0, Port: 234, Role: greenplum.PrimaryRole},
+				{DbID: 5, ContentID: 0, Port: 111, Role: greenplum.MirrorRole},
+				{DbID: 3, ContentID: 1, Port: 345, Role: greenplum.PrimaryRole},
+				{DbID: 6, ContentID: 1, Port: 222, Role: greenplum.MirrorRole},
+				{DbID: 4, ContentID: 2, Port: 456, Role: greenplum.PrimaryRole},
+				{DbID: 7, ContentID: 2, Port: 333, Role: greenplum.MirrorRole},
+			}),
 		},
-	"Target": {
-		"GPHome": "/usr/local/gpdb6",
-			"Version": {
-			  "VersionString": "6.0.0-beta.1 build dev",
-			  "SemVer": "6.0.0"
-			}
-		}
-}`
-	testutils.MustWriteToFile(t, config, data)
-
-	var port int
-	conf := &Config{
-		Source:    src,
-		AgentPort: port, // XXX do we rely on the global MockAgentClient? if not, this can go away
+		{
+			name: "updates ports when there is no standby or mirrors",
+			target: hub.MustCreateCluster(t, []greenplum.SegConfig{
+				{DbID: 1, ContentID: -1, Port: 123, Role: greenplum.PrimaryRole},
+				{DbID: 2, ContentID: 0, Port: 234, Role: greenplum.PrimaryRole},
+				{DbID: 3, ContentID: 1, Port: 345, Role: greenplum.PrimaryRole},
+				{DbID: 4, ContentID: 2, Port: 456, Role: greenplum.PrimaryRole},
+			}),
+		},
+		{
+			name: "updates ports when there is a standby but no mirrors",
+			target: hub.MustCreateCluster(t, []greenplum.SegConfig{
+				{DbID: 1, ContentID: -1, Port: 123, Role: greenplum.PrimaryRole},
+				{DbID: 5, ContentID: -1, Port: 789, Role: greenplum.MirrorRole},
+				{DbID: 2, ContentID: 0, Port: 234, Role: greenplum.PrimaryRole},
+				{DbID: 3, ContentID: 1, Port: 345, Role: greenplum.PrimaryRole},
+				{DbID: 4, ContentID: 2, Port: 456, Role: greenplum.PrimaryRole},
+			}),
+		},
+		{
+			name: "updates ports when there is no standby but mirrors",
+			target: hub.MustCreateCluster(t, []greenplum.SegConfig{
+				{DbID: 1, ContentID: -1, Port: 123, Role: greenplum.PrimaryRole},
+				{DbID: 2, ContentID: 0, Port: 234, Role: greenplum.PrimaryRole},
+				{DbID: 5, ContentID: 0, Port: 111, Role: greenplum.MirrorRole},
+				{DbID: 3, ContentID: 1, Port: 345, Role: greenplum.PrimaryRole},
+				{DbID: 6, ContentID: 1, Port: 222, Role: greenplum.MirrorRole},
+				{DbID: 4, ContentID: 2, Port: 456, Role: greenplum.PrimaryRole},
+				{DbID: 7, ContentID: 2, Port: 333, Role: greenplum.MirrorRole},
+			}),
+		},
 	}
-	server := New(conf, nil, tempDir)
 
-	t.Run("updates ports for every segment", func(t *testing.T) {
-		db, mock, err := sqlmock.New()
-		if err != nil {
-			t.Fatalf("couldn't create sqlmock: %v", err)
-		}
-		defer testutils.FinishMock(mock, t)
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New()
+			if err != nil {
+				t.Fatalf("sqlmock: %v", err)
+			}
+			defer testutils.FinishMock(mock, t)
+			defer db.Close()
 
-		contents := sqlmock.NewRows([]string{"content"})
-		for _, content := range src.ContentIDs {
-			contents.AddRow(content)
-		}
+			mock.MatchExpectationsInOrder(false) // since we iterate over maps for which golang does not guarantee order
 
-		//XXX: this will ignore the begin/commit statement order
-		mock.MatchExpectationsInOrder(false)
+			mock.ExpectBegin()
 
-		mock.ExpectBegin()
-		mock.ExpectQuery("SELECT content FROM gp_segment_configuration").
-			WillReturnRows(contents)
+			for _, primary := range c.target.Primaries {
+				expectCatalogUpdate(mock, primary).WillReturnResult(sqlmock.NewResult(0, 1))
+			}
 
-		// We want one port update for every segment.
-		// Note that ranging over a map doesn't guarantee execution order, so we
-		// range over the contents instead.
-		for _, content := range src.ContentIDs {
-			seg := src.Primaries[content]
-			expectCatalogUpdate(mock, seg).
-				WillReturnResult(sqlmock.NewResult(0, 1))
-		}
+			for _, mirror := range c.target.Mirrors {
+				expectCatalogUpdate(mock, mirror).WillReturnResult(sqlmock.NewResult(0, 1))
+			}
 
-		mock.ExpectCommit()
+			mock.ExpectCommit()
 
-		err = server.UpdateGpSegmentConfiguration(db)
-		if err != nil {
-			t.Errorf("returned error %+v", err)
-		}
+			err = hub.UpdateGpSegmentConfiguration(db, c.target)
+			if err != nil {
+				t.Errorf("returned error %+v", err)
+			}
+		})
+	}
+
+	// error cases
+	target := hub.MustCreateCluster(t, []greenplum.SegConfig{
+		{DbID: 1, ContentID: -1, Port: 123, Role: greenplum.PrimaryRole},
+		{DbID: 8, ContentID: -1, Port: 789, Role: greenplum.MirrorRole},
+		{DbID: 2, ContentID: 0, Port: 234, Role: greenplum.PrimaryRole},
+		{DbID: 5, ContentID: 0, Port: 111, Role: greenplum.MirrorRole},
+		{DbID: 3, ContentID: 1, Port: 345, Role: greenplum.PrimaryRole},
+		{DbID: 6, ContentID: 1, Port: 222, Role: greenplum.MirrorRole},
+		{DbID: 4, ContentID: 2, Port: 456, Role: greenplum.PrimaryRole},
+		{DbID: 7, ContentID: 2, Port: 333, Role: greenplum.MirrorRole},
 	})
 
-	// All cases added to this table expect an error to be returned. The core of
-	// the test case is .prepare(), which sets up the Sqlmock appropriately.
-	// The case's .check() method tests that the returned error is what the test
-	// case expected; in simple cases you can use the match() helper to check
-	// that the error is of a particular "type".
+	expected := fmt.Errorf("sentinel error")
+	ErrRollback := fmt.Errorf("rollback failed")
+
 	errorCases := []struct {
-		name    string
-		prepare func(sqlmock.Sqlmock)
-		verify  func(*testing.T, error)
+		name          string
+		expectations  func(sqlmock.Sqlmock)
+		verifications func(*testing.T, error)
 	}{{
-		"on transaction failure",
-		func(mock sqlmock.Sqlmock) {
-			mock.ExpectBegin().WillReturnError(ErrSentinel)
+		name: "errors when beginning a transaction fails",
+		expectations: func(mock sqlmock.Sqlmock) {
+			mock.ExpectBegin().WillReturnError(expected)
 		},
-		expect(ErrSentinel),
-	}, {
-		"and rolls back on query failure",
-		func(mock sqlmock.Sqlmock) {
-			mock.ExpectBegin()
-			mock.ExpectQuery("SELECT").WillReturnError(ErrSentinel)
-			mock.ExpectRollback()
-		},
-		expect(ErrSentinel),
-	}, {
-		"and rolls back on iteration failure",
-		func(mock sqlmock.Sqlmock) {
-			contents := sqlmock.NewRows([]string{"content"}).
-				AddRow(-1).
-				RowError(0, ErrSentinel)
-
-			mock.ExpectBegin()
-			mock.ExpectQuery("SELECT content FROM gp_segment_configuration").
-				WillReturnRows(contents)
-			mock.ExpectRollback()
-		},
-		expect(ErrSentinel),
-	}, {
-		"and rolls back on update failure",
-		func(mock sqlmock.Sqlmock) {
-			contents := sqlmock.NewRows([]string{"content"})
-			for _, content := range src.ContentIDs {
-				contents.AddRow(content)
-			}
-
-			mock.ExpectBegin()
-			mock.ExpectQuery("SELECT content FROM gp_segment_configuration").
-				WillReturnRows(contents)
-			expectCatalogUpdate(mock, src.Primaries[-1]).
-				WillReturnError(ErrSentinel)
-			mock.ExpectRollback()
-		},
-		expect(ErrSentinel),
-	}, {
-		"on commit failure",
-		func(mock sqlmock.Sqlmock) {
-			contents := sqlmock.NewRows([]string{"content"})
-			for _, content := range src.ContentIDs {
-				contents.AddRow(content)
-			}
-
-			mock.MatchExpectationsInOrder(false) // XXX see above
-
-			mock.ExpectBegin()
-			mock.ExpectQuery("SELECT content FROM gp_segment_configuration").
-				WillReturnRows(contents)
-
-			for _, content := range src.ContentIDs {
-				seg := src.Primaries[content]
-				expectCatalogUpdate(mock, seg).
-					WillReturnResult(sqlmock.NewResult(0, 1))
-			}
-
-			mock.ExpectCommit().WillReturnError(ErrSentinel)
-		},
-		expect(ErrSentinel),
-	}, {
-		"and rolls back on row scan failure",
-		func(mock sqlmock.Sqlmock) {
-			contents := sqlmock.NewRows([]string{"content"}).
-				AddRow("hello")
-
-			mock.ExpectBegin()
-			mock.ExpectQuery("SELECT content FROM gp_segment_configuration").
-				WillReturnRows(contents)
-			mock.ExpectRollback()
-		},
-		func(t *testing.T, err error) {
-			// XXX It'd be nice to inject our ErrSentinel into the Scan
-			// function, but there doesn't seem to be a way to do that. We
-			// instead return junk values from our query, and search for the
-			// "scan error" hardcoded string. Blech.
-			if err == nil || !strings.Contains(err.Error(), "Scan error") {
-				t.Errorf("returned %#v which does not appear to be a scan error", err)
+		verifications: func(t *testing.T, actual error) {
+			if !errors.Is(actual, expected) {
+				t.Errorf("got %#v want %#v", actual, expected)
 			}
 		},
 	}, {
-		"on rollback",
-		func(mock sqlmock.Sqlmock) {
+		name: "rolls back transaction when updating the catalog fails",
+		expectations: func(mock sqlmock.Sqlmock) {
 			mock.ExpectBegin()
-			mock.ExpectQuery("SELECT").WillReturnError(ErrSentinel)
+			mock.ExpectExec("UPDATE gp_segment_configuration SET").WillReturnResult(sqlmock.NewResult(0, 1))
+			mock.ExpectExec("UPDATE gp_segment_configuration SET").WillReturnError(expected)
+			mock.ExpectRollback()
+		},
+		verifications: func(t *testing.T, actual error) {
+			if !errors.Is(actual, expected) {
+				t.Errorf("got %#v want %#v", actual, expected)
+			}
+		},
+	}, {
+		name: "errors when commit fails",
+		expectations: func(mock sqlmock.Sqlmock) {
+			mock.MatchExpectationsInOrder(false) // since we iterate over maps for which golang does not guarantee order
+			mock.ExpectBegin()
+			for _, primary := range target.Primaries {
+				expectCatalogUpdate(mock, primary).WillReturnResult(sqlmock.NewResult(0, 1))
+			}
+			for _, mirror := range target.Mirrors {
+				expectCatalogUpdate(mock, mirror).WillReturnResult(sqlmock.NewResult(0, 1))
+			}
+			mock.ExpectCommit().WillReturnError(expected)
+		},
+		verifications: func(t *testing.T, actual error) {
+			if !errors.Is(actual, expected) {
+				t.Errorf("got %#v want %#v", actual, expected)
+			}
+		},
+	}, {
+		name: "errors when rolling back fails",
+		expectations: func(mock sqlmock.Sqlmock) {
+			mock.ExpectBegin()
+			mock.ExpectExec("UPDATE gp_segment_configuration SET").WillReturnError(expected)
 			mock.ExpectRollback().WillReturnError(ErrRollback)
 		},
-		func(t *testing.T, err error) {
-			errs, ok := err.(errorlist.Errors)
-			if !ok {
-				t.Fatal("did not return an Errors list")
+		verifications: func(t *testing.T, err error) {
+			var errs errorlist.Errors
+			if !xerrors.As(err, &errs) {
+				t.Fatalf("error %#v does not contain type %T", err, errs)
 			}
-			if !errors.Is(errs[0], ErrSentinel) {
-				t.Errorf("first error was %#v want %#v", err, ErrSentinel)
+			if !errors.Is(errs[0], expected) {
+				t.Errorf("got %#v want %#v", err, expected)
 			}
 			if !errors.Is(errs[1], ErrRollback) {
-				t.Errorf("second error was %#v want %#v", err, ErrRollback)
+				t.Errorf("got %#v want %#v", err, ErrRollback)
 			}
 		},
 	}, {
-		"when there are content ids in the database missing from the cluster",
-		func(mock sqlmock.Sqlmock) {
-			contents := sqlmock.NewRows([]string{"content"}).
-				AddRow(-1).
-				AddRow(0).
-				AddRow(1).
-				AddRow(2).
-				AddRow(3) // extra content, does not exist
-
+		name: "rolls back if updating gp_segment_configuration returns multiple rows",
+		expectations: func(mock sqlmock.Sqlmock) {
 			mock.ExpectBegin()
-			mock.ExpectQuery("SELECT content FROM gp_segment_configuration").
-				WillReturnRows(contents)
+			mock.ExpectExec("UPDATE gp_segment_configuration SET").WillReturnResult(sqlmock.NewResult(0, 2))
 			mock.ExpectRollback()
 		},
-		expect(ErrContentMismatch),
-	}, {
-		"when there are content ids in the cluster missing from the database",
-		func(mock sqlmock.Sqlmock) {
-			contents := sqlmock.NewRows([]string{"content"}).
-				AddRow(-1).
-				AddRow(0).
-				// missing content, skipping 1
-				AddRow(2)
-
-			mock.ExpectBegin()
-			mock.ExpectQuery("SELECT content FROM gp_segment_configuration").
-				WillReturnRows(contents)
-			mock.ExpectRollback()
-		},
-		expect(ErrContentMismatch),
-	}, {
-		"if UPDATE updates multiple rows",
-		func(mock sqlmock.Sqlmock) {
-			contents := sqlmock.NewRows([]string{"content"}).
-				AddRow(-1).
-				AddRow(0).
-				AddRow(1).
-				AddRow(2)
-
-			mock.ExpectBegin()
-			mock.ExpectQuery("SELECT content FROM gp_segment_configuration").
-				WillReturnRows(contents)
-
-			expectCatalogUpdate(mock, src.Primaries[-1]).
-				WillReturnResult(sqlmock.NewResult(0, 2))
-
-			mock.ExpectRollback()
-		},
-		func(t *testing.T, err error) {
-			expectedErr := "updated 2 rows for content -1, expected 1"
-			if err.Error() != expectedErr {
-				t.Errorf("returned '%s' want '%s'", err.Error(), expectedErr)
+		verifications: func(t *testing.T, err error) {
+			expected := "Expected 1 row to be updated for segment dbid"
+			if !strings.HasPrefix(err.Error(), expected) {
+				t.Errorf("got %q want %q", err.Error(), expected)
 			}
 		},
 	}}
 
 	for _, c := range errorCases {
-		t.Run(fmt.Sprintf("returns an error %s", c.name), func(t *testing.T) {
+		t.Run(c.name, func(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			if err != nil {
-				t.Fatalf("couldn't create sqlmock: %v", err)
+				t.Fatalf("sqlmock: %v", err)
 			}
 			defer testutils.FinishMock(mock, t)
+			defer db.Close()
 
-			// prepare() sets up any mock expectations.
-			c.prepare(mock)
-
-			err = server.UpdateGpSegmentConfiguration(db)
-
-			// Make sure the error is the one we expect.
-			c.verify(t, err)
+			c.expectations(mock)
+			err = hub.UpdateGpSegmentConfiguration(db, target)
+			c.verifications(t, err)
 		})
 	}
 }
 
-// expect is a helper for the errorCases table test above. You can use it as the
-// errorCase.verify() callback implementation; it just uses errors.Is() to see
-// whether the actual error returned matches the expected one, and complains
-// through the testing.T if not.
-func expect(expected error) func(*testing.T, error) {
-	return func(t *testing.T, actual error) {
-		if !errors.Is(actual, expected) {
-			t.Errorf("returned %#v want %#v", actual, expected)
-		}
-	}
-}
-
-// expectCatalogUpdate is here so we don't have to copy-paste the expected UPDATE
-// statement everywhere.
 func expectCatalogUpdate(mock sqlmock.Sqlmock, seg greenplum.SegConfig) *sqlmock.ExpectedExec {
-	return mock.ExpectExec(
-		"UPDATE gp_segment_configuration SET port = (.+), datadir = (.+) WHERE content = (.+) AND role = (.+)",
-	).WithArgs(seg.Port, seg.DataDir, seg.ContentID, seg.Role)
+	return mock.ExpectExec("UPDATE gp_segment_configuration SET port = (.+), datadir = (.+) WHERE content = (.+) AND role = (.+)").
+		WithArgs(seg.Port, seg.DataDir, seg.ContentID, seg.Role)
 }

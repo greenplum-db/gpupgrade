@@ -7,130 +7,70 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
-	"github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-// TODO: When in copy mode should we update the catalog and in-memory object of
-//  the source cluster?
-func (s *Server) UpdateCatalogAndClusterConfig(streams step.OutStreams) (err error) {
-	err = s.IntermediateTarget.StartMasterOnly(streams)
-	if err != nil {
-		return xerrors.Errorf("failed to start target master: %w", err)
+func UpdateCatalog(conn *greenplum.Conn, intermediate *greenplum.Cluster, target *greenplum.Cluster) error {
+	options := []greenplum.Option{
+		greenplum.ToTarget(),
+		greenplum.Port(intermediate.MasterPort()),
+		greenplum.UtilityMode(),
+		greenplum.AllowSystemTableMods(),
 	}
 
-	err = WithinDbConnection(s.Connection, s.IntermediateTarget.MasterPort(), func(conn *sql.DB) error {
-		return s.UpdateGpSegmentConfiguration(conn)
-	})
+	db, err := sql.Open("pgx", conn.URI(options...))
 	if err != nil {
-		return xerrors.Errorf("%s: %w", idl.Substep_UPDATE_TARGET_CATALOG_AND_CLUSTER_CONFIG, err)
+		return err
+	}
+	defer func() {
+		if cerr := db.Close(); cerr != nil {
+			err = errorlist.Append(err, cerr)
+		}
+	}()
+
+	return UpdateGpSegmentConfiguration(db, target)
+}
+
+func UpdateGpSegmentConfiguration(db *sql.DB, target *greenplum.Cluster) (err error) {
+	tx, err := db.Begin()
+	if err != nil {
+		return xerrors.Errorf("begin transaction: %w", err)
+	}
+	defer func() {
+		err = commitOrRollback(tx, err)
+	}()
+
+	for _, seg := range target.Primaries {
+		if err := updateSegment(tx, seg); err != nil {
+			return err
+		}
 	}
 
-	err = s.IntermediateTarget.StopMasterOnly(streams)
-	if err != nil {
-		return xerrors.Errorf("failed to stop target master: %w", err)
+	for _, seg := range target.Mirrors {
+		if err := updateSegment(tx, seg); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func WithinDbConnection(conn *greenplum.Conn, masterPort int, operation func(connection *sql.DB) error) (err error) {
-	options := []greenplum.Option{
-		greenplum.ToTarget(),
-		greenplum.Port(masterPort),
-		greenplum.UtilityMode(),
-		greenplum.AllowSystemTableMods(),
-	}
-
-	connURI := conn.URI(options...)
-	connection, err := sql.Open("pgx", connURI)
+func updateSegment(tx *sql.Tx, seg greenplum.SegConfig) error {
+	result, err := tx.Exec("UPDATE gp_segment_configuration SET port = $1, datadir = $2 WHERE content = $3 AND role = $4", seg.Port, seg.DataDir, seg.ContentID, seg.Role)
 	if err != nil {
-		return xerrors.Errorf("connecting to master on port %d in utility mode with connection URI '%s': %w", masterPort, connURI, err)
+		return xerrors.Errorf("update gp_segment_configuration: %w", err)
 	}
 
-	defer func() {
-		closeErr := connection.Close()
-		if closeErr != nil {
-			closeErr = xerrors.Errorf("closing connection to target master: %w", closeErr)
-			err = errorlist.Append(err, closeErr)
-		}
-	}()
-
-	return operation(connection)
-}
-
-var ErrContentMismatch = errors.New("content ids do not match")
-
-type ContentMismatchError struct {
-	srcContents      []int
-	databaseContents []int
-}
-
-func newContentMismatchError(srcContents []int, databaseContentMap map[int]bool) ContentMismatchError {
-	databaseContents := []int{}
-	for content := range databaseContentMap {
-		databaseContents = append(databaseContents, content)
-	}
-	return ContentMismatchError{srcContents, databaseContents}
-}
-
-func (c ContentMismatchError) Error() string {
-	return fmt.Sprintf("source content ids are %#v, database content ids are %#v",
-		c.srcContents, c.databaseContents)
-}
-
-func (c ContentMismatchError) Is(err error) bool {
-	return err == ErrContentMismatch
-}
-
-// contentsMatch just makes sure that the two maps (keyed by segment content ID)
-// have the same keys.
-//
-// There's nothing magic about the map signatures here; the maps' value types
-// are ignored completely.
-func contentsMatch(src map[int]greenplum.SegConfig, dst map[int]bool) bool {
-	for content := range src {
-		if _, ok := dst[content]; !ok {
-			return false
-		}
-	}
-
-	for content := range dst {
-		if _, ok := src[content]; !ok {
-			return false
-		}
-	}
-
-	return true
-}
-
-// TODO: add standby/mirrors check here too
-func sanityCheckContentIDs(tx *sql.Tx, src *greenplum.Cluster) error {
-	rows, err := tx.Query("SELECT content FROM gp_segment_configuration")
+	rows, err := result.RowsAffected()
 	if err != nil {
-		return xerrors.Errorf("querying segment configuration: %w", err)
+		panic(fmt.Sprintf("retrieve rows affected: %v", err))
 	}
 
-	contents := make(map[int]bool)
-	for rows.Next() {
-		var content int
-		if err := rows.Scan(&content); err != nil {
-			return xerrors.Errorf("scanning segment configuration: %w", err)
-		}
-
-		contents[content] = true
-	}
-	if err := rows.Err(); err != nil {
-		return xerrors.Errorf("iterating over segment configuration: %w", err)
-	}
-
-	if !contentsMatch(src.Primaries, contents) {
-		return newContentMismatchError(src.ContentIDs, contents)
+	if rows != 1 {
+		return xerrors.Errorf("Expected 1 row to be updated for segment dbid %d, but updated %d rows instead.", seg.DbID, rows)
 	}
 
 	return nil
@@ -142,72 +82,17 @@ func sanityCheckContentIDs(tx *sql.Tx, src *greenplum.Cluster) error {
 // combined with the new error.
 func commitOrRollback(tx *sql.Tx, err error) error {
 	if err != nil {
-		rollbackErr := tx.Rollback()
-		if rollbackErr != nil {
-			rollbackErr = xerrors.Errorf("rolling back transaction: %w", rollbackErr)
-			err = errorlist.Append(err, rollbackErr)
+		if rErr := tx.Rollback(); rErr != nil {
+			rErr = xerrors.Errorf("roll back transaction: %w", rErr)
+			err = errorlist.Append(err, rErr)
 		}
+
 		return err
 	}
 
-	commitErr := tx.Commit()
-	if commitErr != nil {
-		return xerrors.Errorf("committing transaction: %w", commitErr)
-	}
-
-	return nil
-}
-
-// UpdateGpSegmentConfiguration will modify the gp_segment_configuration of the passed
-// sql.DB to match the cluster port settings from the source utils.Cluster.
-//
-// As a reminder to developers, we don't have any mirrors up at this point on
-// the target cluster. We copy only the primary information.
-func (s *Server) UpdateGpSegmentConfiguration(db *sql.DB) (err error) {
-	tx, err := db.Begin()
+	err = tx.Commit()
 	if err != nil {
-		return xerrors.Errorf("starting transaction to update catalog: %w", err)
-	}
-	defer func() {
-		err = commitOrRollback(tx, err)
-	}()
-
-	// Make sure the content IDs in gp_segment_configuration match the source
-	// cluster exactly.
-	if err := sanityCheckContentIDs(tx, s.Source); err != nil {
-		return err
-	}
-
-	// TODO: Consider iterating over dbids instead which is unique and could
-	//  remove the need for specifying the role when updating the catalog.
-	for _, content := range s.Source.ContentIDs {
-		err := updateConfiguration(tx, s.Source.Primaries[content])
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func updateConfiguration(tx *sql.Tx, seg greenplum.SegConfig) error {
-	res, err := tx.Exec("UPDATE gp_segment_configuration SET port = $1, datadir = $2 WHERE content = $3 AND role = $4",
-		seg.Port, seg.DataDir, seg.ContentID, seg.Role)
-	if err != nil {
-		return xerrors.Errorf("updating segment configuration: %w", err)
-	}
-
-	// We should have updated only one row. More than one implies that
-	// gp_segment_configuration has a primary and a mirror up for a single
-	// content ID, and we can't handle mirrors at this point.
-	rows, err := res.RowsAffected()
-	if err != nil {
-		// An error should only occur here if the driver does not support
-		// this call, and we know that the postgres driver does.
-		panic(fmt.Sprintf("retrieving number of rows updated: %v", err))
-	}
-	if rows != 1 {
-		return xerrors.Errorf("updated %d rows for content %d, expected 1", rows, seg.ContentID)
+		return xerrors.Errorf("commit transaction: %w", err)
 	}
 
 	return nil

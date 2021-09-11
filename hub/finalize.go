@@ -42,8 +42,16 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 		return nil
 	})
 
-	st.Run(idl.Substep_UPDATE_TARGET_CATALOG_AND_CLUSTER_CONFIG, func(streams step.OutStreams) error {
-		return s.UpdateCatalogAndClusterConfig(streams)
+	st.Run(idl.Substep_UPDATE_TARGET_CATALOG, func(streams step.OutStreams) error {
+		if err := s.IntermediateTarget.StartMasterOnly(streams); err != nil {
+			return err
+		}
+
+		if err := UpdateCatalog(s.Connection, s.IntermediateTarget, s.Target); err != nil {
+			return err
+		}
+
+		return s.IntermediateTarget.StopMasterOnly(streams)
 	})
 
 	st.Run(idl.Substep_UPDATE_DATA_DIRECTORIES, func(_ step.OutStreams) error {

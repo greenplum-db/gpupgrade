@@ -43,7 +43,7 @@ func init() {
 	})
 	FinalizeHelp = GenerateHelpString(finalizeHelp, []idl.Substep{
 		idl.Substep_SHUTDOWN_TARGET_CLUSTER,
-		idl.Substep_UPDATE_TARGET_CATALOG_AND_CLUSTER_CONFIG,
+		idl.Substep_UPDATE_TARGET_CATALOG,
 		idl.Substep_UPDATE_DATA_DIRECTORIES,
 		idl.Substep_UPDATE_TARGET_CONF_FILES,
 		idl.Substep_START_TARGET_CLUSTER,
