@@ -19,13 +19,11 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-// FillConfiguration populates as much of the passed Config as possible, given a
-// connection to the source cluster and the settings contained in an
-// InitializeRequest from the client. The configuration is then saved to disk.
+// FillConfiguration populates the Config saves it to disk.
 func FillConfiguration(config *Config, request *idl.InitializeRequest, conn *greenplum.Conn, saveConfig func() error) error {
 	options := []greenplum.Option{
 		greenplum.ToSource(),
-		greenplum.Port(int(request.SourcePort)),
+		greenplum.Port(int(request.GetSourcePort())),
 		greenplum.UtilityMode(),
 	}
 
@@ -39,36 +37,28 @@ func FillConfiguration(config *Config, request *idl.InitializeRequest, conn *gre
 		}
 	}()
 
-	config.AgentPort = int(request.AgentPort)
-	config.UseHbaHostnames = request.UseHbaHostnames
-
-	// Assign a new universal upgrade identifier.
+	config.AgentPort = int(request.GetAgentPort())
+	config.UseHbaHostnames = request.GetUseHbaHostnames()
 	config.UpgradeID = upgrade.NewID()
 
 	if err := CheckSourceClusterConfiguration(db); err != nil {
 		return err
 	}
 
-	sourceVersion, err := greenplum.LocalVersion(request.SourceGPHome)
-	if err != nil {
-		return err
-	}
-
-	source, err := greenplum.ClusterFromDB(db, sourceVersion, request.SourceGPHome)
+	source, err := greenplum.ClusterFromDB(db, conn.SourceVersion, request.GetSourceGPHome())
 	if err != nil {
 		return xerrors.Errorf("retrieve source configuration: %w", err)
 	}
 
-	// FIXME: Reorder this function so it makes more sense. Especially with the order or intermediateTarget
-
 	target := source // create target cluster based off source cluster
 	config.Source = &source
 	config.Target = &target
-	config.Target.GPHome = request.TargetGPHome
-	config.UseLinkMode = request.UseLinkMode
+	config.Target.GPHome = request.GetTargetGPHome()
+	config.Target.Version = conn.TargetVersion
+	config.UseLinkMode = request.GetUseLinkMode()
 
 	var ports []int
-	for _, p := range request.Ports {
+	for _, p := range request.GetPorts() {
 		ports = append(ports, int(p))
 	}
 
@@ -77,14 +67,7 @@ func FillConfiguration(config *Config, request *idl.InitializeRequest, conn *gre
 		return err
 	}
 
-	config.IntermediateTarget.GPHome = request.TargetGPHome // this needs to be set before getting the version...
-	targetVersion, err := greenplum.LocalVersion(config.IntermediateTarget.GPHome)
-	if err != nil {
-		return err
-	}
-
-	config.IntermediateTarget.Version = targetVersion
-	config.Target.Version = targetVersion
+	config.IntermediateTarget.Version = conn.TargetVersion
 
 	if err := ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(config.Source, config.IntermediateTarget); err != nil {
 		return err
@@ -94,6 +77,7 @@ func FillConfiguration(config *Config, request *idl.InitializeRequest, conn *gre
 		if err := utils.System.MkdirAll(utils.GetTablespaceDir(), 0700); err != nil {
 			return xerrors.Errorf("create tablespace directory %q: %w", utils.GetTablespaceDir(), err)
 		}
+
 		config.TablespacesMappingFilePath = filepath.Join(utils.GetTablespaceDir(), greenplum.TablespacesMappingFile)
 		config.Tablespaces, err = greenplum.TablespacesFromDB(db, config.TablespacesMappingFilePath)
 		if err != nil {

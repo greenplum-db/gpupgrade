@@ -33,6 +33,8 @@ type SegmentStatus struct {
 	PreferredRole Role
 }
 
+// FIXME: This needs to be heavily simplified and refactored.
+//  Can this be part of ClusterFromDB()?
 func CheckSourceClusterConfiguration(db *sql.DB) error {
 	statuses, err := GetSegmentStatuses(db)
 	if err != nil {

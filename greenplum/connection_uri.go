@@ -14,14 +14,14 @@ import (
 // TODO: we should add the source/target ports here too, but they
 //  are known after we need to first call this package.
 type Conn struct {
-	sourceVersion semver.Version
-	targetVersion semver.Version
+	SourceVersion semver.Version
+	TargetVersion semver.Version
 }
 
 func Connection(sourceVersion semver.Version, targetVersion semver.Version) *Conn {
 	conn := new(Conn)
-	conn.sourceVersion = sourceVersion
-	conn.targetVersion = targetVersion
+	conn.SourceVersion = sourceVersion
+	conn.TargetVersion = targetVersion
 
 	return conn
 }
@@ -29,9 +29,9 @@ func Connection(sourceVersion semver.Version, targetVersion semver.Version) *Con
 func (c *Conn) URI(options ...Option) string {
 	opts := newOptionList(options...)
 
-	version := c.sourceVersion
+	version := c.SourceVersion
 	if opts.connectToTarget {
-		version = c.targetVersion
+		version = c.TargetVersion
 	}
 
 	connURI := fmt.Sprintf("postgresql://localhost:%d/template1?search_path=", opts.port)
