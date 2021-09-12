@@ -95,13 +95,8 @@ func (s *Server) RemoveIntermediateTargetCluster(streams step.OutStreams) error 
 }
 
 func (s *Server) InitTargetCluster(stream step.OutStreams) error {
-	version, err := greenplum.LocalVersion(s.IntermediateTarget.GPHome)
-	if err != nil {
-		return err
-	}
-
 	return RunInitsystemForTargetCluster(stream,
-		s.IntermediateTarget.GPHome, s.initsystemConfPath(), version)
+		s.IntermediateTarget.GPHome, s.initsystemConfPath(), s.IntermediateTarget.Version)
 }
 
 func GetCheckpointSegmentsAndEncoding(gpinitsystemConfig []string, version semver.Version, db *sql.DB) ([]string, error) {

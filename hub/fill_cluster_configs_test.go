@@ -8,6 +8,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/blang/semver/v4"
+
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 )
@@ -150,13 +152,13 @@ func TestAssignDataDirsAndPorts(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			actual, err := AssignDatadirsAndPorts(c.cluster, c.ports, upgradeID)
+			actual, err := GenerateIntermediateTargetCluster(c.cluster, c.ports, upgradeID, semver.Version{}, "")
 			if err != nil {
 				t.Errorf("returned error %+v", err)
 			}
 
 			if !reflect.DeepEqual(actual, c.expected) {
-				t.Errorf("AssignDatadirsAndPorts(<cluster>, %v)=%v, want %v", c.ports, actual, c.expected)
+				t.Errorf("GenerateIntermediateTargetCluster(<cluster>, %v)=%v, want %v", c.ports, actual, c.expected)
 			}
 		})
 	}
@@ -227,9 +229,9 @@ func TestAssignDataDirsAndPorts(t *testing.T) {
 
 	for _, c := range errCases {
 		t.Run(c.name, func(t *testing.T) {
-			_, err := AssignDatadirsAndPorts(c.cluster, c.ports, 0)
+			_, err := GenerateIntermediateTargetCluster(c.cluster, c.ports, 0, semver.Version{}, "")
 			if err == nil {
-				t.Errorf("AssignDatadirsAndPorts(<cluster>, %v) returned nil, want error", c.ports)
+				t.Errorf("GenerateIntermediateTargetCluster(<cluster>, %v) returned nil, want error", c.ports)
 			}
 		})
 	}

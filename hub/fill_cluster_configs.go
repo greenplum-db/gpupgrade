@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sort"
 
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
@@ -62,12 +63,10 @@ func FillConfiguration(config *Config, request *idl.InitializeRequest, conn *gre
 		ports = append(ports, int(p))
 	}
 
-	config.IntermediateTarget, err = AssignDatadirsAndPorts(config.Source, ports, config.UpgradeID)
+	config.IntermediateTarget, err = GenerateIntermediateTargetCluster(config.Source, ports, config.UpgradeID, conn.TargetVersion, request.GetTargetGPHome())
 	if err != nil {
 		return err
 	}
-
-	config.IntermediateTarget.Version = conn.TargetVersion
 
 	if err := ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(config.Source, config.IntermediateTarget); err != nil {
 		return err
@@ -92,11 +91,11 @@ func FillConfiguration(config *Config, request *idl.InitializeRequest, conn *gre
 	return nil
 }
 
-func AssignDatadirsAndPorts(source *greenplum.Cluster, ports []int, upgradeID upgrade.ID) (*greenplum.Cluster, error) {
+func GenerateIntermediateTargetCluster(source *greenplum.Cluster, ports []int, upgradeID upgrade.ID, version semver.Version, gphome string) (*greenplum.Cluster, error) {
 	ports = sanitize(ports)
 
 	var targetContentIDs []int
-	target, err := greenplum.NewCluster([]greenplum.SegConfig{})
+	intermediate, err := greenplum.NewCluster([]greenplum.SegConfig{})
 	if err != nil {
 		return &greenplum.Cluster{}, err
 	}
@@ -121,7 +120,7 @@ func AssignDatadirsAndPorts(source *greenplum.Cluster, ports []int, upgradeID up
 
 		master.Port = ports[nextPortIndex]
 		master.DataDir = upgrade.TempDataDir(master.DataDir, segPrefix, upgradeID)
-		target.Primaries[-1] = master
+		intermediate.Primaries[-1] = master
 		targetContentIDs = append(targetContentIDs, -1)
 		nextPortIndex++
 	}
@@ -133,7 +132,7 @@ func AssignDatadirsAndPorts(source *greenplum.Cluster, ports []int, upgradeID up
 		}
 		standby.Port = ports[nextPortIndex]
 		standby.DataDir = upgrade.TempDataDir(standby.DataDir, segPrefix, upgradeID)
-		target.Mirrors[-1] = standby
+		intermediate.Mirrors[-1] = standby
 		targetContentIDs = append(targetContentIDs, -1)
 		nextPortIndex++
 	}
@@ -163,7 +162,7 @@ func AssignDatadirsAndPorts(source *greenplum.Cluster, ports []int, upgradeID up
 		}
 		segment.DataDir = upgrade.TempDataDir(segment.DataDir, segPrefix, upgradeID)
 
-		target.Primaries[content] = segment
+		intermediate.Primaries[content] = segment
 		targetContentIDs = append(targetContentIDs, content)
 	}
 
@@ -189,14 +188,16 @@ func AssignDatadirsAndPorts(source *greenplum.Cluster, ports []int, upgradeID up
 			}
 			segment.DataDir = upgrade.TempDataDir(segment.DataDir, segPrefix, upgradeID)
 
-			target.Mirrors[content] = segment
+			intermediate.Mirrors[content] = segment
 			targetContentIDs = append(targetContentIDs, content)
 		}
 	}
 
-	target.ContentIDs = sanitize(targetContentIDs)
+	intermediate.ContentIDs = sanitize(targetContentIDs)
+	intermediate.GPHome = gphome
+	intermediate.Version = version
 
-	return &target, nil
+	return &intermediate, nil
 }
 
 // sanitize sorts and deduplicates a slice of port numbers.
