@@ -371,7 +371,6 @@ type Config struct {
 	AgentPort       int
 	UseLinkMode     bool
 	UseHbaHostnames bool
-	TargetGPHome    string
 	UpgradeID       upgrade.ID
 
 	// Tablespaces contains the tablespace in the database keyed by

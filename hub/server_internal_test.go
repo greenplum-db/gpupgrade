@@ -33,7 +33,6 @@ func TestConfig(t *testing.T) {
 			54321,           // AgentPort
 			false,           // UseLinkMode
 			false,           // UseHbaHostnames
-			target.GPHome,   // TargetGPHome
 			upgrade.NewID(), // UpgradeID
 			map[int]greenplum.SegmentTablespaces{
 				1: {1663: {
