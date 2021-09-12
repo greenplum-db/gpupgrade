@@ -33,8 +33,8 @@ type SegmentStatus struct {
 	PreferredRole Role
 }
 
-func CheckSourceClusterConfiguration(conn *sql.DB) error {
-	statuses, err := GetSegmentStatuses(conn)
+func CheckSourceClusterConfiguration(db *sql.DB) error {
+	statuses, err := GetSegmentStatuses(db)
 	if err != nil {
 		return err
 	}
@@ -42,10 +42,10 @@ func CheckSourceClusterConfiguration(conn *sql.DB) error {
 	return SegmentStatusErrors(statuses)
 }
 
-func GetSegmentStatuses(connection *sql.DB) ([]SegmentStatus, error) {
+func GetSegmentStatuses(db *sql.DB) ([]SegmentStatus, error) {
 	statuses := make([]SegmentStatus, 0)
 
-	rows, err := connection.Query(`
+	rows, err := db.Query(`
 		select dbid, status = $1 as is_up, role, preferred_role
 		from gp_segment_configuration
 	`, Up)

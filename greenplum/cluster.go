@@ -4,12 +4,12 @@
 package greenplum
 
 import (
+	"database/sql"
 	"fmt"
 	"os/exec"
 	"path/filepath"
 
 	"github.com/blang/semver/v4"
-	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
@@ -42,27 +42,21 @@ type Cluster struct {
 // ClusterFromDB will create a Cluster by querying the passed DBConn for
 // information. You must pass the cluster's gphome, since it cannot be
 // divined from the database.
-func ClusterFromDB(conn *dbconn.DBConn, version semver.Version, gphome string) (Cluster, error) {
-	err := conn.Connect(1)
+func ClusterFromDB(db *sql.DB, version semver.Version, gphome string) (Cluster, error) {
+	segments, err := GetSegmentConfiguration(db, version)
 	if err != nil {
-		return Cluster{}, xerrors.Errorf("connect to cluster: %w", err)
-	}
-	defer conn.Close()
-
-	segments, err := GetSegmentConfiguration(conn, version)
-	if err != nil {
-		return Cluster{}, xerrors.Errorf("retrieve segment configuration: %w", err)
+		return Cluster{}, xerrors.Errorf("querying gp_segment_configuration: %w", err)
 	}
 
-	c, err := NewCluster(segments)
+	cluster, err := NewCluster(segments)
 	if err != nil {
 		return Cluster{}, err
 	}
 
-	c.Version = version
-	c.GPHome = gphome
+	cluster.Version = version
+	cluster.GPHome = gphome
 
-	return c, nil
+	return cluster, nil
 }
 
 func (c *Cluster) Master() SegConfig {

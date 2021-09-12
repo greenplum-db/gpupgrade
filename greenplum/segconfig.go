@@ -4,9 +4,10 @@
 package greenplum
 
 import (
+	"database/sql"
+
 	"github.com/blang/semver/v4"
-	"github.com/greenplum-db/gp-common-go-libs/dbconn"
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
+	"golang.org/x/xerrors"
 )
 
 type SegConfig struct {
@@ -45,7 +46,7 @@ func (s *SegConfig) IsOnHost(hostname string) bool {
 	return s.Hostname == hostname
 }
 
-func GetSegmentConfiguration(connection *dbconn.DBConn, version semver.Version) ([]SegConfig, error) {
+func GetSegmentConfiguration(db *sql.DB, version semver.Version) ([]SegConfig, error) {
 	query := `
 SELECT
 	dbid,
@@ -73,18 +74,28 @@ WHERE f.fsname = 'pg_system'
 ORDER BY s.content, s.role;`
 	}
 
-	results := make([]SegConfig, 0)
-	err := connection.Select(&results, query)
+	rows, err := db.Query(query)
 	if err != nil {
 		return nil, err
 	}
-	return results, nil
-}
+	defer rows.Close()
 
-func MustGetSegmentConfiguration(connection *dbconn.DBConn) []SegConfig {
-	segConfigs, err := GetSegmentConfiguration(connection, semver.Version{})
-	gplog.FatalOnError(err)
-	return segConfigs
+	results := make([]SegConfig, 0)
+	for rows.Next() {
+		var seg SegConfig
+		if err := rows.Scan(&seg.DbID, &seg.ContentID, &seg.Port, &seg.Hostname, &seg.DataDir, &seg.Role); err != nil {
+			return nil, xerrors.Errorf("scanning gp_segment_configuration: %w", err)
+
+		}
+
+		results = append(results, seg)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, xerrors.Errorf("iterating gp_segment_configuration rows: %w", err)
+	}
+
+	return results, nil
 }
 
 // SelectSegmentConfigs returns a list of all segments that match the given selector

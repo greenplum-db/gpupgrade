@@ -5,7 +5,6 @@ package hub
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"path/filepath"
 
@@ -54,23 +53,7 @@ func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initi
 	})
 
 	st.Run(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(stream step.OutStreams) error {
-		options := []connURI.Option{
-			connURI.ToSource(),
-			connURI.Port(int(in.SourcePort)),
-			connURI.UtilityMode(),
-		}
-
-		conn, err := sql.Open("pgx", s.Connection.URI(options...))
-		if err != nil {
-			return err
-		}
-		defer func() {
-			if cerr := conn.Close(); cerr != nil {
-				err = errorlist.Append(err, cerr)
-			}
-		}()
-
-		return FillConfiguration(s.Config, conn, stream, in, s.SaveConfig)
+		return FillConfiguration(s.Config, in, s.Connection, s.SaveConfig)
 	})
 
 	// we need the cluster information to determine what hosts to check, so we do this check

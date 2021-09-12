@@ -4,7 +4,6 @@
 package greenplum_test
 
 import (
-	"database/sql/driver"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -14,10 +13,8 @@ import (
 	"strings"
 	"testing"
 
-	sqlmock "github.com/DATA-DOG/go-sqlmock"
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/blang/semver/v4"
-	"github.com/greenplum-db/gp-common-go-libs/dbconn"
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -166,70 +163,79 @@ func TestCluster(t *testing.T) {
 }
 
 func TestGetSegmentConfiguration(t *testing.T) {
-	testlog.SetupLogger()
+	t.Run("can retrieve gp_segment_configuration", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		if err != nil {
+			t.Fatalf("couldn't create sqlmock: %v", err)
+		}
+		defer testutils.FinishMock(mock, t)
+		defer db.Close()
 
-	cases := []struct {
-		name     string
-		rows     [][]driver.Value
-		expected []greenplum.SegConfig
-	}{{
-		"single-host, single-segment",
-		[][]driver.Value{
-			{"0", "localhost", "/data/gpseg0"},
-		},
-		[]greenplum.SegConfig{
-			{ContentID: 0, Hostname: "localhost", DataDir: "/data/gpseg0"},
-		},
-	}, {
-		"single-host, multi-segment",
-		[][]driver.Value{
-			{"0", "localhost", "/data/gpseg0"},
-			{"1", "localhost", "/data/gpseg1"},
-		},
-		[]greenplum.SegConfig{
-			{ContentID: 0, Hostname: "localhost", DataDir: "/data/gpseg0"},
-			{ContentID: 1, Hostname: "localhost", DataDir: "/data/gpseg1"},
-		},
-	}, {
-		"multi-host, multi-segment",
-		[][]driver.Value{
-			{"0", "localhost", "/data/gpseg0"},
-			{"1", "localhost", "/data/gpseg1"},
-			{"2", "remotehost", "/data/gpseg2"},
-		},
-		[]greenplum.SegConfig{
-			{ContentID: 0, Hostname: "localhost", DataDir: "/data/gpseg0"},
-			{ContentID: 1, Hostname: "localhost", DataDir: "/data/gpseg1"},
-			{ContentID: 2, Hostname: "remotehost", DataDir: "/data/gpseg2"},
-		},
-	}}
+		rows := sqlmock.NewRows([]string{"dbid", "contentid", "port", "hostname", "datadir", "role"})
+		rows.AddRow(1, -1, 15432, "mdw", "/data/qddir/seg-1", greenplum.PrimaryRole)
+		rows.AddRow(2, -1, 16432, "smdw", "/data/standby", greenplum.MirrorRole)
+		rows.AddRow(3, 0, 25433, "sdw1", "/data/dbfast1/seg1", greenplum.PrimaryRole)
+		rows.AddRow(4, 0, 25434, "sdw2", "/data/dbfast_mirror1/seg1", greenplum.MirrorRole)
+		rows.AddRow(5, 1, 25435, "sdw2", "/data/dbfast2/seg2", greenplum.PrimaryRole)
+		rows.AddRow(6, 1, 25436, "sdw1", "/data/dbfast_mirror2/seg2", greenplum.MirrorRole)
 
-	for _, c := range cases {
-		t.Run(fmt.Sprintf("%s cluster", c.name), func(t *testing.T) {
-			// Set up the connection to return the expected rows.
-			rows := sqlmock.NewRows([]string{"contentid", "hostname", "datadir"})
-			for _, row := range c.rows {
-				rows.AddRow(row...)
-			}
+		mock.ExpectQuery("SELECT").WillReturnRows(rows)
 
-			connection, mock := testhelper.CreateAndConnectMockDB(1)
-			mock.ExpectQuery("SELECT (.*)").WillReturnRows(rows)
-			defer func() {
-				if err := mock.ExpectationsWereMet(); err != nil {
-					t.Errorf("%v", err)
-				}
-			}()
+		actual, err := greenplum.GetSegmentConfiguration(db, semver.Version{})
+		if err != nil {
+			t.Errorf("returned error %+v", err)
+		}
 
-			results, err := greenplum.GetSegmentConfiguration(connection, semver.Version{})
-			if err != nil {
-				t.Errorf("returned error %+v", err)
-			}
+		expected := []greenplum.SegConfig{
+			{DbID: 1, ContentID: -1, Port: 15432, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
+			{DbID: 2, ContentID: -1, Port: 16432, Hostname: "smdw", DataDir: "/data/standby", Role: greenplum.MirrorRole},
+			{DbID: 3, ContentID: 0, Port: 25433, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
+			{DbID: 4, ContentID: 0, Port: 25434, Hostname: "sdw2", DataDir: "/data/dbfast_mirror1/seg1", Role: greenplum.MirrorRole},
+			{DbID: 5, ContentID: 1, Port: 25435, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
+			{DbID: 6, ContentID: 1, Port: 25436, Hostname: "sdw1", DataDir: "/data/dbfast_mirror2/seg2", Role: greenplum.MirrorRole},
+		}
 
-			if !reflect.DeepEqual(results, c.expected) {
-				t.Errorf("got configuration %+v, want %+v", results, c.expected)
-			}
-		})
-	}
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("got configuration %+v, want %+v", actual, expected)
+		}
+	})
+
+	t.Run("can retrieve gp_segment_configuration when all segements are on same host", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		if err != nil {
+			t.Fatalf("couldn't create sqlmock: %v", err)
+		}
+		defer testutils.FinishMock(mock, t)
+		defer db.Close()
+
+		rows := sqlmock.NewRows([]string{"dbid", "contentid", "port", "hostname", "datadir", "role"})
+		rows.AddRow(1, -1, 15432, "mdw", "/data/qddir/seg-1", greenplum.PrimaryRole)
+		rows.AddRow(2, -1, 16432, "mdw", "/data/standby", greenplum.MirrorRole)
+		rows.AddRow(3, 0, 25433, "mdw", "/data/dbfast1/seg1", greenplum.PrimaryRole)
+		rows.AddRow(4, 0, 25434, "mdw", "/data/dbfast_mirror1/seg1", greenplum.MirrorRole)
+		rows.AddRow(5, 1, 25435, "mdw", "/data/dbfast2/seg2", greenplum.PrimaryRole)
+		rows.AddRow(6, 1, 25436, "mdw", "/data/dbfast_mirror2/seg2", greenplum.MirrorRole)
+
+		mock.ExpectQuery("SELECT").WillReturnRows(rows)
+
+		actual, err := greenplum.GetSegmentConfiguration(db, semver.Version{})
+		if err != nil {
+			t.Errorf("returned error %+v", err)
+		}
+
+		expected := []greenplum.SegConfig{
+			{DbID: 1, ContentID: -1, Port: 15432, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
+			{DbID: 2, ContentID: -1, Port: 16432, Hostname: "mdw", DataDir: "/data/standby", Role: greenplum.MirrorRole},
+			{DbID: 3, ContentID: 0, Port: 25433, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
+			{DbID: 4, ContentID: 0, Port: 25434, Hostname: "mdw", DataDir: "/data/dbfast_mirror1/seg1", Role: greenplum.MirrorRole},
+			{DbID: 5, ContentID: 1, Port: 25435, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
+			{DbID: 6, ContentID: 1, Port: 25436, Hostname: "mdw", DataDir: "/data/dbfast_mirror2/seg2", Role: greenplum.MirrorRole},
+		}
+
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("got configuration %+v, want %+v", actual, expected)
+		}
+	})
 }
 
 func TestPrimaryHostnames(t *testing.T) {
@@ -270,31 +276,36 @@ func TestClusterFromDB(t *testing.T) {
 	}()
 
 	t.Run("returns an error if connection fails", func(t *testing.T) {
-		connErr := errors.New("connection failed")
-		conn := dbconn.NewDBConnFromEnvironment("testdb")
-		conn.Driver = testhelper.TestDriver{ErrToReturn: connErr}
-
-		actualCluster, err := greenplum.ClusterFromDB(conn, semver.MustParse("0.0.0"), "")
-
-		if err == nil {
-			t.Errorf("Expected an error, but got nil")
+		db, mock, err := sqlmock.New()
+		if err != nil {
+			t.Fatalf("couldn't create sqlmock: %v", err)
 		}
+		defer testutils.FinishMock(mock, t)
+
+		expected := errors.New("connection failed")
+		mock.ExpectQuery("SELECT ").WillReturnError(expected)
+
+		actualCluster, err := greenplum.ClusterFromDB(db, semver.MustParse("0.0.0"), "")
+		if !errors.Is(err, expected) {
+			t.Errorf("got %#v want %#v", err, expected)
+		}
+
 		if !reflect.DeepEqual(actualCluster, greenplum.Cluster{}) {
 			t.Errorf("got: %#v want empty cluster: %#v", actualCluster, &greenplum.Cluster{})
-		}
-		if !strings.Contains(err.Error(), connErr.Error()) {
-			t.Errorf("Expected error: %+v got: %+v", connErr.Error(), err.Error())
 		}
 	})
 
 	t.Run("returns an error if the segment configuration query fails", func(t *testing.T) {
-		conn, mock := testutils.CreateMockDBConn()
-		testhelper.ExpectVersionQuery(mock, "5.3.4")
+		db, mock, err := sqlmock.New()
+		if err != nil {
+			t.Fatalf("couldn't create sqlmock: %v", err)
+		}
+		defer testutils.FinishMock(mock, t)
 
 		queryErr := errors.New("failed to get segment configuration")
 		mock.ExpectQuery("SELECT .* FROM gp_segment_configuration").WillReturnError(queryErr)
 
-		actualCluster, err := greenplum.ClusterFromDB(conn, semver.MustParse("0.0.0"), "")
+		actualCluster, err := greenplum.ClusterFromDB(db, semver.MustParse("0.0.0"), "")
 
 		if err == nil {
 			t.Errorf("Expected an error, but got nil")
@@ -308,14 +319,17 @@ func TestClusterFromDB(t *testing.T) {
 	})
 
 	t.Run("populates a cluster using DB information", func(t *testing.T) {
-		conn, mock := testutils.CreateMockDBConn()
+		db, mock, err := sqlmock.New()
+		if err != nil {
+			t.Fatalf("couldn't create sqlmock: %v", err)
+		}
+		defer testutils.FinishMock(mock, t)
 
-		testhelper.ExpectVersionQuery(mock, "5.3.4")
 		mock.ExpectQuery("SELECT .* FROM gp_segment_configuration").WillReturnRows(testutils.MockSegmentConfiguration())
 
 		gphome := "/usr/local/gpdb"
 		version := semver.MustParse("5.3.4")
-		actualCluster, err := greenplum.ClusterFromDB(conn, version, gphome)
+		actualCluster, err := greenplum.ClusterFromDB(db, version, gphome)
 		if err != nil {
 			t.Errorf("got unexpected error: %+v", err)
 		}

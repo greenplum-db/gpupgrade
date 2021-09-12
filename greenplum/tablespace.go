@@ -4,12 +4,12 @@
 package greenplum
 
 import (
+	"database/sql"
 	"encoding/csv"
 	"io"
 	"path/filepath"
 	"strconv"
 
-	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -88,11 +88,27 @@ func GetMasterTablespaceLocation(basePath string, oid int) string {
 	return filepath.Join(basePath, strconv.Itoa(oid), strconv.Itoa(MasterDbid))
 }
 
-func GetTablespaceTuples(connection *dbconn.DBConn) (TablespaceTuples, error) {
-	results := make(TablespaceTuples, 0)
-	err := connection.Select(&results, tablespacesQuery)
+func GetTablespaceTuples(db *sql.DB) (TablespaceTuples, error) {
+	rows, err := db.Query(tablespacesQuery)
 	if err != nil {
-		return nil, xerrors.Errorf("tablespace query %q: %w", tablespacesQuery, err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	results := make([]Tablespace, 0)
+	for rows.Next() {
+		var ts Tablespace
+		if err := rows.Scan(&ts.DbId, &ts.Oid, &ts.Name, &ts.Info.Location, &ts.Info.UserDefined); err != nil {
+			return nil, xerrors.Errorf("scanning pg_tablespace: %w", err)
+
+		}
+
+		results = append(results, ts)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, xerrors.Errorf("iterating pg_tablespace rows: %w", err)
+
 	}
 
 	return results, nil
@@ -138,13 +154,8 @@ func (t TablespaceTuples) Write(w io.Writer) error {
 // 1. query the database to get tablespace information
 // 2. write the tablespace information to a file
 // 3. converts the tablespace information to an internal structure
-func TablespacesFromDB(conn *dbconn.DBConn, tablespacesFile string) (Tablespaces, error) {
-	if err := conn.Connect(1); err != nil {
-		return nil, xerrors.Errorf("connect to cluster: %w", err)
-	}
-	defer conn.Close()
-
-	tablespaceTuples, err := GetTablespaceTuples(conn)
+func TablespacesFromDB(db *sql.DB, tablespacesFile string) (Tablespaces, error) {
+	tablespaceTuples, err := GetTablespaceTuples(db)
 	if err != nil {
 		return nil, xerrors.Errorf("retrieve tablespace information: %w", err)
 	}

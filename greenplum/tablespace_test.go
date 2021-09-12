@@ -1,12 +1,10 @@
 // Copyright (c) 2017-2021 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
-package greenplum
+package greenplum_test
 
 import (
 	"bytes"
-	"database/sql/driver"
-	"fmt"
 	"os"
 	"reflect"
 	"strings"
@@ -14,83 +12,91 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/blang/semver/v4"
-	"github.com/greenplum-db/gp-common-go-libs/dbconn"
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/pkg/errors"
 
+	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 func TestGetTablespaces(t *testing.T) {
-	cases := []struct {
-		name           string
-		rows           [][]driver.Value
-		version        semver.Version
-		expectedTuples TablespaceTuples
-		error          error
-	}{
-		{
-			name: "successfully returns tablespace tuples from db",
-			rows: [][]driver.Value{
-				{1, 1234, "pg_default", "/tmp/pg_default_tablespace", 0},
-				{2, 1235, "my_tablespace", "/tmp/my_tablespace", 1},
-			},
-			version: semver.MustParse("5.0.0"),
-			expectedTuples: TablespaceTuples{{
+	t.Run("retrieves tablespaces", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		if err != nil {
+			t.Fatalf("couldn't create sqlmock: %v", err)
+		}
+		defer testutils.FinishMock(mock, t)
+		defer db.Close()
+
+		rows := sqlmock.NewRows([]string{"dbid", "oid", "name", "location", "userdefined"})
+		rows.AddRow(1, 1234, "pg_default", "/tmp/pg_default_tablespace", 0)
+		rows.AddRow(2, 1235, "my_tablespace", "/tmp/my_tablespace", 1)
+
+		mock.ExpectQuery("SELECT").WillReturnRows(rows)
+
+		actual, err := greenplum.GetTablespaceTuples(db)
+		if err != nil {
+			t.Errorf("returned error %+v", err)
+		}
+
+		expected := greenplum.TablespaceTuples{
+			greenplum.Tablespace{
 				DbId: 1,
 				Oid:  1234,
 				Name: "pg_default",
-				Info: TablespaceInfo{
-					Location:    "/tmp/pg_default_tablespace",
-					UserDefined: 0,
-				},
-			}, {
+				Info: greenplum.TablespaceInfo{Location: "/tmp/pg_default_tablespace", UserDefined: 0},
+			},
+			greenplum.Tablespace{
 				DbId: 2,
 				Oid:  1235,
 				Name: "my_tablespace",
-				Info: TablespaceInfo{
-					Location:    "/tmp/my_tablespace",
-					UserDefined: 1,
-				},
-			}},
-			error: nil,
+				Info: greenplum.TablespaceInfo{Location: "/tmp/my_tablespace", UserDefined: 1},
+			},
+		}
+
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("got configuration %+v, want %+v", actual, expected)
+		}
+	})
+
+	// error cases
+	expectedErr := errors.New("tablespace query")
+
+	errorCases := []struct {
+		name    string
+		version semver.Version
+		error   error
+	}{
+		{
+			name:    " query execution failed",
+			version: semver.MustParse("6.0.0"),
+			error:   expectedErr,
 		},
 		{
-			name:           "tablespace query execution failed",
-			rows:           nil,
-			version:        semver.MustParse("5.0.0"),
-			expectedTuples: nil,
-			error:          errors.New("tablespace query"),
+			name:    "tablespace query execution failed",
+			version: semver.MustParse("6.0.0"),
+			error:   expectedErr,
 		},
 	}
 
-	for _, c := range cases {
-		t.Run(fmt.Sprint(c.name), func(t *testing.T) {
-			conn, mock := testhelper.CreateAndConnectMockDB(1)
-			defer conn.Close()
-			var rows *sqlmock.Rows
-			if c.rows != nil {
-				// Set up the connection to return the expected rows.
-				rows = sqlmock.NewRows([]string{"dbid", "oid", "name", "location", "userdefined"})
-				for _, row := range c.rows {
-					rows.AddRow(row...)
-				}
+	for _, c := range errorCases {
+		t.Run(c.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New()
+			if err != nil {
+				t.Fatalf("couldn't create sqlmock: %v", err)
+			}
+			defer testutils.FinishMock(mock, t)
+			defer db.Close()
 
-				mock.ExpectQuery("SELECT (.*)").WillReturnRows(rows)
-				defer func() {
-					if err := mock.ExpectationsWereMet(); err != nil {
-						t.Errorf("%v", err)
-					}
-				}()
+			mock.ExpectQuery("SELECT").WillReturnError(c.error)
+
+			tuples, err := greenplum.GetTablespaceTuples(db)
+			if !errors.Is(err, c.error) {
+				t.Errorf("returned %#v want %#v", err, c.error)
 			}
 
-			results, err := GetTablespaceTuples(conn)
-			if c.error != nil && !strings.Contains(err.Error(), c.error.Error()) {
-				t.Errorf("got %+v, want %+v", err, c.error)
-			}
-
-			if !reflect.DeepEqual(results, c.expectedTuples) {
-				t.Errorf("got configuration %+v, want %+v", results, c.expectedTuples)
+			if tuples != nil {
+				t.Errorf("unexpected results %+v", tuples)
 			}
 		})
 	}
@@ -99,17 +105,17 @@ func TestGetTablespaces(t *testing.T) {
 func TestNewTablespaces(t *testing.T) {
 	cases := []struct {
 		name     string
-		tuples   TablespaceTuples
-		expected Tablespaces
+		tuples   greenplum.TablespaceTuples
+		expected greenplum.Tablespaces
 	}{
 		{
 			name: "only default tablespace",
-			tuples: TablespaceTuples{
+			tuples: greenplum.TablespaceTuples{
 				{
 					DbId: 1,
 					Oid:  1663,
 					Name: "pg_default",
-					Info: TablespaceInfo{
+					Info: greenplum.TablespaceInfo{
 						Location:    "/tmp/master/gpseg-1",
 						UserDefined: 0,
 					},
@@ -118,13 +124,13 @@ func TestNewTablespaces(t *testing.T) {
 					DbId: 2,
 					Oid:  1663,
 					Name: "pg_default",
-					Info: TablespaceInfo{
+					Info: greenplum.TablespaceInfo{
 						Location:    "/tmp/primary/gpseg-1",
 						UserDefined: 0,
 					},
 				},
 			},
-			expected: map[int]SegmentTablespaces{
+			expected: map[int]greenplum.SegmentTablespaces{
 				1: {
 					1663: {
 						Location:    "/tmp/master/gpseg-1",
@@ -141,12 +147,12 @@ func TestNewTablespaces(t *testing.T) {
 		},
 		{
 			name: "multiple tablespaces",
-			tuples: TablespaceTuples{
+			tuples: greenplum.TablespaceTuples{
 				{
 					DbId: 1,
 					Oid:  1663,
 					Name: "pg_default",
-					Info: TablespaceInfo{
+					Info: greenplum.TablespaceInfo{
 						Location:    "/tmp/master/gpseg-1",
 						UserDefined: 0,
 					},
@@ -155,7 +161,7 @@ func TestNewTablespaces(t *testing.T) {
 					DbId: 1,
 					Oid:  1664,
 					Name: "my_tablespace",
-					Info: TablespaceInfo{
+					Info: greenplum.TablespaceInfo{
 						Location:    "/tmp/master/1664",
 						UserDefined: 1,
 					},
@@ -164,7 +170,7 @@ func TestNewTablespaces(t *testing.T) {
 					DbId: 2,
 					Oid:  1663,
 					Name: "pg_default",
-					Info: TablespaceInfo{
+					Info: greenplum.TablespaceInfo{
 						Location:    "/tmp/primary/gpseg0",
 						UserDefined: 0,
 					},
@@ -173,13 +179,13 @@ func TestNewTablespaces(t *testing.T) {
 					DbId: 2,
 					Oid:  1664,
 					Name: "my_tablespace",
-					Info: TablespaceInfo{
+					Info: greenplum.TablespaceInfo{
 						Location:    "/tmp/primary/1664",
 						UserDefined: 1,
 					},
 				},
 			},
-			expected: map[int]SegmentTablespaces{
+			expected: map[int]greenplum.SegmentTablespaces{
 				1: {
 					1663: {
 						Location:    "/tmp/master/gpseg-1",
@@ -205,7 +211,7 @@ func TestNewTablespaces(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			if got := NewTablespaces(c.tuples); !reflect.DeepEqual(got, c.expected) {
+			if got := greenplum.NewTablespaces(c.tuples); !reflect.DeepEqual(got, c.expected) {
 				t.Errorf("NewTablespaces() = %v, want %v", got, c.expected)
 			}
 		})
@@ -224,32 +230,36 @@ func MockTablespaceQueryResult() *sqlmock.Rows {
 
 func TestTablespacesFromDB(t *testing.T) {
 	t.Run("returns an error if connection fails", func(t *testing.T) {
-		connErr := errors.New("connection failed")
-		conn := dbconn.NewDBConnFromEnvironment("testdb")
-		conn.Driver = testhelper.TestDriver{ErrToReturn: connErr}
-
-		tablespaces, err := TablespacesFromDB(conn, "")
-
-		if err == nil {
-			t.Errorf("Expected an error, but got nil")
+		db, mock, err := sqlmock.New()
+		if err != nil {
+			t.Fatalf("couldn't create sqlmock: %v", err)
 		}
+		defer testutils.FinishMock(mock, t)
+
+		expected := errors.New("connection failed")
+		mock.ExpectQuery("SELECT").WillReturnError(expected)
+
+		tablespaces, err := greenplum.TablespacesFromDB(db, "")
+		if !errors.Is(err, expected) {
+			t.Errorf("got %#v want %#v", err, expected)
+		}
+
 		if tablespaces != nil {
 			t.Errorf("Expected tablespaces to be nil, but got %#v", tablespaces)
-		}
-		if !strings.Contains(err.Error(), connErr.Error()) {
-			t.Errorf("Expected error: %+v, got: %+v", connErr.Error(), err.Error())
 		}
 	})
 
 	t.Run("returns an error if the tablespace query fails", func(t *testing.T) {
-		conn, mock := testhelper.CreateMockDBConn()
+		db, mock, err := sqlmock.New()
+		if err != nil {
+			t.Fatalf("couldn't create sqlmock: %v", err)
+		}
+		defer testutils.FinishMock(mock, t)
 
-		testhelper.ExpectVersionQuery(mock, "5.3.4")
+		expected := errors.New("failed to get tablespace information")
+		mock.ExpectQuery("SELECT .* upgrade_tablespace").WillReturnError(expected)
 
-		queryErr := errors.New("failed to get tablespace information")
-		mock.ExpectQuery("SELECT .* upgrade_tablespace").WillReturnError(queryErr)
-
-		tablespaces, err := TablespacesFromDB(conn, "")
+		tablespaces, err := greenplum.TablespacesFromDB(db, "")
 
 		if err == nil {
 			t.Errorf("Expected an error, but got nil")
@@ -257,16 +267,18 @@ func TestTablespacesFromDB(t *testing.T) {
 		if tablespaces != nil {
 			t.Errorf("Expected tablespaces to be nil, got %#v", tablespaces)
 		}
-		if !strings.Contains(err.Error(), queryErr.Error()) {
-			t.Errorf("Expected error: %+v, got: %+v", queryErr.Error(), err.Error())
+		if !strings.Contains(err.Error(), expected.Error()) {
+			t.Errorf("Expected error: %+v, got: %+v", expected.Error(), err.Error())
 		}
 	})
 
 	t.Run("populates Tablespaces using DB information", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		if err != nil {
+			t.Fatalf("couldn't create sqlmock: %v", err)
+		}
+		defer testutils.FinishMock(mock, t)
 
-		conn, mock := testhelper.CreateMockDBConn()
-
-		testhelper.ExpectVersionQuery(mock, "5.3.4")
 		mock.ExpectQuery("SELECT .* upgrade_tablespace").WillReturnRows(MockTablespaceQueryResult())
 
 		_, write, _ := os.Pipe()
@@ -280,7 +292,7 @@ func TestTablespacesFromDB(t *testing.T) {
 		defer write.Close()
 
 		expectedFileName := "/tmp/mappingFile.txt"
-		tablespaces, err := TablespacesFromDB(conn, expectedFileName)
+		tablespaces, err := greenplum.TablespacesFromDB(db, expectedFileName)
 
 		if err != nil {
 			t.Errorf("got unexpected error: %+v", err)
@@ -294,7 +306,7 @@ func TestTablespacesFromDB(t *testing.T) {
 			t.Errorf("Create() got %q, want %q", inputFileName, expectedFileName)
 		}
 
-		expectedTablespaces := Tablespaces{
+		expectedTablespaces := greenplum.Tablespaces{
 			1: {
 				1663: {
 					Location:    "/tmp/master_tablespace",
@@ -315,10 +327,12 @@ func TestTablespacesFromDB(t *testing.T) {
 	})
 
 	t.Run("fails to create tablespacesFile", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		if err != nil {
+			t.Fatalf("couldn't create sqlmock: %v", err)
+		}
+		defer testutils.FinishMock(mock, t)
 
-		conn, mock := testhelper.CreateMockDBConn()
-
-		testhelper.ExpectVersionQuery(mock, "5.3.4")
 		mock.ExpectQuery("SELECT .* upgrade_tablespace").WillReturnRows(MockTablespaceQueryResult())
 
 		expectedFileName := "/tmp/mappingFile.txt"
@@ -331,7 +345,7 @@ func TestTablespacesFromDB(t *testing.T) {
 			createCalled = true
 			return nil, expectedError
 		}
-		_, err := TablespacesFromDB(conn, expectedFileName)
+		_, err = greenplum.TablespacesFromDB(db, expectedFileName)
 
 		if err == nil {
 			t.Errorf("expected error: %+v", expectedError)
@@ -346,26 +360,26 @@ func TestTablespacesFromDB(t *testing.T) {
 func TestWrite(t *testing.T) {
 	tests := []struct {
 		name     string
-		tuples   TablespaceTuples
+		tuples   greenplum.TablespaceTuples
 		expected string
 	}{
 		{
 			name: "successfully writes to buffer",
-			tuples: TablespaceTuples{
-				Tablespace{
+			tuples: greenplum.TablespaceTuples{
+				greenplum.Tablespace{
 					DbId: 1,
 					Oid:  1663,
 					Name: "default",
-					Info: TablespaceInfo{
+					Info: greenplum.TablespaceInfo{
 						"/tmp/master/gpseg-1",
 						0,
 					},
 				},
-				Tablespace{
+				greenplum.Tablespace{
 					DbId: 2,
 					Oid:  1664,
 					Name: "my_tablespace",
-					Info: TablespaceInfo{
+					Info: greenplum.TablespaceInfo{
 						"/tmp/master/gpseg-1",
 						1,
 					},
