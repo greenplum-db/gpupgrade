@@ -13,8 +13,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/blang/semver/v4"
 	"github.com/golang/mock/gomock"
-	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
@@ -44,7 +44,7 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 		{DbID: 6, ContentID: 1, Hostname: "msdw2", DataDir: "/data/dbfast_mirror2/seg2", Role: greenplum.MirrorRole},
 	})
 	cluster.GPHome = "/usr/local/greenplum-db"
-	cluster.Version = dbconn.NewVersion("5.0.0")
+	cluster.Version = semver.MustParse("5.0.0")
 
 	tablespaces := testutils.CreateTablespaces()
 
@@ -152,10 +152,10 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 
 	t.Run("does not restore the mirrors in copy mode on GPDB6 or higher", func(t *testing.T) {
 		defer func() {
-			cluster.Version = dbconn.NewVersion("5.0.0")
+			cluster.Version = semver.MustParse("5.0.0")
 		}()
 
-		cluster.Version = dbconn.NewVersion("6.0.0")
+		cluster.Version = semver.MustParse("6.0.0")
 		called := false
 
 		defer ResetRecoversegCmd()

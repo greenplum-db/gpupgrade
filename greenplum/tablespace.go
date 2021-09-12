@@ -10,7 +10,6 @@ import (
 	"strconv"
 
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
-	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -90,10 +89,6 @@ func GetMasterTablespaceLocation(basePath string, oid int) string {
 }
 
 func GetTablespaceTuples(connection *dbconn.DBConn) (TablespaceTuples, error) {
-	if !connection.Version.Is("5") {
-		return nil, errors.New("version not supported to retrieve tablespace information")
-	}
-
 	results := make(TablespaceTuples, 0)
 	err := connection.Select(&results, tablespacesQuery)
 	if err != nil {

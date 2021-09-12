@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/blang/semver/v4"
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/pkg/errors"
@@ -35,20 +36,20 @@ type Cluster struct {
 	Mirrors map[int]SegConfig
 
 	GPHome  string
-	Version dbconn.GPDBVersion
+	Version semver.Version
 }
 
 // ClusterFromDB will create a Cluster by querying the passed DBConn for
 // information. You must pass the cluster's gphome, since it cannot be
 // divined from the database.
-func ClusterFromDB(conn *dbconn.DBConn, gphome string) (Cluster, error) {
+func ClusterFromDB(conn *dbconn.DBConn, version semver.Version, gphome string) (Cluster, error) {
 	err := conn.Connect(1)
 	if err != nil {
 		return Cluster{}, xerrors.Errorf("connect to cluster: %w", err)
 	}
 	defer conn.Close()
 
-	segments, err := GetSegmentConfiguration(conn)
+	segments, err := GetSegmentConfiguration(conn, version)
 	if err != nil {
 		return Cluster{}, xerrors.Errorf("retrieve segment configuration: %w", err)
 	}
@@ -58,7 +59,7 @@ func ClusterFromDB(conn *dbconn.DBConn, gphome string) (Cluster, error) {
 		return Cluster{}, err
 	}
 
-	c.Version = conn.Version
+	c.Version = version
 	c.GPHome = gphome
 
 	return c, nil

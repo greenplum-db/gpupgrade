@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/blang/semver/v4"
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"github.com/pkg/errors"
@@ -24,7 +25,7 @@ func TestGetTablespaces(t *testing.T) {
 	cases := []struct {
 		name           string
 		rows           [][]driver.Value
-		versionStr     string
+		version        semver.Version
 		expectedTuples TablespaceTuples
 		error          error
 	}{
@@ -34,7 +35,7 @@ func TestGetTablespaces(t *testing.T) {
 				{1, 1234, "pg_default", "/tmp/pg_default_tablespace", 0},
 				{2, 1235, "my_tablespace", "/tmp/my_tablespace", 1},
 			},
-			versionStr: "",
+			version: semver.MustParse("5.0.0"),
 			expectedTuples: TablespaceTuples{{
 				DbId: 1,
 				Oid:  1234,
@@ -55,16 +56,9 @@ func TestGetTablespaces(t *testing.T) {
 			error: nil,
 		},
 		{
-			name:           "not supported version",
-			rows:           nil,
-			versionStr:     "6.1.0",
-			expectedTuples: nil,
-			error:          errors.New("version not supported to retrieve tablespace information"),
-		},
-		{
 			name:           "tablespace query execution failed",
 			rows:           nil,
-			versionStr:     "",
+			version:        semver.MustParse("5.0.0"),
 			expectedTuples: nil,
 			error:          errors.New("tablespace query"),
 		},
@@ -88,10 +82,6 @@ func TestGetTablespaces(t *testing.T) {
 						t.Errorf("%v", err)
 					}
 				}()
-			}
-
-			if c.versionStr != "" {
-				testhelper.SetDBVersion(conn, c.versionStr)
 			}
 
 			results, err := GetTablespaceTuples(conn)
@@ -253,6 +243,7 @@ func TestTablespacesFromDB(t *testing.T) {
 
 	t.Run("returns an error if the tablespace query fails", func(t *testing.T) {
 		conn, mock := testhelper.CreateMockDBConn()
+
 		testhelper.ExpectVersionQuery(mock, "5.3.4")
 
 		queryErr := errors.New("failed to get tablespace information")

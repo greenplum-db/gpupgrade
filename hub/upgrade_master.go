@@ -76,7 +76,7 @@ func UpgradeMaster(args UpgradeMasterArgs) error {
 	}
 
 	// When upgrading from 5 the master must be provided with its standby's dbid to allow WAL to sync.
-	if args.Source.Version.Before("6") {
+	if args.Source.Version.Major == 5 {
 		if args.Source.HasStandby() {
 			options = append(options, upgrade.WithOldOptions(fmt.Sprintf("-x %d", args.Source.Standby().DbID)))
 		}
@@ -84,7 +84,7 @@ func UpgradeMaster(args UpgradeMasterArgs) error {
 
 	// FIXME: args.Target.Version comes from gp-common-go-libs, which uses a deprecated version of semver.
 	//   It is not compatible with the semver v4 we use in gpupgrade.
-	targetVersion := semver.MustParse(args.IntermediateTarget.Version.SemVer.String())
+	targetVersion := semver.MustParse(args.IntermediateTarget.Version.String())
 
 	err = upgrade.Run(pair, targetVersion, options...)
 	if err != nil {

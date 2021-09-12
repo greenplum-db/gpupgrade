@@ -15,8 +15,8 @@ import (
 	"syscall"
 	"testing"
 
+	"github.com/blang/semver/v4"
 	"github.com/golang/mock/gomock"
-	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/step"
@@ -169,7 +169,7 @@ func TestUpgradeMaster(t *testing.T) {
 		{ContentID: -1, Port: 5433, DataDir: "/data/new", DbID: 2, Role: "p"},
 	})
 	target.GPHome = "/usr/local/target"
-	target.Version = dbconn.NewVersion("6.15.0")
+	target.Version = semver.MustParse("6.15.0")
 
 	// We need a real temporary directory to change to. Replace MkdirAll() so
 	// that we can make sure the directory is the correct one.
@@ -294,7 +294,7 @@ func TestUpgradeMaster(t *testing.T) {
 		rsync.SetRsyncCommand(exectest.NewCommand(Success))
 		defer rsync.ResetRsyncCommand()
 
-		source.Version = dbconn.NewVersion("5.28.0")
+		source.Version = semver.MustParse("5.28.0")
 
 		err := UpgradeMaster(UpgradeMasterArgs{
 			Source:             source,
@@ -323,7 +323,7 @@ func TestUpgradeMaster(t *testing.T) {
 		rsync.SetRsyncCommand(exectest.NewCommand(Success))
 		defer rsync.ResetRsyncCommand()
 
-		source.Version = dbconn.NewVersion("6.10.0")
+		source.Version = semver.MustParse("6.10.0")
 
 		err := UpgradeMaster(UpgradeMasterArgs{
 			Source:             source,

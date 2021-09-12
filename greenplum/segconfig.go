@@ -4,6 +4,7 @@
 package greenplum
 
 import (
+	"github.com/blang/semver/v4"
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 )
@@ -44,9 +45,19 @@ func (s *SegConfig) IsOnHost(hostname string) bool {
 	return s.Hostname == hostname
 }
 
-func GetSegmentConfiguration(connection *dbconn.DBConn) ([]SegConfig, error) {
-	query := ""
-	if connection.Version.Before("6") {
+func GetSegmentConfiguration(connection *dbconn.DBConn, version semver.Version) ([]SegConfig, error) {
+	query := `
+SELECT
+	dbid,
+	content as contentid,
+	port,
+	hostname,
+	datadir,
+	role
+FROM gp_segment_configuration
+ORDER BY content, role;`
+
+	if version.Major == 5 {
 		query = `
 SELECT
 	s.dbid,
@@ -59,18 +70,7 @@ FROM gp_segment_configuration s
 JOIN pg_filespace_entry e ON s.dbid = e.fsedbid
 JOIN pg_filespace f ON e.fsefsoid = f.oid
 WHERE f.fsname = 'pg_system'
-ORDER BY s.content;`
-	} else {
-		query = `
-SELECT
-	dbid,
-	content as contentid,
-	port,
-	hostname,
-	datadir,
-	role
-FROM gp_segment_configuration
-ORDER BY content;`
+ORDER BY s.content, s.role;`
 	}
 
 	results := make([]SegConfig, 0)
@@ -82,7 +82,7 @@ ORDER BY content;`
 }
 
 func MustGetSegmentConfiguration(connection *dbconn.DBConn) []SegConfig {
-	segConfigs, err := GetSegmentConfiguration(connection)
+	segConfigs, err := GetSegmentConfiguration(connection, semver.Version{})
 	gplog.FatalOnError(err)
 	return segConfigs
 }

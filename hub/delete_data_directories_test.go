@@ -11,8 +11,8 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/blang/semver/v4"
 	"github.com/golang/mock/gomock"
-	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
@@ -173,7 +173,7 @@ func TestDeleteTablespaceDirectories(t *testing.T) {
 		{DbID: 4, ContentID: 1, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 		{DbID: 5, ContentID: 1, Hostname: "msdw2", DataDir: "/data/dbfast_mirror2/seg2", Role: greenplum.MirrorRole},
 	})
-	target.Version = dbconn.NewVersion("6.1.0")
+	target.Version = semver.MustParse("6.1.0")
 
 	t.Run("deletes tablespace directories only on the master", func(t *testing.T) {
 		tsDir1, _, tsLocation1 := testutils.MustMakeTablespaceDir(t, 16386)

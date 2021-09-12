@@ -158,7 +158,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_RevertResponse{
 		RevertResponse: &idl.RevertResponse{
-			SourceVersion:       s.Source.Version.VersionString,
+			SourceVersion:       s.Source.Version.String(),
 			LogArchiveDirectory: logArchiveDir,
 			Source: &idl.Cluster{
 				Port:                int32(s.Source.MasterPort()),
@@ -182,7 +182,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 // If the former hasn't run yet, then we do expect mirror failure upon start, so return true.
 func (s *Server) expectMirrorFailure() (bool, error) {
 	// mirror startup failure is expected only for GPDB 5x
-	if !s.Source.Version.Is("5") {
+	if s.Source.Version.Major != 5 {
 		return false, nil
 	}
 

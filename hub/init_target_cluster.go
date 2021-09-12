@@ -96,7 +96,7 @@ func (s *Server) InitTargetCluster(stream step.OutStreams) error {
 		s.IntermediateTarget.GPHome, s.initsystemConfPath(), version)
 }
 
-func GetCheckpointSegmentsAndEncoding(gpinitsystemConfig []string, version dbconn.GPDBVersion, dbConnector *dbconn.DBConn) ([]string, error) {
+func GetCheckpointSegmentsAndEncoding(gpinitsystemConfig []string, version semver.Version, dbConnector *dbconn.DBConn) ([]string, error) {
 	encoding, err := dbconn.SelectString(dbConnector, "SELECT current_setting('server_encoding') AS string")
 	if err != nil {
 		return gpinitsystemConfig, xerrors.Errorf("retrieve server encoding: %w", err)
@@ -104,7 +104,7 @@ func GetCheckpointSegmentsAndEncoding(gpinitsystemConfig []string, version dbcon
 	gpinitsystemConfig = append(gpinitsystemConfig, fmt.Sprintf("ENCODING=%s", encoding))
 
 	// The 7X guc max_wal_size supersedes checkpoint_segments and its default value is sufficient.
-	if version.Before("7") {
+	if version.Major < 7 {
 		checkpointSegments, err := dbconn.SelectString(dbConnector, "SELECT current_setting('checkpoint_segments') AS string")
 		if err != nil {
 			return gpinitsystemConfig, xerrors.Errorf("retrieve checkpoint segments: %w", err)

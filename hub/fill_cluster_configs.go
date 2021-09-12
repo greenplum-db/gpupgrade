@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
@@ -35,10 +34,15 @@ func FillConfiguration(config *Config, conn *sql.DB, _ step.OutStreams, request 
 		return err
 	}
 
+	sourceVersion, err := greenplum.LocalVersion(request.SourceGPHome)
+	if err != nil {
+		return err
+	}
+
 	// XXX ugly; we should just use the conn we're passed, but our DbConn
 	// concept (which isn't really used) gets in the way
 	sourceConn := db.NewDBConn("localhost", int(request.SourcePort), "template1")
-	source, err := greenplum.ClusterFromDB(sourceConn, request.SourceGPHome)
+	source, err := greenplum.ClusterFromDB(sourceConn, sourceVersion, request.SourceGPHome)
 	if err != nil {
 		return xerrors.Errorf("retrieve source configuration: %w", err)
 	}
@@ -67,15 +71,14 @@ func FillConfiguration(config *Config, conn *sql.DB, _ step.OutStreams, request 
 		return err
 	}
 
-	config.IntermediateTarget.Version = dbconn.NewVersion(targetVersion.String())
-	config.Target.Version = dbconn.NewVersion(targetVersion.String())
+	config.IntermediateTarget.Version = targetVersion
+	config.Target.Version = targetVersion
 
 	if err := ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(config.Source, config.IntermediateTarget); err != nil {
 		return err
 	}
 
-	// major version upgrade requires upgrading tablespaces
-	if sourceConn.Version.Is("5") {
+	if config.Source.Version.Major == 5 {
 		if err := utils.System.MkdirAll(utils.GetTablespaceDir(), 0700); err != nil {
 			return xerrors.Errorf("create tablespace directory %q: %w", utils.GetTablespaceDir(), err)
 		}

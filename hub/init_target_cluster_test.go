@@ -20,7 +20,6 @@ import (
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/blang/semver/v4"
-	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
@@ -91,11 +90,11 @@ func TestGetCheckpointSegmentsAndEncoding(t *testing.T) {
 
 	// the mock query order must match the query order in GetCheckpointSegmentsAndEncoding
 	cases := []struct {
-		version dbconn.GPDBVersion
+		version semver.Version
 		query   []mockQuery
 	}{
 		{
-			dbconn.NewVersion("5.0.0"),
+			semver.MustParse("5.0.0"),
 			[]mockQuery{
 				{
 					"SELECT .*server.*",
@@ -110,7 +109,7 @@ func TestGetCheckpointSegmentsAndEncoding(t *testing.T) {
 			},
 		},
 		{
-			dbconn.NewVersion("6.0.0"),
+			semver.MustParse("6.0.0"),
 			[]mockQuery{
 				{
 					"SELECT .*server.*",
@@ -125,7 +124,7 @@ func TestGetCheckpointSegmentsAndEncoding(t *testing.T) {
 			},
 		},
 		{
-			dbconn.NewVersion("7.0.0"),
+			semver.MustParse("7.0.0"),
 			[]mockQuery{
 				{
 					"SELECT .*server.*",
@@ -137,7 +136,7 @@ func TestGetCheckpointSegmentsAndEncoding(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		t.Run(fmt.Sprintf("successfully get the GUC values for %s", c.version.VersionString), func(t *testing.T) {
+		t.Run(fmt.Sprintf("successfully get the GUC values for %s", c.version.String()), func(t *testing.T) {
 			dbConn, sqlMock := testhelper.CreateAndConnectMockDB(1)
 
 			var expected []string

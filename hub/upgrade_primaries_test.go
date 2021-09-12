@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/blang/semver/v4"
 	"github.com/golang/mock/gomock"
-	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
@@ -23,14 +23,14 @@ func TestUpgradePrimaries(t *testing.T) {
 		{ContentID: 1, DbID: 3, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 	})
 	source.GPHome = "/usr/local/greenplum-db"
-	source.Version = dbconn.NewVersion("5.0.0")
+	source.Version = semver.MustParse("5.0.0")
 
 	target := hub.MustCreateCluster(t, []greenplum.SegConfig{
 		{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1_upgrade/seg1", Role: greenplum.PrimaryRole},
 		{ContentID: 1, DbID: 3, Hostname: "sdw2", DataDir: "/data/dbfast2_upgrade/seg2", Role: greenplum.PrimaryRole},
 	})
 	target.GPHome = "/usr/local/greenplum-db-new"
-	target.Version = dbconn.NewVersion("6.0.0")
+	target.Version = semver.MustParse("6.0.0")
 
 	segmentDbId2Tablespaces := map[int32]*idl.TablespaceInfo{
 		1663: &idl.TablespaceInfo{Name: "tblspc1", Location: "/tmp/primary1/1663", UserDefined: false},
@@ -75,7 +75,7 @@ func TestUpgradePrimaries(t *testing.T) {
 			&idl.UpgradePrimariesRequest{
 				SourceBinDir:               "/usr/local/greenplum-db/bin",
 				TargetBinDir:               "/usr/local/greenplum-db-new/bin",
-				TargetVersion:              dbconn.NewVersion("6.0.0").VersionString,
+				TargetVersion:              semver.MustParse("6.0.0").String(),
 				DataDirPairs:               pairs["sdw1"],
 				CheckOnly:                  false,
 				UseLinkMode:                false,
@@ -90,7 +90,7 @@ func TestUpgradePrimaries(t *testing.T) {
 			&idl.UpgradePrimariesRequest{
 				SourceBinDir:               "/usr/local/greenplum-db/bin",
 				TargetBinDir:               "/usr/local/greenplum-db-new/bin",
-				TargetVersion:              dbconn.NewVersion("6.0.0").VersionString,
+				TargetVersion:              semver.MustParse("6.0.0").String(),
 				DataDirPairs:               pairs["sdw2"],
 				CheckOnly:                  false,
 				UseLinkMode:                false,
@@ -148,7 +148,7 @@ func TestUpgradePrimaries(t *testing.T) {
 					&idl.UpgradePrimariesRequest{
 						SourceBinDir:    "/usr/local/greenplum-db/bin",
 						TargetBinDir:    "/usr/local/greenplum-db-new/bin",
-						TargetVersion:   dbconn.NewVersion("6.0.0").VersionString,
+						TargetVersion:   semver.MustParse("6.0.0").String(),
 						DataDirPairs:    pairs["sdw1"],
 						CheckOnly:       c.CheckOnly,
 						UseLinkMode:     false,
@@ -163,7 +163,7 @@ func TestUpgradePrimaries(t *testing.T) {
 					&idl.UpgradePrimariesRequest{
 						SourceBinDir:               "/usr/local/greenplum-db/bin",
 						TargetBinDir:               "/usr/local/greenplum-db-new/bin",
-						TargetVersion:              dbconn.NewVersion("6.0.0").VersionString,
+						TargetVersion:              semver.MustParse("6.0.0").String(),
 						DataDirPairs:               pairs["sdw2"],
 						CheckOnly:                  c.CheckOnly,
 						UseLinkMode:                false,

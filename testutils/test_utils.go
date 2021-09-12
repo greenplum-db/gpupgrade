@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/greenplum-db/gp-common-go-libs/dbconn"
+	"github.com/blang/semver/v4"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/upgrade"
@@ -40,7 +40,7 @@ func CreateMultinodeSampleCluster(baseDir string) *greenplum.Cluster {
 
 // TODO remove in favor of MustCreateCluster
 func CreateMultinodeSampleClusterPair(baseDir string) (*greenplum.Cluster, *greenplum.Cluster) {
-	gpdbVersion := dbconn.NewVersion("6.0.0")
+	gpdbVersion := semver.MustParse("6.0.0")
 
 	sourceCluster := CreateMultinodeSampleCluster(baseDir)
 	sourceCluster.GPHome = "/usr/local/source"
@@ -219,12 +219,12 @@ func VerifyRename(t *testing.T, source, target string) {
 
 }
 
-func PathMustExist(t *testing.T, path string){
+func PathMustExist(t *testing.T, path string) {
 	t.Helper()
 	checkPath(t, path, true)
 }
 
-func PathMustNotExist(t *testing.T, path string){
+func PathMustNotExist(t *testing.T, path string) {
 	t.Helper()
 	checkPath(t, path, false)
 }

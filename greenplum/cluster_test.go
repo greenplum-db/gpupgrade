@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
+	"github.com/blang/semver/v4"
 	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 
@@ -219,7 +220,7 @@ func TestGetSegmentConfiguration(t *testing.T) {
 				}
 			}()
 
-			results, err := greenplum.GetSegmentConfiguration(connection)
+			results, err := greenplum.GetSegmentConfiguration(connection, semver.Version{})
 			if err != nil {
 				t.Errorf("returned error %+v", err)
 			}
@@ -238,7 +239,7 @@ func TestPrimaryHostnames(t *testing.T) {
 	}
 	expectedCluster := testutils.CreateMultinodeSampleCluster("/tmp")
 	expectedCluster.GPHome = "/fake/path"
-	expectedCluster.Version = dbconn.NewVersion("6.0.0")
+	expectedCluster.Version = semver.MustParse("6.0.0")
 	testlog.SetupLogger()
 
 	defer func() {
@@ -273,7 +274,7 @@ func TestClusterFromDB(t *testing.T) {
 		conn := dbconn.NewDBConnFromEnvironment("testdb")
 		conn.Driver = testhelper.TestDriver{ErrToReturn: connErr}
 
-		actualCluster, err := greenplum.ClusterFromDB(conn, "")
+		actualCluster, err := greenplum.ClusterFromDB(conn, semver.MustParse("0.0.0"), "")
 
 		if err == nil {
 			t.Errorf("Expected an error, but got nil")
@@ -293,7 +294,7 @@ func TestClusterFromDB(t *testing.T) {
 		queryErr := errors.New("failed to get segment configuration")
 		mock.ExpectQuery("SELECT .* FROM gp_segment_configuration").WillReturnError(queryErr)
 
-		actualCluster, err := greenplum.ClusterFromDB(conn, "")
+		actualCluster, err := greenplum.ClusterFromDB(conn, semver.MustParse("0.0.0"), "")
 
 		if err == nil {
 			t.Errorf("Expected an error, but got nil")
@@ -313,15 +314,15 @@ func TestClusterFromDB(t *testing.T) {
 		mock.ExpectQuery("SELECT .* FROM gp_segment_configuration").WillReturnRows(testutils.MockSegmentConfiguration())
 
 		gphome := "/usr/local/gpdb"
-
-		actualCluster, err := greenplum.ClusterFromDB(conn, gphome)
+		version := semver.MustParse("5.3.4")
+		actualCluster, err := greenplum.ClusterFromDB(conn, version, gphome)
 		if err != nil {
 			t.Errorf("got unexpected error: %+v", err)
 		}
 
 		expectedCluster := testutils.MockCluster()
-		expectedCluster.Version = dbconn.NewVersion("5.3.4")
-		expectedCluster.GPHome = gphome
+		expectedCluster.Version = semver.MustParse("5.3.4")
+		expectedCluster.GPHome = "/usr/local/gpdb"
 
 		if !reflect.DeepEqual(&actualCluster, expectedCluster) {
 			t.Errorf("got: %#v want: %#v ", &actualCluster, expectedCluster)

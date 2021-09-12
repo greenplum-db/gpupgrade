@@ -89,7 +89,7 @@ func RsyncMasterAndPrimariesTablespaces(stream step.OutStreams, agentConns []*id
 // a primary results in a checkpoint that does not get replicated on the mirror.
 // Thus, when the mirror is started it panics and a gprecoverseg or rsync is needed.
 func Recoverseg(stream step.OutStreams, cluster *greenplum.Cluster, useHbaHostnames bool) error {
-	if cluster.Version.AtLeast("6") {
+	if cluster.Version.Major > 5 {
 		return nil
 	}
 

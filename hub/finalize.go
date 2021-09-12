@@ -6,7 +6,6 @@ package hub
 import (
 	"fmt"
 
-	"github.com/blang/semver/v4"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/xerrors"
 
@@ -65,7 +64,7 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 
 	st.Run(idl.Substep_UPDATE_TARGET_CONF_FILES, func(streams step.OutStreams) error {
 		return UpdateConfFiles(streams,
-			semver.MustParse(s.Target.Version.SemVer.String()),
+			s.Target.Version,
 			s.Target.MasterDataDir(),
 			s.IntermediateTarget.MasterPort(),
 			s.Target.MasterPort(),
@@ -132,7 +131,7 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_FinalizeResponse{
 		FinalizeResponse: &idl.FinalizeResponse{
-			TargetVersion:                     s.Target.Version.VersionString,
+			TargetVersion:                     s.Target.Version.String(),
 			LogArchiveDirectory:               logArchiveDir,
 			ArchivedSourceMasterDataDirectory: s.Config.IntermediateTarget.MasterDataDir() + upgrade.OldSuffix,
 			UpgradeID:                         s.Config.UpgradeID.String(),

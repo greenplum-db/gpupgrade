@@ -32,7 +32,7 @@ func UpgradePrimaries(args UpgradePrimaryArgs) error {
 		_, err := conn.AgentClient.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{
 			SourceBinDir:               filepath.Join(args.Source.GPHome, "bin"),
 			TargetBinDir:               filepath.Join(args.IntermediateTarget.GPHome, "bin"),
-			TargetVersion:              args.IntermediateTarget.Version.SemVer.String(),
+			TargetVersion:              args.IntermediateTarget.Version.String(),
 			DataDirPairs:               args.DataDirPairMap[conn.Hostname],
 			CheckOnly:                  args.CheckOnly,
 			UseLinkMode:                args.UseLinkMode,

@@ -91,7 +91,7 @@ func DeleteTargetTablespacesOnMaster(streams step.OutStreams, target *greenplum.
 			continue
 		}
 
-		path := upgrade.TablespacePath(tsInfo.Location, target.Master().DbID, target.Version.SemVer.Major, catalogVersion)
+		path := upgrade.TablespacePath(tsInfo.Location, target.Master().DbID, target.Version.Major, catalogVersion)
 		dirs = append(dirs, path)
 	}
 
@@ -120,7 +120,7 @@ func DeleteTargetTablespacesOnPrimaries(agentConns []*idl.Connection, target *gr
 					continue
 				}
 
-				path := upgrade.TablespacePath(tsInfo.Location, seg.DbID, target.Version.SemVer.Major, catalogVersion)
+				path := upgrade.TablespacePath(tsInfo.Location, seg.DbID, target.Version.Major, catalogVersion)
 				dirs = append(dirs, path)
 			}
 		}
