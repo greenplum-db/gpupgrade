@@ -39,7 +39,7 @@ func TestGetTablespaces(t *testing.T) {
 				DbId: 1,
 				Oid:  1234,
 				Name: "pg_default",
-				TablespaceInfo: &TablespaceInfo{
+				Info: TablespaceInfo{
 					Location:    "/tmp/pg_default_tablespace",
 					UserDefined: 0,
 				},
@@ -47,7 +47,7 @@ func TestGetTablespaces(t *testing.T) {
 				DbId: 2,
 				Oid:  1235,
 				Name: "my_tablespace",
-				TablespaceInfo: &TablespaceInfo{
+				Info: TablespaceInfo{
 					Location:    "/tmp/my_tablespace",
 					UserDefined: 1,
 				},
@@ -119,7 +119,7 @@ func TestNewTablespaces(t *testing.T) {
 					DbId: 1,
 					Oid:  1663,
 					Name: "pg_default",
-					TablespaceInfo: &TablespaceInfo{
+					Info: TablespaceInfo{
 						Location:    "/tmp/master/gpseg-1",
 						UserDefined: 0,
 					},
@@ -128,7 +128,7 @@ func TestNewTablespaces(t *testing.T) {
 					DbId: 2,
 					Oid:  1663,
 					Name: "pg_default",
-					TablespaceInfo: &TablespaceInfo{
+					Info: TablespaceInfo{
 						Location:    "/tmp/primary/gpseg-1",
 						UserDefined: 0,
 					},
@@ -156,7 +156,7 @@ func TestNewTablespaces(t *testing.T) {
 					DbId: 1,
 					Oid:  1663,
 					Name: "pg_default",
-					TablespaceInfo: &TablespaceInfo{
+					Info: TablespaceInfo{
 						Location:    "/tmp/master/gpseg-1",
 						UserDefined: 0,
 					},
@@ -165,7 +165,7 @@ func TestNewTablespaces(t *testing.T) {
 					DbId: 1,
 					Oid:  1664,
 					Name: "my_tablespace",
-					TablespaceInfo: &TablespaceInfo{
+					Info: TablespaceInfo{
 						Location:    "/tmp/master/1664",
 						UserDefined: 1,
 					},
@@ -174,7 +174,7 @@ func TestNewTablespaces(t *testing.T) {
 					DbId: 2,
 					Oid:  1663,
 					Name: "pg_default",
-					TablespaceInfo: &TablespaceInfo{
+					Info: TablespaceInfo{
 						Location:    "/tmp/primary/gpseg0",
 						UserDefined: 0,
 					},
@@ -183,7 +183,7 @@ func TestNewTablespaces(t *testing.T) {
 					DbId: 2,
 					Oid:  1664,
 					Name: "my_tablespace",
-					TablespaceInfo: &TablespaceInfo{
+					Info: TablespaceInfo{
 						Location:    "/tmp/primary/1664",
 						UserDefined: 1,
 					},
@@ -362,19 +362,19 @@ func TestWrite(t *testing.T) {
 			name: "successfully writes to buffer",
 			tuples: TablespaceTuples{
 				Tablespace{
-					1,
-					1663,
-					"default",
-					&TablespaceInfo{
+					DbId: 1,
+					Oid:  1663,
+					Name: "default",
+					Info: TablespaceInfo{
 						"/tmp/master/gpseg-1",
 						0,
 					},
 				},
 				Tablespace{
-					2,
-					1664,
-					"my_tablespace",
-					&TablespaceInfo{
+					DbId: 2,
+					Oid:  1664,
+					Name: "my_tablespace",
+					Info: TablespaceInfo{
 						"/tmp/master/gpseg-1",
 						1,
 					},

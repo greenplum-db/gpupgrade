@@ -57,7 +57,7 @@ type Tablespace struct {
 	DbId int
 	Oid  int
 	Name string
-	*TablespaceInfo
+	Info TablespaceInfo
 }
 
 func (t Tablespaces) GetMasterTablespaces() SegmentTablespaces {
@@ -107,7 +107,7 @@ func GetTablespaceTuples(connection *dbconn.DBConn) (TablespaceTuples, error) {
 func NewTablespaces(tuples TablespaceTuples) Tablespaces {
 	clusterTablespaceMap := make(Tablespaces)
 	for _, t := range tuples {
-		tablespaceInfo := TablespaceInfo{Location: t.Location, UserDefined: t.UserDefined}
+		tablespaceInfo := TablespaceInfo{Location: t.Info.Location, UserDefined: t.Info.UserDefined}
 		if segTablespaceMap, ok := clusterTablespaceMap[t.DbId]; ok {
 			segTablespaceMap[t.Oid] = tablespaceInfo
 			clusterTablespaceMap[t.DbId] = segTablespaceMap
@@ -129,8 +129,8 @@ func (t TablespaceTuples) Write(w io.Writer) error {
 			strconv.Itoa(tablespace.DbId),
 			strconv.Itoa(tablespace.Oid),
 			tablespace.Name,
-			tablespace.Location,
-			strconv.Itoa(tablespace.UserDefined)}
+			tablespace.Info.Location,
+			strconv.Itoa(tablespace.Info.UserDefined)}
 		if err := writer.Write(line); err != nil {
 			return xerrors.Errorf("write record %q: %w", line, err)
 		}
