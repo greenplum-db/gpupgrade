@@ -150,29 +150,6 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 		}
 	})
 
-	t.Run("does not restore the mirrors in copy mode on GPDB6 or higher", func(t *testing.T) {
-		defer func() {
-			cluster.Version = semver.MustParse("5.0.0")
-		}()
-
-		cluster.Version = semver.MustParse("6.0.0")
-		called := false
-
-		defer ResetRecoversegCmd()
-		hub.RecoversegCmd = exectest.NewCommandWithVerifier(hub.Success, func(utility string, args ...string) {
-			called = true
-		})
-
-		err := hub.Recoverseg(&testutils.DevNullWithClose{}, cluster, false)
-		if err != nil {
-			t.Errorf("unexpected err %#v", err)
-		}
-
-		if called {
-			t.Errorf("expected gprecoverseg to not be called")
-		}
-	})
-
 	t.Run("restores primaries using correct gRPC arguments", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
