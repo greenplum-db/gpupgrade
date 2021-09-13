@@ -6,6 +6,7 @@ package hub
 import (
 	"bufio"
 	"bytes"
+	"database/sql"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -16,40 +17,48 @@ import (
 	"strings"
 
 	"github.com/blang/semver/v4"
-	"github.com/greenplum-db/gp-common-go-libs/dbconn"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
-	"github.com/greenplum-db/gpupgrade/db"
+	"github.com/greenplum-db/gpupgrade/db/connURI"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
 var ErrUnknownCatalogVersion = errors.New("pg_controldata output is missing catalog version")
 
 func (s *Server) GenerateInitsystemConfig() error {
-	sourceDBConn := db.NewDBConn("localhost", s.Source.MasterPort(), "template1")
-	return s.writeConf(sourceDBConn)
+	options := []connURI.Option{
+		connURI.ToSource(),
+		connURI.Port(s.Source.MasterPort()),
+	}
+
+	db, err := sql.Open("pgx", s.Connection.URI(options...))
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if cerr := db.Close(); cerr != nil {
+			err = errorlist.Append(err, cerr)
+		}
+	}()
+
+	return s.writeConf(db)
 }
 
 func (s *Server) initsystemConfPath() string {
 	return filepath.Join(s.StateDir, "gpinitsystem_config")
 }
 
-func (s *Server) writeConf(sourceDBConn *dbconn.DBConn) error {
-	err := sourceDBConn.Connect(1)
-	if err != nil {
-		return xerrors.Errorf("connect to database: %w", err)
-	}
-	defer sourceDBConn.Close()
-
+func (s *Server) writeConf(db *sql.DB) error {
 	gpinitsystemConfig, err := CreateInitialInitsystemConfig(s.IntermediateTarget.MasterDataDir(), s.UseHbaHostnames)
 	if err != nil {
 		return err
 	}
 
-	gpinitsystemConfig, err = GetCheckpointSegmentsAndEncoding(gpinitsystemConfig, s.Source.Version, sourceDBConn)
+	gpinitsystemConfig, err = GetCheckpointSegmentsAndEncoding(gpinitsystemConfig, s.Source.Version, db)
 	if err != nil {
 		return err
 	}
@@ -96,19 +105,23 @@ func (s *Server) InitTargetCluster(stream step.OutStreams) error {
 		s.IntermediateTarget.GPHome, s.initsystemConfPath(), version)
 }
 
-func GetCheckpointSegmentsAndEncoding(gpinitsystemConfig []string, version semver.Version, dbConnector *dbconn.DBConn) ([]string, error) {
-	encoding, err := dbconn.SelectString(dbConnector, "SELECT current_setting('server_encoding') AS string")
+func GetCheckpointSegmentsAndEncoding(gpinitsystemConfig []string, version semver.Version, db *sql.DB) ([]string, error) {
+	var encoding string
+	err := db.QueryRow("SELECT current_setting('server_encoding') AS string").Scan(&encoding)
 	if err != nil {
 		return gpinitsystemConfig, xerrors.Errorf("retrieve server encoding: %w", err)
 	}
+
 	gpinitsystemConfig = append(gpinitsystemConfig, fmt.Sprintf("ENCODING=%s", encoding))
 
 	// The 7X guc max_wal_size supersedes checkpoint_segments and its default value is sufficient.
 	if version.Major < 7 {
-		checkpointSegments, err := dbconn.SelectString(dbConnector, "SELECT current_setting('checkpoint_segments') AS string")
+		var checkpointSegments string
+		err := db.QueryRow("SELECT current_setting('checkpoint_segments') AS string").Scan(&checkpointSegments)
 		if err != nil {
 			return gpinitsystemConfig, xerrors.Errorf("retrieve checkpoint segments: %w", err)
 		}
+
 		gpinitsystemConfig = append(gpinitsystemConfig, fmt.Sprintf("CHECK_POINT_SEGMENTS=%s", checkpointSegments))
 	}
 

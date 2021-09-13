@@ -20,7 +20,6 @@ import (
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/blang/semver/v4"
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/step"
@@ -137,16 +136,21 @@ func TestGetCheckpointSegmentsAndEncoding(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(fmt.Sprintf("successfully get the GUC values for %s", c.version.String()), func(t *testing.T) {
-			dbConn, sqlMock := testhelper.CreateAndConnectMockDB(1)
+			db, mock, err := sqlmock.New()
+			if err != nil {
+				t.Fatalf("sqlmock: %v", err)
+			}
+			defer testutils.FinishMock(mock, t)
+			defer db.Close()
 
 			var expected []string
-			for _, mock := range c.query {
-				mockRow := sqlmock.NewRows([]string{"string"}).AddRow(driver.Value(mock.result))
-				sqlMock.ExpectQuery(mock.sql).WillReturnRows(mockRow)
-				expected = append(expected, mock.expected)
+			for _, query := range c.query {
+				mockRow := sqlmock.NewRows([]string{"string"}).AddRow(driver.Value(query.result))
+				mock.ExpectQuery(query.sql).WillReturnRows(mockRow)
+				expected = append(expected, query.expected)
 			}
 
-			actual, err := GetCheckpointSegmentsAndEncoding([]string{}, c.version, dbConn)
+			actual, err := GetCheckpointSegmentsAndEncoding([]string{}, c.version, db)
 			if err != nil {
 				t.Fatalf("got %#v, want nil", err)
 			}
