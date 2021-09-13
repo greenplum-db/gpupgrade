@@ -26,7 +26,6 @@ import (
 	"google.golang.org/grpc/reflection"
 	grpcStatus "google.golang.org/grpc/status"
 
-	"github.com/greenplum-db/gpupgrade/db/connURI"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/upgrade"
@@ -366,7 +365,7 @@ type Config struct {
 	// Connection is a utility object that generates connection URIs to the
 	// source or target databases.  It also contains the Source.Version and
 	// Target.Version internally.
-	Connection *connURI.Conn
+	Connection *greenplum.Conn
 
 	Port            int
 	AgentPort       int

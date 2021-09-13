@@ -8,8 +8,6 @@ import (
 	"testing"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
-	"github.com/greenplum-db/gp-common-go-libs/dbconn"
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 )
@@ -57,14 +55,4 @@ func MockCluster() *greenplum.Cluster {
 	}
 
 	return &c
-}
-
-// CreateMockDBConn is just like testhelper.CreateAndConnectMockDB(), but it
-// doesn't actually connect or set a version.
-func CreateMockDBConn() (*dbconn.DBConn, sqlmock.Sqlmock) {
-	mockdb, mock := testhelper.CreateMockDB()
-	driver := testhelper.TestDriver{DB: mockdb, DBName: "testdb", User: "testrole"}
-	connection := dbconn.NewDBConnFromEnvironment("testdb")
-	connection.Driver = driver
-	return connection, mock
 }

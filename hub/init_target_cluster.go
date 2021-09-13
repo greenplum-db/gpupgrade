@@ -21,7 +21,6 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
-	"github.com/greenplum-db/gpupgrade/db/connURI"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
@@ -30,9 +29,9 @@ import (
 var ErrUnknownCatalogVersion = errors.New("pg_controldata output is missing catalog version")
 
 func (s *Server) GenerateInitsystemConfig() error {
-	options := []connURI.Option{
-		connURI.ToSource(),
-		connURI.Port(s.Source.MasterPort()),
+	options := []greenplum.Option{
+		greenplum.ToSource(),
+		greenplum.Port(s.Source.MasterPort()),
 	}
 
 	db, err := sql.Open("pgx", s.Connection.URI(options...))

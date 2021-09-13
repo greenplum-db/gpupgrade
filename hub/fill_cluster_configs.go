@@ -12,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
-	"github.com/greenplum-db/gpupgrade/db/connURI"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/upgrade"
@@ -23,11 +22,11 @@ import (
 // FillConfiguration populates as much of the passed Config as possible, given a
 // connection to the source cluster and the settings contained in an
 // InitializeRequest from the client. The configuration is then saved to disk.
-func FillConfiguration(config *Config, request *idl.InitializeRequest, conn *connURI.Conn, saveConfig func() error) error {
-	options := []connURI.Option{
-		connURI.ToSource(),
-		connURI.Port(int(request.SourcePort)),
-		connURI.UtilityMode(),
+func FillConfiguration(config *Config, request *idl.InitializeRequest, conn *greenplum.Conn, saveConfig func() error) error {
+	options := []greenplum.Option{
+		greenplum.ToSource(),
+		greenplum.Port(int(request.SourcePort)),
+		greenplum.UtilityMode(),
 	}
 
 	db, err := sql.Open("pgx", conn.URI(options...))

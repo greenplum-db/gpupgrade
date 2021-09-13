@@ -12,7 +12,6 @@ import (
 
 	"golang.org/x/xerrors"
 
-	"github.com/greenplum-db/gpupgrade/db/connURI"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
@@ -92,11 +91,11 @@ func waitForFTS(db *sql.DB, timeout time.Duration) error {
 	}
 }
 
-func UpgradeMirrors(stateDir string, conn *connURI.Conn, masterPort int, mirrors []greenplum.SegConfig, targetRunner greenplum.Runner, useHbaHostnames bool) (err error) {
-	options := []connURI.Option{
-		connURI.ToTarget(),
-		connURI.Port(masterPort),
-		connURI.UtilityMode(),
+func UpgradeMirrors(stateDir string, conn *greenplum.Conn, masterPort int, mirrors []greenplum.SegConfig, targetRunner greenplum.Runner, useHbaHostnames bool) (err error) {
+	options := []greenplum.Option{
+		greenplum.ToTarget(),
+		greenplum.Port(masterPort),
+		greenplum.UtilityMode(),
 	}
 
 	db, err := utils.System.SqlOpen("pgx", conn.URI(options...))

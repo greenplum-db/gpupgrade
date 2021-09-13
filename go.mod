@@ -10,15 +10,13 @@ require (
 	github.com/golang/protobuf v1.3.2
 	github.com/google/renameio v0.1.0
 	github.com/greenplum-db/gp-common-go-libs v1.0.4
-	github.com/jackc/pgx v3.2.0+incompatible
+	github.com/jackc/pgx/v4 v4.13.0
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
-	github.com/lib/pq v1.8.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
-	github.com/stretchr/testify v1.5.1 // indirect
-	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
-	golang.org/x/sys v0.0.0-20200806125547-5acd03effb82
+	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97
+	golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	google.golang.org/grpc v1.24.0
 )

@@ -1,17 +1,15 @@
 //  Copyright (c) 2017-2021 VMware, Inc. or its affiliates
 //  SPDX-License-Identifier: Apache-2.0
 
-package connURI
+package greenplum
 
 import (
 	"fmt"
 
 	"github.com/blang/semver/v4"
+	_ "github.com/greenplum-db/gp-common-go-libs/dbconn" // used indirectly as the database driver
+	_ "github.com/jackc/pgx/v4"                          // used indirectly as the database driver
 )
-
-// NOTE: This package is specific to the supported upgrade matrix of gpupgrade.
-// For instance, URI() will return the wrong result if the request is to
-// AllowSystemTableMods() on a 5X cluster as that parameter differs from 6X and 7X.
 
 // TODO: we should add the source/target ports here too, but they
 //  are known after we need to first call this package.

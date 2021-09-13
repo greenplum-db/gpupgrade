@@ -10,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
-	"github.com/greenplum-db/gpupgrade/db/connURI"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
@@ -40,12 +39,12 @@ func (s *Server) UpdateCatalogAndClusterConfig(streams step.OutStreams) (err err
 	return nil
 }
 
-func WithinDbConnection(conn *connURI.Conn, masterPort int, operation func(connection *sql.DB) error) (err error) {
-	options := []connURI.Option{
-		connURI.ToTarget(),
-		connURI.Port(masterPort),
-		connURI.UtilityMode(),
-		connURI.AllowSystemTableMods(),
+func WithinDbConnection(conn *greenplum.Conn, masterPort int, operation func(connection *sql.DB) error) (err error) {
+	options := []greenplum.Option{
+		greenplum.ToTarget(),
+		greenplum.Port(masterPort),
+		greenplum.UtilityMode(),
+		greenplum.AllowSystemTableMods(),
 	}
 
 	connURI := conn.URI(options...)

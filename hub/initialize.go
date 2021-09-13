@@ -11,7 +11,6 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/xerrors"
 
-	"github.com/greenplum-db/gpupgrade/db/connURI"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
@@ -46,7 +45,7 @@ func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initi
 			return err
 		}
 
-		conn := connURI.Connection(sourceVersion, targetVersion)
+		conn := greenplum.Connection(sourceVersion, targetVersion)
 		s.Connection = conn
 
 		return nil
