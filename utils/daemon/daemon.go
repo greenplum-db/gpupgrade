@@ -192,7 +192,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 // daemonizableCommand is the interface required by waitForDaemon; exec.Command
@@ -367,7 +367,7 @@ func MakeDaemonizable(cmd *cobra.Command, shouldDaemonize *bool) {
 	// If --daemonize isn't passed, this defers to the original PreRun[E]
 	// function, if one existed.
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
-		if *shouldDaemonize && terminal.IsTerminal(int(os.Stdout.Fd())) {
+		if *shouldDaemonize && term.IsTerminal(int(os.Stdout.Fd())) {
 			// Shouldn't be using --daemon from the command line.
 			return fmt.Errorf("--daemon is an internal option (did you mean --daemonize?)")
 		}
