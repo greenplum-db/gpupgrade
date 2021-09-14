@@ -5,7 +5,6 @@ package hub
 
 import (
 	"bytes"
-	"database/sql"
 	"errors"
 	"flag"
 	"io/ioutil"
@@ -16,7 +15,6 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/blang/semver/v4"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -311,68 +309,6 @@ func TestDoUpgrade(t *testing.T) {
 		err = doUpgrade(db, "/state/dir", []greenplum.SegConfig{}, stub, false)
 		if !errors.Is(err, expected) {
 			t.Errorf("returned error %#v want %#v", err, expected)
-		}
-	})
-}
-
-func TestUpgradeMirrors(t *testing.T) {
-	stub := &greenplumStub{
-		func(utility string, arguments ...string) error {
-			return nil
-		},
-	}
-
-	conn := greenplum.Connection(semver.MustParse("6.0.0"), semver.MustParse("7.0.0"))
-
-	t.Run("creates db connection with correct data source settings", func(t *testing.T) {
-		db, mock, err := sqlmock.New()
-		if err != nil {
-			t.Fatalf("couldn't create sqlmock: %v", err)
-		}
-		defer testutils.FinishMock(mock, t)
-
-		_, writePipe, err := os.Pipe()
-		if err != nil {
-			t.Fatalf("couldn't create pipe: %v", err)
-		}
-
-		utils.System.Create = func(name string) (*os.File, error) {
-			return writePipe, nil
-		}
-
-		expectFtsProbe(mock)
-		expectMirrorsAndReturn(mock, "t")
-
-		utils.System.SqlOpen = func(driverName, dataSourceName string) (*sql.DB, error) {
-			options := []greenplum.Option{
-				greenplum.ToTarget(),
-				greenplum.Port(123),
-				greenplum.UtilityMode(),
-			}
-
-			expected := conn.URI(options...)
-			if dataSourceName != expected {
-				t.Errorf("got: %q want: %q", dataSourceName, expected)
-			}
-
-			return db, nil
-		}
-
-		err = UpgradeMirrors("", conn, 123, []greenplum.SegConfig{}, stub, false)
-		if err != nil {
-			t.Errorf("unexpected error: %#v", err)
-		}
-	})
-
-	t.Run("returns error when failing to open db connection", func(t *testing.T) {
-		expected := errors.New("failed to open db")
-		utils.System.SqlOpen = func(driverName, dataSourceName string) (*sql.DB, error) {
-			return nil, expected
-		}
-
-		err := UpgradeMirrors("", conn, 123, []greenplum.SegConfig{}, stub, false)
-		if !errors.Is(err, expected) {
-			t.Errorf("got: %#v want: %#v", err, expected)
 		}
 	})
 }

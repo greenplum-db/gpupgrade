@@ -9,6 +9,7 @@ import (
 	"github.com/blang/semver/v4"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 )
 
 var v5X = semver.MustParse("5.0.0")
@@ -16,6 +17,8 @@ var v6X = semver.MustParse("6.0.0")
 var v7X = semver.MustParse("7.0.0")
 
 func TestConnURI(t *testing.T) {
+	testlog.SetupLogger()
+
 	cases := []struct {
 		name     string
 		source   semver.Version

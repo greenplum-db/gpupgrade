@@ -98,12 +98,15 @@ func UpgradeMirrors(stateDir string, conn *greenplum.Conn, masterPort int, mirro
 		greenplum.UtilityMode(),
 	}
 
-	db, err := utils.System.SqlOpen("pgx", conn.URI(options...))
+	db, err := sql.Open("pgx", conn.URI(options...))
 	if err != nil {
 		return err
 	}
-
-	defer db.Close()
+	defer func() {
+		if cErr := db.Close(); cErr != nil {
+			err = errorlist.Append(err, cErr)
+		}
+	}()
 
 	return doUpgrade(db, stateDir, mirrors, targetRunner, useHbaHostnames)
 }

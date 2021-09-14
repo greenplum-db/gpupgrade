@@ -39,8 +39,8 @@ func (s *Server) GenerateInitsystemConfig() error {
 		return err
 	}
 	defer func() {
-		if cerr := db.Close(); cerr != nil {
-			err = errorlist.Append(err, cerr)
+		if cErr := db.Close(); cErr != nil {
+			err = errorlist.Append(err, cErr)
 		}
 	}()
 

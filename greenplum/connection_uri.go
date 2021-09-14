@@ -8,7 +8,8 @@ import (
 
 	"github.com/blang/semver/v4"
 	_ "github.com/greenplum-db/gp-common-go-libs/dbconn" // used indirectly as the database driver
-	_ "github.com/jackc/pgx/v4"                          // used indirectly as the database driver
+	"github.com/greenplum-db/gp-common-go-libs/gplog"
+	_ "github.com/jackc/pgx/v4" // used indirectly as the database driver
 )
 
 // TODO: we should add the source/target ports here too, but they
@@ -29,8 +30,10 @@ func Connection(sourceVersion semver.Version, targetVersion semver.Version) *Con
 func (c *Conn) URI(options ...Option) string {
 	opts := newOptionList(options...)
 
+	destination := "source"
 	version := c.SourceVersion
 	if opts.connectToTarget {
+		destination = "target"
 		version = c.TargetVersion
 	}
 
@@ -48,6 +51,7 @@ func (c *Conn) URI(options ...Option) string {
 		connURI += "&allow_system_table_mods=true"
 	}
 
+	gplog.Debug("connecting to %s cluster using: %q", destination, connURI)
 	return connURI
 }
 
