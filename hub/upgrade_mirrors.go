@@ -4,38 +4,83 @@
 package hub
 
 import (
+	"bytes"
 	"database/sql"
 	"fmt"
-	"io"
-	"path/filepath"
+	"os"
 	"time"
 
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-const defaultFTSTimeout = 2 * time.Minute
+func UpgradeMirrors(streams step.OutStreams, conn *greenplum.Conn, intermediate *greenplum.Cluster, useHbaHostnames bool) (err error) {
+	err = writeAddMirrorsConfig(intermediate)
+	if err != nil {
+		return err
+	}
 
-func writeGpAddmirrorsConfig(mirrors []greenplum.SegConfig, out io.Writer) error {
-	for _, m := range mirrors {
-		_, err := fmt.Fprintf(out, "%d|%s|%d|%s\n", m.ContentID, m.Hostname, m.Port, m.DataDir)
+	err = runGpAddMirrors(greenplum.NewRunner(intermediate, streams), useHbaHostnames)
+	if err != nil {
+		return err
+	}
+
+	options := []greenplum.Option{
+		greenplum.ToTarget(),
+		greenplum.Port(intermediate.MasterPort()),
+		greenplum.UtilityMode(),
+	}
+
+	db, err := sql.Open("pgx", conn.URI(options...))
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if cErr := db.Close(); cErr != nil {
+			err = errorlist.Append(err, cErr)
+		}
+	}()
+
+	return waitForFTS(db, 2*time.Minute)
+}
+
+func writeAddMirrorsConfig(intermediate *greenplum.Cluster) error {
+	var config bytes.Buffer
+	for _, m := range intermediate.Mirrors {
+		if m.IsStandby() {
+			continue
+		}
+
+		_, err := fmt.Fprintf(&config, "%d|%s|%d|%s\n", m.ContentID, m.Hostname, m.Port, m.DataDir)
 		if err != nil {
 			return err
 		}
 	}
+
+	err := os.WriteFile(utils.GetAddMirrorsConfig(), config.Bytes(), 0644)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func runAddMirrors(r greenplum.Runner, filepath string, useHbaHostnames bool) error {
-	args := []string{"-a", "-i", filepath}
+func runGpAddMirrors(targetRunner greenplum.Runner, useHbaHostnames bool) error {
+	args := []string{"-a", "-i", utils.GetAddMirrorsConfig()}
 	if useHbaHostnames {
 		args = append(args, "--hba-hostnames")
 	}
 
-	return r.Run("gpaddmirrors", args...)
+	err := targetRunner.Run("gpaddmirrors", args...)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func waitForFTS(db *sql.DB, timeout time.Duration) error {
@@ -89,63 +134,4 @@ func waitForFTS(db *sql.DB, timeout time.Duration) error {
 
 		time.Sleep(time.Second)
 	}
-}
-
-func UpgradeMirrors(stateDir string, conn *greenplum.Conn, masterPort int, mirrors []greenplum.SegConfig, targetRunner greenplum.Runner, useHbaHostnames bool) (err error) {
-	options := []greenplum.Option{
-		greenplum.ToTarget(),
-		greenplum.Port(masterPort),
-		greenplum.UtilityMode(),
-	}
-
-	db, err := sql.Open("pgx", conn.URI(options...))
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if cErr := db.Close(); cErr != nil {
-			err = errorlist.Append(err, cErr)
-		}
-	}()
-
-	return doUpgrade(db, stateDir, mirrors, targetRunner, useHbaHostnames)
-}
-
-func doUpgrade(db *sql.DB, stateDir string, mirrors []greenplum.SegConfig, targetRunner greenplum.Runner, useHbaHostnames bool) (err error) {
-	path := filepath.Join(stateDir, "add_mirrors_config")
-	// calling Close() on a file twice results in an error
-	// only call Close() in the defer if we haven't yet tried to close it.
-	fileClosed := false
-
-	f, err := utils.System.Create(path)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if !fileClosed {
-			if cerr := f.Close(); cerr != nil {
-				err = errorlist.Append(err, cerr)
-			}
-		}
-	}()
-
-	err = writeGpAddmirrorsConfig(mirrors, f)
-	if err != nil {
-		return err
-	}
-
-	err = f.Close()
-	fileClosed = true
-	// not unit tested because stubbing it properly
-	// would require too many extra layers
-	if err != nil {
-		return err
-	}
-
-	err = runAddMirrors(targetRunner, path, useHbaHostnames)
-	if err != nil {
-		return err
-	}
-
-	return waitForFTS(db, defaultFTSTimeout)
 }

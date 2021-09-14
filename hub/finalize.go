@@ -47,12 +47,7 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 	})
 
 	st.RunConditionally(idl.Substep_UPGRADE_MIRRORS, s.Source.HasMirrors(), func(streams step.OutStreams) error {
-		mirrors := s.IntermediateTarget.SelectSegments(func(seg *greenplum.SegConfig) bool {
-			return seg.IsMirror()
-		})
-
-		return UpgradeMirrors(s.StateDir, s.Connection, s.IntermediateTarget.MasterPort(),
-			mirrors, greenplum.NewRunner(s.IntermediateTarget, streams), s.UseHbaHostnames)
+		return UpgradeMirrors(streams, s.Connection, s.IntermediateTarget, s.UseHbaHostnames)
 	})
 
 	st.RunConditionally(idl.Substep_UPGRADE_STANDBY, s.Source.HasStandby(), func(streams step.OutStreams) error {

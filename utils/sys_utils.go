@@ -99,6 +99,10 @@ func GetTablespaceDir() string {
 	return filepath.Join(GetStateDir(), "tablespaces")
 }
 
+func GetAddMirrorsConfig() string {
+	return filepath.Join(GetStateDir(), "add_mirrors_config")
+}
+
 // Returns path to a JSON file, and if one does not exist it creates an empty
 // JSON file.
 func GetJSONFile(stateDir string, fileName string) (path string, err error) {

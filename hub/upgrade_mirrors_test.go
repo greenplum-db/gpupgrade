@@ -4,12 +4,10 @@
 package hub
 
 import (
-	"bytes"
 	"errors"
-	"flag"
-	"io/ioutil"
 	"os"
-	"path/filepath"
+	"reflect"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -19,8 +17,43 @@ import (
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils"
-	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
+
+func TestWriteAddMirrorsConfig(t *testing.T) {
+	t.Run("writes gpaddmirrors_config", func(t *testing.T) {
+		stateDir := testutils.GetTempDir(t, "")
+		defer os.RemoveAll(stateDir)
+
+		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
+		defer resetEnv()
+
+		intermediate := MustCreateCluster(t, []greenplum.SegConfig{
+			{DbID: 1, ContentID: -1, Hostname: "master", DataDir: "/data/qddir/seg.HqtFHX54y0o.-1", Port: 50432, Role: greenplum.PrimaryRole},
+			{DbID: 2, ContentID: -1, Hostname: "standby", DataDir: "/data/standby.HqtFHX54y0o", Port: 50433, Role: greenplum.MirrorRole},
+			{DbID: 3, ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg.HqtFHX54y0o.1", Port: 50434, Role: greenplum.PrimaryRole},
+			{DbID: 4, ContentID: 0, Hostname: "sdw2", DataDir: "/data/dbfast_mirror1/seg.HqtFHX54y0o.1", Port: 50435, Role: greenplum.MirrorRole},
+			{DbID: 5, ContentID: 1, Hostname: "sdw2", DataDir: "/data/dbfast2/seg.HqtFHX54y0o.2", Port: 50436, Role: greenplum.PrimaryRole},
+			{DbID: 6, ContentID: 1, Hostname: "sdw1", DataDir: "/data/dbfast_mirror2/seg.HqtFHX54y0o.2", Port: 50437, Role: greenplum.MirrorRole},
+		})
+
+		err := writeAddMirrorsConfig(intermediate)
+		if err != nil {
+			t.Errorf("unexpected error: %#v", err)
+		}
+
+		// iterating maps is not deterministic so sort and rejoin before asserting
+		lines := strings.Split(testutils.MustReadFile(t, utils.GetAddMirrorsConfig()), "\n")
+		sort.Strings(lines)
+		actual := strings.Join(lines, "\n")
+
+		expected := `
+0|sdw2|50435|/data/dbfast_mirror1/seg.HqtFHX54y0o.1
+1|sdw1|50437|/data/dbfast_mirror2/seg.HqtFHX54y0o.2`
+		if actual != expected {
+			t.Errorf("got %q want %q", actual, expected)
+		}
+	})
+}
 
 type greenplumStub struct {
 	run func(utilityName string, arguments ...string) error
@@ -30,111 +63,55 @@ func (g *greenplumStub) Run(utilityName string, arguments ...string) error {
 	return g.run(utilityName, arguments...)
 }
 
-func TestWriteGpAddmirrorsConfig(t *testing.T) {
-	t.Run("streams the gpaddmirrors config file format", func(t *testing.T) {
-		mirrors := []greenplum.SegConfig{
-			{
-				DbID:      3,
-				ContentID: 0,
-				Port:      234,
-				Hostname:  "localhost",
-				DataDir:   "/data/mirrors_upgrade/seg0",
-				Role:      "m",
-			},
-			{
-				DbID:      4,
-				ContentID: 1,
-				Port:      235,
-				Hostname:  "localhost",
-				DataDir:   "/data/mirrors_upgrade/seg1",
-				Role:      "m",
-			},
-		}
-		var out bytes.Buffer
-
-		err := writeGpAddmirrorsConfig(mirrors, &out)
-		if err != nil {
-			t.Errorf("unexpected error: %#v", err)
-		}
-
-		lines := []string{
-			"0|localhost|234|/data/mirrors_upgrade/seg0",
-			"1|localhost|235|/data/mirrors_upgrade/seg1",
-		}
-
-		expected := strings.Join(lines, "\n") + "\n"
-
-		if out.String() != expected {
-			t.Errorf("got %q want %q", out.String(), expected)
-		}
-	})
-
-	t.Run("returns errors from provided write stream", func(t *testing.T) {
-		mirrors := []greenplum.SegConfig{
-			{DbID: 3, ContentID: 0, Port: 234, Hostname: "localhost", DataDir: "/data/mirrors/seg0", Role: "m"},
-		}
-
-		writer := &testutils.FailingWriter{Err: errors.New("ahhh")}
-
-		err := writeGpAddmirrorsConfig(mirrors, writer)
-		if !errors.Is(err, writer.Err) {
-			t.Errorf("returned error %#v, want %#v", err, writer.Err)
-		}
-	})
-}
-
 func TestRunAddMirrors(t *testing.T) {
 	t.Run("runs gpaddmirrors with the created config file", func(t *testing.T) {
-		expectedFilepath := "/add/mirrors/config_file"
-		runCalled := false
+		stateDir := testutils.GetTempDir(t, "")
+		defer os.RemoveAll(stateDir)
+
+		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
+		defer resetEnv()
+
+		db, mock, err := sqlmock.New()
+		if err != nil {
+			t.Fatalf("sqlmock: %v", err)
+		}
+		defer testutils.FinishMock(mock, t)
+		defer db.Close()
 
 		stub := &greenplumStub{
-			func(utility string, arguments ...string) error {
-				runCalled = true
-
-				expectedUtility := "gpaddmirrors"
-				if utility != expectedUtility {
-					t.Errorf("ran utility %q, want %q", utility, expectedUtility)
+			run: func(utility string, args ...string) error {
+				if utility != "gpaddmirrors" {
+					t.Errorf("got utility %q want gpaddmirrors", utility)
 				}
 
-				var fs flag.FlagSet
-
-				actualFilepath := fs.String("i", "", "")
-				quietMode := fs.Bool("a", false, "")
-				hbaHostnames := fs.Bool("hba-hostnames", false, "")
-
-				err := fs.Parse(arguments)
-				if err != nil {
-					t.Fatalf("error parsing arguments: %+v", err)
+				expected := []string{
+					"-a",
+					"-i",
+					utils.GetAddMirrorsConfig(),
+					"--hba-hostnames",
 				}
 
-				if *actualFilepath != expectedFilepath {
-					t.Errorf("got filepath %q, want %q", *actualFilepath, expectedFilepath)
-				}
-
-				if !*quietMode {
-					t.Errorf("missing -a flag")
-				}
-
-				if !*hbaHostnames {
-					t.Errorf("missing --hba-hostname flag")
+				if !reflect.DeepEqual(args, expected) {
+					t.Errorf("got args %q want %q", args, expected)
 				}
 
 				return nil
 			},
 		}
 
-		err := runAddMirrors(stub, expectedFilepath, true)
+		err = runGpAddMirrors(stub, true)
 		if err != nil {
 			t.Errorf("returned error %+v", err)
-		}
-
-		if !runCalled {
-			t.Errorf("Runner.Run() was not called")
 		}
 	})
 
 	t.Run("bubbles up errors from the utility", func(t *testing.T) {
+		stateDir := testutils.GetTempDir(t, "")
+		defer os.RemoveAll(stateDir)
+
+		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
+		defer resetEnv()
+
 		stub := new(greenplumStub)
 
 		expected := errors.New("ahhhh")
@@ -142,173 +119,9 @@ func TestRunAddMirrors(t *testing.T) {
 			return expected
 		}
 
-		actual := runAddMirrors(stub, "", false)
-		if !errors.Is(actual, expected) {
-			t.Errorf("returned error %#v, want %#v", actual, expected)
-		}
-	})
-}
-
-func TestDoUpgrade(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("couldn't create sqlmock: %v", err)
-	}
-	defer testutils.FinishMock(mock, t)
-
-	t.Run("writes the add mirrors config to the and runs add mirrors", func(t *testing.T) {
-		stateDir := "/the/state/dir"
-		expectedFilepath := filepath.Join(stateDir, "add_mirrors_config")
-		runCalled := false
-		readPipe, writePipe, err := os.Pipe()
-		if err != nil {
-			t.Errorf("error creating pipes %#v", err)
-		}
-
-		utils.System.Create = func(name string) (*os.File, error) {
-			if name != expectedFilepath {
-				t.Errorf("got filepath %q want %q", name, expectedFilepath)
-			}
-			if err != nil {
-				return nil, err
-			}
-			return writePipe, nil
-		}
-
-		mirrors := []greenplum.SegConfig{
-			{
-				DbID:      3,
-				ContentID: 0,
-				Port:      234,
-				Hostname:  "localhost",
-				DataDir:   "/data/mirrors_upgrade/seg0",
-				Role:      "m",
-			},
-			{
-				DbID:      4,
-				ContentID: 1,
-				Port:      235,
-				Hostname:  "localhost",
-				DataDir:   "/data/mirrors_upgrade/seg1",
-				Role:      "m",
-			},
-		}
-
-		stub := greenplumStub{run: func(utilityName string, arguments ...string) error {
-			runCalled = true
-
-			expectedUtility := "gpaddmirrors"
-			if utilityName != expectedUtility {
-				t.Errorf("ran utility %q, want %q", utilityName, expectedUtility)
-			}
-
-			var fs flag.FlagSet
-
-			actualFilepath := fs.String("i", "", "")
-			quietMode := fs.Bool("a", false, "")
-
-			err := fs.Parse(arguments)
-			if err != nil {
-				t.Fatalf("error parsing arguments: %+v", err)
-			}
-
-			if *actualFilepath != expectedFilepath {
-				t.Errorf("got filepath %q want %q", *actualFilepath, expectedFilepath)
-			}
-
-			if !*quietMode {
-				t.Errorf("missing -a flag")
-			}
-			return nil
-		}}
-
-		expectFtsProbe(mock)
-		expectMirrorsAndReturn(mock, "t")
-
-		err = doUpgrade(db, stateDir, mirrors, &stub, false)
-
-		if err != nil {
-			t.Errorf("got unexpected error from UpgradeMirrors %#v", err)
-		}
-
-		expectedLines := []string{
-			"0|localhost|234|/data/mirrors_upgrade/seg0",
-			"1|localhost|235|/data/mirrors_upgrade/seg1",
-		}
-
-		expectedFileContents := strings.Join(expectedLines, "\n") + "\n"
-		fileContents, _ := ioutil.ReadAll(readPipe)
-
-		if expectedFileContents != string(fileContents) {
-			t.Errorf("got file contents %q want %q", fileContents, expectedFileContents)
-		}
-
-		if !runCalled {
-			t.Errorf("Runner.Run() was not called")
-		}
-	})
-
-	t.Run("returns the error when create file path fails", func(t *testing.T) {
-		expectedError := errors.New("i'm an error")
-		utils.System.Create = func(name string) (file *os.File, err error) {
-			return nil, expectedError
-		}
-
-		err = doUpgrade(db, "", []greenplum.SegConfig{}, &greenplumStub{}, false)
-		if !errors.Is(err, expectedError) {
-			t.Errorf("returned error %#v want %#v", err, expectedError)
-		}
-	})
-
-	t.Run("returns the error when writing and closing the config file fails", func(t *testing.T) {
-		utils.System.Create = func(name string) (file *os.File, err error) {
-			// A nil file will result in failure.
-			return nil, nil
-		}
-
-		// We need at least one config entry to cause something to be written.
-		mirrors := []greenplum.SegConfig{
-			{DbID: 3, ContentID: 0, Port: 234, Hostname: "localhost", DataDir: "/data/mirrors/seg0", Role: "m"},
-		}
-
-		stub := new(greenplumStub)
-		stub.run = func(_ string, _ ...string) error {
-			t.Errorf("gpaddmirrors should not have been called")
-			return nil
-		}
-
-		err = doUpgrade(db, "/state/dir", mirrors, stub, false)
-
-		var errs errorlist.Errors
-		if !errors.As(err, &errs) {
-			t.Fatalf("returned error %#v, want error type %T", err, errs)
-		}
-
-		if len(errs) != 2 {
-			t.Errorf("expected exactly two errors")
-		}
-
-		for _, err := range errs {
-			if !errors.Is(err, os.ErrInvalid) {
-				t.Errorf("returned error %#v want %#v", err, os.ErrInvalid)
-			}
-		}
-	})
-
-	t.Run("returns the error when running the command fails", func(t *testing.T) {
-		utils.System.Create = func(name string) (file *os.File, err error) {
-			_, writePipe, _ := os.Pipe()
-			return writePipe, nil
-		}
-
-		expected := errors.New("the error happened")
-		stub := &greenplumStub{run: func(utilityName string, arguments ...string) error {
-			return expected
-		}}
-
-		err = doUpgrade(db, "/state/dir", []greenplum.SegConfig{}, stub, false)
+		err := runGpAddMirrors(stub, true)
 		if !errors.Is(err, expected) {
-			t.Errorf("returned error %#v want %#v", err, expected)
+			t.Errorf("returned error %#v, want %#v", err, expected)
 		}
 	})
 }
@@ -324,7 +137,7 @@ func TestWaitForFTS(t *testing.T) {
 		expectFtsProbe(mock)
 		expectMirrorsAndReturn(mock, "t")
 
-		err = waitForFTS(db, defaultFTSTimeout)
+		err = waitForFTS(db, 2*time.Minute)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -336,7 +149,7 @@ func TestWaitForFTS(t *testing.T) {
 		expectFtsProbe(mock)
 		expectMirrorsAndReturn(mock, "t")
 
-		err = waitForFTS(db, defaultFTSTimeout)
+		err = waitForFTS(db, 2*time.Minute)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
