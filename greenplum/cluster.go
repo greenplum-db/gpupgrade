@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 )
@@ -21,6 +22,8 @@ import (
 const MasterDbid = 1
 
 type Cluster struct {
+	Destination idl.ClusterDestination
+
 	// ContentIDs contains the list of all primary content IDs, in the same
 	// order that they were provided to NewCluster. Clients requiring a stable
 	// iteration order over the Primaries map may use this.
@@ -42,7 +45,7 @@ type Cluster struct {
 // ClusterFromDB will create a Cluster by querying the passed DBConn for
 // information. You must pass the cluster's gphome, since it cannot be
 // divined from the database.
-func ClusterFromDB(db *sql.DB, version semver.Version, gphome string) (Cluster, error) {
+func ClusterFromDB(db *sql.DB, version semver.Version, gphome string, destination idl.ClusterDestination) (Cluster, error) {
 	segments, err := GetSegmentConfiguration(db, version)
 	if err != nil {
 		return Cluster{}, xerrors.Errorf("querying gp_segment_configuration: %w", err)
@@ -53,6 +56,7 @@ func ClusterFromDB(db *sql.DB, version semver.Version, gphome string) (Cluster, 
 		return Cluster{}, err
 	}
 
+	cluster.Destination = destination
 	cluster.Version = version
 	cluster.GPHome = gphome
 

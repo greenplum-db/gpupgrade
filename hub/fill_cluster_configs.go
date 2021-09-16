@@ -46,7 +46,7 @@ func FillConfiguration(config *Config, request *idl.InitializeRequest, conn *gre
 		return err
 	}
 
-	source, err := greenplum.ClusterFromDB(db, conn.SourceVersion, request.GetSourceGPHome())
+	source, err := greenplum.ClusterFromDB(db, conn.SourceVersion, request.GetSourceGPHome(), idl.ClusterDestination_SOURCE)
 	if err != nil {
 		return xerrors.Errorf("retrieve source configuration: %w", err)
 	}
@@ -54,6 +54,7 @@ func FillConfiguration(config *Config, request *idl.InitializeRequest, conn *gre
 	target := source // create target cluster based off source cluster
 	config.Source = &source
 	config.Target = &target
+	config.Target.Destination = idl.ClusterDestination_TARGET
 	config.Target.GPHome = request.GetTargetGPHome()
 	config.Target.Version = conn.TargetVersion
 	config.UseLinkMode = request.GetUseLinkMode()
@@ -196,6 +197,7 @@ func GenerateIntermediateTargetCluster(source *greenplum.Cluster, ports []int, u
 	intermediate.ContentIDs = sanitize(targetContentIDs)
 	intermediate.GPHome = gphome
 	intermediate.Version = version
+	intermediate.Destination = idl.ClusterDestination_INTERMEDIATE
 
 	return &intermediate, nil
 }

@@ -16,6 +16,13 @@ service CliToHub {
     rpc StopServices(StopServicesRequest) returns (StopServicesReply) {}
 }
 
+enum ClusterDestination {
+  UNKNOWN_DESTINATION = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
+  SOURCE = 1;
+  INTERMEDIATE = 2;
+  TARGET = 3;
+}
+
 message InitializeRequest {
     int32 agentPort = 1;
     string sourceGPHome = 2;

@@ -11,6 +11,7 @@ import (
 	"github.com/blang/semver/v4"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 )
 
@@ -157,6 +158,7 @@ func TestAssignDataDirsAndPorts(t *testing.T) {
 				t.Errorf("returned error %+v", err)
 			}
 
+			c.expected.Destination = idl.ClusterDestination_INTERMEDIATE
 			if !reflect.DeepEqual(actual, c.expected) {
 				t.Errorf("GenerateIntermediateTargetCluster(<cluster>, %v)=%v, want %v", c.ports, actual, c.expected)
 			}

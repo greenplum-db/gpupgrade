@@ -17,6 +17,7 @@ import (
 	"github.com/blang/semver/v4"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 )
@@ -285,7 +286,7 @@ func TestClusterFromDB(t *testing.T) {
 		expected := errors.New("connection failed")
 		mock.ExpectQuery("SELECT ").WillReturnError(expected)
 
-		actualCluster, err := greenplum.ClusterFromDB(db, semver.MustParse("0.0.0"), "")
+		actualCluster, err := greenplum.ClusterFromDB(db, semver.MustParse("0.0.0"), "", idl.ClusterDestination_SOURCE)
 		if !errors.Is(err, expected) {
 			t.Errorf("got %#v want %#v", err, expected)
 		}
@@ -305,7 +306,7 @@ func TestClusterFromDB(t *testing.T) {
 		queryErr := errors.New("failed to get segment configuration")
 		mock.ExpectQuery("SELECT .* FROM gp_segment_configuration").WillReturnError(queryErr)
 
-		actualCluster, err := greenplum.ClusterFromDB(db, semver.MustParse("0.0.0"), "")
+		actualCluster, err := greenplum.ClusterFromDB(db, semver.MustParse("0.0.0"), "", idl.ClusterDestination_SOURCE)
 
 		if err == nil {
 			t.Errorf("Expected an error, but got nil")
@@ -329,14 +330,16 @@ func TestClusterFromDB(t *testing.T) {
 
 		gphome := "/usr/local/gpdb"
 		version := semver.MustParse("5.3.4")
-		actualCluster, err := greenplum.ClusterFromDB(db, version, gphome)
+		destination := idl.ClusterDestination_INTERMEDIATE
+		actualCluster, err := greenplum.ClusterFromDB(db, version, gphome, destination)
 		if err != nil {
 			t.Errorf("got unexpected error: %+v", err)
 		}
 
 		expectedCluster := testutils.MockCluster()
-		expectedCluster.Version = semver.MustParse("5.3.4")
-		expectedCluster.GPHome = "/usr/local/gpdb"
+		expectedCluster.Destination = destination
+		expectedCluster.Version = version
+		expectedCluster.GPHome = gphome
 
 		if !reflect.DeepEqual(&actualCluster, expectedCluster) {
 			t.Errorf("got: %#v want: %#v ", &actualCluster, expectedCluster)
