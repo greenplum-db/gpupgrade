@@ -42,13 +42,14 @@ func FillConfiguration(config *Config, request *idl.InitializeRequest, conn *gre
 	config.UseHbaHostnames = request.GetUseHbaHostnames()
 	config.UpgradeID = upgrade.NewID()
 
-	if err := CheckSourceClusterConfiguration(db); err != nil {
-		return err
-	}
-
 	source, err := greenplum.ClusterFromDB(db, conn.SourceVersion, request.GetSourceGPHome(), idl.ClusterDestination_SOURCE)
 	if err != nil {
 		return xerrors.Errorf("retrieve source configuration: %w", err)
+	}
+
+	err = source.WaitForClusterToBeReady(conn)
+	if err != nil {
+		return err
 	}
 
 	target := source // create target cluster based off source cluster
