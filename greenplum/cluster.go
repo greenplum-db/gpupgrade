@@ -92,15 +92,15 @@ func (c *Cluster) Master() SegConfig {
 }
 
 func (c *Cluster) MasterDataDir() string {
-	return c.GetDirForContent(-1)
+	return c.Master().DataDir
 }
 
 func (c *Cluster) MasterPort() int {
-	return c.GetPortForContent(-1)
+	return c.Master().Port
 }
 
 func (c *Cluster) MasterHostname() string {
-	return c.Primaries[-1].Hostname
+	return c.Master().Hostname
 }
 
 // the standby might not exist, so it is the caller's responsibility
@@ -114,15 +114,15 @@ func (c *Cluster) HasStandby() bool {
 }
 
 func (c *Cluster) StandbyPort() int {
-	return c.Mirrors[-1].Port
+	return c.Standby().Port
 }
 
 func (c *Cluster) StandbyHostname() string {
-	return c.Mirrors[-1].Hostname
+	return c.Standby().Hostname
 }
 
-func (c *Cluster) StandbyDataDirectory() string {
-	return c.Mirrors[-1].DataDir
+func (c *Cluster) StandbyDataDir() string {
+	return c.Standby().DataDir
 }
 
 // Returns true if we have at least one mirror that is not a standby
@@ -145,19 +145,6 @@ func (c *Cluster) HasAllMirrorsAndStandby() bool {
 	return true
 }
 
-// XXX This does not provide mirror hostnames yet.
-func (c *Cluster) GetHostnames() []string {
-	hostnameMap := make(map[string]bool)
-	for _, seg := range c.Primaries {
-		hostnameMap[seg.Hostname] = true
-	}
-	hostnames := make([]string, 0)
-	for host := range hostnameMap {
-		hostnames = append(hostnames, host)
-	}
-	return hostnames
-}
-
 func (c *Cluster) PrimaryHostnames() []string {
 	hostnames := make(map[string]bool)
 	for _, seg := range c.Primaries {
@@ -173,32 +160,6 @@ func (c *Cluster) PrimaryHostnames() []string {
 	}
 
 	return list
-}
-
-// ErrUnknownHost can be returned by Cluster.SegmentsOn.
-var ErrUnknownHost = xerrors.New("no such host in cluster")
-
-type UnknownHostError struct {
-	Hostname string
-}
-
-func (u UnknownHostError) Error() string {
-	return fmt.Sprintf("cluster has no segments on host %q", u.Hostname)
-}
-
-func (u UnknownHostError) Is(err error) bool {
-	return err == ErrUnknownHost
-}
-
-func FilterSegmentsOnHost(segmentsToFilter []SegConfig, hostname string) []SegConfig {
-	var segments []SegConfig
-	for _, segment := range segmentsToFilter {
-		if segment.Hostname == hostname {
-			segments = append(segments, segment)
-		}
-	}
-
-	return segments
 }
 
 // SelectSegments returns a list of all segments that match the given selector
@@ -294,26 +255,6 @@ func (i *InvalidSegmentsError) Error() string {
 
 func (i *InvalidSegmentsError) Is(err error) bool {
 	return err == ErrInvalidSegments
-}
-
-func (c *Cluster) GetContentList() []int {
-	return c.ContentIDs
-}
-
-func (c *Cluster) GetDbidForContent(contentID int) int {
-	return c.Primaries[contentID].DbID
-}
-
-func (c *Cluster) GetPortForContent(contentID int) int {
-	return c.Primaries[contentID].Port
-}
-
-func (c *Cluster) GetHostForContent(contentID int) string {
-	return c.Primaries[contentID].Hostname
-}
-
-func (c *Cluster) GetDirForContent(contentID int) string {
-	return c.Primaries[contentID].DataDir
 }
 
 func (c *Cluster) Start(stream step.OutStreams) error {

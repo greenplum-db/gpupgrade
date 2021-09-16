@@ -157,7 +157,7 @@ func masterSegmentFromCluster(cluster *greenplum.Cluster) *upgrade.Segment {
 	return &upgrade.Segment{
 		BinDir:  filepath.Join(cluster.GPHome, "bin"),
 		DataDir: cluster.MasterDataDir(),
-		DBID:    cluster.GetDbidForContent(-1),
+		DBID:    cluster.Master().DbID,
 		Port:    cluster.MasterPort(),
 	}
 }

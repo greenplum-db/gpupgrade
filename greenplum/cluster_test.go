@@ -80,7 +80,7 @@ func TestCluster(t *testing.T) {
 			segments := append(c.primaries, c.mirrors...)
 
 			actualCluster := greenplum.MustCreateCluster(t, segments)
-			actualContents := actualCluster.GetContentList()
+			actualContents := actualCluster.ContentIDs
 
 			var expectedContents []int
 			for _, p := range c.primaries {
@@ -97,26 +97,6 @@ func TestCluster(t *testing.T) {
 				actual := actualCluster.Primaries[content]
 				if actual != expected {
 					t.Errorf("Primaries[%d] = %+v, want %+v", content, actual, expected)
-				}
-
-				host := actualCluster.GetHostForContent(content)
-				if host != expected.Hostname {
-					t.Errorf("GetHostForContent(%d) = %q, want %q", content, host, expected.Hostname)
-				}
-
-				port := actualCluster.GetPortForContent(content)
-				if port != expected.Port {
-					t.Errorf("GetPortForContent(%d) = %d, want %d", content, port, expected.Port)
-				}
-
-				dbid := actualCluster.GetDbidForContent(content)
-				if dbid != expected.DbID {
-					t.Errorf("GetDbidForContent(%d) = %d, want %d", content, dbid, expected.DbID)
-				}
-
-				datadir := actualCluster.GetDirForContent(content)
-				if datadir != expected.DataDir {
-					t.Errorf("GetDirForContent(%d) = %q, want %q", content, datadir, expected.DataDir)
 				}
 			}
 

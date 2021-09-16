@@ -152,8 +152,8 @@ func TestUpgradeMaster(t *testing.T) {
 		if seg.DataDir != source.MasterDataDir() {
 			t.Errorf("DataDir was %q, want %q", seg.DataDir, source.MasterDataDir())
 		}
-		if seg.DBID != source.GetDbidForContent(-1) {
-			t.Errorf("DBID was %d, want %d", seg.DBID, source.GetDbidForContent(-1))
+		if seg.DBID != source.Master().DbID {
+			t.Errorf("DBID was %d, want %d", seg.DBID, source.Master().DbID)
 		}
 		if seg.Port != source.MasterPort() {
 			t.Errorf("Port was %d, want %d", seg.Port, source.MasterPort())

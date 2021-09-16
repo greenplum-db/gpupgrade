@@ -45,7 +45,7 @@ func UpdatePostgresqlConfOnSegments(agentConns []*idl.Connection, intermediateCl
 		// add standby
 		if target.Standby().Hostname == conn.Hostname {
 			opt := &idl.UpdateFileConfOptions{
-				Path:    filepath.Join(target.StandbyDataDirectory(), "postgresql.conf"),
+				Path:    filepath.Join(target.StandbyDataDir(), "postgresql.conf"),
 				OldPort: int32(intermediateCluster.StandbyPort()),
 				NewPort: int32(target.StandbyPort()),
 			}
@@ -103,7 +103,7 @@ func UpdateRecoveryConfiguration(agentConns []*idl.Connection, version semver.Ve
 		// add standby
 		if target.Standby().Hostname == conn.Hostname {
 			opt := &idl.UpdateFileConfOptions{
-				Path:    filepath.Join(target.StandbyDataDirectory(), file),
+				Path:    filepath.Join(target.StandbyDataDir(), file),
 				OldPort: int32(intermediateCluster.MasterPort()),
 				NewPort: int32(target.MasterPort()),
 			}
