@@ -2,7 +2,9 @@
 -- SPDX-License-Identifier: Apache-2.0
 
 -- generates alter statement to modify text datatype to tsquery datatype
-SELECT $$ALTER TABLE $$ || n.nspname || '.' || c.relname || $$ ALTER COLUMN $$ || a.attname || $$ TYPE TSQUERY USING $$ || a.attname || $$::tsquery;$$
+SELECT $$ALTER TABLE $$ || pg_catalog.quote_ident(n.nspname) || '.' || pg_catalog.quote_ident(c.relname) ||
+       $$ ALTER COLUMN $$ || pg_catalog.quote_ident(a.attname) ||
+       $$ TYPE TSQUERY USING $$ || pg_catalog.quote_ident(a.attname) || $$::tsquery;$$
 FROM pg_catalog.pg_class c,
      pg_catalog.pg_namespace n,
      pg_catalog.pg_attribute a

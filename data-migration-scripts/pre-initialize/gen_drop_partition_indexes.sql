@@ -58,7 +58,7 @@ part_constraint AS
          ON (n.oid = cc.relnamespace)
 )
 SELECT
-   $$ DROP INDEX $$ || n.nspname ||'.'|| i.relname || $$ ;$$
+   $$ DROP INDEX $$ || pg_catalog.quote_ident(n.nspname) ||'.'|| pg_catalog.quote_ident(i.relname) || $$ ;$$
 FROM
    pg_index x
    JOIN

@@ -8,7 +8,7 @@
 -- also dropping them on the root partition does not cascade the drop of such constraints, as its
 -- not tracked in the catalog. So, we don't touch such constraint.
 SELECT
-   'ALTER TABLE ' || nspname || '.' || relname || ' DROP CONSTRAINT ' || conname || ';'
+   'ALTER TABLE ' || pg_catalog.quote_ident(nspname) || '.' || pg_catalog.quote_ident(relname) || ' DROP CONSTRAINT ' || pg_catalog.quote_ident(conname) || ';'
 FROM
    pg_constraint cc
    JOIN
