@@ -3,17 +3,9 @@
 #
 # This file provides a single high-level function validate_mirrors_and_standby()
 # that takes a cluster with mirrors and a standby "through its paces" to
-# thoroughly test those mirrors and stadnby.
+# thoroughly test those mirrors and standby.
 
-check_mirrors_and_standby() {
-    local master_host=$1
-    local master_port=$2
-
-    _check_synchronized_cluster "${master_host}" "${master_port}"
-    _check_replication_connections "${master_host}" "${master_port}"
-}
-
-_check_synchronized_cluster() {
+check_synchronized_cluster() {
     local master_host=$1
     local master_port=$2
 
@@ -37,7 +29,7 @@ EOF
     return 1
 }
 
-_check_replication_connections() {
+check_replication_connections() {
     local host=$1
     local port=$2
 
@@ -85,7 +77,7 @@ EOF
     return 1
 }
 
-kill_contents() {
+stop_segments_with_contents() {
     local filter="content $1"
     local host=$2
     local port=$3
@@ -218,14 +210,15 @@ validate_mirrors_and_standby() {
     read -r standby_host standby_port standby_data_dir <<<"${standby_info}"
 
     # step 1: initial
+    check_replication_connections "${MASTER_HOST}" "${MASTER_PORT}"
+    check_synchronized_cluster "${MASTER_HOST}" "${MASTER_PORT}"
     wait_can_start_transactions "${MASTER_HOST}" "${MASTER_PORT}"
-    check_mirrors_and_standby "${MASTER_HOST}" "${MASTER_PORT}"
 
     local data_on_upgraded_cluster
     data_on_upgraded_cluster=$(create_table_with_name on_upgraded_cluster 50 "${MASTER_HOST}" "${MASTER_PORT}")
 
     # step 2a: failover stop...
-    kill_contents ">=-1" "${MASTER_HOST}" "${MASTER_PORT}"
+    stop_segments_with_contents ">=-1" "${MASTER_HOST}" "${MASTER_PORT}"
 
     # step 2b: failover promote...
     ssh -n "${standby_host}" "
@@ -259,7 +252,8 @@ validate_mirrors_and_standby() {
         source ${GPHOME_NEW}/greenplum_path.sh
         export PGPORT=$standby_port; gpinitstandby -a -s $MASTER_HOST -P $MASTER_PORT -S $master_data_dir
     "
-    check_mirrors_and_standby "${standby_host}" "${standby_port}"
+    check_replication_connections "${standby_host}" "${standby_port}"
+    check_synchronized_cluster "${standby_host}" "${standby_port}"
 
     check_data_matches on_upgraded_cluster "${data_on_upgraded_cluster}" "${standby_host}" "${standby_port}"
     check_data_matches on_promoted_cluster "${data_on_promoted_cluster}" "${standby_host}" "${standby_port}"
@@ -273,10 +267,12 @@ validate_mirrors_and_standby() {
         export PGPORT=$standby_port
         gprecoverseg -ra
     "
-    check_mirrors_and_standby "${standby_host}" "${standby_port}"
+    check_replication_connections "${standby_host}" "${standby_port}"
+    check_synchronized_cluster "${standby_host}" "${standby_port}"
+
 
     # 4b: rebalance standby
-    kill_contents "=-1" "${standby_host}" "${standby_port}"
+    stop_segments_with_contents "=-1" "${standby_host}" "${standby_port}"
 
     # 4c: rebalance standby
     ssh -n "${MASTER_HOST}" "
@@ -298,7 +294,8 @@ validate_mirrors_and_standby() {
         source ${GPHOME_NEW}/greenplum_path.sh
         export PGPORT=$MASTER_PORT; gpinitstandby -a -s $standby_host -P $standby_port -S $standby_data_dir
     "
-    check_mirrors_and_standby "${MASTER_HOST}" "${MASTER_PORT}"
+    check_replication_connections "${MASTER_HOST}" "${MASTER_PORT}"
+    check_synchronized_cluster "${MASTER_HOST}" "${MASTER_PORT}"
 
     check_data_matches on_upgraded_cluster "${data_on_upgraded_cluster}" "${MASTER_HOST}" "${MASTER_PORT}"
     check_data_matches on_promoted_cluster "${data_on_promoted_cluster}" "${MASTER_HOST}" "${MASTER_PORT}"

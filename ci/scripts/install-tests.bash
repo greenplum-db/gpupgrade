@@ -28,8 +28,6 @@ function run_migration_scripts_and_tests() {
 
         make
         make check --keep-going
-
-        make install
     '
 }
 
