@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"time"
 
 	"github.com/blang/semver/v4"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -17,6 +18,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
+	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
 const MasterDbid = 1
@@ -399,6 +401,110 @@ func (c *Cluster) IsMasterRunning(stream step.OutStreams) (bool, error) {
 
 	if err != nil {
 		return false, xerrors.Errorf("checking for postmaster process: %w", err)
+	}
+
+	return true, nil
+}
+
+// WaitForClusterToBeReady waits until the timeout for all segments to be up,
+// in their preferred role, and synchronized.
+func (c *Cluster) WaitForClusterToBeReady(conn *Conn) error {
+	destination := ToTarget()
+	if c.Destination == idl.ClusterDestination_SOURCE {
+		destination = ToSource()
+	}
+
+	options := []Option{
+		destination,
+		Port(c.MasterPort()),
+	}
+
+	db, err := sql.Open("pgx", conn.URI(options...))
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if cErr := db.Close(); cErr != nil {
+			err = errorlist.Append(err, cErr)
+		}
+	}()
+
+	return WaitForSegments(db, 5*time.Minute, c)
+}
+
+func WaitForSegments(db *sql.DB, timeout time.Duration, cluster *Cluster) error {
+	startTime := time.Now()
+	for {
+		if cluster.Version.Major > 5 {
+			rows, err := db.Query("SELECT gp_request_fts_probe_scan();")
+			if err != nil {
+				return xerrors.Errorf("requesting gp_request_fts_probe_scan: %w", err)
+			}
+
+			if err := rows.Close(); err != nil {
+				return xerrors.Errorf("closing rows for gp_request_fts_probe_scan: %w", err)
+			}
+		}
+
+		ready, err := areSegmentsReady(db, cluster)
+		if err != nil {
+			return err
+		}
+
+		if ready {
+			return nil
+		}
+
+		if time.Since(startTime) > timeout {
+			return xerrors.Errorf("%s timeout exceeded waiting for all segments to be up, in their preferred roles, and synchronized.", timeout)
+		}
+
+		time.Sleep(time.Second)
+	}
+}
+
+func areSegmentsReady(db *sql.DB, cluster *Cluster) (bool, error) {
+	var segments int
+
+	// check gp_segment_configuration on segments
+	whereClause := "AND mode = 's'"
+	if !cluster.HasMirrors() {
+		whereClause = ""
+	}
+
+	row := db.QueryRow(`SELECT COUNT(*) FROM gp_segment_configuration 
+WHERE content > -1 AND status = 'u' AND (role = preferred_role) ` + whereClause)
+
+	if err := row.Scan(&segments); err != nil {
+		if err == sql.ErrNoRows {
+			gplog.Debug("no rows found when querying gp_segment_configuration")
+			return false, nil
+		}
+
+		return false, xerrors.Errorf("querying gp_segment_configuration: %w", err)
+	}
+
+	if segments != len(cluster.ExcludingMasterOrStandby()) {
+		return false, nil
+	}
+
+	// check gp_stat_replication for the standby. Note, gp_stat_replication does not exist in GPDB 5.
+	if cluster.Version.Major == 5 || !cluster.HasStandby() {
+		return true, nil
+	}
+
+	row = db.QueryRow("SELECT COUNT(*) FROM gp_stat_replication WHERE gp_segment_id = -1 AND state = 'streaming' AND sent_location = flush_location;")
+	if err := row.Scan(&segments); err != nil {
+		if err == sql.ErrNoRows {
+			gplog.Debug("no rows found when querying gp_stat_replication")
+			return false, nil
+		}
+
+		return false, xerrors.Errorf("querying gp_stat_replication: %w", err)
+	}
+
+	if segments != 1 {
+		return false, nil
 	}
 
 	return true, nil

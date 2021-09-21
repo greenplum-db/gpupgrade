@@ -60,6 +60,10 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 			})
 	})
 
+	st.Run(idl.Substep_WAIT_FOR_CLUSTER_TO_BE_READY_AFTER_ADDING_MIRRORS_AND_STANDBY, func(streams step.OutStreams) error {
+		return s.IntermediateTarget.WaitForClusterToBeReady(s.Connection)
+	})
+
 	st.Run(idl.Substep_SHUTDOWN_TARGET_CLUSTER, func(streams step.OutStreams) error {
 		err := s.IntermediateTarget.Stop(streams)
 		if err != nil {
@@ -100,6 +104,10 @@ func (s *Server) Finalize(_ *idl.FinalizeRequest, stream idl.CliToHub_FinalizeSe
 		}
 
 		return nil
+	})
+
+	st.Run(idl.Substep_WAIT_FOR_CLUSTER_TO_BE_READY_AFTER_UPDATING_CATALOG, func(streams step.OutStreams) error {
+		return s.Target.WaitForClusterToBeReady(s.Connection)
 	})
 
 	logArchiveDir, err := s.GetLogArchiveDir()

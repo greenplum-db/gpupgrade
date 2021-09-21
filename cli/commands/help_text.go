@@ -43,13 +43,15 @@ func init() {
 	})
 	FinalizeHelp = GenerateHelpString(finalizeHelp, []idl.Substep{
 		idl.Substep_REMOVE_SOURCE_MIRRORS,
+		idl.Substep_UPGRADE_MIRRORS,
+		idl.Substep_UPGRADE_STANDBY,
+		idl.Substep_WAIT_FOR_CLUSTER_TO_BE_READY_AFTER_ADDING_MIRRORS_AND_STANDBY,
 		idl.Substep_SHUTDOWN_TARGET_CLUSTER,
 		idl.Substep_UPDATE_TARGET_CATALOG,
 		idl.Substep_UPDATE_DATA_DIRECTORIES,
 		idl.Substep_UPDATE_TARGET_CONF_FILES,
 		idl.Substep_START_TARGET_CLUSTER,
-		idl.Substep_UPGRADE_STANDBY,
-		idl.Substep_UPGRADE_MIRRORS,
+		idl.Substep_WAIT_FOR_CLUSTER_TO_BE_READY_AFTER_UPDATING_CATALOG,
 		idl.Substep_ARCHIVE_LOG_DIRECTORIES,
 		idl.Substep_DELETE_SEGMENT_STATEDIRS,
 		idl.Substep_STOP_HUB_AND_AGENTS,

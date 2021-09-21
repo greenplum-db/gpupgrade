@@ -10,7 +10,6 @@ import (
 	"sort"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 
@@ -124,58 +123,4 @@ func TestRunAddMirrors(t *testing.T) {
 			t.Errorf("returned error %#v, want %#v", err, expected)
 		}
 	})
-}
-
-func TestWaitForFTS(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("couldn't create sqlmock: %v", err)
-	}
-	defer testutils.FinishMock(mock, t)
-
-	t.Run("succeeds", func(t *testing.T) {
-		expectFtsProbe(mock)
-		expectMirrorsAndReturn(mock, "t")
-
-		err = waitForFTS(db, 2*time.Minute)
-		if err != nil {
-			t.Errorf("unexpected error: %#v", err)
-		}
-	})
-
-	t.Run("waits for mirrors to come up", func(t *testing.T) {
-		expectFtsProbe(mock)
-		expectMirrorsAndReturn(mock, "f")
-		expectFtsProbe(mock)
-		expectMirrorsAndReturn(mock, "t")
-
-		err = waitForFTS(db, 2*time.Minute)
-		if err != nil {
-			t.Errorf("unexpected error: %#v", err)
-		}
-	})
-
-	t.Run("times out if the mirrors never come up", func(t *testing.T) {
-		expectFtsProbe(mock)
-		expectMirrorsAndReturn(mock, "f")
-
-		err = waitForFTS(db, -1*time.Second)
-
-		expected := "-1s timeout exceeded waiting for mirrors to come up"
-		if err.Error() != expected {
-			t.Errorf("got: %#v want %s", err, expected)
-		}
-	})
-}
-
-func expectFtsProbe(mock sqlmock.Sqlmock) {
-	mock.ExpectQuery(`SELECT gp_request_fts_probe_scan\(\);`).
-		WillReturnRows(sqlmock.NewRows([]string{"gp_request_fts_probe_scan"}).AddRow("t"))
-}
-
-func expectMirrorsAndReturn(mock sqlmock.Sqlmock, up string) {
-	mock.ExpectQuery(`SELECT every\(status = 'u' AND mode = 's'\)
-							FROM gp_segment_configuration
-							WHERE role = 'm'`).
-		WillReturnRows(sqlmock.NewRows([]string{"every"}).AddRow(up))
 }
