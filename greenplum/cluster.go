@@ -63,6 +63,28 @@ func ClusterFromDB(db *sql.DB, version semver.Version, gphome string, destinatio
 	return cluster, nil
 }
 
+func (c *Cluster) ExcludingMasterOrStandby() SegConfigs {
+	segs := SegConfigs{}
+
+	for _, seg := range c.Primaries {
+		if seg.IsMaster() {
+			continue
+		}
+
+		segs = append(segs, seg)
+	}
+
+	for _, seg := range c.Mirrors {
+		if seg.IsStandby() {
+			continue
+		}
+
+		segs = append(segs, seg)
+	}
+
+	return segs
+}
+
 func (c *Cluster) Master() SegConfig {
 	return c.Primaries[-1]
 }
