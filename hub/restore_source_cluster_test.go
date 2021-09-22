@@ -35,7 +35,7 @@ func ResetRecoversegCmd() {
 func TestRsyncMasterAndPrimaries(t *testing.T) {
 	testlog.SetupLogger()
 
-	cluster := hub.MustCreateCluster(t, []greenplum.SegConfig{
+	cluster := hub.MustCreateCluster(t, greenplum.SegConfigs{
 		{DbID: 1, ContentID: -1, Hostname: "master", DataDir: "/data/qddir", Role: greenplum.PrimaryRole},
 		{DbID: 2, ContentID: -1, Hostname: "standby", DataDir: "/data/standby", Role: greenplum.MirrorRole},
 		{DbID: 3, ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
@@ -86,7 +86,7 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 	})
 
 	t.Run("errors in restoring tablespaces when source cluster does not have mirrors and standby", func(t *testing.T) {
-		cluster := hub.MustCreateCluster(t, []greenplum.SegConfig{
+		cluster := hub.MustCreateCluster(t, greenplum.SegConfigs{
 			{ContentID: -1, Hostname: "master", DataDir: "/data/qddir", Role: greenplum.PrimaryRole},
 			{ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
 			{ContentID: 0, Hostname: "msdw1", DataDir: "/data/dbfast_mirror1/seg1", Role: greenplum.MirrorRole},
@@ -243,7 +243,7 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 	})
 
 	t.Run("errors when source cluster does not have all mirrors and standby", func(t *testing.T) {
-		cluster := hub.MustCreateCluster(t, []greenplum.SegConfig{
+		cluster := hub.MustCreateCluster(t, greenplum.SegConfigs{
 			{ContentID: -1, Hostname: "master", DataDir: "/data/qddir", Role: greenplum.PrimaryRole},
 			{ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
 			{ContentID: 0, Hostname: "msdw1", DataDir: "/data/dbfast_mirror1/seg1", Role: greenplum.MirrorRole},
@@ -355,7 +355,7 @@ func TestRestoreMasterAndPrimariesPgControl(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		cluster := hub.MustCreateCluster(t, []greenplum.SegConfig{
+		cluster := hub.MustCreateCluster(t, greenplum.SegConfigs{
 			{ContentID: -1, Hostname: "master", DataDir: "/data/qddir", Role: greenplum.PrimaryRole},
 			{ContentID: -1, Hostname: "standby", DataDir: "/data/standby", Role: greenplum.MirrorRole},
 			{ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
@@ -410,7 +410,7 @@ func TestRestoreMasterAndPrimariesPgControl(t *testing.T) {
 		defer ctrl.Finish()
 
 		masterDir := testutils.GetTempDir(t, "")
-		cluster := hub.MustCreateCluster(t, []greenplum.SegConfig{
+		cluster := hub.MustCreateCluster(t, greenplum.SegConfigs{
 			{ContentID: -1, Hostname: "master", DataDir: masterDir, Role: greenplum.PrimaryRole},
 			{ContentID: -1, Hostname: "standby", DataDir: "/data/standby", Role: greenplum.MirrorRole},
 			{ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},

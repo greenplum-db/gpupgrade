@@ -165,8 +165,8 @@ func (c *Cluster) PrimaryHostnames() []string {
 // SelectSegments returns a list of all segments that match the given selector
 // function. Segments are visited in order of ascending content ID (primaries
 // before mirrors).
-func (c Cluster) SelectSegments(selector func(*SegConfig) bool) []SegConfig {
-	var matches []SegConfig
+func (c Cluster) SelectSegments(selector func(*SegConfig) bool) SegConfigs {
+	var matches SegConfigs
 
 	for _, content := range c.ContentIDs {
 		seg := c.Primaries[content]
@@ -190,7 +190,7 @@ var ErrInvalidSegments = errors.New("invalid segment configuration")
  * Base cluster functions
  */
 
-func NewCluster(segConfigs []SegConfig) (Cluster, error) {
+func NewCluster(segConfigs SegConfigs) (Cluster, error) {
 	cluster := Cluster{}
 
 	cluster.Primaries = make(map[int]SegConfig)

@@ -59,7 +59,7 @@ func TestStartOrStopCluster(t *testing.T) {
 		t.Errorf("WriteFile returned error: %+v", err)
 	}
 
-	source := greenplum.MustCreateCluster(t, []greenplum.SegConfig{
+	source := greenplum.MustCreateCluster(t, greenplum.SegConfigs{
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: masterDataDir, Role: "p"},
 	})
 	source.GPHome = "/usr/local/source"
@@ -110,7 +110,7 @@ func TestStartOrStopCluster(t *testing.T) {
 	})
 
 	t.Run("returns false with no error when master data directory does not exist", func(t *testing.T) {
-		source := greenplum.MustCreateCluster(t, []greenplum.SegConfig{
+		source := greenplum.MustCreateCluster(t, greenplum.SegConfigs{
 			{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/does/not/exist", Role: "p"},
 		})
 		running, err := source.IsMasterRunning(step.DevNullStream)

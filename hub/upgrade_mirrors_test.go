@@ -26,7 +26,7 @@ func TestWriteAddMirrorsConfig(t *testing.T) {
 		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 		defer resetEnv()
 
-		intermediate := MustCreateCluster(t, []greenplum.SegConfig{
+		intermediate := MustCreateCluster(t, greenplum.SegConfigs{
 			{DbID: 1, ContentID: -1, Hostname: "master", DataDir: "/data/qddir/seg.HqtFHX54y0o.-1", Port: 50432, Role: greenplum.PrimaryRole},
 			{DbID: 2, ContentID: -1, Hostname: "standby", DataDir: "/data/standby.HqtFHX54y0o", Port: 50433, Role: greenplum.MirrorRole},
 			{DbID: 3, ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg.HqtFHX54y0o.1", Port: 50434, Role: greenplum.PrimaryRole},

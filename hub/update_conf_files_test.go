@@ -25,7 +25,7 @@ import (
 )
 
 func TestUpdatePostgresqlConfOnSegments(t *testing.T) {
-	intermediate := hub.MustCreateCluster(t, []greenplum.SegConfig{
+	intermediate := hub.MustCreateCluster(t, greenplum.SegConfigs{
 		{DbID: 1, ContentID: -1, Hostname: "master", DataDir: "/data/qddir/seg.HqtFHX54y0o.-1", Port: 50432, Role: greenplum.PrimaryRole},
 		{DbID: 2, ContentID: -1, Hostname: "standby", DataDir: "/data/standby.HqtFHX54y0o", Port: 50433, Role: greenplum.MirrorRole},
 		{DbID: 3, ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg.HqtFHX54y0o.1", Port: 50434, Role: greenplum.PrimaryRole},
@@ -34,7 +34,7 @@ func TestUpdatePostgresqlConfOnSegments(t *testing.T) {
 		{DbID: 6, ContentID: 1, Hostname: "sdw1", DataDir: "/data/dbfast_mirror2/seg.HqtFHX54y0o.2", Port: 50437, Role: greenplum.MirrorRole},
 	})
 
-	target := hub.MustCreateCluster(t, []greenplum.SegConfig{
+	target := hub.MustCreateCluster(t, greenplum.SegConfigs{
 		{DbID: 1, ContentID: -1, Hostname: "master", DataDir: "/data/qddir/seg-1", Port: 15432, Role: greenplum.PrimaryRole},
 		{DbID: 2, ContentID: -1, Hostname: "standby", DataDir: "/data/standby", Port: 16432, Role: greenplum.MirrorRole},
 		{DbID: 3, ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Port: 25433, Role: greenplum.PrimaryRole},
@@ -161,7 +161,7 @@ func TestUpdatePostgresqlConfOnSegments(t *testing.T) {
 }
 
 func TestUpdateRecoveryConfiguration(t *testing.T) {
-	intermediate := hub.MustCreateCluster(t, []greenplum.SegConfig{
+	intermediate := hub.MustCreateCluster(t, greenplum.SegConfigs{
 		{DbID: 1, ContentID: -1, Hostname: "master", DataDir: "/data/qddir/seg.HqtFHX54y0o.-1", Port: 50432, Role: greenplum.PrimaryRole},
 		{DbID: 2, ContentID: -1, Hostname: "standby", DataDir: "/data/standby.HqtFHX54y0o", Port: 50433, Role: greenplum.MirrorRole},
 		{DbID: 3, ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg.HqtFHX54y0o.1", Port: 50434, Role: greenplum.PrimaryRole},
@@ -170,7 +170,7 @@ func TestUpdateRecoveryConfiguration(t *testing.T) {
 		{DbID: 6, ContentID: 1, Hostname: "sdw1", DataDir: "/data/dbfast_mirror2/seg.HqtFHX54y0o.2", Port: 50437, Role: greenplum.MirrorRole},
 	})
 
-	target := hub.MustCreateCluster(t, []greenplum.SegConfig{
+	target := hub.MustCreateCluster(t, greenplum.SegConfigs{
 		{DbID: 1, ContentID: -1, Hostname: "master", DataDir: "/data/qddir/seg-1", Port: 15432, Role: greenplum.PrimaryRole},
 		{DbID: 2, ContentID: -1, Hostname: "standby", DataDir: "/data/standby", Port: 16432, Role: greenplum.MirrorRole},
 		{DbID: 3, ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Port: 25433, Role: greenplum.PrimaryRole},

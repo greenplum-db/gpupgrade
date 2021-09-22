@@ -24,12 +24,12 @@ import (
 )
 
 func TestDeleteSegmentDataDirs(t *testing.T) {
-	segConfigs := []greenplum.SegConfig{
+	segConfigs := greenplum.SegConfigs{
 		{ContentID: -1, DbID: 0, Port: 25431, Hostname: "master", DataDir: "/data/qddir", Role: greenplum.PrimaryRole},
 		{ContentID: -1, DbID: 1, Port: 25431, Hostname: "standby", DataDir: "/data/standby", Role: greenplum.MirrorRole},
 	}
 
-	primarySegConfigs := []greenplum.SegConfig{
+	primarySegConfigs := greenplum.SegConfigs{
 		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
 		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 		{ContentID: 2, DbID: 4, Port: 25434, Hostname: "sdw1", DataDir: "/data/dbfast1/seg3", Role: greenplum.PrimaryRole},
@@ -37,7 +37,7 @@ func TestDeleteSegmentDataDirs(t *testing.T) {
 	}
 	segConfigs = append(segConfigs, primarySegConfigs...)
 
-	mirrorSegConfigs := []greenplum.SegConfig{
+	mirrorSegConfigs := greenplum.SegConfigs{
 		{ContentID: 0, DbID: 6, Port: 35432, Hostname: "sdw1", DataDir: "/data/dbfast_mirror1/seg1", Role: greenplum.MirrorRole},
 		{ContentID: 1, DbID: 7, Port: 35433, Hostname: "sdw2", DataDir: "/data/dbfast_mirror2/seg2", Role: greenplum.MirrorRole},
 		{ContentID: 2, DbID: 8, Port: 35434, Hostname: "sdw1", DataDir: "/data/dbfast_mirror1/seg3", Role: greenplum.MirrorRole},
@@ -165,7 +165,7 @@ func TestDeleteSegmentDataDirs(t *testing.T) {
 }
 
 func TestDeleteTablespaceDirectories(t *testing.T) {
-	target := hub.MustCreateCluster(t, []greenplum.SegConfig{
+	target := hub.MustCreateCluster(t, greenplum.SegConfigs{
 		{DbID: 1, ContentID: -1, Hostname: "master", DataDir: "/data/qddir", Role: greenplum.PrimaryRole},
 		{DbID: 6, ContentID: -1, Hostname: "standby", DataDir: "/data/standby", Role: greenplum.MirrorRole},
 		{DbID: 2, ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
@@ -357,7 +357,7 @@ func TestDeleteTablespaceDirectories(t *testing.T) {
 }
 
 func TestDeleteTablespacesOnMirrorsAndStandby(t *testing.T) {
-	source := hub.MustCreateCluster(t, []greenplum.SegConfig{
+	source := hub.MustCreateCluster(t, greenplum.SegConfigs{
 		{DbID: 1, ContentID: -1, Hostname: "master", DataDir: "/data/qddir", Role: greenplum.PrimaryRole},
 		{DbID: 6, ContentID: -1, Hostname: "standby", DataDir: "/data/standby", Role: greenplum.MirrorRole},
 		{DbID: 2, ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},

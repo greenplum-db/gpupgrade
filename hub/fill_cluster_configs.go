@@ -97,7 +97,7 @@ func GenerateIntermediateTargetCluster(source *greenplum.Cluster, ports []int, u
 	ports = sanitize(ports)
 
 	var targetContentIDs []int
-	intermediate, err := greenplum.NewCluster([]greenplum.SegConfig{})
+	intermediate, err := greenplum.NewCluster(greenplum.SegConfigs{})
 	if err != nil {
 		return &greenplum.Cluster{}, err
 	}

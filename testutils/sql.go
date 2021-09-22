@@ -45,7 +45,7 @@ func MockSegmentConfiguration() *sqlmock.Rows {
 // When changing this implementation, make sure you change
 // MockSegmentConfiguration() to match!
 func MockCluster() *greenplum.Cluster {
-	c, err := greenplum.NewCluster([]greenplum.SegConfig{
+	c, err := greenplum.NewCluster(greenplum.SegConfigs{
 		{DbID: 1, ContentID: -1, Port: 15432, Hostname: "mdw", DataDir: "/data/master/gpseg-1", Role: "p"},
 		{DbID: 2, ContentID: 0, Port: 25432, Hostname: "sdw1", DataDir: "/data/primary/gpseg0", Role: "p"},
 	})

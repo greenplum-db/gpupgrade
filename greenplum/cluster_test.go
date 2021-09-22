@@ -51,27 +51,27 @@ func TestCluster(t *testing.T) {
 
 	cases := []struct {
 		name      string
-		primaries []greenplum.SegConfig
-		mirrors   []greenplum.SegConfig
+		primaries greenplum.SegConfigs
+		mirrors   greenplum.SegConfigs
 	}{
-		{"mirrorless single-host, single-segment", []greenplum.SegConfig{master, primaries[0]}, nil},
-		{"mirrorless single-host, multi-segment", []greenplum.SegConfig{master, primaries[0], primaries[2]}, nil},
-		{"mirrorless multi-host, multi-segment", []greenplum.SegConfig{master, primaries[0], primaries[3]}, nil},
+		{"mirrorless single-host, single-segment", greenplum.SegConfigs{master, primaries[0]}, nil},
+		{"mirrorless single-host, multi-segment", greenplum.SegConfigs{master, primaries[0], primaries[2]}, nil},
+		{"mirrorless multi-host, multi-segment", greenplum.SegConfigs{master, primaries[0], primaries[3]}, nil},
 		{"single-host, single-segment",
-			[]greenplum.SegConfig{master, primaries[0]},
-			[]greenplum.SegConfig{mirrors[0]},
+			greenplum.SegConfigs{master, primaries[0]},
+			greenplum.SegConfigs{mirrors[0]},
 		},
 		{"single-host, multi-segment",
-			[]greenplum.SegConfig{master, primaries[0], primaries[2]},
-			[]greenplum.SegConfig{mirrors[0], mirrors[2]},
+			greenplum.SegConfigs{master, primaries[0], primaries[2]},
+			greenplum.SegConfigs{mirrors[0], mirrors[2]},
 		},
 		{"multi-host, multi-segment",
-			[]greenplum.SegConfig{master, primaries[0], primaries[3]},
-			[]greenplum.SegConfig{mirrors[0], mirrors[3]},
+			greenplum.SegConfigs{master, primaries[0], primaries[3]},
+			greenplum.SegConfigs{mirrors[0], mirrors[3]},
 		},
 		{"multi-host, multi-segment with standby",
-			[]greenplum.SegConfig{master, primaries[0], primaries[3]},
-			[]greenplum.SegConfig{standby, mirrors[0], mirrors[3]},
+			greenplum.SegConfigs{master, primaries[0], primaries[3]},
+			greenplum.SegConfigs{standby, mirrors[0], mirrors[3]},
 		},
 	}
 
@@ -113,20 +113,20 @@ func TestCluster(t *testing.T) {
 
 	errCases := []struct {
 		name     string
-		segments []greenplum.SegConfig
+		segments greenplum.SegConfigs
 	}{
-		{"bad role", []greenplum.SegConfig{
+		{"bad role", greenplum.SegConfigs{
 			{Role: "x"},
 		}},
-		{"mirror without primary", []greenplum.SegConfig{
+		{"mirror without primary", greenplum.SegConfigs{
 			{ContentID: 0, Role: "p"},
 			{ContentID: 1, Role: "m"},
 		}},
-		{"duplicated primary contents", []greenplum.SegConfig{
+		{"duplicated primary contents", greenplum.SegConfigs{
 			{ContentID: 0, Role: "p"},
 			{ContentID: 0, Role: "p"},
 		}},
-		{"duplicated mirror contents", []greenplum.SegConfig{
+		{"duplicated mirror contents", greenplum.SegConfigs{
 			{ContentID: 0, Role: "p"},
 			{ContentID: 0, Role: "m"},
 			{ContentID: 0, Role: "m"},
@@ -168,7 +168,7 @@ func TestGetSegmentConfiguration(t *testing.T) {
 			t.Errorf("returned error %+v", err)
 		}
 
-		expected := []greenplum.SegConfig{
+		expected := greenplum.SegConfigs{
 			{DbID: 1, ContentID: -1, Port: 15432, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
 			{DbID: 2, ContentID: -1, Port: 16432, Hostname: "smdw", DataDir: "/data/standby", Role: greenplum.MirrorRole},
 			{DbID: 3, ContentID: 0, Port: 25433, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
@@ -205,7 +205,7 @@ func TestGetSegmentConfiguration(t *testing.T) {
 			t.Errorf("returned error %+v", err)
 		}
 
-		expected := []greenplum.SegConfig{
+		expected := greenplum.SegConfigs{
 			{DbID: 1, ContentID: -1, Port: 15432, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
 			{DbID: 2, ContentID: -1, Port: 16432, Hostname: "mdw", DataDir: "/data/standby", Role: greenplum.MirrorRole},
 			{DbID: 3, ContentID: 0, Port: 25433, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
@@ -329,7 +329,7 @@ func TestClusterFromDB(t *testing.T) {
 }
 
 func TestSelectSegments(t *testing.T) {
-	segs := []greenplum.SegConfig{
+	segs := greenplum.SegConfigs{
 		{ContentID: 1, Role: "p"},
 		{ContentID: 2, Role: "p"},
 		{ContentID: 3, Role: "p"},
@@ -349,7 +349,7 @@ func TestSelectSegments(t *testing.T) {
 	moreThanOne := func(c *greenplum.SegConfig) bool { return c.ContentID > 1 }
 	results = cluster.SelectSegments(moreThanOne)
 
-	expected := []greenplum.SegConfig{segs[1], segs[2], segs[3]}
+	expected := greenplum.SegConfigs{segs[1], segs[2], segs[3]}
 	if !reflect.DeepEqual(results, expected) {
 		t.Errorf("SelectSegments(ContentID > 1) = %+v, want %+v", results, expected)
 	}
@@ -358,7 +358,7 @@ func TestSelectSegments(t *testing.T) {
 
 func TestHasAllMirrorsAndStandby(t *testing.T) {
 	t.Run("returns true on full cluster", func(t *testing.T) {
-		segs := []greenplum.SegConfig{
+		segs := greenplum.SegConfigs{
 			{ContentID: -1, Role: "p"},
 			{ContentID: -1, Role: "m"},
 			{ContentID: 0, Role: "p"},
@@ -377,11 +377,11 @@ func TestHasAllMirrorsAndStandby(t *testing.T) {
 
 	cases := []struct {
 		name string
-		segs []greenplum.SegConfig
+		segs greenplum.SegConfigs
 	}{
 		{
 			"returns false on cluster with no mirrors",
-			[]greenplum.SegConfig{
+			greenplum.SegConfigs{
 				{ContentID: -1, Role: "p"},
 				{ContentID: 0, Role: "p"},
 				{ContentID: 1, Role: "p"},
@@ -390,7 +390,7 @@ func TestHasAllMirrorsAndStandby(t *testing.T) {
 		},
 		{
 			"returns false on cluster with mirrors but no standby",
-			[]greenplum.SegConfig{
+			greenplum.SegConfigs{
 				{ContentID: -1, Role: "p"},
 				{ContentID: 0, Role: "p"},
 				{ContentID: 0, Role: "m"},
@@ -402,7 +402,7 @@ func TestHasAllMirrorsAndStandby(t *testing.T) {
 		},
 		{
 			"returns false on cluster with standby and no mirrors",
-			[]greenplum.SegConfig{
+			greenplum.SegConfigs{
 				{ContentID: -1, Role: "p"},
 				{ContentID: -1, Role: "m"},
 				{ContentID: 0, Role: "p"},
@@ -412,7 +412,7 @@ func TestHasAllMirrorsAndStandby(t *testing.T) {
 		},
 		{
 			"returns false on cluster with only one mirror",
-			[]greenplum.SegConfig{
+			greenplum.SegConfigs{
 				{ContentID: -1, Role: "p"},
 				{ContentID: 0, Role: "p"},
 				{ContentID: 0, Role: "m"},
@@ -435,7 +435,7 @@ func TestHasAllMirrorsAndStandby(t *testing.T) {
 func TestWaitForSegments(t *testing.T) {
 	timeout := 30 * time.Second
 
-	target := MustCreateCluster(t, []greenplum.SegConfig{
+	target := MustCreateCluster(t, greenplum.SegConfigs{
 		{DbID: 1, ContentID: -1, Hostname: "master", DataDir: "/data/qddir/seg-1", Port: 15432, Role: greenplum.PrimaryRole},
 		{DbID: 2, ContentID: -1, Hostname: "standby", DataDir: "/data/standby", Port: 16432, Role: greenplum.MirrorRole},
 		{DbID: 3, ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Port: 25433, Role: greenplum.PrimaryRole},
@@ -475,7 +475,7 @@ func TestWaitForSegments(t *testing.T) {
 	})
 
 	t.Run("skips gp_stat_replication if there is no standby", func(t *testing.T) {
-		target := MustCreateCluster(t, []greenplum.SegConfig{
+		target := MustCreateCluster(t, greenplum.SegConfigs{
 			{DbID: 1, ContentID: -1, Hostname: "master", DataDir: "/data/qddir/seg-1", Port: 15432, Role: greenplum.PrimaryRole},
 			{DbID: 3, ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Port: 25433, Role: greenplum.PrimaryRole},
 			{DbID: 4, ContentID: 0, Hostname: "sdw2", DataDir: "/data/dbfast_mirror1/seg1", Port: 25434, Role: greenplum.MirrorRole},
@@ -494,7 +494,7 @@ func TestWaitForSegments(t *testing.T) {
 	})
 
 	t.Run("does not check mode=s if there are no mirrors but has a standby", func(t *testing.T) {
-		target := MustCreateCluster(t, []greenplum.SegConfig{
+		target := MustCreateCluster(t, greenplum.SegConfigs{
 			{DbID: 1, ContentID: -1, Hostname: "master", DataDir: "/data/qddir/seg-1", Port: 15432, Role: greenplum.PrimaryRole},
 			{DbID: 2, ContentID: -1, Hostname: "standby", DataDir: "/data/standby", Port: 16432, Role: greenplum.MirrorRole},
 			{DbID: 3, ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Port: 25433, Role: greenplum.PrimaryRole},
@@ -513,7 +513,7 @@ func TestWaitForSegments(t *testing.T) {
 	})
 
 	t.Run("skips mode=s and gp_stat_replication checks if there are no mirrors and no standby", func(t *testing.T) {
-		target := MustCreateCluster(t, []greenplum.SegConfig{
+		target := MustCreateCluster(t, greenplum.SegConfigs{
 			{DbID: 1, ContentID: -1, Hostname: "master", DataDir: "/data/qddir/seg-1", Port: 15432, Role: greenplum.PrimaryRole},
 			{DbID: 3, ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Port: 25433, Role: greenplum.PrimaryRole},
 			{DbID: 5, ContentID: 1, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Port: 25435, Role: greenplum.PrimaryRole},
@@ -584,7 +584,7 @@ WHERE gp_segment_id = -1 AND state = 'streaming' AND sent_location = flush_locat
 		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(count))
 }
 
-func MustCreateCluster(t *testing.T, segs []greenplum.SegConfig) *greenplum.Cluster {
+func MustCreateCluster(t *testing.T, segs greenplum.SegConfigs) *greenplum.Cluster {
 	t.Helper()
 
 	cluster, err := greenplum.NewCluster(segs)

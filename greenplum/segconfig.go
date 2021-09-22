@@ -46,7 +46,7 @@ func (s *SegConfig) IsOnHost(hostname string) bool {
 	return s.Hostname == hostname
 }
 
-func GetSegmentConfiguration(db *sql.DB, version semver.Version) ([]SegConfig, error) {
+func GetSegmentConfiguration(db *sql.DB, version semver.Version) (SegConfigs, error) {
 	query := `
 SELECT
 	dbid,
@@ -80,7 +80,7 @@ ORDER BY s.content, s.role;`
 	}
 	defer rows.Close()
 
-	results := make([]SegConfig, 0)
+	results := make(SegConfigs, 0)
 	for rows.Next() {
 		var seg SegConfig
 		if err := rows.Scan(&seg.DbID, &seg.ContentID, &seg.Port, &seg.Hostname, &seg.DataDir, &seg.Role); err != nil {

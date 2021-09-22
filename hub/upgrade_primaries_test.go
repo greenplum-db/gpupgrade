@@ -18,14 +18,14 @@ import (
 )
 
 func TestUpgradePrimaries(t *testing.T) {
-	source := hub.MustCreateCluster(t, []greenplum.SegConfig{
+	source := hub.MustCreateCluster(t, greenplum.SegConfigs{
 		{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
 		{ContentID: 1, DbID: 3, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 	})
 	source.GPHome = "/usr/local/greenplum-db"
 	source.Version = semver.MustParse("5.0.0")
 
-	target := hub.MustCreateCluster(t, []greenplum.SegConfig{
+	target := hub.MustCreateCluster(t, greenplum.SegConfigs{
 		{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1_upgrade/seg1", Role: greenplum.PrimaryRole},
 		{ContentID: 1, DbID: 3, Hostname: "sdw2", DataDir: "/data/dbfast2_upgrade/seg2", Role: greenplum.PrimaryRole},
 	})
@@ -205,13 +205,13 @@ func TestUpgradePrimaries(t *testing.T) {
 
 func TestGetDataDirPairs(t *testing.T) {
 	t.Run("errors if source and target clusters have different number of segments", func(t *testing.T) {
-		source := hub.MustCreateCluster(t, []greenplum.SegConfig{
+		source := hub.MustCreateCluster(t, greenplum.SegConfigs{
 			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
 			{ContentID: 0, DbID: 2, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
 			{ContentID: 1, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 		})
 
-		intermediateTarget := hub.MustCreateCluster(t, []greenplum.SegConfig{
+		intermediateTarget := hub.MustCreateCluster(t, greenplum.SegConfigs{
 			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
 		})
 
@@ -228,13 +228,13 @@ func TestGetDataDirPairs(t *testing.T) {
 	})
 
 	t.Run("errors if source and target clusters have different content ids", func(t *testing.T) {
-		source := hub.MustCreateCluster(t, []greenplum.SegConfig{
+		source := hub.MustCreateCluster(t, greenplum.SegConfigs{
 			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
 			{ContentID: 0, DbID: 2, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
 			{ContentID: 1, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 		})
 
-		interemediateTarget := hub.MustCreateCluster(t, []greenplum.SegConfig{
+		interemediateTarget := hub.MustCreateCluster(t, greenplum.SegConfigs{
 			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
 			{ContentID: 0, DbID: 2, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
 			{ContentID: 2, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
@@ -253,13 +253,13 @@ func TestGetDataDirPairs(t *testing.T) {
 	})
 
 	t.Run("errors if source and target cluster hostnames differ", func(t *testing.T) {
-		source := hub.MustCreateCluster(t, []greenplum.SegConfig{
+		source := hub.MustCreateCluster(t, greenplum.SegConfigs{
 			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
 			{ContentID: 0, DbID: 2, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
 			{ContentID: 1, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 		})
 
-		intermedaiteTarget := hub.MustCreateCluster(t, []greenplum.SegConfig{
+		intermedaiteTarget := hub.MustCreateCluster(t, greenplum.SegConfigs{
 			{ContentID: -1, DbID: 1, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
 			{ContentID: 0, DbID: 2, Hostname: "localhost", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
 			{ContentID: 1, DbID: 3, Hostname: "localhost", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},

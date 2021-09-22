@@ -26,7 +26,7 @@ func TestUpdateGpSegmentConfiguration(t *testing.T) {
 	}{
 		{
 			name: "updates ports for every segment",
-			target: hub.MustCreateCluster(t, []greenplum.SegConfig{
+			target: hub.MustCreateCluster(t, greenplum.SegConfigs{
 				{DbID: 1, ContentID: -1, Port: 123, Role: greenplum.PrimaryRole},
 				{DbID: 8, ContentID: -1, Port: 789, Role: greenplum.MirrorRole},
 				{DbID: 2, ContentID: 0, Port: 234, Role: greenplum.PrimaryRole},
@@ -39,7 +39,7 @@ func TestUpdateGpSegmentConfiguration(t *testing.T) {
 		},
 		{
 			name: "updates ports when there is no standby or mirrors",
-			target: hub.MustCreateCluster(t, []greenplum.SegConfig{
+			target: hub.MustCreateCluster(t, greenplum.SegConfigs{
 				{DbID: 1, ContentID: -1, Port: 123, Role: greenplum.PrimaryRole},
 				{DbID: 2, ContentID: 0, Port: 234, Role: greenplum.PrimaryRole},
 				{DbID: 3, ContentID: 1, Port: 345, Role: greenplum.PrimaryRole},
@@ -48,7 +48,7 @@ func TestUpdateGpSegmentConfiguration(t *testing.T) {
 		},
 		{
 			name: "updates ports when there is a standby but no mirrors",
-			target: hub.MustCreateCluster(t, []greenplum.SegConfig{
+			target: hub.MustCreateCluster(t, greenplum.SegConfigs{
 				{DbID: 1, ContentID: -1, Port: 123, Role: greenplum.PrimaryRole},
 				{DbID: 5, ContentID: -1, Port: 789, Role: greenplum.MirrorRole},
 				{DbID: 2, ContentID: 0, Port: 234, Role: greenplum.PrimaryRole},
@@ -58,7 +58,7 @@ func TestUpdateGpSegmentConfiguration(t *testing.T) {
 		},
 		{
 			name: "updates ports when there is no standby but mirrors",
-			target: hub.MustCreateCluster(t, []greenplum.SegConfig{
+			target: hub.MustCreateCluster(t, greenplum.SegConfigs{
 				{DbID: 1, ContentID: -1, Port: 123, Role: greenplum.PrimaryRole},
 				{DbID: 2, ContentID: 0, Port: 234, Role: greenplum.PrimaryRole},
 				{DbID: 5, ContentID: 0, Port: 111, Role: greenplum.MirrorRole},
@@ -101,7 +101,7 @@ func TestUpdateGpSegmentConfiguration(t *testing.T) {
 	}
 
 	// error cases
-	target := hub.MustCreateCluster(t, []greenplum.SegConfig{
+	target := hub.MustCreateCluster(t, greenplum.SegConfigs{
 		{DbID: 1, ContentID: -1, Port: 123, Role: greenplum.PrimaryRole},
 		{DbID: 8, ContentID: -1, Port: 789, Role: greenplum.MirrorRole},
 		{DbID: 2, ContentID: 0, Port: 234, Role: greenplum.PrimaryRole},

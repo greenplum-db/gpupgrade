@@ -136,7 +136,7 @@ func init() {
 func TestUpgradeMaster(t *testing.T) {
 	testlog.SetupLogger()
 
-	source := MustCreateCluster(t, []greenplum.SegConfig{
+	source := MustCreateCluster(t, greenplum.SegConfigs{
 		{ContentID: -1, Port: 5432, DataDir: "/data/old", DbID: 1, Role: "p"},
 		{ContentID: -1, Port: 5433, DataDir: "/data/standby", DbID: 2, Role: "m"},
 	})
@@ -165,7 +165,7 @@ func TestUpgradeMaster(t *testing.T) {
 	// output streams are hooked up correctly, then defer to the acceptance
 	// tests for full end-to-end verification.
 
-	target := MustCreateCluster(t, []greenplum.SegConfig{
+	target := MustCreateCluster(t, greenplum.SegConfigs{
 		{ContentID: -1, Port: 5433, DataDir: "/data/new", DbID: 2, Role: "p"},
 	})
 	target.GPHome = "/usr/local/target"

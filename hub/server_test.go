@@ -33,13 +33,13 @@ import (
 const timeout = 1 * time.Second
 
 func TestHubStart(t *testing.T) {
-	source := hub.MustCreateCluster(t, []greenplum.SegConfig{
+	source := hub.MustCreateCluster(t, greenplum.SegConfigs{
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: "p"},
 		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: "/data/dbfast1/seg1", Role: "p"},
 		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: "p"},
 	})
 
-	target := hub.MustCreateCluster(t, []greenplum.SegConfig{
+	target := hub.MustCreateCluster(t, greenplum.SegConfigs{
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: "p"},
 		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: "/data/dbfast1/seg1", Role: "p"},
 		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: "p"},
@@ -155,7 +155,7 @@ func mustListen(t *testing.T) (int, func()) {
 //  able to use bufconn.Listen when creating a gRPC dialer. But since there
 //  are many callers to AgentConns that is not an easy change.
 func TestAgentConns(t *testing.T) {
-	source := hub.MustCreateCluster(t, []greenplum.SegConfig{
+	source := hub.MustCreateCluster(t, greenplum.SegConfigs{
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: "p"},
 		{ContentID: -1, DbID: 2, Port: 15432, Hostname: "standby", DataDir: "/data/qddir/seg-1", Role: "m"},
 		{ContentID: 0, DbID: 3, Port: 25432, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: "p"},
@@ -164,7 +164,7 @@ func TestAgentConns(t *testing.T) {
 		{ContentID: 1, DbID: 6, Port: 25433, Hostname: "sdw2-mirror", DataDir: "/data/dbfast_mirror2/seg2", Role: "m"},
 	})
 
-	target := hub.MustCreateCluster(t, []greenplum.SegConfig{
+	target := hub.MustCreateCluster(t, greenplum.SegConfigs{
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "standby", DataDir: "/data/qddir/seg-1", Role: "p"},
 		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "sdw1-mirror", DataDir: "/data/dbfast1/seg1", Role: "p"},
 		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "sdw2-mirror", DataDir: "/data/dbfast2/seg2", Role: "p"},
@@ -436,7 +436,7 @@ func TestAgentHosts(t *testing.T) {
 		expected []string // must be in alphabetical order
 	}{{
 		"master excluded",
-		hub.MustCreateCluster(t, []greenplum.SegConfig{
+		hub.MustCreateCluster(t, greenplum.SegConfigs{
 			{ContentID: -1, Hostname: "mdw", Role: "p"},
 			{ContentID: 0, Hostname: "sdw1", Role: "p"},
 			{ContentID: 1, Hostname: "sdw1", Role: "p"},
@@ -444,14 +444,14 @@ func TestAgentHosts(t *testing.T) {
 		[]string{"sdw1"},
 	}, {
 		"master included if another segment is with it",
-		hub.MustCreateCluster(t, []greenplum.SegConfig{
+		hub.MustCreateCluster(t, greenplum.SegConfigs{
 			{ContentID: -1, Hostname: "mdw", Role: "p"},
 			{ContentID: 0, Hostname: "mdw", Role: "p"},
 		}),
 		[]string{"mdw"},
 	}, {
 		"mirror and standby hosts are handled",
-		hub.MustCreateCluster(t, []greenplum.SegConfig{
+		hub.MustCreateCluster(t, greenplum.SegConfigs{
 			{ContentID: -1, Hostname: "mdw", Role: "p"},
 			{ContentID: -1, Hostname: "smdw", Role: "m"},
 			{ContentID: 0, Hostname: "sdw1", Role: "p"},
