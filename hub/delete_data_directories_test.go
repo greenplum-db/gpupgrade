@@ -57,25 +57,25 @@ func TestDeleteSegmentDataDirs(t *testing.T) {
 			sdw1Client := mock_idl.NewMockAgentClient(ctrl)
 			sdw1Client.EXPECT().DeleteDataDirectories(
 				gomock.Any(),
-				&idl.DeleteDataDirectoriesRequest{Datadirs: []string{
+				equivalentDeleteDataDirsRequest(&idl.DeleteDataDirectoriesRequest{Datadirs: []string{
 					"/data/dbfast_mirror1/seg1",
 					"/data/dbfast_mirror1/seg3",
 				}},
-			).Return(&idl.DeleteDataDirectoriesReply{}, nil)
+				)).Return(&idl.DeleteDataDirectoriesReply{}, nil)
 
 			sdw2Client := mock_idl.NewMockAgentClient(ctrl)
 			sdw2Client.EXPECT().DeleteDataDirectories(
 				gomock.Any(),
-				&idl.DeleteDataDirectoriesRequest{Datadirs: []string{
+				equivalentDeleteDataDirsRequest(&idl.DeleteDataDirectoriesRequest{Datadirs: []string{
 					"/data/dbfast_mirror2/seg2",
 					"/data/dbfast_mirror2/seg4",
-				}},
+				}}),
 			).Return(&idl.DeleteDataDirectoriesReply{}, nil)
 
 			standbyClient := mock_idl.NewMockAgentClient(ctrl)
 			standbyClient.EXPECT().DeleteDataDirectories(
 				gomock.Any(),
-				&idl.DeleteDataDirectoriesRequest{Datadirs: []string{"/data/standby"}},
+				equivalentDeleteDataDirsRequest(&idl.DeleteDataDirectoriesRequest{Datadirs: []string{"/data/standby"}}),
 			).Return(&idl.DeleteDataDirectoriesReply{}, nil)
 
 			agentConns := []*idl.Connection{
@@ -99,20 +99,20 @@ func TestDeleteSegmentDataDirs(t *testing.T) {
 			sdw1Client := mock_idl.NewMockAgentClient(ctrl)
 			sdw1Client.EXPECT().DeleteDataDirectories(
 				gomock.Any(),
-				&idl.DeleteDataDirectoriesRequest{Datadirs: []string{
+				equivalentDeleteDataDirsRequest(&idl.DeleteDataDirectoriesRequest{Datadirs: []string{
 					"/data/dbfast1/seg1",
 					"/data/dbfast1/seg3",
 				}},
-			).Return(&idl.DeleteDataDirectoriesReply{}, nil)
+				)).Return(&idl.DeleteDataDirectoriesReply{}, nil)
 
 			sdw2Client := mock_idl.NewMockAgentClient(ctrl)
 			sdw2Client.EXPECT().DeleteDataDirectories(
 				gomock.Any(),
-				&idl.DeleteDataDirectoriesRequest{Datadirs: []string{
+				equivalentDeleteDataDirsRequest(&idl.DeleteDataDirectoriesRequest{Datadirs: []string{
 					"/data/dbfast2/seg2",
 					"/data/dbfast2/seg4",
 				}},
-			).Return(&idl.DeleteDataDirectoriesReply{}, nil)
+				)).Return(&idl.DeleteDataDirectoriesReply{}, nil)
 
 			standbyClient := mock_idl.NewMockAgentClient(ctrl)
 			// NOTE: we expect no call to the standby
@@ -275,7 +275,7 @@ func TestDeleteTablespaceDirectories(t *testing.T) {
 		sdw1 := mock_idl.NewMockAgentClient(ctrl)
 		sdw1.EXPECT().DeleteTablespaceDirectories(
 			gomock.Any(),
-			equivalentRequest(&idl.DeleteTablespaceRequest{
+			equivalentTablespaceRequest(&idl.DeleteTablespaceRequest{
 				Dirs: []string{
 					"/tmp/testfs/primary1/dbfast1/16386/2/GPDB_6_301908232",
 					"/tmp/testfs/primary1/dbfast1/16387/2/GPDB_6_301908232",
@@ -285,7 +285,7 @@ func TestDeleteTablespaceDirectories(t *testing.T) {
 		sdw2 := mock_idl.NewMockAgentClient(ctrl)
 		sdw2.EXPECT().DeleteTablespaceDirectories(
 			gomock.Any(),
-			equivalentRequest(&idl.DeleteTablespaceRequest{
+			equivalentTablespaceRequest(&idl.DeleteTablespaceRequest{
 				Dirs: []string{
 					"/tmp/testfs/primary2/dbfast2/16386/4/GPDB_6_301908232",
 					"/tmp/testfs/primary2/dbfast2/16387/4/GPDB_6_301908232",
@@ -418,7 +418,7 @@ func TestDeleteTablespacesOnMirrorsAndStandby(t *testing.T) {
 		standby := mock_idl.NewMockAgentClient(ctrl)
 		standby.EXPECT().DeleteSourceTablespaceDirectories(
 			gomock.Any(),
-			equivalentRequest(&idl.DeleteTablespaceRequest{
+			equivalentTablespaceRequest(&idl.DeleteTablespaceRequest{
 				Dirs: []string{
 					"/tmp/testfs/standby/demoDataDir-1/16386",
 					"/tmp/testfs/standby/demoDataDir-1/16387",
@@ -428,7 +428,7 @@ func TestDeleteTablespacesOnMirrorsAndStandby(t *testing.T) {
 		msdw1 := mock_idl.NewMockAgentClient(ctrl)
 		msdw1.EXPECT().DeleteSourceTablespaceDirectories(
 			gomock.Any(),
-			equivalentRequest(&idl.DeleteTablespaceRequest{
+			equivalentTablespaceRequest(&idl.DeleteTablespaceRequest{
 				Dirs: []string{
 					"/tmp/testfs/mirror1/dbfast_mirror1/16386",
 					"/tmp/testfs/mirror1/dbfast_mirror1/16387",
@@ -438,7 +438,7 @@ func TestDeleteTablespacesOnMirrorsAndStandby(t *testing.T) {
 		msdw2 := mock_idl.NewMockAgentClient(ctrl)
 		msdw2.EXPECT().DeleteSourceTablespaceDirectories(
 			gomock.Any(),
-			equivalentRequest(&idl.DeleteTablespaceRequest{
+			equivalentTablespaceRequest(&idl.DeleteTablespaceRequest{
 				Dirs: []string{
 					"/tmp/testfs/mirror2/dbfast_mirror2/16386",
 					"/tmp/testfs/mirror2/dbfast_mirror2/16387",
@@ -472,7 +472,7 @@ func TestDeleteTablespacesOnMirrorsAndStandby(t *testing.T) {
 		msdw1 := mock_idl.NewMockAgentClient(ctrl)
 		msdw1.EXPECT().DeleteSourceTablespaceDirectories(
 			gomock.Any(),
-			equivalentRequest(&idl.DeleteTablespaceRequest{
+			equivalentTablespaceRequest(&idl.DeleteTablespaceRequest{
 				Dirs: []string{
 					"/tmp/testfs/mirror1/dbfast_mirror1/16386",
 					"/tmp/testfs/mirror1/dbfast_mirror1/16387",
@@ -483,7 +483,7 @@ func TestDeleteTablespacesOnMirrorsAndStandby(t *testing.T) {
 		failedClient := mock_idl.NewMockAgentClient(ctrl)
 		failedClient.EXPECT().DeleteSourceTablespaceDirectories(
 			gomock.Any(),
-			equivalentRequest(&idl.DeleteTablespaceRequest{
+			equivalentTablespaceRequest(&idl.DeleteTablespaceRequest{
 				Dirs: []string{
 					"/tmp/testfs/mirror2/dbfast_mirror2/16386",
 					"/tmp/testfs/mirror2/dbfast_mirror2/16387",
@@ -503,17 +503,45 @@ func TestDeleteTablespacesOnMirrorsAndStandby(t *testing.T) {
 	})
 }
 
-// equivalentRequest is a Matcher that can handle differences in order between
+// equivalentDeleteDataDirsRequest is a Matcher that can handle differences in order between
 // two instances of DeleteTablespaceRequest.Dirs
-func equivalentRequest(req *idl.DeleteTablespaceRequest) gomock.Matcher {
-	return reqMatcher{req}
+func equivalentDeleteDataDirsRequest(req *idl.DeleteDataDirectoriesRequest) gomock.Matcher {
+	return reqDeleteDataDirsMatcher{req}
 }
 
-type reqMatcher struct {
+type reqDeleteDataDirsMatcher struct {
+	expected *idl.DeleteDataDirectoriesRequest
+}
+
+func (r reqDeleteDataDirsMatcher) Matches(x interface{}) bool {
+	actual, ok := x.(*idl.DeleteDataDirectoriesRequest)
+	if !ok {
+		return false
+	}
+
+	// The key here is that Datadirs can be in any order. Sort them before
+	// comparison.
+	sort.Strings(r.expected.GetDatadirs())
+	sort.Strings(actual.GetDatadirs())
+
+	return reflect.DeepEqual(r.expected, actual)
+}
+
+func (r reqDeleteDataDirsMatcher) String() string {
+	return fmt.Sprintf("is equivalent to %v", r.expected)
+}
+
+// equivalentTablespaceRequest is a Matcher that can handle differences in order between
+// two instances of DeleteTablespaceRequest.Dirs
+func equivalentTablespaceRequest(req *idl.DeleteTablespaceRequest) gomock.Matcher {
+	return reqTablespaceMatcher{req}
+}
+
+type reqTablespaceMatcher struct {
 	expected *idl.DeleteTablespaceRequest
 }
 
-func (r reqMatcher) Matches(x interface{}) bool {
+func (r reqTablespaceMatcher) Matches(x interface{}) bool {
 	actual, ok := x.(*idl.DeleteTablespaceRequest)
 	if !ok {
 		return false
@@ -527,6 +555,6 @@ func (r reqMatcher) Matches(x interface{}) bool {
 	return reflect.DeepEqual(r.expected, actual)
 }
 
-func (r reqMatcher) String() string {
+func (r reqTablespaceMatcher) String() string {
 	return fmt.Sprintf("is equivalent to %v", r.expected)
 }

@@ -5,7 +5,9 @@ package hub_test
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -106,28 +108,28 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 		smdw := mock_idl.NewMockAgentClient(ctrl)
 		smdw.EXPECT().CheckDiskSpace(
 			gomock.Any(),
-			&idl.CheckSegmentDiskSpaceRequest{
+			equivalentCheckDiskRequest(&idl.CheckSegmentDiskSpaceRequest{
 				DiskFreeRatio: diskFreeRatio,
 				Dirs:          []string{"/data/standby", "/tmp/user_ts/m/standby/16384"},
-			},
+			}),
 		).Return(&idl.CheckDiskSpaceReply{}, nil)
 
 		sdw1 := mock_idl.NewMockAgentClient(ctrl)
 		sdw1.EXPECT().CheckDiskSpace(
 			gomock.Any(),
-			&idl.CheckSegmentDiskSpaceRequest{
+			equivalentCheckDiskRequest(&idl.CheckSegmentDiskSpaceRequest{
 				DiskFreeRatio: diskFreeRatio,
 				Dirs:          []string{"/data/dbfast/seg1", "/tmp/user_ts/p1/16384", "/data/dbfast_mirror2/seg2", "/tmp/user_ts/m2/16384"},
-			},
+			}),
 		).Return(&idl.CheckDiskSpaceReply{}, nil)
 
 		sdw2 := mock_idl.NewMockAgentClient(ctrl)
 		sdw2.EXPECT().CheckDiskSpace(
 			gomock.Any(),
-			&idl.CheckSegmentDiskSpaceRequest{
+			equivalentCheckDiskRequest(&idl.CheckSegmentDiskSpaceRequest{
 				DiskFreeRatio: diskFreeRatio,
 				Dirs:          []string{"/data/dbfast_mirror1/seg1", "/tmp/user_ts/m1/16384", "/data/dbfast/seg2", "/tmp/user_ts/p2/16384"},
-			},
+			}),
 		).Return(&idl.CheckDiskSpaceReply{}, nil)
 
 		agentConns := []*idl.Connection{
@@ -286,4 +288,32 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 			t.Errorf("unexpected error %#v", err)
 		}
 	})
+}
+
+// equivalentCheckDiskRequest is a Matcher that can handle differences in order between
+// two instances of DeleteTablespaceRequest.Dirs
+func equivalentCheckDiskRequest(req *idl.CheckSegmentDiskSpaceRequest) gomock.Matcher {
+	return reqCheckDiskMatcher{req}
+}
+
+type reqCheckDiskMatcher struct {
+	expected *idl.CheckSegmentDiskSpaceRequest
+}
+
+func (r reqCheckDiskMatcher) Matches(x interface{}) bool {
+	actual, ok := x.(*idl.CheckSegmentDiskSpaceRequest)
+	if !ok {
+		return false
+	}
+
+	// The key here is that Datadirs can be in any order. Sort them before
+	// comparison.
+	sort.Strings(r.expected.Dirs)
+	sort.Strings(actual.Dirs)
+
+	return reflect.DeepEqual(r.expected, actual)
+}
+
+func (r reqCheckDiskMatcher) String() string {
+	return fmt.Sprintf("is equivalent to %v", r.expected)
 }

@@ -7,13 +7,13 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"sort"
 
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 type UpgradePrimaryArgs struct {
@@ -60,20 +60,18 @@ var ErrInvalidCluster = errors.New("Source and target clusters do not match")
 func (s *Server) GetDataDirPairs() (map[string][]*idl.DataDirPair, error) {
 	dataDirPairMap := make(map[string][]*idl.DataDirPair)
 
-	sourceContents := s.Source.ContentIDs
-	targetContents := s.IntermediateTarget.ContentIDs
-	if len(sourceContents) != len(targetContents) {
-		return nil, newInvalidClusterError("Source cluster has %d segments, and target cluster has %d segments.", len(sourceContents), len(targetContents))
-	}
-	sort.Ints(sourceContents)
-	sort.Ints(targetContents)
-	for i := range sourceContents {
-		if sourceContents[i] != targetContents[i] {
-			return nil, newInvalidClusterError("Source cluster with content %d, does not match target cluster with content %d.", sourceContents[i], targetContents[i])
-		}
+	var contents []int
+	for content := range s.Source.Primaries {
+		contents = append(contents, content)
 	}
 
-	for _, contentID := range s.Source.ContentIDs {
+	for content := range s.Source.Mirrors {
+		contents = append(contents, content)
+	}
+
+	contents = utils.Sanitize(contents)
+
+	for _, contentID := range contents {
 		if contentID == -1 {
 			continue
 		}

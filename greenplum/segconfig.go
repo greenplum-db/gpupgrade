@@ -10,6 +10,9 @@ import (
 	"golang.org/x/xerrors"
 )
 
+const PrimaryRole = "p"
+const MirrorRole = "m"
+
 type SegConfig struct {
 	DbID      int
 	ContentID int
@@ -36,11 +39,6 @@ func (s SegConfigs) Less(i, j int) bool {
 func (s SegConfigs) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
-
-const (
-	PrimaryRole = "p"
-	MirrorRole  = "m"
-)
 
 func (s *SegConfig) IsMaster() bool {
 	return s.ContentID == -1 && s.Role == PrimaryRole

@@ -95,7 +95,6 @@ func FillConfiguration(config *Config, request *idl.InitializeRequest, conn *gre
 func GenerateIntermediateTargetCluster(source *greenplum.Cluster, ports []int, upgradeID upgrade.ID, version semver.Version, gphome string) (*greenplum.Cluster, error) {
 	ports = utils.Sanitize(ports)
 
-	var targetContentIDs []int
 	intermediate, err := greenplum.NewCluster([]greenplum.SegConfig{})
 	if err != nil {
 		return &greenplum.Cluster{}, err
@@ -122,7 +121,6 @@ func GenerateIntermediateTargetCluster(source *greenplum.Cluster, ports []int, u
 		master.Port = ports[nextPortIndex]
 		master.DataDir = upgrade.TempDataDir(master.DataDir, segPrefix, upgradeID)
 		intermediate.Primaries[-1] = master
-		targetContentIDs = append(targetContentIDs, -1)
 		nextPortIndex++
 	}
 
@@ -134,14 +132,23 @@ func GenerateIntermediateTargetCluster(source *greenplum.Cluster, ports []int, u
 		standby.Port = ports[nextPortIndex]
 		standby.DataDir = upgrade.TempDataDir(standby.DataDir, segPrefix, upgradeID)
 		intermediate.Mirrors[-1] = standby
-		targetContentIDs = append(targetContentIDs, -1)
 		nextPortIndex++
 	}
 
 	portIndexByHost := make(map[string]int)
 
-	for _, content := range source.ContentIDs {
-		// Skip the master segment
+	var contents []int
+	for content := range source.Primaries {
+		contents = append(contents, content)
+	}
+
+	for content := range source.Mirrors {
+		contents = append(contents, content)
+	}
+
+	contents = utils.Sanitize(contents)
+
+	for _, content := range contents {
 		if content == -1 {
 			continue
 		}
@@ -164,11 +171,9 @@ func GenerateIntermediateTargetCluster(source *greenplum.Cluster, ports []int, u
 		segment.DataDir = upgrade.TempDataDir(segment.DataDir, segPrefix, upgradeID)
 
 		intermediate.Primaries[content] = segment
-		targetContentIDs = append(targetContentIDs, content)
 	}
 
-	for _, content := range source.ContentIDs {
-		// Skip the standby segment
+	for _, content := range contents {
 		if content == -1 {
 			continue
 		}
@@ -190,11 +195,9 @@ func GenerateIntermediateTargetCluster(source *greenplum.Cluster, ports []int, u
 			segment.DataDir = upgrade.TempDataDir(segment.DataDir, segPrefix, upgradeID)
 
 			intermediate.Mirrors[content] = segment
-			targetContentIDs = append(targetContentIDs, content)
 		}
 	}
 
-	intermediate.ContentIDs = utils.Sanitize(targetContentIDs)
 	intermediate.GPHome = gphome
 	intermediate.Version = version
 	intermediate.Destination = idl.ClusterDestination_INTERMEDIATE

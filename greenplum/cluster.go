@@ -20,7 +20,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/upgrade"
-	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
@@ -29,13 +28,7 @@ const MasterDbid = 1
 type Cluster struct {
 	Destination idl.ClusterDestination
 
-	// ContentIDs contains the list of all primary content IDs, in the same
-	// order that they were provided to NewCluster. Clients requiring a stable
-	// iteration order over the Primaries map may use this.
-	ContentIDs []int
-
-	// Primaries contains the primary SegConfigs, keyed by content ID. One
-	// primary exists for every entry in ContentIDs.
+	// Primaries contains the primary SegConfigs, keyed by content ID.
 	Primaries map[int]SegConfig
 
 	// Mirrors contains any mirror SegConfigs, keyed by content ID. Not every
@@ -76,20 +69,17 @@ func NewCluster(segments SegConfigs) (Cluster, error) {
 	for _, seg := range segments {
 		if seg.IsPrimary() || seg.IsMaster() {
 			cluster.Primaries[seg.ContentID] = seg
-			cluster.ContentIDs = append(cluster.ContentIDs, seg.ContentID)
 			continue
 		}
 
 		if seg.IsMirror() || seg.IsStandby() {
 			cluster.Mirrors[seg.ContentID] = seg
-			cluster.ContentIDs = append(cluster.ContentIDs, seg.ContentID)
 			continue
 		}
 
 		return Cluster{}, errors.New("Expected role to be primary or mirror, but found none when creating cluster.")
 	}
 
-	cluster.ContentIDs = utils.Sanitize(cluster.ContentIDs)
 	return cluster, nil
 }
 
@@ -155,11 +145,18 @@ func (c *Cluster) StandbyDataDir() string {
 
 // Returns true if we have at least one mirror that is not a standby
 func (c *Cluster) HasMirrors() bool {
-	for contentID := range c.ContentIDs {
-		if _, ok := c.Mirrors[contentID]; ok && contentID != -1 {
-			return true
-		}
+	if len(c.Mirrors) == 0 {
+		return false
 	}
+
+	for _, mirror := range c.Mirrors {
+		if mirror.IsStandby() {
+			continue
+		}
+
+		return true
+	}
+
 	return false
 }
 
@@ -196,13 +193,14 @@ func (c *Cluster) PrimaryHostnames() []string {
 func (c Cluster) SelectSegments(selector func(*SegConfig) bool) SegConfigs {
 	var matches SegConfigs
 
-	for _, content := range c.ContentIDs {
-		seg := c.Primaries[content]
+	for _, seg := range c.Primaries {
 		if selector(&seg) {
 			matches = append(matches, seg)
 		}
+	}
 
-		if seg, ok := c.Mirrors[content]; ok && selector(&seg) {
+	for _, seg := range c.Mirrors {
+		if selector(&seg) {
 			matches = append(matches, seg)
 		}
 	}

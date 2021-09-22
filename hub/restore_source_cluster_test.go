@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strings"
 	"testing"
 
@@ -438,18 +439,18 @@ func TestRestoreMasterAndPrimariesPgControl(t *testing.T) {
 		sdw1 := mock_idl.NewMockAgentClient(ctrl)
 		sdw1.EXPECT().RestorePrimariesPgControl(
 			gomock.Any(),
-			&idl.RestorePgControlRequest{
+			equivalentRestorePgControlRequest(&idl.RestorePgControlRequest{
 				Datadirs: []string{"/data/dbfast1/seg1", "/data/dbfast2/seg2"},
 			},
-		).Return(&idl.RestorePgControlReply{}, nil)
+			)).Return(&idl.RestorePgControlReply{}, nil)
 
 		sdw2 := mock_idl.NewMockAgentClient(ctrl)
 		sdw2.EXPECT().RestorePrimariesPgControl(
 			gomock.Any(),
-			&idl.RestorePgControlRequest{
+			equivalentRestorePgControlRequest(&idl.RestorePgControlRequest{
 				Datadirs: []string{"/data/dbfast3/seg3", "/data/dbfast4/seg4"},
 			},
-		).Return(&idl.RestorePgControlReply{}, nil)
+			)).Return(&idl.RestorePgControlReply{}, nil)
 
 		agentConns := []*idl.Connection{
 			{AgentClient: sdw1, Hostname: "sdw1"},
@@ -461,4 +462,32 @@ func TestRestoreMasterAndPrimariesPgControl(t *testing.T) {
 			t.Errorf("unexpected err %#v", err)
 		}
 	})
+}
+
+// equivalentRestorePgControlRequest is a Matcher that can handle differences in order between
+// two instances of DeleteTablespaceRequest.Dirs
+func equivalentRestorePgControlRequest(req *idl.RestorePgControlRequest) gomock.Matcher {
+	return reqRestorePgControlMatcher{req}
+}
+
+type reqRestorePgControlMatcher struct {
+	expected *idl.RestorePgControlRequest
+}
+
+func (r reqRestorePgControlMatcher) Matches(x interface{}) bool {
+	actual, ok := x.(*idl.RestorePgControlRequest)
+	if !ok {
+		return false
+	}
+
+	// The key here is that Datadirs can be in any order. Sort them before
+	// comparison.
+	sort.Strings(r.expected.GetDatadirs())
+	sort.Strings(actual.GetDatadirs())
+
+	return reflect.DeepEqual(r.expected, actual)
+}
+
+func (r reqRestorePgControlMatcher) String() string {
+	return fmt.Sprintf("is equivalent to %v", r.expected)
 }

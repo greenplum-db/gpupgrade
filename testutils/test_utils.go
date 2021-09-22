@@ -29,7 +29,6 @@ func (f *FailingWriter) Write(_ []byte) (int, error) {
 // TODO remove in favor of MustCreateCluster
 func CreateMultinodeSampleCluster(baseDir string) *greenplum.Cluster {
 	return &greenplum.Cluster{
-		ContentIDs: []int{-1, 0, 1},
 		Primaries: map[int]greenplum.SegConfig{
 			-1: {ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: baseDir + "/seg-1", Role: greenplum.PrimaryRole},
 			0:  {ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: baseDir + "/seg1", Role: greenplum.PrimaryRole},
