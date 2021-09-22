@@ -5,7 +5,7 @@
           trigger: true
           passed:
             - build
-            - noinstall-tests
+            - nocluster-tests
             {{- range .GpupgradeJobs}}
             - {{ .Name }}
             {{- end}}

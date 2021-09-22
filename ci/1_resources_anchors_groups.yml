@@ -267,7 +267,7 @@ groups:
     jobs:
       - build
       - lint
-      - noinstall-tests
+      - nocluster-tests
       {{- range .GpupgradeJobs}}
       - {{.Name}}
       {{- end}}

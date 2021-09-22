@@ -1,4 +1,4 @@
-- name: noinstall-tests
+- name: nocluster-tests
   plan:
     - in_parallel:
         - get: gpupgrade_src
@@ -6,7 +6,7 @@
         - get: bats
         - get: gpdb_src_source
           resource: gpdb5_src
-    - task: noinstall-tests
+    - task: nocluster-tests
       config:
         platform: linux
         image_resource:
@@ -19,7 +19,7 @@
           - name: bats
           - name: gpdb_src_source
         run:
-          path: gpupgrade_src/ci/scripts/noinstall-tests.bash
+          path: gpupgrade_src/ci/scripts/nocluster-tests.bash
   on_failure:
     <<: *slack_alert
 
@@ -38,7 +38,7 @@
         - get: rpm_gpdb_target
           resource: gpdb{{.Target}}_centos7_rpm
           trigger: true
-    - task: install-tests
+    - task: cluster-tests
       config:
         platform: linux
         image_resource:
@@ -53,7 +53,7 @@
           - name: rpm_gpdb_target
           - name: bats
         run:
-          path: gpupgrade_src/ci/scripts/install-tests.bash
+          path: gpupgrade_src/ci/scripts/cluster-tests.bash
       params:
         SOURCE_PACKAGE: greenplum-db-{{.Source}}
         TARGET_PACKAGE: greenplum-db-{{.Target}}

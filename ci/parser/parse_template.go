@@ -36,7 +36,7 @@ type GpupgradeJob struct {
 }
 
 func (j *GpupgradeJob) Name() string {
-	return fmt.Sprintf("%s-to-%s-install-tests", j.Source, j.Target)
+	return fmt.Sprintf("%s-to-%s-cluster-tests", j.Source, j.Target)
 }
 
 type UpgradeJob struct {
