@@ -28,17 +28,4 @@ WHERE c.relkind = 'r'
         WHERE
             i.inhrelid = a.attrelid
             AND a.attname = a2.attname
-    )
-    AND c.oid NOT IN
-    (
-        SELECT DISTINCT d.refobjid
-        FROM
-            pg_depend d
-            JOIN pg_rewrite r ON r.oid = d.objid
-            JOIN pg_class v ON v.oid = r.ev_class
-        WHERE
-            relkind = 'v'
-            AND d.classid = 'pg_rewrite'::regclass
-            AND d.refclassid = 'pg_class'::regclass
-            AND d.deptype = 'n'
     );

@@ -3,6 +3,8 @@
 
 -- generates create index statement to re-create indexes on deprecated types.
 
+SET client_min_messages TO WARNING;
+
 DROP VIEW IF EXISTS __gpupgrade_temp_view2;
 DROP VIEW IF EXISTS __gpupgrade_temp_view;
 

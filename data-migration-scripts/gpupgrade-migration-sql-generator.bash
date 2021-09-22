@@ -103,12 +103,22 @@ execute_script_directory() {
     rm -f "$output_dir"/*.sh
 
     for database in "${databases[@]}"; do
+        # Create the function for detecting dependent views
+        is_python_enabled=$("$GPHOME"/bin/psql -X -q -d "$database" -p "$PGPORT" -Atc "SELECT count(*) FROM pg_language WHERE lanname = 'plpythonu'")
+        if [ ! $is_python_enabled == 1 ]; then
+            is_python_enabled=$("$GPHOME"/bin/psql -X -q -d "$database" -p "$PGPORT" -Atc "CREATE LANGUAGE plpythonu")
+        fi
+        records=$("$GPHOME"/bin/psql -X -q -d "$database" -p "$PGPORT" -Atf "${INPUT_DIR}/create_find_view_dep_function.sql")
+
         for path in "${paths[@]}"; do
             # generate sql modifying shared objects only for default database
             if ! should_apply_once "$path" || [ "$database" == "postgres" ]; then
                 exec_script "$database" "$path" "$output_dir"
             fi
         done
+
+        # Drop the table of dependent views
+        records=$("$GPHOME"/bin/psql -X -q -d "$database" -p "$PGPORT" -Atc "DROP TABLE IF EXISTS __temp_views_list")
     done
 
     echo "Output files are located in: $output_dir"

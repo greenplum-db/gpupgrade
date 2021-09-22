@@ -76,6 +76,9 @@ INSERT INTO table_with_primary_constraint VALUES(2, 2);
 CREATE ROLE gphdfs_user CREATEEXTTABLE(protocol='gphdfs', type='writable') CREATEEXTTABLE(protocol='gphdfs', type='readable');
 
 -- create partitioned tables where the index relation name is not equal primary/unique key constraint name for the root
+-- Note that the naming of the constraint is key, not the type of constraint
+-- If the constraint is named, every partition will have the same named constraint and they all can be dropped with the same command
+-- If the constraint is not named, greenplum generates a unique name for each partition as well as the master table. We can only drop the master tables constraint and the partition constraints remain in effect
 DROP TABLE IF EXISTS table_with_unique_constraint_p;
 CREATE TYPE table_with_unique_constraint_p_author_key AS (dummy int);
 CREATE TYPE table_with_unique_constraint_p_author_key1 AS (dummy int);
@@ -193,5 +196,9 @@ DROP TABLE IF EXISTS name_inherits;
 CREATE TABLE name_inherits (
     state      char(2)
 ) INHERITS (table_with_name_column);
+
+-- view on a view on a name column
+DROP VIEW IF EXISTS v3_on_v2_recursive;
+CREATE VIEW v3_on_v2_recursive AS SELECT * FROM v2_on_t2_with_name;
 
 RESET search_path;

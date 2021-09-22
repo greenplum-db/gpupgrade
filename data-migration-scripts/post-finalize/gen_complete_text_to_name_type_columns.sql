@@ -54,26 +54,6 @@ WHERE
    AND c.oid NOT IN
        (SELECT DISTINCT parchildrelid
        FROM pg_catalog.pg_partition_rule)
-   -- if there is a view dependent on a relation having name column, exclude
-   -- the relation from the output
-   AND c.oid NOT IN
-   (
-      SELECT DISTINCT
-         d.refobjid
-      FROM
-         pg_depend d
-         JOIN
-            pg_rewrite r
-            ON r.oid = d.objid
-         JOIN
-            pg_class v
-            ON v.oid = r.ev_class
-      WHERE
-         relkind = 'v'
-         AND d.classid = 'pg_rewrite'::regclass
-         AND d.refclassid = 'pg_class'::regclass
-         AND d.deptype = 'n'
-   )
   AND NOT EXISTS (
     SELECT 1
     FROM
