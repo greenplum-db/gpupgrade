@@ -5,6 +5,7 @@ package hub
 
 import (
 	"context"
+	"sort"
 	"sync"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
@@ -74,7 +75,7 @@ func checkDiskSpaceOnStandbyAndSegments(agentConns []*idl.Connection, errs chan<
 		segmentsExcludingMaster := source.SelectSegments(func(seg *greenplum.SegConfig) bool {
 			return seg.IsOnHost(conn.Hostname) && !seg.IsMaster()
 		})
-
+		sort.Sort(segmentsExcludingMaster)
 		if len(segmentsExcludingMaster) == 0 {
 			return
 		}

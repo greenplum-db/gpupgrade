@@ -21,6 +21,22 @@ type SegConfig struct {
 
 type SegConfigs []SegConfig
 
+func (s SegConfigs) Len() int {
+	return len(s)
+}
+
+func (s SegConfigs) Less(i, j int) bool {
+	if s[i].DbID == 0 || s[j].DbID == 0 {
+		return s[i].ContentID < s[j].ContentID
+	}
+
+	return s[i].DbID < s[j].DbID
+}
+
+func (s SegConfigs) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
 const (
 	PrimaryRole = "p"
 	MirrorRole  = "m"

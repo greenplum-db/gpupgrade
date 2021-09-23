@@ -4,7 +4,6 @@
 package testutils
 
 import (
-	"fmt"
 	"testing"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
@@ -45,14 +44,15 @@ func MockSegmentConfiguration() *sqlmock.Rows {
 // When changing this implementation, make sure you change
 // MockSegmentConfiguration() to match!
 func MockCluster() *greenplum.Cluster {
-	c, err := greenplum.NewCluster(greenplum.SegConfigs{
-		{DbID: 1, ContentID: -1, Port: 15432, Hostname: "mdw", DataDir: "/data/master/gpseg-1", Role: "p"},
-		{DbID: 2, ContentID: 0, Port: 25432, Hostname: "sdw1", DataDir: "/data/primary/gpseg0", Role: "p"},
-	})
-
-	if err != nil {
-		panic(fmt.Sprintf("unexpected error %+v", err))
+	segments := greenplum.SegConfigs{
+		{DbID: 1, ContentID: -1, Port: 15432, Hostname: "mdw", DataDir: "/data/master/gpseg-1", Role: greenplum.PrimaryRole},
+		{DbID: 2, ContentID: 0, Port: 25432, Hostname: "sdw1", DataDir: "/data/primary/gpseg0", Role: greenplum.PrimaryRole},
 	}
 
-	return &c
+	cluster, err := greenplum.NewCluster(segments)
+	if err != nil {
+		panic(err)
+	}
+
+	return &cluster
 }

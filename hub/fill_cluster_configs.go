@@ -7,7 +7,6 @@ import (
 	"database/sql"
 	"fmt"
 	"path/filepath"
-	"sort"
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
@@ -94,10 +93,10 @@ func FillConfiguration(config *Config, request *idl.InitializeRequest, conn *gre
 }
 
 func GenerateIntermediateTargetCluster(source *greenplum.Cluster, ports []int, upgradeID upgrade.ID, version semver.Version, gphome string) (*greenplum.Cluster, error) {
-	ports = sanitize(ports)
+	ports = utils.Sanitize(ports)
 
 	var targetContentIDs []int
-	intermediate, err := greenplum.NewCluster(greenplum.SegConfigs{})
+	intermediate, err := greenplum.NewCluster([]greenplum.SegConfig{})
 	if err != nil {
 		return &greenplum.Cluster{}, err
 	}
@@ -195,29 +194,12 @@ func GenerateIntermediateTargetCluster(source *greenplum.Cluster, ports []int, u
 		}
 	}
 
-	intermediate.ContentIDs = sanitize(targetContentIDs)
+	intermediate.ContentIDs = utils.Sanitize(targetContentIDs)
 	intermediate.GPHome = gphome
 	intermediate.Version = version
 	intermediate.Destination = idl.ClusterDestination_INTERMEDIATE
 
 	return &intermediate, nil
-}
-
-// sanitize sorts and deduplicates a slice of port numbers.
-func sanitize(ports []int) []int {
-	sort.Slice(ports, func(i, j int) bool { return ports[i] < ports[j] })
-
-	dedupe := ports[:0] // point at the same backing array
-
-	var last int
-	for i, port := range ports {
-		if i == 0 || port != last {
-			dedupe = append(dedupe, port)
-		}
-		last = port
-	}
-
-	return dedupe
 }
 
 func ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(source *greenplum.Cluster, intermediateTarget *greenplum.Cluster) error {

@@ -137,8 +137,8 @@ func TestUpgradeMaster(t *testing.T) {
 	testlog.SetupLogger()
 
 	source := MustCreateCluster(t, greenplum.SegConfigs{
-		{ContentID: -1, Port: 5432, DataDir: "/data/old", DbID: 1, Role: "p"},
-		{ContentID: -1, Port: 5433, DataDir: "/data/standby", DbID: 2, Role: "m"},
+		{ContentID: -1, Port: 5432, DataDir: "/data/old", DbID: 1, Role: greenplum.PrimaryRole},
+		{ContentID: -1, Port: 5433, DataDir: "/data/standby", DbID: 2, Role: greenplum.MirrorRole},
 	})
 	source.GPHome = "/usr/local/source"
 
@@ -166,7 +166,7 @@ func TestUpgradeMaster(t *testing.T) {
 	// tests for full end-to-end verification.
 
 	target := MustCreateCluster(t, greenplum.SegConfigs{
-		{ContentID: -1, Port: 5433, DataDir: "/data/new", DbID: 2, Role: "p"},
+		{ContentID: -1, Port: 5433, DataDir: "/data/new", DbID: 2, Role: greenplum.PrimaryRole},
 	})
 	target.GPHome = "/usr/local/target"
 	target.Version = semver.MustParse("6.15.0")

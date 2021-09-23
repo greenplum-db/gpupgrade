@@ -34,10 +34,10 @@ func ResetExecCommand() {
 //
 // TODO: Consolidate with the same function in common_test.go in the hub
 // package. This is tricky due to cycle imports and other issues.
-func MustCreateCluster(t *testing.T, segs SegConfigs) *Cluster {
+func MustCreateCluster(t *testing.T, segments SegConfigs) *Cluster {
 	t.Helper()
 
-	cluster, err := NewCluster(segs)
+	cluster, err := NewCluster(segments)
 	if err != nil {
 		t.Fatalf("%+v", err)
 	}

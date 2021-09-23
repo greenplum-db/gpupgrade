@@ -9,10 +9,10 @@ import (
 
 func TestSelect(t *testing.T) {
 	segs := greenplum.SegConfigs{
-		{ContentID: 1, Role: "p"},
-		{ContentID: 2, Role: "p"},
-		{ContentID: 3, Role: "p"},
-		{ContentID: 3, Role: "m"},
+		{ContentID: 1, Role: greenplum.PrimaryRole},
+		{ContentID: 2, Role: greenplum.PrimaryRole},
+		{ContentID: 3, Role: greenplum.PrimaryRole},
+		{ContentID: 3, Role: greenplum.MirrorRole},
 	}
 
 	// Ensure all segments are visited correctly.

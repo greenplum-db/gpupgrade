@@ -37,10 +37,10 @@ func ResetCheckDiskUsage() {
 
 // MustCreateCluster creates a utils.Cluster and calls t.Fatalf() if there is
 // any error.
-func MustCreateCluster(t *testing.T, segs greenplum.SegConfigs) *greenplum.Cluster {
+func MustCreateCluster(t *testing.T, segments greenplum.SegConfigs) *greenplum.Cluster {
 	t.Helper()
 
-	cluster, err := greenplum.NewCluster(segs)
+	cluster, err := greenplum.NewCluster(segments)
 	if err != nil {
 		t.Fatalf("%+v", err)
 	}

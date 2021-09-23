@@ -18,6 +18,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
+	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
@@ -62,6 +63,31 @@ func ClusterFromDB(db *sql.DB, version semver.Version, gphome string, destinatio
 	cluster.Version = version
 	cluster.GPHome = gphome
 
+	return cluster, nil
+}
+
+func NewCluster(segments SegConfigs) (Cluster, error) {
+	cluster := Cluster{}
+	cluster.Primaries = make(map[int]SegConfig)
+	cluster.Mirrors = make(map[int]SegConfig)
+
+	for _, seg := range segments {
+		if seg.IsPrimary() || seg.IsMaster() {
+			cluster.Primaries[seg.ContentID] = seg
+			cluster.ContentIDs = append(cluster.ContentIDs, seg.ContentID)
+			continue
+		}
+
+		if seg.IsMirror() || seg.IsStandby() {
+			cluster.Mirrors[seg.ContentID] = seg
+			cluster.ContentIDs = append(cluster.ContentIDs, seg.ContentID)
+			continue
+		}
+
+		return Cluster{}, errors.New("Expected role to be primary or mirror, but found none when creating cluster.")
+	}
+
+	cluster.ContentIDs = utils.Sanitize(cluster.ContentIDs)
 	return cluster, nil
 }
 
@@ -180,81 +206,6 @@ func (c Cluster) SelectSegments(selector func(*SegConfig) bool) SegConfigs {
 	}
 
 	return matches
-}
-
-// ErrInvalidSegments is returned by NewCluster if the segment configuration
-// array does not map to a valid cluster.
-var ErrInvalidSegments = errors.New("invalid segment configuration")
-
-/*
- * Base cluster functions
- */
-
-func NewCluster(segConfigs SegConfigs) (Cluster, error) {
-	cluster := Cluster{}
-
-	cluster.Primaries = make(map[int]SegConfig)
-	cluster.Mirrors = make(map[int]SegConfig)
-
-	for _, seg := range segConfigs {
-		content := seg.ContentID
-
-		switch seg.Role {
-		case PrimaryRole:
-			// Check for duplication.
-			if _, ok := cluster.Primaries[content]; ok {
-				return Cluster{}, newInvalidSegmentsError(seg, "multiple primaries with content ID %d", content)
-			}
-
-			cluster.ContentIDs = append(cluster.ContentIDs, content)
-			cluster.Primaries[content] = seg
-
-		case MirrorRole:
-			// Check for duplication.
-			if _, ok := cluster.Mirrors[content]; ok {
-				return Cluster{}, newInvalidSegmentsError(seg, "multiple mirrors with content ID %d", content)
-			}
-
-			cluster.Mirrors[content] = seg
-
-		default:
-			return Cluster{}, newInvalidSegmentsError(seg, "unknown role %q", seg.Role)
-		}
-	}
-
-	// Make sure each mirror has a primary.
-	for _, seg := range cluster.Mirrors {
-		content := seg.ContentID
-
-		if _, ok := cluster.Primaries[content]; !ok {
-			return Cluster{}, newInvalidSegmentsError(seg, "mirror with content ID %d has no primary", content)
-		}
-	}
-
-	return cluster, nil
-}
-
-// InvalidSegmentsError is the backing error type for ErrInvalidSegments. It
-// contains the offending configuration object.
-type InvalidSegmentsError struct {
-	Segment SegConfig
-
-	msg string
-}
-
-func newInvalidSegmentsError(seg SegConfig, format string, a ...interface{}) *InvalidSegmentsError {
-	return &InvalidSegmentsError{
-		Segment: seg,
-		msg:     fmt.Sprintf(format, a...),
-	}
-}
-
-func (i *InvalidSegmentsError) Error() string {
-	return fmt.Sprintf("invalid segment configuration (%+v): %s", i.Segment, i.msg)
-}
-
-func (i *InvalidSegmentsError) Is(err error) bool {
-	return err == ErrInvalidSegments
 }
 
 func (c *Cluster) Start(stream step.OutStreams) error {

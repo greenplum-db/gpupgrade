@@ -34,15 +34,15 @@ const timeout = 1 * time.Second
 
 func TestHubStart(t *testing.T) {
 	source := hub.MustCreateCluster(t, greenplum.SegConfigs{
-		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: "p"},
-		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: "/data/dbfast1/seg1", Role: "p"},
-		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: "p"},
+		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
+		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
+		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 	})
 
 	target := hub.MustCreateCluster(t, greenplum.SegConfigs{
-		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: "p"},
-		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: "/data/dbfast1/seg1", Role: "p"},
-		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: "p"},
+		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
+		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
+		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 	})
 
 	conf := &hub.Config{
@@ -156,18 +156,18 @@ func mustListen(t *testing.T) (int, func()) {
 //  are many callers to AgentConns that is not an easy change.
 func TestAgentConns(t *testing.T) {
 	source := hub.MustCreateCluster(t, greenplum.SegConfigs{
-		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: "p"},
-		{ContentID: -1, DbID: 2, Port: 15432, Hostname: "standby", DataDir: "/data/qddir/seg-1", Role: "m"},
-		{ContentID: 0, DbID: 3, Port: 25432, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: "p"},
-		{ContentID: 0, DbID: 4, Port: 25432, Hostname: "sdw1-mirror", DataDir: "/data/dbfast_mirror1/seg1", Role: "m"},
-		{ContentID: 1, DbID: 5, Port: 25433, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: "p"},
-		{ContentID: 1, DbID: 6, Port: 25433, Hostname: "sdw2-mirror", DataDir: "/data/dbfast_mirror2/seg2", Role: "m"},
+		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
+		{ContentID: -1, DbID: 2, Port: 15432, Hostname: "standby", DataDir: "/data/qddir/seg-1", Role: greenplum.MirrorRole},
+		{ContentID: 0, DbID: 3, Port: 25432, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
+		{ContentID: 0, DbID: 4, Port: 25432, Hostname: "sdw1-mirror", DataDir: "/data/dbfast_mirror1/seg1", Role: greenplum.MirrorRole},
+		{ContentID: 1, DbID: 5, Port: 25433, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
+		{ContentID: 1, DbID: 6, Port: 25433, Hostname: "sdw2-mirror", DataDir: "/data/dbfast_mirror2/seg2", Role: greenplum.MirrorRole},
 	})
 
 	target := hub.MustCreateCluster(t, greenplum.SegConfigs{
-		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "standby", DataDir: "/data/qddir/seg-1", Role: "p"},
-		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "sdw1-mirror", DataDir: "/data/dbfast1/seg1", Role: "p"},
-		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "sdw2-mirror", DataDir: "/data/dbfast2/seg2", Role: "p"},
+		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "standby", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
+		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "sdw1-mirror", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
+		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "sdw2-mirror", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 	})
 
 	agentServer, dialer, agentPort := mock_agent.NewMockAgentServer()
@@ -437,27 +437,27 @@ func TestAgentHosts(t *testing.T) {
 	}{{
 		"master excluded",
 		hub.MustCreateCluster(t, greenplum.SegConfigs{
-			{ContentID: -1, Hostname: "mdw", Role: "p"},
-			{ContentID: 0, Hostname: "sdw1", Role: "p"},
-			{ContentID: 1, Hostname: "sdw1", Role: "p"},
+			{ContentID: -1, Hostname: "mdw", Role: greenplum.PrimaryRole},
+			{ContentID: 0, Hostname: "sdw1", Role: greenplum.PrimaryRole},
+			{ContentID: 1, Hostname: "sdw1", Role: greenplum.PrimaryRole},
 		}),
 		[]string{"sdw1"},
 	}, {
 		"master included if another segment is with it",
 		hub.MustCreateCluster(t, greenplum.SegConfigs{
-			{ContentID: -1, Hostname: "mdw", Role: "p"},
-			{ContentID: 0, Hostname: "mdw", Role: "p"},
+			{ContentID: -1, Hostname: "mdw", Role: greenplum.PrimaryRole},
+			{ContentID: 0, Hostname: "mdw", Role: greenplum.PrimaryRole},
 		}),
 		[]string{"mdw"},
 	}, {
 		"mirror and standby hosts are handled",
 		hub.MustCreateCluster(t, greenplum.SegConfigs{
-			{ContentID: -1, Hostname: "mdw", Role: "p"},
-			{ContentID: -1, Hostname: "smdw", Role: "m"},
-			{ContentID: 0, Hostname: "sdw1", Role: "p"},
-			{ContentID: 0, Hostname: "sdw1", Role: "m"},
-			{ContentID: 1, Hostname: "sdw1", Role: "p"},
-			{ContentID: 1, Hostname: "sdw2", Role: "m"},
+			{ContentID: -1, Hostname: "mdw", Role: greenplum.PrimaryRole},
+			{ContentID: -1, Hostname: "smdw", Role: greenplum.MirrorRole},
+			{ContentID: 0, Hostname: "sdw1", Role: greenplum.PrimaryRole},
+			{ContentID: 0, Hostname: "sdw1", Role: greenplum.MirrorRole},
+			{ContentID: 1, Hostname: "sdw1", Role: greenplum.PrimaryRole},
+			{ContentID: 1, Hostname: "sdw2", Role: greenplum.MirrorRole},
 		}),
 		[]string{"sdw1", "sdw2", "smdw"},
 	}}

@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"sort"
 	"time"
 
 	"github.com/google/renameio"
@@ -172,4 +173,21 @@ func AtomicallyWrite(path string, data []byte) (err error) {
 	}
 
 	return file.CloseAtomicallyReplace()
+}
+
+// Sanitize sorts and deduplicates a slice of ints.
+func Sanitize(ports []int) []int {
+	sort.Slice(ports, func(i, j int) bool { return ports[i] < ports[j] })
+
+	dedupe := ports[:0] // point at the same backing array
+
+	var last int
+	for i, port := range ports {
+		if i == 0 || port != last {
+			dedupe = append(dedupe, port)
+		}
+		last = port
+	}
+
+	return dedupe
 }
