@@ -18,7 +18,7 @@ import (
 
 const executeMasterBackupName = "upgraded-master.bak"
 
-func (s *Server) Execute(request *idl.ExecuteRequest, stream idl.CliToHub_ExecuteServer) (err error) {
+func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteServer) (err error) {
 	upgradedMasterBackupDir := filepath.Join(s.StateDir, executeMasterBackupName)
 
 	st, err := step.Begin(idl.Step_EXECUTE, stream, s.AgentConns)

@@ -18,7 +18,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_InitializeServer) (err error) {
+func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_InitializeServer) (err error) {
 	st, err := step.Begin(idl.Step_INITIALIZE, stream, s.AgentConns)
 	if err != nil {
 		return err
@@ -35,12 +35,12 @@ func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initi
 	}()
 
 	st.RunInternalSubstep(func() error {
-		sourceVersion, err := greenplum.LocalVersion(in.SourceGPHome)
+		sourceVersion, err := greenplum.LocalVersion(req.SourceGPHome)
 		if err != nil {
 			return err
 		}
 
-		targetVersion, err := greenplum.LocalVersion(in.TargetGPHome)
+		targetVersion, err := greenplum.LocalVersion(req.TargetGPHome)
 		if err != nil {
 			return err
 		}
@@ -52,7 +52,7 @@ func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initi
 	})
 
 	st.Run(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(stream step.OutStreams) error {
-		return FillConfiguration(s.Config, in, s.Connection, s.SaveConfig)
+		return FillConfiguration(s.Config, req, s.Connection, s.SaveConfig)
 	})
 
 	// we need the cluster information to determine what hosts to check, so we do this check
@@ -70,14 +70,14 @@ func (s *Server) Initialize(in *idl.InitializeRequest, stream idl.CliToHub_Initi
 		return err
 	})
 
-	st.RunConditionally(idl.Substep_CHECK_DISK_SPACE, in.GetDiskFreeRatio() > 0, func(streams step.OutStreams) error {
-		return CheckDiskSpace(streams, s.agentConns, in.GetDiskFreeRatio(), s.Source, s.Tablespaces)
+	st.RunConditionally(idl.Substep_CHECK_DISK_SPACE, req.GetDiskFreeRatio() > 0, func(streams step.OutStreams) error {
+		return CheckDiskSpace(streams, s.agentConns, req.GetDiskFreeRatio(), s.Source, s.Tablespaces)
 	})
 
 	return st.Err()
 }
 
-func (s *Server) InitializeCreateCluster(in *idl.InitializeCreateClusterRequest, stream idl.CliToHub_InitializeCreateClusterServer) (err error) {
+func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest, stream idl.CliToHub_InitializeCreateClusterServer) (err error) {
 	st, err := step.Begin(idl.Step_INITIALIZE, stream, s.AgentConns)
 	if err != nil {
 		return err
