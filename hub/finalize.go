@@ -9,7 +9,6 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/xerrors"
 
-	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
@@ -47,17 +46,11 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 	})
 
 	st.RunConditionally(idl.Substep_UPGRADE_MIRRORS, s.Source.HasMirrors(), func(streams step.OutStreams) error {
-		return UpgradeMirrors(streams, s.Connection, s.IntermediateTarget, s.UseHbaHostnames)
+		return UpgradeMirrors(streams, s.IntermediateTarget, s.UseHbaHostnames)
 	})
 
 	st.RunConditionally(idl.Substep_UPGRADE_STANDBY, s.Source.HasStandby(), func(streams step.OutStreams) error {
-		return UpgradeStandby(greenplum.NewRunner(s.IntermediateTarget, streams),
-			StandbyConfig{
-				Port:            s.IntermediateTarget.Standby().Port,
-				Hostname:        s.IntermediateTarget.Standby().Hostname,
-				DataDirectory:   s.IntermediateTarget.Standby().DataDir,
-				UseHbaHostnames: s.UseHbaHostnames,
-			})
+		return UpgradeStandby(streams, s.IntermediateTarget, s.UseHbaHostnames)
 	})
 
 	st.Run(idl.Substep_WAIT_FOR_CLUSTER_TO_BE_READY_AFTER_ADDING_MIRRORS_AND_STANDBY, func(streams step.OutStreams) error {

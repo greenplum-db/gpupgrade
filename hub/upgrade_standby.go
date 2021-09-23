@@ -4,51 +4,34 @@
 package hub
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/step"
 )
 
-type StandbyConfig struct {
-	Port            int
-	Hostname        string
-	DataDirectory   string
-	UseHbaHostnames bool
-}
-
-//
-// To ensure idempotency, remove any possible existing standby from the cluster
-// before adding a new one.
-//
-// In the happy-path, we expect this to fail as there should not be an existing
-// standby for the cluster.
-//
-func UpgradeStandby(r greenplum.Runner, standbyConfig StandbyConfig) error {
+// UpgradeStandby removes any possible existing standby from the cluster
+// before adding a new one for idempotency. In the happy-path, we expect this to
+// fail as there should not be an existing  standby for the cluster.
+func UpgradeStandby(streams step.OutStreams, intermediate *greenplum.Cluster, useHbaHostnames bool) error {
 	gplog.Info("removing any existing standby master on target cluster")
-
-	err := r.Run("gpinitstandby", "-r", "-a")
-
+	err := intermediate.RunGreenplumCmd(streams, "gpinitstandby", "-r", "-a")
 	if err != nil {
-		gplog.Debug(fmt.Sprintf(
-			"error message from removing existing standby master (expected in the happy path): %v",
-			err))
+		gplog.Debug("error message from removing existing standby master (expected in the happy path): %v", err)
 	}
 
-	gplog.Info(fmt.Sprintf("creating target standby master: %#v", standbyConfig))
-
 	args := []string{
-		"-P", strconv.Itoa(standbyConfig.Port),
-		"-s", standbyConfig.Hostname,
-		"-S", standbyConfig.DataDirectory,
+		"-P", strconv.Itoa(intermediate.Standby().Port),
+		"-s", intermediate.Standby().Hostname,
+		"-S", intermediate.Standby().DataDir,
 		"-a",
 	}
 
-	if standbyConfig.UseHbaHostnames {
+	if useHbaHostnames {
 		args = append(args, "--hba-hostnames")
 	}
 
-	return r.Run("gpinitstandby", args...)
+	return intermediate.RunGreenplumCmd(streams, "gpinitstandby", args...)
 }

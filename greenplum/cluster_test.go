@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"reflect"
 	"sort"
 	"strings"
@@ -18,7 +19,9 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 )
 
@@ -364,6 +367,73 @@ func TestHasAllMirrorsAndStandby(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRunGreenplumCmd(t *testing.T) {
+	testlog.SetupLogger()
+
+	cluster := MustCreateCluster(t, greenplum.SegConfigs{
+		{DbID: 1, ContentID: -1, Hostname: "master", DataDir: "/data/qddir/seg-1", Port: 15432, Role: greenplum.PrimaryRole},
+	})
+	cluster.GPHome = "/usr/local/greenplum-db"
+
+	t.Run("executes greenplum utility with greenplum_path.sh set and correct args", func(t *testing.T) {
+		cmd := exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
+			expected := "bash"
+			if name != expected {
+				t.Errorf("got %q want %q", name, expected)
+			}
+
+			expectedArgs := []string{"-c", "source /usr/local/greenplum-db/greenplum_path.sh && /usr/local/greenplum-db/bin/gpaddmirrors -a -i mirrors_config --hba-hostnames"}
+			if !reflect.DeepEqual(args, expectedArgs) {
+				t.Errorf("got %q want %q", args, expectedArgs)
+			}
+		})
+		greenplum.SetGreenplumCommand(cmd)
+		defer greenplum.ResetGreenplumCommand()
+
+		err := cluster.RunGreenplumCmd(step.DevNullStream, "gpaddmirrors", "-a", "-i", "mirrors_config", "--hba-hostnames")
+		if err != nil {
+			t.Errorf("unexpected error: %#v", err)
+		}
+	})
+
+	t.Run("sets greenplum environment variables", func(t *testing.T) {
+		masterDataDirectory := "MASTER_DATA_DIRECTORY"
+		resetEnv := testutils.MustClearEnv(t, masterDataDirectory)
+		defer resetEnv()
+
+		pgPort := "PGPORT"
+		resetEnv = testutils.MustClearEnv(t, pgPort)
+		defer resetEnv()
+
+		// Echo the environment to stdout and to a copy for debugging
+		greenplum.SetGreenplumCommand(exectest.NewCommand(EnvironmentMain))
+		defer greenplum.ResetGreenplumCommand()
+
+		streams := &step.BufferedStreams{}
+		err := cluster.RunGreenplumCmd(streams, "gpaddmirrors", "-a", "-i", "mirrors_config", "--hba-hostnames")
+		if err != nil {
+			t.Errorf("unexpected error: %#v", err)
+		}
+
+		actual := streams.StdoutBuf.String()
+		expected := "MASTER_DATA_DIRECTORY=/data/qddir/seg-1\nPGPORT=15432\n"
+		if actual != expected {
+			t.Errorf("got %q want %q", actual, expected)
+		}
+	})
+
+	t.Run("returns errors", func(t *testing.T) {
+		greenplum.SetGreenplumCommand(exectest.NewCommand(FailedMain))
+		defer greenplum.ResetGreenplumCommand()
+
+		err := cluster.RunGreenplumCmd(step.DevNullStream, "gpaddmirrors", "-a", "-i", "mirrors_config", "--hba-hostnames")
+		var exitError *exec.ExitError
+		if !errors.As(err, &exitError) {
+			t.Errorf("got %T, want %T", err, exitError)
+		}
+	})
 }
 
 func TestWaitForSegments(t *testing.T) {

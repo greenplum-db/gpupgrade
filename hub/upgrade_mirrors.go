@@ -13,13 +13,18 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
-func UpgradeMirrors(streams step.OutStreams, conn *greenplum.Conn, intermediate *greenplum.Cluster, useHbaHostnames bool) (err error) {
+func UpgradeMirrors(streams step.OutStreams, intermediate *greenplum.Cluster, useHbaHostnames bool) (err error) {
 	err = writeAddMirrorsConfig(intermediate)
 	if err != nil {
 		return err
 	}
 
-	err = runGpAddMirrors(greenplum.NewRunner(intermediate, streams), useHbaHostnames)
+	args := []string{"-a", "-i", utils.GetAddMirrorsConfig()}
+	if useHbaHostnames {
+		args = append(args, "--hba-hostnames")
+	}
+
+	err = intermediate.RunGreenplumCmd(streams, "gpaddmirrors", args...)
 	if err != nil {
 		return err
 	}
@@ -41,20 +46,6 @@ func writeAddMirrorsConfig(intermediate *greenplum.Cluster) error {
 	}
 
 	err := os.WriteFile(utils.GetAddMirrorsConfig(), config.Bytes(), 0644)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func runGpAddMirrors(targetRunner greenplum.Runner, useHbaHostnames bool) error {
-	args := []string{"-a", "-i", utils.GetAddMirrorsConfig()}
-	if useHbaHostnames {
-		args = append(args, "--hba-hostnames")
-	}
-
-	err := targetRunner.Run("gpaddmirrors", args...)
 	if err != nil {
 		return err
 	}

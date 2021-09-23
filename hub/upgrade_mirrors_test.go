@@ -4,14 +4,10 @@
 package hub
 
 import (
-	"errors"
 	"os"
-	"reflect"
 	"sort"
 	"strings"
 	"testing"
-
-	"github.com/DATA-DOG/go-sqlmock"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -50,77 +46,6 @@ func TestWriteAddMirrorsConfig(t *testing.T) {
 1|sdw1|50437|/data/dbfast_mirror2/seg.HqtFHX54y0o.2`
 		if actual != expected {
 			t.Errorf("got %q want %q", actual, expected)
-		}
-	})
-}
-
-type greenplumStub struct {
-	run func(utilityName string, arguments ...string) error
-}
-
-func (g *greenplumStub) Run(utilityName string, arguments ...string) error {
-	return g.run(utilityName, arguments...)
-}
-
-func TestRunAddMirrors(t *testing.T) {
-	t.Run("runs gpaddmirrors with the created config file", func(t *testing.T) {
-		stateDir := testutils.GetTempDir(t, "")
-		defer os.RemoveAll(stateDir)
-
-		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
-		defer resetEnv()
-
-		db, mock, err := sqlmock.New()
-		if err != nil {
-			t.Fatalf("sqlmock: %v", err)
-		}
-		defer testutils.FinishMock(mock, t)
-		defer db.Close()
-
-		stub := &greenplumStub{
-			run: func(utility string, args ...string) error {
-				if utility != "gpaddmirrors" {
-					t.Errorf("got utility %q want gpaddmirrors", utility)
-				}
-
-				expected := []string{
-					"-a",
-					"-i",
-					utils.GetAddMirrorsConfig(),
-					"--hba-hostnames",
-				}
-
-				if !reflect.DeepEqual(args, expected) {
-					t.Errorf("got args %q want %q", args, expected)
-				}
-
-				return nil
-			},
-		}
-
-		err = runGpAddMirrors(stub, true)
-		if err != nil {
-			t.Errorf("returned error %+v", err)
-		}
-	})
-
-	t.Run("bubbles up errors from the utility", func(t *testing.T) {
-		stateDir := testutils.GetTempDir(t, "")
-		defer os.RemoveAll(stateDir)
-
-		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
-		defer resetEnv()
-
-		stub := new(greenplumStub)
-
-		expected := errors.New("ahhhh")
-		stub.run = func(_ string, _ ...string) error {
-			return expected
-		}
-
-		err := runGpAddMirrors(stub, true)
-		if !errors.Is(err, expected) {
-			t.Errorf("returned error %#v, want %#v", err, expected)
 		}
 	})
 }

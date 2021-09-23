@@ -12,11 +12,13 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
+	"github.com/kballard/go-shellquote"
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
@@ -296,6 +298,33 @@ func (c *Cluster) IsMasterRunning(stream step.OutStreams) (bool, error) {
 	}
 
 	return true, nil
+}
+
+var greenplumCommand = exec.Command
+
+// XXX: for internal testing only
+func SetGreenplumCommand(command exectest.Command) {
+	greenplumCommand = command
+}
+
+// XXX: for internal testing only
+func ResetGreenplumCommand() {
+	greenplumCommand = exec.Command
+}
+
+func (c *Cluster) RunGreenplumCmd(streams step.OutStreams, utility string, args ...string) error {
+	path := filepath.Join(c.GPHome, "bin", utility)
+	args = append([]string{path}, args...)
+
+	cmd := greenplumCommand("bash", "-c", fmt.Sprintf("source %s/greenplum_path.sh && %s", c.GPHome, shellquote.Join(args...)))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("%v=%v", "MASTER_DATA_DIRECTORY", c.MasterDataDir()))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("%v=%v", "PGPORT", c.MasterPort()))
+
+	cmd.Stdout = streams.Stdout()
+	cmd.Stderr = streams.Stderr()
+
+	gplog.Info("executing: %s", cmd.String())
+	return cmd.Run()
 }
 
 // WaitForClusterToBeReady waits until the timeout for all segments to be up,
