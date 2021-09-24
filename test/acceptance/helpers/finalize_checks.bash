@@ -218,7 +218,14 @@ validate_mirrors_and_standby() {
     data_on_upgraded_cluster=$(create_table_with_name on_upgraded_cluster 50 "${MASTER_HOST}" "${MASTER_PORT}")
 
     # step 2a: failover stop...
-    stop_segments_with_contents ">=-1" "${MASTER_HOST}" "${MASTER_PORT}"
+    # FIXME: We should be able to stop both the master and primaries at once
+    # with ">=-1". However, there appears to be a bug where the standby does not
+    # have the correct or latest information after being promoted. The standby
+    # has the table, and the segments have the data. But checking the data shows
+    # nothing.
+    stop_segments_with_contents ">-1" "${MASTER_HOST}" "${MASTER_PORT}"
+    wait_can_start_transactions "${MASTER_HOST}" "${MASTER_PORT}"
+    stop_segments_with_contents "=-1" "${MASTER_HOST}" "${MASTER_PORT}"
 
     # step 2b: failover promote...
     ssh -n "${standby_host}" "
