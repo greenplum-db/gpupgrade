@@ -1,6 +1,8 @@
 -- Copyright (c) 2017-2021 VMware, Inc. or its affiliates
 -- SPDX-License-Identifier: Apache-2.0
 
+-- We have to create foreign key constraints after primary/unique constraints to make sure that
+-- we can successfully reference them.
 SELECT
     $$ALTER TABLE $$ || pg_catalog.quote_ident(nspname) || $$.$$ || pg_catalog.quote_ident(relname) ||
     $$ ADD CONSTRAINT $$ || pg_catalog.quote_ident(conname) || $$ $$ ||
@@ -25,4 +27,4 @@ FROM
         as sub
     ON sub.oid = cc.conrelid
 WHERE
-        cc.contype = 'f';
+    cc.contype = 'f';

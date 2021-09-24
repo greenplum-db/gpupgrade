@@ -80,19 +80,19 @@ CREATE ROLE gphdfs_user CREATEEXTTABLE(protocol='gphdfs', type='writable') CREAT
 -- If the constraint is named, every partition will have the same named constraint and they all can be dropped with the same command
 -- If the constraint is not named, greenplum generates a unique name for each partition as well as the master table. We can only drop the master tables constraint and the partition constraints remain in effect
 DROP TABLE IF EXISTS table_with_unique_constraint_p;
-CREATE TYPE table_with_unique_constraint_p_author_key AS (dummy int);
-CREATE TYPE table_with_unique_constraint_p_author_key1 AS (dummy int);
-CREATE TABLE table_with_unique_constraint_p (author int, title int, CONSTRAINT table_with_unique_constraint_p_uniq_au_ti UNIQUE (author, title)) PARTITION BY RANGE(title) (START(1) END(4) EVERY(1));
-DROP TYPE table_with_unique_constraint_p_author_key, table_with_unique_constraint_p_author_key1;
+CREATE TYPE unique_constraint_p_author_key AS (dummy int);
+CREATE TYPE unique_constraint_p_author_key1 AS (dummy int);
+CREATE TABLE table_with_unique_constraint_p (author int, title int, CONSTRAINT unique_constraint_p_uniq_au_ti UNIQUE (author, title)) PARTITION BY RANGE(title) (START(1) END(4) EVERY(1));
+DROP TYPE unique_constraint_p_author_key, unique_constraint_p_author_key1;
 ALTER TABLE table_with_unique_constraint_p ADD PRIMARY KEY (author, title);
 INSERT INTO table_with_unique_constraint_p VALUES(1, 1);
 INSERT INTO table_with_unique_constraint_p VALUES(2, 2);
 
 DROP TABLE IF EXISTS table_with_primary_constraint_p;
-CREATE TYPE table_with_primary_constraint_p_pkey AS (dummy int);
-CREATE TYPE table_with_primary_constraint_p_pkey1 AS (dummy int);
-CREATE TABLE table_with_primary_constraint_p (author int, title int, CONSTRAINT table_with_primary_constraint_p_au_ti PRIMARY KEY (author, title)) PARTITION BY RANGE(title) (START(1) END(4) EVERY(1));
-DROP TYPE table_with_primary_constraint_p_pkey, table_with_primary_constraint_p_pkey1;
+CREATE TYPE primary_constraint_p_pkey AS (dummy int);
+CREATE TYPE primary_constraint_p_pkey1 AS (dummy int);
+CREATE TABLE table_with_primary_constraint_p (author int, title int, CONSTRAINT primary_constraint_p_au_ti PRIMARY KEY (author, title)) PARTITION BY RANGE(title) (START(1) END(4) EVERY(1));
+DROP TYPE primary_constraint_p_pkey, primary_constraint_p_pkey1;
 ALTER TABLE table_with_primary_constraint_p ADD UNIQUE (author, title);
 INSERT INTO table_with_primary_constraint_p VALUES(1, 1);
 INSERT INTO table_with_primary_constraint_p VALUES(2, 2);

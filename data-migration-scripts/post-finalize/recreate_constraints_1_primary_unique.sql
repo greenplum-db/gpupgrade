@@ -1,32 +1,20 @@
 -- Copyright (c) 2017-2021 VMware, Inc. or its affiliates
 -- SPDX-License-Identifier: Apache-2.0
 
--- Generate a script to to recreate unique/primary key constraints from
--- non-partitioned tables. Exclude all the root and child partitions as we
--- cannot drop unique/primary constraints on the child partition tables
+-- Generate a script to recreate unique/primary key constraints for
+-- non-child partition tables. Exclude all the child partitions as their
+-- constraints get created by their parent tables.
 
--- cte to get oids of all tables that are not partition tables
-WITH CTE as
-(
-    SELECT
-        oid,
-        *
-    FROM
-        pg_class
+-- cte to get oids of all tables that are not child partition tables
+WITH CTE as (
+    SELECT oid, *
+    FROM pg_class
     WHERE
-        oid NOT IN
-        (
-            SELECT DISTINCT
-                parrelid
-            FROM
-                pg_partition
-            UNION ALL
-            SELECT DISTINCT
-                parchildrelid
-            FROM
-                pg_partition_rule
+            oid NOT IN (
+            SELECT DISTINCT parchildrelid
+            FROM pg_partition_rule
         )
- )
+)
 SELECT
     $$ALTER TABLE $$ || pg_catalog.quote_ident(n.nspname) || $$.$$ ||
     pg_catalog.quote_ident(cc.relname) ||
@@ -58,6 +46,4 @@ FROM
     ON cc.oid = con.conrelid
         JOIN
     pg_namespace n
-    ON (n.oid = cc.relnamespace)
-WHERE
-    conname <> c.relname ;
+    ON (n.oid = cc.relnamespace);

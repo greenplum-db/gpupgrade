@@ -1,12 +1,9 @@
 -- Copyright (c) 2017-2021 VMware, Inc. or its affiliates
 -- SPDX-License-Identifier: Apache-2.0
 
--- generates a script to drop foreign key constraints from root partition tables.
--- Note: 
--- 1. Foreign key constraints are not allowed to be added on to the child partition.
--- 2. Primary and Foreign Key constraints cannot be dropped on the child partitions directly,
--- also dropping them on the root partition does not cascade the drop of such constraints, as its
--- not tracked in the catalog. So, we don't touch such constraint.
+-- generates a script to drop foreign key constraints.
+-- Foreign key constraints have to be dropped before primary/unique constraints to make sure that
+-- we can successfully drop the dependee constraints.
 SELECT
    'ALTER TABLE ' || pg_catalog.quote_ident(nspname) || '.' || pg_catalog.quote_ident(relname) || ' DROP CONSTRAINT ' || pg_catalog.quote_ident(conname) || ';'
 FROM

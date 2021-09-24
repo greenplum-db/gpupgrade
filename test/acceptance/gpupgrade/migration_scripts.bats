@@ -281,11 +281,6 @@ get_primary_unique_constraints() {
             oid NOT IN
             (
                 SELECT DISTINCT
-                    parrelid
-                FROM
-                    pg_partition
-                UNION ALL
-                SELECT DISTINCT
                     parchildrelid
                 FROM
                     pg_partition_rule
