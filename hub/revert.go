@@ -51,11 +51,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 				return step.Skip
 			}
 
-			if err := s.IntermediateTarget.Stop(streams); err != nil {
-				return xerrors.Errorf("stopping target cluster: %w", err)
-			}
-
-			return nil
+			return s.IntermediateTarget.Stop(streams)
 		})
 	}
 
@@ -122,7 +118,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		}
 
 		if err != nil {
-			return xerrors.Errorf("starting source cluster: %w", err)
+			return err
 		}
 
 		return nil

@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -121,12 +120,7 @@ func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest
 	})
 
 	st.Run(idl.Substep_SHUTDOWN_TARGET_CLUSTER, func(stream step.OutStreams) error {
-		err := s.IntermediateTarget.Stop(stream)
-		if err != nil {
-			return xerrors.Errorf("stop target cluster: %w", err)
-		}
-
-		return nil
+		return s.IntermediateTarget.Stop(stream)
 	})
 
 	st.Run(idl.Substep_BACKUP_TARGET_MASTER, func(stream step.OutStreams) error {

@@ -58,12 +58,7 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 	})
 
 	st.Run(idl.Substep_SHUTDOWN_TARGET_CLUSTER, func(streams step.OutStreams) error {
-		err := s.IntermediateTarget.Stop(streams)
-		if err != nil {
-			return xerrors.Errorf("failed to stop target cluster: %w", err)
-		}
-
-		return nil
+		return s.IntermediateTarget.Stop(streams)
 	})
 
 	st.Run(idl.Substep_UPDATE_TARGET_CATALOG, func(streams step.OutStreams) error {
@@ -91,12 +86,7 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 	})
 
 	st.Run(idl.Substep_START_TARGET_CLUSTER, func(streams step.OutStreams) error {
-		err := s.Target.Start(streams)
-		if err != nil {
-			return xerrors.Errorf("failed to start target cluster: %w", err)
-		}
-
-		return nil
+		return s.Target.Start(streams)
 	})
 
 	st.Run(idl.Substep_WAIT_FOR_CLUSTER_TO_BE_READY_AFTER_UPDATING_CATALOG, func(streams step.OutStreams) error {

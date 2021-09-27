@@ -81,9 +81,7 @@ func (s *Server) RemoveIntermediateTargetCluster(streams step.OutStreams) error 
 	}
 
 	if running {
-		if err := s.IntermediateTarget.Stop(streams); err != nil {
-			return xerrors.Errorf("stopping target cluster: %w", err)
-		}
+		return s.IntermediateTarget.Stop(streams)
 	}
 
 	err = DeleteMasterAndPrimaryDataDirectories(streams, s.agentConns, s.IntermediateTarget)
