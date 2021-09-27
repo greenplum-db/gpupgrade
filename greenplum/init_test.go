@@ -6,6 +6,7 @@ package greenplum_test
 import (
 	"fmt"
 	"os"
+	"testing"
 
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 )
@@ -15,6 +16,15 @@ func Success() {}
 
 func FailedMain() {
 	os.Exit(1)
+}
+
+func IsPostmasterRunningCmd_MatchesNoProcesses() {
+	os.Exit(1)
+}
+
+func IsPostmasterRunningCmd_Errors() {
+	os.Stderr.WriteString("exit status 2")
+	os.Exit(2)
 }
 
 // Prints the environment, one variable per line, in NAME=VALUE format.
@@ -28,6 +38,13 @@ func init() {
 	exectest.RegisterMains(
 		Success,
 		FailedMain,
+		IsPostmasterRunningCmd_MatchesNoProcesses,
+		IsPostmasterRunningCmd_Errors,
 		EnvironmentMain,
 	)
+}
+
+// Enable exectest.NewCommand mocking.
+func TestMain(m *testing.M) {
+	os.Exit(exectest.Run(m))
 }

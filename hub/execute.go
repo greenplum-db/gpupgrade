@@ -37,13 +37,7 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 	}()
 
 	st.Run(idl.Substep_SHUTDOWN_SOURCE_CLUSTER, func(streams step.OutStreams) error {
-		err := s.Source.Stop(streams)
-
-		if err != nil {
-			return xerrors.Errorf("failed to stop source cluster: %w", err)
-		}
-
-		return nil
+		return s.Source.Stop(streams)
 	})
 
 	st.Run(idl.Substep_UPGRADE_MASTER, func(streams step.OutStreams) error {
@@ -87,13 +81,7 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 	})
 
 	st.Run(idl.Substep_START_TARGET_CLUSTER, func(streams step.OutStreams) error {
-		err := s.IntermediateTarget.Start(streams)
-
-		if err != nil {
-			return xerrors.Errorf("failed to start target cluster: %w", err)
-		}
-
-		return nil
+		return s.IntermediateTarget.Start(streams)
 	})
 
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_ExecuteResponse{

@@ -82,7 +82,7 @@ func (s *Server) RemoveIntermediateTargetCluster(streams step.OutStreams) error 
 
 	if running {
 		if err := s.IntermediateTarget.Stop(streams); err != nil {
-			return xerrors.Errorf("stopping target cluster: %w", err)
+			return err
 		}
 	}
 

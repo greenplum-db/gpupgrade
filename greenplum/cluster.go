@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/blang/semver/v4"
@@ -188,8 +189,7 @@ func (c *Cluster) PrimaryHostnames() []string {
 }
 
 // SelectSegments returns a list of all segments that match the given selector
-// function. Segments are visited in order of ascending content ID (primaries
-// before mirrors).
+// function.
 func (c Cluster) SelectSegments(selector func(*SegConfig) bool) SegConfigs {
 	var matches SegConfigs
 
@@ -209,7 +209,21 @@ func (c Cluster) SelectSegments(selector func(*SegConfig) bool) SegConfigs {
 }
 
 func (c *Cluster) Start(stream step.OutStreams) error {
-	return runStartStopCmd(stream, c.GPHome, fmt.Sprintf("gpstart -a -d %[1]s", c.MasterDataDir()), fmt.Sprintf("MASTER_DATA_DIRECTORY=%s", c.MasterDataDir()))
+	err := c.RunGreenplumCmd(stream, "gpstart", "-a", "-d", c.MasterDataDir())
+	if err != nil {
+		return xerrors.Errorf("starting %s cluster: %w", strings.ToLower(c.Destination.String()), err)
+	}
+
+	return nil
+}
+
+func (c *Cluster) StartMasterOnly(stream step.OutStreams) error {
+	err := c.RunGreenplumCmd(stream, "gpstart", "-a", "-m", "-d", c.MasterDataDir())
+	if err != nil {
+		return xerrors.Errorf("starting %s cluster in master only mode: %w", strings.ToLower(c.Destination.String()), err)
+	}
+
+	return nil
 }
 
 func (c *Cluster) Stop(stream step.OutStreams) error {
@@ -223,14 +237,15 @@ func (c *Cluster) Stop(stream step.OutStreams) error {
 	}
 
 	if !running {
-		return errors.New("master is already stopped")
+		return errors.New(fmt.Sprintf("Failed to stop %s cluster. Master is already stopped.", strings.ToLower(c.Destination.String())))
 	}
 
-	return runStartStopCmd(stream, c.GPHome, fmt.Sprintf("gpstop -a -d %[1]s", c.MasterDataDir()), fmt.Sprintf("MASTER_DATA_DIRECTORY=%s", c.MasterDataDir()))
-}
+	err = c.RunGreenplumCmd(stream, "gpstop", "-a", "-d", c.MasterDataDir())
+	if err != nil {
+		return xerrors.Errorf("stopping %s cluster: %w", strings.ToLower(c.Destination.String()), err)
+	}
 
-func (c *Cluster) StartMasterOnly(stream step.OutStreams) error {
-	return runStartStopCmd(stream, c.GPHome, fmt.Sprintf("gpstart -m -a -d %[1]s", c.MasterDataDir()), fmt.Sprintf("MASTER_DATA_DIRECTORY=%s", c.MasterDataDir()))
+	return nil
 }
 
 func (c *Cluster) StopMasterOnly(stream step.OutStreams) error {
@@ -244,26 +259,29 @@ func (c *Cluster) StopMasterOnly(stream step.OutStreams) error {
 	}
 
 	if !running {
-		return errors.New("master is already stopped")
+		return errors.New(fmt.Sprintf("Failed to stop %s cluster in master only mode. Master is already stopped.", strings.ToLower(c.Destination.String())))
 	}
 
-	return runStartStopCmd(stream, c.GPHome, fmt.Sprintf("gpstop -m -a -d %[1]s", c.MasterDataDir()), fmt.Sprintf("MASTER_DATA_DIRECTORY=%s", c.MasterDataDir()))
+	err = c.RunGreenplumCmd(stream, "gpstop", "-a", "-m", "-d", c.MasterDataDir())
+	if err != nil {
+		return xerrors.Errorf("stopping %s cluster: %w", strings.ToLower(c.Destination.String()), err)
+	}
+
+	return nil
 }
 
-func runStartStopCmd(stream step.OutStreams, gphome, command string, env string) error {
-	commandWithEnv := fmt.Sprintf("source %[1]s/greenplum_path.sh && %[2]s %[1]s/bin/%[3]s",
-		gphome,
-		env,
-		command)
+var isMasterRunningCommand = exec.Command
 
-	cmd := execCommand("bash", "-c", commandWithEnv)
-	gplog.Info("running command: %q", cmd)
-	cmd.Stdout = stream.Stdout()
-	cmd.Stderr = stream.Stderr()
-	return cmd.Run()
+// XXX: for internal testing only
+func SetIsMasterRunningCommand(command exectest.Command) {
+	isMasterRunningCommand = command
 }
 
-// IsMasterRunning returns whether the cluster's master process is running.
+// XXX: for internal testing only
+func ResetIsMasterRunningCommand() {
+	isMasterRunningCommand = exec.Command
+}
+
 func (c *Cluster) IsMasterRunning(stream step.OutStreams) (bool, error) {
 	path := filepath.Join(c.MasterDataDir(), "postmaster.pid")
 	exist, err := upgrade.PathExist(path)
@@ -275,7 +293,7 @@ func (c *Cluster) IsMasterRunning(stream step.OutStreams) (bool, error) {
 		return false, err
 	}
 
-	cmd := execCommand("pgrep", "-F", path)
+	cmd := isMasterRunningCommand("pgrep", "-F", path)
 
 	cmd.Stdout = stream.Stdout()
 	cmd.Stderr = stream.Stderr()
