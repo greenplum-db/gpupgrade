@@ -13,7 +13,6 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
-	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
@@ -132,24 +131,14 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		return Recoverseg(streams, s.Source, s.UseHbaHostnames)
 	})
 
-	logArchiveDir, err := s.GetLogArchiveDir()
-	if err != nil {
-		return fmt.Errorf("getting archive directory: %w", err)
-	}
-
+	var logArchiveDir string
 	st.Run(idl.Substep_ARCHIVE_LOG_DIRECTORIES, func(_ step.OutStreams) error {
-		// Archive log directory on master
-		logDir, err := utils.GetLogDir()
+		logArchiveDir, err := s.GetLogArchiveDir()
 		if err != nil {
-			return err
+			return xerrors.Errorf("get log archive directory: %w", err)
 		}
 
-		gplog.Debug("archiving log directory %q to %q", logDir, logArchiveDir)
-		if err = utils.Move(logDir, logArchiveDir); err != nil {
-			return err
-		}
-
-		return ArchiveSegmentLogDirectories(s.agentConns, s.Config.Source.MasterHostname(), logArchiveDir)
+		return ArchiveLogDirectories(logArchiveDir, s.agentConns, s.Config.Source.MasterHostname())
 	})
 
 	st.Run(idl.Substep_DELETE_SEGMENT_STATEDIRS, func(_ step.OutStreams) error {
