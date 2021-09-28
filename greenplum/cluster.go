@@ -329,12 +329,21 @@ func ResetGreenplumCommand() {
 }
 
 func (c *Cluster) RunGreenplumCmd(streams step.OutStreams, utility string, args ...string) error {
+	return c.runGreenplumCommand(streams, utility, args, nil)
+}
+
+func (c *Cluster) RunGreenplumCmdWithEnvironment(streams step.OutStreams, utility string, args []string, envs []string) error {
+	return c.runGreenplumCommand(streams, utility, args, envs)
+}
+
+func (c *Cluster) runGreenplumCommand(streams step.OutStreams, utility string, args []string, envs []string) error {
 	path := filepath.Join(c.GPHome, "bin", utility)
 	args = append([]string{path}, args...)
 
 	cmd := greenplumCommand("bash", "-c", fmt.Sprintf("source %s/greenplum_path.sh && %s", c.GPHome, shellquote.Join(args...)))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("%v=%v", "MASTER_DATA_DIRECTORY", c.MasterDataDir()))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("%v=%v", "PGPORT", c.MasterPort()))
+	cmd.Env = append(cmd.Env, envs...)
 
 	cmd.Stdout = streams.Stdout()
 	cmd.Stderr = streams.Stderr()

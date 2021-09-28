@@ -307,7 +307,7 @@ func TestUpdateRecoveryConfiguration(t *testing.T) {
 
 // TODO: this is an integration test; move it
 func TestUpdateConfFiles(t *testing.T) {
-	// Make execCommand and replacement "live" again
+	// Make cmd and replacement "live" again
 	hub.SetExecCommand(exec.Command)
 	defer hub.ResetExecCommand()
 

@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
 	"path"
 	"path/filepath"
 	"reflect"
@@ -23,6 +22,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
@@ -47,10 +47,6 @@ func (s *Server) GenerateInitsystemConfig() error {
 	return s.writeConf(db)
 }
 
-func (s *Server) initsystemConfPath() string {
-	return filepath.Join(s.StateDir, "gpinitsystem_config")
-}
-
 func (s *Server) writeConf(db *sql.DB) error {
 	gpinitsystemConfig, err := CreateInitialInitsystemConfig(s.IntermediateTarget.MasterDataDir(), s.UseHbaHostnames)
 	if err != nil {
@@ -67,7 +63,7 @@ func (s *Server) writeConf(db *sql.DB) error {
 		return xerrors.Errorf("generating segment array: %w", err)
 	}
 
-	return WriteInitsystemFile(gpinitsystemConfig, s.initsystemConfPath())
+	return WriteInitsystemFile(gpinitsystemConfig, utils.GetInitsystemConfig())
 }
 
 func (s *Server) RemoveIntermediateTargetCluster(streams step.OutStreams) error {
@@ -94,9 +90,27 @@ func (s *Server) RemoveIntermediateTargetCluster(streams step.OutStreams) error 
 	return nil
 }
 
-func (s *Server) InitTargetCluster(stream step.OutStreams) error {
-	return RunInitsystemForTargetCluster(stream,
-		s.IntermediateTarget.GPHome, s.initsystemConfPath(), s.IntermediateTarget.Version)
+func InitTargetCluster(stream step.OutStreams, intermediate *greenplum.Cluster) error {
+	// Sanitize the child environment. The sourcing of greenplum_path.sh will
+	// give us back almost everything we need, but it's important not to put a
+	// previous installation's ambient environment into the mix.
+	//
+	// gpinitsystem unfortunately relies on a few envvars for logging purposes;
+	// otherwise, we could clear the environment completely.
+	env := utils.FilterEnv([]string{
+		"HOME",
+		"USER",
+		"LOGNAME",
+	})
+
+	args := []string{"-a", "-I", utils.GetInitsystemConfig()}
+	if intermediate.Version.Major < 7 {
+		// For 6X we add --ignore-warnings to gpinitsystem to return 0 on
+		// warnings and 1 on errors. 7X and later does this by default.
+		args = append(args, "--ignore-warnings")
+	}
+
+	return intermediate.RunGreenplumCmdWithEnvironment(stream, "gpinitsystem", args, env)
 }
 
 func GetCheckpointSegmentsAndEncoding(gpinitsystemConfig []string, version semver.Version, db *sql.DB) ([]string, error) {
@@ -185,63 +199,6 @@ func WriteSegmentArray(config []string, intermediateTarget *greenplum.Cluster) (
 	return config, nil
 }
 
-func RunInitsystemForTargetCluster(stream step.OutStreams, gpHome, configPath string, version semver.Version) error {
-	// TODO: migrate this implementation to greenplum.Runner.
-
-	args := "-a -I " + configPath
-	if version.Major < 7 {
-		// For 6X we add --ignore-warnings to gpinitsystem to return 0 on
-		// warnings and 1 on errors. 7X and later does this by default.
-		args += " --ignore-warnings"
-	}
-
-	script := fmt.Sprintf("source %[1]s/greenplum_path.sh && %[1]s/bin/gpinitsystem %[2]s",
-		gpHome,
-		args,
-	)
-	cmd := execCommand("bash", "-c", script)
-
-	cmd.Stdout = stream.Stdout()
-	cmd.Stderr = stream.Stderr()
-
-	// Sanitize the child environment. The sourcing of greenplum_path.sh will
-	// give us back almost everything we need, but it's important not to put a
-	// previous installation's ambient environment into the mix.
-	//
-	// gpinitsystem unfortunately relies on a few envvars for logging purposes;
-	// otherwise, we could clear the environment completely.
-	cmd.Env = filterEnv([]string{
-		"HOME",
-		"USER",
-		"LOGNAME",
-	})
-
-	err := cmd.Run()
-	if err != nil {
-		return xerrors.Errorf("gpinitsystem: %w", err)
-	}
-
-	return nil
-}
-
-// filterEnv selects only the specified variables from the environment and
-// returns those key/value pairs, in the key=value format expected by
-// os/exec.Cmd.Env.
-func filterEnv(keys []string) []string {
-	var env []string
-
-	for _, key := range keys {
-		val, ok := os.LookupEnv(key)
-		if !ok {
-			continue
-		}
-
-		env = append(env, fmt.Sprintf("%s=%s", key, val))
-	}
-
-	return env
-}
-
 func GetMasterSegPrefix(datadir string) (string, error) {
 	const masterContentID = "-1"
 
@@ -259,7 +216,7 @@ func GetMasterSegPrefix(datadir string) (string, error) {
 
 func GetCatalogVersion(stream step.OutStreams, gphome, datadir string) (string, error) {
 	utility := filepath.Join(gphome, "bin", "pg_controldata")
-	cmd := execCommand(utility, datadir)
+	cmd := cmd(utility, datadir)
 
 	// Buffer stdout to parse pg_controldata
 	stdout := new(bytes.Buffer)

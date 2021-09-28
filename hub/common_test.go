@@ -20,11 +20,11 @@ func init() {
 }
 
 func SetExecCommand(cmdFunc exectest.Command) {
-	execCommand = cmdFunc
+	cmd = cmdFunc
 }
 
 func ResetExecCommand() {
-	execCommand = nil
+	cmd = nil
 }
 
 func SetCheckDiskUsage(usageFunc disk.CheckUsageType) {

@@ -157,7 +157,7 @@ func UpdateRecoveryConf(path string, oldPort, newPort int) error {
 }
 
 func updateConfigurationFile(path string, pattern string, replacement string) error {
-	cmd := execCommand("sed", "-E", "-i.bak",
+	cmd := cmd("sed", "-E", "-i.bak",
 		fmt.Sprintf(`s@%s@%s@`, pattern, replacement),
 		path,
 	)

@@ -29,8 +29,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
-func gpinitsystem() {}
-
 func gpinitsystem_Exits1() {
 	os.Stdout.WriteString("[WARN]:-Master open file limit is 256 should be >= 65535")
 	os.Exit(1)
@@ -51,7 +49,6 @@ Latest checkpoint's REDO location:    0/180001D0
 
 func init() {
 	exectest.RegisterMains(
-		gpinitsystem,
 		gpinitsystem_Exits1,
 		pg_controldata,
 	)
@@ -208,64 +205,71 @@ func TestWriteSegmentArray(t *testing.T) {
 }
 
 func TestRunInitsystemForTargetCluster(t *testing.T) {
-	gpHome6 := "/usr/local/gpdb6"
-	version6 := semver.MustParse("6.0.0")
+	testlog.SetupLogger()
 
-	gpHome7 := "/usr/local/gpdb7"
-	version7 := semver.MustParse("7.0.0")
+	stateDir := testutils.GetTempDir(t, "")
+	defer testutils.MustRemoveAll(t, stateDir)
 
-	gpinitsystemConfigPath := "/dir/.gpupgrade/gpinitsystem_config"
+	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
+	defer resetEnv()
 
-	execCommand = nil
-	defer func() {
-		execCommand = nil
-	}()
+	intermediate := MustCreateCluster(t, greenplum.SegConfigs{
+		{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir_upgrade/seg-1", Role: greenplum.PrimaryRole, Port: 15433},
+	})
+	intermediate.GPHome = "/usr/local/greenplum-db"
 
 	t.Run("does not use --ignore-warnings when upgrading to GPDB7 or higher", func(t *testing.T) {
-		execCommand = exectest.NewCommandWithVerifier(gpinitsystem,
-			func(path string, args ...string) {
-				if path != "bash" {
-					t.Errorf("executed %q, want bash", path)
-				}
+		cmd = exectest.NewCommandWithVerifier(Success, func(path string, args ...string) {
+			if path != "bash" {
+				t.Errorf("executed %q, want bash", path)
+			}
 
-				expected := []string{"-c", "source /usr/local/gpdb7/greenplum_path.sh && " +
-					"/usr/local/gpdb7/bin/gpinitsystem -a -I /dir/.gpupgrade/gpinitsystem_config"}
-				if !reflect.DeepEqual(args, expected) {
-					t.Errorf("args %q, want %q", args, expected)
-				}
-			})
+			expected := []string{"-c", "source /usr/local/greenplum-db/greenplum_path.sh && " +
+				"/usr/local/greenplum-db/bin/gpinitsystem " +
+				"-a -I " + utils.GetInitsystemConfig()}
+			if !reflect.DeepEqual(args, expected) {
+				t.Errorf("args %q, want %q", args, expected)
+			}
+		})
+		greenplum.SetGreenplumCommand(cmd)
+		defer greenplum.ResetGreenplumCommand()
 
-		err := RunInitsystemForTargetCluster(step.DevNullStream, gpHome7, gpinitsystemConfigPath, version7)
+		intermediate.Version = semver.MustParse("7.0.0")
+		err := InitTargetCluster(step.DevNullStream, intermediate)
 		if err != nil {
-			t.Error("gpinitsystem failed")
+			t.Errorf("unexpected error %#v", err)
 		}
 	})
 
 	t.Run("only uses --ignore-warnings when upgrading to GPDB6", func(t *testing.T) {
-		execCommand = exectest.NewCommandWithVerifier(gpinitsystem,
-			func(path string, args ...string) {
-				if path != "bash" {
-					t.Errorf("executed %q, want bash", path)
-				}
+		cmd = exectest.NewCommandWithVerifier(Success, func(path string, args ...string) {
+			if path != "bash" {
+				t.Errorf("executed %q, want bash", path)
+			}
 
-				expected := []string{"-c", "source /usr/local/gpdb6/greenplum_path.sh && " +
-					"/usr/local/gpdb6/bin/gpinitsystem -a -I /dir/.gpupgrade/gpinitsystem_config --ignore-warnings"}
-				if !reflect.DeepEqual(args, expected) {
-					t.Errorf("args %q, want %q", args, expected)
-				}
-			})
+			expected := []string{"-c", "source /usr/local/greenplum-db/greenplum_path.sh && " +
+				"/usr/local/greenplum-db/bin/gpinitsystem " +
+				"-a -I " + utils.GetInitsystemConfig() + " --ignore-warnings"}
+			if !reflect.DeepEqual(args, expected) {
+				t.Errorf("args %q, want %q", args, expected)
+			}
+		})
+		greenplum.SetGreenplumCommand(cmd)
+		defer greenplum.ResetGreenplumCommand()
 
-		err := RunInitsystemForTargetCluster(step.DevNullStream, gpHome6, gpinitsystemConfigPath, version6)
+		intermediate.Version = semver.MustParse("6.0.0")
+		err := InitTargetCluster(step.DevNullStream, intermediate)
 		if err != nil {
-			t.Error("gpinitsystem failed")
+			t.Errorf("unexpected error %#v", err)
 		}
 	})
 
 	t.Run("returns an error when gpinitsystem fails with --ignore-warnings when upgrading to GPDB6", func(t *testing.T) {
-		execCommand = exectest.NewCommand(gpinitsystem_Exits1)
+		greenplum.SetGreenplumCommand(exectest.NewCommand(gpinitsystem_Exits1))
+		defer greenplum.ResetGreenplumCommand()
 
-		err := RunInitsystemForTargetCluster(step.DevNullStream, gpHome6, gpinitsystemConfigPath, version6)
-
+		intermediate.Version = semver.MustParse("6.0.0")
+		err := InitTargetCluster(step.DevNullStream, intermediate)
 		var actual *exec.ExitError
 		if !errors.As(err, &actual) {
 			t.Fatalf("got %#v, want ExitError", err)
@@ -277,10 +281,11 @@ func TestRunInitsystemForTargetCluster(t *testing.T) {
 	})
 
 	t.Run("returns an error when gpinitsystem errors when upgrading to GPDB7 or higher", func(t *testing.T) {
-		execCommand = exectest.NewCommand(gpinitsystem_Exits1)
+		greenplum.SetGreenplumCommand(exectest.NewCommand(gpinitsystem_Exits1))
+		defer greenplum.ResetGreenplumCommand()
 
-		err := RunInitsystemForTargetCluster(step.DevNullStream, gpHome7, gpinitsystemConfigPath, version7)
-
+		intermediate.Version = semver.MustParse("7.0.0")
+		err := InitTargetCluster(step.DevNullStream, intermediate)
 		var actual *exec.ExitError
 		if !errors.As(err, &actual) {
 			t.Fatalf("got %#v, want ExitError", err)
@@ -318,12 +323,11 @@ func TestRunInitsystemForTargetCluster(t *testing.T) {
 		}
 
 		// Capture the actual environment received by the gpinitsystem process.
-		SetExecCommand(exectest.NewCommand(EnvironmentMain))
-		defer ResetExecCommand()
+		greenplum.SetGreenplumCommand(exectest.NewCommand(EnvironmentMain))
+		defer greenplum.ResetGreenplumCommand()
 
 		out := &stdoutBuffer{}
-		err := RunInitsystemForTargetCluster(out, gpHome6, gpinitsystemConfigPath, version6)
-
+		err := InitTargetCluster(step.DevNullStream, intermediate)
 		if err != nil {
 			t.Fatalf("got error: %+v", err)
 		}
@@ -496,7 +500,7 @@ func TestFilterEnv(t *testing.T) {
 				}
 			}
 
-			actual := filterEnv(c.selected)
+			actual := utils.FilterEnv(c.selected)
 			sort.Strings(actual)
 
 			if !reflect.DeepEqual(actual, c.expected) {

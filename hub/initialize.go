@@ -102,7 +102,7 @@ func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest
 			return err
 		}
 
-		err = s.InitTargetCluster(stream)
+		err = InitTargetCluster(stream, s.IntermediateTarget)
 		if err != nil {
 			return err
 		}

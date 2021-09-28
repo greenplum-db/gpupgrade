@@ -4,6 +4,7 @@
 package utils
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -100,6 +101,10 @@ func GetTablespaceDir() string {
 	return filepath.Join(GetStateDir(), "tablespaces")
 }
 
+func GetInitsystemConfig() string {
+	return filepath.Join(GetStateDir(), "gpinitsystem_config")
+}
+
 func GetAddMirrorsConfig() string {
 	return filepath.Join(GetStateDir(), "add_mirrors_config")
 }
@@ -190,4 +195,22 @@ func Sanitize(ports []int) []int {
 	}
 
 	return dedupe
+}
+
+// FilterEnv selects only the specified variables from the environment and
+// returns those key/value pairs, in the key=value format expected by
+// os/exec.Cmd.Env.
+func FilterEnv(keys []string) []string {
+	var env []string
+
+	for _, key := range keys {
+		val, ok := os.LookupEnv(key)
+		if !ok {
+			continue
+		}
+
+		env = append(env, fmt.Sprintf("%s=%s", key, val))
+	}
+
+	return env
 }

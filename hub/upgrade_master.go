@@ -26,7 +26,7 @@ import (
 )
 
 // Allow exec.Command to be mocked out by exectest.NewCommand.
-var execCommand = exec.Command
+var cmd = exec.Command
 
 const originalMasterBackupName = "master.bak"
 
@@ -62,7 +62,7 @@ func UpgradeMaster(args UpgradeMasterArgs) error {
 	tee := io.MultiWriter(args.Stream.Stdout(), stdout)
 
 	options := []upgrade.Option{
-		upgrade.WithExecCommand(execCommand),
+		upgrade.WithExecCommand(cmd),
 		upgrade.WithWorkDir(wd),
 		upgrade.WithOutputStreams(tee, args.Stream.Stderr()),
 	}
