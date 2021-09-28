@@ -64,12 +64,12 @@ func FillConfiguration(config *Config, request *idl.InitializeRequest, conn *gre
 		ports = append(ports, int(p))
 	}
 
-	config.IntermediateTarget, err = GenerateIntermediateTargetCluster(config.Source, ports, config.UpgradeID, conn.TargetVersion, request.GetTargetGPHome())
+	config.Intermediate, err = GenerateIntermediateCluster(config.Source, ports, config.UpgradeID, conn.TargetVersion, request.GetTargetGPHome())
 	if err != nil {
 		return err
 	}
 
-	if err := ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(config.Source, config.IntermediateTarget); err != nil {
+	if err := ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(config.Source, config.Intermediate); err != nil {
 		return err
 	}
 
@@ -92,7 +92,7 @@ func FillConfiguration(config *Config, request *idl.InitializeRequest, conn *gre
 	return nil
 }
 
-func GenerateIntermediateTargetCluster(source *greenplum.Cluster, ports []int, upgradeID upgrade.ID, version semver.Version, gphome string) (*greenplum.Cluster, error) {
+func GenerateIntermediateCluster(source *greenplum.Cluster, ports []int, upgradeID upgrade.ID, version semver.Version, gphome string) (*greenplum.Cluster, error) {
 	ports = utils.Sanitize(ports)
 
 	intermediate, err := greenplum.NewCluster([]greenplum.SegConfig{})
@@ -205,7 +205,7 @@ func GenerateIntermediateTargetCluster(source *greenplum.Cluster, ports []int, u
 	return &intermediate, nil
 }
 
-func ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(source *greenplum.Cluster, intermediateTarget *greenplum.Cluster) error {
+func ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(source *greenplum.Cluster, intermediate *greenplum.Cluster) error {
 	type HostPort struct {
 		Host string
 		Port int
@@ -221,12 +221,12 @@ func ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(source *greenplum.C
 	}
 
 	// check if intermediate target cluster ports overlap with source cluster ports on a particular host
-	for _, seg := range intermediateTarget.Primaries {
+	for _, seg := range intermediate.Primaries {
 		if sourcePorts[HostPort{Host: seg.Hostname, Port: seg.Port}] {
 			return newInvalidTempPortRangeError(seg.Hostname, seg.Port)
 		}
 	}
-	for _, seg := range intermediateTarget.Mirrors {
+	for _, seg := range intermediate.Mirrors {
 		if sourcePorts[HostPort{Host: seg.Hostname, Port: seg.Port}] {
 			return newInvalidTempPortRangeError(seg.Hostname, seg.Port)
 		}

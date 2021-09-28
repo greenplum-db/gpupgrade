@@ -127,7 +127,7 @@ func TestRenameSegmentDataDirs(t *testing.T) {
 func TestUpdateDataDirectories(t *testing.T) {
 	// Prerequisites:
 	// - a valid Source cluster
-	// - a valid IntermediateTarget cluster
+	// - a valid Intermediate cluster
 	// - agentConns pointing to each host (set up per test)
 
 	conf := new(hub.Config)
@@ -147,7 +147,7 @@ func TestUpdateDataDirectories(t *testing.T) {
 		{ContentID: 3, Hostname: "sdw2", DataDir: "/data/dbfast_mirror2/seg4", Role: greenplum.MirrorRole},
 	})
 
-	conf.IntermediateTarget = hub.MustCreateCluster(t, greenplum.SegConfigs{
+	conf.Intermediate = hub.MustCreateCluster(t, greenplum.SegConfigs{
 		{ContentID: -1, Hostname: "sdw1", DataDir: "/data/qddir/seg-1_123ABC-1", Role: greenplum.PrimaryRole},
 		{ContentID: -1, Hostname: "standby", DataDir: "/data/standby_123ABC", Role: greenplum.MirrorRole},
 
@@ -176,7 +176,7 @@ func TestUpdateDataDirectories(t *testing.T) {
 			{ContentID: -1, Hostname: "sdw1", DataDir: sourceDataDir, Role: greenplum.PrimaryRole},
 		})
 
-		conf.IntermediateTarget = hub.MustCreateCluster(t, greenplum.SegConfigs{
+		conf.Intermediate = hub.MustCreateCluster(t, greenplum.SegConfigs{
 			{ContentID: -1, Hostname: "sdw1", DataDir: targetDataDir, Role: greenplum.PrimaryRole},
 		})
 
@@ -187,7 +187,7 @@ func TestUpdateDataDirectories(t *testing.T) {
 			}
 		}()
 
-		err := hub.RenameDataDirectories(nil, conf.Source, conf.IntermediateTarget, conf.UseLinkMode)
+		err := hub.RenameDataDirectories(nil, conf.Source, conf.Intermediate, conf.UseLinkMode)
 		if err != nil {
 			t.Errorf("UpdateDataDirectories() returned error: %+v", err)
 		}
@@ -206,7 +206,7 @@ func TestUpdateDataDirectories(t *testing.T) {
 			}
 		}()
 
-		err := hub.RenameDataDirectories(nil, conf.Source, conf.IntermediateTarget, conf.UseLinkMode)
+		err := hub.RenameDataDirectories(nil, conf.Source, conf.Intermediate, conf.UseLinkMode)
 		if !errors.Is(err, expected) {
 			t.Errorf("got %#v want %#v", err, expected)
 		}
@@ -272,7 +272,7 @@ func TestUpdateDataDirectories(t *testing.T) {
 			{AgentClient: standby, Hostname: "standby"},
 		}
 
-		err := hub.RenameDataDirectories(agentConns, conf.Source, conf.IntermediateTarget, conf.UseLinkMode)
+		err := hub.RenameDataDirectories(agentConns, conf.Source, conf.Intermediate, conf.UseLinkMode)
 		if err != nil {
 			t.Errorf("RenameDataDirectories() returned error: %+v", err)
 		}
@@ -337,7 +337,7 @@ func TestUpdateDataDirectories(t *testing.T) {
 			{AgentClient: standby, Hostname: "standby"},
 		}
 
-		err := hub.RenameDataDirectories(agentConns, conf.Source, conf.IntermediateTarget, conf.UseLinkMode)
+		err := hub.RenameDataDirectories(agentConns, conf.Source, conf.Intermediate, conf.UseLinkMode)
 		if err != nil {
 			t.Errorf("RenameDataDirectories() returned error: %+v", err)
 		}

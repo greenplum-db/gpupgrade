@@ -98,12 +98,12 @@ func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest
 	})
 
 	st.Run(idl.Substep_INIT_TARGET_CLUSTER, func(stream step.OutStreams) error {
-		err := s.RemoveIntermediateTargetCluster(stream)
+		err := s.RemoveIntermediateCluster(stream)
 		if err != nil {
 			return err
 		}
 
-		err = InitTargetCluster(stream, s.IntermediateTarget)
+		err = InitTargetCluster(stream, s.Intermediate)
 		if err != nil {
 			return err
 		}
@@ -111,7 +111,7 @@ func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest
 		// Persist target catalog version which is needed to revert tablespaces.
 		// We do this right after target cluster creation since during revert the
 		// state of the cluster is unknown.
-		targetCatalogVersion, err := GetCatalogVersion(s.IntermediateTarget)
+		targetCatalogVersion, err := GetCatalogVersion(s.Intermediate)
 		if err != nil {
 			return err
 		}
@@ -121,11 +121,11 @@ func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest
 	})
 
 	st.Run(idl.Substep_SHUTDOWN_TARGET_CLUSTER, func(stream step.OutStreams) error {
-		return s.IntermediateTarget.Stop(stream)
+		return s.Intermediate.Stop(stream)
 	})
 
 	st.Run(idl.Substep_BACKUP_TARGET_MASTER, func(stream step.OutStreams) error {
-		sourceDir := s.IntermediateTarget.MasterDataDir()
+		sourceDir := s.Intermediate.MasterDataDir()
 		targetDir := filepath.Join(s.StateDir, originalMasterBackupName)
 		return RsyncMasterDataDir(stream, sourceDir, targetDir)
 	})

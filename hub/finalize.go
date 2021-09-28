@@ -46,41 +46,41 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 	})
 
 	st.RunConditionally(idl.Substep_UPGRADE_MIRRORS, s.Source.HasMirrors(), func(streams step.OutStreams) error {
-		return UpgradeMirrors(streams, s.IntermediateTarget, s.UseHbaHostnames)
+		return UpgradeMirrors(streams, s.Intermediate, s.UseHbaHostnames)
 	})
 
 	st.RunConditionally(idl.Substep_UPGRADE_STANDBY, s.Source.HasStandby(), func(streams step.OutStreams) error {
-		return UpgradeStandby(streams, s.IntermediateTarget, s.UseHbaHostnames)
+		return UpgradeStandby(streams, s.Intermediate, s.UseHbaHostnames)
 	})
 
 	st.Run(idl.Substep_WAIT_FOR_CLUSTER_TO_BE_READY_AFTER_ADDING_MIRRORS_AND_STANDBY, func(streams step.OutStreams) error {
-		return s.IntermediateTarget.WaitForClusterToBeReady(s.Connection)
+		return s.Intermediate.WaitForClusterToBeReady(s.Connection)
 	})
 
 	st.Run(idl.Substep_SHUTDOWN_TARGET_CLUSTER, func(streams step.OutStreams) error {
-		return s.IntermediateTarget.Stop(streams)
+		return s.Intermediate.Stop(streams)
 	})
 
 	st.Run(idl.Substep_UPDATE_TARGET_CATALOG, func(streams step.OutStreams) error {
-		if err := s.IntermediateTarget.StartMasterOnly(streams); err != nil {
+		if err := s.Intermediate.StartMasterOnly(streams); err != nil {
 			return err
 		}
 
-		if err := UpdateCatalog(s.Connection, s.IntermediateTarget, s.Target); err != nil {
+		if err := UpdateCatalog(s.Connection, s.Intermediate, s.Target); err != nil {
 			return err
 		}
 
-		return s.IntermediateTarget.StopMasterOnly(streams)
+		return s.Intermediate.StopMasterOnly(streams)
 	})
 
 	st.Run(idl.Substep_UPDATE_DATA_DIRECTORIES, func(_ step.OutStreams) error {
-		return RenameDataDirectories(s.agentConns, s.Source, s.IntermediateTarget, s.UseLinkMode)
+		return RenameDataDirectories(s.agentConns, s.Source, s.Intermediate, s.UseLinkMode)
 	})
 
 	st.Run(idl.Substep_UPDATE_TARGET_CONF_FILES, func(streams step.OutStreams) error {
 		return UpdateConfFiles(s.agentConns, streams,
 			s.Target.Version,
-			s.IntermediateTarget,
+			s.Intermediate,
 			s.Target,
 		)
 	})
@@ -121,7 +121,7 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 		FinalizeResponse: &idl.FinalizeResponse{
 			TargetVersion:                     s.Target.Version.String(),
 			LogArchiveDirectory:               logArchiveDir,
-			ArchivedSourceMasterDataDirectory: s.Config.IntermediateTarget.MasterDataDir() + upgrade.OldSuffix,
+			ArchivedSourceMasterDataDirectory: s.Config.Intermediate.MasterDataDir() + upgrade.OldSuffix,
 			UpgradeID:                         s.Config.UpgradeID.String(),
 			Target: &idl.Cluster{
 				Port:                int32(s.Target.MasterPort()),

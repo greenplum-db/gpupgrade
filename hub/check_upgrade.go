@@ -38,12 +38,12 @@ func (s *Server) CheckUpgrade(stream step.OutStreams, conns []*idl.Connection) e
 	go func() {
 		defer wg.Done()
 		checkErrs <- upgrader.UpgradeMaster(UpgradeMasterArgs{
-			Source:             s.Source,
-			IntermediateTarget: s.IntermediateTarget,
-			StateDir:           s.StateDir,
-			Stream:             stream,
-			CheckOnly:          true,
-			UseLinkMode:        s.UseLinkMode,
+			Source:       s.Source,
+			Intermediate: s.Intermediate,
+			StateDir:     s.StateDir,
+			Stream:       stream,
+			CheckOnly:    true,
+			UseLinkMode:  s.UseLinkMode,
 		})
 	}()
 
@@ -58,13 +58,13 @@ func (s *Server) CheckUpgrade(stream step.OutStreams, conns []*idl.Connection) e
 		}
 
 		checkErrs <- upgrader.UpgradePrimaries(UpgradePrimaryArgs{
-			CheckOnly:          true,
-			MasterBackupDir:    "",
-			AgentConns:         conns,
-			DataDirPairMap:     dataDirPairMap,
-			Source:             s.Source,
-			IntermediateTarget: s.IntermediateTarget,
-			UseLinkMode:        s.UseLinkMode,
+			CheckOnly:       true,
+			MasterBackupDir: "",
+			AgentConns:      conns,
+			DataDirPairMap:  dataDirPairMap,
+			Source:          s.Source,
+			Intermediate:    s.Intermediate,
+			UseLinkMode:     s.UseLinkMode,
 		})
 	}()
 

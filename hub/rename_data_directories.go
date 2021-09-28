@@ -17,14 +17,14 @@ var RenameDirectories = upgrade.RenameDirectories
 
 type RenameMap = map[string][]*idl.RenameDirectories
 
-func RenameDataDirectories(agentConns []*idl.Connection, source *greenplum.Cluster, intermediateTarget *greenplum.Cluster, linkMode bool) error {
+func RenameDataDirectories(agentConns []*idl.Connection, source *greenplum.Cluster, intermediate *greenplum.Cluster, linkMode bool) error {
 	src := source.MasterDataDir()
-	dst := intermediateTarget.MasterDataDir()
+	dst := intermediate.MasterDataDir()
 	if err := RenameDirectories(src, dst, idl.RenameDirectory_ArchiveSourceAndRenameTarget); err != nil {
 		return xerrors.Errorf("renaming master data directories: %w", err)
 	}
 
-	renameMap := getRenameMap(source, intermediateTarget, linkMode)
+	renameMap := getRenameMap(source, intermediate, linkMode)
 	if err := RenameSegmentDataDirs(agentConns, renameMap); err != nil {
 		return xerrors.Errorf("renaming segment data directories: %w", err)
 	}
@@ -37,7 +37,7 @@ func RenameDataDirectories(agentConns []*idl.Connection, source *greenplum.Clust
 // the mirrors have been deleted to save disk space, so exclude them from the map.
 // Since the upgraded mirrors will be added later to the correct directory there
 // is no need to rename target to source, so only archive the source directory.
-func getRenameMap(source *greenplum.Cluster, intermediateTarget *greenplum.Cluster, linkMode bool) RenameMap {
+func getRenameMap(source *greenplum.Cluster, intermediate *greenplum.Cluster, linkMode bool) RenameMap {
 	m := make(RenameMap)
 
 	for _, seg := range source.Primaries {
@@ -47,7 +47,7 @@ func getRenameMap(source *greenplum.Cluster, intermediateTarget *greenplum.Clust
 
 		m[seg.Hostname] = append(m[seg.Hostname], &idl.RenameDirectories{
 			Source:          seg.DataDir,
-			Target:          intermediateTarget.Primaries[seg.ContentID].DataDir,
+			Target:          intermediate.Primaries[seg.ContentID].DataDir,
 			RenameDirectory: idl.RenameDirectory_ArchiveSourceAndRenameTarget,
 		})
 	}
@@ -62,7 +62,7 @@ func getRenameMap(source *greenplum.Cluster, intermediateTarget *greenplum.Clust
 	for _, seg := range source.Mirrors {
 		m[seg.Hostname] = append(m[seg.Hostname], &idl.RenameDirectories{
 			Source:          seg.DataDir,
-			Target:          intermediateTarget.Mirrors[seg.ContentID].DataDir,
+			Target:          intermediate.Mirrors[seg.ContentID].DataDir,
 			RenameDirectory: renameDirectory,
 		})
 	}

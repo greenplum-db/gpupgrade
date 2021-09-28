@@ -24,14 +24,14 @@ func (s *Server) GetConfig(ctx context.Context, in *idl.GetConfigRequest) (*idl.
 			resp.Value = s.Source.GPHome
 		}
 	case "target-gphome":
-		resp.Value = s.IntermediateTarget.GPHome
+		resp.Value = s.Intermediate.GPHome
 	case "target-datadir":
 		if s.Target != nil {
-			resp.Value = s.IntermediateTarget.MasterDataDir()
+			resp.Value = s.Intermediate.MasterDataDir()
 		}
 	case "target-port":
-		if s.IntermediateTarget.MasterPort() != 0 {
-			resp.Value = strconv.Itoa(s.IntermediateTarget.MasterPort())
+		if s.Intermediate.MasterPort() != 0 {
+			resp.Value = strconv.Itoa(s.Intermediate.MasterPort())
 		}
 	default:
 		return nil, status.Errorf(codes.NotFound, "%s is not a valid configuration key", in.Name)

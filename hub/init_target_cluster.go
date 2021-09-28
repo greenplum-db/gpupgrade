@@ -44,7 +44,7 @@ func (s *Server) GenerateInitsystemConfig() error {
 }
 
 func (s *Server) writeConf(db *sql.DB) error {
-	gpinitsystemConfig, err := CreateInitialInitsystemConfig(s.IntermediateTarget.MasterDataDir(), s.UseHbaHostnames)
+	gpinitsystemConfig, err := CreateInitialInitsystemConfig(s.Intermediate.MasterDataDir(), s.UseHbaHostnames)
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func (s *Server) writeConf(db *sql.DB) error {
 		return err
 	}
 
-	gpinitsystemConfig, err = WriteSegmentArray(gpinitsystemConfig, s.IntermediateTarget)
+	gpinitsystemConfig, err = WriteSegmentArray(gpinitsystemConfig, s.Intermediate)
 	if err != nil {
 		return xerrors.Errorf("generating segment array: %w", err)
 	}
@@ -62,23 +62,23 @@ func (s *Server) writeConf(db *sql.DB) error {
 	return WriteInitsystemFile(gpinitsystemConfig, utils.GetInitsystemConfig())
 }
 
-func (s *Server) RemoveIntermediateTargetCluster(streams step.OutStreams) error {
-	if reflect.DeepEqual(s.IntermediateTarget, greenplum.Cluster{}) {
+func (s *Server) RemoveIntermediateCluster(streams step.OutStreams) error {
+	if reflect.DeepEqual(s.Intermediate, greenplum.Cluster{}) {
 		return nil
 	}
 
-	running, err := s.IntermediateTarget.IsMasterRunning(streams)
+	running, err := s.Intermediate.IsMasterRunning(streams)
 	if err != nil {
 		return err
 	}
 
 	if running {
-		if err := s.IntermediateTarget.Stop(streams); err != nil {
+		if err := s.Intermediate.Stop(streams); err != nil {
 			return err
 		}
 	}
 
-	err = DeleteMasterAndPrimaryDataDirectories(streams, s.agentConns, s.IntermediateTarget)
+	err = DeleteMasterAndPrimaryDataDirectories(streams, s.agentConns, s.Intermediate)
 	if err != nil {
 		return xerrors.Errorf("deleting target cluster data directories: %w", err)
 	}
@@ -160,8 +160,8 @@ func WriteInitsystemFile(gpinitsystemConfig []string, gpinitsystemFilepath strin
 	return nil
 }
 
-func WriteSegmentArray(config []string, intermediateTarget *greenplum.Cluster) ([]string, error) {
-	master := intermediateTarget.Master()
+func WriteSegmentArray(config []string, intermediate *greenplum.Cluster) ([]string, error) {
+	master := intermediate.Master()
 	config = append(config,
 		fmt.Sprintf("QD_PRIMARY_ARRAY=%s~%s~%d~%s~%d~%d",
 			master.Hostname,
@@ -174,7 +174,7 @@ func WriteSegmentArray(config []string, intermediateTarget *greenplum.Cluster) (
 	)
 
 	config = append(config, "declare -a PRIMARY_ARRAY=(")
-	for _, segment := range intermediateTarget.Primaries {
+	for _, segment := range intermediate.Primaries {
 		if segment.ContentID == -1 {
 			continue
 		}

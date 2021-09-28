@@ -40,9 +40,9 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 	}
 
 	// If the intermediate target cluster is started, it must be stopped.
-	if s.IntermediateTarget != nil {
+	if s.Intermediate != nil {
 		st.AlwaysRun(idl.Substep_SHUTDOWN_TARGET_CLUSTER, func(streams step.OutStreams) error {
-			running, err := s.IntermediateTarget.IsMasterRunning(streams)
+			running, err := s.Intermediate.IsMasterRunning(streams)
 			if err != nil {
 				return err
 			}
@@ -51,20 +51,20 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 				return step.Skip
 			}
 
-			return s.IntermediateTarget.Stop(streams)
+			return s.Intermediate.Stop(streams)
 		})
 	}
 
 	st.RunConditionally(idl.Substep_DELETE_TARGET_CLUSTER_DATADIRS,
-		s.IntermediateTarget.Primaries != nil && s.IntermediateTarget.MasterDataDir() != "",
+		s.Intermediate.Primaries != nil && s.Intermediate.MasterDataDir() != "",
 		func(streams step.OutStreams) error {
-			return DeleteMasterAndPrimaryDataDirectories(streams, s.agentConns, s.IntermediateTarget)
+			return DeleteMasterAndPrimaryDataDirectories(streams, s.agentConns, s.Intermediate)
 		})
 
 	st.RunConditionally(idl.Substep_DELETE_TABLESPACES,
-		s.IntermediateTarget.Primaries != nil && s.IntermediateTarget.MasterDataDir() != "",
+		s.Intermediate.Primaries != nil && s.Intermediate.MasterDataDir() != "",
 		func(streams step.OutStreams) error {
-			return DeleteTargetTablespaces(streams, s.agentConns, s.Config.IntermediateTarget, s.TargetCatalogVersion, s.Tablespaces)
+			return DeleteTargetTablespaces(streams, s.agentConns, s.Config.Intermediate, s.TargetCatalogVersion, s.Tablespaces)
 		})
 
 	// For any of the link-mode cases described in the "Reverting to old

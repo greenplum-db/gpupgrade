@@ -153,14 +153,14 @@ func TestAssignDataDirsAndPorts(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			actual, err := GenerateIntermediateTargetCluster(c.cluster, c.ports, upgradeID, semver.Version{}, "")
+			actual, err := GenerateIntermediateCluster(c.cluster, c.ports, upgradeID, semver.Version{}, "")
 			if err != nil {
 				t.Errorf("returned error %+v", err)
 			}
 
 			c.expected.Destination = idl.ClusterDestination_INTERMEDIATE
 			if !reflect.DeepEqual(actual, c.expected) {
-				t.Errorf("GenerateIntermediateTargetCluster(<cluster>, %v)=%v, want %v", c.ports, actual, c.expected)
+				t.Errorf("GenerateIntermediateCluster(<cluster>, %v)=%v, want %v", c.ports, actual, c.expected)
 			}
 		})
 	}
@@ -231,9 +231,9 @@ func TestAssignDataDirsAndPorts(t *testing.T) {
 
 	for _, c := range errCases {
 		t.Run(c.name, func(t *testing.T) {
-			_, err := GenerateIntermediateTargetCluster(c.cluster, c.ports, 0, semver.Version{}, "")
+			_, err := GenerateIntermediateCluster(c.cluster, c.ports, 0, semver.Version{}, "")
 			if err == nil {
-				t.Errorf("GenerateIntermediateTargetCluster(<cluster>, %v) returned nil, want error", c.ports)
+				t.Errorf("GenerateIntermediateCluster(<cluster>, %v) returned nil, want error", c.ports)
 			}
 		})
 	}
@@ -247,7 +247,7 @@ func TestEnsureTempPortRangeDoesNotOverlapWithSourceClusterPorts(t *testing.T) {
 		{ContentID: 0, DbID: 5, Hostname: "sdw2", DataDir: "/data/dbfast_mirror1/seg0", Role: greenplum.MirrorRole, Port: 25435},
 	})
 
-	intermediateTarget := MustCreateCluster(t, greenplum.SegConfigs{
+	intermediate := MustCreateCluster(t, greenplum.SegConfigs{
 		{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole, Port: 6000},
 		{ContentID: -1, DbID: 8, Hostname: "smdw", DataDir: "/data/qddir/seg-1", Role: greenplum.MirrorRole, Port: 6001},
 		{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg0", Role: greenplum.PrimaryRole, Port: 6002},
@@ -255,26 +255,26 @@ func TestEnsureTempPortRangeDoesNotOverlapWithSourceClusterPorts(t *testing.T) {
 	})
 
 	t.Run("ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts succeeds", func(t *testing.T) {
-		err := ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(source, intermediateTarget)
+		err := ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(source, intermediate)
 		if err != nil {
 			t.Errorf("unexpected error %#v", err)
 		}
 	})
 
 	t.Run("allow the same port on different hosts", func(t *testing.T) {
-		intermediateTarget.Mirrors[-1] = greenplum.SegConfig{ContentID: -1, DbID: 8, Hostname: "smdw", DataDir: "/data/qddir/seg-1", Role: greenplum.MirrorRole, Port: source.MasterPort()}
+		intermediate.Mirrors[-1] = greenplum.SegConfig{ContentID: -1, DbID: 8, Hostname: "smdw", DataDir: "/data/qddir/seg-1", Role: greenplum.MirrorRole, Port: source.MasterPort()}
 
-		err := ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(source, intermediateTarget)
+		err := ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(source, intermediate)
 		if err != nil {
 			t.Errorf("unexpected error %#v", err)
 		}
 	})
 
 	errCases := []struct {
-		name               string
-		source             *greenplum.Cluster
-		intermediateTarget *greenplum.Cluster
-		conflictingPort    int
+		name            string
+		source          *greenplum.Cluster
+		intermediate    *greenplum.Cluster
+		conflictingPort int
 	}{{
 		name: "errors when source master port overlaps with intermediate target cluster ports",
 		source: MustCreateCluster(t, greenplum.SegConfigs{
@@ -283,7 +283,7 @@ func TestEnsureTempPortRangeDoesNotOverlapWithSourceClusterPorts(t *testing.T) {
 			{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg0", Role: greenplum.PrimaryRole, Port: 25432},
 			{ContentID: 0, DbID: 5, Hostname: "sdw2", DataDir: "/data/dbfast_mirror1/seg0", Role: greenplum.MirrorRole, Port: 25435},
 		}),
-		intermediateTarget: MustCreateCluster(t, greenplum.SegConfigs{
+		intermediate: MustCreateCluster(t, greenplum.SegConfigs{
 			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole, Port: 15432},
 			{ContentID: -1, DbID: 8, Hostname: "smdw", DataDir: "/data/qddir/seg-1", Role: greenplum.MirrorRole, Port: 6001},
 			{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg0", Role: greenplum.PrimaryRole, Port: 6002},
@@ -298,7 +298,7 @@ func TestEnsureTempPortRangeDoesNotOverlapWithSourceClusterPorts(t *testing.T) {
 			{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg0", Role: greenplum.PrimaryRole, Port: 25432},
 			{ContentID: 0, DbID: 5, Hostname: "sdw2", DataDir: "/data/dbfast_mirror1/seg0", Role: greenplum.MirrorRole, Port: 25435},
 		}),
-		intermediateTarget: MustCreateCluster(t, greenplum.SegConfigs{
+		intermediate: MustCreateCluster(t, greenplum.SegConfigs{
 			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole, Port: 6000},
 			{ContentID: -1, DbID: 8, Hostname: "smdw", DataDir: "/data/qddir/seg-1", Role: greenplum.MirrorRole, Port: 16432},
 			{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg0", Role: greenplum.PrimaryRole, Port: 6002},
@@ -313,7 +313,7 @@ func TestEnsureTempPortRangeDoesNotOverlapWithSourceClusterPorts(t *testing.T) {
 			{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg0", Role: greenplum.PrimaryRole, Port: 25432},
 			{ContentID: 0, DbID: 5, Hostname: "sdw2", DataDir: "/data/dbfast_mirror1/seg0", Role: greenplum.MirrorRole, Port: 25435},
 		}),
-		intermediateTarget: MustCreateCluster(t, greenplum.SegConfigs{
+		intermediate: MustCreateCluster(t, greenplum.SegConfigs{
 			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole, Port: 6000},
 			{ContentID: -1, DbID: 8, Hostname: "smdw", DataDir: "/data/qddir/seg-1", Role: greenplum.MirrorRole, Port: 6001},
 			{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg0", Role: greenplum.PrimaryRole, Port: 25432},
@@ -328,7 +328,7 @@ func TestEnsureTempPortRangeDoesNotOverlapWithSourceClusterPorts(t *testing.T) {
 			{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg0", Role: greenplum.PrimaryRole, Port: 25432},
 			{ContentID: 0, DbID: 5, Hostname: "sdw2", DataDir: "/data/dbfast_mirror1/seg0", Role: greenplum.MirrorRole, Port: 25435},
 		}),
-		intermediateTarget: MustCreateCluster(t, greenplum.SegConfigs{
+		intermediate: MustCreateCluster(t, greenplum.SegConfigs{
 			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole, Port: 6000},
 			{ContentID: -1, DbID: 8, Hostname: "smdw", DataDir: "/data/qddir/seg-1", Role: greenplum.MirrorRole, Port: 6001},
 			{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg0", Role: greenplum.PrimaryRole, Port: 6002},
@@ -339,7 +339,7 @@ func TestEnsureTempPortRangeDoesNotOverlapWithSourceClusterPorts(t *testing.T) {
 
 	for _, c := range errCases {
 		t.Run(c.name, func(t *testing.T) {
-			err := ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(c.source, c.intermediateTarget)
+			err := ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(c.source, c.intermediate)
 			var invalidPortErr *InvalidTempPortRangeError
 			if !errors.As(err, &invalidPortErr) {
 				t.Fatalf("got %T, want %T", err, invalidPortErr)

@@ -22,7 +22,7 @@ type UpgradePrimaryArgs struct {
 	AgentConns             []*idl.Connection
 	DataDirPairMap         map[string][]*idl.DataDirPair
 	Source                 *greenplum.Cluster
-	IntermediateTarget     *greenplum.Cluster
+	Intermediate           *greenplum.Cluster
 	UseLinkMode            bool
 	TablespacesMappingFile string
 }
@@ -31,8 +31,8 @@ func UpgradePrimaries(args UpgradePrimaryArgs) error {
 	request := func(conn *idl.Connection) error {
 		_, err := conn.AgentClient.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{
 			SourceBinDir:               filepath.Join(args.Source.GPHome, "bin"),
-			TargetBinDir:               filepath.Join(args.IntermediateTarget.GPHome, "bin"),
-			TargetVersion:              args.IntermediateTarget.Version.String(),
+			TargetBinDir:               filepath.Join(args.Intermediate.GPHome, "bin"),
+			TargetVersion:              args.Intermediate.Version.String(),
 			DataDirPairs:               args.DataDirPairMap[conn.Hostname],
 			CheckOnly:                  args.CheckOnly,
 			UseLinkMode:                args.UseLinkMode,
@@ -76,7 +76,7 @@ func (s *Server) GetDataDirPairs() (map[string][]*idl.DataDirPair, error) {
 			continue
 		}
 		sourceSeg := s.Source.Primaries[contentID]
-		targetSeg := s.IntermediateTarget.Primaries[contentID]
+		targetSeg := s.Intermediate.Primaries[contentID]
 		if sourceSeg.Hostname != targetSeg.Hostname {
 			return nil, newInvalidClusterError(
 				"hostnames do not match between source and target cluster with content ID %d. "+

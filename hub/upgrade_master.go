@@ -31,12 +31,12 @@ var cmd = exec.Command
 const originalMasterBackupName = "master.bak"
 
 type UpgradeMasterArgs struct {
-	Source             *greenplum.Cluster
-	IntermediateTarget *greenplum.Cluster
-	StateDir           string
-	Stream             step.OutStreams
-	CheckOnly          bool
-	UseLinkMode        bool
+	Source       *greenplum.Cluster
+	Intermediate *greenplum.Cluster
+	StateDir     string
+	Stream       step.OutStreams
+	CheckOnly    bool
+	UseLinkMode  bool
 }
 
 func UpgradeMaster(args UpgradeMasterArgs) error {
@@ -47,14 +47,14 @@ func UpgradeMaster(args UpgradeMasterArgs) error {
 	}
 
 	sourceDir := filepath.Join(args.StateDir, originalMasterBackupName)
-	err = RsyncMasterDataDir(args.Stream, sourceDir, args.IntermediateTarget.MasterDataDir())
+	err = RsyncMasterDataDir(args.Stream, sourceDir, args.Intermediate.MasterDataDir())
 	if err != nil {
 		return err
 	}
 
 	pair := upgrade.SegmentPair{
 		Source: masterSegmentFromCluster(args.Source),
-		Target: masterSegmentFromCluster(args.IntermediateTarget),
+		Target: masterSegmentFromCluster(args.Intermediate),
 	}
 
 	// Buffer stdout to add context to errors.
@@ -84,7 +84,7 @@ func UpgradeMaster(args UpgradeMasterArgs) error {
 
 	// FIXME: args.Target.Version comes from gp-common-go-libs, which uses a deprecated version of semver.
 	//   It is not compatible with the semver v4 we use in gpupgrade.
-	targetVersion := semver.MustParse(args.IntermediateTarget.Version.String())
+	targetVersion := semver.MustParse(args.Intermediate.Version.String())
 
 	err = upgrade.Run(pair, targetVersion, options...)
 	if err != nil {

@@ -43,22 +43,22 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 	st.Run(idl.Substep_UPGRADE_MASTER, func(streams step.OutStreams) error {
 		stateDir := s.StateDir
 		return UpgradeMaster(UpgradeMasterArgs{
-			Source:             s.Source,
-			IntermediateTarget: s.IntermediateTarget,
-			StateDir:           stateDir,
-			Stream:             streams,
-			CheckOnly:          false,
-			UseLinkMode:        s.UseLinkMode,
+			Source:       s.Source,
+			Intermediate: s.Intermediate,
+			StateDir:     stateDir,
+			Stream:       streams,
+			CheckOnly:    false,
+			UseLinkMode:  s.UseLinkMode,
 		})
 	})
 
 	st.Run(idl.Substep_COPY_MASTER, func(streams step.OutStreams) error {
-		err := CopyMasterDataDir(streams, s.IntermediateTarget.MasterDataDir(), upgradedMasterBackupDir, s.IntermediateTarget.PrimaryHostnames())
+		err := CopyMasterDataDir(streams, s.Intermediate.MasterDataDir(), upgradedMasterBackupDir, s.Intermediate.PrimaryHostnames())
 		if err != nil {
 			return err
 		}
 
-		return CopyMasterTablespaces(streams, s.TablespacesMappingFilePath, s.Tablespaces, utils.GetTablespaceDir(), s.IntermediateTarget.PrimaryHostnames())
+		return CopyMasterTablespaces(streams, s.TablespacesMappingFilePath, s.Tablespaces, utils.GetTablespaceDir(), s.Intermediate.PrimaryHostnames())
 	})
 
 	st.Run(idl.Substep_UPGRADE_PRIMARIES, func(_ step.OutStreams) error {
@@ -74,21 +74,21 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 			AgentConns:             s.agentConns,
 			DataDirPairMap:         dataDirPair,
 			Source:                 s.Source,
-			IntermediateTarget:     s.IntermediateTarget,
+			Intermediate:           s.Intermediate,
 			UseLinkMode:            s.UseLinkMode,
 			TablespacesMappingFile: s.TablespacesMappingFilePath,
 		})
 	})
 
 	st.Run(idl.Substep_START_TARGET_CLUSTER, func(streams step.OutStreams) error {
-		return s.IntermediateTarget.Start(streams)
+		return s.Intermediate.Start(streams)
 	})
 
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_ExecuteResponse{
 		ExecuteResponse: &idl.ExecuteResponse{
 			Target: &idl.Cluster{
-				Port:                int32(s.IntermediateTarget.MasterPort()),
-				MasterDataDirectory: s.IntermediateTarget.MasterDataDir(),
+				Port:                int32(s.Intermediate.MasterPort()),
+				MasterDataDirectory: s.Intermediate.MasterDataDir(),
 			}},
 	}}}}
 

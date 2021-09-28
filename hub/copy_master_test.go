@@ -163,7 +163,7 @@ func TestCopy(t *testing.T) {
 func TestCopyMasterDataDir(t *testing.T) {
 	testhelper.SetupTestLogger()
 
-	intermediateTarget := MustCreateCluster(t, greenplum.SegConfigs{
+	intermediate := MustCreateCluster(t, greenplum.SegConfigs{
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
 		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
 		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
@@ -172,7 +172,7 @@ func TestCopyMasterDataDir(t *testing.T) {
 	t.Run("copies the master data directory to each primary host", func(t *testing.T) {
 		// The verifier function can be called in parallel, so use a channel to
 		// communicate which hosts were actually used.
-		hosts := make(chan string, len(intermediateTarget.PrimaryHostnames()))
+		hosts := make(chan string, len(intermediate.PrimaryHostnames()))
 
 		expectedArgs := []string{
 			"--archive", "--compress", "--delete", "--stats",
@@ -181,7 +181,7 @@ func TestCopyMasterDataDir(t *testing.T) {
 
 		execCommandVerifier(t, hosts, expectedArgs)
 
-		err := CopyMasterDataDir(step.DevNullStream, intermediateTarget.MasterDataDir(), "foobar/path", intermediateTarget.PrimaryHostnames())
+		err := CopyMasterDataDir(step.DevNullStream, intermediate.MasterDataDir(), "foobar/path", intermediate.PrimaryHostnames())
 		if err != nil {
 			t.Errorf("copying master data directory: %+v", err)
 		}
@@ -196,7 +196,7 @@ func TestCopyMasterDataDir(t *testing.T) {
 func TestCopyMasterTablespaces(t *testing.T) {
 	testhelper.SetupTestLogger()
 
-	intermediateTarget := MustCreateCluster(t, greenplum.SegConfigs{
+	intermediate := MustCreateCluster(t, greenplum.SegConfigs{
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
 		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
 		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
@@ -234,7 +234,7 @@ func TestCopyMasterTablespaces(t *testing.T) {
 	t.Run("copies tablespace mapping file and master tablespace directory to each primary host", func(t *testing.T) {
 		// The verifier function can be called in parallel, so use a channel to
 		// communicate which hosts were actually used.
-		hosts := make(chan string, len(intermediateTarget.PrimaryHostnames()))
+		hosts := make(chan string, len(intermediate.PrimaryHostnames()))
 
 		expectedArgs := []string{
 			"--archive", "--compress", "--delete", "--stats",
@@ -242,7 +242,7 @@ func TestCopyMasterTablespaces(t *testing.T) {
 		}
 		execCommandVerifier(t, hosts, expectedArgs)
 
-		err := CopyMasterTablespaces(step.DevNullStream, TablespacesMappingFilePath, Tablespaces, "foobar/path", intermediateTarget.PrimaryHostnames())
+		err := CopyMasterTablespaces(step.DevNullStream, TablespacesMappingFilePath, Tablespaces, "foobar/path", intermediate.PrimaryHostnames())
 		if err != nil {
 			t.Errorf("copying master tablespace directories and mapping file: %+v", err)
 		}
@@ -256,12 +256,12 @@ func TestCopyMasterTablespaces(t *testing.T) {
 	t.Run("CopyMasterTablespaces returns nil if there is no tablespaces", func(t *testing.T) {
 		// The verifier function can be called in parallel, so use a channel to
 		// communicate which hosts were actually used.
-		hosts := make(chan string, len(intermediateTarget.PrimaryHostnames()))
+		hosts := make(chan string, len(intermediate.PrimaryHostnames()))
 
 		var expectedArgs []string
 		execCommandVerifier(t, hosts, expectedArgs)
 
-		err := CopyMasterTablespaces(step.DevNullStream, TablespacesMappingFilePath, nil, "foobar/path", intermediateTarget.PrimaryHostnames())
+		err := CopyMasterTablespaces(step.DevNullStream, TablespacesMappingFilePath, nil, "foobar/path", intermediate.PrimaryHostnames())
 		if err != nil {
 			t.Errorf("got %+v, want nil", err)
 		}

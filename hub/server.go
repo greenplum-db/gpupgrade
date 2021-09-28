@@ -353,10 +353,9 @@ type Config struct {
 	// it is nil.
 	Source *greenplum.Cluster
 
-	// IntermediateTarget represents the initialized target cluster that is
-	// upgraded based on the source and later renamed to match the source
-	// cluster.
-	IntermediateTarget *greenplum.Cluster
+	// Intermediate represents the initialized target cluster that is upgraded
+	// based on the source.
+	Intermediate *greenplum.Cluster
 
 	// Target is the upgraded GPDB cluster. It is populated during the target
 	// gpinitsystem execution in the initialize step; before that, it is nil.

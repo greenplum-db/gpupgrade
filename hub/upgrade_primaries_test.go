@@ -110,7 +110,7 @@ func TestUpgradePrimaries(t *testing.T) {
 			AgentConns:             agentConns,
 			DataDirPairMap:         pairs,
 			Source:                 source,
-			IntermediateTarget:     target,
+			Intermediate:           target,
 			UseLinkMode:            false,
 			TablespacesMappingFile: "/tmp/tablespaces_mapping.txt",
 		})
@@ -183,7 +183,7 @@ func TestUpgradePrimaries(t *testing.T) {
 					AgentConns:             agentConns,
 					DataDirPairMap:         pairs,
 					Source:                 source,
-					IntermediateTarget:     target,
+					Intermediate:           target,
 					UseLinkMode:            false,
 					TablespacesMappingFile: "",
 				})
@@ -211,13 +211,13 @@ func TestGetDataDirPairs(t *testing.T) {
 			{ContentID: 1, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 		})
 
-		intermediateTarget := hub.MustCreateCluster(t, greenplum.SegConfigs{
+		intermediate := hub.MustCreateCluster(t, greenplum.SegConfigs{
 			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
 		})
 
 		conf := &hub.Config{
-			Source:             source,
-			IntermediateTarget: intermediateTarget,
+			Source:       source,
+			Intermediate: intermediate,
 		}
 		server := hub.New(conf, nil, "")
 
@@ -241,8 +241,8 @@ func TestGetDataDirPairs(t *testing.T) {
 		})
 
 		conf := &hub.Config{
-			Source:             source,
-			IntermediateTarget: interemediateTarget,
+			Source:       source,
+			Intermediate: interemediateTarget,
 		}
 		server := hub.New(conf, nil, "")
 
@@ -266,8 +266,8 @@ func TestGetDataDirPairs(t *testing.T) {
 		})
 
 		conf := &hub.Config{
-			Source:             source,
-			IntermediateTarget: intermedaiteTarget,
+			Source:       source,
+			Intermediate: intermedaiteTarget,
 		}
 		server := hub.New(conf, nil, "")
 

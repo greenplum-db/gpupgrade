@@ -16,29 +16,29 @@ import (
 	"github.com/greenplum-db/gpupgrade/step"
 )
 
-func UpdateConfFiles(agentConns []*idl.Connection, _ step.OutStreams, version semver.Version, intermediateTarget *greenplum.Cluster, target *greenplum.Cluster) error {
+func UpdateConfFiles(agentConns []*idl.Connection, _ step.OutStreams, version semver.Version, intermediate *greenplum.Cluster, target *greenplum.Cluster) error {
 	if version.Major < 7 {
 		if err := UpdateGpperfmonConf(target.MasterDataDir()); err != nil {
 			return err
 		}
 	}
 
-	if err := UpdatePostgresqlConf(filepath.Join(target.MasterDataDir(), "postgresql.conf"), intermediateTarget.MasterPort(), target.MasterPort()); err != nil {
+	if err := UpdatePostgresqlConf(filepath.Join(target.MasterDataDir(), "postgresql.conf"), intermediate.MasterPort(), target.MasterPort()); err != nil {
 		return err
 	}
 
-	if err := UpdatePostgresqlConfOnSegments(agentConns, intermediateTarget, target); err != nil {
+	if err := UpdatePostgresqlConfOnSegments(agentConns, intermediate, target); err != nil {
 		return err
 	}
 
-	if err := UpdateRecoveryConfiguration(agentConns, version, intermediateTarget, target); err != nil {
+	if err := UpdateRecoveryConfiguration(agentConns, version, intermediate, target); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func UpdatePostgresqlConfOnSegments(agentConns []*idl.Connection, intermediateCluster *greenplum.Cluster, target *greenplum.Cluster) error {
+func UpdatePostgresqlConfOnSegments(agentConns []*idl.Connection, intermediate *greenplum.Cluster, target *greenplum.Cluster) error {
 	request := func(conn *idl.Connection) error {
 		var opts []*idl.UpdateFileConfOptions
 
@@ -46,7 +46,7 @@ func UpdatePostgresqlConfOnSegments(agentConns []*idl.Connection, intermediateCl
 		if target.Standby().Hostname == conn.Hostname {
 			opt := &idl.UpdateFileConfOptions{
 				Path:    filepath.Join(target.StandbyDataDir(), "postgresql.conf"),
-				OldPort: int32(intermediateCluster.StandbyPort()),
+				OldPort: int32(intermediate.StandbyPort()),
 				NewPort: int32(target.StandbyPort()),
 			}
 
@@ -61,7 +61,7 @@ func UpdatePostgresqlConfOnSegments(agentConns []*idl.Connection, intermediateCl
 		for _, mirror := range mirrors {
 			opt := &idl.UpdateFileConfOptions{
 				Path:    filepath.Join(mirror.DataDir, "postgresql.conf"),
-				OldPort: int32(intermediateCluster.Primaries[mirror.ContentID].Port),
+				OldPort: int32(intermediate.Primaries[mirror.ContentID].Port),
 				NewPort: int32(mirror.Port),
 			}
 
@@ -76,7 +76,7 @@ func UpdatePostgresqlConfOnSegments(agentConns []*idl.Connection, intermediateCl
 		for _, primary := range primaries {
 			opt := &idl.UpdateFileConfOptions{
 				Path:    filepath.Join(primary.DataDir, "postgresql.conf"),
-				OldPort: int32(intermediateCluster.Primaries[primary.ContentID].Port),
+				OldPort: int32(intermediate.Primaries[primary.ContentID].Port),
 				NewPort: int32(primary.Port),
 			}
 

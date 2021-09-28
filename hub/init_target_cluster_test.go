@@ -160,10 +160,10 @@ func TestGetCheckpointSegmentsAndEncoding(t *testing.T) {
 }
 
 func TestWriteSegmentArray(t *testing.T) {
-	test := func(t *testing.T, intermediateTarget *greenplum.Cluster, expected []string) {
+	test := func(t *testing.T, intermediate *greenplum.Cluster, expected []string) {
 		t.Helper()
 
-		actual, err := WriteSegmentArray([]string{}, intermediateTarget)
+		actual, err := WriteSegmentArray([]string{}, intermediate)
 		if err != nil {
 			t.Errorf("got %#v", err)
 		}
