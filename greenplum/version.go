@@ -5,18 +5,18 @@ package greenplum
 
 import (
 	"fmt"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
 
 	"github.com/blang/semver/v4"
-	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
-)
 
-var ErrUnknownVersion = errors.New("unknown GPDB version")
+	"github.com/greenplum-db/gpupgrade/testutils/exectest"
+)
 
 type versions struct {
 	gphome string
@@ -31,101 +31,60 @@ func (v *versions) Description() string {
 }
 
 func (v *versions) Local() (string, error) {
-	version, err := version(v.gphome, "")
-	if err != nil {
-		return "", err
-	}
-
-	return version.String(), err
+	return version(v.gphome, "")
 }
 
 func (v *versions) Remote(host string) (string, error) {
-	version, err := version(v.gphome, host)
-	if err != nil {
-		return "", err
-	}
-
-	return version.String(), err
+	return version(v.gphome, host)
 }
 
-func version(gphome string, host string) (semver.Version, error) {
+var versionCommand = exec.Command
+
+// XXX: for internal testing only
+func SetVersionCommand(command exectest.Command) {
+	versionCommand = command
+}
+
+// XXX: for internal testing only
+func ResetVersionCommand() {
+	versionCommand = exec.Command
+}
+
+func version(gphome string, host string) (string, error) {
 	postgres := filepath.Join(gphome, "bin", "postgres")
 
-	name := postgres
+	utility := postgres
 	args := []string{"--gp-version"}
 	if host != "" {
-		name = "ssh"
+		utility = "ssh"
 		args = []string{"-q", host, fmt.Sprintf(`bash -c "%s --gp-version"`, postgres)}
 	}
 
-	cmd := execCommand(name, args...)
+	cmd := versionCommand(utility, args...)
 	cmd.Env = []string{} // explicitly clear the environment
 
 	gplog.Debug("running cmd %q", cmd.String())
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return semver.Version{}, xerrors.Errorf("%q failed with %q: %w", cmd.String(), string(output), err)
+		return "", xerrors.Errorf("%q failed with %q: %w", cmd.String(), string(output), err)
 	}
 
-	version := string(output)
-	gplog.Debug("version: %q", version)
-	return parseVersion(version)
-}
-
-// parseVersion takes the output from `postgres --gp-version` and returns the
-// parsed dotted-triple semantic version.
-func parseVersion(gpversion string) (semver.Version, error) {
-	// XXX The following logic is based on dbconn.InitializeVersion, in an
-	// attempt to minimize implementation differences between this and the
-	// version that is parsed from a live cluster. We can't use that logic
-	// as-is, unfortunately, because the version string formats aren't the same
-	// for the two cases:
-	//
-	//     postgres=# select version();
-	//
-	//                               version
-	//     -----------------------------------------------------------
-	//      PostgreSQL 8.3.23 (Greenplum Database 5.0.0 build dev) ...
-	//     (1 row)
-	//
-	// versus
-	//
-	//     $ ${GPHOME}/bin/postgres --gp-version
-	//     postgres (Greenplum Database) 5.0.0 build dev
-	//
-	// Consolidate once the dependency on dbconn is removed from the codebase.
-	const marker = "(Greenplum Database)"
-
-	// Remove everything up to and including the marker.
-	markerStart := strings.Index(gpversion, marker)
-	if markerStart < 0 {
-		return semver.Version{}, &unknownVersionError{gpversion}
+	rawVersion := string(output)
+	parts := strings.SplitN(strings.TrimSpace(rawVersion), "postgres (Greenplum Database) ", 2)
+	if len(parts) != 2 {
+		return "", xerrors.Errorf(`Greenplum version %q is not of the form "postgres (Greenplum Database) #.#.#"`, rawVersion)
 	}
 
-	versionStart := markerStart + len(marker)
-	version := gpversion[versionStart:]
-
-	// Find the dotted triple.
 	pattern := regexp.MustCompile(`\d+\.\d+\.\d+`)
-	matches := pattern.FindStringSubmatch(version)
-
+	matches := pattern.FindStringSubmatch(parts[1])
 	if len(matches) < 1 {
-		return semver.Version{}, &unknownVersionError{gpversion}
+		return "", xerrors.Errorf("parsing Greenplum version %q: %w", rawVersion, err)
 	}
 
-	return semver.Parse(matches[0])
-}
+	version, err := semver.Parse(matches[0])
+	if err != nil {
+		return "", xerrors.Errorf("parsing Greenplum version %q: %w", rawVersion, err)
+	}
 
-// unknownVersionError is returned when parseVersion fails. It's an instance
-// of ErrUnknownVersion.
-type unknownVersionError struct {
-	input string
-}
-
-func (u *unknownVersionError) Error() string {
-	return fmt.Sprintf("could not find GPDB version in %q", u.input)
-}
-
-func (u *unknownVersionError) Is(err error) bool {
-	return err == ErrUnknownVersion
+	return version.String(), nil
 }
