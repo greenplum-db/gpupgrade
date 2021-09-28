@@ -28,7 +28,7 @@ func DeleteMasterAndPrimaryDataDirectories(streams step.OutStreams, agentConns [
 	}()
 
 	intermediateSegs := intermediate.SelectSegments(func(seg *greenplum.SegConfig) bool {
-		return seg.Role == greenplum.PrimaryRole
+		return seg.IsPrimary()
 	})
 	err := deleteDataDirectories(agentConns, intermediateSegs)
 	err = errorlist.Append(err, <-masterErr)
