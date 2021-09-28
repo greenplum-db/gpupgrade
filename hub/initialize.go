@@ -110,7 +110,7 @@ func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest
 		// Persist target catalog version which is needed to revert tablespaces.
 		// We do this right after target cluster creation since during revert the
 		// state of the cluster is unknown.
-		targetCatalogVersion, err := GetCatalogVersion(stream, s.IntermediateTarget.GPHome, s.IntermediateTarget.MasterDataDir())
+		targetCatalogVersion, err := GetCatalogVersion(s.IntermediateTarget)
 		if err != nil {
 			return err
 		}

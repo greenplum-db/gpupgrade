@@ -5,18 +5,14 @@ package hub
 
 import (
 	"bufio"
-	"bytes"
 	"database/sql"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"path"
-	"path/filepath"
 	"reflect"
 	"strings"
 
 	"github.com/blang/semver/v4"
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
@@ -214,19 +210,10 @@ func GetMasterSegPrefix(datadir string) (string, error) {
 	return segPrefix, nil
 }
 
-func GetCatalogVersion(stream step.OutStreams, gphome, datadir string) (string, error) {
-	utility := filepath.Join(gphome, "bin", "pg_controldata")
-	cmd := cmd(utility, datadir)
-
-	// Buffer stdout to parse pg_controldata
-	stdout := new(bytes.Buffer)
-	tee := io.MultiWriter(stream.Stdout(), stdout)
-
-	cmd.Stdout = tee
-	cmd.Stderr = stream.Stderr()
-
-	gplog.Debug("determining catalog version with %s", cmd.String())
-	if err := cmd.Run(); err != nil {
+func GetCatalogVersion(intermediate *greenplum.Cluster) (string, error) {
+	stream := &step.BufferedStreams{}
+	err := intermediate.RunGreenplumCmd(stream, "pg_controldata", intermediate.MasterDataDir())
+	if err != nil {
 		return "", err
 	}
 
@@ -234,7 +221,7 @@ func GetCatalogVersion(stream step.OutStreams, gphome, datadir string) (string, 
 	var version string
 	prefix := "Catalog version number:"
 
-	scanner := bufio.NewScanner(stdout)
+	scanner := bufio.NewScanner(strings.NewReader(stream.StdoutBuf.String()))
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.HasPrefix(line, prefix) {

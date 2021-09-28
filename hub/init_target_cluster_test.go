@@ -413,14 +413,15 @@ func TestGetMasterSegPrefix(t *testing.T) {
 func TestGetCatalogVersion(t *testing.T) {
 	testlog.SetupLogger()
 
-	gphome := "/usr/local/target"
-	datadir := "/data/qddir_upgrade/seg-1"
+	intermediate := MustCreateCluster(t, greenplum.SegConfigs{
+		{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir_upgrade/seg-1", Role: greenplum.PrimaryRole, Port: 15433},
+	})
 
 	t.Run("returns catalog version", func(t *testing.T) {
-		SetExecCommand(exectest.NewCommand(pg_controldata))
-		defer ResetExecCommand()
+		greenplum.SetGreenplumCommand(exectest.NewCommand(pg_controldata))
+		defer greenplum.ResetGreenplumCommand()
 
-		version, err := GetCatalogVersion(step.DevNullStream, gphome, datadir)
+		version, err := GetCatalogVersion(intermediate)
 		if err != nil {
 			t.Errorf("GetCatalogVersion returned error %+v", err)
 		}
@@ -432,10 +433,10 @@ func TestGetCatalogVersion(t *testing.T) {
 	})
 
 	t.Run("errors when pg_controldata fails", func(t *testing.T) {
-		SetExecCommand(exectest.NewCommand(Failure))
-		defer ResetExecCommand()
+		greenplum.SetGreenplumCommand(exectest.NewCommand(Failure))
+		defer greenplum.ResetGreenplumCommand()
 
-		version, err := GetCatalogVersion(step.DevNullStream, gphome, datadir)
+		version, err := GetCatalogVersion(intermediate)
 		var exitErr *exec.ExitError
 		if !errors.As(err, &exitErr) {
 			t.Fatalf("got error %#v want %T", err, exitErr)
@@ -451,10 +452,10 @@ func TestGetCatalogVersion(t *testing.T) {
 	})
 
 	t.Run("errors when catalog version is not found", func(t *testing.T) {
-		SetExecCommand(exectest.NewCommand(Success))
-		defer ResetExecCommand()
+		greenplum.SetGreenplumCommand(exectest.NewCommand(Success))
+		defer greenplum.ResetGreenplumCommand()
 
-		version, err := GetCatalogVersion(step.DevNullStream, gphome, datadir)
+		version, err := GetCatalogVersion(intermediate)
 		if !errors.Is(err, ErrUnknownCatalogVersion) {
 			t.Errorf("got error %#v want %#v", err, ErrUnknownCatalogVersion)
 		}
