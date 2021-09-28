@@ -5,10 +5,13 @@ package greenplum
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/blang/semver/v4"
 
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
+	"github.com/greenplum-db/gpupgrade/versioner"
 )
 
 // Note that we represent the source and target versions separately.  Another
@@ -82,39 +85,38 @@ func getMinVersion(version semver.Version, minVersions map[int]string) string {
 	return semver.MustParse(minVersions[lowest]).String()
 }
 
-var gpdbVersion = LocalVersion
-
 func VerifyCompatibleGPDBVersions(sourceGPHome, targetGPHome string) error {
 	var err error
 
-	vErr := validateVersion(sourceGPHome, "source")
+	vErr := validateVersion(NewVersions(sourceGPHome), idl.ClusterDestination_SOURCE)
 	err = errorlist.Append(err, vErr)
 
-	vErr = validateVersion(targetGPHome, "target")
+	vErr = validateVersion(NewVersions(targetGPHome), idl.ClusterDestination_TARGET)
 	err = errorlist.Append(err, vErr)
 
 	return err
 }
 
-func validateVersion(gphome, context string) error {
+func validateVersion(versioner versioner.Obtain, destination idl.ClusterDestination) error {
 	versionsAllowed := sourceVersionAllowed
 	minVersions := minSourceVersions
-	if context == "target" {
+	if destination == idl.ClusterDestination_TARGET {
 		versionsAllowed = targetVersionAllowed
 		minVersions = minTargetVersions
 	}
 
-	version, err := gpdbVersion(gphome)
+	versionStr, err := versioner.Local()
 	if err != nil {
-		return fmt.Errorf("could not determine %s cluster version: %w", context, err)
+		return err
 	}
 
+	version := semver.MustParse(versionStr)
 	if !versionsAllowed(version) {
 		min := getMinVersion(version, minVersions)
 		return fmt.Errorf("%s cluster version %s is not supported.  "+
 			"The minimum required version is %s. "+
 			"We recommend the latest version.",
-			context, version, min)
+			strings.ToLower(destination.String()), version, min)
 	}
 
 	return nil

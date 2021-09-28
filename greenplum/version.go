@@ -19,11 +19,11 @@ import (
 var ErrUnknownVersion = errors.New("unknown GPDB version")
 
 type versions struct {
-	targetGPHome string
+	gphome string
 }
 
-func NewVersions(TargetGPHome string) *versions {
-	return &versions{targetGPHome: TargetGPHome}
+func NewVersions(gphome string) *versions {
+	return &versions{gphome: gphome}
 }
 
 func (v *versions) Description() string {
@@ -31,7 +31,7 @@ func (v *versions) Description() string {
 }
 
 func (v *versions) Local() (string, error) {
-	version, err := version(v.targetGPHome, "")
+	version, err := version(v.gphome, "")
 	if err != nil {
 		return "", err
 	}
@@ -40,21 +40,12 @@ func (v *versions) Local() (string, error) {
 }
 
 func (v *versions) Remote(host string) (string, error) {
-	version, err := version(v.targetGPHome, host)
+	version, err := version(v.gphome, host)
 	if err != nil {
 		return "", err
 	}
 
 	return version.String(), err
-}
-
-func LocalVersion(gphome string) (semver.Version, error) {
-	version, err := version(gphome, "")
-	if err != nil {
-		return semver.Version{}, err
-	}
-
-	return version, err
 }
 
 func version(gphome string, host string) (semver.Version, error) {

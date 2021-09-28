@@ -67,7 +67,6 @@ func TestGPHomeVersion(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			runVersionTest(t, LocalVersion, false, c.execMain, c.expected)
 			runVersionTest(t, localFunction, false, c.execMain, c.expected)
 			runVersionTest(t, remoteFunction, true, c.execMain, c.expected)
 		})
@@ -106,8 +105,7 @@ func TestGPHomeVersion(t *testing.T) {
 			Command(postgresPath, []string{"--gp-version"}).
 			Return(exectest.Failure)
 
-		_, err := LocalVersion(gphome)
-
+		_, err := NewVersions(gphome).Local()
 		var exitErr *exec.ExitError
 		if !errors.As(err, &exitErr) {
 			t.Errorf("returned error %#v, want type %T", err, exitErr)

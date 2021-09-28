@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/blang/semver/v4"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
@@ -34,17 +35,17 @@ func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_Init
 	}()
 
 	st.RunInternalSubstep(func() error {
-		sourceVersion, err := greenplum.LocalVersion(req.SourceGPHome)
+		sourceVersion, err := greenplum.NewVersions(req.SourceGPHome).Local()
 		if err != nil {
 			return err
 		}
 
-		targetVersion, err := greenplum.LocalVersion(req.TargetGPHome)
+		targetVersion, err := greenplum.NewVersions(req.TargetGPHome).Local()
 		if err != nil {
 			return err
 		}
 
-		conn := greenplum.Connection(sourceVersion, targetVersion)
+		conn := greenplum.Connection(semver.MustParse(sourceVersion), semver.MustParse(targetVersion))
 		s.Connection = conn
 
 		return nil
