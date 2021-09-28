@@ -11,7 +11,6 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/testutils"
-	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 func TestWriteAddMirrorsConfig(t *testing.T) {
@@ -31,13 +30,13 @@ func TestWriteAddMirrorsConfig(t *testing.T) {
 			{DbID: 6, ContentID: 1, Hostname: "sdw1", DataDir: "/data/dbfast_mirror2/seg.HqtFHX54y0o.2", Port: 50437, Role: greenplum.MirrorRole},
 		})
 
-		err := writeAddMirrorsConfig(intermediate)
+		config, err := writeAddMirrorsConfig(intermediate)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
 
 		// iterating maps is not deterministic so sort and rejoin before asserting
-		lines := strings.Split(testutils.MustReadFile(t, utils.GetAddMirrorsConfig()), "\n")
+		lines := strings.Split(testutils.MustReadFile(t, config), "\n")
 		sort.Strings(lines)
 		actual := strings.Join(lines, "\n")
 
