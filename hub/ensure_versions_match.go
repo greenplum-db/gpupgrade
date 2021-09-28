@@ -12,13 +12,8 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
+	"github.com/greenplum-db/gpupgrade/versioner"
 )
-
-type ObtainVersions interface {
-	Local() (string, error)
-	Remote(host string) (string, error)
-	Description() string
-}
 
 type MismatchedVersions map[string][]string
 
@@ -31,7 +26,7 @@ func (m MismatchedVersions) String() string {
 	return text
 }
 
-func EnsureVersionsMatch(agentHosts []string, version ObtainVersions) error {
+func EnsureVersionsMatch(agentHosts []string, version versioner.Obtain) error {
 	type agentVersion struct {
 		host    string
 		version string

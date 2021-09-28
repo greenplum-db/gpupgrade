@@ -9,7 +9,7 @@ import (
 
 	"github.com/blang/semver/v4"
 
-	"github.com/greenplum-db/gpupgrade/utils/errorlist"
+	"github.com/greenplum-db/gpupgrade/idl"
 )
 
 func TestAllowedVersions(t *testing.T) {
@@ -89,82 +89,61 @@ func TestAllowedVersions(t *testing.T) {
 	}
 }
 
-func TestValidateVersions(t *testing.T) {
-	t.Run("passes when given supported versions", func(t *testing.T) {
-		gpdbVersion = func(str string) (semver.Version, error) {
-			return semver.MustParse("6.50.0"), nil
-		}
-		defer func() {
-			gpdbVersion = LocalVersion
-		}()
+type TestVersioner struct {
+	localVersion    string
+	localVersionErr error
+}
 
-		err := VerifyCompatibleGPDBVersions("/does/not/matter", "/does/not/matter")
-		if err != nil {
-			t.Errorf("got unexpected error %#v", err)
-		}
+func (t *TestVersioner) Local() (string, error) {
+	return t.localVersion, t.localVersionErr
+}
 
-	})
+func (t *TestVersioner) Remote(host string) (string, error) {
+	return "", nil
+}
+
+func (t *TestVersioner) Description() string {
+	return "test"
 }
 
 func TestValidateVersionsErrorCases(t *testing.T) {
-
 	cases := []struct {
 		name             string
+		versioner        *TestVersioner
 		testLocalVersion func(string) (semver.Version, error)
-		expectedSource   string
-		expectedTarget   string
+		expected         error
 	}{
 		{
-			"fails when gpdbVersion returns an error",
-			func(string) (semver.Version, error) {
-				return semver.MustParse("1.2.3"), errors.New("some error")
+			name: "returns error when getting local GPDB version fails",
+			versioner: &TestVersioner{
+				localVersion:    semver.MustParse("1.2.3").String(),
+				localVersionErr: errors.New("some error"),
 			},
-			"could not determine source cluster version: some error",
-			"could not determine target cluster version: some error",
+			expected: errors.New("some error"),
 		},
 		{
-			"fails when sourceVersion and targetVersion have unsupported minor versions",
-			func(string) (semver.Version, error) {
-				return semver.MustParse("6.8.0"), nil
+			name: "fails when GPDB version has unsupported minor versions",
+			versioner: &TestVersioner{
+				localVersion:    semver.MustParse("6.8.0").String(),
+				localVersionErr: nil,
 			},
-			"source cluster version 6.8.0 is not supported.  The minimum required version is 6.17.0. We recommend the latest version.",
-			"target cluster version 6.8.0 is not supported.  The minimum required version is 6.17.0. We recommend the latest version.",
+			expected: errors.New("source cluster version 6.8.0 is not supported.  The minimum required version is 6.17.0. We recommend the latest version."),
 		},
 		{
-			"fails when sourceVersion and targetVersion have unsupported major versions",
-			func(string) (semver.Version, error) {
-				return semver.MustParse("0.0.0"), nil
+			name: "fails when GPDB version has unsupported major versions",
+			versioner: &TestVersioner{
+				localVersion:    semver.MustParse("0.0.0").String(),
+				localVersionErr: nil,
 			},
-			"source cluster version 0.0.0 is not supported.  The minimum required version is 5.28.12. We recommend the latest version.",
-			"target cluster version 0.0.0 is not supported.  The minimum required version is 6.17.0. We recommend the latest version.",
+			expected: errors.New("source cluster version 0.0.0 is not supported.  The minimum required version is 5.28.12. We recommend the latest version."),
 		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			gpdbVersion = c.testLocalVersion
-			defer func() {
-				gpdbVersion = LocalVersion
-			}()
-
-			err := VerifyCompatibleGPDBVersions("/does/not/matter", "/does/not/matter")
-
-			// make sure both source and target produce an error and that they match
-			// the expected error string
-
-			var errs errorlist.Errors
-			if !(errors.As(err, &errs)) {
-				t.Fatalf("got %T wanted %T", err, errs)
-			}
-			if len(errs) != 2 {
-				t.Fatalf("got %d errors instead of 2", len(errs))
-			}
-
-			if errs[0].Error() != c.expectedSource {
-				t.Errorf("got %s want %s", errs[0].Error(), c.expectedSource)
-			}
-			if errs[1].Error() != c.expectedTarget {
-				t.Errorf("got %s want %s", errs[1].Error(), c.expectedTarget)
+			err := validateVersion(c.versioner, idl.ClusterDestination_SOURCE)
+			if err.Error() != c.expected.Error() {
+				t.Errorf("got %s want %s", err, c.expected)
 			}
 		})
 	}
