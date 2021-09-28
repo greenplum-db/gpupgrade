@@ -3,8 +3,17 @@
 
 package greenplum
 
-import "os/exec"
+import (
+	"testing"
+)
 
-// execCommand should be used instead of exec.Command in all package code, so
-// that the test framework can intercept external command invocations.
-var execCommand = exec.Command
+func MustCreateCluster(t *testing.T, segments SegConfigs) *Cluster {
+	t.Helper()
+
+	cluster, err := NewCluster(segments)
+	if err != nil {
+		t.Fatalf("%+v", err)
+	}
+
+	return &cluster
+}
