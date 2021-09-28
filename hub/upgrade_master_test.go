@@ -16,7 +16,6 @@ import (
 	"testing"
 
 	"github.com/blang/semver/v4"
-	"github.com/golang/mock/gomock"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/step"
@@ -418,23 +417,15 @@ Failure, exiting
 
 		for _, c := range cases {
 			t.Run(c.name, func(t *testing.T) {
-				ctrl := gomock.NewController(t)
-				defer ctrl.Finish()
-				cmd, mock := exectest.NewCommandMock(ctrl)
-				SetExecCommand(cmd)
+				SetExecCommand(exectest.NewCommand(c.main))
 				defer ResetExecCommand()
 
 				rsync.SetRsyncCommand(exectest.NewCommand(Success))
 				defer rsync.ResetRsyncCommand()
 
-				stream := new(step.BufferedStreams)
+				testutils.MustWriteToFile(t, filepath.Join(createdWD, "gphdfs_user_roles.txt"), "")
 
-				// create a file in the working directory of upgrade_master just like pg_upgrade would do
-				mock.EXPECT().Command("/usr/local/target/bin/pg_upgrade", gomock.Any()).
-					DoAndReturn(func(string, ...string) exectest.Main {
-						testutils.MustWriteToFile(t, filepath.Join(createdWD, "gphdfs_user_roles.txt"), "")
-						return c.main
-					})
+				stream := new(step.BufferedStreams)
 
 				err := UpgradeMaster(UpgradeMasterArgs{
 					Source:             source,
