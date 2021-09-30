@@ -94,7 +94,7 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 			{ContentID: 1, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 		})
 
-		err := hub.RsyncMasterAndPrimariesTablespaces(&testutils.DevNullWithClose{}, []*idl.Connection{}, cluster, nil)
+		err := hub.RsyncMasterAndPrimariesTablespaces(&testutils.DevNullWithClose{}, []*idl.Connection{}, cluster)
 		if !errors.Is(err, hub.ErrMissingMirrorsAndStandby) {
 			t.Errorf("got error %#v want %#v", err, hub.ErrMissingMirrorsAndStandby)
 		}

@@ -133,7 +133,7 @@ func DeleteTargetTablespacesOnPrimaries(agentConns []*idl.Connection, target *gr
 	return ExecuteRPC(agentConns, request)
 }
 
-func DeleteSourceTablespacesOnMirrorsAndStandby(agentConns []*idl.Connection, source *greenplum.Cluster, tablespaces greenplum.Tablespaces) error {
+func DeleteSourceTablespacesOnMirrorsAndStandby(agentConns []*idl.Connection, source *greenplum.Cluster) error {
 	request := func(conn *idl.Connection) error {
 
 		segments := source.SelectSegments(func(seg *greenplum.SegConfig) bool {
@@ -146,7 +146,7 @@ func DeleteSourceTablespacesOnMirrorsAndStandby(agentConns []*idl.Connection, so
 
 		var dirs []string
 		for _, seg := range segments {
-			dirs = append(dirs, tablespaces[seg.DbID].UserDefinedTablespacesLocations()...)
+			dirs = append(dirs, source.Tablespaces[seg.DbID].UserDefinedTablespacesLocations()...)
 		}
 
 		if len(dirs) == 0 {

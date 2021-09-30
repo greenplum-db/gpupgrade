@@ -35,6 +35,8 @@ type Cluster struct {
 	// Mirrors contains any mirror SegConfigs, keyed by content ID.
 	Mirrors map[int]SegConfig
 
+	Tablespaces Tablespaces
+
 	GPHome         string
 	Version        semver.Version
 	CatalogVersion string

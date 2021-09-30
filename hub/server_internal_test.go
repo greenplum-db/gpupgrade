@@ -34,11 +34,6 @@ func TestConfig(t *testing.T) {
 			false,           // UseLinkMode
 			false,           // UseHbaHostnames
 			upgrade.NewID(), // UpgradeID
-			map[int]greenplum.SegmentTablespaces{
-				1: {1663: {
-					Location:    "/tmp/master/my_tablespace/1663",
-					UserDefined: 1,
-				}}}, // Tablespaces
 		}
 
 		buf := new(bytes.Buffer)

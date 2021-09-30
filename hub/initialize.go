@@ -71,7 +71,7 @@ func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_Init
 	})
 
 	st.RunConditionally(idl.Substep_CHECK_DISK_SPACE, req.GetDiskFreeRatio() > 0, func(streams step.OutStreams) error {
-		return CheckDiskSpace(streams, s.agentConns, req.GetDiskFreeRatio(), s.Source, s.Tablespaces)
+		return CheckDiskSpace(streams, s.agentConns, req.GetDiskFreeRatio(), s.Source, s.Source.Tablespaces)
 	})
 
 	return st.Err()

@@ -77,7 +77,7 @@ func FillConfiguration(config *Config, request *idl.InitializeRequest, conn *gre
 			return xerrors.Errorf("create tablespace directory %q: %w", utils.GetTablespaceDir(), err)
 		}
 
-		config.Tablespaces, err = greenplum.TablespacesFromDB(db, utils.GetTablespaceMappingFile())
+		config.Source.Tablespaces, err = greenplum.TablespacesFromDB(db, utils.GetTablespaceMappingFile())
 		if err != nil {
 			return xerrors.Errorf("extract tablespace information: %w", err)
 		}

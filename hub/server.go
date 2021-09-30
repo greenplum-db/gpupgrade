@@ -371,10 +371,6 @@ type Config struct {
 	UseLinkMode     bool
 	UseHbaHostnames bool
 	UpgradeID       upgrade.ID
-
-	// Tablespaces contains the tablespace in the database keyed by
-	// dbid and tablespace oid
-	Tablespaces greenplum.Tablespaces
 }
 
 func (c *Config) Load(r io.Reader) error {

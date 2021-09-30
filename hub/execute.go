@@ -58,7 +58,7 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 			return err
 		}
 
-		return CopyMasterTablespaces(streams, s.Tablespaces, utils.GetTablespaceDir(), s.Intermediate.PrimaryHostnames())
+		return CopyMasterTablespaces(streams, s.Source.Tablespaces, utils.GetTablespaceDir(), s.Intermediate.PrimaryHostnames())
 	})
 
 	st.Run(idl.Substep_UPGRADE_PRIMARIES, func(_ step.OutStreams) error {

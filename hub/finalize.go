@@ -37,7 +37,7 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 			return xerrors.Errorf("removing source cluster standby and mirror segment data directories: %w", err)
 		}
 
-		if err := DeleteSourceTablespacesOnMirrorsAndStandby(s.agentConns, s.Source, s.Tablespaces); err != nil {
+		if err := DeleteSourceTablespacesOnMirrorsAndStandby(s.agentConns, s.Source); err != nil {
 			return xerrors.Errorf("removing source cluster standby and mirror tablespace data directories: %w", err)
 		}
 

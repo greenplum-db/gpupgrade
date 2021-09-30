@@ -57,7 +57,7 @@ func RsyncMasterAndPrimaries(stream step.OutStreams, agentConns []*idl.Connectio
 	return err
 }
 
-func RsyncMasterAndPrimariesTablespaces(stream step.OutStreams, agentConns []*idl.Connection, source *greenplum.Cluster, tablespaces greenplum.Tablespaces) error {
+func RsyncMasterAndPrimariesTablespaces(stream step.OutStreams, agentConns []*idl.Connection, source *greenplum.Cluster) error {
 	if !source.HasAllMirrorsAndStandby() {
 		return ErrMissingMirrorsAndStandby
 	}
@@ -68,10 +68,10 @@ func RsyncMasterAndPrimariesTablespaces(stream step.OutStreams, agentConns []*id
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		errs <- RsyncMasterTablespaces(stream, source.StandbyHostname(), tablespaces[source.Master().DbID], tablespaces[source.Standby().DbID])
+		errs <- RsyncMasterTablespaces(stream, source.StandbyHostname(), source.Tablespaces[source.Master().DbID], source.Tablespaces[source.Standby().DbID])
 	}()
 
-	errs <- RsyncPrimariesTablespaces(agentConns, source, tablespaces)
+	errs <- RsyncPrimariesTablespaces(agentConns, source, source.Tablespaces)
 
 	wg.Wait()
 	close(errs)

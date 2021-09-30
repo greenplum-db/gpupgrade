@@ -366,7 +366,7 @@ func TestDeleteTablespacesOnMirrorsAndStandby(t *testing.T) {
 		{DbID: 5, ContentID: 1, Hostname: "msdw2", DataDir: "/data/dbfast_mirror2/seg2", Role: greenplum.MirrorRole},
 	})
 
-	tablespaces := map[int]greenplum.SegmentTablespaces{
+	source.Tablespaces = map[int]greenplum.SegmentTablespaces{
 		6: {
 			16386: {
 				Location:    "/tmp/testfs/standby/demoDataDir-1/16386",
@@ -458,7 +458,7 @@ func TestDeleteTablespacesOnMirrorsAndStandby(t *testing.T) {
 			{AgentClient: standby, Hostname: "standby"},
 		}
 
-		err := hub.DeleteSourceTablespacesOnMirrorsAndStandby(agentConns, source, tablespaces)
+		err := hub.DeleteSourceTablespacesOnMirrorsAndStandby(agentConns, source)
 		if err != nil {
 			t.Errorf("DeleteTablespacesOnMirrorsAndStandby returned error %+v", err)
 		}
@@ -495,7 +495,7 @@ func TestDeleteTablespacesOnMirrorsAndStandby(t *testing.T) {
 			{AgentClient: failedClient, Hostname: "msdw2"},
 		}
 
-		err := hub.DeleteSourceTablespacesOnMirrorsAndStandby(agentConns, source, tablespaces)
+		err := hub.DeleteSourceTablespacesOnMirrorsAndStandby(agentConns, source)
 
 		if !errors.Is(err, expected) {
 			t.Errorf("got error %#v, want %#v", err, expected)
