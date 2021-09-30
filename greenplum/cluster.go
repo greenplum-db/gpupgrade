@@ -32,9 +32,7 @@ type Cluster struct {
 	// Primaries contains the primary SegConfigs, keyed by content ID.
 	Primaries map[int]SegConfig
 
-	// Mirrors contains any mirror SegConfigs, keyed by content ID. Not every
-	// primary is guaranteed to have a corresponding mirror, so lookups should
-	// check for key existence.
+	// Mirrors contains any mirror SegConfigs, keyed by content ID.
 	Mirrors map[int]SegConfig
 
 	GPHome         string
