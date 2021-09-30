@@ -16,6 +16,7 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils/daemon"
 	"github.com/greenplum-db/gpupgrade/utils/log"
 )
@@ -105,7 +106,20 @@ func (s *Server) Stop() {
 }
 
 func createIfNotExists(dir string) {
-	if _, err := os.Stat(dir); !os.IsNotExist(err) {
+	// When the agent is started it is passed the state directory. Ensure it also
+	// sets GPUPGRADE_HOME in its environment such that utils functions work.
+	// This is critical for our acceptance tests which often set GPUPGRADE_HOME.
+	err := os.Setenv("GPUPGRADE_HOME", dir)
+	if err != nil {
+		gplog.Fatal(err, "setting GPUPGRADE_HOME=%s on the agent", dir)
+	}
+
+	exist, err := upgrade.PathExist(dir)
+	if err != nil {
+		gplog.Fatal(err, "")
+	}
+
+	if exist {
 		return
 	}
 
