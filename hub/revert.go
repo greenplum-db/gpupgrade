@@ -63,7 +63,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 	st.RunConditionally(idl.Substep_DELETE_TABLESPACES,
 		s.Intermediate.Primaries != nil && s.Intermediate.MasterDataDir() != "",
 		func(streams step.OutStreams) error {
-			return DeleteTargetTablespaces(streams, s.agentConns, s.Config.Intermediate, s.TargetCatalogVersion, s.Tablespaces)
+			return DeleteTargetTablespaces(streams, s.agentConns, s.Config.Intermediate, s.Intermediate.CatalogVersion, s.Tablespaces)
 		})
 
 	// For any of the link-mode cases described in the "Reverting to old

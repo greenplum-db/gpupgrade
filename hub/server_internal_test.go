@@ -39,7 +39,6 @@ func TestConfig(t *testing.T) {
 					Location:    "/tmp/master/my_tablespace/1663",
 					UserDefined: 1,
 				}}}, // Tablespaces
-			"301908232", // TargetCatalogVersion
 		}
 
 		buf := new(bytes.Buffer)

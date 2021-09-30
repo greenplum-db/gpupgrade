@@ -61,17 +61,17 @@ func deleteDataDirectories(agentConns []*idl.Connection, segConfigs greenplum.Se
 	return ExecuteRPC(agentConns, request)
 }
 
-func DeleteTargetTablespaces(streams step.OutStreams, agentConns []*idl.Connection, target *greenplum.Cluster, targetCatalogVersion string, sourceTablespaces greenplum.Tablespaces) error {
+func DeleteTargetTablespaces(streams step.OutStreams, agentConns []*idl.Connection, target *greenplum.Cluster, intermediateCatalogVersion string, sourceTablespaces greenplum.Tablespaces) error {
 	var wg sync.WaitGroup
 	errs := make(chan error, 2)
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		errs <- DeleteTargetTablespacesOnMaster(streams, target, sourceTablespaces.GetMasterTablespaces(), targetCatalogVersion)
+		errs <- DeleteTargetTablespacesOnMaster(streams, target, sourceTablespaces.GetMasterTablespaces(), intermediateCatalogVersion)
 	}()
 
-	errs <- DeleteTargetTablespacesOnPrimaries(agentConns, target, sourceTablespaces, targetCatalogVersion)
+	errs <- DeleteTargetTablespacesOnPrimaries(agentConns, target, sourceTablespaces, intermediateCatalogVersion)
 
 	wg.Wait()
 	close(errs)

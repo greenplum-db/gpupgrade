@@ -374,8 +374,7 @@ type Config struct {
 
 	// Tablespaces contains the tablespace in the database keyed by
 	// dbid and tablespace oid
-	Tablespaces          greenplum.Tablespaces
-	TargetCatalogVersion string
+	Tablespaces greenplum.Tablespaces
 }
 
 func (c *Config) Load(r io.Reader) error {
