@@ -36,7 +36,6 @@ message UpgradePrimariesRequest {
     bool CheckOnly = 5;
     bool UseLinkMode = 6;
     string MasterBackupDir = 7;
-    string TablespacesMappingFilePath = 8;
 }
 
 message DataDirPair {

@@ -6,7 +6,6 @@ package agent
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strconv"
 
 	"github.com/blang/semver/v4"
@@ -66,7 +65,7 @@ func performUpgrade(segment Segment, request *idl.UpgradePrimariesRequest) error
 		// the master has been upgraded. So, don't pass this option during
 		// --check mode. There is no test in pg_upgrade which depends on the
 		// existence of this file.
-		options = append(options, upgrade.WithTablespaceFile(request.TablespacesMappingFilePath))
+		options = append(options, upgrade.WithTablespaceFile(utils.GetTablespaceMappingFile()))
 	}
 
 	if request.UseLinkMode {
@@ -109,10 +108,10 @@ func RestoreTablespaces(request *idl.UpgradePrimariesRequest, segment Segment) e
 		}
 
 		targetDir := greenplum.GetTablespaceLocationForDbId(tablespace, int(segment.DBID))
-		sourceDir := greenplum.GetMasterTablespaceLocation(filepath.Dir(request.TablespacesMappingFilePath), int(oid))
+		sourceDir := greenplum.GetMasterTablespaceLocation(utils.GetTablespaceDir(), int(oid)) + string(os.PathSeparator)
 
 		options := []rsync.Option{
-			rsync.WithSources(sourceDir + string(os.PathSeparator)),
+			rsync.WithSources(sourceDir),
 			rsync.WithDestination(targetDir),
 			rsync.WithOptions("--archive", "--delete"),
 		}

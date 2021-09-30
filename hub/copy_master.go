@@ -14,6 +14,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
@@ -87,13 +88,13 @@ func CopyMasterDataDir(streams step.OutStreams, masterDataDir string, destinatio
 	return Copy(streams, destination, source, hosts)
 }
 
-func CopyMasterTablespaces(streams step.OutStreams, TablespacesMappingFilePath string, tablespaces greenplum.Tablespaces, destinationDir string, hosts []string) error {
+func CopyMasterTablespaces(streams step.OutStreams, tablespaces greenplum.Tablespaces, destinationDir string, hosts []string) error {
 	if tablespaces == nil {
 		return nil
 	}
 
 	// include tablespace mapping file which is used as a parameter to pg_upgrade
-	sourcePaths := []string{TablespacesMappingFilePath}
+	sourcePaths := []string{utils.GetTablespaceMappingFile()}
 	sourcePaths = append(sourcePaths, tablespaces.GetMasterTablespaces().UserDefinedTablespacesLocations()...)
 
 	return Copy(streams, destinationDir+string(os.PathSeparator), sourcePaths, hosts)

@@ -17,27 +17,25 @@ import (
 )
 
 type UpgradePrimaryArgs struct {
-	CheckOnly              bool
-	MasterBackupDir        string
-	AgentConns             []*idl.Connection
-	DataDirPairMap         map[string][]*idl.DataDirPair
-	Source                 *greenplum.Cluster
-	Intermediate           *greenplum.Cluster
-	UseLinkMode            bool
-	TablespacesMappingFile string
+	CheckOnly       bool
+	MasterBackupDir string
+	AgentConns      []*idl.Connection
+	DataDirPairMap  map[string][]*idl.DataDirPair
+	Source          *greenplum.Cluster
+	Intermediate    *greenplum.Cluster
+	UseLinkMode     bool
 }
 
 func UpgradePrimaries(args UpgradePrimaryArgs) error {
 	request := func(conn *idl.Connection) error {
 		_, err := conn.AgentClient.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{
-			SourceBinDir:               filepath.Join(args.Source.GPHome, "bin"),
-			TargetBinDir:               filepath.Join(args.Intermediate.GPHome, "bin"),
-			TargetVersion:              args.Intermediate.Version.String(),
-			DataDirPairs:               args.DataDirPairMap[conn.Hostname],
-			CheckOnly:                  args.CheckOnly,
-			UseLinkMode:                args.UseLinkMode,
-			MasterBackupDir:            args.MasterBackupDir,
-			TablespacesMappingFilePath: args.TablespacesMappingFile,
+			SourceBinDir:    filepath.Join(args.Source.GPHome, "bin"),
+			TargetBinDir:    filepath.Join(args.Intermediate.GPHome, "bin"),
+			TargetVersion:   args.Intermediate.Version.String(),
+			DataDirPairs:    args.DataDirPairMap[conn.Hostname],
+			CheckOnly:       args.CheckOnly,
+			UseLinkMode:     args.UseLinkMode,
+			MasterBackupDir: args.MasterBackupDir,
 		})
 		if err != nil {
 			failedAction := "upgrade"

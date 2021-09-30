@@ -105,6 +105,12 @@ func GetInitsystemConfig() string {
 	return filepath.Join(GetStateDir(), "gpinitsystem_config")
 }
 
+// GetTablespaceMappingFile returns the tablespace input file for pg_upgrade used
+// to upgrade tablespaces.
+func GetTablespaceMappingFile() string {
+	return filepath.Join(GetTablespaceDir(), "tablespaces.txt")
+}
+
 func GetAddMirrorsConfig() string {
 	return filepath.Join(GetStateDir(), "add_mirrors_config")
 }

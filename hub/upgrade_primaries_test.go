@@ -73,14 +73,13 @@ func TestUpgradePrimaries(t *testing.T) {
 		client1.EXPECT().UpgradePrimaries(
 			gomock.Any(),
 			&idl.UpgradePrimariesRequest{
-				SourceBinDir:               "/usr/local/greenplum-db/bin",
-				TargetBinDir:               "/usr/local/greenplum-db-new/bin",
-				TargetVersion:              semver.MustParse("6.0.0").String(),
-				DataDirPairs:               pairs["sdw1"],
-				CheckOnly:                  false,
-				UseLinkMode:                false,
-				MasterBackupDir:            "",
-				TablespacesMappingFilePath: "/tmp/tablespaces_mapping.txt",
+				SourceBinDir:    "/usr/local/greenplum-db/bin",
+				TargetBinDir:    "/usr/local/greenplum-db-new/bin",
+				TargetVersion:   semver.MustParse("6.0.0").String(),
+				DataDirPairs:    pairs["sdw1"],
+				CheckOnly:       false,
+				UseLinkMode:     false,
+				MasterBackupDir: "",
 			},
 		).Return(&idl.UpgradePrimariesReply{}, nil)
 
@@ -88,14 +87,13 @@ func TestUpgradePrimaries(t *testing.T) {
 		client2.EXPECT().UpgradePrimaries(
 			gomock.Any(),
 			&idl.UpgradePrimariesRequest{
-				SourceBinDir:               "/usr/local/greenplum-db/bin",
-				TargetBinDir:               "/usr/local/greenplum-db-new/bin",
-				TargetVersion:              semver.MustParse("6.0.0").String(),
-				DataDirPairs:               pairs["sdw2"],
-				CheckOnly:                  false,
-				UseLinkMode:                false,
-				MasterBackupDir:            "",
-				TablespacesMappingFilePath: "/tmp/tablespaces_mapping.txt",
+				SourceBinDir:    "/usr/local/greenplum-db/bin",
+				TargetBinDir:    "/usr/local/greenplum-db-new/bin",
+				TargetVersion:   semver.MustParse("6.0.0").String(),
+				DataDirPairs:    pairs["sdw2"],
+				CheckOnly:       false,
+				UseLinkMode:     false,
+				MasterBackupDir: "",
 			},
 		).Return(&idl.UpgradePrimariesReply{}, nil)
 
@@ -105,14 +103,13 @@ func TestUpgradePrimaries(t *testing.T) {
 		}
 
 		err := hub.UpgradePrimaries(hub.UpgradePrimaryArgs{
-			CheckOnly:              false,
-			MasterBackupDir:        "",
-			AgentConns:             agentConns,
-			DataDirPairMap:         pairs,
-			Source:                 source,
-			Intermediate:           target,
-			UseLinkMode:            false,
-			TablespacesMappingFile: "/tmp/tablespaces_mapping.txt",
+			CheckOnly:       false,
+			MasterBackupDir: "",
+			AgentConns:      agentConns,
+			DataDirPairMap:  pairs,
+			Source:          source,
+			Intermediate:    target,
+			UseLinkMode:     false,
 		})
 		if err != nil {
 			t.Errorf("got unexpected error: %+v", err)
@@ -161,14 +158,13 @@ func TestUpgradePrimaries(t *testing.T) {
 				failedClient.EXPECT().UpgradePrimaries(
 					gomock.Any(),
 					&idl.UpgradePrimariesRequest{
-						SourceBinDir:               "/usr/local/greenplum-db/bin",
-						TargetBinDir:               "/usr/local/greenplum-db-new/bin",
-						TargetVersion:              semver.MustParse("6.0.0").String(),
-						DataDirPairs:               pairs["sdw2"],
-						CheckOnly:                  c.CheckOnly,
-						UseLinkMode:                false,
-						MasterBackupDir:            "",
-						TablespacesMappingFilePath: "",
+						SourceBinDir:    "/usr/local/greenplum-db/bin",
+						TargetBinDir:    "/usr/local/greenplum-db-new/bin",
+						TargetVersion:   semver.MustParse("6.0.0").String(),
+						DataDirPairs:    pairs["sdw2"],
+						CheckOnly:       c.CheckOnly,
+						UseLinkMode:     false,
+						MasterBackupDir: "",
 					},
 				).Return(&idl.UpgradePrimariesReply{}, expected)
 
@@ -178,14 +174,13 @@ func TestUpgradePrimaries(t *testing.T) {
 				}
 
 				err := hub.UpgradePrimaries(hub.UpgradePrimaryArgs{
-					CheckOnly:              c.CheckOnly,
-					MasterBackupDir:        "",
-					AgentConns:             agentConns,
-					DataDirPairMap:         pairs,
-					Source:                 source,
-					Intermediate:           target,
-					UseLinkMode:            false,
-					TablespacesMappingFile: "",
+					CheckOnly:       c.CheckOnly,
+					MasterBackupDir: "",
+					AgentConns:      agentConns,
+					DataDirPairMap:  pairs,
+					Source:          source,
+					Intermediate:    target,
+					UseLinkMode:     false,
 				})
 				if err == nil {
 					t.Fatal("expected error got nil")

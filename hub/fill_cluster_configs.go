@@ -6,7 +6,6 @@ package hub
 import (
 	"database/sql"
 	"fmt"
-	"path/filepath"
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
@@ -78,8 +77,7 @@ func FillConfiguration(config *Config, request *idl.InitializeRequest, conn *gre
 			return xerrors.Errorf("create tablespace directory %q: %w", utils.GetTablespaceDir(), err)
 		}
 
-		config.TablespacesMappingFilePath = filepath.Join(utils.GetTablespaceDir(), greenplum.TablespacesMappingFile)
-		config.Tablespaces, err = greenplum.TablespacesFromDB(db, config.TablespacesMappingFilePath)
+		config.Tablespaces, err = greenplum.TablespacesFromDB(db, utils.GetTablespaceMappingFile())
 		if err != nil {
 			return xerrors.Errorf("extract tablespace information: %w", err)
 		}

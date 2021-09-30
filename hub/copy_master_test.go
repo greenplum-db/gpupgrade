@@ -20,6 +20,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/testutils/testlog"
+	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
@@ -196,13 +197,17 @@ func TestCopyMasterDataDir(t *testing.T) {
 func TestCopyMasterTablespaces(t *testing.T) {
 	testhelper.SetupTestLogger()
 
+	stateDir := testutils.GetTempDir(t, "")
+	defer os.RemoveAll(stateDir)
+
+	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
+	defer resetEnv()
+
 	intermediate := MustCreateCluster(t, greenplum.SegConfigs{
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
 		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
 		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 	})
-
-	TablespacesMappingFilePath := "/tmp/mapping.txt"
 
 	Tablespaces := greenplum.Tablespaces{
 		1: greenplum.SegmentTablespaces{
@@ -238,11 +243,11 @@ func TestCopyMasterTablespaces(t *testing.T) {
 
 		expectedArgs := []string{
 			"--archive", "--compress", "--delete", "--stats",
-			"/tmp/mapping.txt", "/tmp/tblspc2", "foobar/path/",
+			utils.GetTablespaceMappingFile(), "/tmp/tblspc2", "foobar/path/",
 		}
 		execCommandVerifier(t, hosts, expectedArgs)
 
-		err := CopyMasterTablespaces(step.DevNullStream, TablespacesMappingFilePath, Tablespaces, "foobar/path", intermediate.PrimaryHostnames())
+		err := CopyMasterTablespaces(step.DevNullStream, Tablespaces, "foobar/path", intermediate.PrimaryHostnames())
 		if err != nil {
 			t.Errorf("copying master tablespace directories and mapping file: %+v", err)
 		}
@@ -261,7 +266,7 @@ func TestCopyMasterTablespaces(t *testing.T) {
 		var expectedArgs []string
 		execCommandVerifier(t, hosts, expectedArgs)
 
-		err := CopyMasterTablespaces(step.DevNullStream, TablespacesMappingFilePath, nil, "foobar/path", intermediate.PrimaryHostnames())
+		err := CopyMasterTablespaces(step.DevNullStream, nil, "foobar/path", intermediate.PrimaryHostnames())
 		if err != nil {
 			t.Errorf("got %+v, want nil", err)
 		}

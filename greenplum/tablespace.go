@@ -43,10 +43,6 @@ type Tablespaces map[int]SegmentTablespaces
 // slice of tablespace rows from database
 type TablespaceTuples []Tablespace
 
-// input file passed to pg_upgrade, it contains the tablespace information
-// used by pg_upgrade to upgrade the segment tablespace
-const TablespacesMappingFile = "tablespaces.txt"
-
 type TablespaceInfo struct {
 	Location    string
 	UserDefined int

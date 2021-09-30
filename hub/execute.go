@@ -58,7 +58,7 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 			return err
 		}
 
-		return CopyMasterTablespaces(streams, s.TablespacesMappingFilePath, s.Tablespaces, utils.GetTablespaceDir(), s.Intermediate.PrimaryHostnames())
+		return CopyMasterTablespaces(streams, s.Tablespaces, utils.GetTablespaceDir(), s.Intermediate.PrimaryHostnames())
 	})
 
 	st.Run(idl.Substep_UPGRADE_PRIMARIES, func(_ step.OutStreams) error {
@@ -69,14 +69,13 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 		}
 
 		return UpgradePrimaries(UpgradePrimaryArgs{
-			CheckOnly:              false,
-			MasterBackupDir:        upgradedMasterBackupDir,
-			AgentConns:             s.agentConns,
-			DataDirPairMap:         dataDirPair,
-			Source:                 s.Source,
-			Intermediate:           s.Intermediate,
-			UseLinkMode:            s.UseLinkMode,
-			TablespacesMappingFile: s.TablespacesMappingFilePath,
+			CheckOnly:       false,
+			MasterBackupDir: upgradedMasterBackupDir,
+			AgentConns:      s.agentConns,
+			DataDirPairMap:  dataDirPair,
+			Source:          s.Source,
+			Intermediate:    s.Intermediate,
+			UseLinkMode:     s.UseLinkMode,
 		})
 	})
 

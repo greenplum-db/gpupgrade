@@ -156,6 +156,14 @@ func MustRemoveAll(t *testing.T, dir string) {
 	}
 }
 
+func MustCreateDir(t *testing.T, path string) {
+	t.Helper()
+
+	if err := os.MkdirAll(path, 0700); err != nil {
+		t.Fatalf("MkdirAll %q: %+v", path, err)
+	}
+}
+
 // MustCreateDataDirs returns a temporary source and target data directory that
 // looks like a postgres directory. The last argument returned is a cleanup
 // function that can be used in a defer.

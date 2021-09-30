@@ -6,13 +6,16 @@ package agent_test
 import (
 	"errors"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/greenplum-db/gpupgrade/agent"
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
@@ -37,10 +40,19 @@ func getSampleSegment() agent.Segment {
 	return segment
 }
 func TestRestoreTablespaces(t *testing.T) {
+	testlog.SetupLogger()
+
+	stateDir := testutils.GetTempDir(t, "")
+	defer os.RemoveAll(stateDir)
+
+	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
+	defer resetEnv()
+
+	testutils.MustCreateDir(t, utils.GetTablespaceDir())
+	defer os.RemoveAll(utils.GetTablespaceDir())
+
 	t.Run("successfully performs restore of tablespaces", func(t *testing.T) {
-		request := &idl.UpgradePrimariesRequest{
-			TablespacesMappingFilePath: "/tmp/tablespaces/tablespace_mapping.txt",
-		}
+		request := &idl.UpgradePrimariesRequest{}
 
 		tablespaces := map[int32]*idl.TablespaceInfo{
 			1663: {
@@ -65,7 +77,8 @@ func TestRestoreTablespaces(t *testing.T) {
 		// all the args for multiple invocations of rsync
 		expectedRsyncArgs := []string{
 			"--archive", "--delete",
-			"/tmp/tablespaces/1663/1/", "/tmp/default/1663/2",
+			filepath.Join(utils.GetTablespaceDir(), "1663", string(os.PathSeparator), "1") + string(os.PathSeparator),
+			"/tmp/default/1663/2",
 		}
 
 		var actualArgs []string
@@ -136,9 +149,7 @@ func TestRestoreTablespaces(t *testing.T) {
 	})
 
 	t.Run("restore tablespace fails during rsync", func(t *testing.T) {
-		request := &idl.UpgradePrimariesRequest{
-			TablespacesMappingFilePath: "/tmp/tablespaces/tablespace_mapping.txt",
-		}
+		request := &idl.UpgradePrimariesRequest{}
 
 		segment := getSampleSegment()
 
@@ -158,9 +169,7 @@ func TestRestoreTablespaces(t *testing.T) {
 	})
 
 	t.Run("fails during recreation of symlink", func(t *testing.T) {
-		request := &idl.UpgradePrimariesRequest{
-			TablespacesMappingFilePath: "/tmp/tablespaces/tablespace_mapping.txt",
-		}
+		request := &idl.UpgradePrimariesRequest{}
 
 		segment := getSampleSegment()
 

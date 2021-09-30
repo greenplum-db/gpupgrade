@@ -39,8 +39,7 @@ func TestConfig(t *testing.T) {
 					Location:    "/tmp/master/my_tablespace/1663",
 					UserDefined: 1,
 				}}}, // Tablespaces
-			greenplum.TablespacesMappingFile, // TablespacesMappingFilePath
-			"301908232",                      // TargetCatalogVersion
+			"301908232", // TargetCatalogVersion
 		}
 
 		buf := new(bytes.Buffer)
