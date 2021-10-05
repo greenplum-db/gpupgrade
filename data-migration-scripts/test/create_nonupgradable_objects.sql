@@ -76,9 +76,7 @@ INSERT INTO table_with_primary_constraint VALUES(2, 2);
 CREATE ROLE gphdfs_user CREATEEXTTABLE(protocol='gphdfs', type='writable') CREATEEXTTABLE(protocol='gphdfs', type='readable');
 
 -- create partitioned tables where the index relation name is not equal primary/unique key constraint name for the root
--- Note that the naming of the constraint is key, not the type of constraint
--- If the constraint is named, every partition will have the same named constraint and they all can be dropped with the same command
--- If the constraint is not named, greenplum generates a unique name for each partition as well as the master table. We can only drop the master tables constraint and the partition constraints remain in effect
+
 DROP TABLE IF EXISTS table_with_unique_constraint_p;
 CREATE TYPE table_with_unique_constraint_p_author_key AS (dummy int);
 CREATE TYPE table_with_unique_constraint_p_author_key1 AS (dummy int);
@@ -159,6 +157,7 @@ INSERT INTO table_with_tsquery_datatype_columns
             ('e & f'::tsquery, 'e & f'::tsquery, 'e & f'::tsquery, 2),
             ('x & y'::tsquery, 'x & y'::tsquery, 'x & y'::tsquery, 3);
 
+-- Index tests on tsquery
 --composite index
 DROP TABLE IF EXISTS tsquery_composite;
 CREATE TABLE tsquery_composite(i int, j tsquery, k tsquery);
@@ -167,16 +166,24 @@ CREATE INDEX tsquery_composite_idx ON tsquery_composite(j, k);
 DROP TABLE IF EXISTS tsquery_gist;
 CREATE TABLE tsquery_gist(i int, j tsquery, k tsquery);
 CREATE INDEX tsquery_gist_idx ON tsquery_gist using gist(j) ;
---clustered index
-DROP TABLE IF EXISTS tsquery_cluster;
-CREATE TABLE tsquery_cluster(i int, j tsquery);
-CREATE INDEX tsquery_cluster_idx ON tsquery_cluster(j);
-ALTER TABLE tsquery_cluster CLUSTER ON tsquery_cluster_idx;
---index with comment
-DROP TABLE IF EXISTS tsquery_comment;
-CREATE TABLE tsquery_comment(i int, j tsquery);
-CREATE INDEX tsquery_comment_idx ON tsquery_comment(j);
-COMMENT ON INDEX tsquery_comment_idx IS 'hello world';
+--clustered index with comment
+DROP TABLE IF EXISTS tsquery_cluster_comment;
+CREATE TABLE tsquery_cluster_comment(i int, j tsquery);
+CREATE INDEX tsquery_cluster_comment_idx ON tsquery_cluster_comment(j);
+ALTER TABLE tsquery_cluster_comment CLUSTER ON tsquery_cluster_comment_idx;
+COMMENT ON INDEX tsquery_cluster_comment_idx IS 'hello world';
+
+-- Index tests on name
+--composite index
+DROP TABLE IF EXISTS name_composite;
+CREATE TABLE name_composite(i int, j name, k name);
+CREATE INDEX name_composite_idx ON name_composite(j, k);
+--clustered index with comment
+DROP TABLE IF EXISTS name_cluster_comment;
+CREATE TABLE name_cluster_comment(i int, j name);
+CREATE INDEX name_cluster_comment_idx ON name_cluster_comment(j);
+ALTER TABLE name_cluster_comment CLUSTER ON name_cluster_comment_idx;
+COMMENT ON INDEX name_cluster_comment_idx IS 'hello world';
 
 -- inherits with tsquery column
 DROP TABLE IF EXISTS tsquery_inherits;
@@ -184,9 +191,9 @@ CREATE TABLE tsquery_inherits (
     e      tsquery
 ) INHERITS (table_with_tsquery_datatype_columns);
 
--- inherits with name column
+-- inherits with name and tsquery columns
 DROP TABLE IF EXISTS table_with_name_column;
-CREATE TABLE table_with_name_column (
+CREATE TABLE table_with_name_tsquery (
     name       text,
     population name,
     altitude   tsquery
@@ -195,10 +202,27 @@ CREATE TABLE table_with_name_column (
 DROP TABLE IF EXISTS name_inherits;
 CREATE TABLE name_inherits (
     state      char(2)
-) INHERITS (table_with_name_column);
+) INHERITS (table_with_name_tsquery);
 
 -- view on a view on a name column
 DROP VIEW IF EXISTS v3_on_v2_recursive;
 CREATE VIEW v3_on_v2_recursive AS SELECT * FROM v2_on_t2_with_name;
+
+-- Third level recursive view on a name column
+DROP VIEW IF EXISTS v4_on_v3_recursive;
+CREATE VIEW v4_on_v3_recursive AS SELECT * FROM v3_on_v2_with_name;
+
+-- view on a table with view that doesn't actually depend on the name column
+-- this one should not be dropped since its dependent columns are not changing
+DROP VIEW IF EXISTS v4_on_t2_no_name;
+CREATE VIEW v4_on_t2_no_name AS SELECT a, 1::INTEGER AS i FROM t2_with_name;
+
+-- view on both name and tsquery from the same table
+DROP VIEW IF EXISTS view_on_name_tsquery;
+CREATE VIEW view_on_name_tsquery AS SELECT * FROM table_with_name_tsquery;
+
+-- view on both name and tsquery from multiple tables
+DROP VIEW IF EXISTS view_on_name_tsquery_mult_tables;
+CREATE VIEW view_on_name_tsquery_mult_tables AS SELECT t1.population, t2.altitude FROM table_with_name_tsquery t1, table_with_name_tsquery t2;
 
 RESET search_path;

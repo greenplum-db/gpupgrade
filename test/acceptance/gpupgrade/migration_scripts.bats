@@ -45,7 +45,7 @@ teardown() {
 @test "migration scripts generate sql to modify non-upgradeable objects and fix pg_upgrade check errors" {
 
     $PSQL -c "CREATE DATABASE $TEST_DBNAME;" -d $DEFAULT_DBNAME
-    $PSQL -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql -d $TEST_DBNAME
+    PGOPTIONS='--client-min-messages=warning' $PSQL -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql -d $TEST_DBNAME
 
     run gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
@@ -62,11 +62,10 @@ teardown() {
     egrep "^Checking.*fatal$" $GPUPGRADE_HOME/pg_upgrade/seg-1/pg_upgrade_internal.log
 
     MIGRATION_DIR=`mktemp -d /tmp/migration.XXXXXX`
-    register_teardown rm -r "$MIGRATION_DIR"
 
     "$SCRIPTS_DIR"/gpupgrade-migration-sql-generator.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR" "$SCRIPTS_DIR"
 
-    $PSQL -d $TEST_DBNAME -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
+    PGOPTIONS='--client-min-messages=warning' $PSQL -d $TEST_DBNAME -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
 
     root_child_indexes_before=$(get_indexes "$GPHOME_SOURCE")
     tsquery_datatype_objects_before=$(get_tsquery_datatypes "$GPHOME_SOURCE")

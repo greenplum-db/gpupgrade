@@ -27,7 +27,7 @@
 -- non-partitioned tables. The ALTER command executed on root partitions cascades
 -- to child partitions, and thus are excluded here.
 
--- generates drop index statement to drop indexes on columns of name type.
+-- Columns having an index on a name column can't be altered, so generate a drop statement for them
 SELECT $$DROP INDEX $$ || pg_catalog.quote_ident(n.nspname) || '.' || pg_catalog.quote_ident(xc.relname) || ';'
 FROM
     pg_catalog.pg_class c
@@ -62,21 +62,11 @@ partitionedKeys AS
    SELECT DISTINCT parrelid, unnest(paratts) att_num
    FROM pg_catalog.pg_partition p
 )
-SELECT CASE
-    WHEN NOT EXISTS (
-        SELECT 1
-        FROM pg_inherits AS i
-             JOIN pg_attribute AS a2
-                ON i.inhparent = a2.attrelid
-        WHERE i.inhrelid = a.attrelid
-              AND a.attname = a2.attname
-    ) THEN
-        'DO $$ BEGIN ALTER TABLE ' || c.oid::pg_catalog.regclass ||
-        ' ALTER COLUMN ' || pg_catalog.quote_ident(a.attname) ||
-        ' TYPE VARCHAR(63); EXCEPTION WHEN feature_not_supported THEN PERFORM pg_temp.notsupported(''' ||
-        c.oid::pg_catalog.regclass || '''); END $$;'
-    ELSE NULL
-    END
+SELECT
+    'DO $$ BEGIN ALTER TABLE ' || c.oid::pg_catalog.regclass ||
+    ' ALTER COLUMN ' || pg_catalog.quote_ident(a.attname) ||
+    ' TYPE VARCHAR(63); EXCEPTION WHEN feature_not_supported THEN PERFORM pg_temp.notsupported(''' ||
+    c.oid::pg_catalog.regclass || '''); END $$;'
 FROM
     pg_catalog.pg_class c
     JOIN pg_catalog.pg_namespace n
@@ -106,6 +96,8 @@ WHERE
     distcols.attnum IS NULL
     -- exclude partition tables entries which has partition columns using name data type
     AND partitionedKeys.parrelid IS NULL
+    -- exclude inherited columns
+    AND a.attinhcount = 0
     -- exclude child partitions
     AND c.oid NOT IN
         (SELECT DISTINCT parchildrelid

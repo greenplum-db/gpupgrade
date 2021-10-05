@@ -118,7 +118,14 @@ execute_script_directory() {
         done
 
         # Drop the table of dependent views
-        records=$("$GPHOME"/bin/psql -X -q -d "$database" -p "$PGPORT" -Atc "DROP TABLE IF EXISTS __temp_views_list")
+        records=$(PGOPTIONS='--client-min-messages=warning' \
+            "$GPHOME"/bin/psql -X -q -d "$database" -p "$PGPORT" -Atc \
+            "DROP TABLE IF EXISTS __gpupgrade_tmp.__temp_views_list")
+
+        # Drop the temp schema
+        records=$(PGOPTIONS='--client-min-messages=warning' \
+            "$GPHOME"/bin/psql -X -q -d "$database" -p "$PGPORT" -Atc \
+            "DROP SCHEMA IF EXISTS __gpupgrade_tmp")
     done
 
     echo "Output files are located in: $output_dir"

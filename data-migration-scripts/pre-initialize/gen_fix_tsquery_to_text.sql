@@ -1,7 +1,8 @@
 -- Copyright (c) 2017-2021 VMware, Inc. or its affiliates
 -- SPDX-License-Identifier: Apache-2.0
 
--- generates drop index statement to drop indexes on columns of tsquery type.
+-- Columns having an index on a tsquery column can't be altered, so generate a drop statement for them
+
 SELECT $$DROP INDEX $$ || pg_catalog.quote_ident(n.nspname) || '.' || pg_catalog.quote_ident(xc.relname) || ';'
 FROM
     pg_catalog.pg_class c
@@ -37,22 +38,12 @@ partitionedKeys AS
     SELECT DISTINCT parrelid, unnest(paratts) att_num
     FROM pg_catalog.pg_partition p
 )
-SELECT CASE
-    WHEN NOT EXISTS (
-        SELECT 1
-        FROM pg_inherits AS i
-             JOIN pg_attribute AS a2
-                ON i.inhparent = a2.attrelid
-        WHERE i.inhrelid = a.attrelid
-            AND a.attname = a2.attname
-    ) THEN
-        'DO $$ BEGIN ALTER TABLE ' ||
-        pg_catalog.quote_ident(n.nspname) || '.' || pg_catalog.quote_ident(c.relname) ||
-        ' ALTER COLUMN ' || pg_catalog.quote_ident(a.attname) ||
-        ' TYPE VARCHAR(63); EXCEPTION WHEN feature_not_supported THEN PERFORM pg_temp.notsupported(''' ||
-        c.oid::pg_catalog.regclass || '''); END $$;'
-    ELSE NULL
-    END
+SELECT
+    'DO $$ BEGIN ALTER TABLE ' ||
+    pg_catalog.quote_ident(n.nspname) || '.' || pg_catalog.quote_ident(c.relname) ||
+    ' ALTER COLUMN ' || pg_catalog.quote_ident(a.attname) ||
+    ' TYPE VARCHAR(63); EXCEPTION WHEN feature_not_supported THEN PERFORM pg_temp.notsupported(''' ||
+    c.oid::pg_catalog.regclass || '''); END $$;'
 FROM
     pg_catalog.pg_class c,
     pg_catalog.pg_namespace n,
@@ -68,6 +59,8 @@ WHERE
     distcols.attnum IS NULL
     -- exclude partition tables entries which has partition columns using tsquery data type
     AND partitionedKeys.parrelid IS NULL
+    -- exclude inherited columns
+    AND a.attinhcount = 0
     AND c.relkind = 'r'
     AND c.oid = a.attrelid
     AND NOT a.attisdropped
@@ -77,6 +70,7 @@ WHERE
     AND n.nspname NOT LIKE 'pg_toast_temp_%'
     AND n.nspname NOT IN ('pg_catalog',
                         'information_schema')
+    -- exclude child partitions
     AND c.oid NOT IN
         (SELECT DISTINCT parchildrelid
          FROM pg_catalog.pg_partition_rule)

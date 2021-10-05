@@ -46,22 +46,13 @@ FROM
       ON a.attnum = partitionedKeys.att_num
       AND a.attrelid = partitionedKeys.parrelid
 WHERE
-   -- exclude table entries which has a distribution key using name data type
-   distcols.attnum is NULL
-   -- exclude partition tables entries which has partition columns using name data type
-   AND partitionedKeys.parrelid is NULL
-   -- exclude child partitions
-   AND c.oid NOT IN
-       (SELECT DISTINCT parchildrelid
-       FROM pg_catalog.pg_partition_rule)
-  AND NOT EXISTS (
-    SELECT 1
-    FROM
-    pg_inherits AS i
-    JOIN
-    pg_attribute AS a2
-    ON i.inhparent = a2.attrelid
-    WHERE
-    i.inhrelid = a.attrelid
-  AND a.attname = a2.attname
-    );
+    -- exclude table entries which has a distribution key using name data type
+    distcols.attnum is NULL
+    -- exclude partition tables entries which has partition columns using name data type
+    AND partitionedKeys.parrelid is NULL
+    -- exclude child partitions
+    AND c.oid NOT IN
+        (SELECT DISTINCT parchildrelid
+        FROM pg_catalog.pg_partition_rule)
+    -- exclude inherited columns
+    AND a.attinhcount = 0;

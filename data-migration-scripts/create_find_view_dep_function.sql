@@ -4,14 +4,22 @@
 -- This script assumes that the plpython language is already enabled
 -- The generator should enable it if necessary on each database prior to this point
 
+-- TODO: This implementation can be greatly simplified using recursive CTEs
+-- They will be supported for 6X -> 7X upgrades
+
 SET client_min_messages TO WARNING;
 
-CREATE OR REPLACE FUNCTION find_view_dependencies()
+DROP SCHEMA IF EXISTS __gpupgrade_tmp;
+CREATE SCHEMA __gpupgrade_tmp;
+
+CREATE OR REPLACE FUNCTION  __gpupgrade_tmp.find_view_dependencies()
 RETURNS VOID AS
 $$
 import plpy
 
-first_level = plpy.execute("""
+# First find views that do not depend on other views (and directly on the table)
+
+leaf_view = plpy.execute("""
 SELECT schema, view
 FROM (
 SELECT DISTINCT nv.nspname AS schema, v.relname AS view
@@ -44,7 +52,7 @@ WHERE
 
 checklist = {}
 view_order = 1
-for row in first_level:
+for row in leaf_view:
     checklist[(row['schema'], row['view'])] = view_order
 
 rows = plpy.execute("""
@@ -108,13 +116,13 @@ while True:
     else:
         checklist.update(new_checklist)
 
-plpy.execute("DROP TABLE IF EXISTS __temp_views_list")
-plpy.execute("CREATE TABLE __temp_views_list (full_view_name TEXT, view_order INTEGER)")
+plpy.execute("DROP TABLE IF EXISTS  __gpupgrade_tmp.__temp_views_list")
+plpy.execute("CREATE TABLE  __gpupgrade_tmp.__temp_views_list (full_view_name TEXT, view_order INTEGER)")
 for v, view_order in checklist.items():
-    sql = "INSERT INTO __temp_views_list VALUES('{0}.{1}', {2})".format(v[0],v[1],view_order)
+    sql = "INSERT INTO  __gpupgrade_tmp.__temp_views_list VALUES('{0}.{1}', {2})".format(v[0],v[1],view_order)
     plpy.execute(sql)
 $$ LANGUAGE plpythonu;
 
-SELECT find_view_dependencies();
+SELECT  __gpupgrade_tmp.find_view_dependencies();
 
-DROP FUNCTION find_view_dependencies();
+DROP FUNCTION  __gpupgrade_tmp.find_view_dependencies();
