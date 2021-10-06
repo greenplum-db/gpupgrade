@@ -69,6 +69,9 @@ teardown() {
 
     root_child_indexes_before=$(get_indexes "$GPHOME_SOURCE")
     tsquery_datatype_objects_before=$(get_tsquery_datatypes "$GPHOME_SOURCE")
+    name_datatype_objects_before=$(get_name_datatypes "$GPHOME_SOURCE")
+    fk_constraints_before=$(get_fk_constraints "$GPHOME_SOURCE")
+    primary_unique_constraints_before=$(get_primary_unique_constraints "$GPHOME_SOURCE")
 
     "$SCRIPTS_DIR"/gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/pre-initialize
 
@@ -88,10 +91,16 @@ teardown() {
     # migration scripts should create the indexes on the target cluster
     root_child_indexes_after=$(get_indexes "$GPHOME_TARGET")
     tsquery_datatype_objects_after=$(get_tsquery_datatypes "$GPHOME_TARGET")
+    name_datatype_objects_after=$(get_name_datatypes "$GPHOME_TARGET")
+    fk_constraints_after=$(get_fk_constraints "$GPHOME_TARGET")
+    primary_unique_constraints_after=$(get_primary_unique_constraints "$GPHOME_TARGET")
 
     # expect the index and tsquery datatype information to be same after the upgrade
     diff -U3 <(echo "$root_child_indexes_before") <(echo "$root_child_indexes_after")
     diff -U3 <(echo "$tsquery_datatype_objects_before") <(echo "$tsquery_datatype_objects_after")
+    diff -U3 <(echo "$name_datatype_objects_before") <(echo "$name_datatype_objects_after")
+    diff -U3 <(echo "$fk_constraints_before") <(echo "$fk_constraints_after")
+    diff -U3 <(echo "$primary_unique_constraints_before") <(echo "$primary_unique_constraints_after")
 }
 
 @test "after reverting recreate scripts must restore non-upgradeable objects" {
@@ -209,4 +218,106 @@ get_tsquery_datatypes() {
             FROM pg_catalog.pg_partition_rule)
         ORDER BY 1,2,3;
         "
+}
+
+get_name_datatypes() {
+    local gphome=$1
+    $gphome/bin/psql -d "$TEST_DBNAME" -p "$PGPORT" -Atc "
+        SELECT n.nspname, c.relname, a.attname
+        FROM pg_catalog.pg_class c,
+             pg_catalog.pg_namespace n,
+            pg_catalog.pg_attribute a
+        WHERE c.relkind = 'r'
+        AND c.oid = a.attrelid
+        AND NOT a.attisdropped
+        AND a.atttypid = 'pg_catalog.name'::pg_catalog.regtype
+        AND c.relnamespace = n.oid
+        AND n.nspname !~ '^pg_temp_'
+        AND n.nspname !~ '^pg_toast_temp_'
+        AND n.nspname NOT IN ('pg_catalog',
+                                'information_schema')
+        AND c.oid NOT IN
+            (SELECT DISTINCT parchildrelid
+            FROM pg_catalog.pg_partition_rule)
+        ORDER BY 1,2,3;
+        "
+}
+
+get_fk_constraints() {
+    local gphome=$1
+    $gphome/bin/psql -d "$TEST_DBNAME" -p "$PGPORT" -Atc "
+        SELECT nspname, relname, conname
+        FROM pg_constraint cc
+            JOIN
+            (
+            SELECT DISTINCT
+                c.oid,
+                n.nspname,
+                c.relname
+            FROM
+                pg_catalog.pg_partition p
+            JOIN
+                pg_catalog.pg_class c
+                ON (p.parrelid = c.oid)
+            JOIN
+                pg_catalog.pg_namespace n
+                ON (n.oid = c.relnamespace)
+            ) AS sub
+            ON sub.oid = cc.conrelid
+        WHERE
+            cc.contype = 'f'
+        ORDER BY 1,2,3;
+        "
+}
+
+get_primary_unique_constraints() {
+    local gphome=$1
+    $gphome/bin/psql -d "$TEST_DBNAME" -p "$PGPORT" -Atc "
+    WITH CTE as
+    (
+        SELECT oid, *
+        FROM pg_class
+        WHERE
+            oid NOT IN
+            (
+                SELECT DISTINCT
+                    parrelid
+                FROM
+                    pg_partition
+                UNION ALL
+                SELECT DISTINCT
+                    parchildrelid
+                FROM
+                    pg_partition_rule
+            )
+    )
+    SELECT
+        n.nspname, cc.relname, conname
+    FROM
+        pg_constraint con
+        JOIN
+        pg_depend dep
+        ON (refclassid, classid, objsubid) =
+        (
+           'pg_constraint'::regclass,
+           'pg_class'::regclass,
+           0
+        )
+        AND refobjid = con.oid
+        AND deptype = 'i'
+        -- Note that 'x' is an option for contype in GPDB6, and not in GPDB5
+        -- It is included in this query to make it compatible for both.
+        AND contype IN ('u', 'p', 'x')
+        JOIN
+        CTE c
+        ON objid = c.oid
+        AND relkind = 'i'
+        JOIN
+        CTE cc
+        ON cc.oid = con.conrelid
+        JOIN
+        pg_namespace n
+        ON (n.oid = cc.relnamespace)
+    ORDER BY 1,2,3;
+    "
 }
