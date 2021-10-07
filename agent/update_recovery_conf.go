@@ -18,7 +18,7 @@ func (s *Server) UpdateRecoveryConf(ctx context.Context, in *idl.UpdateRecoveryC
 
 	var errs error
 	for _, opt := range in.GetOptions() {
-		err := hub.UpdateRecoveryConf(opt.GetPath(), int(opt.GetOldPort()), int(opt.GetNewPort()))
+		err := hub.UpdateRecoveryConf(opt.GetPath(), int(opt.GetCurrentValue()), int(opt.GetUpdatedValue()))
 		if err != nil {
 			errs = errorlist.Append(errs, err)
 		}

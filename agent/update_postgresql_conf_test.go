@@ -25,14 +25,14 @@ func TestServer_UpdatePostgresqlConf(t *testing.T) {
 	t.Run("bubbles up errors", func(t *testing.T) {
 		opts := []*idl.UpdateFileConfOptions{
 			{
-				Path:    filepath.Join("", "postgresql.conf"),
-				OldPort: 0,
-				NewPort: 0,
+				Path:         filepath.Join("", "postgresql.conf"),
+				CurrentValue: 0,
+				UpdatedValue: 0,
 			},
 			{
-				Path:    filepath.Join("", "postgresql.conf"),
-				OldPort: 0,
-				NewPort: 0,
+				Path:         filepath.Join("", "postgresql.conf"),
+				CurrentValue: 0,
+				UpdatedValue: 0,
 			}}
 
 		_, err := server.UpdatePostgresqlConf(context.Background(), &idl.UpdatePostgresqlConfRequest{Options: opts})
@@ -59,7 +59,7 @@ func TestServer_UpdatePostgresqlConf(t *testing.T) {
 		path := filepath.Join(dir, "postgresql.conf")
 		testutils.MustWriteToFile(t, path, "port=123")
 
-		opts := []*idl.UpdateFileConfOptions{{Path: path, OldPort: 123, NewPort: 456}}
+		opts := []*idl.UpdateFileConfOptions{{Path: path, CurrentValue: 123, UpdatedValue: 456}}
 		_, err := server.UpdatePostgresqlConf(context.Background(), &idl.UpdatePostgresqlConfRequest{Options: opts})
 		if err != nil {
 			t.Errorf("unexpected error %#v", err)

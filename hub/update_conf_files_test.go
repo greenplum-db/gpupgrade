@@ -52,9 +52,9 @@ func TestUpdatePostgresqlConfOnSegments(t *testing.T) {
 			gomock.Any(),
 			&idl.UpdatePostgresqlConfRequest{
 				Options: []*idl.UpdateFileConfOptions{{
-					Path:    "/data/standby/postgresql.conf",
-					OldPort: 50433,
-					NewPort: 16432,
+					Path:         "/data/standby/postgresql.conf",
+					CurrentValue: 50433,
+					UpdatedValue: 16432,
 				}},
 			},
 		).Return(&idl.UpdatePostgresqlConfReply{}, nil)
@@ -65,14 +65,14 @@ func TestUpdatePostgresqlConfOnSegments(t *testing.T) {
 			&idl.UpdatePostgresqlConfRequest{
 				Options: []*idl.UpdateFileConfOptions{
 					{
-						Path:    "/data/dbfast_mirror2/seg2/postgresql.conf",
-						OldPort: 50436,
-						NewPort: 25436,
+						Path:         "/data/dbfast_mirror2/seg2/postgresql.conf",
+						CurrentValue: 50436,
+						UpdatedValue: 25436,
 					},
 					{
-						Path:    "/data/dbfast1/seg1/postgresql.conf",
-						OldPort: 50434,
-						NewPort: 25433,
+						Path:         "/data/dbfast1/seg1/postgresql.conf",
+						CurrentValue: 50434,
+						UpdatedValue: 25433,
 					}},
 			},
 		).Return(&idl.UpdatePostgresqlConfReply{}, nil)
@@ -83,14 +83,14 @@ func TestUpdatePostgresqlConfOnSegments(t *testing.T) {
 			&idl.UpdatePostgresqlConfRequest{
 				Options: []*idl.UpdateFileConfOptions{
 					{
-						Path:    "/data/dbfast_mirror1/seg1/postgresql.conf",
-						OldPort: 50434,
-						NewPort: 25434,
+						Path:         "/data/dbfast_mirror1/seg1/postgresql.conf",
+						CurrentValue: 50434,
+						UpdatedValue: 25434,
 					},
 					{
-						Path:    "/data/dbfast2/seg2/postgresql.conf",
-						OldPort: 50436,
-						NewPort: 25435,
+						Path:         "/data/dbfast2/seg2/postgresql.conf",
+						CurrentValue: 50436,
+						UpdatedValue: 25435,
 					}},
 			},
 		).Return(&idl.UpdatePostgresqlConfReply{}, nil)
@@ -116,9 +116,9 @@ func TestUpdatePostgresqlConfOnSegments(t *testing.T) {
 			gomock.Any(),
 			&idl.UpdatePostgresqlConfRequest{
 				Options: []*idl.UpdateFileConfOptions{{
-					Path:    "/data/standby/postgresql.conf",
-					OldPort: 50433,
-					NewPort: 16432,
+					Path:         "/data/standby/postgresql.conf",
+					CurrentValue: 50433,
+					UpdatedValue: 16432,
 				}},
 			},
 		).Return(&idl.UpdatePostgresqlConfReply{}, nil)
@@ -206,9 +206,9 @@ func TestUpdateRecoveryConfiguration(t *testing.T) {
 				gomock.Any(),
 				&idl.UpdateRecoveryConfRequest{
 					Options: []*idl.UpdateFileConfOptions{{
-						Path:    filepath.Join("/data/standby", c.file),
-						OldPort: 50432,
-						NewPort: 15432,
+						Path:         filepath.Join("/data/standby", c.file),
+						CurrentValue: 50432,
+						UpdatedValue: 15432,
 					}},
 				},
 			).Return(&idl.UpdateRecoveryConfReply{}, nil)
@@ -219,9 +219,9 @@ func TestUpdateRecoveryConfiguration(t *testing.T) {
 				&idl.UpdateRecoveryConfRequest{
 					Options: []*idl.UpdateFileConfOptions{
 						{
-							Path:    filepath.Join("/data/dbfast_mirror2/seg2", c.file),
-							OldPort: 50436,
-							NewPort: 25435,
+							Path:         filepath.Join("/data/dbfast_mirror2/seg2", c.file),
+							CurrentValue: 50436,
+							UpdatedValue: 25435,
 						}},
 				},
 			).Return(&idl.UpdateRecoveryConfReply{}, nil)
@@ -232,9 +232,9 @@ func TestUpdateRecoveryConfiguration(t *testing.T) {
 				&idl.UpdateRecoveryConfRequest{
 					Options: []*idl.UpdateFileConfOptions{
 						{
-							Path:    filepath.Join("/data/dbfast_mirror1/seg1", c.file),
-							OldPort: 50434,
-							NewPort: 25433,
+							Path:         filepath.Join("/data/dbfast_mirror1/seg1", c.file),
+							CurrentValue: 50434,
+							UpdatedValue: 25433,
 						}},
 				},
 			).Return(&idl.UpdateRecoveryConfReply{}, nil)
@@ -261,9 +261,9 @@ func TestUpdateRecoveryConfiguration(t *testing.T) {
 			gomock.Any(),
 			&idl.UpdateRecoveryConfRequest{
 				Options: []*idl.UpdateFileConfOptions{{
-					Path:    "/data/standby/recovery.conf",
-					OldPort: 50432,
-					NewPort: 15432,
+					Path:         "/data/standby/recovery.conf",
+					CurrentValue: 50432,
+					UpdatedValue: 15432,
 				}},
 			},
 		).Return(&idl.UpdateRecoveryConfReply{}, nil)

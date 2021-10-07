@@ -127,8 +127,8 @@ message RestorePgControlReply {}
 
 message UpdateFileConfOptions {
     string path = 1;
-    int32 oldPort = 2;
-    int32 newPort = 3;
+    int32 currentValue = 2;
+    int32 updatedValue = 3;
 }
 
 message UpdatePostgresqlConfRequest {

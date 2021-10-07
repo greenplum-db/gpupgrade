@@ -45,9 +45,9 @@ func UpdatePostgresqlConfOnSegments(agentConns []*idl.Connection, intermediate *
 		// add standby
 		if target.Standby().Hostname == conn.Hostname {
 			opt := &idl.UpdateFileConfOptions{
-				Path:    filepath.Join(target.StandbyDataDir(), "postgresql.conf"),
-				OldPort: int32(intermediate.StandbyPort()),
-				NewPort: int32(target.StandbyPort()),
+				Path:         filepath.Join(target.StandbyDataDir(), "postgresql.conf"),
+				CurrentValue: int32(intermediate.StandbyPort()),
+				UpdatedValue: int32(target.StandbyPort()),
 			}
 
 			opts = append(opts, opt)
@@ -60,9 +60,9 @@ func UpdatePostgresqlConfOnSegments(agentConns []*idl.Connection, intermediate *
 
 		for _, mirror := range mirrors {
 			opt := &idl.UpdateFileConfOptions{
-				Path:    filepath.Join(mirror.DataDir, "postgresql.conf"),
-				OldPort: int32(intermediate.Primaries[mirror.ContentID].Port),
-				NewPort: int32(mirror.Port),
+				Path:         filepath.Join(mirror.DataDir, "postgresql.conf"),
+				CurrentValue: int32(intermediate.Primaries[mirror.ContentID].Port),
+				UpdatedValue: int32(mirror.Port),
 			}
 
 			opts = append(opts, opt)
@@ -75,9 +75,9 @@ func UpdatePostgresqlConfOnSegments(agentConns []*idl.Connection, intermediate *
 
 		for _, primary := range primaries {
 			opt := &idl.UpdateFileConfOptions{
-				Path:    filepath.Join(primary.DataDir, "postgresql.conf"),
-				OldPort: int32(intermediate.Primaries[primary.ContentID].Port),
-				NewPort: int32(primary.Port),
+				Path:         filepath.Join(primary.DataDir, "postgresql.conf"),
+				CurrentValue: int32(intermediate.Primaries[primary.ContentID].Port),
+				UpdatedValue: int32(primary.Port),
 			}
 
 			opts = append(opts, opt)
@@ -103,9 +103,9 @@ func UpdateRecoveryConfiguration(agentConns []*idl.Connection, version semver.Ve
 		// add standby
 		if target.Standby().Hostname == conn.Hostname {
 			opt := &idl.UpdateFileConfOptions{
-				Path:    filepath.Join(target.StandbyDataDir(), file),
-				OldPort: int32(intermediateCluster.MasterPort()),
-				NewPort: int32(target.MasterPort()),
+				Path:         filepath.Join(target.StandbyDataDir(), file),
+				CurrentValue: int32(intermediateCluster.MasterPort()),
+				UpdatedValue: int32(target.MasterPort()),
 			}
 
 			opts = append(opts, opt)
@@ -118,9 +118,9 @@ func UpdateRecoveryConfiguration(agentConns []*idl.Connection, version semver.Ve
 
 		for _, mirror := range mirrors {
 			opt := &idl.UpdateFileConfOptions{
-				Path:    filepath.Join(mirror.DataDir, file),
-				OldPort: int32(intermediateCluster.Primaries[mirror.ContentID].Port),
-				NewPort: int32(target.Primaries[mirror.ContentID].Port),
+				Path:         filepath.Join(mirror.DataDir, file),
+				CurrentValue: int32(intermediateCluster.Primaries[mirror.ContentID].Port),
+				UpdatedValue: int32(target.Primaries[mirror.ContentID].Port),
 			}
 
 			opts = append(opts, opt)
@@ -142,16 +142,16 @@ func UpdateGpperfmonConf(masterDataDir string) error {
 	return updateConfigurationFile(path, pattern, replacement)
 }
 
-func UpdatePostgresqlConf(path string, oldPort, newPort int) error {
-	pattern := fmt.Sprintf(`(^port[ \t]*=[ \t]*)%d([^0-9]|$)`, oldPort)
-	replacement := fmt.Sprintf(`\1%d\2`, newPort)
+func UpdatePostgresqlConf(path string, currentPort, updatedPort int) error {
+	pattern := fmt.Sprintf(`(^port[ \t]*=[ \t]*)%d([^0-9]|$)`, currentPort)
+	replacement := fmt.Sprintf(`\1%d\2`, updatedPort)
 
 	return updateConfigurationFile(path, pattern, replacement)
 }
 
-func UpdateRecoveryConf(path string, oldPort, newPort int) error {
-	pattern := fmt.Sprintf(`(primary_conninfo .* port[ \t]*=[ \t]*)%d([^0-9]|$)`, oldPort)
-	replacement := fmt.Sprintf(`\1%d\2`, newPort)
+func UpdateRecoveryConf(path string, currentPort, updatedPort int) error {
+	pattern := fmt.Sprintf(`(primary_conninfo .* port[ \t]*=[ \t]*)%d([^0-9]|$)`, currentPort)
+	replacement := fmt.Sprintf(`\1%d\2`, updatedPort)
 
 	return updateConfigurationFile(path, pattern, replacement)
 }

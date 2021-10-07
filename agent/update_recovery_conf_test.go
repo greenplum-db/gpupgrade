@@ -25,14 +25,14 @@ func TestServer_UpdateRecoveryConf(t *testing.T) {
 	t.Run("bubbles up errors", func(t *testing.T) {
 		opts := []*idl.UpdateFileConfOptions{
 			{
-				Path:    filepath.Join("", "recovery.conf"),
-				OldPort: 0,
-				NewPort: 0,
+				Path:         filepath.Join("", "recovery.conf"),
+				CurrentValue: 0,
+				UpdatedValue: 0,
 			},
 			{
-				Path:    filepath.Join("", "recovery.conf"),
-				OldPort: 0,
-				NewPort: 0,
+				Path:         filepath.Join("", "recovery.conf"),
+				CurrentValue: 0,
+				UpdatedValue: 0,
 			}}
 
 		_, err := server.UpdateRecoveryConf(context.Background(), &idl.UpdateRecoveryConfRequest{Options: opts})
@@ -59,7 +59,7 @@ func TestServer_UpdateRecoveryConf(t *testing.T) {
 		path := filepath.Join(dir, "recovery.conf")
 		testutils.MustWriteToFile(t, path, "primary_conninfo = 'user=gpadmin host=sdw1 port=123 sslmode=disable")
 
-		opts := []*idl.UpdateFileConfOptions{{Path: path, OldPort: 123, NewPort: 456}}
+		opts := []*idl.UpdateFileConfOptions{{Path: path, CurrentValue: 123, UpdatedValue: 456}}
 		_, err := server.UpdateRecoveryConf(context.Background(), &idl.UpdateRecoveryConfRequest{Options: opts})
 		if err != nil {
 			t.Errorf("unexpected error %#v", err)
