@@ -56,6 +56,7 @@ func TestRsync(t *testing.T) {
 			rsync.WithDestination(destination),
 			rsync.WithOptions("--archive", "--delete"),
 		}
+
 		if err := rsync.Rsync(opts...); err != nil {
 			t.Errorf("Rsync() returned error %+v", err)
 		}
@@ -82,6 +83,7 @@ func TestRsync(t *testing.T) {
 			rsync.WithDestination(destination),
 			rsync.WithOptions("--archive", "--delete"),
 		}
+
 		if err := rsync.Rsync(opts...); err != nil {
 			t.Errorf("Rsync() returned error %+v", err)
 		}
@@ -116,6 +118,7 @@ func TestRsync(t *testing.T) {
 			rsync.WithDestination(destination),
 			rsync.WithOptions("--archive", "--delete"),
 		}
+
 		if err := rsync.Rsync(opts...); err != nil {
 			t.Errorf("Rsync() returned error %+v", err)
 		}
@@ -151,6 +154,7 @@ func TestRsync(t *testing.T) {
 			rsync.WithOptions([]string{"--archive", "--verbose"}...),
 			rsync.WithStream(streams),
 		}
+
 		if err := rsync.Rsync(opts...); err != nil {
 			t.Errorf("Rsync() returned error %+v", err)
 		}
@@ -182,6 +186,7 @@ func TestRsync(t *testing.T) {
 			rsync.WithDestination(destination),
 			rsync.WithOptions("--archive", "--delete"),
 		}
+
 		if err := rsync.Rsync(opts...); err != nil {
 			t.Errorf("Rsync() returned error %+v", err)
 		}
@@ -205,6 +210,7 @@ func TestRsync(t *testing.T) {
 			rsync.WithOptions("--archive", "--delete"),
 			rsync.WithExcludedFiles(filename),
 		}
+
 		if err := rsync.Rsync(opts...); err != nil {
 			t.Errorf("Rsync() returned error %+v", err)
 		}
@@ -232,6 +238,7 @@ func TestRsync(t *testing.T) {
 			rsync.WithOptions("--archive", "--delete"),
 			rsync.WithExcludedFiles(filename2, filename3),
 		}
+
 		if err := rsync.Rsync(opts...); err != nil {
 			t.Errorf("Rsync() returned error %+v", err)
 		}
@@ -257,6 +264,7 @@ func TestRsync(t *testing.T) {
 			rsync.WithOptions("--BOGUS"),
 			rsync.WithStream(stream),
 		}
+
 		err := rsync.Rsync(opts...)
 		if err == nil {
 			t.Errorf("expected error, got nil")
@@ -266,6 +274,7 @@ func TestRsync(t *testing.T) {
 		if !errors.As(err, &rsyncError) {
 			t.Errorf("got error %#v, wanted type %T", err, rsyncError)
 		}
+
 		expected := "exit status 1"
 		if rsyncError.Error() != expected {
 			t.Errorf("got %s, expected %s", rsyncError.Error(), expected)
@@ -275,6 +284,7 @@ func TestRsync(t *testing.T) {
 		if !errors.As(err, &exitError) {
 			t.Errorf("expected err to wrap ExitError")
 		}
+
 		if exitError.Error() != expected {
 			t.Errorf("got %s, expected %s", err.Error(), expected)
 		}
@@ -283,7 +293,6 @@ func TestRsync(t *testing.T) {
 		if !strings.Contains(stream.StderrBuf.String(), expected) {
 			t.Errorf("got %v, expected substring %s", stream.StderrBuf.String(), expected)
 		}
-
 	})
 
 	t.Run("when no input stream is provided, it returns an RsyncError that wraps an ExitError", func(t *testing.T) {
@@ -300,6 +309,7 @@ func TestRsync(t *testing.T) {
 			rsync.WithDestination(destination),
 			rsync.WithOptions("--BOGUS"),
 		}
+
 		err := rsync.Rsync(opts...)
 		if err == nil {
 			t.Errorf("expected error, got nil")
@@ -309,6 +319,7 @@ func TestRsync(t *testing.T) {
 		if !errors.As(err, &rsyncError) {
 			t.Errorf("got error %#v, wanted type %T", err, rsyncError)
 		}
+
 		expected := "rsync: --BOGUS: unknown option"
 		if !strings.Contains(rsyncError.Error(), expected) {
 			t.Errorf("got %s, expected %s", rsyncError.Error(), expected)
@@ -318,6 +329,7 @@ func TestRsync(t *testing.T) {
 		if !errors.As(err, &exitError) {
 			t.Errorf("expected err to wrap ExitError")
 		}
+
 		if !strings.Contains(rsyncError.Error(), expected) {
 			t.Errorf("got %v, expected substring %s", err.Error(), expected)
 		}
@@ -331,8 +343,8 @@ func TestRsync(t *testing.T) {
 		// Validate the rsync call and arguments.
 		cmd := exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
 			expected := "rsync"
-			if name != expected {
-				t.Errorf("Copy() invoked %q, want %q", name, expected)
+			if !strings.HasSuffix(name, expected) {
+				t.Errorf("got %q, want %q", name, expected)
 			}
 
 			expectedSourcePath := sourceHost + ":" + sourceDir + string(os.PathSeparator)
@@ -354,6 +366,7 @@ func TestRsync(t *testing.T) {
 			rsync.WithSourceHost(sourceHost),
 			rsync.WithDestination(targetDir),
 		}
+
 		err := rsync.Rsync(opts...)
 		if err != nil {
 			t.Errorf("unexpected error %#v", err)
@@ -370,6 +383,7 @@ func TestRsync(t *testing.T) {
 			rsync.WithSourceHost(sourceHost),
 			rsync.WithDestination(targetDir),
 		}
+
 		err := rsync.Rsync(opts...)
 
 		if err == nil {

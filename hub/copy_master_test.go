@@ -54,8 +54,8 @@ func TestCopy(t *testing.T) {
 		// Validate the rsync call and arguments.
 		cmd := exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
 			expected := "rsync"
-			if name != expected {
-				t.Errorf("Copy() invoked %q, want %q", name, expected)
+			if !strings.HasSuffix(name, expected) {
+				t.Errorf("got %q, want %q", name, expected)
 			}
 
 			expectedArgs := []string{
@@ -296,8 +296,8 @@ func verifyHosts(hosts chan string, expectedHosts []string, t *testing.T) {
 func execCommandVerifier(t *testing.T, hosts chan string, expectedArgs []string) {
 	cmd := exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
 		expected := "rsync"
-		if name != expected {
-			t.Errorf("invoked %q, want %q", name, expected)
+		if !strings.HasSuffix(name, expected) {
+			t.Errorf("got %q, want %q", name, expected)
 		}
 
 		// The last argument is host:/destination/directory. Remove the

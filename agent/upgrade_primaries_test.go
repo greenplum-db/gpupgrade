@@ -146,7 +146,7 @@ func TestUpgradePrimary(t *testing.T) {
 
 		rsync.SetRsyncCommand(
 			exectest.NewCommandWithVerifier(agent.Success, func(commandName string, _ ...string) {
-				if commandName == "rsync" {
+				if strings.HasSuffix(commandName, "rsync") {
 					t.Error("unexpected rsync call")
 				}
 			}))

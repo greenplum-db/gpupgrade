@@ -5,6 +5,7 @@ package rsync
 
 import (
 	"os/exec"
+	"runtime"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/pkg/errors"
@@ -50,7 +51,16 @@ func Rsync(options ...Option) error {
 	args = append(args, dstPath)
 	args = append(args, opts.excludedFiles...)
 
-	cmd := rsyncCommand("rsync", args...)
+	utility := "rsync"
+	if runtime.GOOS == "darwin" {
+		// Darwin ships with an older rsync that does not support certain options.
+		// Rather than changing the PATH on the agent for all utilities and
+		// commands, specify the full rsync command here. We also don't want to
+		// affect customer environments.
+		utility = "/usr/local/bin/rsync"
+	}
+
+	cmd := rsyncCommand(utility, args...)
 
 	// when no streams are specified, capture stderr for the error message
 	stream := step.BufferedStreams{}
@@ -60,7 +70,7 @@ func Rsync(options ...Option) error {
 		cmd.Stderr = opts.stream.Stderr()
 	}
 
-	gplog.Info("running Rsync as %s", cmd.String())
+	gplog.Info(cmd.String())
 
 	err := cmd.Run()
 	if err != nil {

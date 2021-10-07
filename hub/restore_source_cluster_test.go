@@ -52,7 +52,7 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 	t.Run("restores master in link mode using correct rsync arguments", func(t *testing.T) {
 		defer rsync.ResetRsyncCommand()
 		rsync.SetRsyncCommand(exectest.NewCommandWithVerifier(hub.Success, func(utility string, args ...string) {
-			if utility != "rsync" {
+			if !strings.HasSuffix(utility, "rsync") {
 				t.Errorf("got %q want rsync", utility)
 			}
 
@@ -103,7 +103,7 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 	t.Run("restores master tablespaces in link mode using correct rsync arguments", func(t *testing.T) {
 		defer rsync.ResetRsyncCommand()
 		rsync.SetRsyncCommand(exectest.NewCommandWithVerifier(hub.Success, func(utility string, args ...string) {
-			if utility != "rsync" {
+			if !strings.HasSuffix(utility, "rsync") {
 				t.Errorf("got %q want rsync", utility)
 			}
 

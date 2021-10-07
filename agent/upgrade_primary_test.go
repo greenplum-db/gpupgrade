@@ -84,8 +84,8 @@ func TestRestoreTablespaces(t *testing.T) {
 		var actualArgs []string
 		rsync.SetRsyncCommand(exectest.NewCommandWithVerifier(agent.Success, func(name string, args ...string) {
 			expected := "rsync"
-			if name != expected {
-				t.Errorf("RestoreTablespaces() invoked %q, want %q", name, expected)
+			if !strings.HasSuffix(name, expected) {
+				t.Errorf("got %q, want %q", name, expected)
 			}
 
 			// will use for validation later

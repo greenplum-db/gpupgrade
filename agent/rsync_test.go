@@ -49,7 +49,7 @@ func TestRsync(t *testing.T) {
 
 		defer rsync.SetRsyncCommand(exec.Command)
 		rsync.SetRsyncCommand(exectest.NewCommandWithVerifier(agent.Success, func(utility string, args ...string) {
-			if utility != "rsync" {
+			if !strings.HasSuffix(utility, "rsync") {
 				t.Errorf("got %q want rsync", utility)
 			}
 
@@ -192,7 +192,7 @@ func TestRsyncTablespaceDirectories(t *testing.T) {
 
 		defer rsync.SetRsyncCommand(exec.Command)
 		rsync.SetRsyncCommand(exectest.NewCommandWithVerifier(agent.Success, func(utility string, args ...string) {
-			if utility != "rsync" {
+			if !strings.HasSuffix(utility, "rsync") {
 				t.Errorf("got %q want rsync", utility)
 			}
 
