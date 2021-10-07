@@ -45,7 +45,7 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 	})
 
 	st.RunConditionally(idl.Substep_UPGRADE_MIRRORS, s.Source.HasMirrors(), func(streams step.OutStreams) error {
-		return UpgradeMirrors(streams, s.Intermediate, s.UseHbaHostnames)
+		return UpgradeMirrorsUsingGpAddMirrors(streams, s.Intermediate, s.UseHbaHostnames)
 	})
 
 	st.RunConditionally(idl.Substep_UPGRADE_STANDBY, s.Source.HasStandby(), func(streams step.OutStreams) error {

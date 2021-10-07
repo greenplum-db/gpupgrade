@@ -13,7 +13,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
-func UpgradeMirrors(streams step.OutStreams, intermediate *greenplum.Cluster, useHbaHostnames bool) (err error) {
+func UpgradeMirrorsUsingGpAddMirrors(streams step.OutStreams, intermediate *greenplum.Cluster, useHbaHostnames bool) (err error) {
 	config, err := writeAddMirrorsConfig(intermediate)
 	if err != nil {
 		return err
