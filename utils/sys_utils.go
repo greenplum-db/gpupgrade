@@ -6,6 +6,7 @@ package utils
 import (
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"os/exec"
 	"os/user"
@@ -31,11 +32,12 @@ var (
  */
 
 type SystemFunctions struct {
-	CurrentUser  func() (*user.User, error)
+	Current      func() (*user.User, error)
 	Getenv       func(key string) string
 	Getpid       func() int
 	Hostname     func() (string, error)
 	IsNotExist   func(err error) bool
+	LookupIP     func(host string) ([]net.IP, error)
 	MkdirAll     func(path string, perm os.FileMode) error
 	Now          func() time.Time
 	Open         func(name string) (*os.File, error)
@@ -55,11 +57,12 @@ type SystemFunctions struct {
 
 func InitializeSystemFunctions() *SystemFunctions {
 	return &SystemFunctions{
-		CurrentUser:  user.Current,
+		Current:      user.Current,
 		Getenv:       os.Getenv,
 		Getpid:       os.Getpid,
 		Hostname:     os.Hostname,
 		IsNotExist:   os.IsNotExist,
+		LookupIP:     net.LookupIP,
 		MkdirAll:     os.MkdirAll,
 		Now:          time.Now,
 		Open:         os.Open,
@@ -88,7 +91,7 @@ func GetStateDir() string {
 }
 
 func GetLogDir() (string, error) {
-	currentUser, err := System.CurrentUser()
+	currentUser, err := System.Current()
 	if err != nil {
 		return "", err
 	}

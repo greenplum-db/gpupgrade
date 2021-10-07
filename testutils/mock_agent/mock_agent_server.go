@@ -148,3 +148,15 @@ func (m *MockAgentServer) UpdateConfiguration(context.Context, *idl.UpdateConfig
 	m.increaseCalls()
 	return &idl.UpdateConfigurationReply{}, nil
 }
+
+func (m *MockAgentServer) RenameTablespaces(context context.Context, in *idl.RenameTablespacesRequest) (*idl.RenameTablespacesReply, error) {
+	return &idl.RenameTablespacesReply{}, nil
+}
+
+func (m *MockAgentServer) CreateRecoveryConf(context context.Context, in *idl.CreateRecoveryConfRequest) (*idl.CreateRecoveryConfReply, error) {
+	return &idl.CreateRecoveryConfReply{}, nil
+}
+
+func (m *MockAgentServer) AddReplicationEntries(context context.Context, in *idl.AddReplicationEntriesRequest) (*idl.AddReplicationEntriesReply, error) {
+	return &idl.AddReplicationEntriesReply{}, nil
+}

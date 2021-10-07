@@ -37,8 +37,6 @@ upgrade_cluster() {
 
         # place marker file in source master data directory
         local marker_file=source-cluster.test-marker
-        local mirror_datadirs=($(query_datadirs $GPHOME_SOURCE $PGPORT "role='m'"))
-        local primary_datadirs=($(query_datadirs $GPHOME_SOURCE $PGPORT "role='p'"))
         local datadirs=($(query_datadirs $GPHOME_SOURCE $PGPORT))
         for datadir in "${datadirs[@]}"; do
             touch "$datadir/${marker_file}"
@@ -82,19 +80,8 @@ upgrade_cluster() {
             check_tablespace_data
         fi
 
-        # the source data directories are not deleted
-        if [ "$LINK_MODE" == "--mode=link" ]; then
-            validate_data_directories "$upgradeID" "EXISTS" "$primary_datadirs"
-            validate_data_directories "$upgradeID" "NOT_EXISTS" "$mirror_datadirs"
-            if is_GPDB5 "$GPHOME_SOURCE"; then
-                validate_tablespace_dirs "NOT_EXISTS" "$tablespace_dirs"
-            fi
-        else
-            validate_data_directories "$upgradeID" "EXISTS" "${datadirs}"
-            if is_GPDB5 "$GPHOME_SOURCE"; then
-                validate_tablespace_dirs "EXISTS" "$tablespace_dirs"
-            fi
-        fi
+        validate_data_directories "$upgradeID" "${datadirs}"
+        is_GPDB5 "$GPHOME_SOURCE" && validate_tablespace_dirs "$tablespace_dirs"
 
         # ensure gpperfmon configuration file has been modified to reflect new data dir location
         local gpperfmon_config_file="${MASTER_DATA_DIRECTORY}/gpperfmon/conf/gpperfmon.conf"
@@ -156,20 +143,13 @@ get_standby_status() {
 validate_data_directories() {
         UPGRADE_ID=$1
         shift
-        CHECK_EXISTS=$1
-        shift
         DATADIRS=("$@")
         for datadir in "${DATADIRS[@]}"; do
-            local source_datadir=$(archive_dir "$datadir" "$UPGRADE_ID")
-
-            if [ "$CHECK_EXISTS" == "NOT_EXISTS" ] ; then
-                # ensure that <mirror_datadir>_old directory for mirrors or standby does not exists
-                [ ! -d "${source_datadir}/" ] || fail "expected source data directory ${source_datadir} to not exists"
-            else
-                [ -d "${source_datadir}/" ] || fail "expected source data directory to be located at $source_datadir"
-                [ -f "${source_datadir}/${marker_file}" ] || fail "expected ${marker_file} marker file to be in source datadir: $source_datadir"
-                [ -f "${source_datadir}/postgresql.conf" ] || fail "expected postgresql.conf file to be in $source_datadir"
-            fi
+            local source_datadir
+            source_datadir=$(archive_dir "$datadir" "$UPGRADE_ID")
+            [ -d "${source_datadir}/" ] || fail "expected source data directory to be located at $source_datadir"
+            [ -f "${source_datadir}/${marker_file}" ] || fail "expected ${marker_file} marker file to be in source datadir: $source_datadir"
+            [ -f "${source_datadir}/postgresql.conf" ] || fail "expected postgresql.conf file to be in $source_datadir"
 
             # ensure the target cluster is located where the source used to be
             [ -d "${datadir}/" ] || fail "expected target data directory to be located at $datadir"
@@ -179,15 +159,9 @@ validate_data_directories() {
 }
 
 validate_tablespace_dirs() {
-        CHECK_EXISTS=$1
-        shift
         TABLESPACERDIRS=("$@")
         for tablespaceDir in "${TABLESPACERDIRS[@]}"; do
-            if [ "$CHECK_EXISTS" == "NOT_EXISTS" ] ; then
-                [ ! -d "${tablespaceDir}" ] || fail "expected tablespace directory ${tablespaceDir} to not exist"
-            else
-                [ -d "${tablespaceDir}" ] || fail "expected tablespace directory to be located at $tablespaceDir"
-            fi
+            [ -d "${tablespaceDir}" ] || fail "expected tablespace directory to be located at $tablespaceDir"
         done
 }
 

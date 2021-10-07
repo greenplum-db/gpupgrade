@@ -257,7 +257,6 @@ func TestRsyncTablespaceDirectories(t *testing.T) {
 		}}
 
 		_, err = server.RsyncTablespaceDirectories(context.Background(), request)
-
 		expected := fmt.Sprintf("Invalid tablespace directory %q", filepath.Join(invalidTablespaceDir, "12094"))
 		if err.Error() != expected {
 			t.Errorf("got error %#v want %#v", err, expected)

@@ -275,6 +275,66 @@ func (mr *MockAgentClientMockRecorder) UpdateConfiguration(ctx, in interface{}, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateConfiguration", reflect.TypeOf((*MockAgentClient)(nil).UpdateConfiguration), varargs...)
 }
 
+// RenameTablespaces mocks base method
+func (m *MockAgentClient) RenameTablespaces(ctx context.Context, in *idl.RenameTablespacesRequest, opts ...grpc.CallOption) (*idl.RenameTablespacesReply, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "RenameTablespaces", varargs...)
+	ret0, _ := ret[0].(*idl.RenameTablespacesReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RenameTablespaces indicates an expected call of RenameTablespaces
+func (mr *MockAgentClientMockRecorder) RenameTablespaces(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RenameTablespaces", reflect.TypeOf((*MockAgentClient)(nil).RenameTablespaces), varargs...)
+}
+
+// CreateRecoveryConf mocks base method
+func (m *MockAgentClient) CreateRecoveryConf(ctx context.Context, in *idl.CreateRecoveryConfRequest, opts ...grpc.CallOption) (*idl.CreateRecoveryConfReply, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CreateRecoveryConf", varargs...)
+	ret0, _ := ret[0].(*idl.CreateRecoveryConfReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateRecoveryConf indicates an expected call of CreateRecoveryConf
+func (mr *MockAgentClientMockRecorder) CreateRecoveryConf(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRecoveryConf", reflect.TypeOf((*MockAgentClient)(nil).CreateRecoveryConf), varargs...)
+}
+
+// AddReplicationEntries mocks base method
+func (m *MockAgentClient) AddReplicationEntries(ctx context.Context, in *idl.AddReplicationEntriesRequest, opts ...grpc.CallOption) (*idl.AddReplicationEntriesReply, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "AddReplicationEntries", varargs...)
+	ret0, _ := ret[0].(*idl.AddReplicationEntriesReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AddReplicationEntries indicates an expected call of AddReplicationEntries
+func (mr *MockAgentClientMockRecorder) AddReplicationEntries(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddReplicationEntries", reflect.TypeOf((*MockAgentClient)(nil).AddReplicationEntries), varargs...)
+}
+
 // MockAgentServer is a mock of AgentServer interface
 type MockAgentServer struct {
 	ctrl     *gomock.Controller
@@ -476,4 +536,49 @@ func (m *MockAgentServer) UpdateConfiguration(arg0 context.Context, arg1 *idl.Up
 func (mr *MockAgentServerMockRecorder) UpdateConfiguration(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateConfiguration", reflect.TypeOf((*MockAgentServer)(nil).UpdateConfiguration), arg0, arg1)
+}
+
+// RenameTablespaces mocks base method
+func (m *MockAgentServer) RenameTablespaces(arg0 context.Context, arg1 *idl.RenameTablespacesRequest) (*idl.RenameTablespacesReply, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RenameTablespaces", arg0, arg1)
+	ret0, _ := ret[0].(*idl.RenameTablespacesReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RenameTablespaces indicates an expected call of RenameTablespaces
+func (mr *MockAgentServerMockRecorder) RenameTablespaces(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RenameTablespaces", reflect.TypeOf((*MockAgentServer)(nil).RenameTablespaces), arg0, arg1)
+}
+
+// CreateRecoveryConf mocks base method
+func (m *MockAgentServer) CreateRecoveryConf(arg0 context.Context, arg1 *idl.CreateRecoveryConfRequest) (*idl.CreateRecoveryConfReply, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateRecoveryConf", arg0, arg1)
+	ret0, _ := ret[0].(*idl.CreateRecoveryConfReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateRecoveryConf indicates an expected call of CreateRecoveryConf
+func (mr *MockAgentServerMockRecorder) CreateRecoveryConf(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRecoveryConf", reflect.TypeOf((*MockAgentServer)(nil).CreateRecoveryConf), arg0, arg1)
+}
+
+// AddReplicationEntries mocks base method
+func (m *MockAgentServer) AddReplicationEntries(arg0 context.Context, arg1 *idl.AddReplicationEntriesRequest) (*idl.AddReplicationEntriesReply, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddReplicationEntries", arg0, arg1)
+	ret0, _ := ret[0].(*idl.AddReplicationEntriesReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AddReplicationEntries indicates an expected call of AddReplicationEntries
+func (mr *MockAgentServerMockRecorder) AddReplicationEntries(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddReplicationEntries", reflect.TypeOf((*MockAgentServer)(nil).AddReplicationEntries), arg0, arg1)
 }

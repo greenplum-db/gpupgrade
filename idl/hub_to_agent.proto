@@ -18,6 +18,9 @@ service Agent {
   rpc RsyncTablespaceDirectories (RsyncRequest) returns (RsyncReply) {}
   rpc RestorePrimariesPgControl (RestorePgControlRequest) returns (RestorePgControlReply) {}
   rpc UpdateConfiguration (UpdateConfigurationRequest) returns (UpdateConfigurationReply) {}
+  rpc RenameTablespaces (RenameTablespacesRequest) returns (RenameTablespacesReply) {}
+  rpc CreateRecoveryConf (CreateRecoveryConfRequest) returns (CreateRecoveryConfReply) {}
+  rpc AddReplicationEntries (AddReplicationEntriesRequest) returns (AddReplicationEntriesReply) {}
 }
 
 message TablespaceInfo {
@@ -127,3 +130,41 @@ message UpdateConfigurationRequest {
 }
 
 message UpdateConfigurationReply {}
+
+message RenameTablespacesRequest {
+  message RenamePair {
+    string source = 1;
+    string destination = 2;
+  }
+
+  repeated RenamePair renamePairs = 1;
+}
+
+message RenameTablespacesReply{}
+
+message CreateRecoveryConfRequest {
+  message Connection {
+    string mirrorDataDir = 2;
+    string user = 1;
+    string primaryHost = 3;
+    int32 primaryPort = 4;
+  }
+
+  repeated Connection connections = 1;
+}
+
+message CreateRecoveryConfReply{}
+
+message AddReplicationEntriesRequest {
+  message Entry {
+    string DataDir = 1;
+    string User = 2;
+    repeated string HostAddrs = 3;
+  }
+
+  repeated Entry entries = 1;
+}
+
+message AddReplicationEntriesReply {}
+
+

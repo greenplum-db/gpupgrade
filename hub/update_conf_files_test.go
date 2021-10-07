@@ -309,6 +309,96 @@ func TestUpdateRecoveryConfOnSegments(t *testing.T) {
 	})
 }
 
+func TestUpdateInternalAutoConfOnMirrors(t *testing.T) {
+	intermediate := hub.MustCreateCluster(t, greenplum.SegConfigs{
+		{DbID: 1, ContentID: -1, Hostname: "master", DataDir: "/data/qddir/seg.HqtFHX54y0o.-1", Port: 50432, Role: greenplum.PrimaryRole},
+		{DbID: 2, ContentID: -1, Hostname: "standby", DataDir: "/data/standby.HqtFHX54y0o", Port: 50433, Role: greenplum.MirrorRole},
+		{DbID: 3, ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg.HqtFHX54y0o.1", Port: 50434, Role: greenplum.PrimaryRole},
+		{DbID: 4, ContentID: 0, Hostname: "sdw2", DataDir: "/data/dbfast_mirror1/seg.HqtFHX54y0o.1", Port: 50435, Role: greenplum.MirrorRole},
+		{DbID: 5, ContentID: 1, Hostname: "sdw2", DataDir: "/data/dbfast2/seg.HqtFHX54y0o.2", Port: 50436, Role: greenplum.PrimaryRole},
+		{DbID: 6, ContentID: 1, Hostname: "sdw1", DataDir: "/data/dbfast_mirror2/seg.HqtFHX54y0o.2", Port: 50437, Role: greenplum.MirrorRole},
+	})
+
+	pattern := `(^gp_dbid=)%d([^0-9]|$)`
+	replacement := `\1%d\2`
+
+	t.Run("updates internal.auto.conf on mirrors excluding the standby", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		sdw1 := mock_idl.NewMockAgentClient(ctrl)
+		sdw1.EXPECT().UpdateConfiguration(
+			gomock.Any(),
+			&idl.UpdateConfigurationRequest{
+				Options: []*idl.UpdateFileConfOptions{
+					{
+						Path:        "/data/dbfast_mirror2/seg.HqtFHX54y0o.2/internal.auto.conf",
+						Pattern:     fmt.Sprintf(pattern, 5),
+						Replacement: fmt.Sprintf(replacement, 6),
+					}},
+			},
+		).Return(&idl.UpdateConfigurationReply{}, nil)
+
+		sdw2 := mock_idl.NewMockAgentClient(ctrl)
+		sdw2.EXPECT().UpdateConfiguration(
+			gomock.Any(),
+			&idl.UpdateConfigurationRequest{
+				Options: []*idl.UpdateFileConfOptions{
+					{
+						Path:        "/data/dbfast_mirror1/seg.HqtFHX54y0o.1/internal.auto.conf",
+						Pattern:     fmt.Sprintf(pattern, 3),
+						Replacement: fmt.Sprintf(replacement, 4),
+					}},
+			},
+		).Return(&idl.UpdateConfigurationReply{}, nil)
+
+		agentConns := []*idl.Connection{
+			{AgentClient: sdw1, Hostname: "sdw1"},
+			{AgentClient: sdw2, Hostname: "sdw2"},
+		}
+
+		err := hub.UpdateInternalAutoConfOnMirrors(agentConns, intermediate)
+		if err != nil {
+			t.Errorf("unexpected err %#v", err)
+		}
+	})
+
+	t.Run("returns error when failing to update internal.auto.conf on segments", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		sdw1 := mock_idl.NewMockAgentClient(ctrl)
+		sdw1.EXPECT().UpdateConfiguration(
+			gomock.Any(),
+			&idl.UpdateConfigurationRequest{
+				Options: []*idl.UpdateFileConfOptions{
+					{
+						Path:        "/data/dbfast_mirror2/seg.HqtFHX54y0o.2/internal.auto.conf",
+						Pattern:     fmt.Sprintf(pattern, 5),
+						Replacement: fmt.Sprintf(replacement, 6),
+					}},
+			},
+		).Return(&idl.UpdateConfigurationReply{}, nil)
+
+		expected := errors.New("permission denied")
+		sdw2 := mock_idl.NewMockAgentClient(ctrl)
+		sdw2.EXPECT().UpdateConfiguration(
+			gomock.Any(),
+			gomock.Any(),
+		).Return(nil, expected)
+
+		agentConns := []*idl.Connection{
+			{AgentClient: sdw1, Hostname: "sdw1"},
+			{AgentClient: sdw2, Hostname: "sdw2"},
+		}
+
+		err := hub.UpdateInternalAutoConfOnMirrors(agentConns, intermediate)
+		if !errors.Is(err, expected) {
+			t.Errorf("got error %#v, want %#v", err, expected)
+		}
+	})
+}
+
 func TestUpdateConfFiles(t *testing.T) {
 	t.Run("UpdateGpperfmonConf", func(t *testing.T) {
 		dir := testutils.GetTempDir(t, "")

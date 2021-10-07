@@ -41,7 +41,7 @@ func TestArchiveLogDirectories(t *testing.T) {
 		homeDir := testutils.GetTempDir(t, "")
 
 		mockUser := user.User{HomeDir: homeDir}
-		utils.System.CurrentUser = func() (*user.User, error) {
+		utils.System.Current = func() (*user.User, error) {
 			return &mockUser, nil
 		}
 		oldLogDir := filepath.Join(mockUser.HomeDir, "gpAdminLogs", "gpupgrade")

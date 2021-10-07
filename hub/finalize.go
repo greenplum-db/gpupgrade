@@ -31,7 +31,11 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 		}
 	}()
 
-	st.RunConditionally(idl.Substep_UPGRADE_MIRRORS, s.Source.HasMirrors(), func(streams step.OutStreams) error {
+	st.RunConditionally(idl.Substep_UPGRADE_MIRRORS, s.Source.HasMirrors() && s.UseLinkMode, func(streams step.OutStreams) error {
+		return UpgradeMirrorsUsingRsync(s.Connection, s.agentConns, s.Source, s.Intermediate, s.UseHbaHostnames)
+	})
+
+	st.RunConditionally(idl.Substep_UPGRADE_MIRRORS, s.Source.HasMirrors() && !s.UseLinkMode, func(streams step.OutStreams) error {
 		return UpgradeMirrorsUsingGpAddMirrors(streams, s.Intermediate, s.UseHbaHostnames)
 	})
 

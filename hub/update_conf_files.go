@@ -155,6 +155,39 @@ func UpdateRecoveryConfOnSegments(agentConns []*idl.Connection, version semver.V
 	return ExecuteRPC(agentConns, request)
 }
 
+func UpdateInternalAutoConfOnMirrors(agentConns []*idl.Connection, intermediate *greenplum.Cluster) error {
+	pattern := `(^gp_dbid=)%d([^0-9]|$)`
+	replacement := `\1%d\2`
+
+	request := func(conn *idl.Connection) error {
+		intermediateMirrors := intermediate.SelectSegments(func(seg *greenplum.SegConfig) bool {
+			return seg.IsOnHost(conn.Hostname) && !seg.IsStandby() && seg.IsMirror()
+		})
+
+		if len(intermediateMirrors) == 0 {
+			return nil
+		}
+
+		var opts []*idl.UpdateFileConfOptions
+		for _, intermediateMirror := range intermediateMirrors {
+			opt := &idl.UpdateFileConfOptions{
+				Path:        filepath.Join(intermediateMirror.DataDir, "internal.auto.conf"),
+				Pattern:     fmt.Sprintf(pattern, intermediate.Primaries[intermediateMirror.ContentID].DbID),
+				Replacement: fmt.Sprintf(replacement, intermediateMirror.DbID),
+			}
+
+			opts = append(opts, opt)
+
+		}
+
+		req := &idl.UpdateConfigurationRequest{Options: opts}
+		_, err := conn.AgentClient.UpdateConfiguration(context.Background(), req)
+		return err
+	}
+
+	return ExecuteRPC(agentConns, request)
+}
+
 func UpdateConfigurationFile(opts []*idl.UpdateFileConfOptions) error {
 	var wg sync.WaitGroup
 	errs := make(chan error, len(opts))
