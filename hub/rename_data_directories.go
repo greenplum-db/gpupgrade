@@ -17,14 +17,14 @@ var RenameDirectories = upgrade.RenameDirectories
 
 type RenameMap = map[string][]*idl.RenameDirectories
 
-func RenameDataDirectories(agentConns []*idl.Connection, source *greenplum.Cluster, intermediate *greenplum.Cluster, linkMode bool) error {
+func RenameDataDirectories(agentConns []*idl.Connection, source *greenplum.Cluster, intermediate *greenplum.Cluster) error {
 	src := source.MasterDataDir()
 	dst := intermediate.MasterDataDir()
-	if err := RenameDirectories(src, dst, idl.RenameDirectory_ArchiveSourceAndRenameTarget); err != nil {
+	if err := RenameDirectories(src, dst); err != nil {
 		return xerrors.Errorf("renaming master data directories: %w", err)
 	}
 
-	renameMap := getRenameMap(source, intermediate, linkMode)
+	renameMap := getRenameMap(source, intermediate)
 	if err := RenameSegmentDataDirs(agentConns, renameMap); err != nil {
 		return xerrors.Errorf("renaming segment data directories: %w", err)
 	}
@@ -37,7 +37,7 @@ func RenameDataDirectories(agentConns []*idl.Connection, source *greenplum.Clust
 // the mirrors have been deleted to save disk space, so exclude them from the map.
 // Since the upgraded mirrors will be added later to the correct directory there
 // is no need to rename target to source, so only archive the source directory.
-func getRenameMap(source *greenplum.Cluster, intermediate *greenplum.Cluster, linkMode bool) RenameMap {
+func getRenameMap(source *greenplum.Cluster, intermediate *greenplum.Cluster) RenameMap {
 	m := make(RenameMap)
 
 	for _, seg := range source.Primaries {
@@ -46,24 +46,15 @@ func getRenameMap(source *greenplum.Cluster, intermediate *greenplum.Cluster, li
 		}
 
 		m[seg.Hostname] = append(m[seg.Hostname], &idl.RenameDirectories{
-			Source:          seg.DataDir,
-			Target:          intermediate.Primaries[seg.ContentID].DataDir,
-			RenameDirectory: idl.RenameDirectory_ArchiveSourceAndRenameTarget,
+			Source: seg.DataDir,
+			Target: intermediate.Primaries[seg.ContentID].DataDir,
 		})
-	}
-
-	// In link mode the mirrors have been deleted to save disk space, so only
-	// rename the target directories.
-	renameDirectory := idl.RenameDirectory_ArchiveSourceAndRenameTarget
-	if linkMode {
-		renameDirectory = idl.RenameDirectory_OnlyRenameTarget
 	}
 
 	for _, seg := range source.Mirrors {
 		m[seg.Hostname] = append(m[seg.Hostname], &idl.RenameDirectories{
-			Source:          seg.DataDir,
-			Target:          intermediate.Mirrors[seg.ContentID].DataDir,
-			RenameDirectory: renameDirectory,
+			Source: seg.DataDir,
+			Target: intermediate.Mirrors[seg.ContentID].DataDir,
 		})
 	}
 

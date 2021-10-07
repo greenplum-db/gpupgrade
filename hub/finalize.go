@@ -60,7 +60,7 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 	})
 
 	st.Run(idl.Substep_UPDATE_DATA_DIRECTORIES, func(_ step.OutStreams) error {
-		return RenameDataDirectories(s.agentConns, s.Source, s.Intermediate, s.UseLinkMode)
+		return RenameDataDirectories(s.agentConns, s.Source, s.Intermediate)
 	})
 
 	st.Run(idl.Substep_UPDATE_TARGET_CONF_FILES, func(streams step.OutStreams) error {

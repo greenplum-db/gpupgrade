@@ -162,7 +162,7 @@ func TestUpdateDataDirectories(t *testing.T) {
 		{ContentID: 3, Hostname: "sdw2", DataDir: "/data/dbfast_mirror2/seg4_123ABC", Role: greenplum.MirrorRole},
 	})
 
-	hub.RenameDirectories = func(source, target string, renameDirectory idl.RenameDirectory) error {
+	hub.RenameDirectories = func(source, target string) error {
 		return nil
 	}
 
@@ -182,12 +182,12 @@ func TestUpdateDataDirectories(t *testing.T) {
 
 		hub.RenameDirectories = upgrade.RenameDirectories
 		defer func() {
-			hub.RenameDirectories = func(source, target string, renameDirectory idl.RenameDirectory) error {
+			hub.RenameDirectories = func(source, target string) error {
 				return nil
 			}
 		}()
 
-		err := hub.RenameDataDirectories(nil, conf.Source, conf.Intermediate, conf.UseLinkMode)
+		err := hub.RenameDataDirectories(nil, conf.Source, conf.Intermediate)
 		if err != nil {
 			t.Errorf("UpdateDataDirectories() returned error: %+v", err)
 		}
@@ -197,16 +197,16 @@ func TestUpdateDataDirectories(t *testing.T) {
 
 	t.Run("returns error when renaming master data directories fails", func(t *testing.T) {
 		expected := errors.New("permission denied")
-		hub.RenameDirectories = func(source, target string, renameDirectory idl.RenameDirectory) error {
+		hub.RenameDirectories = func(source, target string) error {
 			return expected
 		}
 		defer func() {
-			hub.RenameDirectories = func(source, target string, renameDirectory idl.RenameDirectory) error {
+			hub.RenameDirectories = func(source, target string) error {
 				return nil
 			}
 		}()
 
-		err := hub.RenameDataDirectories(nil, conf.Source, conf.Intermediate, conf.UseLinkMode)
+		err := hub.RenameDataDirectories(nil, conf.Source, conf.Intermediate)
 		if !errors.Is(err, expected) {
 			t.Errorf("got %#v want %#v", err, expected)
 		}
@@ -223,47 +223,38 @@ func TestUpdateDataDirectories(t *testing.T) {
 		// locations.
 		sdw1 := mock_idl.NewMockAgentClient(ctrl)
 		expectRenames(sdw1, []*idl.RenameDirectories{{
-			Source:          "/data/dbfast1/seg1",
-			Target:          "/data/dbfast1/seg1_123ABC",
-			RenameDirectory: idl.RenameDirectory_ArchiveSourceAndRenameTarget,
+			Source: "/data/dbfast1/seg1",
+			Target: "/data/dbfast1/seg1_123ABC",
 		}, {
-			Source:          "/data/dbfast1/seg3",
-			Target:          "/data/dbfast1/seg3_123ABC",
-			RenameDirectory: idl.RenameDirectory_ArchiveSourceAndRenameTarget,
+			Source: "/data/dbfast1/seg3",
+			Target: "/data/dbfast1/seg3_123ABC",
 		}, {
-			Source:          "/data/dbfast_mirror1/seg1",
-			Target:          "/data/dbfast_mirror1/seg1_123ABC",
-			RenameDirectory: idl.RenameDirectory_ArchiveSourceAndRenameTarget,
+			Source: "/data/dbfast_mirror1/seg1",
+			Target: "/data/dbfast_mirror1/seg1_123ABC",
 		}, {
-			Source:          "/data/dbfast_mirror1/seg3",
-			Target:          "/data/dbfast_mirror1/seg3_123ABC",
-			RenameDirectory: idl.RenameDirectory_ArchiveSourceAndRenameTarget,
+			Source: "/data/dbfast_mirror1/seg3",
+			Target: "/data/dbfast_mirror1/seg3_123ABC",
 		}})
 
 		sdw2 := mock_idl.NewMockAgentClient(ctrl)
 		expectRenames(sdw2, []*idl.RenameDirectories{{
-			Source:          "/data/dbfast2/seg2",
-			Target:          "/data/dbfast2/seg2_123ABC",
-			RenameDirectory: idl.RenameDirectory_ArchiveSourceAndRenameTarget,
+			Source: "/data/dbfast2/seg2",
+			Target: "/data/dbfast2/seg2_123ABC",
 		}, {
-			Source:          "/data/dbfast2/seg4",
-			Target:          "/data/dbfast2/seg4_123ABC",
-			RenameDirectory: idl.RenameDirectory_ArchiveSourceAndRenameTarget,
+			Source: "/data/dbfast2/seg4",
+			Target: "/data/dbfast2/seg4_123ABC",
 		}, {
-			Source:          "/data/dbfast_mirror2/seg2",
-			Target:          "/data/dbfast_mirror2/seg2_123ABC",
-			RenameDirectory: idl.RenameDirectory_ArchiveSourceAndRenameTarget,
+			Source: "/data/dbfast_mirror2/seg2",
+			Target: "/data/dbfast_mirror2/seg2_123ABC",
 		}, {
-			Source:          "/data/dbfast_mirror2/seg4",
-			Target:          "/data/dbfast_mirror2/seg4_123ABC",
-			RenameDirectory: idl.RenameDirectory_ArchiveSourceAndRenameTarget,
+			Source: "/data/dbfast_mirror2/seg4",
+			Target: "/data/dbfast_mirror2/seg4_123ABC",
 		}})
 
 		standby := mock_idl.NewMockAgentClient(ctrl)
 		expectRenames(standby, []*idl.RenameDirectories{{
-			Source:          "/data/standby",
-			Target:          "/data/standby_123ABC",
-			RenameDirectory: idl.RenameDirectory_ArchiveSourceAndRenameTarget,
+			Source: "/data/standby",
+			Target: "/data/standby_123ABC",
 		}})
 
 		agentConns := []*idl.Connection{
@@ -272,7 +263,7 @@ func TestUpdateDataDirectories(t *testing.T) {
 			{AgentClient: standby, Hostname: "standby"},
 		}
 
-		err := hub.RenameDataDirectories(agentConns, conf.Source, conf.Intermediate, conf.UseLinkMode)
+		err := hub.RenameDataDirectories(agentConns, conf.Source, conf.Intermediate)
 		if err != nil {
 			t.Errorf("RenameDataDirectories() returned error: %+v", err)
 		}
@@ -288,47 +279,38 @@ func TestUpdateDataDirectories(t *testing.T) {
 		// and standby as opposed to archive requests.
 		sdw1 := mock_idl.NewMockAgentClient(ctrl)
 		expectRenames(sdw1, []*idl.RenameDirectories{{
-			Source:          "/data/dbfast1/seg1",
-			Target:          "/data/dbfast1/seg1_123ABC",
-			RenameDirectory: idl.RenameDirectory_ArchiveSourceAndRenameTarget,
+			Source: "/data/dbfast1/seg1",
+			Target: "/data/dbfast1/seg1_123ABC",
 		}, {
-			Source:          "/data/dbfast1/seg3",
-			Target:          "/data/dbfast1/seg3_123ABC",
-			RenameDirectory: idl.RenameDirectory_ArchiveSourceAndRenameTarget,
+			Source: "/data/dbfast1/seg3",
+			Target: "/data/dbfast1/seg3_123ABC",
 		}, {
-			Source:          "/data/dbfast_mirror1/seg1",
-			Target:          "/data/dbfast_mirror1/seg1_123ABC",
-			RenameDirectory: idl.RenameDirectory_OnlyRenameTarget,
+			Source: "/data/dbfast_mirror1/seg1",
+			Target: "/data/dbfast_mirror1/seg1_123ABC",
 		}, {
-			Source:          "/data/dbfast_mirror1/seg3",
-			Target:          "/data/dbfast_mirror1/seg3_123ABC",
-			RenameDirectory: idl.RenameDirectory_OnlyRenameTarget,
+			Source: "/data/dbfast_mirror1/seg3",
+			Target: "/data/dbfast_mirror1/seg3_123ABC",
 		}})
 
 		sdw2 := mock_idl.NewMockAgentClient(ctrl)
 		expectRenames(sdw2, []*idl.RenameDirectories{{
-			Source:          "/data/dbfast2/seg2",
-			Target:          "/data/dbfast2/seg2_123ABC",
-			RenameDirectory: idl.RenameDirectory_ArchiveSourceAndRenameTarget,
+			Source: "/data/dbfast2/seg2",
+			Target: "/data/dbfast2/seg2_123ABC",
 		}, {
-			Source:          "/data/dbfast2/seg4",
-			Target:          "/data/dbfast2/seg4_123ABC",
-			RenameDirectory: idl.RenameDirectory_ArchiveSourceAndRenameTarget,
+			Source: "/data/dbfast2/seg4",
+			Target: "/data/dbfast2/seg4_123ABC",
 		}, {
-			Source:          "/data/dbfast_mirror2/seg2",
-			Target:          "/data/dbfast_mirror2/seg2_123ABC",
-			RenameDirectory: idl.RenameDirectory_OnlyRenameTarget,
+			Source: "/data/dbfast_mirror2/seg2",
+			Target: "/data/dbfast_mirror2/seg2_123ABC",
 		}, {
-			Source:          "/data/dbfast_mirror2/seg4",
-			Target:          "/data/dbfast_mirror2/seg4_123ABC",
-			RenameDirectory: idl.RenameDirectory_OnlyRenameTarget,
+			Source: "/data/dbfast_mirror2/seg4",
+			Target: "/data/dbfast_mirror2/seg4_123ABC",
 		}})
 
 		standby := mock_idl.NewMockAgentClient(ctrl)
 		expectRenames(standby, []*idl.RenameDirectories{{
-			Source:          "/data/standby",
-			Target:          "/data/standby_123ABC",
-			RenameDirectory: idl.RenameDirectory_OnlyRenameTarget,
+			Source: "/data/standby",
+			Target: "/data/standby_123ABC",
 		}})
 
 		agentConns := []*idl.Connection{
@@ -337,7 +319,7 @@ func TestUpdateDataDirectories(t *testing.T) {
 			{AgentClient: standby, Hostname: "standby"},
 		}
 
-		err := hub.RenameDataDirectories(agentConns, conf.Source, conf.Intermediate, conf.UseLinkMode)
+		err := hub.RenameDataDirectories(agentConns, conf.Source, conf.Intermediate)
 		if err != nil {
 			t.Errorf("RenameDataDirectories() returned error: %+v", err)
 		}
