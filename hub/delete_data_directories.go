@@ -14,13 +14,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-func DeleteMirrorAndStandbyDataDirectories(agentConns []*idl.Connection, cluster *greenplum.Cluster) error {
-	segs := cluster.SelectSegments(func(seg *greenplum.SegConfig) bool {
-		return seg.IsMirror() || seg.IsStandby()
-	})
-	return deleteDataDirectories(agentConns, segs)
-}
-
 func DeleteMasterAndPrimaryDataDirectories(streams step.OutStreams, agentConns []*idl.Connection, intermediate *greenplum.Cluster) error {
 	masterErr := make(chan error)
 	go func() {
@@ -127,34 +120,6 @@ func DeleteTargetTablespacesOnPrimaries(agentConns []*idl.Connection, target *gr
 
 		req := &idl.DeleteTablespaceRequest{Dirs: dirs}
 		_, err := conn.AgentClient.DeleteTablespaceDirectories(context.Background(), req)
-		return err
-	}
-
-	return ExecuteRPC(agentConns, request)
-}
-
-func DeleteSourceTablespacesOnMirrorsAndStandby(agentConns []*idl.Connection, source *greenplum.Cluster) error {
-	request := func(conn *idl.Connection) error {
-
-		segments := source.SelectSegments(func(seg *greenplum.SegConfig) bool {
-			return seg.IsOnHost(conn.Hostname) && (seg.IsMirror() || seg.IsStandby())
-		})
-
-		if len(segments) == 0 {
-			return nil
-		}
-
-		var dirs []string
-		for _, seg := range segments {
-			dirs = append(dirs, source.Tablespaces[seg.DbID].UserDefinedTablespacesLocations()...)
-		}
-
-		if len(dirs) == 0 {
-			return nil
-		}
-
-		req := &idl.DeleteTablespaceRequest{Dirs: dirs}
-		_, err := conn.AgentClient.DeleteSourceTablespaceDirectories(context.Background(), req)
 		return err
 	}
 

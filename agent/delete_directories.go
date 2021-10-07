@@ -37,10 +37,3 @@ func (s *Server) DeleteTablespaceDirectories(ctx context.Context, in *idl.Delete
 	err := upgrade.DeleteTablespaceDirectories(step.DevNullStream, in.GetDirs())
 	return &idl.DeleteTablespaceReply{}, err
 }
-
-func (s *Server) DeleteSourceTablespaceDirectories(ctx context.Context, in *idl.DeleteTablespaceRequest) (*idl.DeleteTablespaceReply, error) {
-	gplog.Info("got a request to delete mirrors and standby tablespace directories of source cluster from the hub")
-
-	err := DeleteDirectoriesFunc(in.GetDirs(), []string{}, step.DevNullStream)
-	return &idl.DeleteTablespaceReply{}, err
-}

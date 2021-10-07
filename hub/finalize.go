@@ -31,19 +31,6 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 		}
 	}()
 
-	// In link mode to reduce disk space remove the source mirror and standby data directories and tablespaces.
-	st.RunConditionally(idl.Substep_REMOVE_SOURCE_MIRRORS, s.UseLinkMode, func(streams step.OutStreams) error {
-		if err := DeleteMirrorAndStandbyDataDirectories(s.agentConns, s.Source); err != nil {
-			return xerrors.Errorf("removing source cluster standby and mirror segment data directories: %w", err)
-		}
-
-		if err := DeleteSourceTablespacesOnMirrorsAndStandby(s.agentConns, s.Source); err != nil {
-			return xerrors.Errorf("removing source cluster standby and mirror tablespace data directories: %w", err)
-		}
-
-		return nil
-	})
-
 	st.RunConditionally(idl.Substep_UPGRADE_MIRRORS, s.Source.HasMirrors(), func(streams step.OutStreams) error {
 		return UpgradeMirrorsUsingGpAddMirrors(streams, s.Intermediate, s.UseHbaHostnames)
 	})

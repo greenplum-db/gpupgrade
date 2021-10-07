@@ -24,72 +24,15 @@ import (
 )
 
 func TestDeleteSegmentDataDirs(t *testing.T) {
-	segConfigs := greenplum.SegConfigs{
-		{ContentID: -1, DbID: 0, Port: 25431, Hostname: "master", DataDir: "/data/qddir", Role: greenplum.PrimaryRole},
-		{ContentID: -1, DbID: 1, Port: 25431, Hostname: "standby", DataDir: "/data/standby", Role: greenplum.MirrorRole},
-	}
-
 	primarySegConfigs := greenplum.SegConfigs{
+		{ContentID: -1, DbID: 0, Port: 25431, Hostname: "master", DataDir: "/data/qddir", Role: greenplum.PrimaryRole},
 		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
 		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 		{ContentID: 2, DbID: 4, Port: 25434, Hostname: "sdw1", DataDir: "/data/dbfast1/seg3", Role: greenplum.PrimaryRole},
 		{ContentID: 3, DbID: 5, Port: 25435, Hostname: "sdw2", DataDir: "/data/dbfast2/seg4", Role: greenplum.PrimaryRole},
 	}
-	segConfigs = append(segConfigs, primarySegConfigs...)
-
-	mirrorSegConfigs := greenplum.SegConfigs{
-		{ContentID: 0, DbID: 6, Port: 35432, Hostname: "sdw1", DataDir: "/data/dbfast_mirror1/seg1", Role: greenplum.MirrorRole},
-		{ContentID: 1, DbID: 7, Port: 35433, Hostname: "sdw2", DataDir: "/data/dbfast_mirror2/seg2", Role: greenplum.MirrorRole},
-		{ContentID: 2, DbID: 8, Port: 35434, Hostname: "sdw1", DataDir: "/data/dbfast_mirror1/seg3", Role: greenplum.MirrorRole},
-		{ContentID: 3, DbID: 9, Port: 35435, Hostname: "sdw2", DataDir: "/data/dbfast_mirror2/seg4", Role: greenplum.MirrorRole},
-	}
-	segConfigs = append(segConfigs, mirrorSegConfigs...)
-
-	c := hub.MustCreateCluster(t, segConfigs)
 
 	testlog.SetupLogger()
-
-	t.Run("DeleteMirrorAndStandbyDataDirectories", func(t *testing.T) {
-		t.Run("deletes standby and mirror data directories", func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			sdw1Client := mock_idl.NewMockAgentClient(ctrl)
-			sdw1Client.EXPECT().DeleteDataDirectories(
-				gomock.Any(),
-				equivalentDeleteDataDirsRequest(&idl.DeleteDataDirectoriesRequest{Datadirs: []string{
-					"/data/dbfast_mirror1/seg1",
-					"/data/dbfast_mirror1/seg3",
-				}},
-				)).Return(&idl.DeleteDataDirectoriesReply{}, nil)
-
-			sdw2Client := mock_idl.NewMockAgentClient(ctrl)
-			sdw2Client.EXPECT().DeleteDataDirectories(
-				gomock.Any(),
-				equivalentDeleteDataDirsRequest(&idl.DeleteDataDirectoriesRequest{Datadirs: []string{
-					"/data/dbfast_mirror2/seg2",
-					"/data/dbfast_mirror2/seg4",
-				}}),
-			).Return(&idl.DeleteDataDirectoriesReply{}, nil)
-
-			standbyClient := mock_idl.NewMockAgentClient(ctrl)
-			standbyClient.EXPECT().DeleteDataDirectories(
-				gomock.Any(),
-				equivalentDeleteDataDirsRequest(&idl.DeleteDataDirectoriesRequest{Datadirs: []string{"/data/standby"}}),
-			).Return(&idl.DeleteDataDirectoriesReply{}, nil)
-
-			agentConns := []*idl.Connection{
-				{AgentClient: sdw1Client, Hostname: "sdw1"},
-				{AgentClient: sdw2Client, Hostname: "sdw2"},
-				{AgentClient: standbyClient, Hostname: "standby"},
-			}
-
-			err := hub.DeleteMirrorAndStandbyDataDirectories(agentConns, c)
-			if err != nil {
-				t.Errorf("unexpected err %#v", err)
-			}
-		})
-	})
 
 	t.Run("DeleteMasterAndPrimaryDataDirectories", func(t *testing.T) {
 		t.Run("deletes master and primary data directories", func(t *testing.T) {
@@ -352,153 +295,6 @@ func TestDeleteTablespaceDirectories(t *testing.T) {
 		err := hub.DeleteTargetTablespacesOnPrimaries(agentConns, nil, nil, "")
 		if err != nil {
 			t.Errorf("unexpected error %#v", err)
-		}
-	})
-}
-
-func TestDeleteTablespacesOnMirrorsAndStandby(t *testing.T) {
-	source := hub.MustCreateCluster(t, greenplum.SegConfigs{
-		{DbID: 1, ContentID: -1, Hostname: "master", DataDir: "/data/qddir", Role: greenplum.PrimaryRole},
-		{DbID: 6, ContentID: -1, Hostname: "standby", DataDir: "/data/standby", Role: greenplum.MirrorRole},
-		{DbID: 2, ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
-		{DbID: 3, ContentID: 0, Hostname: "msdw1", DataDir: "/data/dbfast_mirror1/seg1", Role: greenplum.MirrorRole},
-		{DbID: 4, ContentID: 1, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
-		{DbID: 5, ContentID: 1, Hostname: "msdw2", DataDir: "/data/dbfast_mirror2/seg2", Role: greenplum.MirrorRole},
-	})
-
-	source.Tablespaces = map[int]greenplum.SegmentTablespaces{
-		6: {
-			16386: {
-				Location:    "/tmp/testfs/standby/demoDataDir-1/16386",
-				UserDefined: 1,
-			},
-			16387: {
-				Location:    "/tmp/testfs/standby/demoDataDir-1/16387",
-				UserDefined: 1,
-			},
-			1663: {
-				Location:    "/data/standby/demoDataDir-1",
-				UserDefined: 0,
-			},
-		},
-		3: {
-			16386: {
-				Location:    "/tmp/testfs/mirror1/dbfast_mirror1/16386",
-				UserDefined: 1,
-			},
-			16387: {
-				Location:    "/tmp/testfs/mirror1/dbfast_mirror1/16387",
-				UserDefined: 1,
-			},
-			1663: {
-				Location:    "/data/dbfast_mirror1/seg1",
-				UserDefined: 0,
-			},
-		},
-		5: {
-			16386: {
-				Location:    "/tmp/testfs/mirror2/dbfast_mirror2/16386",
-				UserDefined: 1,
-			},
-			16387: {
-				Location:    "/tmp/testfs/mirror2/dbfast_mirror2/16387",
-				UserDefined: 1,
-			},
-			1663: {
-				Location:    "/data/dbfast_mirror2/seg2",
-				UserDefined: 0,
-			},
-		},
-	}
-
-	t.Run("deletes tablespace directories only on the mirrors and standby", func(t *testing.T) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		standby := mock_idl.NewMockAgentClient(ctrl)
-		standby.EXPECT().DeleteSourceTablespaceDirectories(
-			gomock.Any(),
-			equivalentTablespaceRequest(&idl.DeleteTablespaceRequest{
-				Dirs: []string{
-					"/tmp/testfs/standby/demoDataDir-1/16386",
-					"/tmp/testfs/standby/demoDataDir-1/16387",
-				}}),
-		).Return(&idl.DeleteTablespaceReply{}, nil)
-
-		msdw1 := mock_idl.NewMockAgentClient(ctrl)
-		msdw1.EXPECT().DeleteSourceTablespaceDirectories(
-			gomock.Any(),
-			equivalentTablespaceRequest(&idl.DeleteTablespaceRequest{
-				Dirs: []string{
-					"/tmp/testfs/mirror1/dbfast_mirror1/16386",
-					"/tmp/testfs/mirror1/dbfast_mirror1/16387",
-				}}),
-		).Return(&idl.DeleteTablespaceReply{}, nil)
-
-		msdw2 := mock_idl.NewMockAgentClient(ctrl)
-		msdw2.EXPECT().DeleteSourceTablespaceDirectories(
-			gomock.Any(),
-			equivalentTablespaceRequest(&idl.DeleteTablespaceRequest{
-				Dirs: []string{
-					"/tmp/testfs/mirror2/dbfast_mirror2/16386",
-					"/tmp/testfs/mirror2/dbfast_mirror2/16387",
-				}}),
-		).Return(&idl.DeleteTablespaceReply{}, nil)
-
-		master := mock_idl.NewMockAgentClient(ctrl)
-		sdw1 := mock_idl.NewMockAgentClient(ctrl)
-		sdw2 := mock_idl.NewMockAgentClient(ctrl)
-
-		agentConns := []*idl.Connection{
-			{AgentClient: sdw1, Hostname: "sdw1"},
-			{AgentClient: msdw1, Hostname: "msdw1"},
-			{AgentClient: sdw2, Hostname: "sdw2"},
-			{AgentClient: msdw2, Hostname: "msdw2"},
-			{AgentClient: master, Hostname: "master"},
-			{AgentClient: standby, Hostname: "standby"},
-		}
-
-		err := hub.DeleteSourceTablespacesOnMirrorsAndStandby(agentConns, source)
-		if err != nil {
-			t.Errorf("DeleteTablespacesOnMirrorsAndStandby returned error %+v", err)
-		}
-	})
-
-	t.Run("errors when failing to delete tablespace directories on the mirrors", func(t *testing.T) {
-
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		msdw1 := mock_idl.NewMockAgentClient(ctrl)
-		msdw1.EXPECT().DeleteSourceTablespaceDirectories(
-			gomock.Any(),
-			equivalentTablespaceRequest(&idl.DeleteTablespaceRequest{
-				Dirs: []string{
-					"/tmp/testfs/mirror1/dbfast_mirror1/16386",
-					"/tmp/testfs/mirror1/dbfast_mirror1/16387",
-				}}),
-		).Return(&idl.DeleteTablespaceReply{}, nil)
-
-		expected := errors.New("permission denied")
-		failedClient := mock_idl.NewMockAgentClient(ctrl)
-		failedClient.EXPECT().DeleteSourceTablespaceDirectories(
-			gomock.Any(),
-			equivalentTablespaceRequest(&idl.DeleteTablespaceRequest{
-				Dirs: []string{
-					"/tmp/testfs/mirror2/dbfast_mirror2/16386",
-					"/tmp/testfs/mirror2/dbfast_mirror2/16387",
-				}}),
-		).Return(nil, expected)
-
-		agentConns := []*idl.Connection{
-			{AgentClient: msdw1, Hostname: "msdw1"},
-			{AgentClient: failedClient, Hostname: "msdw2"},
-		}
-
-		err := hub.DeleteSourceTablespacesOnMirrorsAndStandby(agentConns, source)
-
-		if !errors.Is(err, expected) {
-			t.Errorf("got error %#v, want %#v", err, expected)
 		}
 	})
 }
