@@ -38,7 +38,7 @@ func UpdateConfFiles(agentConns []*idl.Connection, _ step.OutStreams, version se
 		return err
 	}
 
-	if err := UpdateRecoveryConfiguration(agentConns, version, intermediate, target); err != nil {
+	if err := UpdateRecoveryConfOnSegments(agentConns, version, intermediate, target); err != nil {
 		return err
 	}
 
@@ -98,7 +98,7 @@ func UpdatePostgresqlConfOnSegments(agentConns []*idl.Connection, intermediate *
 	return ExecuteRPC(agentConns, request)
 }
 
-func UpdateRecoveryConfiguration(agentConns []*idl.Connection, version semver.Version, intermediateCluster *greenplum.Cluster, target *greenplum.Cluster) error {
+func UpdateRecoveryConfOnSegments(agentConns []*idl.Connection, version semver.Version, intermediateCluster *greenplum.Cluster, target *greenplum.Cluster) error {
 	file := "postgresql.auto.conf"
 	if version.Major == 6 {
 		file = "recovery.conf"

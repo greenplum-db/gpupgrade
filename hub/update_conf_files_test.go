@@ -245,7 +245,7 @@ func TestUpdateRecoveryConfiguration(t *testing.T) {
 				{AgentClient: sdw2, Hostname: "sdw2"},
 			}
 
-			err := hub.UpdateRecoveryConfiguration(agentConns, c.version, intermediate, target)
+			err := hub.UpdateRecoveryConfOnSegments(agentConns, c.version, intermediate, target)
 			if err != nil {
 				t.Errorf("unexpected err %#v", err)
 			}
@@ -287,7 +287,7 @@ func TestUpdateRecoveryConfiguration(t *testing.T) {
 			{AgentClient: sdw2, Hostname: "sdw2"},
 		}
 
-		err := hub.UpdateRecoveryConfiguration(agentConns, semver.MustParse("6.0.0"), intermediate, target)
+		err := hub.UpdateRecoveryConfOnSegments(agentConns, semver.MustParse("6.0.0"), intermediate, target)
 		var errs errorlist.Errors
 		if !xerrors.As(err, &errs) {
 			t.Fatalf("error %#v does not contain type %T", err, errs)
