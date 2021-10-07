@@ -366,7 +366,7 @@ port=50000
 `)
 
 		// Perform the replacement.
-		err = hub.UpdatePostgresqlConf(path, 5000, 6000)
+		err = hub.UpdatePostgresqlConf([]*idl.UpdateFileConfOptions{{Path: path, CurrentValue: int32(5000), UpdatedValue: int32(6000)}})
 		if err != nil {
 			t.Errorf("UpdatePostgresqlConf() returned error %+v", err)
 		}
@@ -396,7 +396,7 @@ primary_slot_name = 'internal_wal_replication_slot'
 `)
 
 		// Perform the replacement.
-		err = hub.UpdateRecoveryConf(path, 5000, 6000)
+		err = hub.UpdateRecoveryConf([]*idl.UpdateFileConfOptions{{Path: path, CurrentValue: int32(5000), UpdatedValue: int32(6000)}})
 		if err != nil {
 			t.Errorf("UpdateRecoveryConf() returned error %+v", err)
 		}

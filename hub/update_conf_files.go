@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"sync"
 
 	"github.com/blang/semver/v4"
 	"golang.org/x/xerrors"
@@ -14,6 +15,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
 func UpdateConfFiles(agentConns []*idl.Connection, _ step.OutStreams, version semver.Version, intermediate *greenplum.Cluster, target *greenplum.Cluster) error {
@@ -23,7 +25,12 @@ func UpdateConfFiles(agentConns []*idl.Connection, _ step.OutStreams, version se
 		}
 	}
 
-	if err := UpdatePostgresqlConf(filepath.Join(target.MasterDataDir(), "postgresql.conf"), intermediate.MasterPort(), target.MasterPort()); err != nil {
+	opt := []*idl.UpdateFileConfOptions{{
+		Path:         filepath.Join(target.MasterDataDir(), "postgresql.conf"),
+		CurrentValue: int32(intermediate.MasterPort()),
+		UpdatedValue: int32(target.MasterPort()),
+	}}
+	if err := UpdatePostgresqlConf(opt); err != nil {
 		return err
 	}
 
@@ -142,18 +149,60 @@ func UpdateGpperfmonConf(masterDataDir string) error {
 	return updateConfigurationFile(path, pattern, replacement)
 }
 
-func UpdatePostgresqlConf(path string, currentPort, updatedPort int) error {
-	pattern := fmt.Sprintf(`(^port[ \t]*=[ \t]*)%d([^0-9]|$)`, currentPort)
-	replacement := fmt.Sprintf(`\1%d\2`, updatedPort)
+func UpdatePostgresqlConf(opts []*idl.UpdateFileConfOptions) error {
+	var wg sync.WaitGroup
+	errs := make(chan error, len(opts))
 
-	return updateConfigurationFile(path, pattern, replacement)
+	for _, opt := range opts {
+
+		wg.Add(1)
+		go func(opt *idl.UpdateFileConfOptions) {
+			defer wg.Done()
+
+			pattern := fmt.Sprintf(`(^port[ \t]*=[ \t]*)%d([^0-9]|$)`, opt.GetCurrentValue())
+			replacement := fmt.Sprintf(`\1%d\2`, opt.GetUpdatedValue())
+
+			errs <- updateConfigurationFile(opt.GetPath(), pattern, replacement)
+		}(opt)
+	}
+
+	wg.Wait()
+	close(errs)
+
+	var err error
+	for e := range errs {
+		err = errorlist.Append(err, e)
+	}
+
+	return err
 }
 
-func UpdateRecoveryConf(path string, currentPort, updatedPort int) error {
-	pattern := fmt.Sprintf(`(primary_conninfo .* port[ \t]*=[ \t]*)%d([^0-9]|$)`, currentPort)
-	replacement := fmt.Sprintf(`\1%d\2`, updatedPort)
+func UpdateRecoveryConf(opts []*idl.UpdateFileConfOptions) error {
+	var wg sync.WaitGroup
+	errs := make(chan error, len(opts))
 
-	return updateConfigurationFile(path, pattern, replacement)
+	for _, opt := range opts {
+
+		wg.Add(1)
+		go func(opt *idl.UpdateFileConfOptions) {
+			defer wg.Done()
+
+			pattern := fmt.Sprintf(`(primary_conninfo .* port[ \t]*=[ \t]*)%d([^0-9]|$)`, opt.GetCurrentValue())
+			replacement := fmt.Sprintf(`\1%d\2`, opt.GetUpdatedValue())
+
+			errs <- updateConfigurationFile(opt.GetPath(), pattern, replacement)
+		}(opt)
+	}
+
+	wg.Wait()
+	close(errs)
+
+	var err error
+	for e := range errs {
+		err = errorlist.Append(err, e)
+	}
+
+	return err
 }
 
 func updateConfigurationFile(path string, pattern string, replacement string) error {

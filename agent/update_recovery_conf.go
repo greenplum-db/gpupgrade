@@ -10,19 +10,15 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-func (s *Server) UpdateRecoveryConf(ctx context.Context, in *idl.UpdateRecoveryConfRequest) (*idl.UpdateRecoveryConfReply, error) {
+func (s *Server) UpdateRecoveryConf(ctx context.Context, req *idl.UpdateRecoveryConfRequest) (*idl.UpdateRecoveryConfReply, error) {
 	gplog.Info("agent received request to update recovery.conf")
 
-	var errs error
-	for _, opt := range in.GetOptions() {
-		err := hub.UpdateRecoveryConf(opt.GetPath(), int(opt.GetCurrentValue()), int(opt.GetUpdatedValue()))
-		if err != nil {
-			errs = errorlist.Append(errs, err)
-		}
+	err := hub.UpdateRecoveryConf(req.GetOptions())
+	if err != nil {
+		return &idl.UpdateRecoveryConfReply{}, err
 	}
 
-	return &idl.UpdateRecoveryConfReply{}, errs
+	return &idl.UpdateRecoveryConfReply{}, nil
 }
