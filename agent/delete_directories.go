@@ -34,7 +34,7 @@ func (s *Server) DeleteDataDirectories(ctx context.Context, in *idl.DeleteDataDi
 func (s *Server) DeleteTablespaceDirectories(ctx context.Context, in *idl.DeleteTablespaceRequest) (*idl.DeleteTablespaceReply, error) {
 	gplog.Info("got a request to delete tablespace directories from the hub")
 
-	err := upgrade.DeleteNewTablespaceDirectories(step.DevNullStream, in.GetDirs())
+	err := upgrade.DeleteTablespaceDirectories(step.DevNullStream, in.GetDirs())
 	return &idl.DeleteTablespaceReply{}, err
 }
 

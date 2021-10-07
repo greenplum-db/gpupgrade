@@ -44,7 +44,7 @@ func (s *Server) RsyncTablespaceDirectories(ctx context.Context, in *idl.RsyncRe
 	}
 
 	// NOTE: Rsync will still be called if a given sourceDir is empty.
-	if err := upgrade.Verify5XTablespaceDirectories(sources); err != nil {
+	if err := upgrade.VerifyTablespaceDirectories(sources); err != nil {
 		return &idl.RsyncReply{}, err
 	}
 

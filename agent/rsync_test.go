@@ -6,6 +6,7 @@ package agent_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -257,8 +258,9 @@ func TestRsyncTablespaceDirectories(t *testing.T) {
 
 		_, err = server.RsyncTablespaceDirectories(context.Background(), request)
 
-		if !errors.Is(err, upgrade.ErrInvalidTablespaceDirectory) {
-			t.Errorf("got error %#v want %#v", err, upgrade.ErrInvalidTablespaceDirectory)
+		expected := fmt.Sprintf("Invalid tablespace directory %q", filepath.Join(invalidTablespaceDir, "12094"))
+		if err.Error() != expected {
+			t.Errorf("got error %#v want %#v", err, expected)
 		}
 
 		if rsyncCalled {

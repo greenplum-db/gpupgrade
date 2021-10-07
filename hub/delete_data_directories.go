@@ -95,7 +95,7 @@ func DeleteTargetTablespacesOnMaster(streams step.OutStreams, target *greenplum.
 		dirs = append(dirs, path)
 	}
 
-	return upgrade.DeleteNewTablespaceDirectories(streams, dirs)
+	return upgrade.DeleteTablespaceDirectories(streams, dirs)
 }
 
 func DeleteTargetTablespacesOnPrimaries(agentConns []*idl.Connection, target *greenplum.Cluster, tablespaces greenplum.Tablespaces, catalogVersion string) error {
