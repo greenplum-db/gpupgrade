@@ -30,16 +30,40 @@ type Cluster struct {
 	Destination idl.ClusterDestination
 
 	// Primaries contains the primary SegConfigs, keyed by content ID.
-	Primaries map[int]SegConfig
+	Primaries ContentToSegConfig
 
 	// Mirrors contains any mirror SegConfigs, keyed by content ID.
-	Mirrors map[int]SegConfig
+	Mirrors ContentToSegConfig
 
 	Tablespaces Tablespaces
 
 	GPHome         string
 	Version        semver.Version
 	CatalogVersion string
+}
+
+type ContentToSegConfig map[int]SegConfig
+
+func (c ContentToSegConfig) ExcludingMaster() ContentToSegConfig {
+	return c.excludingMasterOrStandby()
+}
+
+func (c ContentToSegConfig) ExcludingStandby() ContentToSegConfig {
+	return c.excludingMasterOrStandby()
+}
+
+func (c ContentToSegConfig) excludingMasterOrStandby() ContentToSegConfig {
+	segsExcludingMasterOrStandby := make(ContentToSegConfig)
+
+	for _, seg := range c {
+		if seg.IsStandby() || seg.IsMaster() {
+			continue
+		}
+
+		segsExcludingMasterOrStandby[seg.ContentID] = seg
+	}
+
+	return segsExcludingMasterOrStandby
 }
 
 // ClusterFromDB will create a Cluster by querying the passed DBConn for
