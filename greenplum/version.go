@@ -4,7 +4,6 @@
 package greenplum
 
 import (
-	"fmt"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -18,26 +17,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 )
 
-type versions struct {
-	gphome string
-}
-
-func NewVersions(gphome string) *versions {
-	return &versions{gphome: gphome}
-}
-
-func (v *versions) Description() string {
-	return "Greenplum Database"
-}
-
-func (v *versions) Local() (string, error) {
-	return version(v.gphome, "")
-}
-
-func (v *versions) Remote(host string) (string, error) {
-	return version(v.gphome, host)
-}
-
 var versionCommand = exec.Command
 
 // XXX: for internal testing only
@@ -50,20 +29,11 @@ func ResetVersionCommand() {
 	versionCommand = exec.Command
 }
 
-func version(gphome string, host string) (string, error) {
-	postgres := filepath.Join(gphome, "bin", "postgres")
+func Version(gphome string) (string, error) {
+	cmd := versionCommand(filepath.Join(gphome, "bin", "postgres"), "--gp-version")
+	cmd.Env = []string{}
 
-	utility := postgres
-	args := []string{"--gp-version"}
-	if host != "" {
-		utility = "ssh"
-		args = []string{"-q", host, fmt.Sprintf(`bash -c "%s --gp-version"`, postgres)}
-	}
-
-	cmd := versionCommand(utility, args...)
-	cmd.Env = []string{} // explicitly clear the environment
-
-	gplog.Debug("running cmd %q", cmd.String())
+	gplog.Debug(cmd.String())
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", xerrors.Errorf("%q failed with %q: %w", cmd.String(), string(output), err)

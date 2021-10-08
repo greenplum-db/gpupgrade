@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"reflect"
 	"testing"
 
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
@@ -74,7 +73,7 @@ func TestVersion_Parsing(t *testing.T) {
 			SetVersionCommand(exectest.NewCommand(c.versionCommand))
 			defer ResetVersionCommand()
 
-			version, err := version("", "")
+			version, err := Version("")
 			if err != nil {
 				t.Errorf("unexpected error: %+v", err)
 			}
@@ -99,7 +98,7 @@ func TestVersion_Parsing(t *testing.T) {
 			SetVersionCommand(exectest.NewCommand(c.versionCommand))
 			defer ResetVersionCommand()
 
-			version, err := version("", "")
+			version, err := Version("")
 			if err.Error() != c.expected.Error() {
 				t.Errorf("got %q want %q", err, c.expected)
 			}
@@ -114,107 +113,10 @@ func TestVersion_Parsing(t *testing.T) {
 		SetVersionCommand(exectest.NewCommand(FailedMain))
 		defer ResetVersionCommand()
 
-		_, err := version("", "")
+		_, err := Version("")
 		var exitErr *exec.ExitError
 		if !errors.As(err, &exitErr) {
 			t.Errorf("returned error %#v, want type %T", err, exitErr)
-		}
-	})
-}
-
-func TestVersion_Local(t *testing.T) {
-	testlog.SetupLogger()
-
-	t.Run("local version succeeds", func(t *testing.T) {
-		cmd := exectest.NewCommandWithVerifier(PostgresGPVersion_11_341_31, func(cmd string, args ...string) {
-			if cmd != "/usr/local/greenplum-db/bin/postgres" {
-				t.Errorf("got cmd %q want postgres", cmd)
-			}
-
-			expected := []string{"--gp-version"}
-			if !reflect.DeepEqual(args, expected) {
-				t.Errorf("got args %q want %q", args, expected)
-			}
-		})
-
-		SetVersionCommand(cmd)
-		defer ResetVersionCommand()
-
-		version, err := NewVersions("/usr/local/greenplum-db").Local()
-		if err != nil {
-			t.Errorf("unexpected errr %#v", err)
-		}
-
-		expected := "11.341.31"
-		if version != expected {
-			t.Errorf("got version %v, want %v", version, expected)
-		}
-	})
-
-	t.Run("local version returns errors", func(t *testing.T) {
-		SetVersionCommand(exectest.NewCommand(FailedMain))
-		defer ResetVersionCommand()
-
-		version, err := NewVersions("/usr/local/greenplum-db").Local()
-		var exitError *exec.ExitError
-		if !errors.As(err, &exitError) {
-			t.Errorf("got %T, want %T", err, exitError)
-		}
-
-		if version != "" {
-			t.Errorf("unexpected version %q", version)
-		}
-	})
-}
-
-func TestVersion_Remote(t *testing.T) {
-	testlog.SetupLogger()
-
-	t.Run("remote version succeeds", func(t *testing.T) {
-		host := "sdw1"
-
-		cmd := exectest.NewCommandWithVerifier(PostgresGPVersion_11_341_31, func(cmd string, args ...string) {
-			if cmd != "ssh" {
-				t.Errorf("got cmd %q want ssh", cmd)
-			}
-
-			expected := []string{
-				"-q",
-				host,
-				`bash -c "/usr/local/greenplum-db/bin/postgres --gp-version"`,
-			}
-
-			if !reflect.DeepEqual(args, expected) {
-				t.Errorf("got args %q want %q", args, expected)
-			}
-		})
-
-		SetVersionCommand(cmd)
-		defer ResetVersionCommand()
-
-		version, err := NewVersions("/usr/local/greenplum-db").Remote(host)
-		if err != nil {
-			t.Errorf("unexpected errr %#v", err)
-		}
-
-		expected := "11.341.31"
-		if version != expected {
-			t.Errorf("got version %v, want %v", version, expected)
-		}
-	})
-
-	t.Run("remote version returns errors", func(t *testing.T) {
-		SetVersionCommand(exectest.NewCommand(FailedMain))
-		defer ResetVersionCommand()
-
-		version, err := NewVersions("/usr/local/greenplum-db").Remote("sdw1")
-		var exitError *exec.ExitError
-		if !errors.As(err, &exitError) {
-			t.Errorf("got %T, want %T", err, exitError)
-		}
-
-		if version != "" {
-			t.Errorf("unexpected version %q", version)
 		}
 	})
 }

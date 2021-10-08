@@ -89,59 +89,28 @@ func TestAllowedVersions(t *testing.T) {
 	}
 }
 
-type TestVersioner struct {
-	localVersion    string
-	localVersionErr error
-}
-
-func (t *TestVersioner) Local() (string, error) {
-	return t.localVersion, t.localVersionErr
-}
-
-func (t *TestVersioner) Remote(host string) (string, error) {
-	return "", nil
-}
-
-func (t *TestVersioner) Description() string {
-	return "test"
-}
-
 func TestValidateVersionsErrorCases(t *testing.T) {
 	cases := []struct {
 		name             string
-		versioner        *TestVersioner
+		localVersion     string
 		testLocalVersion func(string) (semver.Version, error)
 		expected         error
 	}{
 		{
-			name: "returns error when getting local GPDB version fails",
-			versioner: &TestVersioner{
-				localVersion:    semver.MustParse("1.2.3").String(),
-				localVersionErr: errors.New("some error"),
-			},
-			expected: errors.New("some error"),
-		},
-		{
 			name: "fails when GPDB version has unsupported minor versions",
-			versioner: &TestVersioner{
-				localVersion:    semver.MustParse("6.8.0").String(),
-				localVersionErr: nil,
-			},
+			localVersion:    semver.MustParse("6.8.0").String(),
 			expected: errors.New("source cluster version 6.8.0 is not supported.  The minimum required version is 6.17.0. We recommend the latest version."),
 		},
 		{
 			name: "fails when GPDB version has unsupported major versions",
-			versioner: &TestVersioner{
-				localVersion:    semver.MustParse("0.0.0").String(),
-				localVersionErr: nil,
-			},
+			localVersion:    semver.MustParse("0.0.0").String(),
 			expected: errors.New("source cluster version 0.0.0 is not supported.  The minimum required version is 5.28.12. We recommend the latest version."),
 		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			err := validateVersion(c.versioner, idl.ClusterDestination_SOURCE)
+			err := validateVersion(c.localVersion, idl.ClusterDestination_SOURCE)
 			if err.Error() != c.expected.Error() {
 				t.Errorf("got %s want %s", err, c.expected)
 			}

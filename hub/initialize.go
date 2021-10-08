@@ -35,12 +35,12 @@ func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_Init
 	}()
 
 	st.RunInternalSubstep(func() error {
-		sourceVersion, err := greenplum.NewVersions(req.SourceGPHome).Local()
+		sourceVersion, err := greenplum.Version(req.SourceGPHome)
 		if err != nil {
 			return err
 		}
 
-		targetVersion, err := greenplum.NewVersions(req.TargetGPHome).Local()
+		targetVersion, err := greenplum.Version(req.TargetGPHome)
 		if err != nil {
 			return err
 		}
@@ -55,14 +55,9 @@ func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_Init
 		return FillConfiguration(s.Config, req, s.Connection, s.SaveConfig)
 	})
 
-	// we need the cluster information to determine what hosts to check, so we do this check
-	// as early as possible after that information is available
+	// Since the agents might not be up if gpupgrade is not properly installed, check it early on using ssh.
 	st.RunInternalSubstep(func() error {
-		if err := EnsureVersionsMatch(AgentHosts(s.Source), upgrade.NewVersions()); err != nil {
-			return err
-		}
-
-		return EnsureVersionsMatch(AgentHosts(s.Source), greenplum.NewVersions(s.Target.GPHome))
+		return upgrade.EnsureGpupgradeVersionsMatch(AgentHosts(s.Source))
 	})
 
 	st.Run(idl.Substep_START_AGENTS, func(_ step.OutStreams) error {

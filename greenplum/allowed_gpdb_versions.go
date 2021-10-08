@@ -11,7 +11,6 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
-	"github.com/greenplum-db/gpupgrade/versioner"
 )
 
 // Note that we represent the source and target versions separately.  Another
@@ -88,26 +87,25 @@ func getMinVersion(version semver.Version, minVersions map[int]string) string {
 func VerifyCompatibleGPDBVersions(sourceGPHome, targetGPHome string) error {
 	var err error
 
-	vErr := validateVersion(NewVersions(sourceGPHome), idl.ClusterDestination_SOURCE)
+	sourceVersion, vErr := Version(sourceGPHome)
+	err = errorlist.Append(err, vErr)
+	vErr = validateVersion(sourceVersion, idl.ClusterDestination_SOURCE)
 	err = errorlist.Append(err, vErr)
 
-	vErr = validateVersion(NewVersions(targetGPHome), idl.ClusterDestination_TARGET)
+	targetVersion, vErr := Version(targetGPHome)
+	err = errorlist.Append(err, vErr)
+	vErr = validateVersion(targetVersion, idl.ClusterDestination_TARGET)
 	err = errorlist.Append(err, vErr)
 
 	return err
 }
 
-func validateVersion(versioner versioner.Obtain, destination idl.ClusterDestination) error {
+func validateVersion(versionStr string, destination idl.ClusterDestination) error {
 	versionsAllowed := sourceVersionAllowed
 	minVersions := minSourceVersions
 	if destination == idl.ClusterDestination_TARGET {
 		versionsAllowed = targetVersionAllowed
 		minVersions = minTargetVersions
-	}
-
-	versionStr, err := versioner.Local()
-	if err != nil {
-		return err
 	}
 
 	version := semver.MustParse(versionStr)

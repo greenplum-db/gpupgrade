@@ -8,36 +8,41 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 
-	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/upgrade"
+	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-const version_0_4_0 = "Version: 0.4.0 Commit: 21b66d7 Release: Dev Build"
+const localVersion = `Version: 1.0.0 Commit: 83aaa4 Release: Enterprise`
+const remoteVersion = `Version: 1.1.0 Commit: 63cc21 Release: Enterprise`
 const versionStdErr = `
 Error: unknown command "\/ersion" for "gpupgrade"
 Run 'gpupgrade --help' for usage.
 `
 
-func gpupgradeVersion() {
-	os.Stdout.WriteString(version_0_4_0)
+func gpupgrade_local_version() {
+	fmt.Print(localVersion)
 }
 
-func gpupgradeVersion_Errors() {
-	os.Stderr.WriteString(versionStdErr)
+func gpupgrade_remote_version() {
+	fmt.Print(remoteVersion)
+}
+
+func gpupgrade_version_fails() {
+	os.Stderr.WriteString("oops")
 	os.Exit(1)
 }
 
 func init() {
 	exectest.RegisterMains(
-		gpupgradeVersion,
-		gpupgradeVersion_Errors,
+		gpupgrade_local_version,
+		gpupgrade_remote_version,
+		gpupgrade_version_fails,
 	)
 }
 
@@ -45,36 +50,24 @@ func TestGpupgradeVersion(t *testing.T) {
 	testlog.SetupLogger()
 
 	t.Run("returns the version", func(t *testing.T) {
-		execCmd := exectest.NewCommandWithVerifier(gpupgradeVersion, func(cmd string, args ...string) {
-			expected := filepath.Join(testutils.MustGetExecutablePath(t), "gpupgrade")
-			if cmd != expected {
-				t.Errorf("got cmd %q want %q", cmd, expected)
-			}
+		upgrade.SetLocalVersionCommand(exectest.NewCommand(gpupgrade_local_version))
+		defer upgrade.ResetLocalVersionCommand()
 
-			expectedArgs := []string{"version", "--format", "oneline"}
-			if !reflect.DeepEqual(args, expectedArgs) {
-				t.Errorf("got args %q want %q", args, expectedArgs)
-			}
-		})
-
-		upgrade.SetExecCommand(execCmd)
-		defer upgrade.ResetExecCommand()
-
-		version, err := upgrade.NewVersions().Local()
+		version, err := upgrade.LocalVersion()
 		if err != nil {
 			t.Errorf("unexpected errr %#v", err)
 		}
 
-		if version != version_0_4_0 {
-			t.Errorf("got %q want %q", version, version_0_4_0)
+		if version != localVersion {
+			t.Errorf("got %q want %q", version, localVersion)
 		}
 	})
 
 	t.Run("returns error when command fails", func(t *testing.T) {
-		upgrade.SetExecCommand(exectest.NewCommand(gpupgradeVersion_Errors))
-		defer upgrade.ResetExecCommand()
+		upgrade.SetLocalVersionCommand(exectest.NewCommand(gpupgrade_version_fails))
+		defer upgrade.ResetLocalVersionCommand()
 
-		version, err := upgrade.NewVersions().Local()
+		version, err := upgrade.LocalVersion()
 		var actual *exec.ExitError
 		if !errors.As(err, &actual) {
 			t.Fatalf("got %#v want ExitError", err)
@@ -99,40 +92,25 @@ func TestGpupgradeVersionOnHost(t *testing.T) {
 	host := "sdw1"
 
 	t.Run("returns remote version using -q to suppress motd banner messages from polluting the version output", func(t *testing.T) {
-		execCmd := exectest.NewCommandWithVerifier(gpupgradeVersion, func(cmd string, args ...string) {
-			if cmd != "ssh" {
-				t.Errorf("got cmd %q want ssh", cmd)
-			}
 
-			expected := []string{
-				"-q",
-				host,
-				fmt.Sprintf(`bash -c "%s/gpupgrade version --format oneline"`, testutils.MustGetExecutablePath(t)),
-			}
+		upgrade.SetRemoteVersionCommand(exectest.NewCommand(gpupgrade_remote_version))
+		defer upgrade.ResetRemoteVersionCommand()
 
-			if !reflect.DeepEqual(args, expected) {
-				t.Errorf("got args %q want %q", args, expected)
-			}
-		})
-
-		upgrade.SetExecCommand(execCmd)
-		defer upgrade.ResetExecCommand()
-
-		version, err := upgrade.NewVersions().Remote(host)
+		version, err := upgrade.RemoteVersion(host)
 		if err != nil {
 			t.Errorf("unexpected errr %#v", err)
 		}
 
-		if version != version_0_4_0 {
-			t.Errorf("got %q want %q", version, version_0_4_0)
+		if version != remoteVersion {
+			t.Errorf("got %q want %q", version, remoteVersion)
 		}
 	})
 
 	t.Run("returns error when command fails", func(t *testing.T) {
-		upgrade.SetExecCommand(exectest.NewCommand(gpupgradeVersion_Errors))
-		defer upgrade.ResetExecCommand()
+		upgrade.SetRemoteVersionCommand(exectest.NewCommand(gpupgrade_version_fails))
+		defer upgrade.ResetRemoteVersionCommand()
 
-		version, err := upgrade.NewVersions().Remote(host)
+		version, err := upgrade.RemoteVersion(host)
 		var actual *exec.ExitError
 		if !errors.As(err, &actual) {
 			t.Fatalf("got %#v want ExitError", err)
@@ -148,6 +126,67 @@ func TestGpupgradeVersionOnHost(t *testing.T) {
 
 		if version != "" {
 			t.Errorf("got %q want %q", version, "")
+		}
+	})
+}
+
+func TestEnsureVersionsMatch(t *testing.T) {
+	testlog.SetupLogger()
+
+	t.Run("versions match", func(t *testing.T) {
+		upgrade.SetLocalVersionCommand(exectest.NewCommand(gpupgrade_local_version))
+		defer upgrade.ResetLocalVersionCommand()
+
+		err := upgrade.EnsureGpupgradeVersionsMatch([]string{""})
+		if err != nil {
+			t.Errorf("unexpected err %#v", err)
+		}
+	})
+
+	t.Run("errors when failing to get version on the hub", func(t *testing.T) {
+		upgrade.SetLocalVersionCommand(exectest.NewCommand(gpupgrade_version_fails))
+		defer upgrade.ResetLocalVersionCommand()
+
+		err := upgrade.EnsureGpupgradeVersionsMatch([]string{""})
+		expected := `failed with "oops": exit status 1`
+		if !strings.HasSuffix(err.Error(), expected) {
+			t.Errorf("got %v want %v", err, expected)
+		}
+	})
+
+	t.Run("errors when failing to get version on the agents", func(t *testing.T) {
+		upgrade.SetLocalVersionCommand(exectest.NewCommand(gpupgrade_local_version))
+		defer upgrade.ResetLocalVersionCommand()
+
+		upgrade.SetRemoteVersionCommand(exectest.NewCommand(gpupgrade_version_fails))
+		defer upgrade.ResetRemoteVersionCommand()
+
+		hosts := []string{"sdw1", "sdw2"}
+		err := upgrade.EnsureGpupgradeVersionsMatch(hosts)
+		var expected errorlist.Errors
+		if !errors.As(err, &expected) {
+			t.Fatalf("got type %T, want type %T", err, expected)
+		}
+
+		if !reflect.DeepEqual(err, expected) {
+			t.Fatalf("got err %#v, want %#v", err, expected)
+		}
+	})
+
+	t.Run("errors when hub version does not match agent versions", func(t *testing.T) {
+		upgrade.SetLocalVersionCommand(exectest.NewCommand(gpupgrade_local_version))
+		defer upgrade.ResetLocalVersionCommand()
+
+		upgrade.SetRemoteVersionCommand(exectest.NewCommand(gpupgrade_remote_version))
+		defer upgrade.ResetRemoteVersionCommand()
+
+		hosts := []string{"sdw1"}
+		err := upgrade.EnsureGpupgradeVersionsMatch(hosts)
+		expected := upgrade.MismatchedVersions{remoteVersion: hosts}
+		if !strings.HasSuffix(err.Error(), expected.String()) {
+			t.Error("expected error to contain mismatched agents")
+			t.Logf("got err: %s", err)
+			t.Logf("want suffix: %s", expected)
 		}
 	})
 }
