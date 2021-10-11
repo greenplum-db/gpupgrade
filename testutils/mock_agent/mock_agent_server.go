@@ -144,11 +144,7 @@ func (m *MockAgentServer) RestorePrimariesPgControl(ctx context.Context, in *idl
 	return &idl.RestorePgControlReply{}, nil
 }
 
-func (m *MockAgentServer) UpdatePostgresqlConf(context.Context, *idl.UpdatePostgresqlConfRequest) (*idl.UpdatePostgresqlConfReply, error) {
+func (m *MockAgentServer) UpdateConfiguration(context.Context, *idl.UpdateConfigurationRequest) (*idl.UpdateConfigurationReply, error) {
 	m.increaseCalls()
-	return &idl.UpdatePostgresqlConfReply{}, nil
-}
-
-func (m *MockAgentServer) UpdateRecoveryConf(context context.Context, in *idl.UpdateRecoveryConfRequest) (*idl.UpdateRecoveryConfReply, error) {
-	return &idl.UpdateRecoveryConfReply{}, nil
+	return &idl.UpdateConfigurationReply{}, nil
 }

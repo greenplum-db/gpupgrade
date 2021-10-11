@@ -255,44 +255,24 @@ func (mr *MockAgentClientMockRecorder) RestorePrimariesPgControl(ctx, in interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RestorePrimariesPgControl", reflect.TypeOf((*MockAgentClient)(nil).RestorePrimariesPgControl), varargs...)
 }
 
-// UpdatePostgresqlConf mocks base method
-func (m *MockAgentClient) UpdatePostgresqlConf(ctx context.Context, in *idl.UpdatePostgresqlConfRequest, opts ...grpc.CallOption) (*idl.UpdatePostgresqlConfReply, error) {
+// UpdateConfiguration mocks base method
+func (m *MockAgentClient) UpdateConfiguration(ctx context.Context, in *idl.UpdateConfigurationRequest, opts ...grpc.CallOption) (*idl.UpdateConfigurationReply, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "UpdatePostgresqlConf", varargs...)
-	ret0, _ := ret[0].(*idl.UpdatePostgresqlConfReply)
+	ret := m.ctrl.Call(m, "UpdateConfiguration", varargs...)
+	ret0, _ := ret[0].(*idl.UpdateConfigurationReply)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// UpdatePostgresqlConf indicates an expected call of UpdatePostgresqlConf
-func (mr *MockAgentClientMockRecorder) UpdatePostgresqlConf(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+// UpdateConfiguration indicates an expected call of UpdateConfiguration
+func (mr *MockAgentClientMockRecorder) UpdateConfiguration(ctx, in interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePostgresqlConf", reflect.TypeOf((*MockAgentClient)(nil).UpdatePostgresqlConf), varargs...)
-}
-
-// UpdateRecoveryConf mocks base method
-func (m *MockAgentClient) UpdateRecoveryConf(ctx context.Context, in *idl.UpdateRecoveryConfRequest, opts ...grpc.CallOption) (*idl.UpdateRecoveryConfReply, error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "UpdateRecoveryConf", varargs...)
-	ret0, _ := ret[0].(*idl.UpdateRecoveryConfReply)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// UpdateRecoveryConf indicates an expected call of UpdateRecoveryConf
-func (mr *MockAgentClientMockRecorder) UpdateRecoveryConf(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateRecoveryConf", reflect.TypeOf((*MockAgentClient)(nil).UpdateRecoveryConf), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateConfiguration", reflect.TypeOf((*MockAgentClient)(nil).UpdateConfiguration), varargs...)
 }
 
 // MockAgentServer is a mock of AgentServer interface
@@ -483,32 +463,17 @@ func (mr *MockAgentServerMockRecorder) RestorePrimariesPgControl(arg0, arg1 inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RestorePrimariesPgControl", reflect.TypeOf((*MockAgentServer)(nil).RestorePrimariesPgControl), arg0, arg1)
 }
 
-// UpdatePostgresqlConf mocks base method
-func (m *MockAgentServer) UpdatePostgresqlConf(arg0 context.Context, arg1 *idl.UpdatePostgresqlConfRequest) (*idl.UpdatePostgresqlConfReply, error) {
+// UpdateConfiguration mocks base method
+func (m *MockAgentServer) UpdateConfiguration(arg0 context.Context, arg1 *idl.UpdateConfigurationRequest) (*idl.UpdateConfigurationReply, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdatePostgresqlConf", arg0, arg1)
-	ret0, _ := ret[0].(*idl.UpdatePostgresqlConfReply)
+	ret := m.ctrl.Call(m, "UpdateConfiguration", arg0, arg1)
+	ret0, _ := ret[0].(*idl.UpdateConfigurationReply)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// UpdatePostgresqlConf indicates an expected call of UpdatePostgresqlConf
-func (mr *MockAgentServerMockRecorder) UpdatePostgresqlConf(arg0, arg1 interface{}) *gomock.Call {
+// UpdateConfiguration indicates an expected call of UpdateConfiguration
+func (mr *MockAgentServerMockRecorder) UpdateConfiguration(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePostgresqlConf", reflect.TypeOf((*MockAgentServer)(nil).UpdatePostgresqlConf), arg0, arg1)
-}
-
-// UpdateRecoveryConf mocks base method
-func (m *MockAgentServer) UpdateRecoveryConf(arg0 context.Context, arg1 *idl.UpdateRecoveryConfRequest) (*idl.UpdateRecoveryConfReply, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateRecoveryConf", arg0, arg1)
-	ret0, _ := ret[0].(*idl.UpdateRecoveryConfReply)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// UpdateRecoveryConf indicates an expected call of UpdateRecoveryConf
-func (mr *MockAgentServerMockRecorder) UpdateRecoveryConf(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateRecoveryConf", reflect.TypeOf((*MockAgentServer)(nil).UpdateRecoveryConf), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateConfiguration", reflect.TypeOf((*MockAgentServer)(nil).UpdateConfiguration), arg0, arg1)
 }

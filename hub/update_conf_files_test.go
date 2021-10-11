@@ -6,10 +6,8 @@ package hub_test
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/blang/semver/v4"
@@ -43,57 +41,60 @@ func TestUpdatePostgresqlConfOnSegments(t *testing.T) {
 		{DbID: 6, ContentID: 1, Hostname: "sdw1", DataDir: "/data/dbfast_mirror2/seg2", Port: 25436, Role: greenplum.MirrorRole},
 	})
 
+	pattern := `(^port[ \t]*=[ \t]*)%d([^0-9]|$)`
+	replacement := `\1%d\2`
+
 	t.Run("updates postgresql.conf on segments", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
 		standby := mock_idl.NewMockAgentClient(ctrl)
-		standby.EXPECT().UpdatePostgresqlConf(
+		standby.EXPECT().UpdateConfiguration(
 			gomock.Any(),
-			&idl.UpdatePostgresqlConfRequest{
+			&idl.UpdateConfigurationRequest{
 				Options: []*idl.UpdateFileConfOptions{{
-					Path:         "/data/standby/postgresql.conf",
-					CurrentValue: 50433,
-					UpdatedValue: 16432,
+					Path:        "/data/standby/postgresql.conf",
+					Pattern:     fmt.Sprintf(pattern, 50433),
+					Replacement: fmt.Sprintf(replacement, 16432),
 				}},
 			},
-		).Return(&idl.UpdatePostgresqlConfReply{}, nil)
+		).Return(&idl.UpdateConfigurationReply{}, nil)
 
 		sdw1 := mock_idl.NewMockAgentClient(ctrl)
-		sdw1.EXPECT().UpdatePostgresqlConf(
+		sdw1.EXPECT().UpdateConfiguration(
 			gomock.Any(),
-			&idl.UpdatePostgresqlConfRequest{
+			&idl.UpdateConfigurationRequest{
 				Options: []*idl.UpdateFileConfOptions{
 					{
-						Path:         "/data/dbfast_mirror2/seg2/postgresql.conf",
-						CurrentValue: 50436,
-						UpdatedValue: 25436,
+						Path:        "/data/dbfast_mirror2/seg2/postgresql.conf",
+						Pattern:     fmt.Sprintf(pattern, 50436),
+						Replacement: fmt.Sprintf(replacement, 25436),
 					},
 					{
-						Path:         "/data/dbfast1/seg1/postgresql.conf",
-						CurrentValue: 50434,
-						UpdatedValue: 25433,
+						Path:        "/data/dbfast1/seg1/postgresql.conf",
+						Pattern:     fmt.Sprintf(pattern, 50434),
+						Replacement: fmt.Sprintf(replacement, 25433),
 					}},
 			},
-		).Return(&idl.UpdatePostgresqlConfReply{}, nil)
+		).Return(&idl.UpdateConfigurationReply{}, nil)
 
 		sdw2 := mock_idl.NewMockAgentClient(ctrl)
-		sdw2.EXPECT().UpdatePostgresqlConf(
+		sdw2.EXPECT().UpdateConfiguration(
 			gomock.Any(),
-			&idl.UpdatePostgresqlConfRequest{
+			&idl.UpdateConfigurationRequest{
 				Options: []*idl.UpdateFileConfOptions{
 					{
-						Path:         "/data/dbfast_mirror1/seg1/postgresql.conf",
-						CurrentValue: 50434,
-						UpdatedValue: 25434,
+						Path:        "/data/dbfast_mirror1/seg1/postgresql.conf",
+						Pattern:     fmt.Sprintf(pattern, 50434),
+						Replacement: fmt.Sprintf(replacement, 25434),
 					},
 					{
-						Path:         "/data/dbfast2/seg2/postgresql.conf",
-						CurrentValue: 50436,
-						UpdatedValue: 25435,
+						Path:        "/data/dbfast2/seg2/postgresql.conf",
+						Pattern:     fmt.Sprintf(pattern, 50436),
+						Replacement: fmt.Sprintf(replacement, 25435),
 					}},
 			},
-		).Return(&idl.UpdatePostgresqlConfReply{}, nil)
+		).Return(&idl.UpdateConfigurationReply{}, nil)
 
 		agentConns := []*idl.Connection{
 			{AgentClient: standby, Hostname: "standby"},
@@ -112,26 +113,26 @@ func TestUpdatePostgresqlConfOnSegments(t *testing.T) {
 		defer ctrl.Finish()
 
 		standby := mock_idl.NewMockAgentClient(ctrl)
-		standby.EXPECT().UpdatePostgresqlConf(
+		standby.EXPECT().UpdateConfiguration(
 			gomock.Any(),
-			&idl.UpdatePostgresqlConfRequest{
+			&idl.UpdateConfigurationRequest{
 				Options: []*idl.UpdateFileConfOptions{{
-					Path:         "/data/standby/postgresql.conf",
-					CurrentValue: 50433,
-					UpdatedValue: 16432,
+					Path:        "/data/standby/postgresql.conf",
+					Pattern:     fmt.Sprintf(pattern, 50433),
+					Replacement: fmt.Sprintf(replacement, 16432),
 				}},
 			},
-		).Return(&idl.UpdatePostgresqlConfReply{}, nil)
+		).Return(&idl.UpdateConfigurationReply{}, nil)
 
 		expected := errors.New("permission denied")
 		sdw1 := mock_idl.NewMockAgentClient(ctrl)
-		sdw1.EXPECT().UpdatePostgresqlConf(
+		sdw1.EXPECT().UpdateConfiguration(
 			gomock.Any(),
 			gomock.Any(),
 		).Return(nil, expected)
 
 		sdw2 := mock_idl.NewMockAgentClient(ctrl)
-		sdw2.EXPECT().UpdatePostgresqlConf(
+		sdw2.EXPECT().UpdateConfiguration(
 			gomock.Any(),
 			gomock.Any(),
 		).Return(nil, expected)
@@ -160,7 +161,7 @@ func TestUpdatePostgresqlConfOnSegments(t *testing.T) {
 	})
 }
 
-func TestUpdateRecoveryConfiguration(t *testing.T) {
+func TestUpdateRecoveryConfOnSegments(t *testing.T) {
 	intermediate := hub.MustCreateCluster(t, greenplum.SegConfigs{
 		{DbID: 1, ContentID: -1, Hostname: "master", DataDir: "/data/qddir/seg.HqtFHX54y0o.-1", Port: 50432, Role: greenplum.PrimaryRole},
 		{DbID: 2, ContentID: -1, Hostname: "standby", DataDir: "/data/standby.HqtFHX54y0o", Port: 50433, Role: greenplum.MirrorRole},
@@ -178,6 +179,9 @@ func TestUpdateRecoveryConfiguration(t *testing.T) {
 		{DbID: 5, ContentID: 1, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Port: 25435, Role: greenplum.PrimaryRole},
 		{DbID: 6, ContentID: 1, Hostname: "sdw1", DataDir: "/data/dbfast_mirror2/seg2", Port: 25436, Role: greenplum.MirrorRole},
 	})
+
+	pattern := `(primary_conninfo .* port[ \t]*=[ \t]*)%d([^0-9]|$)`
+	replacement := `\1%d\2`
 
 	cases := []struct {
 		name    string
@@ -202,42 +206,42 @@ func TestUpdateRecoveryConfiguration(t *testing.T) {
 			defer ctrl.Finish()
 
 			standby := mock_idl.NewMockAgentClient(ctrl)
-			standby.EXPECT().UpdateRecoveryConf(
+			standby.EXPECT().UpdateConfiguration(
 				gomock.Any(),
-				&idl.UpdateRecoveryConfRequest{
+				&idl.UpdateConfigurationRequest{
 					Options: []*idl.UpdateFileConfOptions{{
-						Path:         filepath.Join("/data/standby", c.file),
-						CurrentValue: 50432,
-						UpdatedValue: 15432,
+						Path:        filepath.Join("/data/standby", c.file),
+						Pattern:     fmt.Sprintf(pattern, 50432),
+						Replacement: fmt.Sprintf(replacement, 15432),
 					}},
 				},
-			).Return(&idl.UpdateRecoveryConfReply{}, nil)
+			).Return(&idl.UpdateConfigurationReply{}, nil)
 
 			sdw1 := mock_idl.NewMockAgentClient(ctrl)
-			sdw1.EXPECT().UpdateRecoveryConf(
+			sdw1.EXPECT().UpdateConfiguration(
 				gomock.Any(),
-				&idl.UpdateRecoveryConfRequest{
+				&idl.UpdateConfigurationRequest{
 					Options: []*idl.UpdateFileConfOptions{
 						{
-							Path:         filepath.Join("/data/dbfast_mirror2/seg2", c.file),
-							CurrentValue: 50436,
-							UpdatedValue: 25435,
+							Path:        filepath.Join("/data/dbfast_mirror2/seg2", c.file),
+							Pattern:     fmt.Sprintf(pattern, 50436),
+							Replacement: fmt.Sprintf(replacement, 25435),
 						}},
 				},
-			).Return(&idl.UpdateRecoveryConfReply{}, nil)
+			).Return(&idl.UpdateConfigurationReply{}, nil)
 
 			sdw2 := mock_idl.NewMockAgentClient(ctrl)
-			sdw2.EXPECT().UpdateRecoveryConf(
+			sdw2.EXPECT().UpdateConfiguration(
 				gomock.Any(),
-				&idl.UpdateRecoveryConfRequest{
+				&idl.UpdateConfigurationRequest{
 					Options: []*idl.UpdateFileConfOptions{
 						{
-							Path:         filepath.Join("/data/dbfast_mirror1/seg1", c.file),
-							CurrentValue: 50434,
-							UpdatedValue: 25433,
+							Path:        filepath.Join("/data/dbfast_mirror1/seg1", c.file),
+							Pattern:     fmt.Sprintf(pattern, 50434),
+							Replacement: fmt.Sprintf(replacement, 25433),
 						}},
 				},
-			).Return(&idl.UpdateRecoveryConfReply{}, nil)
+			).Return(&idl.UpdateConfigurationReply{}, nil)
 
 			agentConns := []*idl.Connection{
 				{AgentClient: standby, Hostname: "standby"},
@@ -257,26 +261,26 @@ func TestUpdateRecoveryConfiguration(t *testing.T) {
 		defer ctrl.Finish()
 
 		standby := mock_idl.NewMockAgentClient(ctrl)
-		standby.EXPECT().UpdateRecoveryConf(
+		standby.EXPECT().UpdateConfiguration(
 			gomock.Any(),
-			&idl.UpdateRecoveryConfRequest{
+			&idl.UpdateConfigurationRequest{
 				Options: []*idl.UpdateFileConfOptions{{
-					Path:         "/data/standby/recovery.conf",
-					CurrentValue: 50432,
-					UpdatedValue: 15432,
+					Path:        "/data/standby/recovery.conf",
+					Pattern:     fmt.Sprintf(pattern, 50432),
+					Replacement: fmt.Sprintf(replacement, 15432),
 				}},
 			},
-		).Return(&idl.UpdateRecoveryConfReply{}, nil)
+		).Return(&idl.UpdateConfigurationReply{}, nil)
 
 		expected := errors.New("permission denied")
 		sdw1 := mock_idl.NewMockAgentClient(ctrl)
-		sdw1.EXPECT().UpdateRecoveryConf(
+		sdw1.EXPECT().UpdateConfiguration(
 			gomock.Any(),
 			gomock.Any(),
 		).Return(nil, expected)
 
 		sdw2 := mock_idl.NewMockAgentClient(ctrl)
-		sdw2.EXPECT().UpdateRecoveryConf(
+		sdw2.EXPECT().UpdateConfiguration(
 			gomock.Any(),
 			gomock.Any(),
 		).Return(nil, expected)
@@ -305,56 +309,47 @@ func TestUpdateRecoveryConfiguration(t *testing.T) {
 	})
 }
 
-// TODO: this is an integration test; move it
 func TestUpdateConfFiles(t *testing.T) {
-	// Make cmd and replacement "live" again
-	hub.SetExecCommand(exec.Command)
-	defer hub.ResetExecCommand()
-
-	// This will be our "master data directory".
-	dir, err := ioutil.TempDir("", "gpupgrade-unit-")
-	if err != nil {
-		t.Fatalf("creating temporary directory: %+v", err)
-	}
-	defer func() {
-		if err := os.RemoveAll(dir); err != nil {
-			t.Fatalf("removing temporary directory: %+v", err)
-		}
-	}()
-
 	t.Run("UpdateGpperfmonConf", func(t *testing.T) {
-		// Set up an example gpperfmon.conf.
+		dir := testutils.GetTempDir(t, "")
+		defer testutils.MustRemoveAll(t, dir)
+
+		testutils.MustCreateDir(t, filepath.Join(dir, "gpperfmon", "conf"))
 		path := filepath.Join(dir, "gpperfmon", "conf", "gpperfmon.conf")
-		writeFile(t, path, `
+		testutils.MustWriteToFile(t, path, `
 log_location = /some/directory
 
 # should not be replaced
 other_log_location = /some/directory
 `)
 
-		// Perform the replacement.
-		err = hub.UpdateGpperfmonConf(dir)
+		err := hub.UpdateConfigurationFile([]*idl.UpdateFileConfOptions{{
+			Path:        filepath.Join(dir, "gpperfmon", "conf", "gpperfmon.conf"),
+			Pattern:     `^log_location = .*$`,
+			Replacement: fmt.Sprintf("log_location = %s", filepath.Join(dir, "gpperfmon", "logs")),
+		}})
 		if err != nil {
 			t.Errorf("UpdateGpperfmonConf() returned error %+v", err)
 		}
 
-		// Check contents. The correct value depends on the temporary directory
-		// location.
-		logPath := filepath.Join(dir, "gpperfmon", "logs")
+		contents := testutils.MustReadFile(t, path)
 		expected := fmt.Sprintf(`
 log_location = %s
 
 # should not be replaced
 other_log_location = /some/directory
-`, logPath)
-
-		checkContents(t, path, expected)
+`, filepath.Join(dir, "gpperfmon", "logs"))
+		if contents != expected {
+			t.Errorf("replaced contents: %s\nwant: %s", contents, expected)
+		}
 	})
 
 	t.Run("UpdatePostgresqlConf", func(t *testing.T) {
-		// Set up an example postgresql.conf.
+		dir := testutils.GetTempDir(t, "")
+		defer testutils.MustRemoveAll(t, dir)
+
 		path := filepath.Join(dir, "postgresql.conf")
-		writeFile(t, path, `
+		testutils.MustWriteToFile(t, path, `
 port=5000
 port=5000 # comment
 port = 5000 # make sure we can handle spaces
@@ -365,13 +360,13 @@ port=50000
 #port=5000
 `)
 
-		// Perform the replacement.
-		err = hub.UpdatePostgresqlConf([]*idl.UpdateFileConfOptions{{Path: path, CurrentValue: int32(5000), UpdatedValue: int32(6000)}})
+		err := hub.UpdateConfigurationFile([]*idl.UpdateFileConfOptions{{Path: path, Pattern: fmt.Sprintf(`(^port[ \t]*=[ \t]*)%d([^0-9]|$)`, 5000), Replacement: fmt.Sprintf(`\1%d\2`, 6000)}})
 		if err != nil {
 			t.Errorf("UpdatePostgresqlConf() returned error %+v", err)
 		}
 
-		checkContents(t, path, `
+		contents := testutils.MustReadFile(t, path)
+		expected := `
 port=6000
 port=6000 # comment
 port = 6000 # make sure we can handle spaces
@@ -380,13 +375,17 @@ port = 6000 # make sure we can handle spaces
 gpperfmon_port=5000
 port=50000
 #port=5000
-`)
+`
+		if contents != expected {
+			t.Errorf("replaced contents: %s\nwant: %s", contents, expected)
+		}
 	})
-
 	t.Run("UpdateRecoveryConf", func(t *testing.T) {
-		// Set up an example recovery.conf.
+		dir := testutils.GetTempDir(t, "")
+		defer testutils.MustRemoveAll(t, dir)
+
 		path := filepath.Join(dir, "recovery.conf")
-		writeFile(t, path, `
+		testutils.MustWriteToFile(t, path, `
 standby_mode = 'on'
 primary_conninfo = 'user=gpadmin host=sdw1 port=5000 sslmode=disable sslcompression=1 krbsrvname=postgres application_name=gp_walreceiver'
 primary_slot_name = 'internal_wal_replication_slot'
@@ -395,37 +394,53 @@ primary_slot_name = 'internal_wal_replication_slot'
 #primary_conninfo = 'user=gpadmin host=sdw1 port=5000 sslmode=disable sslcompression=1 krbsrvname=postgres application_name=gp_walreceiver'
 `)
 
-		// Perform the replacement.
-		err = hub.UpdateRecoveryConf([]*idl.UpdateFileConfOptions{{Path: path, CurrentValue: int32(5000), UpdatedValue: int32(6000)}})
+		err := hub.UpdateConfigurationFile([]*idl.UpdateFileConfOptions{{Path: path, Pattern: fmt.Sprintf(`(primary_conninfo .* port[ \t]*=[ \t]*)%d([^0-9]|$)`, 5000), Replacement: fmt.Sprintf(`\1%d\2`, 6000)}})
 		if err != nil {
 			t.Errorf("UpdateRecoveryConf() returned error %+v", err)
 		}
 
-		checkContents(t, path, `
+		contents := testutils.MustReadFile(t, path)
+		expected := `
 standby_mode = 'on'
 primary_conninfo = 'user=gpadmin host=sdw1 port=6000 sslmode=disable sslcompression=1 krbsrvname=postgres application_name=gp_walreceiver'
 primary_slot_name = 'internal_wal_replication_slot'
 
 # should not be replaced
 #primary_conninfo = 'user=gpadmin host=sdw1 port=6000 sslmode=disable sslcompression=1 krbsrvname=postgres application_name=gp_walreceiver'
-`)
+`
+		if contents != expected {
+			t.Errorf("replaced contents: %s\nwant: %s", contents, expected)
+		}
 	})
-}
 
-func writeFile(t *testing.T, path string, contents string) {
-	parent := filepath.Dir(path)
-	if err := os.MkdirAll(parent, 0700); err != nil {
-		t.Fatalf("creating parent directory: %+v", err)
-	}
+	t.Run("returns errors", func(t *testing.T) {
+		opts := []*idl.UpdateFileConfOptions{
+			{
+				Path:        "",
+				Pattern:     "",
+				Replacement: "",
+			},
+			{
+				Path:        "",
+				Pattern:     "",
+				Replacement: "",
+			}}
 
-	testutils.MustWriteToFile(t, path, contents)
-}
+		err := hub.UpdateConfigurationFile(opts)
+		var errs errorlist.Errors
+		if !xerrors.As(err, &errs) {
+			t.Fatalf("error %#v does not contain type %T", err, errs)
+		}
 
-func checkContents(t *testing.T, path string, expected string) {
-	t.Helper()
+		if len(errs) != len(opts) {
+			t.Fatalf("got error count %d, want %d", len(errs), len(opts))
+		}
 
-	contents := testutils.MustReadFile(t, path)
-	if contents != expected {
-		t.Errorf("replaced contents: %s\nwant: %s", contents, expected)
-	}
+		for _, err := range errs {
+			expected := `update . using "/usr/bin/sed -E -i.bak s@@@ " failed with "sed:`
+			if !strings.HasPrefix(err.Error(), expected) {
+				t.Errorf("expected error to contain %q got %q", expected, err.Error())
+			}
+		}
+	})
 }
