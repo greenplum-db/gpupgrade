@@ -94,7 +94,7 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 
 	var logArchiveDir string
 	st.Run(idl.Substep_ARCHIVE_LOG_DIRECTORIES, func(_ step.OutStreams) error {
-		logArchiveDir, err := s.GetLogArchiveDir()
+		logArchiveDir, err = s.GetLogArchiveDir()
 		if err != nil {
 			return xerrors.Errorf("get log archive directory: %w", err)
 		}
