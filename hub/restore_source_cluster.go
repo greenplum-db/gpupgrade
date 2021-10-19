@@ -11,7 +11,6 @@ import (
 	"sync"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
-	"github.com/pkg/errors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -31,9 +30,6 @@ var Excludes = []string{
 }
 
 func RsyncMasterAndPrimaries(stream step.OutStreams, agentConns []*idl.Connection, source *greenplum.Cluster) error {
-	if !source.HasAllMirrorsAndStandby() {
-		return errors.New("Source cluster does not have mirrors and/or standby. Cannot restore source cluster. Please contact support.")
-	}
 
 	var wg sync.WaitGroup
 	errs := make(chan error, 2)
@@ -58,10 +54,6 @@ func RsyncMasterAndPrimaries(stream step.OutStreams, agentConns []*idl.Connectio
 }
 
 func RsyncMasterAndPrimariesTablespaces(stream step.OutStreams, agentConns []*idl.Connection, source *greenplum.Cluster) error {
-	if !source.HasAllMirrorsAndStandby() {
-		return ErrMissingMirrorsAndStandby
-	}
-
 	var wg sync.WaitGroup
 	errs := make(chan error, 2)
 

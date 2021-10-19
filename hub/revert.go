@@ -34,7 +34,12 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		}
 	}()
 
-	if !s.Source.HasAllMirrorsAndStandby() {
+	hasExecuteStarted, err := step.HasStarted(idl.Step_EXECUTE)
+	if err != nil {
+		return err
+	}
+
+	if hasExecuteStarted && !s.Source.HasAllMirrorsAndStandby() {
 		return errors.New("Source cluster does not have mirrors and/or standby. Cannot restore source cluster. Please contact support.")
 	}
 

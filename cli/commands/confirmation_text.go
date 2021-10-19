@@ -90,6 +90,8 @@ gpupgrade revert will perform a series of steps, including:
 
 gpupgrade log files can be found on all hosts in %s
 
+WARNING: You cannot revert if you do not have mirrors & standby configured, and execute has started.
+
 WARNING: Do not perform operations on the source and target clusters until gpupgrade revert
 has completed.
 `

@@ -5,6 +5,7 @@ package step_test
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -339,6 +340,95 @@ func TestStepRun(t *testing.T) {
 
 		if s.Err() == nil {
 			t.Error("got nil want err")
+		}
+	})
+}
+
+func TestHasStarted(t *testing.T) {
+	stateDir, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := os.RemoveAll(stateDir); err != nil {
+			t.Errorf("removing temp directory: %v", err)
+		}
+	}()
+
+	t.Run("returns an error when getting the status file fails", func(t *testing.T) {
+		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", "does/not/exist")
+		defer resetEnv()
+
+		hasStarted, err := step.HasStarted(idl.Step_INITIALIZE)
+		var expected *os.PathError
+		if !errors.As(err, &expected) {
+			t.Errorf("returned error %#v want %#v", err, expected)
+		}
+
+		if hasStarted {
+			t.Errorf("expected step to not have been run")
+		}
+	})
+
+	t.Run("returns an error when reading from the substep store fails", func(t *testing.T) {
+		dir := testutils.GetTempDir(t, "")
+		defer testutils.MustRemoveAll(t, dir)
+
+		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", dir)
+		defer resetEnv()
+
+		path := filepath.Join(dir, step.SubstepsFileName)
+		testutils.MustWriteToFile(t, path, `{"}"`) // write a malformed JSON status file
+
+		hasStarted, err := step.HasStarted(idl.Step_INITIALIZE)
+		if err == nil {
+			t.Errorf("expected error %#v got nil", err)
+		}
+
+		if hasStarted {
+			t.Errorf("expected step to not have been run")
+		}
+	})
+
+	t.Run("returns false with no error when a step has not yet been started", func(t *testing.T) {
+		dir := testutils.GetTempDir(t, "")
+		defer testutils.MustRemoveAll(t, dir)
+
+		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", dir)
+		defer resetEnv()
+
+		path := filepath.Join(dir, step.SubstepsFileName)
+		testutils.MustWriteToFile(t, path, "{}")
+
+		hasStarted, err := step.HasStarted(idl.Step_FINALIZE)
+		if err != nil {
+			t.Errorf("HasStarted returned error %+v", err)
+		}
+
+		if hasStarted {
+			t.Errorf("expected step to not have been run")
+		}
+	})
+
+	t.Run("returns true with no error when a step has been started", func(t *testing.T) {
+		dir := testutils.GetTempDir(t, "")
+		defer testutils.MustRemoveAll(t, dir)
+
+		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", dir)
+		defer resetEnv()
+
+		path := filepath.Join(dir, step.SubstepsFileName)
+		jsonContent := fmt.Sprintf("{\"%s\":{\"%s\":\"%s\"}}",
+			idl.Step_INITIALIZE, idl.Substep_BACKUP_TARGET_MASTER, idl.Status_COMPLETE)
+		testutils.MustWriteToFile(t, path, jsonContent)
+
+		hasStarted, err := step.HasStarted(idl.Step_INITIALIZE)
+		if err != nil {
+			t.Errorf("HasStarted returned error %+v", err)
+		}
+
+		if !hasStarted {
+			t.Errorf("expected substep to not have been run")
 		}
 	})
 }

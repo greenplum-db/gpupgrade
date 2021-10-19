@@ -83,6 +83,24 @@ func Begin(step idl.Step, sender idl.MessageSender, agentConns func() ([]*idl.Co
 	return New(step, sender, substepStore, streams), nil
 }
 
+func HasStarted(step idl.Step) (bool, error) {
+	substepStore, err := NewSubstepFileStore()
+	if err != nil {
+		return false, err
+	}
+
+	substepsMap, err := substepStore.ReadStep(step)
+	if err != nil {
+		return false, err
+	}
+
+	if substepsMap != nil {
+		return true, nil
+	}
+
+	return false, nil
+}
+
 func HasRun(step idl.Step, substep idl.Substep) (bool, error) {
 	return hasStatus(step, substep, func(status idl.Status) bool {
 		return status != idl.Status_UNKNOWN_STATUS

@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -29,13 +30,41 @@ func TestFileStore(t *testing.T) {
 	path := filepath.Join(tmpDir, step.SubstepsFileName)
 	fs := step.NewSubstepStoreUsingFile(path)
 
-	const section = idl.Step_INITIALIZE
+	const initialize = idl.Step_INITIALIZE
 
-	t.Run("bubbles up any read failures", func(t *testing.T) {
-		_, err := fs.Read(section, idl.Substep_CHECK_UPGRADE)
-
+	t.Run("ReadStep returns errors when failing to read", func(t *testing.T) {
+		_, err := fs.ReadStep(initialize)
 		if !os.IsNotExist(err) {
 			t.Errorf("returned error %#v, want ErrNotExist", err)
+		}
+	})
+
+	t.Run("Read returns errors when failing to read", func(t *testing.T) {
+		_, err := fs.Read(initialize, idl.Substep_CHECK_UPGRADE)
+		if !os.IsNotExist(err) {
+			t.Errorf("returned error %#v, want ErrNotExist", err)
+		}
+	})
+
+	t.Run("ReadStep reads the same status that was written", func(t *testing.T) {
+		clear(t, path)
+
+		substep := idl.Substep_CHECK_UPGRADE
+		status := idl.Status_COMPLETE
+
+		err := fs.Write(initialize, substep, status)
+		if err != nil {
+			t.Fatalf("Write() returned error %#v", err)
+		}
+
+		statusMap, err := fs.ReadStep(initialize)
+		if err != nil {
+			t.Errorf("Read() returned error %#v", err)
+		}
+
+		expected := step.PrettyStatus{Status: status}
+		if !reflect.DeepEqual(statusMap[substep.String()], expected) {
+			t.Errorf("read %v, want %v", statusMap, expected)
 		}
 	})
 
@@ -45,15 +74,16 @@ func TestFileStore(t *testing.T) {
 		substep := idl.Substep_CHECK_UPGRADE
 		expected := idl.Status_COMPLETE
 
-		err := fs.Write(section, substep, expected)
+		err := fs.Write(initialize, substep, expected)
 		if err != nil {
 			t.Fatalf("Write() returned error %#v", err)
 		}
 
-		status, err := fs.Read(section, substep)
+		status, err := fs.Read(initialize, substep)
 		if err != nil {
 			t.Errorf("Read() returned error %#v", err)
 		}
+
 		if status != expected {
 			t.Errorf("read %v, want %v", status, expected)
 		}
@@ -91,10 +121,23 @@ func TestFileStore(t *testing.T) {
 		}
 	})
 
-	t.Run("returns unknown status if requested section has not been written", func(t *testing.T) {
+	t.Run("ReadStep returns nil if requested step has not been written", func(t *testing.T) {
 		clear(t, path)
 
-		status, err := fs.Read(section, idl.Substep_INIT_TARGET_CLUSTER)
+		status, err := fs.ReadStep(initialize)
+		if err != nil {
+			t.Errorf("Read() returned error %#v", err)
+		}
+
+		if status != nil {
+			t.Errorf("read %v, want nil", status)
+		}
+	})
+
+	t.Run("returns unknown status if requested step has not been written", func(t *testing.T) {
+		clear(t, path)
+
+		status, err := fs.Read(initialize, idl.Substep_INIT_TARGET_CLUSTER)
 		if err != nil {
 			t.Errorf("Read() returned error %#v", err)
 		}
@@ -105,15 +148,15 @@ func TestFileStore(t *testing.T) {
 		}
 	})
 
-	t.Run("returns unknown status if substep was not written to the requested section", func(t *testing.T) {
+	t.Run("returns unknown status if substep was not written to the requested step", func(t *testing.T) {
 		clear(t, path)
 
-		err := fs.Write(section, idl.Substep_CHECK_UPGRADE, idl.Status_FAILED)
+		err := fs.Write(initialize, idl.Substep_CHECK_UPGRADE, idl.Status_FAILED)
 		if err != nil {
 			t.Fatalf("Write() returned error %+v", err)
 		}
 
-		status, err := fs.Read(section, idl.Substep_INIT_TARGET_CLUSTER)
+		status, err := fs.Read(initialize, idl.Substep_INIT_TARGET_CLUSTER)
 		if err != nil {
 			t.Errorf("Read() returned error %#v", err)
 		}
@@ -124,7 +167,7 @@ func TestFileStore(t *testing.T) {
 		}
 	})
 
-	t.Run("returns unknown status if substep was written to a different section", func(t *testing.T) {
+	t.Run("returns unknown status if substep was written to a different step", func(t *testing.T) {
 		clear(t, path)
 
 		err := fs.Write(idl.Step_FINALIZE, idl.Substep_INIT_TARGET_CLUSTER, idl.Status_FAILED)
@@ -132,7 +175,7 @@ func TestFileStore(t *testing.T) {
 			t.Fatalf("Write() returned error %+v", err)
 		}
 
-		status, err := fs.Read(section, idl.Substep_INIT_TARGET_CLUSTER)
+		status, err := fs.Read(initialize, idl.Substep_INIT_TARGET_CLUSTER)
 		if err != nil {
 			t.Errorf("Read() returned error %#v", err)
 		}
@@ -146,7 +189,7 @@ func TestFileStore(t *testing.T) {
 	t.Run("uses human-readable serialization", func(t *testing.T) {
 		substep := idl.Substep_INIT_TARGET_CLUSTER
 		status := idl.Status_FAILED
-		if err := fs.Write(section, substep, status); err != nil {
+		if err := fs.Write(initialize, substep, status); err != nil {
 			t.Fatalf("Write(): %+v", err)
 		}
 
@@ -163,8 +206,8 @@ func TestFileStore(t *testing.T) {
 		}
 
 		key := substep.String()
-		if raw[section.String()][key] != status.String() {
-			t.Errorf("status[%q][%q] = %q, want %q", section, key, raw[section.String()][key], status.String())
+		if raw[initialize.String()][key] != status.String() {
+			t.Errorf("status[%q][%q] = %q, want %q", initialize, key, raw[initialize.String()][key], status.String())
 		}
 	})
 }

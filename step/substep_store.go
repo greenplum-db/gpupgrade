@@ -8,9 +8,10 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	"golang.org/x/xerrors"
+
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
-	"golang.org/x/xerrors"
 )
 
 type SubstepStore interface {
@@ -75,15 +76,24 @@ func (f *SubstepFileStore) load() (prettyMap, error) {
 	return substeps, nil
 }
 
-func (f *SubstepFileStore) Read(step idl.Step, substep idl.Substep) (idl.Status, error) {
+func (f *SubstepFileStore) ReadStep(step idl.Step) (map[string]PrettyStatus, error) {
 	steps, err := f.load()
 	if err != nil {
-		return idl.Status_UNKNOWN_STATUS, err
+		return nil, err
 	}
 
 	sectionMap, ok := steps[step.String()]
 	if !ok {
-		return idl.Status_UNKNOWN_STATUS, nil
+		return nil, nil
+	}
+
+	return sectionMap, nil
+}
+
+func (f *SubstepFileStore) Read(step idl.Step, substep idl.Substep) (idl.Status, error) {
+	sectionMap, err := f.ReadStep(step)
+	if err != nil {
+		return idl.Status_UNKNOWN_STATUS, err
 	}
 
 	status, ok := sectionMap[substep.String()]

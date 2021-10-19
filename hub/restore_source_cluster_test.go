@@ -86,20 +86,6 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 		}
 	})
 
-	t.Run("errors in restoring tablespaces when source cluster does not have mirrors and standby", func(t *testing.T) {
-		cluster := hub.MustCreateCluster(t, greenplum.SegConfigs{
-			{ContentID: -1, Hostname: "master", DataDir: "/data/qddir", Role: greenplum.PrimaryRole},
-			{ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
-			{ContentID: 0, Hostname: "msdw1", DataDir: "/data/dbfast_mirror1/seg1", Role: greenplum.MirrorRole},
-			{ContentID: 1, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
-		})
-
-		err := hub.RsyncMasterAndPrimariesTablespaces(&testutils.DevNullWithClose{}, []*idl.Connection{}, cluster)
-		if !errors.Is(err, hub.ErrMissingMirrorsAndStandby) {
-			t.Errorf("got error %#v want %#v", err, hub.ErrMissingMirrorsAndStandby)
-		}
-	})
-
 	t.Run("restores master tablespaces in link mode using correct rsync arguments", func(t *testing.T) {
 		defer rsync.ResetRsyncCommand()
 		rsync.SetRsyncCommand(exectest.NewCommandWithVerifier(hub.Success, func(utility string, args ...string) {
@@ -240,20 +226,6 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 		err := hub.RsyncPrimariesTablespaces(agentConns, cluster, tablespaces)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
-		}
-	})
-
-	t.Run("errors when source cluster does not have all mirrors and standby", func(t *testing.T) {
-		cluster := hub.MustCreateCluster(t, greenplum.SegConfigs{
-			{ContentID: -1, Hostname: "master", DataDir: "/data/qddir", Role: greenplum.PrimaryRole},
-			{ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
-			{ContentID: 0, Hostname: "msdw1", DataDir: "/data/dbfast_mirror1/seg1", Role: greenplum.MirrorRole},
-			{ContentID: 1, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
-		})
-
-		err := hub.RsyncMasterAndPrimaries(&testutils.DevNullWithClose{}, []*idl.Connection{}, cluster)
-		if err == nil {
-			t.Error("unexpected nil error")
 		}
 	})
 
