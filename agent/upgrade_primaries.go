@@ -11,8 +11,8 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
@@ -24,7 +24,7 @@ func (s *Server) UpgradePrimaries(ctx context.Context, request *idl.UpgradePrima
 		gplog.Info("agent starting %s", idl.Substep_UPGRADE_PRIMARIES)
 	}
 
-	err := UpgradePrimaries(s.conf.StateDir, request)
+	err := UpgradePrimaries(request)
 
 	return &idl.UpgradePrimariesReply{}, err
 }
@@ -38,8 +38,8 @@ type Segment struct {
 	WorkDir string // the pg_upgrade working directory, where logs are stored
 }
 
-func UpgradePrimaries(stateDir string, request *idl.UpgradePrimariesRequest) error {
-	segments, err := buildSegments(request, stateDir)
+func UpgradePrimaries(request *idl.UpgradePrimariesRequest) error {
+	segments, err := buildSegments(request)
 
 	if err != nil {
 		return err
@@ -85,12 +85,16 @@ func UpgradePrimaries(stateDir string, request *idl.UpgradePrimariesRequest) err
 	return nil
 }
 
-func buildSegments(request *idl.UpgradePrimariesRequest, stateDir string) ([]Segment, error) {
+func buildSegments(request *idl.UpgradePrimariesRequest) ([]Segment, error) {
 	segments := make([]Segment, 0, len(request.DataDirPairs))
 
 	for _, dataPair := range request.DataDirPairs {
-		workdir := upgrade.SegmentWorkingDirectory(stateDir, int(dataPair.Content))
-		err := utils.System.MkdirAll(workdir, 0700)
+		workdir, err := utils.GetPgUpgradeDir(greenplum.PrimaryRole, int(dataPair.Content))
+		if err != nil {
+			return nil, err
+		}
+
+		err = utils.System.MkdirAll(workdir, 0700)
 		if err != nil {
 			return nil, xerrors.Errorf("creating pg_upgrade work directory: %w", err)
 		}

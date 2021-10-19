@@ -39,7 +39,7 @@ CREATE
 -- start_ignore
 -- end_ignore
 (exited with code 1)
-! cat ${GPUPGRADE_HOME}/pg_upgrade/seg-1/view_deprecated_tables.txt | LC_ALL=C sort -b;
+! cat ~/gpAdminLogs/gpupgrade/pg_upgrade/p-1/view_deprecated_tables.txt | LC_ALL=C sort -b;
 Database: isolation2test
   public.dep_rel_dynamic_oid 
   public.dep_rel_sublink 

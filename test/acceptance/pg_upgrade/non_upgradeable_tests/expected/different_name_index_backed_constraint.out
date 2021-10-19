@@ -52,7 +52,7 @@ INSERT 1
 -- start_ignore
 -- end_ignore
 (exited with code 1)
-! cat ${GPUPGRADE_HOME}/pg_upgrade/seg-1/unique_primary_key_constraint.txt | LC_ALL=C sort -b;
+! cat ~/gpAdminLogs/gpupgrade/pg_upgrade/p-1/unique_primary_key_constraint.txt | LC_ALL=C sort -b;
 Constraint name "table_with_primary_constraint_au_ti" does not match index name "table_with_primary_constraint_pkey2"
 Constraint name "table_with_unique_constraint_uniq_au_ti" does not match index name "table_with_unique_constraint_author_key2"
 Database:  isolation2test

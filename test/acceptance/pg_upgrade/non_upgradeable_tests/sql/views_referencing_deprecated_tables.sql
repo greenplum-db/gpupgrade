@@ -30,7 +30,7 @@ CREATE VIEW dep_rel_dynamic_oid AS SELECT * FROM gp_toolkit.__gp_localid;
 -- Assert that pg_upgrade --check correctly detects the non-upgradeable objects
 --------------------------------------------------------------------------------
 !\retcode gpupgrade initialize --source-gphome="${GPHOME_SOURCE}" --target-gphome=${GPHOME_TARGET} --source-master-port=${PGPORT} --disk-free-ratio 0 --automatic;
-! cat ${GPUPGRADE_HOME}/pg_upgrade/seg-1/view_deprecated_tables.txt | LC_ALL=C sort -b;
+! cat ~/gpAdminLogs/gpupgrade/pg_upgrade/p-1/view_deprecated_tables.txt | LC_ALL=C sort -b;
 
 --------------------------------------------------------------------------------
 -- Workaround to unblock upgrade

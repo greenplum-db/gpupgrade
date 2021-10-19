@@ -33,7 +33,7 @@ INSERT 2
 -- start_ignore
 -- end_ignore
 (exited with code 1)
-! cat ${GPUPGRADE_HOME}/pg_upgrade/seg-1/mismatched_aopartition_indexes.txt;
+! cat ~/gpAdminLogs/gpupgrade/pg_upgrade/p-1/mismatched_aopartition_indexes.txt;
 Mismatched index on partition 22227 in relation 22180
 
 

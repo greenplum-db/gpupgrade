@@ -40,8 +40,12 @@ type UpgradeMasterArgs struct {
 }
 
 func UpgradeMaster(args UpgradeMasterArgs) error {
-	wd := upgrade.MasterWorkingDirectory(args.StateDir)
-	err := utils.System.MkdirAll(wd, 0700)
+	wd, err := utils.GetPgUpgradeDir(greenplum.PrimaryRole, -1)
+	if err != nil {
+		return err
+	}
+
+	err = utils.System.MkdirAll(wd, 0700)
 	if err != nil {
 		return err
 	}

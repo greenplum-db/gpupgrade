@@ -43,11 +43,10 @@ func TestUpgradePrimary(t *testing.T) {
 
 	utils.System.MkdirAll = func(path string, perms os.FileMode) error {
 		// Bail out if the implementation tries to touch any other directories.
-		if !strings.HasPrefix(path, tempDir) {
-			t.Fatalf("requested directory %q is not under temporary directory %q; refusing to create it",
-				path, tempDir)
+		expected := "gpAdminLogs" + string(os.PathSeparator) + "gpupgrade"
+		if !strings.Contains(path, expected) {
+			t.Fatalf("requested directory %q does not contain %q; refusing to create it", path, expected)
 		}
-
 		return os.MkdirAll(path, perms)
 	}
 
@@ -92,7 +91,7 @@ func TestUpgradePrimary(t *testing.T) {
 			UseLinkMode:   false,
 			TargetVersion: "6.15.0",
 		}
-		err := agent.UpgradePrimaries(tempDir, request)
+		err := agent.UpgradePrimaries(request)
 		if err == nil {
 			t.Fatal("UpgradeSegments() returned no error")
 		}
@@ -120,7 +119,7 @@ func TestUpgradePrimary(t *testing.T) {
 			CheckOnly:     false,
 			UseLinkMode:   false,
 			TargetVersion: "6.15.0"}
-		err := agent.UpgradePrimaries(tempDir, request)
+		err := agent.UpgradePrimaries(request)
 		if err == nil {
 			t.Fatal("UpgradeSegments() returned no error")
 		}
@@ -151,7 +150,7 @@ func TestUpgradePrimary(t *testing.T) {
 				}
 			}))
 
-		_ = agent.UpgradePrimaries(tempDir, request)
+		_ = agent.UpgradePrimaries(request)
 	})
 
 	t.Run("it returns errors in parallel if the copy step fails", func(t *testing.T) {
@@ -159,7 +158,7 @@ func TestUpgradePrimary(t *testing.T) {
 		agent.SetExecCommand(exectest.NewCommand(agent.Success))
 
 		request := buildRequest(pairs)
-		err = agent.UpgradePrimaries(tempDir, request)
+		err = agent.UpgradePrimaries(request)
 
 		// We expect each part of the request to return its own ExitError,
 		// containing the expected message from FailedRsync.
@@ -228,7 +227,7 @@ func TestUpgradePrimary(t *testing.T) {
 		request := buildRequest(pairs)
 		request.MasterBackupDir = "/some/master/backup/dir"
 
-		err := agent.UpgradePrimaries(tempDir, request)
+		err := agent.UpgradePrimaries(request)
 		if err != nil {
 			t.Error(err)
 		}

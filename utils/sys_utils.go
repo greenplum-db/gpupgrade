@@ -12,6 +12,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/google/renameio"
@@ -106,6 +107,15 @@ func GetTablespaceDir() string {
 
 func GetInitsystemConfig() string {
 	return filepath.Join(GetStateDir(), "gpinitsystem_config")
+}
+
+func GetPgUpgradeDir(role string, contentID int) (string, error) {
+	logDir, err := GetLogDir()
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(logDir, "pg_upgrade", role + strconv.Itoa(contentID)), nil
 }
 
 // GetTablespaceMappingFile returns the tablespace input file for pg_upgrade used

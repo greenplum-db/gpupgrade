@@ -25,7 +25,7 @@ SELECT count(*) FROM pg_largeobject;
 -- start_ignore
 -- end_ignore
 (exited with code 1)
-! cat ${GPUPGRADE_HOME}/pg_upgrade/seg-1/pg_largeobject.txt;
+! cat ~/gpAdminLogs/gpupgrade/pg_upgrade/p-1/pg_largeobject.txt;
 Database isolation2test contains large objects
 
 

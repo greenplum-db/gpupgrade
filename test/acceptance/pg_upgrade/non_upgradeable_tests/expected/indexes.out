@@ -32,7 +32,7 @@ RESET
 -- start_ignore
 -- end_ignore
 (exited with code 1)
-! cat ${GPUPGRADE_HOME}/pg_upgrade/seg-1/invalid_indexes.txt;
+! cat ~/gpAdminLogs/gpupgrade/pg_upgrade/p-1/invalid_indexes.txt;
 Database: isolation2test
   public.btree_idx on relation public.tbl_with_btree_index
 

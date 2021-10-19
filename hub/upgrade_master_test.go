@@ -22,7 +22,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/testutils/testlog"
-	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
@@ -183,9 +182,9 @@ func TestUpgradeMaster(t *testing.T) {
 		createdWD = path
 
 		// Bail out if the implementation tries to touch any other directories.
-		if !strings.HasPrefix(path, tempDir) {
-			t.Fatalf("requested directory %q is not under temporary directory %q; refusing to create it",
-				path, tempDir)
+		expected := "gpAdminLogs" + string(os.PathSeparator) + "gpupgrade"
+		if !strings.Contains(path, expected) {
+			t.Fatalf("requested directory %q does not contain %q; refusing to create it", path, expected)
 		}
 
 		return os.MkdirAll(path, perms)
@@ -213,7 +212,11 @@ func TestUpgradeMaster(t *testing.T) {
 			t.Errorf("returned error %+v", err)
 		}
 
-		expectedWD := upgrade.MasterWorkingDirectory(tempDir)
+		expectedWD, err := utils.GetPgUpgradeDir(greenplum.PrimaryRole, -1)
+		if err != nil {
+			t.Errorf("unexpected error %+v", err)
+		}
+
 		if createdWD != expectedWD {
 			t.Errorf("created working directory %q, want %q", createdWD, expectedWD)
 		}

@@ -59,7 +59,7 @@ teardown() {
     [ "$status" -ne 0 ] || fail "expected initialize to fail due to pg_upgrade check"
 
     egrep "\"CHECK_UPGRADE\": \"FAILED\"" $GPUPGRADE_HOME/substeps.json
-    egrep "^Checking.*fatal$" $GPUPGRADE_HOME/pg_upgrade/seg-1/pg_upgrade_internal.log
+    egrep "^Checking.*fatal$" ~/gpAdminLogs/gpupgrade/pg_upgrade/p-1/pg_upgrade_internal.log
 
     MIGRATION_DIR=`mktemp -d /tmp/migration.XXXXXX`
 

@@ -16,7 +16,7 @@ INSERT INTO tsquery_tbl SELECT 'a', 'New&York' FROM generate_series(1,4);
 -- Assert that pg_upgrade --check correctly detects the non-upgradeable objects
 --------------------------------------------------------------------------------
 !\retcode gpupgrade initialize --source-gphome="${GPHOME_SOURCE}" --target-gphome=${GPHOME_TARGET} --source-master-port=${PGPORT} --disk-free-ratio 0 --automatic;
-! cat ${GPUPGRADE_HOME}/pg_upgrade/seg-1/tables_using_tsquery.txt;
+! cat ~/gpAdminLogs/gpupgrade/pg_upgrade/p-1/tables_using_tsquery.txt;
 
 --------------------------------------------------------------------------------
 -- Workaround to unblock upgrade

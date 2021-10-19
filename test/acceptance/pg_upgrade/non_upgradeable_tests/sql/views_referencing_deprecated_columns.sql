@@ -53,7 +53,7 @@ CREATE VIEW dep_col_dynamic_oid AS SELECT proposed_concurrency FROM gp_toolkit.g
 -- Assert that pg_upgrade --check correctly detects the non-upgradeable objects
 --------------------------------------------------------------------------------
 !\retcode gpupgrade initialize --source-gphome="${GPHOME_SOURCE}" --target-gphome=${GPHOME_TARGET} --source-master-port=${PGPORT} --disk-free-ratio 0 --automatic;
-! cat ${GPUPGRADE_HOME}/pg_upgrade/seg-1/view_deprecated_columns.txt | LC_ALL=C sort -b;
+! cat ~/gpAdminLogs/gpupgrade/pg_upgrade/p-1/view_deprecated_columns.txt | LC_ALL=C sort -b;
 
 --------------------------------------------------------------------------------
 -- Workaround to unblock upgrade

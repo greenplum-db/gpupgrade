@@ -86,15 +86,15 @@ teardown() {
 
     grep "Clusters are compatible" "$GPUPGRADE_LOGDIR"/initialize_*.log
 
-    [ -e "$GPUPGRADE_HOME"/pg_upgrade/seg-1/pg_upgrade_internal.log ]
-    [ -e "$GPUPGRADE_HOME"/pg_upgrade/seg0/pg_upgrade_internal.log ]
-    [ -e "$GPUPGRADE_HOME"/pg_upgrade/seg1/pg_upgrade_internal.log ]
-    [ -e "$GPUPGRADE_HOME"/pg_upgrade/seg2/pg_upgrade_internal.log ]
+    [ -e ~/gpAdminLogs/gpupgrade/pg_upgrade/p-1/pg_upgrade_internal.log ]
+    [ -e ~/gpAdminLogs/gpupgrade/pg_upgrade/p0/pg_upgrade_internal.log ]
+    [ -e ~/gpAdminLogs/gpupgrade/pg_upgrade/p1/pg_upgrade_internal.log ]
+    [ -e ~/gpAdminLogs/gpupgrade/pg_upgrade/p2/pg_upgrade_internal.log ]
 
-    grep -c "Clusters are compatible" "$GPUPGRADE_HOME"/pg_upgrade/seg-1/pg_upgrade_internal.log
-    grep -c "Clusters are compatible" "$GPUPGRADE_HOME"/pg_upgrade/seg0/pg_upgrade_internal.log
-    grep -c "Clusters are compatible" "$GPUPGRADE_HOME"/pg_upgrade/seg1/pg_upgrade_internal.log
-    grep -c "Clusters are compatible" "$GPUPGRADE_HOME"/pg_upgrade/seg2/pg_upgrade_internal.log
+    grep -c "Clusters are compatible" ~/gpAdminLogs/gpupgrade/pg_upgrade/p-1/pg_upgrade_internal.log
+    grep -c "Clusters are compatible" ~/gpAdminLogs/gpupgrade/pg_upgrade/p0/pg_upgrade_internal.log
+    grep -c "Clusters are compatible" ~/gpAdminLogs/gpupgrade/pg_upgrade/p1/pg_upgrade_internal.log
+    grep -c "Clusters are compatible" ~/gpAdminLogs/gpupgrade/pg_upgrade/p2/pg_upgrade_internal.log
 
     KEEP_STATE_DIR=0
 }

@@ -24,7 +24,7 @@ RESET allow_system_table_mods;
 -- Assert that pg_upgrade --check correctly detects the non-upgradeable objects
 --------------------------------------------------------------------------------
 !\retcode gpupgrade initialize --source-gphome="${GPHOME_SOURCE}" --target-gphome=${GPHOME_TARGET} --source-master-port=${PGPORT} --disk-free-ratio 0 --automatic;
-! cat ${GPUPGRADE_HOME}/pg_upgrade/seg-1/invalid_indexes.txt;
+! cat ~/gpAdminLogs/gpupgrade/pg_upgrade/p-1/invalid_indexes.txt;
 
 --------------------------------------------------------------------------------
 -- Workaround to unblock upgrade
