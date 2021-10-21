@@ -92,6 +92,19 @@ SQL_EOF
         psql -v ON_ERROR_STOP=1 -d postgres -c 'CREATE EXTENSION pxf;'
     fi
 
+    echo 'Migrating gptext to target cluster...'
+    source /usr/local/greenplum-db-text/greenplum-text_path.sh
+    gptext-migrator
+
+    echo 'gptext: copy config files...'
+    cp $MASTER_DATA_DIRECTORY/{gptext.conf,gptxtenvs.conf,zoo_cluster.conf} \$MASTER_DATA_DIRECTORY/
+    cp $MASTER_DATA_DIRECTORY/{gptext.conf,gptxtenvs.conf,zoo_cluster.conf} ~/.gpupgrade/master.bak/
+    ls \$MASTER_DATA_DIRECTORY
+    if [ -e $MASTER_DATA_DIRECTORY/gptxtauth.conf ]; then
+        cp $MASTER_DATA_DIRECTORY/gptxtauth.conf \$MASTER_DATA_DIRECTORY/
+        cp $MASTER_DATA_DIRECTORY/gptxtauth.conf ~/.gpupgrade/master.bak/
+    fi
+
     gpstop -a
 
     echo 'Finishing the upgrade...'
@@ -142,6 +155,9 @@ ssh -n mdw "
         echo 'Starting pxf...'
         /usr/local/pxf-gp6/bin/pxf cluster start
     fi
+
+    echo 'Testing gptext...'
+    psql -d gptext_db -c \"SELECT * FROM gptext.search(table(SELECT 1 SCATTER BY 1), 'gptext_db.public.t1', 'greenplum', NULL);\"
 "
 
 echo "Upgrade successful..."
