@@ -65,6 +65,9 @@ time ssh -n mdw "
               --temp-port-range 6020-6040
     set -e
 
+    # Remove the expected failure logs such that any legitimate errors can easily be identified.
+    rm -rf /home/gpadmin/gpAdminLogs/gpupgrade/pg_upgrade/*
+
     echo 'Installing extensions on the target cluster...'
     source /usr/local/greenplum-db-target/greenplum_path.sh
     export MASTER_DATA_DIRECTORY=\$(gpupgrade config show --target-datadir)
@@ -91,6 +94,14 @@ SQL_EOF
         /usr/local/pxf-gp6/bin/pxf cluster init
         psql -v ON_ERROR_STOP=1 -d postgres -c 'CREATE EXTENSION pxf;'
     fi
+
+    echo 'Installing gptext on target cluster...'
+    source /usr/local/greenplum-db-text/greenplum-text_path.sh
+    gptext-migrator
+
+    # Since these files are required by the gptext .so file they need to be in the target cluster. Since gpupgrade
+    # initialize is re-run and idempotent place them in the backup of the master data directory.
+    cp $MASTER_DATA_DIRECTORY/{gptext.conf,gptxtenvs.conf,zoo_cluster.conf} /home/gpadmin/.gpupgrade/master.bak/
 
     gpstop -a
 

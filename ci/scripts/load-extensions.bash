@@ -18,13 +18,53 @@ echo "Copying extensions to the source cluster..."
 scp postgis_gppkg_source/postgis*.gppkg gpadmin@mdw:/tmp/postgis_source.gppkg
 scp sqldump/*.sql gpadmin@mdw:/tmp/postgis_dump.sql
 scp madlib_gppkg_source/madlib*.gppkg gpadmin@mdw:/tmp/madlib_source.gppkg
+scp gptext_targz_source/greenplum-text*.tar.gz gpadmin@mdw:/tmp/gptext.tar.gz
 
 echo "Installing extensions and sample data on source cluster..."
+
+echo "Setting up gptext dependencies ..."
+mapfile -t hosts < cluster_env_files/hostfile_all
+for host in "${hosts[@]}"; do
+    ssh -n "centos@${host}" "
+        sudo yum install -y java-1.8.0-openjdk lsof nc
+
+        sudo mkdir /usr/local/greenplum-db-text
+        sudo chown gpadmin:gpadmin /usr/local/greenplum-db-text
+
+        sudo mkdir /usr/local/greenplum-solr
+        sudo chown gpadmin:gpadmin /usr/local/greenplum-solr
+    "
+done
+
 time ssh -n mdw "
     set -eux -o pipefail
-
     source /usr/local/greenplum-db-source/greenplum_path.sh
     export MASTER_DATA_DIRECTORY=$MASTER_DATA_DIRECTORY
+
+    echo 'Installing gptext...'
+    tar zxvf /tmp/gptext.tar.gz -C /tmp/
+    chmod +x /tmp/greenplum-text*.bin
+    sed -i -r 's/GPTEXT_HOSTS\=\(localhost\)/GPTEXT_HOSTS\=\"ALLSEGHOSTS\"/' /tmp/gptext_install_config
+    sed -i -r 's/ZOO_HOSTS.*/ZOO_HOSTS\=\(mdw mdw mdw\)/' /tmp/gptext_install_config
+
+    /tmp/greenplum-text*.bin -c /tmp/gptext_install_config -d /usr/local/greenplum-db-text
+    source /usr/local/greenplum-db-text/greenplum-text_path.sh
+    createdb gptext_db
+    gptext-installsql gptext_db
+    gptext-start
+
+    psql -v ON_ERROR_STOP=1 -d gptext_db <<SQL_EOF
+        CREATE TABLE t1 (id INT PRIMARY KEY, content TEXT);
+
+        INSERT INTO t1 VALUES (1, 'Greenplum Database balabalabala');
+        INSERT INTO t1 VALUES (2, 'VMware Greenplum balabala');
+
+        SELECT * FROM gptext.create_index('public', 't1', 'id', 'content');
+        SELECT * FROM gptext.index(table(SELECT * FROM t1), 'gptext_db.public.t1');
+        SELECT * FROM gptext.commit_index('gptext_db.public.t1');
+
+        SELECT * FROM gptext.search(table(SELECT 1 SCATTER BY 1), 'gptext_db.public.t1', 'greenplum', NULL);
+SQL_EOF
 
     echo 'Installing PostGIS...'
     gppkg -i /tmp/postgis_source.gppkg
@@ -100,7 +140,6 @@ SQL_EOF
 
         CREATE VIEW pgcrypto_test_view AS SELECT crypt('new password', gen_salt('md5'));
 SQL_EOF
-
 "
 
 install_pxf() {
