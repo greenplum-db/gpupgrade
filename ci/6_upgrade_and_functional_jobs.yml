@@ -38,6 +38,8 @@
           {{- end }}
         {{- end }}
         {{- if .ExtensionsJob }}
+        - get: gptext_targz # NOTE: The same gptext artifact is used for both the source and target clusters.
+          resource: greenplum-text-dev-rhel{{.CentosVersion}}
         - get: postgis_gppkg_source
           resource: postgis_2.1.5_gpdb{{.Source}}_centos{{.CentosVersion}}_gppkg
         - get: postgis_gppkg_target
@@ -130,6 +132,7 @@
           - name: ccp_src
           - name: cluster_env_files
           - name: gpupgrade_src
+          - name: gptext_targz
           - name: postgis_gppkg_source
           - name: madlib_gppkg_source
           - name: sqldump

@@ -63,8 +63,11 @@ time ssh -n mdw "
               --source-gphome $GPHOME_SOURCE \
               --source-master-port $PGPORT \
               --temp-port-range 6020-6040 \
-              --dynamic-library-path '$GPHOME_TARGET/madlib/Current/ports/greenplum/6/lib'
+              --dynamic-library-path '$GPHOME_TARGET/madlib/Current/ports/greenplum/6/lib:/usr/local/greenplum-db-text/lib/gpdb6'
     set -e
+
+    # Remove the expected failure logs such that any legitimate errors can easily be identified.
+    rm -rf /home/gpadmin/gpAdminLogs/gpupgrade/pg_upgrade/*
 
     echo 'Installing extensions on the target cluster...'
     source /usr/local/greenplum-db-target/greenplum_path.sh
@@ -85,6 +88,14 @@ time ssh -n mdw "
         /usr/local/pxf-gp6/bin/pxf cluster init
     fi
 
+    # This is a band-aid workaround due to gptext tech debt that needs to be addressed.
+    # Extension data belongs in the extension directory and 'not' in the server
+    # data directories. Do not mix them!
+    # Since these files are required by the gptext .so file they need to be in
+    # the target cluster. Since gpupgrade initialize is re-run and idempotent
+    # place them in the backup of the master data directory.
+    cp $MASTER_DATA_DIRECTORY/{gptext.conf,gptxtenvs.conf,zoo_cluster.conf} /home/gpadmin/.gpupgrade/master.bak/
+
     gpstop -a
 
     echo 'Finishing the upgrade...'
@@ -95,7 +106,7 @@ time ssh -n mdw "
               --source-gphome $GPHOME_SOURCE \
               --source-master-port $PGPORT \
               --temp-port-range 6020-6040 \
-              --dynamic-library-path '$GPHOME_TARGET/madlib/Current/ports/greenplum/6/lib'
+              --dynamic-library-path '$GPHOME_TARGET/madlib/Current/ports/greenplum/6/lib:/usr/local/greenplum-db-text/lib/gpdb6'
 
     gpupgrade execute --non-interactive
     gpupgrade finalize --non-interactive
