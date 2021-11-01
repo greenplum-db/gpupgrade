@@ -51,21 +51,40 @@ create_tablespace_with_tables() {
 
     (source "${GPHOME_SOURCE}"/greenplum_path.sh && gpfilespace --config "${TABLESPACE_CONFIG}")
 
-    # create a tablespace in said filespace and a table in that tablespace
+    # create a tablespace in said filespace and some databases in that tablespace
     "${GPHOME_SOURCE}"/bin/psql -d postgres -v ON_ERROR_STOP=1 <<- EOF
-				CREATE TABLESPACE batsTbsp FILESPACE batsFS;
-				CREATE TABLE "${tablespace_table_prefix}_0" (a int) TABLESPACE batsTbsp;
-				INSERT INTO "${tablespace_table_prefix}_0" SELECT i from generate_series(1,100)i;
+        CREATE TABLESPACE batsTbsp FILESPACE batsFS;
 
-				CREATE TABLE "${tablespace_table_prefix}_1" (a int) WITH(appendonly=true, orientation=row) TABLESPACE batsTbsp;
-				INSERT INTO "${tablespace_table_prefix}_1" SELECT i from generate_series(1,100)i;
+        CREATE DATABASE foodb TABLESPACE batsTbsp;
+        CREATE DATABASE eatdb TABLESPACE batsTbsp;
+EOF
 
-				CREATE TABLE "${tablespace_table_prefix}_2" (a int) WITH(appendonly=true, orientation=column) TABLESPACE batsTbsp;
-				INSERT INTO "${tablespace_table_prefix}_2" SELECT i from generate_series(1,100)i;
+    # create various tables in the tablespace
+    "${GPHOME_SOURCE}"/bin/psql -d postgres -v ON_ERROR_STOP=1 <<- EOF
+        CREATE TABLE "${tablespace_table_prefix}_0" (a int) TABLESPACE batsTbsp;
+        INSERT INTO "${tablespace_table_prefix}_0" SELECT i from generate_series(1,100)i;
 
-				CREATE TABLE  "${tablespace_table_prefix}_3" (a int, b int) WITH(appendonly=true, orientation=column) TABLESPACE batsTbsp
-				    PARTITION BY RANGE(b) (START(1) END(4) EVERY(1));
-				INSERT INTO "${tablespace_table_prefix}_3" SELECT i, (i%3)+1 FROM generate_series(1,100)i;
+        CREATE TABLE "${tablespace_table_prefix}_1" (a int) WITH(appendonly=true, orientation=row) TABLESPACE batsTbsp;
+        INSERT INTO "${tablespace_table_prefix}_1" SELECT i from generate_series(1,100)i;
+
+        CREATE TABLE "${tablespace_table_prefix}_2" (a int) WITH(appendonly=true, orientation=column) TABLESPACE batsTbsp;
+        INSERT INTO "${tablespace_table_prefix}_2" SELECT i from generate_series(1,100)i;
+
+        CREATE TABLE  "${tablespace_table_prefix}_3" (a int, b int) WITH(appendonly=true, orientation=column) TABLESPACE batsTbsp
+            PARTITION BY RANGE(b) (START(1) END(4) EVERY(1));
+        INSERT INTO "${tablespace_table_prefix}_3" SELECT i, (i%3)+1 FROM generate_series(1,100)i;
+EOF
+
+    # add a table to the database within the tablespace
+    "${GPHOME_SOURCE}"/bin/psql -d foodb -v ON_ERROR_STOP=1 <<- EOF
+        CREATE TABLE "${tablespace_table_prefix}_0" (a int);
+        INSERT INTO "${tablespace_table_prefix}_0" SELECT i from generate_series(1,100)i;
+EOF
+
+    # add a table to the database within the tablespace
+    "${GPHOME_SOURCE}"/bin/psql -d eatdb -v ON_ERROR_STOP=1 <<- EOF
+        CREATE TABLE "${tablespace_table_prefix}_0" (a int);
+        INSERT INTO "${tablespace_table_prefix}_0" SELECT i from generate_series(1,100)i;
 EOF
 }
 
@@ -73,13 +92,23 @@ EOF
 delete_tablespace_data() {
    local tablespace_table_prefix=${1:-batsTable}
 
+    "${GPHOME_SOURCE}"/bin/psql -d foodb -v ON_ERROR_STOP=1 <<- EOF
+        DROP TABLE IF EXISTS "${tablespace_table_prefix}_0";
+EOF
+
+    "${GPHOME_SOURCE}"/bin/psql -d eatdb -v ON_ERROR_STOP=1 <<- EOF
+        DROP TABLE IF EXISTS "${tablespace_table_prefix}_0";
+EOF
+
     "${GPHOME_SOURCE}"/bin/psql -d postgres -v ON_ERROR_STOP=1 <<- EOF
-				DROP TABLE IF EXISTS "${tablespace_table_prefix}_0";
-				DROP TABLE IF EXISTS "${tablespace_table_prefix}_1";
-				DROP TABLE IF EXISTS "${tablespace_table_prefix}_2";
-				DROP TABLE IF EXISTS "${tablespace_table_prefix}_3";
-				DROP TABLESPACE IF EXISTS batsTbsp;
-				DROP FILESPACE IF EXISTS batsFS;
+        DROP TABLE IF EXISTS "${tablespace_table_prefix}_0";
+        DROP TABLE IF EXISTS "${tablespace_table_prefix}_1";
+        DROP TABLE IF EXISTS "${tablespace_table_prefix}_2";
+        DROP TABLE IF EXISTS "${tablespace_table_prefix}_3";
+        DROP DATABASE IF EXISTS foodb;
+        DROP DATABASE IF EXISTS eatdb;
+        DROP TABLESPACE IF EXISTS batsTbsp;
+        DROP FILESPACE IF EXISTS batsFS;
 EOF
 }
 
@@ -88,10 +117,18 @@ truncate_tablespace_data() {
        local port=$2
 
     "${GPHOME_SOURCE}"/bin/psql -p "$port" -d postgres -v ON_ERROR_STOP=1 <<- EOF
-				TRUNCATE "${tablespace_table_prefix}_0";
-				TRUNCATE "${tablespace_table_prefix}_1";
-				TRUNCATE "${tablespace_table_prefix}_2";
-				TRUNCATE "${tablespace_table_prefix}_3";
+        TRUNCATE "${tablespace_table_prefix}_0";
+        TRUNCATE "${tablespace_table_prefix}_1";
+        TRUNCATE "${tablespace_table_prefix}_2";
+        TRUNCATE "${tablespace_table_prefix}_3";
+EOF
+
+    "${GPHOME_SOURCE}"/bin/psql -p "$port" -d foodb -v ON_ERROR_STOP=1 <<- EOF
+        TRUNCATE "${tablespace_table_prefix}_0";
+EOF
+
+    "${GPHOME_SOURCE}"/bin/psql -p "$port" -d eatdb -v ON_ERROR_STOP=1 <<- EOF
+        TRUNCATE "${tablespace_table_prefix}_0";
 EOF
 }
 
@@ -105,4 +142,18 @@ check_tablespace_data() {
             fail "failed verifying tablespaces. $table got $rows want 100"
         fi
     done
+
+    local rows table
+    table="${tablespace_table_prefix}_0"
+    rows=$("$GPHOME_TARGET"/bin/psql -d foodb -Atc "SELECT COUNT(*) FROM \"$table\";")
+    if (( rows != 100 )); then
+        fail "failed verifying tablespaces. $table got $rows want 100"
+    fi
+
+    local rows table
+    table="${tablespace_table_prefix}_0"
+    rows=$("$GPHOME_TARGET"/bin/psql -d eatdb -Atc "SELECT COUNT(*) FROM \"$table\";")
+    if (( rows != 100 )); then
+        fail "failed verifying tablespaces. $table got $rows want 100"
+    fi
 }

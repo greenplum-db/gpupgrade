@@ -309,19 +309,23 @@ EOF
 # always have a content 0 primary.
 setup_primary_upgrade_failure() {
     "$PSQL" postgres --single-transaction -f - <<"EOF"
-        CREATE TABLE primary_failure (a int, b int);
-        INSERT INTO primary_failure SELECT i, i FROM generate_series(1,10)i;
+        CREATE TABLE primary_failure_tbl (a int, b int);
+        INSERT INTO primary_failure_tbl SELECT i, i FROM generate_series(1,10)i;
 EOF
+    register_teardown "$PSQL" postgres -c "DROP TABLE IF EXISTS primary_failure_tbl"
 
-    register_teardown "$PSQL" postgres -c "DROP TABLE IF EXISTS primary_failure"
+    # NOTE: Before removing the relfile for primary_failure_tbl issue a checkpoint to flush the dirty buffers to disk.
+    # Later we have a CREATE DATABASE statement which indirectly creates a checkpoint and if the dirty buffers exist at
+    # that point the statement will fail.
+    "$PSQL" postgres --single-transaction -c "CHECKPOINT"
 
     # get host and datadir for segment 0
     local host datadir
     read -r host datadir <<<"$(query_host_datadirs "$GPHOME_SOURCE" "$PGPORT" "content=0 AND role = 'p'")"
 
-    # obtain the relfilenode and dbid of the table primary_failure on segment 0
+    # obtain the relfilenode and dbid of the table primary_failure_tbl on segment 0
     local file dboid
-    file=$("$GPHOME_SOURCE"/bin/psql -d postgres -Atc "SELECT relfilenode FROM gp_dist_random('pg_class') WHERE relname='primary_failure' AND gp_segment_id=0;")
+    file=$("$GPHOME_SOURCE"/bin/psql -d postgres -Atc "SELECT relfilenode FROM gp_dist_random('pg_class') WHERE relname='primary_failure_tbl' AND gp_segment_id=0;")
     dboid=$("$GPHOME_SOURCE"/bin/psql -d postgres -Atc "SELECT oid FROM gp_dist_random('pg_database') WHERE datname='postgres' and gp_segment_id=0;")
 
     ssh "$host" mv "$datadir/base/$dboid/$file" "$datadir/base/$dboid/$file.bkp"
@@ -338,11 +342,11 @@ test_revert_after_execute_pg_upgrade_failure() {
     old_config=$(get_segment_configuration "${GPHOME_SOURCE}")
 
     # Place marker files on mirrors
-    MARKER=source-cluster.MARKER
+    MARKER=source-cluster.marker
     mirrors=$(query_host_datadirs "$GPHOME_SOURCE" "$PGPORT" "role='m'")
-    while read -r host datadir; do
-        ssh -n "$host" touch "$datadir/${MARKER}"
-        register_teardown ssh "$host" rm -f "$datadir/${MARKER}"
+    while read -r mirror_host datadir; do
+        ssh -n "$mirror_host" touch "$datadir/${MARKER}"
+        register_teardown ssh "$mirror_host" rm -f "$datadir/${MARKER}"
     done <<< "$mirrors"
 
     # Add a tablespace, which only works when upgrading from 5X.
