@@ -63,7 +63,8 @@ time ssh -n mdw "
         SELECT * FROM gptext.index(table(SELECT * FROM t1), 'gptext_db.public.t1');
         SELECT * FROM gptext.commit_index('gptext_db.public.t1');
 
-        SELECT * FROM gptext.search(table(SELECT 1 SCATTER BY 1), 'gptext_db.public.t1', 'greenplum', NULL);
+        -- TODO: Add a dependency on the gptext function by creating a view.
+        CREATE VIEW gptext_test_view AS SELECT * FROM gptext.search(table(SELECT 1 SCATTER BY 1), 'gptext_db.public.t1', 'greenplum', NULL);
 SQL_EOF
 
     echo 'Installing PostGIS...'
