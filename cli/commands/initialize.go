@@ -49,6 +49,7 @@ func initialize() *cobra.Command {
 	var ports string
 	var mode string
 	var useHbaHostnames bool
+	var dynamicLibraryPath string
 
 	subInit := &cobra.Command{
 		Use:   "initialize",
@@ -237,7 +238,10 @@ func initialize() *cobra.Command {
 					return step.Skip
 				}
 
-				response, err = commanders.InitializeCreateCluster(client, verbose)
+				request := &idl.InitializeCreateClusterRequest{
+					DynamicLibraryPath: dynamicLibraryPath,
+				}
+				response, err = commanders.InitializeCreateCluster(client, request, verbose)
 				if err != nil {
 					return err
 				}
@@ -276,6 +280,7 @@ To return the cluster to its original state, run "gpupgrade revert".`,
 	subInit.Flags().StringVar(&ports, "temp-port-range", "50432-65535", "set of ports to use when initializing the target cluster")
 	subInit.Flags().StringVar(&mode, "mode", "copy", "performs upgrade in either copy or link mode. Default is copy.")
 	subInit.Flags().BoolVar(&useHbaHostnames, "use-hba-hostnames", false, "use hostnames in pg_hba.conf")
+	subInit.Flags().StringVar(&dynamicLibraryPath, "dynamic-library-path", "", "sets the dynamic_library_path GUC to correctly find extensions installed outside their default location. Defaults to '$dynamic_library_path'.")
 	subInit.Flags().BoolVar(&skipVersionCheck, "skip-version-check", false, "disable source and target version check")
 	subInit.Flags().MarkHidden("skip-version-check") //nolint
 	return addHelpToCommand(subInit, InitializeHelp)

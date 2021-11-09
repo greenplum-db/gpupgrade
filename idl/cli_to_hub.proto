@@ -33,7 +33,11 @@ message InitializeRequest {
     repeated uint32 ports = 7;
     double diskFreeRatio = 8;
 }
-message InitializeCreateClusterRequest {}
+
+message InitializeCreateClusterRequest {
+  string dynamicLibraryPath = 1;
+}
+
 message ExecuteRequest {}
 message FinalizeRequest {}
 
@@ -96,6 +100,7 @@ enum Substep {
     WAIT_FOR_CLUSTER_TO_BE_READY_AFTER_ADDING_MIRRORS_AND_STANDBY = 32;
     WAIT_FOR_CLUSTER_TO_BE_READY_AFTER_UPDATING_CATALOG = 33;
     STOP_TARGET_CLUSTER = 34;
+    SETTING_DYNAMIC_LIBRARY_PATH_ON_TARGET_CLSUTER = 35;
 }
 
 enum Status {

@@ -62,7 +62,8 @@ time ssh -n mdw "
               --target-gphome $GPHOME_TARGET \
               --source-gphome $GPHOME_SOURCE \
               --source-master-port $PGPORT \
-              --temp-port-range 6020-6040
+              --temp-port-range 6020-6040 \
+              --dynamic-library-path '$GPHOME_TARGET/madlib/Current/ports/greenplum/6/lib'
     set -e
 
     echo 'Installing extensions on the target cluster...'
@@ -96,12 +97,13 @@ SQL_EOF
 
     echo 'Finishing the upgrade...'
     gpupgrade initialize \
-          $LINK_MODE \
-          --automatic \
-          --target-gphome $GPHOME_TARGET \
-          --source-gphome $GPHOME_SOURCE \
-          --source-master-port $PGPORT \
-          --temp-port-range 6020-6040
+              $LINK_MODE \
+              --automatic \
+              --target-gphome $GPHOME_TARGET \
+              --source-gphome $GPHOME_SOURCE \
+              --source-master-port $PGPORT \
+              --temp-port-range 6020-6040 \
+              --dynamic-library-path '$GPHOME_TARGET/madlib/Current/ports/greenplum/6/lib'
 
     gpupgrade execute --non-interactive
     gpupgrade finalize --non-interactive

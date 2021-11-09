@@ -186,7 +186,7 @@ resources:
     access_key_id: ((madlib-s3-access_key_id))
     secret_access_key: ((madlib-s3-secret_access_key))
     region_name: us-west-2
-    bucket: madlib-artifacts-gpupgrade  # FIXME: update to prod bucket once MADlib is released.
+    bucket: madlib-artifacts  # FIXME: update to prod bucket once MADlib is released.
     versioned_file: bin_madlib_artifacts_centos{{.CentosVersion}}/madlib-master-gp{{.GPVersion}}-rhel{{.CentosVersion}}-x86_64.gppkg
 
 # NOTE: Skip creating the pxf resources for centos6 since pxf5 gpdb6 is not supported for centos6. Thus, we can only

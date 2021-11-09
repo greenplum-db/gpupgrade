@@ -42,8 +42,8 @@ func Initialize(client idl.CliToHubClient, request *idl.InitializeRequest, verbo
 	return nil
 }
 
-func InitializeCreateCluster(client idl.CliToHubClient, verbose bool) (idl.InitializeResponse, error) {
-	stream, err := client.InitializeCreateCluster(context.Background(), &idl.InitializeCreateClusterRequest{})
+func InitializeCreateCluster(client idl.CliToHubClient, request *idl.InitializeCreateClusterRequest, verbose bool) (idl.InitializeResponse, error) {
+	stream, err := client.InitializeCreateCluster(context.Background(), request)
 	if err != nil {
 		return idl.InitializeResponse{}, err
 	}
