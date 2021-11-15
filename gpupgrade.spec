@@ -8,8 +8,7 @@ Summary: %{summary}
 License: %{license}
 URL: https://github.com/greenplum-db/gpupgrade
 Source0: %{name}.tar.gz
-# Allow the RPM to be relocatable by setting prefix to "/".
-Prefix: /
+Prefix: /usr/local/bin
 Requires: openssh rsync >= 3.0
 
 %description
@@ -28,34 +27,29 @@ fi
 
 %install
 # executables
-mkdir -p %{buildroot}%{prefix}/usr/local/bin
-mv gpupgrade %{buildroot}%{prefix}/usr/local/bin
-mv data-migration-scripts/gpupgrade-migration-sql-generator.bash %{buildroot}%{prefix}/usr/local/bin/gpupgrade-migration-sql-generator.bash
-mv data-migration-scripts/gpupgrade-migration-sql-executor.bash %{buildroot}%{prefix}/usr/local/bin/gpupgrade-migration-sql-executor.bash
+mkdir -p %{buildroot}%{prefix}
+mv gpupgrade %{buildroot}%{prefix}
+mv data-migration-scripts/gpupgrade-migration-sql-generator.bash %{buildroot}%{prefix}/gpupgrade-migration-sql-generator.bash
+mv data-migration-scripts/gpupgrade-migration-sql-executor.bash %{buildroot}%{prefix}/gpupgrade-migration-sql-executor.bash
 
 # additional files
-mkdir -p %{buildroot}%{prefix}/usr/local/bin/greenplum/%{name}
-mv data-migration-scripts %{buildroot}%{prefix}/usr/local/bin/greenplum/%{name}
-mv gpupgrade_config %{buildroot}%{prefix}/usr/local/bin/greenplum/%{name}
-mv gpupgrade.bash %{buildroot}%{prefix}/usr/local/bin/greenplum/%{name}
-mv open_source_licenses.txt %{buildroot}%{prefix}/usr/local/bin/greenplum/%{name}
+mkdir -p %{buildroot}%{prefix}/greenplum/%{name}
+mv data-migration-scripts %{buildroot}%{prefix}/greenplum/%{name}
+mv gpupgrade_config %{buildroot}%{prefix}/greenplum/%{name}
+mv gpupgrade.bash %{buildroot}%{prefix}/greenplum/%{name}
+mv open_source_licenses.txt %{buildroot}%{prefix}/greenplum/%{name}
 
 
 %files
 # executables
-%dir %{prefix}/usr
-%dir %{prefix}/usr/local
-%dir %{prefix}/usr/local/bin
-
-%{prefix}/usr/local/bin/gpupgrade
-%{prefix}/usr/local/bin/gpupgrade-migration-sql-generator.bash
-%{prefix}/usr/local/bin/gpupgrade-migration-sql-executor.bash
+%{prefix}/gpupgrade
+%{prefix}/gpupgrade-migration-sql-generator.bash
+%{prefix}/gpupgrade-migration-sql-executor.bash
 
 # additional files
-%dir %{prefix}/usr/local/bin/greenplum
-%dir %{prefix}/usr/local/bin/greenplum/%{name}
-
-%{prefix}/usr/local/bin/greenplum/%{name}/data-migration-scripts
-%config %{prefix}/usr/local/bin/greenplum/%{name}/gpupgrade_config
-%{prefix}/usr/local/bin/greenplum/%{name}/gpupgrade.bash
-%{prefix}/usr/local/bin/greenplum/%{name}/open_source_licenses.txt
+%dir %{prefix}/greenplum
+%dir %{prefix}/greenplum/%{name}
+%{prefix}/greenplum/%{name}/data-migration-scripts
+%config %{prefix}/greenplum/%{name}/gpupgrade_config
+%{prefix}/greenplum/%{name}/gpupgrade.bash
+%{prefix}/greenplum/%{name}/open_source_licenses.txt
