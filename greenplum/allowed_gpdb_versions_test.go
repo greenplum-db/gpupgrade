@@ -23,11 +23,11 @@ func TestAllowedVersions(t *testing.T) {
 		{
 			"allowed source versions",
 			[]string{
-				"5.28.12",
-				"5.28.13",
+				"5.29.0",
+				"5.29.13",
 				"5.50.0",
-				"6.17.0",
-				"6.17.1",
+				"6.18.0",
+				"6.18.1",
 				"6.50.1",
 			},
 			sourceVersionAllowed,
@@ -41,7 +41,7 @@ func TestAllowedVersions(t *testing.T) {
 				"5.28.0",
 				"5.28.11",
 				"6.0.0",
-				"6.16.9",
+				"6.17.9",
 				"7.0.0",
 			},
 			sourceVersionAllowed,
@@ -50,8 +50,8 @@ func TestAllowedVersions(t *testing.T) {
 		}, {
 			"allowed target versions",
 			[]string{
-				"6.17.0",
-				"6.17.1",
+				"6.18.0",
+				"6.18.1",
 				"6.50.1",
 			},
 			targetVersionAllowed,
@@ -66,7 +66,7 @@ func TestAllowedVersions(t *testing.T) {
 				"5.28.0",
 				"5.50.0",
 				"6.0.0",
-				"6.16.0",
+				"6.17.0",
 				"7.0.0",
 			},
 			targetVersionAllowed,
@@ -97,14 +97,14 @@ func TestValidateVersionsErrorCases(t *testing.T) {
 		expected         error
 	}{
 		{
-			name: "fails when GPDB version has unsupported minor versions",
-			localVersion:    semver.MustParse("6.8.0").String(),
-			expected: errors.New("source cluster version 6.8.0 is not supported.  The minimum required version is 6.17.0. We recommend the latest version."),
+			name:         "fails when GPDB version has unsupported minor versions",
+			localVersion: semver.MustParse("6.8.0").String(),
+			expected:     errors.New("source cluster version 6.8.0 is not supported.  The minimum required version is 6.18.0. We recommend the latest version."),
 		},
 		{
-			name: "fails when GPDB version has unsupported major versions",
-			localVersion:    semver.MustParse("0.0.0").String(),
-			expected: errors.New("source cluster version 0.0.0 is not supported.  The minimum required version is 5.28.12. We recommend the latest version."),
+			name:         "fails when GPDB version has unsupported major versions",
+			localVersion: semver.MustParse("0.0.0").String(),
+			expected:     errors.New("source cluster version 0.0.0 is not supported.  The minimum required version is 5.29.0. We recommend the latest version."),
 		},
 	}
 

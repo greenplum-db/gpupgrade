@@ -32,12 +32,12 @@ var (
 // by the utility.  Map entries are of the form: GPDB_VERSION : MIN_ALLOWED_SEMVER
 
 var minSourceVersions = map[int]string{
-	5: "5.28.12",
-	6: "6.17.0",
+	5: "5.29.0",
+	6: "6.18.0",
 }
 
 var minTargetVersions = map[int]string{
-	6: "6.17.0",
+	6: "6.18.0",
 }
 
 // The below boilerplate turns the source/targetRanges variables into
