@@ -30,6 +30,16 @@ func PostgresGPVersion_11_341_31() {
 	fmt.Println("postgres (Greenplum Database) 11.341.31 build commit:a21de286045072d8d1df64fa48752b7dfac8c1b7")
 }
 
+func PostgresGPVersion_MultiLine() {
+	fmt.Println(`/usr/local/greenplum-db-6.18.2/bin/postgres: /usr/local/greenplum-db-5.29.1+dev.1.g0962183f78/lib/libxml2.so.2: no version information available (required by /usr/local/greenplum-db-6.18.2/bin/postgres)
+/usr/local/greenplum-db-6.18.2/bin/postgres: /usr/local/greenplum-db-5.29.1+dev.1.g0962183f78/lib/libxml2.so.2: no version information available (required by /usr/local/greenplum-db-6.18.2/bin/postgres)
+postgres (Greenplum Database) 6.18.2 build commit:1242aadf0137d3b26ee42c80e579e78bd7a805c7`)
+}
+
+func PostgresGPVersion_0_0_0() {
+	fmt.Println("postgres (Greenplum Database) 0.0.0 build commit:a21de286045072d8d1df64fa48752b7dfac8c1b7")
+}
+
 func EmptyString() {
 	fmt.Println("")
 }
@@ -48,6 +58,8 @@ func init() {
 		PostgresGPVersion_6_dev,
 		PostgresGPVersion_6_7_1,
 		PostgresGPVersion_11_341_31,
+		PostgresGPVersion_MultiLine,
+		PostgresGPVersion_0_0_0,
 		EmptyString,
 		MarkerOnly,
 		FailedMain,
@@ -66,6 +78,7 @@ func TestVersion_Parsing(t *testing.T) {
 		{name: "handles beta versions", versionCommand: PostgresGPVersion_5_27_0_beta, expected: "5.27.0"},
 		{name: "handles release versions", versionCommand: PostgresGPVersion_6_7_1, expected: "6.7.1"},
 		{name: "handles large versions", versionCommand: PostgresGPVersion_11_341_31, expected: "11.341.31"},
+		{name: "handles multi line versions", versionCommand: PostgresGPVersion_MultiLine, expected: "6.18.2"},
 	}
 
 	for _, c := range cases {

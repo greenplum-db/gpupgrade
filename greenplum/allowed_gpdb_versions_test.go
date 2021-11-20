@@ -5,11 +5,16 @@ package greenplum
 
 import (
 	"errors"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/blang/semver/v4"
 
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/testutils/exectest"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
+	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
 func TestAllowedVersions(t *testing.T) {
@@ -116,4 +121,41 @@ func TestValidateVersionsErrorCases(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestVerifyCompatibleGPDBVersions(t *testing.T) {
+	testlog.SetupLogger()
+
+	t.Run("returns error when gphome is incorrect", func(t *testing.T) {
+		err := VerifyCompatibleGPDBVersions("/usr/local/greenplum-db-source-typo", "")
+		var pathError *os.PathError
+		if !errors.As(err, &pathError) {
+			t.Errorf("got type %T want %T", err, pathError)
+		}
+	})
+
+	t.Run("returns combined errors when source and target cluster versions are invalid", func(t *testing.T) {
+		SetVersionCommand(exectest.NewCommand(PostgresGPVersion_0_0_0))
+		defer ResetVersionCommand()
+
+		err := VerifyCompatibleGPDBVersions("", "")
+		var errs errorlist.Errors
+		if !errors.As(err, &errs) {
+			t.Fatalf("got error %#v, want type %T", err, errs)
+		}
+
+		if len(errs) != 2 {
+			t.Errorf("got %d errors want 2", len(errs))
+		}
+
+		expected := "source cluster version 0.0.0 is not supported"
+		if !strings.Contains(errs[0].Error(), expected) {
+			t.Errorf("expected error %+v to contain %q", errs[0], expected)
+		}
+
+		expected = "target cluster version 0.0.0 is not supported"
+		if !strings.Contains(errs[1].Error(), expected) {
+			t.Errorf("expected error %+v to contain %q", errs[1], expected)
+		}
+	})
 }

@@ -4,6 +4,7 @@
 package greenplum
 
 import (
+	"fmt"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -36,7 +37,7 @@ func Version(gphome string) (string, error) {
 	gplog.Debug(cmd.String())
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", xerrors.Errorf("%q failed with %q: %w", cmd.String(), string(output), err)
+		return "", fmt.Errorf("%q failed with %q: %w", cmd.String(), string(output), err)
 	}
 
 	rawVersion := string(output)

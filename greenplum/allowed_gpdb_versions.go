@@ -85,19 +85,25 @@ func getMinVersion(version semver.Version, minVersions map[int]string) string {
 }
 
 func VerifyCompatibleGPDBVersions(sourceGPHome, targetGPHome string) error {
-	var err error
+	var errs error
 
-	sourceVersion, vErr := Version(sourceGPHome)
-	err = errorlist.Append(err, vErr)
-	vErr = validateVersion(sourceVersion, idl.ClusterDestination_SOURCE)
-	err = errorlist.Append(err, vErr)
+	sourceVersion, err := Version(sourceGPHome)
+	if err != nil {
+		return err
+	}
 
-	targetVersion, vErr := Version(targetGPHome)
-	err = errorlist.Append(err, vErr)
-	vErr = validateVersion(targetVersion, idl.ClusterDestination_TARGET)
-	err = errorlist.Append(err, vErr)
+	err = validateVersion(sourceVersion, idl.ClusterDestination_SOURCE)
+	errs = errorlist.Append(errs, err)
 
-	return err
+	targetVersion, err := Version(targetGPHome)
+	if err != nil {
+		return err
+	}
+
+	err = validateVersion(targetVersion, idl.ClusterDestination_TARGET)
+	errs = errorlist.Append(errs, err)
+
+	return errs
 }
 
 func validateVersion(versionStr string, destination idl.ClusterDestination) error {
