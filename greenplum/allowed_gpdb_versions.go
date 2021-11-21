@@ -32,7 +32,7 @@ var (
 // by the utility.  Map entries are of the form: GPDB_VERSION : MIN_ALLOWED_SEMVER
 
 var minSourceVersions = map[int]string{
-	5: "5.29.0",
+	5: "5.29.1",
 	6: "6.18.0",
 }
 
