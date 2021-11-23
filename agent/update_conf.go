@@ -5,6 +5,8 @@ package agent
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 
@@ -15,9 +17,14 @@ import (
 func (s *Server) UpdateConfiguration(ctx context.Context, req *idl.UpdateConfigurationRequest) (*idl.UpdateConfigurationReply, error) {
 	gplog.Info("agent received request to update configuration file")
 
-	err := hub.UpdateConfigurationFile(req.GetOptions())
+	hostname, err := os.Hostname()
 	if err != nil {
 		return &idl.UpdateConfigurationReply{}, err
+	}
+
+	err = hub.UpdateConfigurationFile(req.GetOptions())
+	if err != nil {
+		return &idl.UpdateConfigurationReply{}, fmt.Errorf("on host %q: %w", hostname, err)
 	}
 
 	return &idl.UpdateConfigurationReply{}, nil

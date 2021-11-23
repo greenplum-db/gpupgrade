@@ -5,6 +5,8 @@ package agent
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"sync"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -52,6 +54,11 @@ func (s *Server) RsyncTablespaceDirectories(ctx context.Context, in *idl.RsyncRe
 }
 
 func rsyncRequestDirs(in *idl.RsyncRequest) error {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return err
+	}
+
 	var wg sync.WaitGroup
 	errs := make(chan error, len(in.GetOptions()))
 
@@ -69,14 +76,16 @@ func rsyncRequestDirs(in *idl.RsyncRequest) error {
 				rsync.WithOptions(opts.GetOptions()...),
 				rsync.WithExcludedFiles(opts.GetExcludedFiles()...),
 			}
-			errs <- rsync.Rsync(opts...)
+			err := rsync.Rsync(opts...)
+			if err != nil {
+				errs <- fmt.Errorf("on host %q: %w", hostname, err)
+			}
 		}()
 	}
 
 	wg.Wait()
 	close(errs)
 
-	var err error
 	for e := range errs {
 		err = errorlist.Append(err, e)
 	}

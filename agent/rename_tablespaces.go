@@ -5,6 +5,7 @@ package agent
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -27,6 +28,11 @@ func (s *Server) RenameTablespaces(ctx context.Context, req *idl.RenameTablespac
 }
 
 func renameTablespaces(pairs []*idl.RenameTablespacesRequest_RenamePair) error {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return err
+	}
+
 	var wg sync.WaitGroup
 	errs := make(chan error, len(pairs)*2)
 
@@ -39,13 +45,13 @@ func renameTablespaces(pairs []*idl.RenameTablespacesRequest_RenamePair) error {
 			gplog.Info("mkdirAll: %q", filepath.Dir(pair.GetDestination()))
 			err := os.MkdirAll(filepath.Dir(pair.GetDestination()), 0700)
 			if err != nil {
-				errs <- err
+				errs <- fmt.Errorf("on host %q: %w", hostname, err)
 			}
 
 			gplog.Info("rename: %q to %q", pair.GetSource(), pair.GetDestination())
 			err = os.Rename(pair.GetSource(), pair.GetDestination())
 			if err != nil {
-				errs <- err
+				errs <- fmt.Errorf("on host %q: %w", hostname, err)
 			}
 		}(pair)
 	}
@@ -53,7 +59,6 @@ func renameTablespaces(pairs []*idl.RenameTablespacesRequest_RenamePair) error {
 	wg.Wait()
 	close(errs)
 
-	var err error
 	for e := range errs {
 		err = errorlist.Append(err, e)
 	}
