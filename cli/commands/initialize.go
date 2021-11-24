@@ -228,7 +228,7 @@ func initialize() *cobra.Command {
 				}
 				err = commanders.Initialize(client, request, verbose)
 				if err != nil {
-					return xerrors.Errorf("initialize: %w", err)
+					return err
 				}
 
 				return nil
@@ -242,7 +242,7 @@ func initialize() *cobra.Command {
 
 				response, err = commanders.InitializeCreateCluster(client, verbose)
 				if err != nil {
-					return xerrors.Errorf("initialize create cluster: %w", err)
+					return err
 				}
 
 				return nil

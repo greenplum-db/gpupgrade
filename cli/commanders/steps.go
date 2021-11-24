@@ -9,7 +9,6 @@ import (
 	"io"
 	"os"
 
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -29,28 +28,26 @@ var indicators = map[idl.Status]string{
 func Initialize(client idl.CliToHubClient, request *idl.InitializeRequest, verbose bool) (err error) {
 	stream, err := client.Initialize(context.Background(), request)
 	if err != nil {
-		return xerrors.Errorf("initialize hub: %w", err)
+		return err
 	}
 
 	_, err = UILoop(stream, verbose)
 	if err != nil {
-		return xerrors.Errorf("Initialize: %w", err)
+		return err
 	}
 
 	return nil
 }
 
 func InitializeCreateCluster(client idl.CliToHubClient, verbose bool) (idl.InitializeResponse, error) {
-	stream, err := client.InitializeCreateCluster(context.Background(),
-		&idl.InitializeCreateClusterRequest{},
-	)
+	stream, err := client.InitializeCreateCluster(context.Background(), &idl.InitializeCreateClusterRequest{})
 	if err != nil {
-		return idl.InitializeResponse{}, xerrors.Errorf("initialize create cluster: %w", err)
+		return idl.InitializeResponse{}, err
 	}
 
 	response, err := UILoop(stream, verbose)
 	if err != nil {
-		return idl.InitializeResponse{}, xerrors.Errorf("InitializeCreateCluster: %w", err)
+		return idl.InitializeResponse{}, err
 	}
 
 	initializeResponse := response.GetInitializeResponse()
@@ -64,14 +61,12 @@ func InitializeCreateCluster(client idl.CliToHubClient, verbose bool) (idl.Initi
 func Execute(client idl.CliToHubClient, verbose bool) (idl.ExecuteResponse, error) {
 	stream, err := client.Execute(context.Background(), &idl.ExecuteRequest{})
 	if err != nil {
-		// TODO: Change the logging message?
-		gplog.Error("ERROR - Unable to connect to hub")
 		return idl.ExecuteResponse{}, err
 	}
 
 	response, err := UILoop(stream, verbose)
 	if err != nil {
-		return idl.ExecuteResponse{}, xerrors.Errorf("Execute: %w", err)
+		return idl.ExecuteResponse{}, err
 	}
 
 	executeResponse := response.GetExecuteResponse()
@@ -85,13 +80,12 @@ func Execute(client idl.CliToHubClient, verbose bool) (idl.ExecuteResponse, erro
 func Finalize(client idl.CliToHubClient, verbose bool) (idl.FinalizeResponse, error) {
 	stream, err := client.Finalize(context.Background(), &idl.FinalizeRequest{})
 	if err != nil {
-		gplog.Error(err.Error())
 		return idl.FinalizeResponse{}, err
 	}
 
 	response, err := UILoop(stream, verbose)
 	if err != nil {
-		return idl.FinalizeResponse{}, xerrors.Errorf("Finalize: %w", err)
+		return idl.FinalizeResponse{}, err
 	}
 
 	finalizeResponse := response.GetFinalizeResponse()
@@ -105,13 +99,12 @@ func Finalize(client idl.CliToHubClient, verbose bool) (idl.FinalizeResponse, er
 func Revert(client idl.CliToHubClient, verbose bool) (idl.RevertResponse, error) {
 	stream, err := client.Revert(context.Background(), &idl.RevertRequest{})
 	if err != nil {
-		gplog.Error(err.Error())
 		return idl.RevertResponse{}, err
 	}
 
 	response, err := UILoop(stream, verbose)
 	if err != nil {
-		return idl.RevertResponse{}, xerrors.Errorf("Revert: %w", err)
+		return idl.RevertResponse{}, err
 	}
 
 	revertResponse := response.GetRevertResponse()
