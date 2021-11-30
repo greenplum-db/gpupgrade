@@ -51,7 +51,7 @@
         image_resource:
           type: registry-image
           source:
-            repository: alpine
+            repository: centos
             tag: latest
         inputs:
           - name: gpupgrade_src
@@ -61,7 +61,7 @@
           - name: rpm_gpdb_target
           {{- end }}
         run:
-          path: gpupgrade_src/ci/scripts/prepare-installation.sh
+          path: gpupgrade_src/ci/scripts/prepare-installation.bash
           args:
             - greenplum-db-{{majorVersion .Source}}
             - greenplum-db-{{majorVersion .Target}}

@@ -17,7 +17,7 @@ set -eux -o pipefail
 source_package=$1
 target_package=$2
 
-apk add --no-progress openssh-client
+yum install --quiet -y openssh-clients
 
 echo "Enabling ssh to the ccp cluster..."
 cp -R cluster_env_files/.ssh /root/.ssh
