@@ -169,3 +169,9 @@ message GetConfigRequest {
 message GetConfigReply {
     string value = 1;
 }
+
+// Used to set the gRPC status details that the CLI converts to a NextActions
+// error type to be displayed to the user.
+message NextActions {
+  string nextActions = 1;
+}

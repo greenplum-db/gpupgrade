@@ -13,13 +13,15 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"google.golang.org/grpc/status"
 
-	"github.com/greenplum-db/gpupgrade/testutils/testlog"
-
+	"github.com/greenplum-db/gpupgrade/cli"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
+	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
 func TestStepRun(t *testing.T) {
@@ -682,6 +684,157 @@ func TestStepFinish(t *testing.T) {
 		err := s.Finish()
 		if !errors.Is(err, expected) {
 			t.Errorf("got error %#v, want %#v", err, expected)
+		}
+	})
+}
+
+func TestStepErr(t *testing.T) {
+	t.Run("returns nil when substep did not fail", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
+		server.EXPECT().
+			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
+				Step:   idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG,
+				Status: idl.Status_RUNNING,
+			}}})
+		server.EXPECT().
+			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
+				Step:   idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG,
+				Status: idl.Status_COMPLETE,
+			}}})
+
+		s := step.New(idl.Step_INITIALIZE, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
+
+		s.Run(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(streams step.OutStreams) error {
+			return nil
+		})
+
+		err := s.Err()
+		if err != nil {
+			t.Errorf("unexpected error %#v", err)
+		}
+	})
+
+	t.Run("does not set next action when error is not next action", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
+		server.EXPECT().
+			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
+				Step:   idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG,
+				Status: idl.Status_RUNNING,
+			}}})
+		server.EXPECT().
+			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
+				Step:   idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG,
+				Status: idl.Status_FAILED,
+			}}})
+
+		s := step.New(idl.Step_INITIALIZE, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
+
+		expected := os.ErrPermission
+		s.Run(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(streams step.OutStreams) error {
+			return expected
+		})
+
+		err := s.Err()
+		_, ok := status.FromError(err)
+		if ok {
+			t.Fatalf("got gRPC status error %#v, want %#v", err, expected)
+		}
+	})
+
+	t.Run("sets next action when error is next action", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
+		server.EXPECT().
+			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
+				Step:   idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG,
+				Status: idl.Status_RUNNING,
+			}}})
+		server.EXPECT().
+			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
+				Step:   idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG,
+				Status: idl.Status_FAILED,
+			}}})
+
+		s := step.New(idl.Step_INITIALIZE, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
+
+		expected := cli.NewNextActions(os.ErrPermission, "change permissions to gpadmin")
+		s.Run(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(streams step.OutStreams) error {
+			return expected
+		})
+
+		err := s.Err()
+		st, ok := status.FromError(err)
+		if !ok {
+			t.Fatalf("got gRPC status error %#v, want %#v", err, expected)
+		}
+
+		for _, detail := range st.Details() {
+			switch msg := detail.(type) {
+			case *idl.NextActions:
+				if msg.GetNextActions() != expected.NextAction {
+					t.Fatalf("got %q want %q", msg.GetNextActions(), expected.NextAction)
+				}
+			default:
+				t.Fatalf("expected details to contain NextActions")
+			}
+		}
+	})
+
+	t.Run("appends next actions when error is a list of errors containing next actions", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
+		server.EXPECT().
+			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
+				Step:   idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG,
+				Status: idl.Status_RUNNING,
+			}}})
+		server.EXPECT().
+			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
+				Step:   idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG,
+				Status: idl.Status_FAILED,
+			}}})
+
+		s := step.New(idl.Step_INITIALIZE, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
+
+		expected1 := cli.NewNextActions(os.ErrPermission, "change permissions to gpadmin")
+		expected2 := cli.NewNextActions(os.ErrDeadlineExceeded, "stop and rerun")
+		errs := errorlist.Errors{
+			errors.New("ahhh"),
+			expected1,
+			errors.New("oops"),
+			expected2,
+		}
+
+		s.Run(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(streams step.OutStreams) error {
+			return errs
+		})
+
+		err := s.Err()
+		st, ok := status.FromError(err)
+		if !ok {
+			t.Fatalf("got gRPC status error %#v, want %#v", err, expected1)
+		}
+
+		for _, detail := range st.Details() {
+			switch msg := detail.(type) {
+			case *idl.NextActions:
+				expectedText := strings.Join([]string{expected1.NextAction, expected2.NextAction}, "\n")
+				if msg.GetNextActions() != expectedText {
+					t.Fatalf("got %q want %q", msg.GetNextActions(), expectedText)
+				}
+			default:
+				t.Fatalf("expected details to contain NextActions")
+			}
 		}
 	})
 }

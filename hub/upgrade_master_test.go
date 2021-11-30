@@ -17,6 +17,7 @@ import (
 
 	"github.com/blang/semver/v4"
 
+	"github.com/greenplum-db/gpupgrade/cli"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -243,11 +244,42 @@ func TestUpgradeMaster(t *testing.T) {
 
 		var upgradeErr UpgradeMasterError
 		if !errors.As(err, &upgradeErr) {
-			t.Errorf("got type %T want %T", err, upgradeErr)
+			t.Fatalf("got type %T want %T", err, upgradeErr)
 		}
 
 		if upgradeErr.FailedAction != "upgrade" {
-			t.Errorf("got FailedAction %q want upgrade", upgradeErr.FailedAction)
+			t.Fatalf("got FailedAction %q want upgrade", upgradeErr.FailedAction)
+		}
+	})
+
+	t.Run("returns next actions error when pg_upgrade check fails", func(t *testing.T) {
+		rsync.SetRsyncCommand(exectest.NewCommand(Success))
+		defer rsync.ResetRsyncCommand()
+
+		SetExecCommand(exectest.NewCommand(Failure))
+		defer ResetExecCommand()
+
+		err := UpgradeMaster(UpgradeMasterArgs{
+			Source:       source,
+			Intermediate: target,
+			StateDir:     tempDir,
+			Stream:       new(step.BufferedStreams),
+			CheckOnly:    true,
+			UseLinkMode:  false,
+		})
+
+		var nextActionsErr cli.NextActions
+		if !errors.As(err, &nextActionsErr) {
+			t.Fatalf("got type %T want %T", err, nextActionsErr)
+		}
+
+		var upgradeErr UpgradeMasterError
+		if !errors.As(nextActionsErr.Err, &upgradeErr) {
+			t.Fatalf("got type %T want %T", err, upgradeErr)
+		}
+
+		if upgradeErr.FailedAction != "check" {
+			t.Fatalf("got FailedAction %q want check", upgradeErr.FailedAction)
 		}
 	})
 
@@ -357,8 +389,19 @@ func TestUpgradeMaster(t *testing.T) {
 			CheckOnly:    false,
 			UseLinkMode:  false,
 		})
-		if !errors.Is(err, expectedErr) {
-			t.Errorf("returned error %+v, want %+v", err, expectedErr)
+
+		var upgradeErr UpgradeMasterError
+		if !errors.As(err, &upgradeErr) {
+			t.Fatalf("got type %T want %T", err, upgradeErr)
+		}
+
+		if upgradeErr.FailedAction != "upgrade" {
+			t.Fatalf("got FailedAction %q want upgrade", upgradeErr.FailedAction)
+		}
+
+		expected := "upgrade master: write failed!"
+		if upgradeErr.Error() != expected {
+			t.Fatalf("got error text %q want %q", upgradeErr.Error(), expected)
 		}
 	})
 
@@ -442,8 +485,13 @@ Failure, exiting
 					t.Errorf("expected error, returned nil")
 				}
 
+				var nextActionsErr cli.NextActions
+				if !errors.As(err, &nextActionsErr) {
+					t.Fatalf("got type %T want %T", err, nextActionsErr)
+				}
+
 				var upgradeErr UpgradeMasterError
-				if !errors.As(err, &upgradeErr) {
+				if !errors.As(nextActionsErr.Err, &upgradeErr) {
 					t.Errorf("got type %T want %T", err, upgradeErr)
 				}
 

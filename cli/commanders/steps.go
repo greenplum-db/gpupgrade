@@ -8,9 +8,12 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"golang.org/x/xerrors"
+	"google.golang.org/grpc/status"
 
+	"github.com/greenplum-db/gpupgrade/cli"
 	"github.com/greenplum-db/gpupgrade/idl"
 )
 
@@ -173,7 +176,19 @@ func UILoop(stream receiver, verbose bool) (*idl.Response, error) {
 	}
 
 	if err != io.EOF {
-		return response, err
+		statusErr, ok := status.FromError(err)
+		if !ok || len(statusErr.Details()) == 0 {
+			return response, err
+		}
+
+		var nextActions []string
+		for _, detail := range statusErr.Details() {
+			if msg, ok := detail.(*idl.NextActions); ok {
+				nextActions = append(nextActions, msg.GetNextActions())
+			}
+		}
+
+		return response, cli.NewNextActions(err, strings.Join(nextActions, "\n"))
 	}
 
 	return response, nil

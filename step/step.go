@@ -13,7 +13,10 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/greenplum-db/gp-common-go-libs/operating"
 	"golang.org/x/xerrors"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
+	"github.com/greenplum-db/gpupgrade/cli"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
@@ -140,7 +143,39 @@ func (s *Step) Finish() error {
 }
 
 func (s *Step) Err() error {
-	return s.err
+	if s.err == nil {
+		return nil
+	}
+
+	text := ""
+	var nextActionErr cli.NextActions
+	if errors.As(s.err, &nextActionErr) {
+		text += nextActionErr.NextAction
+	}
+
+	var errs errorlist.Errors
+	if errors.As(s.err, &errs) {
+		var nextActions []string
+		for _, err := range errs {
+			if errors.As(err, &nextActionErr) {
+				nextActions = append(nextActions, nextActionErr.NextAction)
+			}
+		}
+
+		text = strings.Join(nextActions, "\n")
+	}
+
+	if text == "" {
+		return s.err
+	}
+
+	statusErr := status.New(codes.Internal, s.err.Error())
+	statusErr, err := statusErr.WithDetails(&idl.NextActions{NextActions: text})
+	if err != nil {
+		return s.err
+	}
+
+	return statusErr.Err()
 }
 
 func (s *Step) RunInternalSubstep(f func() error) {

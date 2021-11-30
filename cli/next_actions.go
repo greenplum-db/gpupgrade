@@ -3,21 +3,27 @@
 
 package cli
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // NextActions attaches the PrintHelp method to an existing error. This is used
 // to tell the CLI's top level to print additional helper text AFTER the error
 // message is printed.
 type NextActions struct {
-	error
+	Err        error
 	NextAction string
 }
 
 func NewNextActions(err error, nextAction string) NextActions {
 	return NextActions{
-		error:      err,
+		Err:        err,
 		NextAction: nextAction,
 	}
+}
+
+func (n NextActions) Error() string {
+	return n.Err.Error()
 }
 
 func (n NextActions) PrintHelp() {

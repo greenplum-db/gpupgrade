@@ -16,6 +16,7 @@ import (
 
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/cli"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
@@ -113,6 +114,12 @@ func UpgradeMaster(args UpgradeMasterArgs) error {
 		err = errorlist.Append(err, dirErr)
 		for _, errFile := range errorFiles {
 			errText = strings.ReplaceAll(errText, errFile, filepath.Join(wd, errFile))
+		}
+
+		if args.CheckOnly {
+			nextAction := `Ensure the "pre-initialize" data migration scripts have been run. 
+Consult the gpupgrade documentation for details on the pg_upgrade check error.`
+			return cli.NewNextActions(NewUpgradeMasterError(args.CheckOnly, errText, err), nextAction)
 		}
 
 		return NewUpgradeMasterError(args.CheckOnly, errText, err)

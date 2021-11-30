@@ -8,6 +8,10 @@ import (
 	"io"
 	"testing"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
+	"github.com/greenplum-db/gpupgrade/cli"
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/idl"
 )
@@ -79,6 +83,44 @@ func TestUILoop(t *testing.T) {
 		_, err := commanders.UILoop(&errStream{expected}, true)
 		if err != expected {
 			t.Errorf("returned %#v want %#v", err, expected)
+		}
+	})
+
+	t.Run("returns next action when error contains next action in details", func(t *testing.T) {
+		expected := "do these next actions"
+		statusErr := status.New(codes.Internal, "oops")
+		statusErr, err := statusErr.WithDetails(&idl.NextActions{NextActions: expected})
+		if err != nil {
+			t.Fatal("failed to add next action details")
+		}
+
+		_, err = commanders.UILoop(&errStream{statusErr.Err()}, true)
+		var nextActionsErr cli.NextActions
+		if !errors.As(err, &nextActionsErr) {
+			t.Errorf("got type %T want %T", err, nextActionsErr)
+		}
+
+		expectedErr := "rpc error: code = Internal desc = oops"
+		if err.Error() != expectedErr {
+			t.Errorf("got error %#v want %#v", err.Error(), expectedErr)
+		}
+
+		if nextActionsErr.NextAction != expected {
+			t.Fatalf("got %q want %q", nextActionsErr.NextAction, expected)
+		}
+	})
+
+	t.Run("does not return a next action status error has no details", func(t *testing.T) {
+		statusErr := status.New(codes.Internal, "oops")
+		_, err := commanders.UILoop(&errStream{statusErr.Err()}, true)
+		var nextActionsErr cli.NextActions
+		if errors.As(err, &nextActionsErr) {
+			t.Errorf("got type %T do not want %T", err, nextActionsErr)
+		}
+
+		expectedErr := "rpc error: code = Internal desc = oops"
+		if err.Error() != expectedErr {
+			t.Errorf("got error %#v want %#v", err.Error(), expectedErr)
 		}
 	})
 
