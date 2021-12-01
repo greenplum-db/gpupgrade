@@ -14,7 +14,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/blang/semver/v4"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
@@ -86,11 +85,7 @@ func UpgradeMaster(args UpgradeMasterArgs) error {
 		}
 	}
 
-	// FIXME: args.Target.Version comes from gp-common-go-libs, which uses a deprecated version of semver.
-	//   It is not compatible with the semver v4 we use in gpupgrade.
-	targetVersion := semver.MustParse(args.Intermediate.Version.String())
-
-	err = upgrade.Run(pair, targetVersion, options...)
+	err = upgrade.Run(pair, args.Intermediate.Version, options...)
 	if err != nil {
 		// Error details from stdout are added to any errors containing "fatal"
 		// such as pg_ugprade check errors.
