@@ -14,11 +14,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/greenplum-db/gpupgrade/cli"
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 func TestSubstep(t *testing.T) {
@@ -361,7 +361,7 @@ func TestSubstep(t *testing.T) {
 		defer resetEnv()
 
 		_, err := commanders.NewStep(idl.Step_INITIALIZE, &step.BufferedStreams{}, false, true, "")
-		var nextActionsErr cli.NextActions
+		var nextActionsErr utils.NextActionErr
 		if !errors.As(err, &nextActionsErr) {
 			t.Errorf("got %T, want %T", err, nextActionsErr)
 		}
@@ -379,11 +379,11 @@ func TestSubstep(t *testing.T) {
 
 		nextAction := "re-run gpupgrade"
 		st.RunHubSubstep(func(streams step.OutStreams) error {
-			return cli.NewNextActions(errors.New("oops"), nextAction)
+			return utils.NewNextActionErr(errors.New("oops"), nextAction)
 		})
 
 		err = st.Complete("")
-		var nextActions cli.NextActions
+		var nextActions utils.NextActionErr
 		if !errors.As(err, &nextActions) {
 			t.Errorf("got type %T want %T", err, nextActions)
 		}
@@ -440,7 +440,7 @@ func TestSubstep(t *testing.T) {
 		})
 
 		err = st.Complete("")
-		var nextActionsErr cli.NextActions
+		var nextActionsErr utils.NextActionErr
 		if !errors.As(err, &nextActionsErr) {
 			t.Errorf("got %T, want %T", err, nextActionsErr)
 		}
@@ -518,7 +518,7 @@ func TestStepStatus(t *testing.T) {
 		})
 
 		err = st.Complete("")
-		var nextActionsErr cli.NextActions
+		var nextActionsErr utils.NextActionErr
 		if !errors.As(err, &nextActionsErr) {
 			t.Errorf("got %T, want %T", err, nextActionsErr)
 		}
@@ -545,7 +545,7 @@ func TestStepStatus(t *testing.T) {
 		})
 
 		err = st.Complete("")
-		var nextActionsErr cli.NextActions
+		var nextActionsErr utils.NextActionErr
 		if !errors.As(err, &nextActionsErr) {
 			t.Errorf("got %T, want %T", err, nextActionsErr)
 		}
@@ -572,7 +572,7 @@ func TestStepStatus(t *testing.T) {
 		})
 
 		err = st.Complete("")
-		var nextActionsErr cli.NextActions
+		var nextActionsErr utils.NextActionErr
 		if !errors.As(err, &nextActionsErr) {
 			t.Errorf("got %T, want %T", err, nextActionsErr)
 		}
@@ -592,7 +592,7 @@ func TestStepStatus(t *testing.T) {
 		d := commanders.BufferStandardDescriptors(t)
 
 		_, err := commanders.NewStep(idl.Step_EXECUTE, &step.BufferedStreams{}, false, true, "confirmation text")
-		var nextActionsErr cli.NextActions
+		var nextActionsErr utils.NextActionErr
 		if !errors.As(err, &nextActionsErr) {
 			d.Close()
 			t.Errorf("got %T want %T", err, nextActionsErr)

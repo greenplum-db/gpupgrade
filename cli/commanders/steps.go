@@ -13,8 +13,8 @@ import (
 	"golang.org/x/xerrors"
 	"google.golang.org/grpc/status"
 
-	"github.com/greenplum-db/gpupgrade/cli"
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 type receiver interface {
@@ -188,7 +188,7 @@ func UILoop(stream receiver, verbose bool) (*idl.Response, error) {
 			}
 		}
 
-		return response, cli.NewNextActions(err, strings.Join(nextActions, "\n"))
+		return response, utils.NewNextActionErr(err, strings.Join(nextActions, "\n"))
 	}
 
 	return response, nil

@@ -15,7 +15,6 @@ import (
 	"github.com/spf13/pflag"
 	"golang.org/x/xerrors"
 
-	"github.com/greenplum-db/gpupgrade/cli"
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -166,7 +165,7 @@ func initialize() *cobra.Command {
 			err = commanders.CreateStateDir()
 			if err != nil {
 				nextActions := fmt.Sprintf(`Please address the above issue and run "gpupgrade %s" again.`, strings.ToLower(idl.Step_INITIALIZE.String()))
-				return cli.NewNextActions(err, nextActions)
+				return utils.NewNextActionErr(err, nextActions)
 			}
 
 			confirmationText := fmt.Sprintf(initializeConfirmationText, logdir, configPath, sourceGPHome, targetGPHome,
@@ -195,7 +194,7 @@ func initialize() *cobra.Command {
 				err := greenplum.VerifyCompatibleGPDBVersions(sourceGPHome, targetGPHome)
 				if err != nil {
 					nextActions := fmt.Sprintf(`Please address the above issue and run "gpupgrade %s" again.`, strings.ToLower(idl.Step_INITIALIZE.String()))
-					return cli.NewNextActions(err, nextActions)
+					return utils.NewNextActionErr(err, nextActions)
 				}
 
 				return nil

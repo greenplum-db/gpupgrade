@@ -12,7 +12,6 @@ import (
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 
-	"github.com/greenplum-db/gpupgrade/cli"
 	"github.com/greenplum-db/gpupgrade/cli/commands"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/daemon"
@@ -44,9 +43,9 @@ func main() {
 		gplog.Debug("%+v", err)
 
 		// Print any additional actions that should be taken by the user.
-		var actions cli.NextActions
+		var actions utils.NextActionErr
 		if errors.As(err, &actions) {
-			actions.PrintHelp()
+			fmt.Print(actions.Help())
 		}
 
 		os.Exit(1)

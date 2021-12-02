@@ -11,7 +11,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/greenplum-db/gpupgrade/cli"
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -347,7 +346,7 @@ func TestValidateStep(t *testing.T) {
 			}
 
 			err = stepStore.ValidateStep(c.currentStep)
-			var nextActionsErr cli.NextActions
+			var nextActionsErr utils.NextActionErr
 			if !errors.As(err, &nextActionsErr) {
 				t.Errorf("got %T, want %T", err, nextActionsErr)
 			}

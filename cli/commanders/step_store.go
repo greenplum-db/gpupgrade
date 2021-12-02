@@ -8,7 +8,6 @@ import (
 
 	"golang.org/x/xerrors"
 
-	"github.com/greenplum-db/gpupgrade/cli"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -135,7 +134,7 @@ func (s *StepStore) ValidateStep(currentStep idl.Step) (err error) {
 		}
 
 		if !status {
-			return cli.NewNextActions(StepErr, c.nextAction)
+			return utils.NewNextActionErr(StepErr, c.nextAction)
 		}
 	}
 

@@ -17,7 +17,6 @@ import (
 
 	"github.com/blang/semver/v4"
 
-	"github.com/greenplum-db/gpupgrade/cli"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -268,7 +267,7 @@ func TestUpgradeMaster(t *testing.T) {
 			UseLinkMode:  false,
 		})
 
-		var nextActionsErr cli.NextActions
+		var nextActionsErr utils.NextActionErr
 		if !errors.As(err, &nextActionsErr) {
 			t.Fatalf("got type %T want %T", err, nextActionsErr)
 		}
@@ -485,7 +484,7 @@ Failure, exiting
 					t.Errorf("expected error, returned nil")
 				}
 
-				var nextActionsErr cli.NextActions
+				var nextActionsErr utils.NextActionErr
 				if !errors.As(err, &nextActionsErr) {
 					t.Fatalf("got type %T want %T", err, nextActionsErr)
 				}

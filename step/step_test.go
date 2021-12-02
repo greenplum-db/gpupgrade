@@ -15,12 +15,12 @@ import (
 	"github.com/golang/mock/gomock"
 	"google.golang.org/grpc/status"
 
-	"github.com/greenplum-db/gpupgrade/cli"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/testlog"
+	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
@@ -765,7 +765,7 @@ func TestStepErr(t *testing.T) {
 
 		s := step.New(idl.Step_INITIALIZE, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
 
-		expected := cli.NewNextActions(os.ErrPermission, "change permissions to gpadmin")
+		expected := utils.NewNextActionErr(os.ErrPermission, "change permissions to gpadmin")
 		s.Run(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(streams step.OutStreams) error {
 			return expected
 		})
@@ -783,7 +783,7 @@ func TestStepErr(t *testing.T) {
 					t.Fatalf("got %q want %q", msg.GetNextActions(), expected.NextAction)
 				}
 			default:
-				t.Fatalf("expected details to contain NextActions")
+				t.Fatalf("expected details to contain NextActionErr")
 			}
 		}
 	})
@@ -806,8 +806,8 @@ func TestStepErr(t *testing.T) {
 
 		s := step.New(idl.Step_INITIALIZE, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
 
-		expected1 := cli.NewNextActions(os.ErrPermission, "change permissions to gpadmin")
-		expected2 := cli.NewNextActions(os.ErrDeadlineExceeded, "stop and rerun")
+		expected1 := utils.NewNextActionErr(os.ErrPermission, "change permissions to gpadmin")
+		expected2 := utils.NewNextActionErr(os.ErrDeadlineExceeded, "stop and rerun")
 		errs := errorlist.Errors{
 			errors.New("ahhh"),
 			expected1,
@@ -833,7 +833,7 @@ func TestStepErr(t *testing.T) {
 					t.Fatalf("got %q want %q", msg.GetNextActions(), expectedText)
 				}
 			default:
-				t.Fatalf("expected details to contain NextActions")
+				t.Fatalf("expected details to contain NextActionErr")
 			}
 		}
 	})

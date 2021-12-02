@@ -13,7 +13,6 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/xerrors"
 
-	"github.com/greenplum-db/gpupgrade/cli"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -49,7 +48,7 @@ func NewStep(currentStep idl.Step, streams *step.BufferedStreams, verbose bool, 
 		gplog.Error("creating step store: %v", err)
 		context := fmt.Sprintf("Note: If commands were issued in order, ensure gpupgrade can write to %s", utils.GetStateDir())
 		wrappedErr := xerrors.Errorf("%v\n\n%v", StepErr, context)
-		return &Step{}, cli.NewNextActions(wrappedErr, RunInitialize)
+		return &Step{}, utils.NewNextActionErr(wrappedErr, RunInitialize)
 	}
 
 	err = stepStore.ValidateStep(currentStep)
@@ -196,13 +195,13 @@ func (s *Step) Complete(completedText string) error {
 		fmt.Println() // Separate the step status from the error text
 
 		// allow substpes to override the default next actions
-		var nextActions cli.NextActions
+		var nextActions utils.NextActionErr
 		if errors.As(s.Err(), &nextActions) {
 			return nextActions
 		}
 
 		msg := fmt.Sprintf(`Please address the above issue and run "gpupgrade %s" again.`+additionalNextActions[s.step], strings.ToLower(s.stepName))
-		return cli.NewNextActions(s.Err(), msg)
+		return utils.NewNextActionErr(s.Err(), msg)
 	}
 
 	fmt.Println(completedText)

@@ -16,7 +16,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/greenplum-db/gpupgrade/cli"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
@@ -148,7 +147,7 @@ func (s *Step) Err() error {
 	}
 
 	text := ""
-	var nextActionErr cli.NextActions
+	var nextActionErr utils.NextActionErr
 	if errors.As(s.err, &nextActionErr) {
 		text += nextActionErr.NextAction
 	}

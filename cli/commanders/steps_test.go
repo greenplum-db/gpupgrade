@@ -11,9 +11,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/greenplum-db/gpupgrade/cli"
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 type msgStream []*idl.Message
@@ -95,7 +95,7 @@ func TestUILoop(t *testing.T) {
 		}
 
 		_, err = commanders.UILoop(&errStream{statusErr.Err()}, true)
-		var nextActionsErr cli.NextActions
+		var nextActionsErr utils.NextActionErr
 		if !errors.As(err, &nextActionsErr) {
 			t.Errorf("got type %T want %T", err, nextActionsErr)
 		}
@@ -113,7 +113,7 @@ func TestUILoop(t *testing.T) {
 	t.Run("does not return a next action status error has no details", func(t *testing.T) {
 		statusErr := status.New(codes.Internal, "oops")
 		_, err := commanders.UILoop(&errStream{statusErr.Err()}, true)
-		var nextActionsErr cli.NextActions
+		var nextActionsErr utils.NextActionErr
 		if errors.As(err, &nextActionsErr) {
 			t.Errorf("got type %T do not want %T", err, nextActionsErr)
 		}
