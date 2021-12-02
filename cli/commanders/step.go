@@ -194,14 +194,14 @@ func (s *Step) Complete(completedText string) error {
 	if s.Err() != nil {
 		fmt.Println() // Separate the step status from the error text
 
-		// allow substpes to override the default next actions
-		var nextActions utils.NextActionErr
-		if errors.As(s.Err(), &nextActions) {
-			return nextActions
+		genericNextAction := fmt.Sprintf("Please address the above issue and run \"gpupgrade %s\" again."+additionalNextActions[s.step], strings.ToLower(s.stepName))
+
+		var nextActionErr utils.NextActionErr
+		if errors.As(s.Err(), &nextActionErr) {
+			return utils.NewNextActionErr(s.Err(), nextActionErr.NextAction+"\n\n"+genericNextAction)
 		}
 
-		msg := fmt.Sprintf(`Please address the above issue and run "gpupgrade %s" again.`+additionalNextActions[s.step], strings.ToLower(s.stepName))
-		return utils.NewNextActionErr(s.Err(), msg)
+		return utils.NewNextActionErr(s.Err(), genericNextAction)
 	}
 
 	fmt.Println(completedText)

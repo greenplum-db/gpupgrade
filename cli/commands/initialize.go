@@ -164,8 +164,7 @@ func initialize() *cobra.Command {
 			// working state directory.
 			err = commanders.CreateStateDir()
 			if err != nil {
-				nextActions := fmt.Sprintf(`Please address the above issue and run "gpupgrade %s" again.`, strings.ToLower(idl.Step_INITIALIZE.String()))
-				return utils.NewNextActionErr(err, nextActions)
+				return err
 			}
 
 			confirmationText := fmt.Sprintf(initializeConfirmationText, logdir, configPath, sourceGPHome, targetGPHome,
@@ -193,8 +192,7 @@ func initialize() *cobra.Command {
 
 				err := greenplum.VerifyCompatibleGPDBVersions(sourceGPHome, targetGPHome)
 				if err != nil {
-					nextActions := fmt.Sprintf(`Please address the above issue and run "gpupgrade %s" again.`, strings.ToLower(idl.Step_INITIALIZE.String()))
-					return utils.NewNextActionErr(err, nextActions)
+					return err
 				}
 
 				return nil
