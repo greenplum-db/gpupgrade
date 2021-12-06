@@ -79,8 +79,8 @@ func revert() *cobra.Command {
 Revert completed successfully.
 
 The source cluster is now running version %s.
-PGPORT: %d
-MASTER_DATA_DIRECTORY: %s
+PGPORT=%d
+MASTER_DATA_DIRECTORY=%s
 
 The gpupgrade logs can be found on the master and segment hosts in
 %s

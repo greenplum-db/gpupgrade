@@ -81,8 +81,8 @@ Finalize completed successfully.
 
 The target cluster has been upgraded to Greenplum %s:
 %s
-PGPORT: %d
-MASTER_DATA_DIRECTORY: %s
+PGPORT=%d
+MASTER_DATA_DIRECTORY=%s
 
 The source cluster is not running. If copy mode was used you may start 
 the source cluster, but not at the same time as the target cluster. 
