@@ -86,6 +86,8 @@ teardown() {
     gpupgrade execute --non-interactive --verbose
     gpupgrade finalize --non-interactive --verbose
 
+    (source "${GPHOME_TARGET}"/greenplum_path.sh && "${GPHOME_TARGET}"/bin/gpstart -a)
+
     "$SCRIPTS_DIR"/gpupgrade-migration-sql-executor.bash "$GPHOME_TARGET" "$PGPORT" "$MIGRATION_DIR"/post-finalize
 
     # migration scripts should create the indexes on the target cluster

@@ -83,6 +83,10 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 		return s.Target.WaitForClusterToBeReady(s.Connection)
 	})
 
+	st.Run(idl.Substep_STOP_TARGET_CLUSTER, func(streams step.OutStreams) error {
+		return s.Target.Stop(streams)
+	})
+
 	var logArchiveDir string
 	st.Run(idl.Substep_ARCHIVE_LOG_DIRECTORIES, func(_ step.OutStreams) error {
 		logArchiveDir, err = s.GetLogArchiveDir()
@@ -103,7 +107,8 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 			LogArchiveDirectory:               logArchiveDir,
 			ArchivedSourceMasterDataDirectory: s.Config.Intermediate.MasterDataDir() + upgrade.OldSuffix,
 			UpgradeID:                         s.Config.UpgradeID.String(),
-			Target: &idl.Cluster{
+			TargetCluster: &idl.Cluster{
+				GPHome:              s.Target.GPHome,
 				Port:                int32(s.Target.MasterPort()),
 				MasterDataDirectory: s.Target.MasterDataDir(),
 			},

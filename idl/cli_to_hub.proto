@@ -95,6 +95,7 @@ enum Substep {
     REMOVE_SOURCE_MIRRORS = 31;
     WAIT_FOR_CLUSTER_TO_BE_READY_AFTER_ADDING_MIRRORS_AND_STANDBY = 32;
     WAIT_FOR_CLUSTER_TO_BE_READY_AFTER_UPDATING_CATALOG = 33;
+    STOP_TARGET_CLUSTER = 34;
 }
 
 enum Status {
@@ -141,8 +142,9 @@ message InitializeResponse {
 }
 
 message Cluster {
-  int32 Port = 1;
-  string MasterDataDirectory = 2;
+  string GPHome = 1;
+  int32 Port = 2;
+  string MasterDataDirectory = 3;
 }
 
 message ExecuteResponse {
@@ -150,7 +152,7 @@ message ExecuteResponse {
 }
 
 message FinalizeResponse {
-  Cluster target = 1;
+  Cluster TargetCluster = 1;
   string TargetVersion = 2;
   string LogArchiveDirectory = 3;
   string ArchivedSourceMasterDataDirectory = 4;

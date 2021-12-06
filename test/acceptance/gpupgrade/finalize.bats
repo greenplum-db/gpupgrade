@@ -76,6 +76,8 @@ upgrade_cluster() {
 
         gpupgrade finalize --non-interactive --verbose
 
+        (source "${GPHOME_TARGET}"/greenplum_path.sh && "${GPHOME_TARGET}"/bin/gpstart -a)
+
         if is_GPDB5 "$GPHOME_SOURCE"; then
             check_tablespace_data
         fi

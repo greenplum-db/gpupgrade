@@ -6,6 +6,7 @@ package commands
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 
@@ -78,25 +79,44 @@ func finalize() *cobra.Command {
 			return st.Complete(fmt.Sprintf(`
 Finalize completed successfully.
 
-The target cluster is now ready to use, running Greenplum %s.
+The target cluster has been upgraded to Greenplum %s:
+%s
 PGPORT: %d
 MASTER_DATA_DIRECTORY: %s
 
-The source cluster is not running. You may delete the source cluster to recover space from all hosts. 
+The source cluster is not running. If copy mode was used you may start 
+the source cluster, but not at the same time as the target cluster. 
+To do so configure different ports to avoid conflicts. 
+
+You may delete the source cluster to recover space from all hosts. 
 All source cluster data directories end in "%s".
-MASTER_DATA_DIRECTORY: %s
+MASTER_DATA_DIRECTORY=%s
 
 The gpupgrade logs can be found on the master and segment hosts in
 %s
 
 NEXT ACTIONS
 ------------
-Run the “post-finalize” data migration scripts, and recreate any additional tables,
-indexes, and roles that were dropped or altered to resolve migration issues.`,
-				response.GetTargetVersion(), response.GetTarget().GetPort(), response.GetTarget().GetMasterDataDirectory(),
+To use the upgraded cluster:
+1. Update any scripts to source %s
+2. If applicable, update the greenplum-db symlink to point to the target 
+   install location: %s -> %s
+3. In a new shell source %s and start the cluster with gpstart.
+   Execute the “post-finalize” data migration scripts, and recreate any 
+   additional tables, indexes, and roles that were dropped or altered 
+   to resolve migration issues.`,
+				response.GetTargetVersion(),
+				filepath.Join(response.GetTargetCluster().GetGPHome(), "greenplum_path.sh"),
+				response.GetTargetCluster().GetPort(),
+				response.GetTargetCluster().GetMasterDataDirectory(),
 				fmt.Sprintf("%s.<contentID>%s", response.GetUpgradeID(), upgrade.OldSuffix),
 				response.GetArchivedSourceMasterDataDirectory(),
-				response.GetLogArchiveDirectory()))
+				response.GetLogArchiveDirectory(),
+				filepath.Join(response.GetTargetCluster().GetGPHome(), "greenplum_path.sh"),
+				filepath.Join(filepath.Dir(response.GetTargetCluster().GetGPHome()), "greenplum-db"),
+				response.GetTargetCluster().GetGPHome(),
+				filepath.Join(response.GetTargetCluster().GetGPHome(), "greenplum_path.sh"),
+			))
 		},
 	}
 

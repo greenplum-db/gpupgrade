@@ -105,6 +105,8 @@ SQL_EOF
 
     gpupgrade execute --non-interactive
     gpupgrade finalize --non-interactive
+
+    (source ${GPHOME_TARGET}/greenplum_path.sh && ${GPHOME_TARGET}/bin/gpstart -a -d /data/gpdata/master/gpseg-1)
 "
 
 if ! is_GPDB5 ${GPHOME_TARGET}; then

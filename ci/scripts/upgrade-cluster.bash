@@ -13,6 +13,7 @@ DIFF_FILE=${DIFF_FILE:-"icw.diff"}
 
 export GPHOME_SOURCE=/usr/local/greenplum-db-source
 export GPHOME_TARGET=/usr/local/greenplum-db-target
+export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
 export PGPORT=5432
 
 ./ccp_src/scripts/setup_ssh_to_cluster.sh
@@ -44,6 +45,8 @@ time ssh -n mdw "
 
     gpupgrade execute --non-interactive
     gpupgrade finalize --non-interactive
+
+    (source ${GPHOME_TARGET}/greenplum_path.sh && ${GPHOME_TARGET}/bin/gpstart -a -d /data/gpdata/master/gpseg-1)
 "
 
 if ! is_GPDB5 ${GPHOME_TARGET}; then

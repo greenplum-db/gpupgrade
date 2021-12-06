@@ -257,13 +257,13 @@ func TestUILoop(t *testing.T) {
 				name: "processes finalize response successfully",
 				msgs: msgStream{&idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{
 					Contents: &idl.Response_FinalizeResponse{FinalizeResponse: &idl.FinalizeResponse{
-						Target: &idl.Cluster{
+						TargetCluster: &idl.Cluster{
 							Port:                15433,
 							MasterDataDirectory: "/data/gpseg-10",
 						}}}}}}},
 				expected: func(response *idl.Response) bool {
-					return response.GetFinalizeResponse().GetTarget().GetPort() == 15433 &&
-						response.GetFinalizeResponse().GetTarget().GetMasterDataDirectory() == "/data/gpseg-10"
+					return response.GetFinalizeResponse().GetTargetCluster().GetPort() == 15433 &&
+						response.GetFinalizeResponse().GetTargetCluster().GetMasterDataDirectory() == "/data/gpseg-10"
 				},
 			},
 			{

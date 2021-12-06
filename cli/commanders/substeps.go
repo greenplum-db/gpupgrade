@@ -27,6 +27,7 @@ var SubstepDescriptions = map[idl.Substep]substepText{
 	idl.Substep_COPY_MASTER:                                                   substepText{"Copying master catalog to primary segments...", "Copy master catalog to primary segments"},
 	idl.Substep_UPGRADE_PRIMARIES:                                             substepText{"Upgrading primary segments...", "Upgrade primary segments"},
 	idl.Substep_START_TARGET_CLUSTER:                                          substepText{"Starting target cluster...", "Start target cluster"},
+	idl.Substep_STOP_TARGET_CLUSTER:                                           substepText{"Stopping target cluster...", "Stop target cluster"},
 	idl.Substep_UPDATE_TARGET_CATALOG:                                         substepText{"Updating target master catalog...", "Update target master catalog"},
 	idl.Substep_UPDATE_DATA_DIRECTORIES:                                       substepText{"Updating data directories...", "Update data directories"},
 	idl.Substep_UPDATE_TARGET_CONF_FILES:                                      substepText{"Updating target master configuration files...", "Update target master configuration files"},
