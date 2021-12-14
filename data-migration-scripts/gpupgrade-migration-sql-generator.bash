@@ -125,7 +125,7 @@ execute_script_directory() {
         # Drop the temp schema
         records=$(PGOPTIONS='--client-min-messages=warning' \
             "$GPHOME"/bin/psql -X -q -d "$database" -p "$PGPORT" -Atc \
-            "DROP SCHEMA IF EXISTS __gpupgrade_tmp")
+            "DROP SCHEMA IF EXISTS __gpupgrade_tmp CASCADE")
     done
 
     echo "Output files are located in: $output_dir"

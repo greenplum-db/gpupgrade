@@ -9,7 +9,7 @@
 
 SET client_min_messages TO WARNING;
 
-DROP SCHEMA IF EXISTS __gpupgrade_tmp;
+DROP SCHEMA IF EXISTS __gpupgrade_tmp CASCADE;
 CREATE SCHEMA __gpupgrade_tmp;
 
 CREATE OR REPLACE FUNCTION  __gpupgrade_tmp.find_view_dependencies()
