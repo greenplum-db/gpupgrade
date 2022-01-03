@@ -125,9 +125,13 @@ make needs to be run first.
 
 ### Setting up your IDE
 
-For IntelliJ users set up the following:
+#### Vim
 
-Imports:
+Checkout [vim-go](https://github.com/fatih/vim-go) and [go-delve](https://github.com/go-delve/delve).
+
+#### IntelliJ
+
+##### Imports
 - Preferences > Editor > Code Style > Go > select "Imports" tab
   - uncheck "Use back quotes for imports"
   - uncheck "Add parentheses for a single import"
@@ -139,7 +143,7 @@ Imports:
   - check "Group"
     - check "Current project packages"
 
-Copyright:
+##### Copyright
 - Preferences > Editor > Copyright > Copyright Profiles
   - Add new profile called "vmware" with the following text:
     
@@ -152,7 +156,7 @@ Copyright:
   - For Comment Type: check "Prefix each line" and select "use line comment"
   - For Relative Location: select "Before other comments" and check "Add blank line after"
 
-Formatting:
+##### Formatting
 - Install the "File Watchers" plugin
 - Preferences > Tools > File Watchers
   - Add a new file watcher choosing "go fmt"
