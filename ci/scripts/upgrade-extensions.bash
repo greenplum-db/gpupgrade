@@ -73,13 +73,6 @@ time ssh -n mdw "
 
     gpstart -a
 
-    psql -v ON_ERROR_STOP=1 -d postgres <<SQL_EOF
-        CREATE EXTENSION amcheck;
-        CREATE EXTENSION dblink;
-        CREATE EXTENSION hstore;
-        CREATE EXTENSION pgcrypto;
-SQL_EOF
-
     gppkg -i /tmp/postgis_target.gppkg
     gppkg -i /tmp/madlib_target.gppkg
 
@@ -90,7 +83,6 @@ SQL_EOF
         export JAVA_HOME=/usr/lib/jvm/jre
 
         /usr/local/pxf-gp6/bin/pxf cluster init
-        psql -v ON_ERROR_STOP=1 -d postgres -c 'CREATE EXTENSION pxf;'
     fi
 
     gpstop -a
