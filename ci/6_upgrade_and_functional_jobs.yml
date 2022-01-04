@@ -180,7 +180,7 @@
       params:
         USE_LINK_MODE: 1
         FILTER_DIFF: 1
-        DIFF_FILE: postgis.diff
+        DIFF_FILE: extensions.diff
     {{- else }}
     - task: upgrade_cluster
       config:

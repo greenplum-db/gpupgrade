@@ -101,6 +101,27 @@ SQL_EOF
         CREATE VIEW pgcrypto_test_view AS SELECT crypt('new password', gen_salt('md5'));
 SQL_EOF
 
+    echo 'Installing Fuzzy String Match...'
+    psql -d postgres -f /usr/local/greenplum-db-source/share/postgresql/contrib/fuzzystrmatch.sql
+    psql -v ON_ERROR_STOP=1 -d postgres <<SQL_EOF
+        CREATE VIEW fuzzystrmatch_test_view AS SELECT soundex('a'::text);
+SQL_EOF
+
+    echo 'Installing citext...'
+    echo 'Create a new db to avoid potential function overlaps with postgis to simplify the diff when comparing before and after upgrade.'
+    createdb citext_db
+    psql -d citext_db -f /usr/local/greenplum-db-source/share/postgresql/contrib/citext.sql
+    psql -v ON_ERROR_STOP=1 -d citext_db <<SQL_EOF
+        CREATE TABLE citext_test_type (
+            id bigint PRIMARY KEY,
+            nick CITEXT NOT NULL,
+            pass TEXT   NOT NULL
+        ) DISTRIBUTED BY (id);
+
+        INSERT INTO citext_test_type VALUES (1,  'larry',  md5(random()::text) );
+SQL_EOF
+
+
 "
 
 install_pxf() {
