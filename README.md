@@ -205,6 +205,17 @@ Please review the [integrations/README](https://github.com/greenplum-db/gpupgrad
 make gpupgrade-tests
 make pg-upgrade-tests
 ```
+
+To run all tests in a suite:
+```
+bats test/acceptance/gpupgrade/finalize.bats
+```
+
+To run a single test or set of tests:
+```
+bats -f "gpupgrade finalize should" test/acceptance/gpupgrade/finalize.bats
+```
+
 #### All local tests
 ```
 # Runs all local tests
