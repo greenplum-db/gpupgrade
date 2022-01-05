@@ -388,7 +388,7 @@ func TestSubstep(t *testing.T) {
 			t.Errorf("got type %T want %T", err, nextActions)
 		}
 
-		genericNextAction := "Please address the above issue and run \"gpupgrade initialize\" again.\nIf you would like to return the cluster to its original state, please run \"gpupgrade revert\"."
+		genericNextAction := "Please address the above issue and run \"gpupgrade initialize\" again.\nIf you would like to return the cluster to its original state, please run \"gpupgrade revert\".\n"
 		expected := nextAction + "\n\n" + genericNextAction
 		if nextActions.NextAction != expected {
 			t.Errorf("got next action %q want %q", nextActions.NextAction, expected)

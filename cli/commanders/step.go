@@ -22,7 +22,7 @@ import (
 
 const StepsFileName = "steps.json"
 
-const nextActionRunRevertText = "\nIf you would like to return the cluster to its original state, please run \"gpupgrade revert\"."
+const nextActionRunRevertText = "If you would like to return the cluster to its original state, please run \"gpupgrade revert\".\n"
 
 var additionalNextActions = map[idl.Step]string{
 	idl.Step_INITIALIZE: nextActionRunRevertText,
@@ -194,7 +194,7 @@ func (s *Step) Complete(completedText string) error {
 	if s.Err() != nil {
 		fmt.Println() // Separate the step status from the error text
 
-		genericNextAction := fmt.Sprintf("Please address the above issue and run \"gpupgrade %s\" again."+additionalNextActions[s.step], strings.ToLower(s.stepName))
+		genericNextAction := fmt.Sprintf("Please address the above issue and run \"gpupgrade %s\" again.\n"+additionalNextActions[s.step], strings.ToLower(s.stepName))
 
 		var nextActionErr utils.NextActionErr
 		if errors.As(s.Err(), &nextActionErr) {
