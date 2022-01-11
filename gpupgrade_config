@@ -2,6 +2,9 @@
 # gpupgrade configuration file
 # ----------------------------
 
+# The master port for the source Greenplum installation.
+source_master_port =
+
 # The installation path for the source Greenplum Database.
 # For example, /usr/local/<source-greenplum-version>.
 source_gphome =
@@ -26,8 +29,10 @@ disk_free_ratio = 0.6
 # Choose "true" to use host names, or "false" to use IP addresses.
 use_hba_hostnames = false
 
-# The master port for the source Greenplum installation.
-source_master_port =
+# For extensions installed outside of target_gphome include the extension’s
+# path in the dynamic_library_path value. For example, if pxf was installed in
+# /opt then set dynamic_library_path to "$libdir:/opt/greenplum/pxf-gp6".
+dynamic_library_path = $libdir
 
 # The temporary port range for the target Greenplum installation.
 # The temporary port range should be reserved prior to initializaton.

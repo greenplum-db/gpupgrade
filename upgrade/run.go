@@ -15,6 +15,7 @@ import (
 
 const DefaultHubPort = 7527
 const DefaultAgentPort = 6416
+const DefaultDynamicLibraryPath = "$libdir"
 
 // execCommand allows tests to stub out the Commands that are actually run. See
 // also the WithExecCommand option.

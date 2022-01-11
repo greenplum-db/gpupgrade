@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -136,5 +137,36 @@ func TestAtomicallyWrite(t *testing.T) {
 		}
 
 		testutils.PathMustNotExist(t, path)
+	})
+}
+
+func TestRemoveDuplicates(t *testing.T) {
+	t.Run("removes duplicates while preserving order", func(t *testing.T) {
+		cases := []struct {
+			input    []string
+			expected []string
+		}{
+			{
+				input:    []string{"1", "2", "3"},
+				expected: []string{"1", "2", "3"},
+			},
+			{
+				input:    []string{"1", "2", "3", "2"},
+				expected: []string{"1", "2", "3"},
+			},
+			{
+				input:    []string{"1", "2", "3", "3", "3", "2", "1"},
+				expected: []string{"1", "2", "3"},
+			},
+		}
+
+		for _, c := range cases {
+			actual := utils.RemoveDuplicates(c.input)
+
+			expected := []string{"1", "2", "3"}
+			if !reflect.DeepEqual(actual, expected) {
+				t.Errorf("got %q, want %q", actual, expected)
+			}
+		}
 	})
 }

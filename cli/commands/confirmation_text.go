@@ -15,15 +15,16 @@ gpupgrade initialize will perform a series of steps, including:
 gpupgrade log files can be found on all hosts in %s
 
 gpupgrade initialize will use these values from %s
-source_gphome:      %s
-target_gphome:      %s
-mode:               %s
-disk_free_ratio:    %.1f
-use_hba_hostnames:  %t
-source_master_port: %d
-temp_port_range:    %s
-hub_port:           %d
-agent_port:         %d
+source_master_port:   %d
+source_gphome:        %s
+target_gphome:        %s
+mode:                 %s
+disk_free_ratio:      %.1f
+use_hba_hostnames:    %t
+dynamic_library_path: %s
+temp_port_range:      %s
+hub_port:             %d
+agent_port:           %d
 
 You will still have the opportunity to revert the cluster to its original state 
 after this step.

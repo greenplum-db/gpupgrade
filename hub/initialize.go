@@ -115,7 +115,7 @@ func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest
 		return s.SaveConfig()
 	})
 
-	st.RunConditionally(idl.Substep_SETTING_DYNAMIC_LIBRARY_PATH_ON_TARGET_CLSUTER, req.GetDynamicLibraryPath() != "", func(stream step.OutStreams) error {
+	st.RunConditionally(idl.Substep_SETTING_DYNAMIC_LIBRARY_PATH_ON_TARGET_CLSUTER, req.GetDynamicLibraryPath() != upgrade.DefaultDynamicLibraryPath, func(stream step.OutStreams) error {
 		return AppendDynamicLibraryPath(s.Intermediate, req.GetDynamicLibraryPath())
 	})
 

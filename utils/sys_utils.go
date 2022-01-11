@@ -115,7 +115,7 @@ func GetPgUpgradeDir(role string, contentID int) (string, error) {
 		return "", err
 	}
 
-	return filepath.Join(logDir, "pg_upgrade", role + strconv.Itoa(contentID)), nil
+	return filepath.Join(logDir, "pg_upgrade", role+strconv.Itoa(contentID)), nil
 }
 
 // GetTablespaceMappingFile returns the tablespace input file for pg_upgrade used
@@ -232,4 +232,20 @@ func FilterEnv(keys []string) []string {
 	}
 
 	return env
+}
+
+// RemoveDuplicates removes any duplicates while preserving order
+func RemoveDuplicates(input []string) []string {
+	var dedupe []string
+
+	seen := make(map[string]bool, len(input))
+	for _, elem := range input {
+		if !seen[elem] {
+			seen[elem] = true
+			dedupe = append(dedupe, elem)
+		}
+
+	}
+
+	return dedupe
 }
