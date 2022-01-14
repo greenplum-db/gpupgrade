@@ -116,7 +116,7 @@ func UpgradeMaster(args UpgradeMasterArgs) error {
 		}
 
 		if args.CheckOnly {
-			nextAction := `Ensure the "pre-initialize" data migration scripts have been run. 
+			nextAction := `If you haven't run pre-initialize data migration scripts at the start, please run them.
 Consult the gpupgrade documentation for details on the pg_upgrade check error.`
 			return utils.NewNextActionErr(NewUpgradeMasterError(args.CheckOnly, errText, err), nextAction)
 		}
