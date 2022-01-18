@@ -17,4 +17,8 @@ SELECT id, age FROM p_subpart_heap_1_prt_partition_id_2_prt_subpartition_age_fir
 SELECT id, age FROM p_subpart_heap_1_prt_partition_id_2_prt_subpartition_age_second;
 SELECT id, age FROM p_subpart_heap;
 
-SELECT c, d FROM p_dropcol WHERE a=10;
+SELECT b, c FROM dropped_column WHERE a=10;
+
+SELECT b, c FROM root_has_dropped_column WHERE a=10;
+
+SELECT c, d FROM dropped_and_added_column WHERE a=10;

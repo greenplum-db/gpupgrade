@@ -80,15 +80,56 @@ VACUUM
 
 
 --
+-- partitioned table with a dropped column
+--
+CREATE TABLE dropped_column (a int, b int, c int, d int) DISTRIBUTED BY (c) PARTITION BY RANGE (a) (PARTITION part_1 START(1) END(5), PARTITION part_2 START(5));
+CREATE
+INSERT INTO dropped_column SELECT i, i, i, i FROM generate_series(1, 10) i;
+INSERT 10
+ALTER TABLE dropped_column DROP COLUMN d;
+ALTER
+INSERT INTO dropped_column SELECT i, i, i FROM generate_series(10, 20) i;
+INSERT 11
+
+--
+-- partitioned table with the root partition has a dropped column reference but
+-- none of its child partitions do.
+--
+CREATE TABLE root_has_dropped_column (a int, b int, c int, d int) PARTITION BY RANGE (a) (PARTITION part_1 START(1) END(5), PARTITION part_2 START(5));
+CREATE
+INSERT INTO root_has_dropped_column SELECT i, i, i, i FROM generate_series(1, 10) i;
+INSERT 10
+ALTER TABLE root_has_dropped_column DROP COLUMN d;
+ALTER
+
+CREATE TABLE intermediate_table_1 (a int, b int, c int);
+CREATE
+ALTER TABLE root_has_dropped_column EXCHANGE PARTITION part_1 WITH TABLE intermediate_table_1;
+ALTER
+DROP TABLE intermediate_table_1;
+DROP
+
+CREATE TABLE intermediate_table_2 (a int, b int, c int);
+CREATE
+ALTER TABLE root_has_dropped_column EXCHANGE PARTITION part_2 WITH TABLE intermediate_table_2;
+ALTER
+DROP TABLE intermediate_table_2;
+DROP
+
+INSERT INTO root_has_dropped_column SELECT i, i, i FROM generate_series(10, 20) i;
+INSERT 11
+
+--
 -- partitioned table with a dropped and newly added column
 --
-CREATE TABLE p_dropcol (a int, b int, c int, d numeric) DISTRIBUTED BY (a) PARTITION BY RANGE(c) SUBPARTITION BY range(d) (PARTITION mama START(0) END(42) (SUBPARTITION chica START(0) END(42)));
+CREATE TABLE dropped_and_added_column (a int, b int, c int, d numeric) DISTRIBUTED BY (a) PARTITION BY RANGE(c) SUBPARTITION BY range(d) (PARTITION part_1 START(0) END(42) (SUBPARTITION subpart_1 START(0) END(42)));
 CREATE
-INSERT INTO p_dropcol SELECT i, i, i, i FROM generate_series(1, 10)i;
+
+INSERT INTO dropped_and_added_column SELECT i, i, i, i FROM generate_series(1, 10) i;
 INSERT 10
-ALTER TABLE p_dropcol DROP COLUMN b;
+ALTER TABLE dropped_and_added_column DROP COLUMN b;
 ALTER
-ALTER TABLE p_dropcol ADD COLUMN e int;
+ALTER TABLE dropped_and_added_column ADD COLUMN e int;
 ALTER
-INSERT INTO p_dropcol SELECT i, i, i, i FROM generate_series(10, 20)i;
+INSERT INTO dropped_and_added_column SELECT i, i, i, i FROM generate_series(10, 20) i;
 INSERT 11
