@@ -200,6 +200,8 @@ CREATE TABLE table_with_name_tsquery (
     population name,
     altitude   tsquery
 );
+CREATE INDEX table_with_name_tsquery_name_idx on table_with_name_tsquery(population);
+CREATE INDEX table_with_name_tsquery_tsquery_idx on table_with_name_tsquery(altitude);
 
 DROP TABLE IF EXISTS name_inherits;
 CREATE TABLE name_inherits (
@@ -226,5 +228,38 @@ CREATE VIEW view_on_name_tsquery AS SELECT * FROM table_with_name_tsquery;
 -- view on both name and tsquery from multiple tables
 DROP VIEW IF EXISTS view_on_name_tsquery_mult_tables;
 CREATE VIEW view_on_name_tsquery_mult_tables AS SELECT t1.population, t2.altitude FROM table_with_name_tsquery t1, table_with_name_tsquery t2;
+
+CREATE TABLE sales_name (trans_id int, office_name name, region text)
+    DISTRIBUTED BY (trans_id)
+    PARTITION BY LIST (office_name)
+            ( PARTITION usa VALUES ('usa'),
+            PARTITION asia VALUES ('asia'),
+            PARTITION europe VALUES ('europe'),
+            DEFAULT PARTITION other_regions);
+
+CREATE INDEX sales_name_idx on sales_name(office_name);
+
+CREATE TABLE sales_tsquery (trans_id int, office_tsquery tsquery, region text)
+    DISTRIBUTED BY (trans_id)
+    PARTITION BY LIST (office_tsquery)
+            ( PARTITION usa VALUES ('usa'),
+            PARTITION asia VALUES ('asia'),
+            PARTITION europe VALUES ('europe'),
+            DEFAULT PARTITION other_regions);
+
+CREATE INDEX sales_tsquery_idx on sales_tsquery USING GIST (office_tsquery);
+
+-- Multilevel partitioned table with unique index
+DROP TABLE IF EXISTS ml_partitioned_with_index;
+CREATE TABLE ml_partitioned_with_index (trans_id int, office_id int, region int, dummy int)
+    DISTRIBUTED BY (trans_id)
+    PARTITION BY RANGE (office_id)
+        SUBPARTITION BY RANGE (dummy)
+            SUBPARTITION TEMPLATE (
+            START (1) END (16) EVERY (4),
+            DEFAULT SUBPARTITION other_dummy )
+        (START (1) END (4) EVERY (1),
+        DEFAULT PARTITION outlying_dates );
+CREATE UNIQUE INDEX ml_partitioned_with_index_idx ON ml_partitioned_with_index(trans_id);
 
 RESET search_path;
