@@ -110,22 +110,17 @@ teardown() {
 
     $PSQL -d $TEST_DBNAME -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
 
-    # Ignore the test tables that break the diff for now.
-    # XXX We don't properly handle index constraints after revert, yet.
-    # XXX We don't properly handle name type columns after revert, yet.
-    EXCLUSIONS=" -T ${TEST_SCHEMA}.table_with_primary_constraint "
-    EXCLUSIONS+="-T ${TEST_SCHEMA}.table_with_unique_constraint "
-    EXCLUSIONS+="-T ${TEST_SCHEMA}.pt_with_index "
-    EXCLUSIONS+="-T ${TEST_SCHEMA}.sales "
-    EXCLUSIONS+="-T ${TEST_SCHEMA}.table_with_name_as_second_column "
-
     MIGRATION_DIR=`mktemp -d /tmp/migration.XXXXXX`
     register_teardown rm -r "$MIGRATION_DIR"
 
-    "$GPHOME_SOURCE"/bin/pg_dump --schema-only "$TEST_DBNAME" $EXCLUSIONS -f "$MIGRATION_DIR"/before.sql
-
-
     $SCRIPTS_DIR/gpupgrade-migration-sql-generator.bash $GPHOME_SOURCE $PGPORT $MIGRATION_DIR "$SCRIPTS_DIR"
+
+    root_child_indexes_before=$(get_indexes "$GPHOME_SOURCE")
+    tsquery_datatype_objects_before=$(get_tsquery_datatypes "$GPHOME_SOURCE")
+    name_datatype_objects_before=$(get_name_datatypes "$GPHOME_SOURCE")
+    fk_constraints_before=$(get_fk_constraints "$GPHOME_SOURCE")
+    primary_unique_constraints_before=$(get_primary_unique_constraints "$GPHOME_SOURCE")
+
     $SCRIPTS_DIR/gpupgrade-migration-sql-executor.bash $GPHOME_SOURCE $PGPORT $MIGRATION_DIR/pre-initialize
 
     gpupgrade initialize \
@@ -141,8 +136,19 @@ teardown() {
 
     $SCRIPTS_DIR/gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/post-revert
 
-    "$GPHOME_SOURCE"/bin/pg_dump --schema-only $TEST_DBNAME $EXCLUSIONS -f "$MIGRATION_DIR"/after.sql
-    diff -U3 --speed-large-files "$MIGRATION_DIR"/before.sql "$MIGRATION_DIR"/after.sql
+    # migration scripts should create the indexes on the target cluster
+    root_child_indexes_after=$(get_indexes "$GPHOME_SOURCE")
+    tsquery_datatype_objects_after=$(get_tsquery_datatypes "$GPHOME_SOURCE")
+    name_datatype_objects_after=$(get_name_datatypes "$GPHOME_SOURCE")
+    fk_constraints_after=$(get_fk_constraints "$GPHOME_SOURCE")
+    primary_unique_constraints_after=$(get_primary_unique_constraints "$GPHOME_SOURCE")
+
+    # expect the index and tsquery datatype information to be same after the upgrade
+    diff -U3 <(echo "$root_child_indexes_before") <(echo "$root_child_indexes_after")
+    diff -U3 <(echo "$tsquery_datatype_objects_before") <(echo "$tsquery_datatype_objects_after")
+    diff -U3 <(echo "$name_datatype_objects_before") <(echo "$name_datatype_objects_after")
+    diff -U3 <(echo "$fk_constraints_before") <(echo "$fk_constraints_after")
+    diff -U3 <(echo "$primary_unique_constraints_before") <(echo "$primary_unique_constraints_after")
 }
 
 @test "migration scripts ignore .psqlrc files" {
