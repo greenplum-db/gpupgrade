@@ -214,7 +214,7 @@ CREATE VIEW v3_on_v2_recursive AS SELECT * FROM v2_on_t2_with_name;
 
 -- Third level recursive view on a name column
 DROP VIEW IF EXISTS v4_on_v3_recursive;
-CREATE VIEW v4_on_v3_recursive AS SELECT * FROM v4_on_v3_recursive;
+CREATE VIEW v4_on_v3_recursive AS SELECT * FROM v3_on_v2_recursive;
 
 -- view on a table with view that doesn't actually depend on the name column
 -- this one should not be dropped since its dependent columns are not changing
