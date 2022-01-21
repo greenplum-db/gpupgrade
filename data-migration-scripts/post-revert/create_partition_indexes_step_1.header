@@ -1,6 +1,11 @@
--- Copyright (c) 2017-2021 VMware, Inc. or its affiliates
--- SPDX-License-Identifier: Apache-2.0
-
--- The below CREATE INDEX statement will create the indexes on the leaf
--- partitions only. Indexes on the root partition will be created via a
--- separate step which must be executed after these SQL statements.
+-- The below CREATE INDEX statement will create the indexes on the root
+-- partitions, which get cascaded to the child partitions.
+-- 
+-- Note:
+-- 1. There may be cases where an index was dropped on child partition in
+-- source cluster explicitly as it was allowed with Greenplum Database 5.x
+-- version, but with Greenplum Database 6.x since a CREATE INDEX will be executed
+-- on the root, indexes will be created on all the child partitions.
+--
+-- 2. The name of the unique indexes on the child partitions created in target cluster
+-- may have a different name in source cluster.

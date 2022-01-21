@@ -1,19 +1,18 @@
 -- Copyright (c) 2017-2021 VMware, Inc. or its affiliates
 -- SPDX-License-Identifier: Apache-2.0
 
--- generates SQL statement to create indexes on root partition tables
--- that don't correspond to unique or primary key constraints
+-- generates SQL statement to create indexes on child partition tables that do
+-- not correspond to primary or unique constraints.
 
--- cte to get all the unique and primary key constraints
-WITH root_partitions (relid) AS
+WITH child_partitions (relid) AS
 (
    SELECT DISTINCT
-      parrelid
+      parchildrelid
    FROM
-      pg_partition
+      pg_partition_rule
 )
 ,
-root_constraints AS
+part_constraints AS
 (
    SELECT
       conname,
@@ -42,8 +41,8 @@ root_constraints AS
          ON dep.objid = c.oid
          AND c.relkind = 'i'
       JOIN
-         root_partitions
-         ON con.conrelid = root_partitions.relid
+         child_partitions
+         ON con.conrelid = child_partitions.relid
       JOIN
          pg_class cc
          ON cc.oid = con.conrelid
@@ -63,8 +62,8 @@ indexes AS
    FROM
       pg_index x
       JOIN
-         root_partitions rp
-         on rp.relid = x.indrelid
+         child_partitions np
+         on np.relid = x.indrelid
       JOIN
          pg_class c
          ON c.oid = x.indrelid
@@ -82,7 +81,8 @@ indexes AS
       AND i.relkind = 'i'::"char"
 )
 SELECT
-$$SET SEARCH_PATH=$$ || schemaname || $$; $$ || indexdef || $$;$$
+'DO $$ BEGIN IF NOT EXISTS ( SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE  c.relname = ''' || indexname ||
+''' AND n.nspname = ''' || schemaname || ''' ) THEN ' || indexdef || '; END IF; END $$; '
 FROM
    indexes
 WHERE
@@ -98,6 +98,6 @@ WHERE
          relschema,
          rel
       FROM
-         root_constraints
+         part_constraints
    )
 ;

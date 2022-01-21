@@ -61,11 +61,10 @@ teardown() {
     egrep "\"CHECK_UPGRADE\": \"FAILED\"" $GPUPGRADE_HOME/substeps.json
     egrep "^Checking.*fatal$" ~/gpAdminLogs/gpupgrade/pg_upgrade/p-1/pg_upgrade_internal.log
 
-    MIGRATION_DIR=`mktemp -d /tmp/migration.XXXXXX`
-
-    "$SCRIPTS_DIR"/gpupgrade-migration-sql-generator.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR" "$SCRIPTS_DIR"
-
     PGOPTIONS='--client-min-messages=warning' $PSQL -d $TEST_DBNAME -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
+
+    MIGRATION_DIR=`mktemp -d /tmp/migration.XXXXXX`
+    "$SCRIPTS_DIR"/gpupgrade-migration-sql-generator.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR" "$SCRIPTS_DIR"
 
     root_child_indexes_before=$(get_indexes "$GPHOME_SOURCE")
     tsquery_datatype_objects_before=$(get_tsquery_datatypes "$GPHOME_SOURCE")
