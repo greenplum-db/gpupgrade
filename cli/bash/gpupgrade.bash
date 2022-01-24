@@ -40,6 +40,12 @@ __gpupgrade_handle_go_custom_completion()
 {
     __gpupgrade_debug "${FUNCNAME[0]}: cur is ${cur}, words[*] is ${words[*]}, #words[@] is ${#words[@]}"
 
+    local shellCompDirectiveError=1
+    local shellCompDirectiveNoSpace=2
+    local shellCompDirectiveNoFileComp=4
+    local shellCompDirectiveFilterFileExt=8
+    local shellCompDirectiveFilterDirs=16
+
     local out requestComp lastParam lastChar comp directive args
 
     # Prepare the command to request completions for the program.
@@ -73,24 +79,50 @@ __gpupgrade_handle_go_custom_completion()
     __gpupgrade_debug "${FUNCNAME[0]}: the completion directive is: ${directive}"
     __gpupgrade_debug "${FUNCNAME[0]}: the completions are: ${out[*]}"
 
-    if [ $((directive & 1)) -ne 0 ]; then
+    if [ $((directive & shellCompDirectiveError)) -ne 0 ]; then
         # Error code.  No completion.
         __gpupgrade_debug "${FUNCNAME[0]}: received error from custom completion go code"
         return
     else
-        if [ $((directive & 2)) -ne 0 ]; then
+        if [ $((directive & shellCompDirectiveNoSpace)) -ne 0 ]; then
             if [[ $(type -t compopt) = "builtin" ]]; then
                 __gpupgrade_debug "${FUNCNAME[0]}: activating no space"
                 compopt -o nospace
             fi
         fi
-        if [ $((directive & 4)) -ne 0 ]; then
+        if [ $((directive & shellCompDirectiveNoFileComp)) -ne 0 ]; then
             if [[ $(type -t compopt) = "builtin" ]]; then
                 __gpupgrade_debug "${FUNCNAME[0]}: activating no file completion"
                 compopt +o default
             fi
         fi
+    fi
 
+    if [ $((directive & shellCompDirectiveFilterFileExt)) -ne 0 ]; then
+        # File extension filtering
+        local fullFilter filter filteringCmd
+        # Do not use quotes around the $out variable or else newline
+        # characters will be kept.
+        for filter in ${out[*]}; do
+            fullFilter+="$filter|"
+        done
+
+        filteringCmd="_filedir $fullFilter"
+        __gpupgrade_debug "File filtering command: $filteringCmd"
+        $filteringCmd
+    elif [ $((directive & shellCompDirectiveFilterDirs)) -ne 0 ]; then
+        # File completion for directories only
+        local subDir
+        # Use printf to strip any trailing newline
+        subdir=$(printf "%s" "${out[0]}")
+        if [ -n "$subdir" ]; then
+            __gpupgrade_debug "Listing directories in $subdir"
+            __gpupgrade_handle_subdirs_in_dir_flag "$subdir"
+        else
+            __gpupgrade_debug "Listing directories in ."
+            _filedir -d
+        fi
+    else
         while IFS='' read -r comp; do
             COMPREPLY+=("$comp")
         done < <(compgen -W "${out[*]}" -- "$cur")
@@ -159,10 +191,9 @@ __gpupgrade_handle_reply()
     local completions
     completions=("${commands[@]}")
     if [[ ${#must_have_one_noun[@]} -ne 0 ]]; then
-        completions=("${must_have_one_noun[@]}")
+        completions+=("${must_have_one_noun[@]}")
     elif [[ -n "${has_completion_function}" ]]; then
         # if a go completion function is provided, defer to that function
-        completions=()
         __gpupgrade_handle_go_custom_completion
     fi
     if [[ ${#must_have_one_flag[@]} -ne 0 ]]; then
@@ -411,9 +442,11 @@ _gpupgrade_execute()
     flags+=("--?")
     flags+=("-?")
     local_nonpersistent_flags+=("--?")
+    local_nonpersistent_flags+=("-?")
     flags+=("--verbose")
     flags+=("-v")
     local_nonpersistent_flags+=("--verbose")
+    local_nonpersistent_flags+=("-v")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -458,9 +491,11 @@ _gpupgrade_finalize()
     flags+=("--?")
     flags+=("-?")
     local_nonpersistent_flags+=("--?")
+    local_nonpersistent_flags+=("-?")
     flags+=("--verbose")
     flags+=("-v")
     local_nonpersistent_flags+=("--verbose")
+    local_nonpersistent_flags+=("-v")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -525,45 +560,59 @@ _gpupgrade_initialize()
     flags+=("--?")
     flags+=("-?")
     local_nonpersistent_flags+=("--?")
+    local_nonpersistent_flags+=("-?")
     flags+=("--agent-port=")
     two_word_flags+=("--agent-port")
+    local_nonpersistent_flags+=("--agent-port")
     local_nonpersistent_flags+=("--agent-port=")
     flags+=("--automatic")
     flags+=("-a")
     local_nonpersistent_flags+=("--automatic")
+    local_nonpersistent_flags+=("-a")
     flags+=("--disk-free-ratio=")
     two_word_flags+=("--disk-free-ratio")
+    local_nonpersistent_flags+=("--disk-free-ratio")
     local_nonpersistent_flags+=("--disk-free-ratio=")
     flags+=("--dynamic-library-path=")
     two_word_flags+=("--dynamic-library-path")
+    local_nonpersistent_flags+=("--dynamic-library-path")
     local_nonpersistent_flags+=("--dynamic-library-path=")
     flags+=("--file=")
     two_word_flags+=("--file")
     two_word_flags+=("-f")
+    local_nonpersistent_flags+=("--file")
     local_nonpersistent_flags+=("--file=")
+    local_nonpersistent_flags+=("-f")
     flags+=("--hub-port=")
     two_word_flags+=("--hub-port")
+    local_nonpersistent_flags+=("--hub-port")
     local_nonpersistent_flags+=("--hub-port=")
     flags+=("--mode=")
     two_word_flags+=("--mode")
+    local_nonpersistent_flags+=("--mode")
     local_nonpersistent_flags+=("--mode=")
     flags+=("--source-gphome=")
     two_word_flags+=("--source-gphome")
+    local_nonpersistent_flags+=("--source-gphome")
     local_nonpersistent_flags+=("--source-gphome=")
     flags+=("--source-master-port=")
     two_word_flags+=("--source-master-port")
+    local_nonpersistent_flags+=("--source-master-port")
     local_nonpersistent_flags+=("--source-master-port=")
     flags+=("--target-gphome=")
     two_word_flags+=("--target-gphome")
+    local_nonpersistent_flags+=("--target-gphome")
     local_nonpersistent_flags+=("--target-gphome=")
     flags+=("--temp-port-range=")
     two_word_flags+=("--temp-port-range")
+    local_nonpersistent_flags+=("--temp-port-range")
     local_nonpersistent_flags+=("--temp-port-range=")
     flags+=("--use-hba-hostnames")
     local_nonpersistent_flags+=("--use-hba-hostnames")
     flags+=("--verbose")
     flags+=("-v")
     local_nonpersistent_flags+=("--verbose")
+    local_nonpersistent_flags+=("-v")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -648,9 +697,11 @@ _gpupgrade_revert()
     flags+=("--?")
     flags+=("-?")
     local_nonpersistent_flags+=("--?")
+    local_nonpersistent_flags+=("-?")
     flags+=("--verbose")
     flags+=("-v")
     local_nonpersistent_flags+=("--verbose")
+    local_nonpersistent_flags+=("-v")
 
     must_have_one_flag=()
     must_have_one_noun=()
@@ -673,6 +724,7 @@ _gpupgrade_version()
 
     flags+=("--format=")
     two_word_flags+=("--format")
+    local_nonpersistent_flags+=("--format")
     local_nonpersistent_flags+=("--format=")
 
     must_have_one_flag=()
@@ -706,12 +758,15 @@ _gpupgrade_root_command()
     flags+=("--?")
     flags+=("-?")
     local_nonpersistent_flags+=("--?")
+    local_nonpersistent_flags+=("-?")
     flags+=("--format=")
     two_word_flags+=("--format")
+    local_nonpersistent_flags+=("--format")
     local_nonpersistent_flags+=("--format=")
     flags+=("--version")
     flags+=("-V")
     local_nonpersistent_flags+=("--version")
+    local_nonpersistent_flags+=("-V")
 
     must_have_one_flag=()
     must_have_one_noun=()
