@@ -57,7 +57,7 @@ Database: isolation2test
 --------------------------------------------------------------------------------
 -- Workaround to unblock upgrade
 --------------------------------------------------------------------------------
-ALTER TABLE public.pt DROP CONSTRAINT pt_fkey CASCADE;
+ALTER TABLE public.pt DROP CONSTRAINT pt_fkey;
 ALTER
-ALTER TABLE public.pt_another DROP CONSTRAINT pt_another_fkey CASCADE;
+ALTER TABLE public.pt_another DROP CONSTRAINT pt_another_fkey;
 ALTER

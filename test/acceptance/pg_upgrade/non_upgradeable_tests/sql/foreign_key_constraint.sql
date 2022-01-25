@@ -42,5 +42,5 @@ INSERT INTO non_pt SELECT i FROM generate_series(1,2)i;
 --------------------------------------------------------------------------------
 -- Workaround to unblock upgrade
 --------------------------------------------------------------------------------
-ALTER TABLE public.pt DROP CONSTRAINT pt_fkey CASCADE;
-ALTER TABLE public.pt_another DROP CONSTRAINT pt_another_fkey CASCADE;
+ALTER TABLE public.pt DROP CONSTRAINT pt_fkey;
+ALTER TABLE public.pt_another DROP CONSTRAINT pt_another_fkey;
