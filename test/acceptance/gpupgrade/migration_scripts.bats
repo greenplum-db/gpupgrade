@@ -63,15 +63,14 @@ teardown() {
 
     PGOPTIONS='--client-min-messages=warning' $PSQL -d $TEST_DBNAME -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
 
-    MIGRATION_DIR=`mktemp -d /tmp/migration.XXXXXX`
-    "$SCRIPTS_DIR"/gpupgrade-migration-sql-generator.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR" "$SCRIPTS_DIR"
-
     root_child_indexes_before=$(get_indexes "$GPHOME_SOURCE")
     tsquery_datatype_objects_before=$(get_tsquery_datatypes "$GPHOME_SOURCE")
     name_datatype_objects_before=$(get_name_datatypes "$GPHOME_SOURCE")
     fk_constraints_before=$(get_fk_constraints "$GPHOME_SOURCE")
     primary_unique_constraints_before=$(get_primary_unique_constraints "$GPHOME_SOURCE")
 
+    MIGRATION_DIR=`mktemp -d /tmp/migration.XXXXXX`
+    "$SCRIPTS_DIR"/gpupgrade-migration-sql-generator.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR" "$SCRIPTS_DIR"
     "$SCRIPTS_DIR"/gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/pre-initialize
 
     gpupgrade initialize \
@@ -110,17 +109,16 @@ teardown() {
 
     $PSQL -d $TEST_DBNAME -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
 
-    MIGRATION_DIR=`mktemp -d /tmp/migration.XXXXXX`
-    register_teardown rm -r "$MIGRATION_DIR"
-
-    $SCRIPTS_DIR/gpupgrade-migration-sql-generator.bash $GPHOME_SOURCE $PGPORT $MIGRATION_DIR "$SCRIPTS_DIR"
-
     root_child_indexes_before=$(get_indexes "$GPHOME_SOURCE")
     tsquery_datatype_objects_before=$(get_tsquery_datatypes "$GPHOME_SOURCE")
     name_datatype_objects_before=$(get_name_datatypes "$GPHOME_SOURCE")
     fk_constraints_before=$(get_fk_constraints "$GPHOME_SOURCE")
     primary_unique_constraints_before=$(get_primary_unique_constraints "$GPHOME_SOURCE")
 
+    MIGRATION_DIR=`mktemp -d /tmp/migration.XXXXXX`
+    register_teardown rm -r "$MIGRATION_DIR"
+
+    $SCRIPTS_DIR/gpupgrade-migration-sql-generator.bash $GPHOME_SOURCE $PGPORT $MIGRATION_DIR "$SCRIPTS_DIR"
     $SCRIPTS_DIR/gpupgrade-migration-sql-executor.bash $GPHOME_SOURCE $PGPORT $MIGRATION_DIR/pre-initialize
 
     gpupgrade initialize \
