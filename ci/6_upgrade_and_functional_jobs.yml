@@ -86,7 +86,7 @@
         image_resource:
           type: registry-image
           source:
-            repository: centos
+            repository: registry.access.redhat.com/ubi8/ubi
             tag: latest
         inputs:
           - name: gpupgrade_src
