@@ -252,7 +252,7 @@ CREATE INDEX sales_tsquery_idx on sales_tsquery USING GIST (office_tsquery);
 -- Multilevel partitioned table with unique index
 DROP TABLE IF EXISTS ml_partitioned_with_index;
 CREATE TABLE ml_partitioned_with_index (trans_id int, office_id int, region int, dummy int)
-    DISTRIBUTED BY (trans_id)
+DISTRIBUTED BY (trans_id)
     PARTITION BY RANGE (office_id)
         SUBPARTITION BY RANGE (dummy)
             SUBPARTITION TEMPLATE (
@@ -261,5 +261,49 @@ CREATE TABLE ml_partitioned_with_index (trans_id int, office_id int, region int,
         (START (1) END (4) EVERY (1),
         DEFAULT PARTITION outlying_dates );
 CREATE UNIQUE INDEX ml_partitioned_with_index_idx ON ml_partitioned_with_index(trans_id);
+
+-- heterogeneous partitioned tables
+-- copied from acceptance tests
+
+-- Heterogeneous partition table with dropped column
+-- The root and only a subset of children have the dropped column reference.
+CREATE TABLE dropped_column (a int, b int, c char, d varchar(50)) DISTRIBUTED BY (c)
+    PARTITION BY RANGE (a)
+        (PARTITION part_1 START(1) END(5),
+        PARTITION part_2 START(5));
+ALTER TABLE dropped_column DROP COLUMN d;
+
+-- Splitting the subpartition leads to its rewrite, eliminating its dropped column
+-- reference. So, after this, only part_2 and the root partition will have a
+-- dropped column reference.
+ALTER TABLE dropped_column SPLIT PARTITION FOR(1) AT (2) INTO (PARTITION split_part_1, PARTITION split_part_2);
+INSERT INTO dropped_column VALUES(1, 2, 'a');
+
+-- Root partitions do not have dropped column references, but some child partitions do
+CREATE TABLE child_has_dropped_column (a int, b int, c char, d varchar(50))
+    PARTITION BY RANGE (a)
+        (PARTITION part_1 START(1) END(5),
+        PARTITION part_2 START(5));
+
+CREATE TABLE intermediate_table (a int, b int, c char, d varchar(50), to_drop int);
+ALTER TABLE intermediate_table DROP COLUMN to_drop;
+
+ALTER TABLE child_has_dropped_column EXCHANGE PARTITION part_1 WITH TABLE intermediate_table;
+DROP TABLE intermediate_table;
+
+-- heterogeneous multilevel partitioned table
+DROP TABLE IF EXISTS heterogeneous_ml_partition_table;
+CREATE TABLE heterogeneous_ml_partition_table (trans_id int, office_id int, region int, dummy int)
+    DISTRIBUTED BY (trans_id)
+    PARTITION BY RANGE (office_id)
+        SUBPARTITION BY RANGE (dummy)
+            SUBPARTITION TEMPLATE (
+            START (1) END (16) EVERY (4),
+            DEFAULT SUBPARTITION other_dummy )
+        (START (1) END (4) EVERY (1),
+        DEFAULT PARTITION outlying_dates );
+
+ALTER TABLE heterogeneous_ml_partition_table DROP COLUMN region;
+ALTER TABLE heterogeneous_ml_partition_table ALTER PARTITION for (1) SPLIT PARTITION for (1) at (3) into (PARTITION p1, PARTITION p2);
 
 RESET search_path;

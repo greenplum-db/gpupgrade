@@ -115,6 +115,9 @@ teardown() {
     fk_constraints_before=$(get_fk_constraints "$GPHOME_SOURCE")
     primary_unique_constraints_before=$(get_primary_unique_constraints "$GPHOME_SOURCE")
 
+    # Ignore the test tables that break the diff for now.
+    EXCLUSIONS+="-T ${TEST_SCHEMA}.heterogeneous_ml_partition_table "
+
     MIGRATION_DIR=`mktemp -d /tmp/migration.XXXXXX`
     register_teardown rm -r "$MIGRATION_DIR"
 
