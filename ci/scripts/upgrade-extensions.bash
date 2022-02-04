@@ -63,7 +63,7 @@ time ssh -n mdw "
               --source-gphome $GPHOME_SOURCE \
               --source-master-port $PGPORT \
               --temp-port-range 6020-6040 \
-              --dynamic-library-path $GPHOME_TARGET'/madlib/Current/ports/greenplum/6/lib:/usr/local/greenplum-db-text/lib/gpdb6'
+              --dynamic-library-path ${GPHOME_TARGET}/madlib/Current/ports/greenplum/6/lib:/usr/local/greenplum-db-text/lib/gpdb6
     set -e
 
     # Remove the expected failure logs such that any legitimate errors can easily be identified.
@@ -106,7 +106,7 @@ time ssh -n mdw "
               --source-gphome $GPHOME_SOURCE \
               --source-master-port $PGPORT \
               --temp-port-range 6020-6040 \
-              --dynamic-library-path $GPHOME_TARGET'/madlib/Current/ports/greenplum/6/lib:/usr/local/greenplum-db-text/lib/gpdb6'
+              --dynamic-library-path ${GPHOME_TARGET}/madlib/Current/ports/greenplum/6/lib:/usr/local/greenplum-db-text/lib/gpdb6
 
     gpupgrade execute --non-interactive
     gpupgrade finalize --non-interactive
