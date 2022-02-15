@@ -23,6 +23,37 @@ service Agent {
   rpc AddReplicationEntries (AddReplicationEntriesRequest) returns (AddReplicationEntriesReply) {}
 }
 
+message PgOptions {
+  enum Mode {
+    UNKNOWN_Mode = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
+    Dispatcher = 1;
+    Segment = 2;
+  }
+
+  enum Action {
+    UNKNOWN_Action = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
+    upgrade = 1;
+    check = 2;
+  }
+
+  Action action = 1;
+  string Role = 2;
+  int32 ContentID = 3;
+  Mode mode = 4;
+  string OldOptions = 5;
+  bool LinkMode = 6;
+  string TargetVersion = 7;
+  string OldBinDir = 8;
+  string OldDataDir = 9;
+  string OldPort = 10;
+  string OldDBID = 11;
+  string NewBinDir = 12;
+  string NewDataDir = 13;
+  string NewPort = 14;
+  string NewDBID = 15;
+  map<int32, TablespaceInfo> Tablespaces = 16;
+}
+
 message TablespaceInfo {
   string Name = 3;
   string Location = 4;
@@ -30,23 +61,8 @@ message TablespaceInfo {
 }
 
 message UpgradePrimariesRequest {
-    string SourceBinDir = 1;
-    string TargetBinDir = 2;
-    string TargetVersion = 3;
-    repeated DataDirPair DataDirPairs = 4;
-    bool CheckOnly = 5;
-    bool UseLinkMode = 6;
-    string MasterBackupDir = 7;
-}
-
-message DataDirPair {
-    string SourceDataDir = 1;
-    string TargetDataDir = 2;
-    int32  SourcePort    = 3;
-    int32  TargetPort    = 4;
-    int32  Content    = 5;
-    int32  DBID       = 6;
-    map<int32, TablespaceInfo> Tablespaces = 7;
+  PgOptions.Action action = 1;
+  repeated PgOptions opts = 2;
 }
 
 message UpgradePrimariesReply {}

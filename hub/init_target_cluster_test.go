@@ -219,7 +219,7 @@ func TestRunInitsystemForTargetCluster(t *testing.T) {
 	intermediate.GPHome = "/usr/local/greenplum-db"
 
 	t.Run("does not use --ignore-warnings when upgrading to GPDB7 or higher", func(t *testing.T) {
-		cmd = exectest.NewCommandWithVerifier(Success, func(path string, args ...string) {
+		ExecCommand = exectest.NewCommandWithVerifier(Success, func(path string, args ...string) {
 			if path != "bash" {
 				t.Errorf("executed %q, want bash", path)
 			}
@@ -231,7 +231,7 @@ func TestRunInitsystemForTargetCluster(t *testing.T) {
 				t.Errorf("args %q, want %q", args, expected)
 			}
 		})
-		greenplum.SetGreenplumCommand(cmd)
+		greenplum.SetGreenplumCommand(ExecCommand)
 		defer greenplum.ResetGreenplumCommand()
 
 		intermediate.Version = semver.MustParse("7.0.0")
@@ -242,7 +242,7 @@ func TestRunInitsystemForTargetCluster(t *testing.T) {
 	})
 
 	t.Run("only uses --ignore-warnings when upgrading to GPDB6", func(t *testing.T) {
-		cmd = exectest.NewCommandWithVerifier(Success, func(path string, args ...string) {
+		ExecCommand = exectest.NewCommandWithVerifier(Success, func(path string, args ...string) {
 			if path != "bash" {
 				t.Errorf("executed %q, want bash", path)
 			}
@@ -254,7 +254,7 @@ func TestRunInitsystemForTargetCluster(t *testing.T) {
 				t.Errorf("args %q, want %q", args, expected)
 			}
 		})
-		greenplum.SetGreenplumCommand(cmd)
+		greenplum.SetGreenplumCommand(ExecCommand)
 		defer greenplum.ResetGreenplumCommand()
 
 		intermediate.Version = semver.MustParse("6.0.0")

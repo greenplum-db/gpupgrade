@@ -4,301 +4,412 @@
 package agent_test
 
 import (
+	"context"
 	"errors"
-	"io/ioutil"
+	"fmt"
 	"os"
+	"os/exec"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/greenplum-db/gp-common-go-libs/testhelper"
+	"golang.org/x/xerrors"
+
 	"github.com/greenplum-db/gpupgrade/agent"
+	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
-	"github.com/greenplum-db/gpupgrade/testutils/testlog"
+	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
 
-func ResetCommands() {
-	agent.SetExecCommand(nil)
-	rsync.SetRsyncCommand(nil)
-}
+func TestUpgradePrimaries(t *testing.T) {
+	testhelper.SetupTestLogger()
+	server := agent.NewServer(agent.Config{})
 
-func TestUpgradePrimary(t *testing.T) {
-	testlog.SetupLogger()
-
-	// Disable exec.Command. This way, if a test forgets to mock it out, we
-	// crash the test instead of executing code on a dev system.
-	agent.SetExecCommand(nil)
-
-	// We need a real temporary directory to change to. Replace MkdirAll() so
-	// that we can make sure the directory is the correct one.
-	tempDir, err := ioutil.TempDir("", "gpupgrade")
-	if err != nil {
-		t.Fatalf("creating temporary directory: %+v", err)
-	}
-	defer os.RemoveAll(tempDir)
-
-	utils.System.MkdirAll = func(path string, perms os.FileMode) error {
-		// Bail out if the implementation tries to touch any other directories.
-		expected := "gpAdminLogs" + string(os.PathSeparator) + "gpupgrade"
-		if !strings.Contains(path, expected) {
-			t.Fatalf("requested directory %q does not contain %q; refusing to create it", path, expected)
-		}
-		return os.MkdirAll(path, perms)
-	}
-
-	defer func() {
-		utils.System = utils.InitializeSystemFunctions()
-	}()
-
-	pairs := []*idl.DataDirPair{
-		{
-			SourceDataDir: "/data/old",
-			TargetDataDir: "/data/new",
-			SourcePort:    15432,
-			TargetPort:    15433,
-			Content:       1,
-			DBID:          2,
-		},
-		{
-			SourceDataDir: "/other/data/old",
-			TargetDataDir: "/other/data/new",
-			SourcePort:    99999,
-			TargetPort:    88888,
-			Content:       7,
-			DBID:          6,
-		},
-	}
-
-	// NOTE: we could choose to duplicate the upgrade.Run unit tests for all of
-	// this, but we choose to instead rely on end-to-end tests for most of this
-	// functionality, and test only a few integration paths here.
-
-	t.Run("when pg_upgrade --check fails it returns an error", func(t *testing.T) {
-		agent.SetExecCommand(exectest.NewCommand(agent.FailedMain))
+	t.Run("succeeds", func(t *testing.T) {
 		rsync.SetRsyncCommand(exectest.NewCommand(agent.Success))
+		defer rsync.ResetRsyncCommand()
 
-		defer ResetCommands()
+		upgrade.SetPgUpgradeCommand(exectest.NewCommand(agent.Success))
+		defer upgrade.ResetPgUpgradeCommand()
 
-		request := &idl.UpgradePrimariesRequest{
-			SourceBinDir:  "/old/bin",
-			TargetBinDir:  "/new/bin",
-			DataDirPairs:  pairs,
-			CheckOnly:     true,
-			UseLinkMode:   false,
-			TargetVersion: "6.15.0",
-		}
-		err := agent.UpgradePrimaries(request)
-		if err == nil {
-			t.Fatal("UpgradeSegments() returned no error")
-		}
+		opts := []*idl.PgOptions{{
+			Role:          greenplum.PrimaryRole,
+			Action:        idl.PgOptions_check,
+			TargetVersion: "6.0.0",
+		}}
 
-		// XXX it'd be nice if we didn't couple against a hardcoded string here,
-		// but it's difficult to unwrap multiple errors with the new xerrors
-		// interface.
-		if !strings.Contains(err.Error(), "check primaries") ||
-			!strings.Contains(err.Error(), "check primary on host") ||
-			!strings.Contains(err.Error(), "with content 1") {
-			t.Errorf("error %q did not contain expected contents 'check primary on host' and 'content 1'",
-				err.Error())
+		_, err := server.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{Opts: opts})
+		if err != nil {
+			t.Fatalf("unexpected error %+v", err)
 		}
 	})
 
-	t.Run("when pg_upgrade with no check fails it returns an error", func(t *testing.T) {
-		rsync.SetRsyncCommand(exectest.NewCommand(agent.Success))
-		agent.SetExecCommand(exectest.NewCommand(agent.FailedMain))
-		defer ResetCommands()
-
-		request := &idl.UpgradePrimariesRequest{
-			SourceBinDir:  "/old/bin",
-			TargetBinDir:  "/new/bin",
-			DataDirPairs:  pairs,
-			CheckOnly:     false,
-			UseLinkMode:   false,
-			TargetVersion: "6.15.0"}
-		err := agent.UpgradePrimaries(request)
-		if err == nil {
-			t.Fatal("UpgradeSegments() returned no error")
-		}
-
-		// XXX it'd be nice if we didn't couple against a hardcoded string here,
-		// but it's difficult to unwrap multiple errors with the new xerrors
-		// interface.
-		if !strings.Contains(err.Error(), "upgrade primaries") ||
-			!strings.Contains(err.Error(), "upgrade primary on host") ||
-			!strings.Contains(err.Error(), "with content 1") {
-			t.Errorf("error %q did not contain expected contents 'upgrade primary on host' and 'content 1'",
-				err.Error())
-		}
-	})
-
-	t.Run("it does not perform a copy of the master backup directory when using check mode", func(t *testing.T) {
-		agent.SetExecCommand(exectest.NewCommand(agent.Success))
-
-		defer ResetCommands()
-
-		request := buildRequest(pairs)
-		request.CheckOnly = true
-
-		rsync.SetRsyncCommand(
-			exectest.NewCommandWithVerifier(agent.Success, func(commandName string, _ ...string) {
-				if strings.HasSuffix(commandName, "rsync") {
-					t.Error("unexpected rsync call")
-				}
-			}))
-
-		_ = agent.UpgradePrimaries(request)
-	})
-
-	t.Run("it returns errors in parallel if the copy step fails", func(t *testing.T) {
-		rsync.SetRsyncCommand(exectest.NewCommand(agent.FailedRsync))
-		agent.SetExecCommand(exectest.NewCommand(agent.Success))
-
-		request := buildRequest(pairs)
-		err = agent.UpgradePrimaries(request)
-
-		// We expect each part of the request to return its own ExitError,
-		// containing the expected message from FailedRsync.
-		var errs errorlist.Errors
-		if !errors.As(err, &errs) {
-			t.Fatalf("got error %#v, want type %T", err, errs)
-		}
-
-		if len(errs) != len(pairs) {
-			t.Errorf("received %d errors, want %d", len(errs), len(pairs))
-		}
-
-		for _, err := range errs {
-			if !strings.Contains(string(err.Error()), "rsync failed cause I said so") {
-				t.Errorf("wanted error message 'rsync failed cause I said so' from rsync, got %q",
-					string(err.Error()))
-			}
-		}
-	})
-
-	t.Run("it grabs a copy of the master backup directory before running upgrade", func(t *testing.T) {
-		defer ResetCommands()
-
-		var targetDataDirs []string
-		var targetDataDirsUsed []string
-
-		for _, pair := range pairs {
-			targetDataDirs = append(targetDataDirs, pair.TargetDataDir)
-		}
-
-		targetDataDirsUsedChannel := make(chan string, len(targetDataDirs))
-
-		agent.SetExecCommand(exectest.NewCommand(agent.Success))
-		rsync.SetRsyncCommand(exectest.NewCommandWithVerifier(agent.Success, func(utility string, arguments ...string) {
-			call := rsyncCall(utility, arguments)
-
-			if call.sourceDir != "/some/master/backup/dir/" {
-				t.Errorf("rsync source directory was %v, want %v",
-					call.sourceDir,
-					"/some/master/backup/dir")
+	t.Run("restores backup and tablespaces when not calling --check", func(t *testing.T) {
+		var calls int
+		rsync.SetRsyncCommand(exectest.NewCommandWithVerifier(agent.Success, func(utility string, args ...string) {
+			if !strings.HasSuffix(utility, "rsync") {
+				t.Errorf("got %q want rsync", utility)
 			}
 
-			for _, dir := range targetDataDirs {
-				if call.targetDir == dir {
-					targetDataDirsUsedChannel <- dir
-				}
-			}
-
-			expectedExclusions := []string{
-				"--exclude", "internal.auto.conf",
-				"--exclude", "postgresql.conf",
-				"--exclude", "pg_hba.conf",
-				"--exclude", "postmaster.opts",
-				"--exclude", "gp_dbid",
-				"--exclude", "gpssh.conf",
-				"--exclude", "gpperfmon",
-			}
-
-			if !reflect.DeepEqual(call.exclusions, expectedExclusions) {
-				t.Errorf("got %q exclusions in rsync, want %q",
-					call.exclusions,
-					expectedExclusions)
-			}
+			calls++
 		}))
 
-		request := buildRequest(pairs)
-		request.MasterBackupDir = "/some/master/backup/dir"
+		var symlinks Symlinks
+		utils.System.Symlink = func(oldname, newname string) error {
+			symlinks = append(symlinks, Symlink{Oldname: oldname, Newname: newname})
+			return nil
+		}
+		defer utils.ResetSystemFunctions()
 
-		err := agent.UpgradePrimaries(request)
+		upgrade.SetPgUpgradeCommand(exectest.NewCommand(agent.Success))
+		defer upgrade.ResetPgUpgradeCommand()
+
+		opts := []*idl.PgOptions{
+			{
+				Role:          greenplum.PrimaryRole,
+				Action:        idl.PgOptions_upgrade,
+				TargetVersion: "6.0.0",
+				OldDBID:       "1",
+				NewDataDir:    "/new/data/dir",
+				Tablespaces: map[int32]*idl.TablespaceInfo{
+					1663: {Name: "tblspc1", Location: "/tmp/primary1/1663", UserDefined: true},
+					1664: {Name: "tblspc2", Location: "/tmp/primary1/1664", UserDefined: true},
+				},
+			},
+		}
+
+		_, err := server.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{Opts: opts})
 		if err != nil {
-			t.Error(err)
+			t.Fatalf("unexpected error %+v", err)
 		}
 
-		close(targetDataDirsUsedChannel)
-
-		//
-		// Collect data dirs that were used to restore
-		// a backup of the master data directory
-		//
-		// note: we're using channels because the rsync is happening
-		// on a goroutine, so order cannot be guaranteed
-		//
-		for dir := range targetDataDirsUsedChannel {
-			targetDataDirsUsed = append(targetDataDirsUsed, dir)
+		if calls != 3 {
+			t.Errorf("got %d want 3 calls to rsync. 1 to restore backup and 2 to restore tablespaces", calls)
 		}
 
-		sort.Strings(targetDataDirs)
-		sort.Strings(targetDataDirsUsed)
-		if !reflect.DeepEqual(targetDataDirsUsed, targetDataDirs) {
-			t.Errorf("all target data directories (%q) should have been upgraded, only %q were",
-				targetDataDirs,
-				targetDataDirsUsed)
+		expectedSymlinks := Symlinks{
+			{Oldname: "/tmp/primary1/1663/1", Newname: "/new/data/dir/pg_tblspc/1663"},
+			{Oldname: "/tmp/primary1/1664/1", Newname: "/new/data/dir/pg_tblspc/1664"},
+		}
+
+		sort.Sort(symlinks)
+		if !reflect.DeepEqual(symlinks, expectedSymlinks) {
+			t.Error("symlinks do not match")
+			t.Errorf("got  %+v", symlinks)
+			t.Errorf("want %+v", expectedSymlinks)
+		}
+	})
+
+	t.Run("does not restore backup and tablespaces when not calling --check", func(t *testing.T) {
+		var called bool
+		rsync.SetRsyncCommand(exectest.NewCommandWithVerifier(agent.Success, func(utility string, args ...string) {
+			if !strings.HasSuffix(utility, "rsync") {
+				t.Errorf("got %q want rsync", utility)
+			}
+
+			called = true
+		}))
+		defer rsync.ResetRsyncCommand()
+
+		upgrade.SetPgUpgradeCommand(exectest.NewCommand(agent.Success))
+		defer upgrade.ResetPgUpgradeCommand()
+
+		opts := []*idl.PgOptions{{
+			Role:          greenplum.PrimaryRole,
+			Action:        idl.PgOptions_check,
+			TargetVersion: "6.0.0",
+		}}
+
+		_, err := server.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{Opts: opts})
+		if err != nil {
+			t.Fatalf("unexpected error %+v", err)
+		}
+
+		if called {
+			t.Error("expected rsync to not be called")
+		}
+	})
+
+	t.Run("errors when restoring the backup fails", func(t *testing.T) {
+		rsync.SetRsyncCommand(exectest.NewCommand(agent.FailedRsync))
+		defer rsync.ResetRsyncCommand()
+
+		upgrade.SetPgUpgradeCommand(exectest.NewCommand(agent.Success))
+		defer upgrade.ResetPgUpgradeCommand()
+
+		opts := []*idl.PgOptions{
+			{
+				Role:          greenplum.PrimaryRole,
+				Action:        idl.PgOptions_upgrade,
+				TargetVersion: "6.0.0",
+				NewDBID:       "1",
+				NewDataDir:    "/new/data/dir",
+				Tablespaces: map[int32]*idl.TablespaceInfo{
+					1663: {Name: "tblspc1", Location: "/tmp/primary1/1663", UserDefined: true},
+					1664: {Name: "tblspc2", Location: "/tmp/primary1/1664", UserDefined: true},
+				},
+			},
+		}
+
+		_, err := server.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{Opts: opts})
+		var exitErr *exec.ExitError
+		if !errors.As(err, &exitErr) {
+			t.Fatalf("got error %T, want type %T", err, exitErr)
+		}
+
+		if exitErr.ExitCode() != 2 {
+			t.Errorf("got exit code %d, want 2", exitErr.ExitCode())
+		}
+	})
+
+	t.Run("errors when restoring tablespaces fails", func(t *testing.T) {
+		rsync.SetRsyncCommand(exectest.NewCommand(agent.Success))
+		defer rsync.ResetRsyncCommand()
+
+		upgrade.SetPgUpgradeCommand(exectest.NewCommand(agent.Success))
+		defer upgrade.ResetPgUpgradeCommand()
+
+		opts := []*idl.PgOptions{
+			{
+				Role:          greenplum.PrimaryRole,
+				Action:        idl.PgOptions_upgrade,
+				TargetVersion: "6.0.0",
+				OldDBID:       "1",
+				NewDataDir:    "/new/data/dir",
+				Tablespaces: map[int32]*idl.TablespaceInfo{
+					1663: {Name: "tblspc1", Location: "/tmp/primary1/1663", UserDefined: true},
+					1664: {Name: "tblspc2", Location: "/tmp/primary1/1664", UserDefined: true},
+				},
+			},
+		}
+
+		_, err := server.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{Opts: opts})
+		var linkErr *os.LinkError
+		if !errors.As(err, &linkErr) {
+			t.Errorf("got error %T, want type %T", err, linkErr)
+		}
+	})
+
+	t.Run("errors when pg_upgrade fails", func(t *testing.T) {
+		utils.System.Hostname = func() (string, error) {
+			return "sdw1", nil
+		}
+
+		rsync.SetRsyncCommand(exectest.NewCommand(agent.Success))
+		defer rsync.ResetRsyncCommand()
+
+		upgrade.SetPgUpgradeCommand(exectest.NewCommand(agent.FailedMain))
+		defer upgrade.ResetPgUpgradeCommand()
+
+		opts := []*idl.PgOptions{
+			{Role: greenplum.PrimaryRole, Action: idl.PgOptions_upgrade, TargetVersion: "6.0.0", ContentID: 1, OldDBID: "1"},
+			{Role: greenplum.PrimaryRole, Action: idl.PgOptions_upgrade, TargetVersion: "6.0.0", ContentID: 2, OldDBID: "2"},
+		}
+
+		_, err := server.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{Opts: opts})
+		var errs errorlist.Errors
+		if !xerrors.As(err, &errs) {
+			t.Errorf("error %T does not contain type %T", err, errs)
+		}
+
+		if len(errs) != len(opts) {
+			t.Fatalf("got error count %d, want %d", len(errs), len(opts))
+		}
+
+		sort.Sort(errs)
+		for i, err := range errs {
+			expected := fmt.Sprintf("upgrade primary on host sdw1 with content %d: exit status 1", i+1)
+			if err.Error() != expected {
+				t.Errorf("got %q want %q", err.Error(), expected)
+			}
 		}
 	})
 }
 
-type rsyncRequest struct {
-	commandName string
-	sourceDir   string
-	targetDir   string
-	archiveFlag string
-	deleteFlag  string
-	exclusions  []string
+func TestRestoreTablespaces(t *testing.T) {
+	testhelper.SetupTestLogger()
+
+	t.Run("restores user defined tablespaces", func(t *testing.T) {
+		rsync.SetRsyncCommand(exectest.NewCommand(agent.Success))
+		defer rsync.ResetRsyncCommand()
+
+		utils.System.Symlink = func(oldname, newname string) error {
+			return nil
+		}
+		defer utils.ResetSystemFunctions()
+
+		tablespaces := map[int32]*idl.TablespaceInfo{
+			1663: {Name: "tblspc1", Location: "/tmp/primary1/1663", UserDefined: true},
+			1664: {Name: "tblspc2", Location: "/tmp/primary1/1664", UserDefined: true},
+		}
+
+		err := agent.RestoreTablespaces(tablespaces, "2", "/new/data/dir")
+		if err != nil {
+			t.Fatalf("unexpected error %+v", err)
+		}
+	})
+
+	t.Run("skips restoring default tablespaces and only restores user defined tablespaces", func(t *testing.T) {
+		expected := "/tmp/primary1/1664/2"
+
+		rsync.SetRsyncCommand(exectest.NewCommandWithVerifier(agent.Success, func(utility string, args ...string) {
+			if !strings.HasSuffix(utility, "rsync") {
+				t.Errorf("got %q want rsync", utility)
+			}
+
+			if args[3] != expected {
+				t.Errorf("got %q want %q", args[3], expected)
+			}
+		}))
+		defer rsync.ResetRsyncCommand()
+
+		utils.System.Lstat = func(name string) (os.FileInfo, error) {
+			return nil, nil
+		}
+		defer utils.ResetSystemFunctions()
+
+		utils.System.Remove = func(name string) error {
+			return nil
+		}
+		defer utils.ResetSystemFunctions()
+
+		utils.System.Symlink = func(sourceDir, symLinkName string) error {
+			return nil
+		}
+		defer utils.ResetSystemFunctions()
+
+		tablespaces := map[int32]*idl.TablespaceInfo{
+			1663: {Name: "tblspc1", Location: "/tmp/primary1/1663", UserDefined: false},
+			1664: {Name: "tblspc2", Location: "/tmp/primary1/1664", UserDefined: true},
+		}
+
+		err := agent.RestoreTablespaces(tablespaces, "2", "/new/data/dir")
+		if err != nil {
+			t.Fatalf("unexpected error %+v", err)
+		}
+	})
+
+	t.Run("errors when parse dbID fails", func(t *testing.T) {
+		err := agent.RestoreTablespaces(nil, "", "")
+		var expected *strconv.NumError
+		if !errors.As(err, &expected) {
+			t.Errorf("got error type %T want %T", err, expected)
+		}
+	})
+
+	t.Run("errors when rsync fails", func(t *testing.T) {
+		rsync.SetRsyncCommand(exectest.NewCommand(agent.FailedRsync))
+		defer rsync.ResetRsyncCommand()
+
+		tablespaces := map[int32]*idl.TablespaceInfo{
+			1664: {Name: "tblspc2", Location: "/tmp/primary1/1664", UserDefined: true},
+		}
+
+		err := agent.RestoreTablespaces(tablespaces, "2", "/new/data/dir")
+		var expected rsync.RsyncError
+		if !errors.As(err, &expected) {
+			t.Errorf("got error type %T want %T", err, expected)
+		}
+	})
+
+	t.Run("errors when recreating the symlink fails to read the link", func(t *testing.T) {
+		rsync.SetRsyncCommand(exectest.NewCommand(agent.Success))
+		defer rsync.ResetRsyncCommand()
+
+		expected := errors.New("oops")
+		utils.System.Lstat = func(name string) (os.FileInfo, error) {
+			return nil, expected
+		}
+		defer utils.ResetSystemFunctions()
+
+		tablespaces := map[int32]*idl.TablespaceInfo{
+			1664: {Name: "tblspc2", Location: "/tmp/primary1/1664", UserDefined: true},
+		}
+
+		err := agent.RestoreTablespaces(tablespaces, "2", "/new/data/dir")
+		if !errors.Is(err, expected) {
+			t.Errorf("got %#v want %#v", err, expected.Error())
+		}
+	})
+
+	t.Run("errors when recreating the symlink fails to remove the link", func(t *testing.T) {
+		rsync.SetRsyncCommand(exectest.NewCommand(agent.Success))
+		defer rsync.ResetRsyncCommand()
+
+		utils.System.Lstat = func(name string) (os.FileInfo, error) {
+			return nil, nil
+		}
+		defer utils.ResetSystemFunctions()
+
+		expected := errors.New("oops")
+		utils.System.Remove = func(name string) error {
+			return expected
+		}
+		defer utils.ResetSystemFunctions()
+
+		tablespaces := map[int32]*idl.TablespaceInfo{
+			1664: {Name: "tblspc2", Location: "/tmp/primary1/1664", UserDefined: true},
+		}
+
+		err := agent.RestoreTablespaces(tablespaces, "2", "/new/data/dir")
+		if !errors.Is(err, expected) {
+			t.Errorf("got %#v want %#v", err, expected)
+		}
+	})
+
+	t.Run("errors when recreating the symlink fails to create the link", func(t *testing.T) {
+		rsync.SetRsyncCommand(exectest.NewCommand(agent.Success))
+		defer rsync.ResetRsyncCommand()
+
+		utils.System.Lstat = func(name string) (os.FileInfo, error) {
+			return nil, nil
+		}
+		defer utils.ResetSystemFunctions()
+
+		utils.System.Remove = func(name string) error {
+			return nil
+		}
+		defer utils.ResetSystemFunctions()
+
+		expected := errors.New("oops")
+		utils.System.Symlink = func(sourceDir, symLinkName string) error {
+			return expected
+		}
+		defer utils.ResetSystemFunctions()
+
+		tablespaces := map[int32]*idl.TablespaceInfo{
+			1664: {Name: "tblspc2", Location: "/tmp/primary1/1664", UserDefined: true},
+		}
+
+		err := agent.RestoreTablespaces(tablespaces, "2", "/new/data/dir")
+		if !errors.Is(err, expected) {
+			t.Errorf("got %#v want %#v", err, expected)
+		}
+	})
 }
 
-func rsyncCall(utility string, arguments []string) rsyncRequest {
-	r := rsyncRequest{}
-	r.commandName = utility
-
-	if len(arguments) > 0 {
-		r.archiveFlag = arguments[0]
-	}
-
-	if len(arguments) > 1 {
-		r.deleteFlag = arguments[1]
-	}
-
-	if len(arguments) > 2 {
-		r.sourceDir = arguments[2]
-	}
-
-	if len(arguments) > 3 {
-		r.targetDir = arguments[3]
-	}
-
-	if len(arguments) > 4 {
-		r.exclusions = arguments[4:]
-	}
-
-	return r
+type Symlink struct {
+	Oldname string
+	Newname string
 }
 
-func buildRequest(pairs []*idl.DataDirPair) *idl.UpgradePrimariesRequest {
-	return &idl.UpgradePrimariesRequest{
-		SourceBinDir:    "/old/bin",
-		TargetBinDir:    "/new/bin",
-		DataDirPairs:    pairs,
-		CheckOnly:       false,
-		UseLinkMode:     false,
-		MasterBackupDir: "/some/master/backup/dir",
-		TargetVersion:   "6.15.0",
-	}
+type Symlinks []Symlink
+
+func (s Symlinks) Len() int {
+	return len(s)
+}
+
+func (s Symlinks) Less(i, j int) bool {
+	return s[i].Oldname < s[j].Oldname && s[i].Newname < s[j].Newname
+}
+
+func (s Symlinks) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
 }

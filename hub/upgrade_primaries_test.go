@@ -5,270 +5,264 @@ package hub_test
 
 import (
 	"errors"
-	"strings"
+	"fmt"
+	"os"
+	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/blang/semver/v4"
 	"github.com/golang/mock/gomock"
+	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
+	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
 func TestUpgradePrimaries(t *testing.T) {
 	source := hub.MustCreateCluster(t, greenplum.SegConfigs{
-		{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
-		{ContentID: 1, DbID: 3, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
+		{DbID: 1, ContentID: -1, Hostname: "master", DataDir: "/data/qddir/seg-1", Port: 15432, Role: greenplum.PrimaryRole},
+		{DbID: 2, ContentID: -1, Hostname: "standby", DataDir: "/data/standby", Port: 16432, Role: greenplum.MirrorRole},
+
+		{DbID: 3, ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Port: 25433, Role: greenplum.PrimaryRole},
+		{DbID: 4, ContentID: 0, Hostname: "sdw2", DataDir: "/data/dbfast_mirror1/seg1", Port: 25434, Role: greenplum.MirrorRole},
+		{DbID: 5, ContentID: 1, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Port: 25435, Role: greenplum.PrimaryRole},
+		{DbID: 6, ContentID: 1, Hostname: "sdw1", DataDir: "/data/dbfast_mirror2/seg2", Port: 25436, Role: greenplum.MirrorRole},
+
+		{DbID: 7, ContentID: 2, Hostname: "sdw1", DataDir: "/data/dbfast3/seg3", Port: 25437, Role: greenplum.PrimaryRole},
+		{DbID: 8, ContentID: 2, Hostname: "sdw2", DataDir: "/data/dbfast_mirror3/seg3", Port: 25438, Role: greenplum.MirrorRole},
+		{DbID: 9, ContentID: 3, Hostname: "sdw2", DataDir: "/data/dbfast4/seg4", Port: 25439, Role: greenplum.PrimaryRole},
+		{DbID: 10, ContentID: 3, Hostname: "sdw1", DataDir: "/data/dbfast_mirror4/seg4", Port: 25440, Role: greenplum.MirrorRole},
 	})
-	source.GPHome = "/usr/local/greenplum-db"
-	source.Version = semver.MustParse("5.0.0")
+	source.GPHome = "/usr/local/gpdb5"
 
-	target := hub.MustCreateCluster(t, greenplum.SegConfigs{
-		{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1_upgrade/seg1", Role: greenplum.PrimaryRole},
-		{ContentID: 1, DbID: 3, Hostname: "sdw2", DataDir: "/data/dbfast2_upgrade/seg2", Role: greenplum.PrimaryRole},
+	intermediate := hub.MustCreateCluster(t, greenplum.SegConfigs{
+		{DbID: 1, ContentID: -1, Hostname: "master", DataDir: "/data/qddir/seg.HqtFHX54y0o.-1", Port: 60432, Role: greenplum.PrimaryRole},
+		{DbID: 2, ContentID: -1, Hostname: "standby", DataDir: "/data/standby.HqtFHX54y0o", Port: 60433, Role: greenplum.MirrorRole},
+
+		{DbID: 3, ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg.HqtFHX54y0o.1", Port: 60434, Role: greenplum.PrimaryRole},
+		{DbID: 4, ContentID: 0, Hostname: "sdw2", DataDir: "/data/dbfast_mirror1/seg.HqtFHX54y0o.1", Port: 60435, Role: greenplum.MirrorRole},
+		{DbID: 5, ContentID: 1, Hostname: "sdw2", DataDir: "/data/dbfast2/seg.HqtFHX54y0o.2", Port: 60436, Role: greenplum.PrimaryRole},
+		{DbID: 6, ContentID: 1, Hostname: "sdw1", DataDir: "/data/dbfast_mirror2/seg.HqtFHX54y0o.2", Port: 60437, Role: greenplum.MirrorRole},
+
+		{DbID: 7, ContentID: 2, Hostname: "sdw1", DataDir: "/data/dbfast3/seg.HqtFHX54y0o.3", Port: 60438, Role: greenplum.PrimaryRole},
+		{DbID: 8, ContentID: 2, Hostname: "sdw2", DataDir: "/data/dbfast_mirror3/seg.HqtFHX54y0o.3", Port: 60439, Role: greenplum.MirrorRole},
+		{DbID: 9, ContentID: 3, Hostname: "sdw2", DataDir: "/data/dbfast4/seg.HqtFHX54y0o.4", Port: 60440, Role: greenplum.PrimaryRole},
+		{DbID: 10, ContentID: 3, Hostname: "sdw1", DataDir: "/data/dbfast_mirror4/seg.HqtFHX54y0o.4", Port: 60441, Role: greenplum.MirrorRole},
 	})
-	target.GPHome = "/usr/local/greenplum-db-new"
-	target.Version = semver.MustParse("6.0.0")
+	intermediate.GPHome = "/usr/local/gpdb6"
+	intermediate.Version = semver.MustParse("6.0.0")
 
-	segmentDbId2Tablespaces := map[int32]*idl.TablespaceInfo{
-		1663: &idl.TablespaceInfo{Name: "tblspc1", Location: "/tmp/primary1/1663", UserDefined: false},
-		1664: &idl.TablespaceInfo{Name: "tblspc2", Location: "/tmp/primary1/1664", UserDefined: true}}
-
-	segmentDbId3Tablespaces := map[int32]*idl.TablespaceInfo{
-		1663: &idl.TablespaceInfo{Name: "tblspc1", Location: "/tmp/primary1/1663", UserDefined: false},
-		1664: &idl.TablespaceInfo{Name: "tblspc2", Location: "/tmp/primary1/1664", UserDefined: true}}
-
-	pairs := map[string][]*idl.DataDirPair{
-		"sdw1": {
-			{
-				SourceDataDir: "/data/dbfast1",
-				TargetDataDir: "/data/dbfast1_upgrade",
-				SourcePort:    15432,
-				TargetPort:    15433,
-				Content:       0,
-				DBID:          2,
-				Tablespaces:   segmentDbId2Tablespaces,
-			},
-		},
-		"sdw2": {
-			{
-				SourceDataDir: "/data/dbfast2",
-				TargetDataDir: "/data/dbfast2_upgrade",
-				SourcePort:    15432,
-				TargetPort:    15433,
-				Content:       1,
-				DBID:          3,
-				Tablespaces:   segmentDbId3Tablespaces,
-			},
-		},
-	}
-
-	t.Run("sends expected request when upgrading primaries", func(t *testing.T) {
+	t.Run("calls upgrades primaries on segments", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		client1 := mock_idl.NewMockAgentClient(ctrl)
-		client1.EXPECT().UpgradePrimaries(
+		sdw1 := mock_idl.NewMockAgentClient(ctrl)
+		sdw1.EXPECT().UpgradePrimaries(
 			gomock.Any(),
-			&idl.UpgradePrimariesRequest{
-				SourceBinDir:    "/usr/local/greenplum-db/bin",
-				TargetBinDir:    "/usr/local/greenplum-db-new/bin",
-				TargetVersion:   semver.MustParse("6.0.0").String(),
-				DataDirPairs:    pairs["sdw1"],
-				CheckOnly:       false,
-				UseLinkMode:     false,
-				MasterBackupDir: "",
-			},
+			equivalentUpgradePrimariesRequest(&idl.UpgradePrimariesRequest{
+				Action: idl.PgOptions_check,
+				Opts: []*idl.PgOptions{
+					{
+						Action:        idl.PgOptions_check,
+						Role:          greenplum.PrimaryRole,
+						ContentID:     0,
+						Mode:          idl.PgOptions_Segment,
+						LinkMode:      false,
+						TargetVersion: "6.0.0",
+						OldBinDir:     "/usr/local/gpdb5/bin",
+						OldDataDir:    "/data/dbfast1/seg1",
+						OldPort:       "25433",
+						OldDBID:       "3",
+						NewBinDir:     "/usr/local/gpdb6/bin",
+						NewDataDir:    "/data/dbfast1/seg.HqtFHX54y0o.1",
+						NewPort:       "60434",
+						NewDBID:       "3",
+						Tablespaces:   nil,
+					},
+					{
+						Action:        idl.PgOptions_check,
+						Role:          greenplum.PrimaryRole,
+						ContentID:     2,
+						Mode:          idl.PgOptions_Segment,
+						LinkMode:      false,
+						TargetVersion: "6.0.0",
+						OldBinDir:     "/usr/local/gpdb5/bin",
+						OldDataDir:    "/data/dbfast3/seg3",
+						OldPort:       "25437",
+						OldDBID:       "7",
+						NewBinDir:     "/usr/local/gpdb6/bin",
+						NewDataDir:    "/data/dbfast3/seg.HqtFHX54y0o.3",
+						NewPort:       "60438",
+						NewDBID:       "7",
+						Tablespaces:   nil,
+					},
+				},
+			}),
 		).Return(&idl.UpgradePrimariesReply{}, nil)
 
-		client2 := mock_idl.NewMockAgentClient(ctrl)
-		client2.EXPECT().UpgradePrimaries(
+		sdw2 := mock_idl.NewMockAgentClient(ctrl)
+		sdw2.EXPECT().UpgradePrimaries(
 			gomock.Any(),
-			&idl.UpgradePrimariesRequest{
-				SourceBinDir:    "/usr/local/greenplum-db/bin",
-				TargetBinDir:    "/usr/local/greenplum-db-new/bin",
-				TargetVersion:   semver.MustParse("6.0.0").String(),
-				DataDirPairs:    pairs["sdw2"],
-				CheckOnly:       false,
-				UseLinkMode:     false,
-				MasterBackupDir: "",
-			},
+			equivalentUpgradePrimariesRequest(&idl.UpgradePrimariesRequest{
+				Action: idl.PgOptions_check,
+				Opts: []*idl.PgOptions{
+					{
+						Action:        idl.PgOptions_check,
+						Role:          greenplum.PrimaryRole,
+						ContentID:     1,
+						Mode:          idl.PgOptions_Segment,
+						LinkMode:      false,
+						TargetVersion: "6.0.0",
+						OldBinDir:     "/usr/local/gpdb5/bin",
+						OldDataDir:    "/data/dbfast2/seg2",
+						OldPort:       "25435",
+						OldDBID:       "5",
+						NewBinDir:     "/usr/local/gpdb6/bin",
+						NewDataDir:    "/data/dbfast2/seg.HqtFHX54y0o.2",
+						NewPort:       "60436",
+						NewDBID:       "5",
+						Tablespaces:   nil,
+					},
+					{
+						Action:        idl.PgOptions_check,
+						Role:          greenplum.PrimaryRole,
+						ContentID:     3,
+						Mode:          idl.PgOptions_Segment,
+						LinkMode:      false,
+						TargetVersion: "6.0.0",
+						OldBinDir:     "/usr/local/gpdb5/bin",
+						OldDataDir:    "/data/dbfast4/seg4",
+						OldPort:       "25439",
+						OldDBID:       "9",
+						NewBinDir:     "/usr/local/gpdb6/bin",
+						NewDataDir:    "/data/dbfast4/seg.HqtFHX54y0o.4",
+						NewPort:       "60440",
+						NewDBID:       "9",
+						Tablespaces:   nil,
+					},
+				},
+			}),
 		).Return(&idl.UpgradePrimariesReply{}, nil)
 
 		agentConns := []*idl.Connection{
-			{AgentClient: client1, Hostname: "sdw1"},
-			{AgentClient: client2, Hostname: "sdw2"},
+			{AgentClient: sdw1, Hostname: "sdw1"},
+			{AgentClient: sdw2, Hostname: "sdw2"},
 		}
 
-		err := hub.UpgradePrimaries(hub.UpgradePrimaryArgs{
-			CheckOnly:       false,
-			MasterBackupDir: "",
-			AgentConns:      agentConns,
-			DataDirPairMap:  pairs,
-			Source:          source,
-			Intermediate:    target,
-			UseLinkMode:     false,
-		})
+		err := hub.UpgradePrimaries(agentConns, source, intermediate, idl.PgOptions_check, false)
 		if err != nil {
-			t.Errorf("got unexpected error: %+v", err)
+			t.Errorf("unexpected err %#v", err)
 		}
 	})
 
-	t.Run("errors when checking or upgrading primary fails", func(t *testing.T) {
-		errCases := []struct {
-			name         string
-			CheckOnly    bool
-			failedAction string
-		}{
-			{
-				name:         "errors when upgrading primary fails",
-				CheckOnly:    false,
-				failedAction: "upgrade",
-			},
-			{
-				name:         "errors when checking primary fails",
-				CheckOnly:    true,
-				failedAction: "check",
-			},
-		}
+	errCases := []struct {
+		name   string
+		Action idl.PgOptions_Action
+		action string
+	}{
+		{
+			name:   "returns error when failing to upgrade primaries on segments fails",
+			Action: idl.PgOptions_upgrade,
+			action: "upgrade",
+		},
+		{
+			name:   "returns error when failing to check primaries on segments fails",
+			Action: idl.PgOptions_check,
+			action: "check",
+		},
+	}
 
-		for _, c := range errCases {
-			t.Run(c.name, func(t *testing.T) {
-				ctrl := gomock.NewController(t)
-				defer ctrl.Finish()
+	for _, c := range errCases {
+		t.Run(c.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-				client1 := mock_idl.NewMockAgentClient(ctrl)
-				client1.EXPECT().UpgradePrimaries(
-					gomock.Any(),
-					&idl.UpgradePrimariesRequest{
-						SourceBinDir:    "/usr/local/greenplum-db/bin",
-						TargetBinDir:    "/usr/local/greenplum-db-new/bin",
-						TargetVersion:   semver.MustParse("6.0.0").String(),
-						DataDirPairs:    pairs["sdw1"],
-						CheckOnly:       c.CheckOnly,
-						UseLinkMode:     false,
-						MasterBackupDir: "",
-					},
-				).Return(&idl.UpgradePrimariesReply{}, nil)
+			expected := os.ErrPermission
+			sdw1 := mock_idl.NewMockAgentClient(ctrl)
+			sdw1.EXPECT().UpgradePrimaries(
+				gomock.Any(),
+				gomock.Any(),
+			).Return(nil, expected)
 
-				expected := errors.New("permission denied")
-				failedClient := mock_idl.NewMockAgentClient(ctrl)
-				failedClient.EXPECT().UpgradePrimaries(
-					gomock.Any(),
-					&idl.UpgradePrimariesRequest{
-						SourceBinDir:    "/usr/local/greenplum-db/bin",
-						TargetBinDir:    "/usr/local/greenplum-db-new/bin",
-						TargetVersion:   semver.MustParse("6.0.0").String(),
-						DataDirPairs:    pairs["sdw2"],
-						CheckOnly:       c.CheckOnly,
-						UseLinkMode:     false,
-						MasterBackupDir: "",
-					},
-				).Return(&idl.UpgradePrimariesReply{}, expected)
+			sdw2 := mock_idl.NewMockAgentClient(ctrl)
+			sdw2.EXPECT().UpgradePrimaries(
+				gomock.Any(),
+				gomock.Any(),
+			).Return(nil, expected)
 
-				agentConns := []*idl.Connection{
-					{AgentClient: client1, Hostname: "sdw1"},
-					{AgentClient: failedClient, Hostname: "sdw2"},
-				}
+			agentConns := []*idl.Connection{
+				{AgentClient: sdw1, Hostname: "sdw1"},
+				{AgentClient: sdw2, Hostname: "sdw2"},
+			}
 
-				err := hub.UpgradePrimaries(hub.UpgradePrimaryArgs{
-					CheckOnly:       c.CheckOnly,
-					MasterBackupDir: "",
-					AgentConns:      agentConns,
-					DataDirPairMap:  pairs,
-					Source:          source,
-					Intermediate:    target,
-					UseLinkMode:     false,
-				})
-				if err == nil {
-					t.Fatal("expected error got nil")
+			err := hub.UpgradePrimaries(agentConns, source, intermediate, c.Action, true)
+			var errs errorlist.Errors
+			if !xerrors.As(err, &errs) {
+				t.Fatalf("error %#v does not contain type %T", err, errs)
+			}
+
+			if len(errs) != 2 {
+				t.Fatalf("got error count %d, want %d", len(errs), 2)
+			}
+
+			sort.Sort(errs)
+			for i, err := range errs {
+				if !errors.Is(err, expected) {
+					t.Errorf("got error %#v, want %#v", err, expected)
 				}
 
 				// XXX it'd be nice if we didn't couple against a hardcoded string here,
 				// but it's difficult to unwrap multiple errors with the new xerrors interface.
-				if !strings.Contains(err.Error(), c.failedAction+" primary segment on host sdw2") ||
-					!strings.Contains(err.Error(), expected.Error()) {
-					t.Errorf("error %q did not contain expected contents '%q'", err.Error(), expected.Error())
+				expectedErrMsg := fmt.Errorf("%s primary segment on host sdw%d: %w", c.action, i+1, expected)
+				if err.Error() != expectedErrMsg.Error() {
+					t.Errorf("got %q want %q", err.Error(), expectedErrMsg)
 				}
-			})
-		}
-
-	})
+			}
+		})
+	}
 }
 
-func TestGetDataDirPairs(t *testing.T) {
-	t.Run("errors if source and target clusters have different number of segments", func(t *testing.T) {
-		source := hub.MustCreateCluster(t, greenplum.SegConfigs{
-			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
-			{ContentID: 0, DbID: 2, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
-			{ContentID: 1, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
-		})
+// equivalentUpgradePrimariesRequest is a Matcher that can handle differences in order between
+// two instances of DeleteTablespaceRequest.Dirs
+func equivalentUpgradePrimariesRequest(req *idl.UpgradePrimariesRequest) gomock.Matcher {
+	return reqUpgradePrimariesMatcher{req}
+}
 
-		intermediate := hub.MustCreateCluster(t, greenplum.SegConfigs{
-			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
-		})
+type reqUpgradePrimariesMatcher struct {
+	expected *idl.UpgradePrimariesRequest
+}
 
-		conf := &hub.Config{
-			Source:       source,
-			Intermediate: intermediate,
-		}
-		server := hub.New(conf, nil, "")
+func (r reqUpgradePrimariesMatcher) Matches(x interface{}) bool {
+	actual, ok := x.(*idl.UpgradePrimariesRequest)
+	if !ok {
+		return false
+	}
 
-		_, err := server.GetDataDirPairs()
-		if !errors.Is(err, hub.ErrInvalidCluster) {
-			t.Errorf("returned error %#v got: %#v", err, hub.ErrInvalidCluster)
-		}
-	})
+	// The key here is that getOpts can be in any order. Sort them before comparison.
+	sort.Sort(getOpts(r.expected.GetOpts()))
+	sort.Sort(getOpts(actual.GetOpts()))
 
-	t.Run("errors if source and target clusters have different content ids", func(t *testing.T) {
-		source := hub.MustCreateCluster(t, greenplum.SegConfigs{
-			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
-			{ContentID: 0, DbID: 2, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
-			{ContentID: 1, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
-		})
+	return reflect.DeepEqual(r.expected, actual)
+}
 
-		interemediateTarget := hub.MustCreateCluster(t, greenplum.SegConfigs{
-			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
-			{ContentID: 0, DbID: 2, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
-			{ContentID: 2, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
-		})
+func (r reqUpgradePrimariesMatcher) String() string {
+	return fmt.Sprintf("is equivalent to %v", r.expected)
+}
 
-		conf := &hub.Config{
-			Source:       source,
-			Intermediate: interemediateTarget,
-		}
-		server := hub.New(conf, nil, "")
+type getOpts []*idl.PgOptions
 
-		_, err := server.GetDataDirPairs()
-		if !errors.Is(err, hub.ErrInvalidCluster) {
-			t.Errorf("returned error %#v got: %#v", err, hub.ErrInvalidCluster)
-		}
-	})
+func (r getOpts) Len() int {
+	return len(r)
+}
 
-	t.Run("errors if source and target cluster hostnames differ", func(t *testing.T) {
-		source := hub.MustCreateCluster(t, greenplum.SegConfigs{
-			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
-			{ContentID: 0, DbID: 2, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
-			{ContentID: 1, DbID: 3, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
-		})
+func (r getOpts) Less(i, j int) bool {
+	return r[i].GetContentID() > r[j].GetContentID()
+}
 
-		intermedaiteTarget := hub.MustCreateCluster(t, greenplum.SegConfigs{
-			{ContentID: -1, DbID: 1, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
-			{ContentID: 0, DbID: 2, Hostname: "localhost", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
-			{ContentID: 1, DbID: 3, Hostname: "localhost", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
-		})
-
-		conf := &hub.Config{
-			Source:       source,
-			Intermediate: intermedaiteTarget,
-		}
-		server := hub.New(conf, nil, "")
-
-		_, err := server.GetDataDirPairs()
-		if !errors.Is(err, hub.ErrInvalidCluster) {
-			t.Errorf("returned error %#v got: %#v", err, hub.ErrInvalidCluster)
-		}
-	})
+func (r getOpts) Swap(i, j int) {
+	r[i], r[j] = r[j], r[i]
 }

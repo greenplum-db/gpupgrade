@@ -5,10 +5,8 @@ package hub
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
@@ -16,11 +14,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-const executeMasterBackupName = "upgraded-master.bak"
-
 func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteServer) (err error) {
-	upgradedMasterBackupDir := filepath.Join(s.StateDir, executeMasterBackupName)
-
 	st, err := step.Begin(idl.Step_EXECUTE, stream, s.AgentConns)
 	if err != nil {
 		return err
@@ -41,19 +35,11 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 	})
 
 	st.Run(idl.Substep_UPGRADE_MASTER, func(streams step.OutStreams) error {
-		stateDir := s.StateDir
-		return UpgradeMaster(UpgradeMasterArgs{
-			Source:       s.Source,
-			Intermediate: s.Intermediate,
-			StateDir:     stateDir,
-			Stream:       streams,
-			CheckOnly:    false,
-			UseLinkMode:  s.UseLinkMode,
-		})
+		return UpgradeMaster(streams, s.Source, s.Intermediate, idl.PgOptions_upgrade, s.UseLinkMode)
 	})
 
 	st.Run(idl.Substep_COPY_MASTER, func(streams step.OutStreams) error {
-		err := CopyMasterDataDir(streams, s.Intermediate.MasterDataDir(), upgradedMasterBackupDir, s.Intermediate.PrimaryHostnames())
+		err := CopyMasterDataDir(streams, s.Intermediate.MasterDataDir(), utils.GetCoordinatorPostUpgradeBackupDir(), s.Intermediate.PrimaryHostnames())
 		if err != nil {
 			return err
 		}
@@ -61,22 +47,8 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 		return CopyMasterTablespaces(streams, s.Source.Tablespaces, utils.GetTablespaceDir(), s.Intermediate.PrimaryHostnames())
 	})
 
-	st.Run(idl.Substep_UPGRADE_PRIMARIES, func(_ step.OutStreams) error {
-		dataDirPair, err := s.GetDataDirPairs()
-
-		if err != nil {
-			return xerrors.Errorf("get source and target primary data directories: %w", err)
-		}
-
-		return UpgradePrimaries(UpgradePrimaryArgs{
-			CheckOnly:       false,
-			MasterBackupDir: upgradedMasterBackupDir,
-			AgentConns:      s.agentConns,
-			DataDirPairMap:  dataDirPair,
-			Source:          s.Source,
-			Intermediate:    s.Intermediate,
-			UseLinkMode:     s.UseLinkMode,
-		})
+	st.Run(idl.Substep_UPGRADE_PRIMARIES, func(streams step.OutStreams) error {
+		return UpgradePrimaries(s.agentConns, s.Source, s.Intermediate, idl.PgOptions_upgrade, s.UseLinkMode)
 	})
 
 	st.Run(idl.Substep_START_TARGET_CLUSTER, func(streams step.OutStreams) error {

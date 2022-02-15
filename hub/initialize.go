@@ -6,7 +6,6 @@ package hub
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 
 	"github.com/blang/semver/v4"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -15,6 +14,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
+	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
@@ -125,12 +125,22 @@ func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest
 
 	st.Run(idl.Substep_BACKUP_TARGET_MASTER, func(stream step.OutStreams) error {
 		sourceDir := s.Intermediate.MasterDataDir()
-		targetDir := filepath.Join(s.StateDir, originalMasterBackupName)
+		targetDir := utils.GetCoordinatorPreUpgradeBackupDir()
+
+		err := utils.System.MkdirAll(targetDir, 0700)
+		if err != nil {
+			return err
+		}
+
 		return RsyncMasterDataDir(stream, sourceDir, targetDir)
 	})
 
 	st.AlwaysRun(idl.Substep_CHECK_UPGRADE, func(stream step.OutStreams) error {
-		return s.CheckUpgrade(stream, s.agentConns)
+		if err := UpgradeMaster(stream, s.Source, s.Intermediate, idl.PgOptions_check, s.UseLinkMode); err != nil {
+			return err
+		}
+
+		return UpgradePrimaries(s.agentConns, s.Source, s.Intermediate, idl.PgOptions_check, s.UseLinkMode)
 	})
 
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_InitializeResponse{

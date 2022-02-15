@@ -110,7 +110,7 @@ time ssh -n mdw "
     # Since these files are required by the gptext .so file they need to be in
     # the target cluster. Since gpupgrade initialize is re-run and idempotent
     # place them in the backup of the master data directory.
-    cp $MASTER_DATA_DIRECTORY/{gptext.conf,gptxtenvs.conf,zoo_cluster.conf} /home/gpadmin/.gpupgrade/master.bak/
+    cp $MASTER_DATA_DIRECTORY/{gptext.conf,gptxtenvs.conf,zoo_cluster.conf} /home/gpadmin/.gpupgrade/coordinator-pre-upgrade-backup/
 
     gpstop -a
 

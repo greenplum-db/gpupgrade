@@ -31,10 +31,3 @@ func init() {
 		FailedRsync,
 	)
 }
-
-//
-// Override internals of the agent package
-//
-func SetExecCommand(command exectest.Command) {
-	execCommand = command
-}

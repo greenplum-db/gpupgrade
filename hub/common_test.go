@@ -4,6 +4,9 @@
 package hub
 
 import (
+	"bytes"
+	"fmt"
+	"os"
 	"testing"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
@@ -17,14 +20,50 @@ func init() {
 	ResetExecCommand()
 	rsync.ResetRsyncCommand()
 	ResetCheckDiskUsage()
+
+	exectest.RegisterMains(
+		Success,
+		Failure,
+		StreamingMain,
+		EnvironmentMain,
+	)
+}
+
+func Success() {}
+
+func Failure() {
+	os.Stderr.WriteString(os.ErrPermission.Error())
+	os.Exit(1)
+}
+
+const StreamingMainStdout = "expected\nstdout\n"
+const StreamingMainStderr = "process\nstderr\n"
+
+// Streams the above stdout/err constants to the corresponding standard file
+// descriptors, alternately interleaving five-byte chunks.
+func StreamingMain() {
+	stdout := bytes.NewBufferString(StreamingMainStdout)
+	stderr := bytes.NewBufferString(StreamingMainStderr)
+
+	for stdout.Len() > 0 || stderr.Len() > 0 {
+		os.Stdout.Write(stdout.Next(5))
+		os.Stderr.Write(stderr.Next(5))
+	}
+}
+
+// Prints the environment, one variable per line, in NAME=VALUE format.
+func EnvironmentMain() {
+	for _, e := range os.Environ() {
+		fmt.Println(e)
+	}
 }
 
 func SetExecCommand(cmdFunc exectest.Command) {
-	cmd = cmdFunc
+	ExecCommand = cmdFunc
 }
 
 func ResetExecCommand() {
-	cmd = nil
+	ExecCommand = nil
 }
 
 func SetCheckDiskUsage(usageFunc disk.CheckUsageType) {

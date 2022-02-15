@@ -50,6 +50,18 @@ func Append(a, b error, e ...error) error {
 // value. Use Append to create Errors instances.
 type Errors []error
 
+func (e Errors) Len() int {
+	return len(e)
+}
+
+func (e Errors) Less(i, j int) bool {
+	return e[i].Error() < e[j].Error()
+}
+
+func (e Errors) Swap(i, j int) {
+	e[i], e[j] = e[j], e[i]
+}
+
 func (e Errors) Error() string {
 	if len(e) == 1 {
 		return fmt.Sprintf("1 error occurred:\n\t* %s\n\n", e[0])

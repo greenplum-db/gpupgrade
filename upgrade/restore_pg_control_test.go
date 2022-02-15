@@ -118,9 +118,7 @@ func TestRestorePgControl(t *testing.T) {
 
 			return nil, expectedError
 		}
-		defer func() {
-			utils.System = utils.InitializeSystemFunctions()
-		}()
+		defer utils.ResetSystemFunctions()
 
 		err := upgrade.RestorePgControl(source, step.DevNullStream)
 		if !errors.Is(err, expectedError) {

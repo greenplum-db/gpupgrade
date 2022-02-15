@@ -5,6 +5,7 @@ package upgrade
 
 import (
 	"os"
+	"os/exec"
 	"testing"
 
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
@@ -12,20 +13,28 @@ import (
 
 func init() {
 	ResetExecCommand()
+
+	exectest.RegisterMains(
+		Success,
+		Failure,
+	)
 }
 
+func Success() {}
+
+func Failure() {
+	os.Stderr.WriteString(os.ErrPermission.Error())
+	os.Exit(1)
+}
+
+var ExecCommand = exec.Command
+
 func SetExecCommand(cmdFunc exectest.Command) {
-	execCommand = cmdFunc
+	ExecCommand = cmdFunc
 }
 
 func ResetExecCommand() {
-	execCommand = nil
-}
-
-// NewOptionList is a public version of upgrade.newOptionList for testing
-// purposes.
-func NewOptionList(opts []Option) *optionList {
-	return newOptionList(opts)
+	ExecCommand = nil
 }
 
 func TestMain(m *testing.M) {

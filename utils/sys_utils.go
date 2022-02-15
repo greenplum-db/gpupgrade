@@ -13,7 +13,6 @@ import (
 	"os/user"
 	"path/filepath"
 	"sort"
-	"strconv"
 	"time"
 
 	"github.com/google/renameio"
@@ -89,6 +88,10 @@ func InitializeSystemFunctions() *SystemFunctions {
 	}
 }
 
+func ResetSystemFunctions() {
+	System = InitializeSystemFunctions()
+}
+
 func GetStateDir() string {
 	stateDir := os.Getenv("GPUPGRADE_HOME")
 	if stateDir == "" {
@@ -116,13 +119,21 @@ func GetInitsystemConfig() string {
 	return filepath.Join(GetStateDir(), "gpinitsystem_config")
 }
 
-func GetPgUpgradeDir(role string, contentID int) (string, error) {
+func GetPgUpgradeDir(role string, contentID int32) (string, error) {
 	logDir, err := GetLogDir()
 	if err != nil {
 		return "", err
 	}
 
-	return filepath.Join(logDir, "pg_upgrade", role+strconv.Itoa(contentID)), nil
+	return filepath.Join(logDir, "pg_upgrade", fmt.Sprintf(role+"%d", contentID)), nil
+}
+
+func GetCoordinatorPreUpgradeBackupDir() string {
+	return filepath.Join(GetStateDir(), "coordinator-pre-upgrade-backup")
+}
+
+func GetCoordinatorPostUpgradeBackupDir() string {
+	return filepath.Join(GetStateDir(), "coordinator-post-upgrade-backup")
 }
 
 // GetTablespaceMappingFile returns the tablespace input file for pg_upgrade used

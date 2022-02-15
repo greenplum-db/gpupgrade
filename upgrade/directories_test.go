@@ -479,9 +479,7 @@ func TestPathExist(t *testing.T) {
 		utils.System.Stat = func(name string) (os.FileInfo, error) {
 			return nil, expected
 		}
-		defer func() {
-			utils.System = utils.InitializeSystemFunctions()
-		}()
+		defer utils.ResetSystemFunctions()
 
 		doesExist, err := upgrade.PathExist("somepath")
 		if !errors.Is(err, expected) {
