@@ -51,8 +51,8 @@
         image_resource:
           type: registry-image
           source:
-            repository: registry.access.redhat.com/ubi8/ubi
-            tag: latest
+            repository: centos
+            tag: 7
         inputs:
           - name: gpupgrade_src
           - name: cluster_env_files
