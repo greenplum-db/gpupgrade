@@ -40,7 +40,6 @@ WHERE
               AND NOT attisdropped
         )
     AND c.relkind = 'r'
-    AND c.relhassubclass != TRUE
     AND xc.relkind = 'i'
     AND n.nspname NOT LIKE 'pg_temp_%'
     AND n.nspname NOT LIKE 'pg_toast_temp_%'
