@@ -39,7 +39,7 @@
         {{- end }}
         {{- if .ExtensionsJob }}
         - get: gptext_targz # NOTE: The same gptext artifact is used for both the source and target clusters.
-          resource: greenplum-text-dev-rhel{{.CentosVersion}}
+          resource: greenplum_text_rhel{{.CentosVersion}}
         - get: postgis_gppkg_source
           resource: postgis_2.1.5_gpdb{{.Source}}_centos{{.CentosVersion}}_gppkg
         - get: postgis_gppkg_target

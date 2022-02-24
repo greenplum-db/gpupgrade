@@ -193,7 +193,7 @@ resources:
 # NOTE: The same gptext artifact is used for both gpdb5 and gpdb6. Also, the same
 # rhel6 artifact is used for both centos6 and centos7, since the rhel7 artifact
 # does not support gpdb5.
-- name: greenplum-text-dev-rhel{{.CentosVersion}}
+- name: greenplum_text_rhel{{.CentosVersion}}
   type: s3
   source:
     access_key_id: ((gptext_s3_access_key_id))
