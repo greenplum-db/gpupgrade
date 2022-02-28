@@ -9,10 +9,7 @@
 
 SET client_min_messages TO WARNING;
 
-DROP SCHEMA IF EXISTS __gpupgrade_tmp CASCADE;
-CREATE SCHEMA __gpupgrade_tmp;
-
-CREATE OR REPLACE FUNCTION  __gpupgrade_tmp.find_view_dependencies()
+CREATE OR REPLACE FUNCTION  __gpupgrade_tmp_generator.find_view_dependencies()
 RETURNS VOID AS
 $$
 import plpy
@@ -116,13 +113,13 @@ while True:
     else:
         checklist.update(new_checklist)
 
-plpy.execute("DROP TABLE IF EXISTS  __gpupgrade_tmp.__temp_views_list")
-plpy.execute("CREATE TABLE  __gpupgrade_tmp.__temp_views_list (full_view_name TEXT, view_order INTEGER)")
+plpy.execute("DROP TABLE IF EXISTS  __gpupgrade_tmp_generator.__temp_views_list")
+plpy.execute("CREATE TABLE  __gpupgrade_tmp_generator.__temp_views_list (full_view_name TEXT, view_order INTEGER)")
 for v, view_order in checklist.items():
-    sql = "INSERT INTO  __gpupgrade_tmp.__temp_views_list VALUES('{0}.{1}', {2})".format(v[0],v[1],view_order)
+    sql = "INSERT INTO  __gpupgrade_tmp_generator.__temp_views_list VALUES('{0}.{1}', {2})".format(v[0],v[1],view_order)
     plpy.execute(sql)
 $$ LANGUAGE plpythonu;
 
-SELECT  __gpupgrade_tmp.find_view_dependencies();
+SELECT __gpupgrade_tmp_generator.find_view_dependencies();
 
-DROP FUNCTION  __gpupgrade_tmp.find_view_dependencies();
+DROP FUNCTION __gpupgrade_tmp_generator.find_view_dependencies();

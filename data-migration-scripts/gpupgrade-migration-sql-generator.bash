@@ -108,6 +108,13 @@ execute_script_directory() {
         if [ ! $is_python_enabled == 1 ]; then
             is_python_enabled=$("$GPHOME"/bin/psql -X -q -d "$database" -p "$PGPORT" -Atc "CREATE LANGUAGE plpythonu")
         fi
+        records=$(PGOPTIONS='--client-min-messages=warning' \
+            "$GPHOME"/bin/psql -X -q -d "$database" -p "$PGPORT" -Atc \
+            "DROP SCHEMA IF EXISTS __gpupgrade_tmp_generator CASCADE")
+
+        # Create a schema to use during generator run. This schema will be droppped at the end of generator process
+        # which means the generated scripts cannot depend on it, they will use their own temp schema if necessary.
+        records=$("$GPHOME"/bin/psql -X -q -d "$database" -p "$PGPORT" -Atc "CREATE SCHEMA __gpupgrade_tmp_generator")
         records=$("$GPHOME"/bin/psql -X -q -d "$database" -p "$PGPORT" -Atf "${INPUT_DIR}/create_find_view_dep_function.sql")
 
         for path in "${paths[@]}"; do
@@ -120,12 +127,12 @@ execute_script_directory() {
         # Drop the table of dependent views
         records=$(PGOPTIONS='--client-min-messages=warning' \
             "$GPHOME"/bin/psql -X -q -d "$database" -p "$PGPORT" -Atc \
-            "DROP TABLE IF EXISTS __gpupgrade_tmp.__temp_views_list")
+            "DROP TABLE IF EXISTS __gpupgrade_tmp_generator.__temp_views_list")
 
         # Drop the temp schema
         records=$(PGOPTIONS='--client-min-messages=warning' \
             "$GPHOME"/bin/psql -X -q -d "$database" -p "$PGPORT" -Atc \
-            "DROP SCHEMA IF EXISTS __gpupgrade_tmp CASCADE")
+            "DROP SCHEMA IF EXISTS __gpupgrade_tmp_generator CASCADE")
     done
 
     echo "Output files are located in: $output_dir"

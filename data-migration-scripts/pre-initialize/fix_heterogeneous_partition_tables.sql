@@ -11,8 +11,7 @@
 SET client_min_messages TO WARNING;
 
 -- Use CREATE SCHEMA IF NOT EXISTS once it is supported
-CREATE SCHEMA __gpupgrade_tmp;
-CREATE OR REPLACE FUNCTION  __gpupgrade_tmp.fix_het()
+CREATE OR REPLACE FUNCTION  __gpupgrade_tmp_generator.fix_het()
 RETURNS VARCHAR AS
 $$
 import plpy
@@ -94,22 +93,26 @@ if res1 is not None:
             plpy.error("Cannot read partition name or rank {0}".format(parentpartitiontablename))
 
         swap_sql = swap_sql + """
-CREATE TABLE __gpupgrade_tmp.scratch_table AS SELECT * FROM {schemaname}.{childrelname};
-ALTER TABLE {schemaname}.{parrelname} {partition_sql} {exchange_sql} WITH TABLE __gpupgrade_tmp.scratch_table;
-DROP TABLE __gpupgrade_tmp.scratch_table;
+CREATE TABLE __gpupgrade_tmp_executor.scratch_table AS SELECT * FROM {schemaname}.{childrelname};
+ALTER TABLE {schemaname}.{parrelname} {partition_sql} {exchange_sql} WITH TABLE __gpupgrade_tmp_executor.scratch_table;
+DROP TABLE __gpupgrade_tmp_executor.scratch_table;
 """.format(**locals())
 
+# We create a schema during the executor runtime for the temporary scratch tables.
+# This schema has a different name than the generator temp schema to avoid potential double create and/or premature
+# drop commands.
 if swap_sql is not "":
     swap_sql = """
 SET gp_enable_exchange_default_partition = on;
 SET optimizer_enable_ctas = off;
-CREATE SCHEMA __gpupgrade_tmp;
-DROP TABLE IF EXISTS __gpupgrade_tmp.scratch_table;
+CREATE SCHEMA __gpupgrade_tmp_executor;
+DROP TABLE IF EXISTS __gpupgrade_tmp_executor.scratch_table;
 {0}
+DROP SCHEMA __gpupgrade_tmp_executor CASCADE;
 RESET gp_enable_exchange_default_partition;
 RESET optimizer_enable_ctas;
 """.format(swap_sql)
 return swap_sql
 
 $$ LANGUAGE plpythonu;
-SELECT __gpupgrade_tmp.fix_het();
+SELECT __gpupgrade_tmp_generator.fix_het();
