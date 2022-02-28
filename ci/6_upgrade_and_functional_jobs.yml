@@ -48,6 +48,10 @@
           resource: madlib_1.19.0_gpdb{{.Source}}_centos{{.CentosVersion}}_gppkg
         - get: madlib_gppkg_target
           resource: madlib_1.19.0_gpdb{{.Target}}_centos{{.CentosVersion}}_gppkg
+        - get: plr_gppkg_source
+          resource: plr_gpdb{{.Source}}_rhel{{.CentosVersion}}_gppkg
+        - get: plr_gppkg_target
+          resource: plr_gpdb{{.Target}}_rhel{{.CentosVersion}}_gppkg
         {{- if ne .CentosVersion "6" }}
         - get: pxf_installer_source
           resource: pxf_6_gpdb{{.Source}}_centos{{.CentosVersion}}_tgz
@@ -135,6 +139,7 @@
           - name: gptext_targz
           - name: postgis_gppkg_source
           - name: madlib_gppkg_source
+          - name: plr_gppkg_source
           - name: sqldump
           {{- if ne .CentosVersion "6" }}
           - name: pxf_installer_source
@@ -175,6 +180,7 @@
           - name: gpupgrade_src
           - name: postgis_gppkg_target
           - name: madlib_gppkg_target
+          - name: plr_gppkg_target
           {{- if ne .CentosVersion "6" }}
           - name: pxf_installer_target
           {{- end }}

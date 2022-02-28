@@ -19,17 +19,20 @@ scp gptext_targz/greenplum-text*.tar.gz gpadmin@mdw:/tmp/gptext.tar.gz
 scp postgis_gppkg_source/postgis*.gppkg gpadmin@mdw:/tmp/postgis_source.gppkg
 scp sqldump/*.sql gpadmin@mdw:/tmp/postgis_dump.sql
 scp madlib_gppkg_source/madlib*.gppkg gpadmin@mdw:/tmp/madlib_source.gppkg
+scp plr_gppkg_source/plr*.gppkg gpadmin@mdw:/tmp/plr_source.gppkg
 
 echo "Installing extensions and sample data on source cluster..."
 
-echo 'Installing gptext dependencies...'
+echo 'Installing dependencies...'
 mapfile -t hosts < cluster_env_files/hostfile_all
 for host in "${hosts[@]}"; do
     ssh -n "centos@${host}" "
         set -eux -o pipefail
 
-        sudo yum install -y java-1.8.0-openjdk
+        # java for gptext, and R for plr
+        sudo yum install -y java-1.8.0-openjdk R
 
+        # Setup gptext directories
         sudo mkdir /usr/local/greenplum-db-text
         sudo chown gpadmin:gpadmin /usr/local/greenplum-db-text
 
@@ -38,6 +41,7 @@ for host in "${hosts[@]}"; do
     "
 done
 
+echo "Installing GPDB extensions and sample data on source cluster..."
 time ssh -n mdw "
     set -eux -o pipefail
     source /usr/local/greenplum-db-source/greenplum_path.sh
@@ -90,6 +94,18 @@ SQL_EOF
 
         CREATE VIEW madlib_test_view AS SELECT madlib.normal_quantile(0.5, 0, 1);
         CREATE VIEW madlib_test_agg AS SELECT madlib.mean(value) FROM madlib_test_type;
+SQL_EOF
+
+    echo 'Installing plr...'
+    gppkg -i /tmp/plr_source.gppkg
+    psql -v ON_ERROR_STOP=1 -d postgres <<SQL_EOF
+        CREATE EXTENSION plr;
+        CREATE OR REPLACE FUNCTION r_norm(n integer, mean float8, std_dev float8) RETURNS float8[ ] AS \\\$\\\$
+            x<-rnorm(n,mean,std_dev)
+            return(x)
+        \\\$\\\$ LANGUAGE 'plr';
+
+        CREATE VIEW test_norm_var AS SELECT id, r_norm(10,0,1) as x FROM (SELECT generate_series(1,30::bigint) AS ID) foo;
 SQL_EOF
 "
 

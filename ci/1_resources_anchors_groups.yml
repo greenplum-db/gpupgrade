@@ -215,6 +215,14 @@ resources:
     # bucket: pivotal-gpdb-concourse-resources-prod
     # regexp: pxf/published/gpdb{{.GPVersion}}/pxf-gp{{.GPVersion}}-6.(.*).el{{.CentosVersion}}.x86_64.rpm
 {{- end }}
+
+- name: plr_gpdb{{.GPVersion}}_rhel{{.CentosVersion}}_gppkg
+  type: gcs
+  source:
+    json_key: ((concourse-gcs-resources-service-account-key))
+    bucket: pivotal-gpdb-concourse-resources-prod
+    regexp: plr/released/gpdb{{.GPVersion}}/plr-(.*)-gp{{.GPVersion}}-rhel{{.CentosVersion}}-x86_64.gppkg
+
 {{end}}
 
 anchors:
