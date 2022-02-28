@@ -11,6 +11,7 @@
 SET client_min_messages TO WARNING;
 
 -- Use CREATE SCHEMA IF NOT EXISTS once it is supported
+SELECT 'The following error is expected: schema "__gpupgrade_tmp" already exists';
 CREATE SCHEMA __gpupgrade_tmp;
 CREATE OR REPLACE FUNCTION  __gpupgrade_tmp.fix_het()
 RETURNS VARCHAR AS
