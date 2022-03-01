@@ -57,6 +57,10 @@
           resource: pxf_6_gpdb{{.Source}}_centos{{.CentosVersion}}_tgz
         - get: pxf_installer_target
           resource: pxf_6_gpdb{{.Target}}_centos{{.CentosVersion}}_tgz
+        - get: plcontainer_gppkg_source
+          resource: plcontainer_1.x_gpdb5_rhel{{.CentosVersion}}_gppkg
+        - get: plcontainer_gppkg_target
+          resource: plcontainer_2.x_gpdb6_rhel{{.CentosVersion}}_gppkg
         {{- end }}
         {{- end }}
     - put: terraform
@@ -143,6 +147,7 @@
           - name: sqldump
           {{- if ne .CentosVersion "6" }}
           - name: pxf_installer_source
+          - name: plcontainer_gppkg_source
           {{- end }}
         run:
           path: gpupgrade_src/ci/scripts/load-extensions.bash
@@ -183,6 +188,7 @@
           - name: plr_gppkg_target
           {{- if ne .CentosVersion "6" }}
           - name: pxf_installer_target
+          - name: plcontainer_gppkg_target
           {{- end }}
         run:
           path: gpupgrade_src/ci/scripts/upgrade-extensions.bash

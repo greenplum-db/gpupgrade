@@ -23,6 +23,10 @@ scp postgis_gppkg_target/postgis*.gppkg gpadmin@mdw:/tmp/postgis_target.gppkg
 scp madlib_gppkg_target/madlib*.gppkg gpadmin@mdw:/tmp/madlib_target.gppkg
 scp plr_gppkg_target/plr*.gppkg gpadmin@mdw:/tmp/plr_target.gppkg
 
+if test_plcontainer "$OS_VERSION"; then
+    scp plcontainer_gppkg_target/*.gppkg gpadmin@mdw:/tmp/plcontainer_target.gppkg
+fi
+
 if test_pxf "$OS_VERSION"; then
     # PXF SNAPSHOT builds are only available as an RPM inside a tar.gz
     if compgen -G pxf_installer_target/pxf-gp?.el7.tar.gz &>/dev/null; then
@@ -96,6 +100,11 @@ time ssh -n mdw "
     gppkg -i /tmp/postgis_target.gppkg
     gppkg -i /tmp/madlib_target.gppkg
     gppkg -i /tmp/plr_target.gppkg
+
+    $(typeset -f test_plcontainer) # allow local function on remote host
+    if test_plcontainer '$OS_VERSION'; then
+        gppkg -i /tmp/plcontainer_target.gppkg
+    fi
 
     $(typeset -f test_pxf) # allow local function on remote host
     if test_pxf '$OS_VERSION'; then

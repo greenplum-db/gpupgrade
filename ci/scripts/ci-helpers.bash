@@ -17,6 +17,12 @@ test_pxf() {
     [ "$os_version" != "centos6" ]
 }
 
+# Don't test plcontainer on centos6 as its not supported.
+test_plcontainer() {
+    local os_version=$1
+    [ "$os_version" != "centos6" ]
+}
+
 # set the database gucs
 # 1. bytea_output: by default for bytea the output format is hex on GPDB 6,
 #    so change it to escape to match GPDB 5 representation

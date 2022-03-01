@@ -223,6 +223,27 @@ resources:
     bucket: pivotal-gpdb-concourse-resources-prod
     regexp: plr/released/gpdb{{.GPVersion}}/plr-(.*)-gp{{.GPVersion}}-rhel{{.CentosVersion}}-x86_64.gppkg
 
+# NOTE: plcontainer is only supported for centos7 so skip creating the resource
+# for centos6. plcontainer 1.x is only for GPDB 5X.
+{{- if and (ne .CentosVersion "6") (eq .GPVersion "5") }}
+- name: plcontainer_1.x_gpdb{{.GPVersion}}_rhel{{.CentosVersion}}_gppkg
+  type: gcs
+  source:
+    json_key: ((concourse-gcs-resources-service-account-key))
+    bucket: pivotal-gpdb-concourse-resources-prod
+    regexp: plcontainer/released/gpdb{{.GPVersion}}/plcontainer-1.(.*)-rhel{{.CentosVersion}}-x86_64.gppkg
+{{- end }}
+
+# NOTE: plcontainer is only supported for centos7 so skip creating the resource
+# for centos6. plcontainer 2.x is only for GPDB 6X.
+{{- if and (ne .CentosVersion "6") (ne .GPVersion "5") }}
+- name: plcontainer_2.x_gpdb{{.GPVersion}}_rhel{{.CentosVersion}}_gppkg
+  type: gcs
+  source:
+    json_key: ((concourse-gcs-resources-service-account-key))
+    bucket: pivotal-gpdb-concourse-resources-prod
+    regexp: plcontainer/released/gpdb{{.GPVersion}}/plcontainer-2.(.*)-gp{{.GPVersion}}-rhel{{.CentosVersion}}_x86_64.gppkg
+{{- end }}
 {{end}}
 
 anchors:

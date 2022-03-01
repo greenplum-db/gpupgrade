@@ -109,6 +109,33 @@ SQL_EOF
 SQL_EOF
 "
 
+install_plcontainer() {
+    echo "Installing plcontainer..."
+
+    scp plcontainer_gppkg_source/*.gppkg gpadmin@mdw:/tmp/plcontainer_source.gppkg
+
+    time ssh -n mdw "
+        set -eux -o pipefail
+
+        source /usr/local/greenplum-db-source/greenplum_path.sh
+        export MASTER_DATA_DIRECTORY=$MASTER_DATA_DIRECTORY
+
+        gppkg -i /tmp/plcontainer_source.gppkg
+
+        psql -v ON_ERROR_STOP=1 -d postgres <<SQL_EOF
+            CREATE EXTENSION plcontainer;
+            CREATE FUNCTION dummyPython() RETURNS text AS \\\$\\\$
+                # container: plc_python_shared
+                return 'hello from Python'
+            \\\$\\\$ LANGUAGE plcontainer;
+
+            CREATE VIEW plcontainer_view AS SELECT * FROM dummyPython();
+SQL_EOF
+"
+}
+
+test_plcontainer "$OS_VERSION" && install_plcontainer || echo "Skipping plcontainer for centos6 since its not supported..."
+
 echo "Installing postgres native extensions and sample data on source cluster..."
 time ssh -n mdw "
     set -eux -o pipefail
