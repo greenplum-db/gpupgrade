@@ -29,12 +29,7 @@ fi
 
 if test_pxf "$OS_VERSION"; then
     # PXF SNAPSHOT builds are only available as an RPM inside a tar.gz
-    if compgen -G pxf_rpm_target/pxf-gp?.el7.tar.gz &>/dev/null; then
-        tar -xf pxf_rpm_target/pxf-gp?.el7.tar.gz \
-            --directory pxf_rpm_target \
-            --strip-components=1 \
-            --wildcards '*.rpm'
-        fi
+    tar -xf pxf_rpm_target/pxf*.tar.gz --directory pxf_rpm_target --strip-components=1 --wildcards '*.rpm'
 
     mapfile -t hosts < cluster_env_files/hostfile_all
     for host in "${hosts[@]}"; do
