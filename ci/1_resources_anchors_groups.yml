@@ -203,17 +203,15 @@ resources:
 
 # NOTE: Skip creating the pxf resources for centos6 since pxf6 is not
 # supported for centos6. Thus, we can only test pxf upgrades on centos7.
+# NOTE: The resource name is _rpm even though the artifact is a tar.gz since
+# pxf SNAPSHOT builds are only available as an rpm inside a tar.gz.
 {{- if ne .CentosVersion "6" }}
-- name: pxf_6_gpdb{{.GPVersion}}_centos{{.CentosVersion}}_tgz
+- name: pxf_6_gpdb{{.GPVersion}}_centos{{.CentosVersion}}_rpm
   type: gcs
   source:
     json_key: ((pxf-storage-service-account-key))
     bucket: data-gpdb-ud-pxf-build
     versioned_file: prod/snapshots/pxf-gp{{.GPVersion}}.el{{.CentosVersion}}.tar.gz
-    # after PXF 6.3.0 is released, the released RPMs can be fetched from standard bucket locations
-    # json_key: ((concourse-gcs-resources-service-account-key))
-    # bucket: pivotal-gpdb-concourse-resources-prod
-    # regexp: pxf/published/gpdb{{.GPVersion}}/pxf-gp{{.GPVersion}}-6.(.*).el{{.CentosVersion}}.x86_64.rpm
 {{- end }}
 
 - name: plr_gpdb{{.GPVersion}}_rhel{{.CentosVersion}}_gppkg

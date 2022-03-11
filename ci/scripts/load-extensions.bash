@@ -213,16 +213,16 @@ install_pxf() {
     echo "${GOOGLE_CREDENTIALS}" > /tmp/key.json
 
     # PXF SNAPSHOT builds are only available as an RPM inside a tar.gz
-    if compgen -G pxf_installer_source/pxf-gp?.el7.tar.gz &>/dev/null; then
-        tar -xf pxf_installer_source/pxf-gp?.el7.tar.gz \
-            --directory pxf_installer_source \
+    if compgen -G pxf_rpm_source/pxf-gp?.el7.tar.gz &>/dev/null; then
+        tar -xf pxf_rpm_source/pxf-gp?.el7.tar.gz \
+            --directory pxf_rpm_source \
             --strip-components=1 \
             --wildcards '*.rpm'
     fi
 
     mapfile -t hosts < cluster_env_files/hostfile_all
     for host in "${hosts[@]}"; do
-        scp pxf_installer_source/*.rpm "gpadmin@${host}":/tmp/pxf_source.rpm
+        scp pxf_rpm_source/*.rpm "gpadmin@${host}":/tmp/pxf_source.rpm
         scp /tmp/key.json "gpadmin@${host}":/tmp/key.json
 
         ssh -n "centos@${host}" "
