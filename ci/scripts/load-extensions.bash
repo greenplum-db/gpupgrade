@@ -23,16 +23,14 @@ scp plr_gppkg_source/plr*.gppkg gpadmin@mdw:/tmp/plr_source.gppkg
 
 echo "Installing extensions and sample data on source cluster..."
 
-echo 'Installing dependencies...'
+echo 'Installing GPDB extension dependencies...'
 mapfile -t hosts < cluster_env_files/hostfile_all
 for host in "${hosts[@]}"; do
     ssh -n "centos@${host}" "
         set -eux -o pipefail
 
-        # java for gptext, and R for plr
-        sudo yum install -y java-1.8.0-openjdk R
+        sudo yum install -y R # needed for plr
 
-        # Setup gptext directories
         sudo mkdir /usr/local/greenplum-db-text
         sudo chown gpadmin:gpadmin /usr/local/greenplum-db-text
 
@@ -230,8 +228,7 @@ install_pxf() {
         ssh -n "centos@${host}" "
             set -eux -o pipefail
 
-            echo 'Installing pxf dependencies...'
-            sudo yum install -q -y java-1.8.0-openjdk.x86_64
+            echo 'Installing pxf...'
             sudo rpm -ivh /tmp/pxf_source.rpm
             sudo chown -R gpadmin:gpadmin /usr/local/pxf*
         "
