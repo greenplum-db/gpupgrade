@@ -7,7 +7,7 @@ set -eux -o pipefail
 
 source gpupgrade_src/ci/scripts/ci-helpers.bash
 
-USE_LINK_MODE=${USE_LINK_MODE:-0}
+MODE=${MODE:-"copy"}
 FILTER_DIFF=${FILTER_DIFF:-0}
 DIFF_FILE=${DIFF_FILE:-"icw.diff"}
 
@@ -61,11 +61,6 @@ echo "Dumping the source cluster for comparing after upgrade..."
 dump_sql $PGPORT /tmp/source.sql
 
 echo "Performing gpupgrade..."
-LINK_MODE=""
-if [ "${USE_LINK_MODE}" = "1" ]; then
-    LINK_MODE="--mode=link"
-fi
-
 time ssh -n mdw "
     set -ex -o pipefail
 
@@ -73,11 +68,11 @@ time ssh -n mdw "
     echo 'Initialize expected to fail as target extension is not yet installed since target cluster is needed...'
     set +e
     gpupgrade initialize \
-              $LINK_MODE \
               --automatic \
               --target-gphome $GPHOME_TARGET \
               --source-gphome $GPHOME_SOURCE \
               --source-master-port $PGPORT \
+              --mode $MODE \
               --temp-port-range 6020-6040 \
               --dynamic-library-path ${GPHOME_TARGET}/madlib/Current/ports/greenplum/6/lib:/usr/local/greenplum-db-text/lib/gpdb6:/usr/local/pxf-gp6/gpextable
     set -e
@@ -121,11 +116,11 @@ time ssh -n mdw "
 
     echo 'Finishing the upgrade...'
     gpupgrade initialize \
-              $LINK_MODE \
               --automatic \
               --target-gphome $GPHOME_TARGET \
               --source-gphome $GPHOME_SOURCE \
               --source-master-port $PGPORT \
+              --mode $MODE \
               --temp-port-range 6020-6040 \
               --dynamic-library-path ${GPHOME_TARGET}/madlib/Current/ports/greenplum/6/lib:/usr/local/greenplum-db-text/lib/gpdb6:/usr/local/pxf-gp6/gpextable
 

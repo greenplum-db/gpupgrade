@@ -32,7 +32,7 @@ teardown() {
 }
 
 upgrade_cluster() {
-        LINK_MODE=$1
+        MODE=$1
         HBA_HOSTNAMES=$2
 
         # place marker file in source master data directory
@@ -65,7 +65,7 @@ upgrade_cluster() {
             --source-master-port="${PGPORT}" \
             --temp-port-range 6020-6040 \
             --disk-free-ratio 0 \
-            "$LINK_MODE" \
+            --mode "$MODE" \
             "$HBA_HOSTNAMES" \
             --verbose 3>&-
         gpupgrade execute --non-interactive --verbose
@@ -134,7 +134,7 @@ upgrade_cluster() {
 }
 
 @test "in link mode gpupgrade finalize should also delete mirror directories and honors --use-hba-hostnames" {
-    upgrade_cluster "--mode=link" "--use-hba-hostnames"
+    upgrade_cluster "link" "--use-hba-hostnames"
 }
 
 get_standby_status() {
