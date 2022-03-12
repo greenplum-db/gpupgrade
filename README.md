@@ -54,7 +54,7 @@ gpupgrade consists of three processes that communicate using gRPC and protocol b
 
 **Steps:**
 
-Running gpupgrade consists of three main steps:
+Running gpupgrade consists of several steps (ie: commands):
 - gpupgrade initialize
   - The source cluster can still be running. No downtime.
   - Substeps include creating the gpupgrade state directory, starting the hub 
@@ -67,9 +67,8 @@ Running gpupgrade consists of three main steps:
   - After finalizing the upgrade cannot be reverted.
   - Substeps include updating the data directories and master catalog, and 
   upgrading the standby and mirrors.
-Additional commands:
 - gpupgrade revert
-  - Restores the cluster to the state before upgrade.
+  - An optional command to restore the cluster to the state before the upgrade.
   - Can be run after initialize or execute, but *not* finalize.
   - Substeps include deleting the target cluster, archiving the gpupgrade log 
   directory, and restoring the source cluster.
