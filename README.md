@@ -67,8 +67,10 @@ Running gpupgrade consists of several steps (ie: commands):
   - After finalizing the upgrade cannot be reverted.
   - Substeps include updating the data directories and master catalog, and 
   upgrading the standby and mirrors.
+
+Optional steps (ie: commands):
 - gpupgrade revert
-  - An optional command to restore the cluster to the state before the upgrade.
+  - To restore the cluster to the state before the upgrade.
   - Can be run after initialize or execute, but *not* finalize.
   - Substeps include deleting the target cluster, archiving the gpupgrade log 
   directory, and restoring the source cluster.
