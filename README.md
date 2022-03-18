@@ -175,6 +175,10 @@ make check   # runs tests
 make install # installs gpupgrade into $GOBIN
 ```
 
+Cross-compile with:
+- `make build_linux`
+- `make build_mac`
+
 ### Running
 
 ```
@@ -274,9 +278,3 @@ To enable tab completion of gpupgrade commands source the `cli/bash/gpupgrade.ba
 script from your `~/.bash_completion` config, or copy it into your system's 
 completions directory such as  `/etc/bash_completion.d`.
 
-
-## Building
-
-Cross-compile with:
-- `make build_linux`
-- `make build_mac`
