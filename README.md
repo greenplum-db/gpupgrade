@@ -278,3 +278,28 @@ To enable tab completion of gpupgrade commands source the `cli/bash/gpupgrade.ba
 script from your `~/.bash_completion` config, or copy it into your system's 
 completions directory such as  `/etc/bash_completion.d`.
 
+## Debugging
+- Identify the High Level Failure
+  - What mode was used - copy vs. link?
+  - What step failed - initialize, execute, finalize, or revert?
+  - What specific substep failed?
+- Identify the Failing Host
+  - Did the Hub (master) vs. Agent (segment) fail?
+  - What specific host failed?
+- Identify the Failed Utility
+  - Did gpupgrade fail, or an underlying utility such as pg_upgrade, gpinitsystem, gpstart, etc.?
+- Identify the Specific Failure
+  - Based on the error context and logs what is the specific error?
+
+### Debugging Hub and Agent Processes
+- Set a breakpoint in the CLI
+  - For example in `cli/commands/initialize.go`, `execute.go`, or `finalize.go` right before the call to the hub.
+- Set additional breakpoints in the hub or agent code to aid in debugging.
+- Run gpupgrade to hit the first breakpoint in the CLI process.
+- When using intellij "Attach to Process" and select the hub and agent processes.
+- Continue execution until the additional breakpoints in the hub or agent code are hit. Step through the code to debug.
+- For faster iterations:
+  - Make any local changes in the code
+  - Rebuild with `make && make install`
+  - Reload the new code with `gpupgrade restart-services` or manually stop and restart the hub.
+  - Repeat the above breakpoints and attaching to the new processes as their PIDs have changed.
