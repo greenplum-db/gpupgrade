@@ -278,6 +278,17 @@ To enable tab completion of gpupgrade commands source the `cli/bash/gpupgrade.ba
 script from your `~/.bash_completion` config, or copy it into your system's 
 completions directory such as  `/etc/bash_completion.d`.
 
+## Log Locations
+Logs are located on **_all hosts_**.
+
+- gpupgrade logs: `$HOME/gpAdminLogs/gpupgrade`
+  - After finalize the directory is archived with format `gpupgrade-<timestamp-upgradeID>`.
+- pg_upgrade logs: `$HOME/gpAdminLogs/gpupgrade/pg_upgrade`
+- greenplum utility logs: `$HOME/gpAdminLogs`
+- source cluster pg_log: `$MASTER_DATA_DIRECTORY/pg_log`
+- target cluster pg_log: `$(gpupgrade config show --target-datadir)/pg_log`
+  - The target cluster data directories are located next to the source cluster directories with the format `-<upgradeID>.<contentID>`
+
 ## Debugging
 - Identify the High Level Failure
   - What mode was used - copy vs. link?
