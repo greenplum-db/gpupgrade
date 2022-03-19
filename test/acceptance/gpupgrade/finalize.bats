@@ -130,7 +130,7 @@ upgrade_cluster() {
 # NOTE: To reduce overall test time we test --use-hba-hostnames in link mode, and without in copy mode.
 
 @test "in copy mode gpupgrade finalize should swap the target data directories and ports with the source cluster" {
-    upgrade_cluster
+    upgrade_cluster "copy"
 }
 
 @test "in link mode gpupgrade finalize should also delete mirror directories and honors --use-hba-hostnames" {
