@@ -39,15 +39,15 @@
         {{- end }}
         {{- if .ExtensionsJob }}
         - get: gptext_targz # NOTE: The same gptext artifact is used for both the source and target clusters.
-          resource: greenplum_text_rhel{{.CentosVersion}}_targz
+          resource: gptext_3.x_gpdb6_rhel{{.CentosVersion}}_targz
         - get: postgis_gppkg_source
-          resource: postgis_2.1.5_gpdb{{.Source}}_centos{{.CentosVersion}}_gppkg
+          resource: postgis_2.x_gpdb{{.Source}}_centos{{.CentosVersion}}_gppkg
         - get: postgis_gppkg_target
-          resource: postgis_2.1.5_gpdb{{.Target}}_centos{{.CentosVersion}}_gppkg
+          resource: postgis_2.x_gpdb{{.Target}}_centos{{.CentosVersion}}_gppkg
         - get: madlib_gppkg_source
-          resource: madlib_1.19.0_gpdb{{.Source}}_centos{{.CentosVersion}}_gppkg
+          resource: madlib_1.x_gpdb{{.Source}}_centos{{.CentosVersion}}_gppkg
         - get: madlib_gppkg_target
-          resource: madlib_1.19.0_gpdb{{.Target}}_centos{{.CentosVersion}}_gppkg
+          resource: madlib_1.x_gpdb{{.Target}}_centos{{.CentosVersion}}_gppkg
         - get: plr_gppkg_source
           resource: plr_gpdb{{.Source}}_rhel{{.CentosVersion}}_gppkg
         - get: plr_gppkg_target

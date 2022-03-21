@@ -173,27 +173,27 @@ resources:
     versioned_file: extensions/postgis215_dump.sql
 
 {{range .Versions}}
-- name: postgis_2.1.5_gpdb{{.GPVersion}}_centos{{.CentosVersion}}_gppkg
+- name: postgis_2.x_gpdb{{.GPVersion}}_centos{{.CentosVersion}}_gppkg
   type: gcs
   source:
     json_key: ((concourse-gcs-resources-service-account-key))
     bucket: pivotal-gpdb-concourse-resources-prod
     regexp: postgis/released/gpdb{{.GPVersion}}/postgis-2.1.5\+(.*)-gp{{.GPVersion}}-rhel{{.CentosVersion}}-x86_64.gppkg
 
-- name: madlib_1.19.0_gpdb{{.GPVersion}}_centos{{.CentosVersion}}_gppkg
+- name: madlib_1.x_gpdb{{.GPVersion}}_centos{{.CentosVersion}}_gppkg
   type: s3
   source:
     access_key_id: ((madlib-s3-access_key_id))
     secret_access_key: ((madlib-s3-secret_access_key))
     region_name: us-west-2
-    bucket: madlib-artifacts  # FIXME: update to prod bucket once MADlib is released.
+    bucket: madlib-artifacts
     versioned_file: bin_madlib_artifacts_centos{{.CentosVersion}}/madlib-master-gp{{.GPVersion}}-rhel{{.CentosVersion}}-x86_64.gppkg
 
 # NOTE: The same gptext artifact is used for both gpdb5 and gpdb6. Also, the same
 # rhel6 artifact is used for both centos6 and centos7, since the rhel7 artifact
 # does not support gpdb5.
 {{- if ne .GPVersion "6" }}
-- name: greenplum_text_rhel{{.CentosVersion}}_targz
+- name: gptext_3.x_gpdb6_rhel{{.CentosVersion}}_targz
   type: gcs
   source:
     json_key: ((concourse-gcs-resources-service-account-key))
