@@ -5,6 +5,7 @@ package utils
 
 import (
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"net"
 	"os"
@@ -54,6 +55,9 @@ type SystemFunctions struct {
 	Mkdir        func(name string, perm os.FileMode) error
 	Symlink      func(oldname, newname string) error
 	Lstat        func(name string) (os.FileInfo, error)
+	ReadDir      func(fsys fs.FS, name string) ([]fs.DirEntry, error)
+	StatFS       func(fsys fs.FS, name string) (fs.FileInfo, error)
+	DirFS        func(dir string) fs.FS
 }
 
 func InitializeSystemFunctions() *SystemFunctions {
@@ -79,6 +83,9 @@ func InitializeSystemFunctions() *SystemFunctions {
 		Mkdir:        os.Mkdir,
 		Symlink:      os.Symlink,
 		Lstat:        os.Lstat,
+		ReadDir:      fs.ReadDir,
+		StatFS:       fs.Stat,
+		DirFS:        os.DirFS,
 	}
 }
 

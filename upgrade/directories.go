@@ -6,6 +6,7 @@ package upgrade
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -169,6 +170,19 @@ func AlreadyRenamed(src, dst string) (bool, error) {
 	}
 
 	return !srcExist && dstExist, nil
+}
+
+func PathExistInFS(fsys fs.FS, path string) (bool, error) {
+	_, err := utils.System.StatFS(fsys, path)
+	if err == nil {
+		return true, nil
+	}
+
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+
+	return false, err
 }
 
 func PathExist(path string) (bool, error) {

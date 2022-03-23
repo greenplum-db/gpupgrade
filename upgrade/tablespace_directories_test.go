@@ -6,9 +6,11 @@ package upgrade_test
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
+	"testing/fstest"
 
 	"golang.org/x/xerrors"
 
@@ -245,120 +247,116 @@ func TestDeleteNewTablespaceDirectories(t *testing.T) {
 }
 
 func TestVerifyTablespaceDirectories(t *testing.T) {
-	t.Run("succeeds when given multiple legacy and non-legacy tablespace locations", func(t *testing.T) {
-		var dirs []string
-
-		// create legacy tablespace directories
-		tablespaceOids := []int{16386, 16387, 16388}
-		for _, oid := range tablespaceOids {
-			_, tsLocationDir := testutils.MustMake5XTablespaceDir(t, oid)
-			defer testutils.MustRemoveAll(t, tsLocationDir)
-
-			dirs = append(dirs, tsLocationDir)
+	t.Run("succeeds with multiple legacy tablespace locations", func(t *testing.T) {
+		ts := fstest.MapFS{
+			filepath.Join("12094", upgrade.PGVersion): {},
+			filepath.Join("12094", "16384"):           {},
 		}
 
-		// create tablespace directories
-		_, _, tsLocation1 := testutils.MustMakeTablespaceDir(t, 12812)
-		defer testutils.MustRemoveAll(t, tsLocation1)
-		dirs = append(dirs, tsLocation1)
-
-		_, _, tsLocation2 := testutils.MustMakeTablespaceDir(t, 12094)
-		defer testutils.MustRemoveAll(t, tsLocation2)
-		dirs = append(dirs, tsLocation2)
-
-		err := upgrade.VerifyTablespaceDirectories(dirs)
-		if err != nil {
-			t.Errorf("unexpected error %+v", err)
+		paths := []string{"/filespace/demoDataDir0/16386", "/filespace/demoDataDir0/16387", "/filespace/demoDataDir0/16388"}
+		for _, path := range paths {
+			err := upgrade.VerifyTablespaceLocation(ts, path)
+			if err != nil {
+				t.Errorf("unexpected error %+v", err)
+			}
 		}
 	})
 
-	t.Run("does not error when tablespace directory contains other files in additional to tablespace directory", func(t *testing.T) {
-		_, _, tsLocation := testutils.MustMakeTablespaceDir(t, 12812)
-		defer testutils.MustRemoveAll(t, tsLocation)
+	t.Run("succeeds with multiple non-legacy tablespace locations", func(t *testing.T) {
+		ts := fstest.MapFS{
+			filepath.Join("1", "GPDB_6_301908232"): {Mode: os.ModeDir},
+		}
 
-		testutils.MustWriteToFile(t, filepath.Join(tsLocation, "foo"), "")
+		paths := []string{"/filespace/demoDataDir0/12812", "/filespace/demoDataDir0/12094"}
+		for _, path := range paths {
+			err := upgrade.VerifyTablespaceLocation(ts, path)
+			if err != nil {
+				t.Errorf("unexpected error %+v", err)
+			}
+		}
+	})
 
-		err := upgrade.VerifyTablespaceDirectories([]string{tsLocation})
+	t.Run("does not error when tablespace directory contains additional files", func(t *testing.T) {
+		ts := fstest.MapFS{
+			"foo":                                  {},
+			filepath.Join("1", "bar"):              {},
+			filepath.Join("1", "GPDB_6_301908232"): {Mode: os.ModeDir},
+		}
+
+		err := upgrade.VerifyTablespaceLocation(ts, "/filespace/demoDataDir0/16386")
 		if err != nil {
 			t.Errorf("unexpected error %+v", err)
 		}
 	})
 
 	t.Run("errors when failing to read tablespace directory", func(t *testing.T) {
-		tsLocationDir := testutils.GetTempDir(t, "")
-		defer func() {
-			err := os.Chmod(tsLocationDir, userRWX)
-			if err != nil {
-				t.Fatalf("making tablespace location directory writeable: %v", err)
-			}
-			testutils.MustRemoveAll(t, tsLocationDir)
-		}()
-
-		// Set tablespace directory to write and execute to prevent its contents
-		// from being read.
-		err := os.Chmod(tsLocationDir, 0300)
-		if err != nil {
-			t.Fatalf("making tablespace directory non-readable: %v", err)
+		ts := fstest.MapFS{
+			filepath.Join("1", "GPDB_6_301908232"): {Mode: os.ModeDir},
 		}
 
-		err = upgrade.VerifyTablespaceDirectories([]string{tsLocationDir})
+		utils.System.ReadDir = func(fsys fs.FS, name string) ([]fs.DirEntry, error) {
+			return nil, os.ErrPermission
+		}
+		defer func() {
+			utils.System.ReadDir = fs.ReadDir
+		}()
+
+		err := upgrade.VerifyTablespaceLocation(ts, "/filespace/demoDataDir0/16386")
 		if !errors.Is(err, os.ErrPermission) {
 			t.Errorf("got error %#v want %#v", err, os.ErrPermission)
 		}
 	})
 
 	t.Run("errors when there are no tablespace directories", func(t *testing.T) {
-		tsLocation := testutils.GetTempDir(t, "")
-		defer testutils.MustRemoveAll(t, tsLocation)
+		ts := fstest.MapFS{}
+		tsLocation := "/filespace/demoDataDir0/16386"
 
-		err := upgrade.VerifyTablespaceDirectories([]string{tsLocation})
-		expected := fmt.Sprintf("Invalid tablespace directory %q", tsLocation)
+		err := upgrade.VerifyTablespaceLocation(ts, tsLocation)
+		expected := fmt.Sprintf("invalid tablespace location %q", tsLocation)
 		if err.Error() != expected {
 			t.Errorf("got error %#v want %#v", err, expected)
 		}
 	})
 
 	t.Run("errors when failing to verify legacy tablespace directory", func(t *testing.T) {
-		dbOidDir, tsLocation := testutils.MustMake5XTablespaceDir(t, 16386)
-		defer testutils.MustRemoveAll(t, tsLocation)
+		ts := fstest.MapFS{
+			filepath.Join("12094", upgrade.PGVersion): {},
+			filepath.Join("12094", "16384"):           {},
+		}
 
-		utils.System.Stat = func(name string) (os.FileInfo, error) {
+		utils.System.StatFS = func(fsys fs.FS, name string) (fs.FileInfo, error) {
 			return nil, os.ErrPermission
 		}
 		defer func() {
-			utils.System.Stat = os.Stat
+			utils.System.StatFS = fs.Stat
 		}()
 
-		err := upgrade.VerifyTablespaceDirectories([]string{tsLocation})
-		expected := xerrors.Errorf("checking legacy tablespace directory %q: %w", filepath.Join(dbOidDir, upgrade.PGVersion), os.ErrPermission)
+		err := upgrade.VerifyTablespaceLocation(ts, "/filespace/demoDataDir0/16386")
+		expected := xerrors.Errorf("checking path exists for legacy tablespace dbOID directory %q: %w", filepath.Join("12094", upgrade.PGVersion), os.ErrPermission)
 		if err.Error() != expected.Error() {
 			t.Errorf("got error %#v want %#v", err, expected)
 		}
 	})
 
 	t.Run("errors when failing to verify non-legacy tablespace directory", func(t *testing.T) {
-		tsLocation := testutils.GetTempDir(t, "")
-		defer testutils.MustRemoveAll(t, tsLocation)
+		ts := fstest.MapFS{
+			filepath.Join("1", "non_tablespace_directory"): {Mode: os.ModeDir},
+		}
 
-		someSubDir := filepath.Join(tsLocation, "1", "some_dub_dir")
-		testutils.MustCreateDir(t, someSubDir)
-		defer testutils.MustRemoveAll(t, someSubDir)
-
-		err := upgrade.VerifyTablespaceDirectories([]string{tsLocation})
-		expected := xerrors.Errorf("Invalid tablespace directory. Expected %q to start with 'GPDB_'.", someSubDir)
+		err := upgrade.VerifyTablespaceLocation(ts, "/filespace/demoDataDir0/16386")
+		expected := xerrors.Errorf(`Invalid tablespace directory. Expected "1/non_tablespace_directory" to start with "GPDB_".`)
 		if err.Error() != expected.Error() {
 			t.Errorf("got error %#v want %#v", err, expected)
 		}
 	})
 
 	t.Run("errors when directory is not a legacy and non-legacy tablespace directory", func(t *testing.T) {
-		tablespaceDir, dbIdDir, tsLocation := testutils.MustMakeTablespaceDir(t, 16386)
-		defer testutils.MustRemoveAll(t, tsLocation)
+		ts := fstest.MapFS{
+			filepath.Join("1"): {Mode: os.ModeDir},
+		}
 
-		testutils.MustRemoveAll(t, tablespaceDir)
-
-		err := upgrade.VerifyTablespaceDirectories([]string{tsLocation})
-		expected := xerrors.Errorf("Invalid tablespace directory %q", dbIdDir)
+		err := upgrade.VerifyTablespaceLocation(ts, "/filespace/demoDataDir0/16386")
+		expected := xerrors.Errorf(`invalid tablespace directory "/filespace/demoDataDir0/16386/1"`)
 		if err.Error() != expected.Error() {
 			t.Errorf("got error %#v want %#v", err, expected)
 		}
@@ -367,122 +365,123 @@ func TestVerifyTablespaceDirectories(t *testing.T) {
 
 func TestVerifyLegacyTablespaceDirectory(t *testing.T) {
 	t.Run("succeeds for legacy tablespace directories", func(t *testing.T) {
-		_, tsLocation := testutils.MustMake5XTablespaceDir(t, 16386)
-		defer testutils.MustRemoveAll(t, tsLocation)
+		ts := fstest.MapFS{
+			filepath.Join("12094", upgrade.PGVersion): {},
+			filepath.Join("12094", "16384"):           {},
+		}
 
-		path := filepath.Join(tsLocation, "12094")
-		exists, err := upgrade.VerifyLegacyTablespaceDirectory(path)
+		exists, err := upgrade.VerifyLegacyTablespaceDbOIDDirectory(ts, "12094")
 		if err != nil {
 			t.Errorf("unexpected error %+v", err)
 		}
 
 		if !exists {
-			t.Errorf("expected path %q to exist", path)
+			t.Error(`expected path "12094" to exist`)
 		}
 	})
 
 	t.Run("returns false for non-legacy tablespace directories", func(t *testing.T) {
-		_, dbIdDir, tsLocation := testutils.MustMakeTablespaceDir(t, 16386)
-		defer testutils.MustRemoveAll(t, tsLocation)
+		ts := fstest.MapFS{
+			filepath.Join("1", "GPDB_6_301908232"): {Mode: os.ModeDir},
+		}
 
-		exists, err := upgrade.VerifyLegacyTablespaceDirectory(dbIdDir)
+		exists, err := upgrade.VerifyLegacyTablespaceDbOIDDirectory(ts, "1")
 		if err != nil {
 			t.Errorf("unexpected error %+v", err)
 		}
 
 		if exists {
-			t.Errorf("expected path %q to not exist", filepath.Join(dbIdDir, upgrade.PGVersion))
+			t.Error(`expected path "1/PG_VERSION" to not exist`)
 		}
 	})
 
 	t.Run("returns false when path does not exist", func(t *testing.T) {
-		path := "/does/not/exist"
-		exists, err := upgrade.VerifyLegacyTablespaceDirectory(path)
+		ts := fstest.MapFS{}
+		exists, err := upgrade.VerifyLegacyTablespaceDbOIDDirectory(ts, "12094")
 		if err != nil {
 			t.Errorf("unexpected error %+v", err)
 		}
 
 		if exists {
-			t.Errorf("expected path %q to not exist", filepath.Join(path, upgrade.PGVersion))
+			t.Error(`expected path "12094/PG_VERSION" to not exist`)
 		}
 	})
 
 	t.Run("errors when failing to check if path exists", func(t *testing.T) {
-		utils.System.Stat = func(name string) (os.FileInfo, error) {
+		utils.System.StatFS = func(fsys fs.FS, name string) (fs.FileInfo, error) {
 			return nil, os.ErrPermission
 		}
 		defer func() {
-			utils.System.Stat = os.Stat
+			utils.System.StatFS = fs.Stat
 		}()
 
-		exists, err := upgrade.VerifyLegacyTablespaceDirectory("")
+		exists, err := upgrade.VerifyLegacyTablespaceDbOIDDirectory(fstest.MapFS{}, "12094")
 		if !errors.Is(err, os.ErrPermission) {
 			t.Errorf("got error %#v want %#v", err, os.ErrPermission)
 		}
 
 		if exists {
-			t.Errorf("expected path %q to not exist", "")
+			t.Error("expected path to not exist")
 		}
 	})
 }
 
 func TestVerifyTablespaceDirectory(t *testing.T) {
 	t.Run("succeeds for tablespace directories", func(t *testing.T) {
-		_, dbIdDir, tsLocation := testutils.MustMakeTablespaceDir(t, 16386)
-		defer testutils.MustRemoveAll(t, tsLocation)
+		ts := fstest.MapFS{
+			filepath.Join("1", "GPDB_6_301908232"): {Mode: os.ModeDir},
+		}
 
-		exists, err := upgrade.VerifyTablespaceDirectory(dbIdDir)
+		exists, err := upgrade.VerifyTablespaceDbIDDirectory(ts, "1")
 		if err != nil {
 			t.Errorf("unexpected error %+v", err)
 		}
 
 		if !exists {
-			t.Errorf("expected path %q to exist", dbIdDir)
+			t.Error(`expected path "1" to exist`)
 		}
 	})
 
 	t.Run("fails with legacy tablespace directories", func(t *testing.T) {
-		_, tsLocation := testutils.MustMake5XTablespaceDir(t, 16386)
-		defer testutils.MustRemoveAll(t, tsLocation)
+		ts := fstest.MapFS{
+			filepath.Join("12094", upgrade.PGVersion): {},
+			filepath.Join("12094", "16384"):           {},
+		}
 
-		path := filepath.Join(tsLocation, "12094")
-		exists, err := upgrade.VerifyTablespaceDirectory(path)
+		exists, err := upgrade.VerifyTablespaceDbIDDirectory(ts, "12094")
 		if err != nil {
 			t.Errorf("unexpected error %+v", err)
 		}
 
 		if exists {
-			t.Errorf("expected path %q not exist", path)
+			t.Error(`expected path "12094/16384" not exist`)
 		}
 	})
 
 	t.Run("fails if path does not look like tablespace directory", func(t *testing.T) {
-		dbIDDir := testutils.GetTempDir(t, "")
-		defer testutils.MustRemoveAll(t, dbIDDir)
+		ts := fstest.MapFS{
+			filepath.Join("1", "non_tablespace_directory"): {Mode: os.ModeDir},
+		}
 
-		subDir := filepath.Join(dbIDDir, "some_sub_dir")
-		testutils.MustCreateDir(t, subDir)
-
-		exists, err := upgrade.VerifyTablespaceDirectory(dbIDDir)
-		expected := fmt.Sprintf("Invalid tablespace directory. Expected %q to start with 'GPDB_'.", subDir)
+		exists, err := upgrade.VerifyTablespaceDbIDDirectory(ts, "1")
+		expected := `Invalid tablespace directory. Expected "1/non_tablespace_directory" to start with "GPDB_".`
 		if err.Error() != expected {
 			t.Errorf("got error %#v want %#v", err, expected)
 		}
 
 		if exists {
-			t.Errorf("expected path %q not exist", dbIDDir)
+			t.Error(`expected path "1/non_tablespace_directory" not exist`)
 		}
 	})
 
 	t.Run("errors when failing to read directory", func(t *testing.T) {
-		path := "/does/not/exist"
-		exists, err := upgrade.VerifyTablespaceDirectory(path)
+		exists, err := upgrade.VerifyTablespaceDbIDDirectory(fstest.MapFS{}, "1")
 		if !errors.Is(err, os.ErrNotExist) {
 			t.Errorf("got error %#v want %#v", err, os.ErrNotExist)
 		}
 
 		if exists {
-			t.Errorf("expected path %q to not exist", path)
+			t.Error(`expected path "1" not exist`)
 		}
 	})
 }

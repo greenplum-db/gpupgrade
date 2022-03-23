@@ -6,6 +6,7 @@ package upgrade
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -15,6 +16,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
@@ -116,54 +118,53 @@ func DeleteTablespaceDirectories(streams step.OutStreams, dirs []string) error {
 	return nil
 }
 
-// VerifyTablespaceDirectories takes in list of tablespace locations and verifies
-// that they are either tablespace directories or legacy tablespace directories.
-// It takes an input path of /dir/<fsname>/<datadir>/<tablespaceOID>
-func VerifyTablespaceDirectories(tsLocations []string) error {
+// VerifyTablespaceLocation verifies if the given path is either a
+// tablespace (ie: 6X and higher), or legacy (ie: 5X) tablespace location.
+// The input path is a tablespace location with the form
+// /dir/<fsname>/<datadir>/<tablespaceOID>
+func VerifyTablespaceLocation(fsys fs.FS, tsLocation string) error {
+	entries, err := utils.System.ReadDir(fsys, ".")
+	if err != nil {
+		return err
+	}
+
+	if len(entries) == 0 {
+		return xerrors.Errorf("invalid tablespace location %q", tsLocation)
+	}
+
 	var mErr error
-	for _, tsLocation := range tsLocations {
-		entries, err := ioutil.ReadDir(tsLocation)
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		path := filepath.Join(tsLocation, entry.Name())
+		exist_5X, err := VerifyLegacyTablespaceDbOIDDirectory(fsys, entry.Name())
 		if err != nil {
-			return err
+			mErr = errorlist.Append(mErr, err)
+			continue
 		}
 
-		if len(entries) == 0 {
-			return xerrors.Errorf("Invalid tablespace directory %q", tsLocation)
+		if exist_5X {
+			continue
 		}
 
-		for _, entry := range entries {
-			if !entry.IsDir() {
-				continue
-			}
+		exist_6X, err := VerifyTablespaceDbIDDirectory(fsys, entry.Name())
+		if err != nil {
+			mErr = errorlist.Append(mErr, err)
+			continue
+		}
 
-			path := filepath.Join(tsLocation, entry.Name())
-			exist_5X, err := VerifyLegacyTablespaceDirectory(path)
-			if err != nil {
-				mErr = errorlist.Append(mErr, err)
-				continue
-			}
-
-			if exist_5X {
-				continue
-			}
-
-			exist_6X, err := VerifyTablespaceDirectory(path)
-			if err != nil {
-				mErr = errorlist.Append(mErr, err)
-				continue
-			}
-
-			if !exist_6X {
-				mErr = errorlist.Append(mErr, xerrors.Errorf("Invalid tablespace directory %q", path))
-				continue
-			}
+		if !exist_6X {
+			mErr = errorlist.Append(mErr, xerrors.Errorf("invalid tablespace directory %q", path))
+			continue
 		}
 	}
 
 	return mErr
 }
 
-// VerifyLegacyTablespaceDirectory verifies directories for GPDB 5X and lower.
+// VerifyLegacyTablespaceDbOIDDirectory verifies a directory for GPDB 5X and lower.
 // It takes an input path of /dir/<fsname>/<datadir>/<tablespaceOID>/<dbOID>
 // and checks if the underlying relfilenode directory contains the PG_VERSION
 // file. Note that the input path is one level down from the tablespace location.
@@ -171,11 +172,11 @@ func VerifyTablespaceDirectories(tsLocations []string) error {
 // the user may not have created a table within the tablespace.
 // The expected tablespace directory layout is:
 //   /dir/<fsname>/<datadir>/<tablespaceOID>/<dbOID>/<relfilenode>
-func VerifyLegacyTablespaceDirectory(dbOIDPath string) (bool, error) {
-	path := filepath.Join(dbOIDPath, PGVersion)
-	exist, err := PathExist(path)
+func VerifyLegacyTablespaceDbOIDDirectory(fsys fs.FS, dbOID string) (bool, error) {
+	path := filepath.Join(dbOID, PGVersion)
+	exist, err := PathExistInFS(fsys, path)
 	if err != nil {
-		return false, xerrors.Errorf("checking legacy tablespace directory %q: %w", path, err)
+		return false, xerrors.Errorf("checking path exists for legacy tablespace dbOID directory %q: %w", path, err)
 	}
 
 	if !exist {
@@ -183,6 +184,33 @@ func VerifyLegacyTablespaceDirectory(dbOIDPath string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+// VerifyTablespaceDbIDDirectory verifies a directory for GPDB 6X and higher. It
+// takes an input path of the form /dir/<fsname>/<datadir>/<tablespaceOID>/<dbID>
+// and checks if the underlying directory starts with "GPDB_". Note that the
+// input path is one level down from the tablespace location.
+// The expected tablespace directory layout is:
+//   /dir/<fsname>/<datadir>/<tablespaceOID>/<dbID>/GPDB_6_<catalogVersion>/<dbOID>/<relfilenode>
+func VerifyTablespaceDbIDDirectory(fsys fs.FS, dbID string) (bool, error) {
+	entries, err := fs.ReadDir(fsys, dbID)
+	if err != nil {
+		return false, xerrors.Errorf("read tablespace dbID directory %q: %w", dbID, err)
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		if !strings.HasPrefix(entry.Name(), "GPDB_") {
+			return false, xerrors.Errorf(`Invalid tablespace directory. Expected %q to start with "GPDB_".`, filepath.Join(dbID, entry.Name()))
+		}
+
+		return true, nil
+	}
+
+	return false, nil
 }
 
 // VerifyTablespaceDirectory verifies directories for GPDB 6X and higher. It

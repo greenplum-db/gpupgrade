@@ -329,39 +329,6 @@ func MustMakeTablespaceDir(t *testing.T, tablespaceOid int) (string, string, str
 	return tablespace, dbID, location
 }
 
-// MustMake5XTablespaceDir returns the parent tablespace location and dbOID
-// directory containing PG_VERSION and a relfile. The location should be removed
-// for cleanup. An optional tablespaceOid may be specified to construct unique
-// tablespace directories.
-func MustMake5XTablespaceDir(t *testing.T, tablespaceOID int) (string, string) {
-	t.Helper()
-
-	// ex: /filespace/demoDataDir0
-	filespace := os.TempDir()
-
-	// ex: /filespace/demoDataDir0/16386
-	if tablespaceOID == 0 {
-		tablespaceOID = 16386
-	}
-	location := filepath.Join(filespace, strconv.Itoa(tablespaceOID))
-	err := os.MkdirAll(location, 0700)
-	if err != nil {
-		t.Fatalf("creating 5x tablespace location directory: %v", err)
-	}
-
-	// ex: /filespace/demoDataDir0/16386/12094
-	dbOID := filepath.Join(location, "12094")
-	err = os.MkdirAll(dbOID, 0700)
-	if err != nil {
-		t.Fatalf("creating 5x tablespace dbOID directory: %v", err)
-	}
-
-	MustWriteToFile(t, filepath.Join(dbOID, upgrade.PGVersion), "")
-	MustWriteToFile(t, filepath.Join(dbOID, "16384"), "")
-
-	return dbOID, location
-}
-
 func MustGetExecutablePath(t *testing.T) string {
 	t.Helper()
 

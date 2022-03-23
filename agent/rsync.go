@@ -13,6 +13,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/upgrade"
+	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
@@ -40,14 +41,12 @@ func (s *Server) RsyncTablespaceDirectories(ctx context.Context, in *idl.RsyncRe
 
 	// We can only verify the source directories since the destination
 	// directories are on another host.
-	var sources []string
 	for _, opts := range in.GetOptions() {
-		sources = append(sources, opts.GetSources()...)
-	}
-
-	// NOTE: Rsync will still be called if a given sourceDir is empty.
-	if err := upgrade.VerifyTablespaceDirectories(sources); err != nil {
-		return &idl.RsyncReply{}, err
+		for _, dir := range opts.GetSources() {
+			if err := upgrade.VerifyTablespaceLocation(utils.System.DirFS(dir), dir); err != nil {
+				return &idl.RsyncReply{}, err
+			}
+		}
 	}
 
 	return &idl.RsyncReply{}, rsyncRequestDirs(in)

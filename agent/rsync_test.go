@@ -7,12 +7,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
+	"testing/fstest"
 
 	"github.com/greenplum-db/gpupgrade/agent"
 	"github.com/greenplum-db/gpupgrade/hub"
@@ -21,6 +23,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/upgrade"
+	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
@@ -180,8 +183,16 @@ func TestRsyncTablespaceDirectories(t *testing.T) {
 	testlog.SetupLogger()
 	server := agent.NewServer(agent.Config{})
 
-	_, sourceTsLocationDir := testutils.MustMake5XTablespaceDir(t, 0)
-	defer testutils.MustRemoveAll(t, sourceTsLocationDir)
+	sourceTsLocationDir := "/filespace/demoDataDir0/16386"
+	utils.System.DirFS = func(dir string) fs.FS {
+		return fstest.MapFS{
+			filepath.Join("12094", upgrade.PGVersion): {},
+			filepath.Join("12094", "16384"):           {},
+		}
+	}
+	defer func() {
+		utils.System.DirFS = os.DirFS
+	}()
 
 	destination := testutils.GetTempDir(t, "")
 	defer testutils.MustRemoveAll(t, destination)
@@ -243,21 +254,23 @@ func TestRsyncTablespaceDirectories(t *testing.T) {
 			rsyncCalled = true
 		}))
 
-		dbOidDir, invalidTablespaceDir := testutils.MustMake5XTablespaceDir(t, 0)
-		defer testutils.MustRemoveAll(t, invalidTablespaceDir)
-
-		// create an invalid tablespace directory by removing PG_VERSION
-		err := os.Remove(filepath.Join(dbOidDir, upgrade.PGVersion))
-		if err != nil {
-			t.Fatalf("removing PG_VERSION from %q: %v", dbOidDir, err)
+		invalidTablespaceDir := "/filespace/demoDataDir0/16386"
+		utils.System.DirFS = func(dir string) fs.FS {
+			return fstest.MapFS{
+				// create an invalid tablespace directory by removing PG_VERSION
+				filepath.Join("12094", "16384"): {},
+			}
 		}
+		defer func() {
+			utils.System.DirFS = os.DirFS
+		}()
 
 		request := &idl.RsyncRequest{Options: []*idl.RsyncRequest_RsyncOptions{
 			{Sources: []string{invalidTablespaceDir}, Destination: destination},
 		}}
 
-		_, err = server.RsyncTablespaceDirectories(context.Background(), request)
-		expected := fmt.Sprintf("Invalid tablespace directory %q", filepath.Join(invalidTablespaceDir, "12094"))
+		_, err := server.RsyncTablespaceDirectories(context.Background(), request)
+		expected := fmt.Sprintf("invalid tablespace directory %q", filepath.Join(invalidTablespaceDir, "12094"))
 		if err.Error() != expected {
 			t.Errorf("got error %#v want %#v", err, expected)
 		}
