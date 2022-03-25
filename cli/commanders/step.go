@@ -7,6 +7,8 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"os"
 	"strings"
 
@@ -74,7 +76,7 @@ func NewStep(currentStep idl.Step, streams *step.BufferedStreams, verbose bool, 
 		return &Step{}, err
 	}
 
-	stepName := strings.Title(strings.ToLower(currentStep.String()))
+	stepName := cases.Title(language.English).String(strings.ToLower(currentStep.String()))
 
 	fmt.Println()
 	fmt.Println(stepName + " in progress.")

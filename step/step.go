@@ -6,6 +6,8 @@ package step
 import (
 	"errors"
 	"fmt"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"os"
 	"path/filepath"
 	"strings"
@@ -69,7 +71,7 @@ func Begin(step idl.Step, sender idl.MessageSender, agentConns func() ([]*idl.Co
 		return nil, xerrors.Errorf(`step "%s": %w`, step, err)
 	}
 
-	_, err = fmt.Fprintf(log, "\n%s in progress.\n", strings.Title(step.String()))
+	_, err = fmt.Fprintf(log, "\n%s in progress.\n", cases.Title(language.English).String(step.String()))
 	if err != nil {
 		log.Close()
 		return nil, xerrors.Errorf(`logging step "%s": %w`, step, err)
