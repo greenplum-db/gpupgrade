@@ -62,7 +62,7 @@ func TablespacePath(tablespaceLocation string, dbID int, majorVersion uint64, ca
 //  GPDB 6X:  /dir/<fsname>/<datadir>/<tablespaceOID>/<dbID>/GPDB_6_<catalogVersion>/<dbOID>/<relfilenode>
 func DeleteTablespaceDirectories(streams step.OutStreams, dirs []string) error {
 	for _, dir := range dirs {
-		exist, err := VerifyTablespaceDirectory(filepath.Dir(dir))
+		validTSDir, err := VerifyTablespaceDirectory(filepath.Dir(dir))
 		if err != nil && errors.Is(err, os.ErrNotExist) {
 			continue
 		}
@@ -71,8 +71,8 @@ func DeleteTablespaceDirectories(streams step.OutStreams, dirs []string) error {
 			return err
 		}
 
-		if !exist {
-			return xerrors.Errorf("wat")
+		if !validTSDir {
+			return xerrors.Errorf("Invalid tablespace directory %q", dir)
 		}
 	}
 
