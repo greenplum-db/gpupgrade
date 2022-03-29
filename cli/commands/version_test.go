@@ -11,6 +11,10 @@ import (
 
 func TestVersion(t *testing.T) {
 	t.Run("returns empty values when version fields are not set", func(t *testing.T) {
+		commands.Version = ""
+		commands.Commit = ""
+		commands.Release = ""
+
 		actual := commands.VersionString("")
 		expected := `Version: 
 Commit: 
