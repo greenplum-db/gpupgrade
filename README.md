@@ -304,11 +304,12 @@ Logs are located on **_all hosts_**.
 
 ### Debugging Hub and Agent Processes
 - Set a breakpoint in the CLI
-  - For example in `cli/commands/initialize.go`, `execute.go`, or `finalize.go` right before the call to the hub.
+  - For example in `cli/commands/initialize.go`, `execute.go`, or `finalize.go` right before the gRPC call to the hub.
+- Run gpupgrade to hit the breakpoint in the CLI and start the hub process.
+- When using intellij "Attach to Process" and select the hub and/or agent processes.
 - Set additional breakpoints in the hub or agent code to aid in debugging.
-- Run gpupgrade to hit the first breakpoint in the CLI process.
-- When using intellij "Attach to Process" and select the hub and agent processes.
-- Continue execution until the additional breakpoints in the hub or agent code are hit. Step through the code to debug.
+- Continue execution on the CLI until the additional breakpoints in the hub or agent code are hit. Step through the code 
+to debug.
 - For faster iterations:
   - Make any local changes in the code
   - Rebuild with `make && make install`
