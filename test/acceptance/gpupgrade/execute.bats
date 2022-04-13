@@ -183,7 +183,7 @@ ensure_hardlinks_for_relfilenode_on_master_and_segments() {
     restore_cluster
 
     # Put the source and target clusters back the way they were.
-    (source "$GPHOME_TARGET"/greenplum_path.sh && gpstop -a -d "$NEW_CLUSTER")
+    (unset LD_LIBRARY_PATH; source "$GPHOME_TARGET"/greenplum_path.sh && gpstop -a -d "$NEW_CLUSTER")
     start_source_cluster
 
     # Mark every substep in the status file as failed. Then re-execute.

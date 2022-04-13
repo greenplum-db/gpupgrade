@@ -317,7 +317,7 @@ wait_for_port_change() {
     # To simulate an init cluster failure, stop a segment and remove a datadir
     local newmasterdir
     newmasterdir="$(gpupgrade config show --target-datadir)"
-    (PGPORT=$TARGET_PGPORT source "$GPHOME_TARGET"/greenplum_path.sh && gpstart -a -d "$newmasterdir")
+    (unset LD_LIBRARY_PATH; PGPORT=$TARGET_PGPORT source "$GPHOME_TARGET"/greenplum_path.sh && gpstart -a -d "$newmasterdir")
 
     local datadir=$(query_datadirs "$GPHOME_TARGET" $TARGET_PGPORT "content=1")
     pg_ctl -D "$datadir" stop

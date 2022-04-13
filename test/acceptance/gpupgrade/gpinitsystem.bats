@@ -61,7 +61,7 @@ teardown() {
     # Sanity check the newly created master's location.
     [ "$newmasterdir" = $(expected_target_datadir "$masterdir") ]
 
-    (PGPORT=$newport source "$GPHOME_TARGET"/greenplum_path.sh && gpstart -a -d "$newmasterdir")
+    (unset LD_LIBRARY_PATH; PGPORT=$newport source "$GPHOME_TARGET"/greenplum_path.sh && gpstart -a -d "$newmasterdir")
 
     # Store the data directories for the new cluster.
     run get_segment_configuration "$GPHOME_TARGET" "$newport"
@@ -115,7 +115,7 @@ teardown() {
     local newmasterdir="$(gpupgrade config show --target-datadir)"
     NEW_CLUSTER="${newmasterdir}"
 
-    (PGPORT=$newport source "$GPHOME_TARGET"/greenplum_path.sh && gpstart -a -d "$newmasterdir")
+    (unset LD_LIBRARY_PATH; PGPORT=$newport source "$GPHOME_TARGET"/greenplum_path.sh && gpstart -a -d "$newmasterdir")
 
     # save the actual ports
     local actual_ports=$($PSQL -At -p $newport postgres -c "

@@ -49,7 +49,7 @@ create_tablespace_with_tables() {
     echo "tablespace configuration:"
     cat "$TABLESPACE_CONFIG"
 
-    (source "${GPHOME_SOURCE}"/greenplum_path.sh && gpfilespace --config "${TABLESPACE_CONFIG}")
+    (unset LD_LIBRARY_PATH; source "${GPHOME_SOURCE}"/greenplum_path.sh && gpfilespace --config "${TABLESPACE_CONFIG}")
 
     # create a tablespace in said filespace and some databases in that tablespace
     "${GPHOME_SOURCE}"/bin/psql -d postgres -v ON_ERROR_STOP=1 <<- EOF

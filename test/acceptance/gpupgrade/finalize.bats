@@ -76,7 +76,7 @@ upgrade_cluster() {
 
         gpupgrade finalize --non-interactive --verbose
 
-        (source "${GPHOME_TARGET}"/greenplum_path.sh && "${GPHOME_TARGET}"/bin/gpstart -a)
+        (unset LD_LIBRARY_PATH; source "${GPHOME_TARGET}"/greenplum_path.sh && "${GPHOME_TARGET}"/bin/gpstart -a)
 
         if is_GPDB5 "$GPHOME_SOURCE"; then
             check_tablespace_data
@@ -120,7 +120,7 @@ upgrade_cluster() {
         # TODO: Query gp_stat_replication to check if the standby is in sync.
         #   That is a more accurate representation if the standby is running and
         #   in sync, since gpstate might simply check if the process is running.
-        local actual_standby_status=$(source "${GPHOME_TARGET}/greenplum_path.sh" && gpstate -d "${MASTER_DATA_DIRECTORY}")
+        local actual_standby_status=$(unset LD_LIBRARY_PATH; source "${GPHOME_TARGET}/greenplum_path.sh" && gpstate -d "${MASTER_DATA_DIRECTORY}")
         local standby_status_line=$(get_standby_status "$actual_standby_status")
         [[ $standby_status_line == *"Standby host passive"* ]] || fail "expected standby to be up and in passive mode, got **** ${actual_standby_status} ****"
 
