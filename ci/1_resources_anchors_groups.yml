@@ -211,7 +211,7 @@ resources:
   source:
     json_key: ((pxf-storage-service-account-key))
     bucket: data-gpdb-ud-pxf-build
-    versioned_file: prod/snapshots/pxf-gp{{.GPVersion}}.el{{.CentosVersion}}.tar.gz
+    versioned_file: prod/snapshots/pxf6/pxf-gp{{.GPVersion}}.el{{.CentosVersion}}.tar.gz
 {{- end }}
 
 - name: plr_gpdb{{.GPVersion}}_rhel{{.CentosVersion}}_gppkg
