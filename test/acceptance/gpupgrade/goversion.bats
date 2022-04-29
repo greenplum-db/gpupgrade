@@ -5,9 +5,14 @@
 
 load ../helpers/helpers
 
-@test "gpupupgrade is compiled with golang version 1.16.X" {
-    local EXPECTED="gpupgrade: go1.17.6"
-    run go version gpupgrade
-    [ "$status" -eq 0 ]
-    [[ "$output" =~ $EXPECTED ]] || fail "expected: $EXPECTED got: $output"
+@test "gpupgrade is compiled with the expected golang version from go.mod" {
+    pushd "${BATS_TEST_DIRNAME}/../../../"
+        local version expected
+        version=$(sed -n -E 's/^go ([0-9].[0-9]+)/\1/p' go.mod)
+        expected="gpupgrade: go${version}"
+
+        run go version gpupgrade
+        [ "$status" -eq 0 ]
+        [[ "$output" =~ $expected ]] || fail "expected: $expected got: $output"
+    popd
 }
