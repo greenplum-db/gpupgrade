@@ -43,7 +43,7 @@ type UpgradeJob struct {
 	Source, Target string
 	PrimariesOnly  bool
 	NoStandby      bool
-	UseLinkMode    bool
+	LinkMode       bool
 	RetailDemo     bool
 	ExtensionsJob  bool
 	CentosVersion  string
@@ -64,7 +64,7 @@ func (j *UpgradeJob) BaseName() string {
 		suffix = "-primaries-only"
 	case j.NoStandby:
 		suffix = "-no-standby"
-	case j.UseLinkMode:
+	case j.LinkMode:
 		suffix = "-link-mode"
 	case j.RetailDemo:
 		suffix = "-retail-demo"
@@ -175,7 +175,7 @@ func init() {
 		// Special cases for 5->6. (These are special-cased to avoid exploding the
 		// test matrix too much.)
 		special := []*UpgradeJob{
-			{UseLinkMode: true},
+			{LinkMode: true},
 			{PrimariesOnly: true},
 			{NoStandby: true},
 			{RetailDemo: true},

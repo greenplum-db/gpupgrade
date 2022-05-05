@@ -215,7 +215,7 @@
         {{- if ne .Source .Target }}
         FILTER_DIFF: 1
         {{- end }}
-        {{- if .UseLinkMode}}
+        {{- if .LinkMode}}
         MODE: "link"
         {{- end}}
         {{- if .RetailDemo}}

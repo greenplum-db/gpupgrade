@@ -35,7 +35,7 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 	})
 
 	st.Run(idl.Substep_UPGRADE_MASTER, func(streams step.OutStreams) error {
-		return UpgradeMaster(streams, s.Source, s.Intermediate, idl.PgOptions_upgrade, s.UseLinkMode)
+		return UpgradeMaster(streams, s.Source, s.Intermediate, idl.PgOptions_upgrade, s.LinkMode)
 	})
 
 	st.Run(idl.Substep_COPY_MASTER, func(streams step.OutStreams) error {
@@ -48,7 +48,7 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 	})
 
 	st.Run(idl.Substep_UPGRADE_PRIMARIES, func(streams step.OutStreams) error {
-		return UpgradePrimaries(s.agentConns, s.Source, s.Intermediate, idl.PgOptions_upgrade, s.UseLinkMode)
+		return UpgradePrimaries(s.agentConns, s.Source, s.Intermediate, idl.PgOptions_upgrade, s.LinkMode)
 	})
 
 	st.Run(idl.Substep_START_TARGET_CLUSTER, func(streams step.OutStreams) error {

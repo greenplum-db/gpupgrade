@@ -53,9 +53,9 @@ func Hub() *cobra.Command {
 			// they're not defined in the configuration (as happens
 			// pre-initialize), we still need good defaults.
 			conf := &hub.Config{
-				Port:        port,
-				AgentPort:   upgrade.DefaultAgentPort,
-				UseLinkMode: false,
+				Port:      port,
+				AgentPort: upgrade.DefaultAgentPort,
+				LinkMode:  false,
 			}
 
 			err = hub.LoadConfig(conf, upgrade.GetConfigFile())

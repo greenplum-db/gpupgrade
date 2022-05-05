@@ -219,7 +219,7 @@ func initialize() *cobra.Command {
 					SourceGPHome:    filepath.Clean(sourceGPHome),
 					TargetGPHome:    filepath.Clean(targetGPHome),
 					SourcePort:      int32(sourcePort),
-					UseLinkMode:     linkMode,
+					LinkMode:        linkMode,
 					UseHbaHostnames: useHbaHostnames,
 					Ports:           parsedPorts,
 					DiskFreeRatio:   diskFreeRatio,

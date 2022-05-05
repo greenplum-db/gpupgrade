@@ -77,7 +77,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 	// we're going to perform a full rsync restoration, we rely on this
 	// substep to clean up the pg_control.old file, since the rsync will not
 	// remove it.
-	st.RunConditionally(idl.Substep_RESTORE_PGCONTROL, s.UseLinkMode, func(streams step.OutStreams) error {
+	st.RunConditionally(idl.Substep_RESTORE_PGCONTROL, s.LinkMode, func(streams step.OutStreams) error {
 		return RestoreMasterAndPrimariesPgControl(streams, s.agentConns, s.Source)
 	})
 
@@ -88,7 +88,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		return err
 	}
 
-	st.RunConditionally(idl.Substep_RESTORE_SOURCE_CLUSTER, s.UseLinkMode && targetStarted, func(stream step.OutStreams) error {
+	st.RunConditionally(idl.Substep_RESTORE_SOURCE_CLUSTER, s.LinkMode && targetStarted, func(stream step.OutStreams) error {
 		if err := RsyncMasterAndPrimaries(stream, s.agentConns, s.Source); err != nil {
 			return err
 		}

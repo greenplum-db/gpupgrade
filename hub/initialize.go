@@ -136,11 +136,11 @@ func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest
 	})
 
 	st.AlwaysRun(idl.Substep_CHECK_UPGRADE, func(stream step.OutStreams) error {
-		if err := UpgradeMaster(stream, s.Source, s.Intermediate, idl.PgOptions_check, s.UseLinkMode); err != nil {
+		if err := UpgradeMaster(stream, s.Source, s.Intermediate, idl.PgOptions_check, s.LinkMode); err != nil {
 			return err
 		}
 
-		return UpgradePrimaries(s.agentConns, s.Source, s.Intermediate, idl.PgOptions_check, s.UseLinkMode)
+		return UpgradePrimaries(s.agentConns, s.Source, s.Intermediate, idl.PgOptions_check, s.LinkMode)
 	})
 
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_InitializeResponse{

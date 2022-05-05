@@ -216,7 +216,7 @@ func TestUpdateDataDirectories(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		conf.UseLinkMode = false
+		conf.LinkMode = false
 
 		// We want the source's primaries and mirrors to be archived, but only
 		// the target's upgraded primaries should be moved back to the source
@@ -273,7 +273,7 @@ func TestUpdateDataDirectories(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		conf.UseLinkMode = true
+		conf.LinkMode = true
 
 		// Similar to copy mode, but we want deletion requests on the mirrors
 		// and standby as opposed to archive requests.

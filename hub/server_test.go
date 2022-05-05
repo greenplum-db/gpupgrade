@@ -51,7 +51,7 @@ func TestHubStart(t *testing.T) {
 		Intermediate: &greenplum.Cluster{},
 		Port:         testutils.MustGetPort(t),
 		AgentPort:    testutils.MustGetPort(t),
-		UseLinkMode:  false,
+		LinkMode:     false,
 		UpgradeID:    0,
 	}
 
@@ -179,7 +179,7 @@ func TestAgentConns(t *testing.T) {
 		Intermediate: &greenplum.Cluster{},
 		Port:         testutils.MustGetPort(t),
 		AgentPort:    agentPort,
-		UseLinkMode:  false,
+		LinkMode:     false,
 		UpgradeID:    0,
 	}
 
@@ -327,7 +327,7 @@ func TestHubSaveConfig(t *testing.T) {
 		Intermediate: &greenplum.Cluster{},
 		Port:         12345,
 		AgentPort:    54321,
-		UseLinkMode:  false,
+		LinkMode:     false,
 		UpgradeID:    0,
 	}
 
@@ -377,7 +377,7 @@ func TestGetArchiveDir(t *testing.T) {
 		Intermediate: &greenplum.Cluster{},
 		Port:         12345,
 		AgentPort:    54321,
-		UseLinkMode:  false,
+		LinkMode:     false,
 		UpgradeID:    0,
 	}
 

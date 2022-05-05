@@ -354,7 +354,7 @@ func TestRun(t *testing.T) {
 			},
 		},
 		{
-			name:        "sets --link when UseLinkMode is true",
+			name:        "sets --link when LinkMode is true",
 			expectedCmd: "pg_upgrade",
 			expectedArgs: []string{"--retain", "--progress",
 				"--old-bindir", "",
@@ -376,7 +376,7 @@ func TestRun(t *testing.T) {
 			},
 		},
 		{
-			name:        "does not set --link when UseLinkMode is true",
+			name:        "does not set --link when LinkMode is true",
 			expectedCmd: "pg_upgrade",
 			expectedArgs: []string{"--retain", "--progress",
 				"--old-bindir", "",

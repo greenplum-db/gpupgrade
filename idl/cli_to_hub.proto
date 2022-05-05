@@ -28,7 +28,7 @@ message InitializeRequest {
     string sourceGPHome = 2;
     string targetGPHome = 3;
     int32 sourcePort = 4;
-    bool useLinkMode = 5;
+    bool linkMode = 5;
     bool useHbaHostnames = 6;
     repeated uint32 ports = 7;
     double diskFreeRatio = 8;

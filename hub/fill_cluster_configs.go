@@ -56,7 +56,7 @@ func FillConfiguration(config *Config, request *idl.InitializeRequest, conn *gre
 	config.Target.Destination = idl.ClusterDestination_TARGET
 	config.Target.GPHome = request.GetTargetGPHome()
 	config.Target.Version = conn.TargetVersion
-	config.UseLinkMode = request.GetUseLinkMode()
+	config.LinkMode = request.GetLinkMode()
 
 	var ports []int
 	for _, p := range request.GetPorts() {

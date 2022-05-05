@@ -31,7 +31,7 @@ func TestConfig(t *testing.T) {
 			&greenplum.Conn{},
 			12345,           // Port
 			54321,           // AgentPort
-			false,           // UseLinkMode
+			false,           // LinkMode
 			false,           // UseHbaHostnames
 			upgrade.NewID(), // UpgradeID
 		}
