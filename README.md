@@ -57,16 +57,17 @@ gpupgrade consists of three processes that communicate using gRPC and protocol b
 Running gpupgrade consists of several steps (ie: commands):
 - gpupgrade initialize
   - The source cluster can still be running. No downtime.
-  - Substeps include creating the gpupgrade state directory, starting the hub 
-  and agents, creating the target cluster, and running pre-upgrade checks. 
+  - Substeps include creating the gpupgrade state directory, starting the hub and agents, creating the target cluster, 
+    and running pre-upgrade checks.
 - gpupgrade execute
   - This step will stop the source cluster. Downtime is needed.
-  - Substeps include upgrading the master, copying the master catalog to the 
-  segments, and upgrading the primaries.  
+  - Substeps include upgrading the master, copying the master catalog to the segments, and upgrading the primaries.
+  - The coordinator contains only catalog information and no data, and is used to upgrade the catalog of the primaries. 
+    That is, after the target cluster coordinator is upgraded it's copied to each of the primary data directories on 
+    the target cluster to upgrade their catalog. Next, the target cluster primaries data is upgraded using pg_upgrade.
 - gpupgrade finalize
   - After finalizing the upgrade cannot be reverted.
-  - Substeps include updating the data directories and master catalog, and 
-  upgrading the standby and mirrors.
+  - Substeps include updating the data directories and master catalog, and upgrading the standby and mirrors.
 
 Optional steps (ie: commands):
 - gpupgrade revert
