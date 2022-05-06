@@ -19,7 +19,7 @@ var SubstepDescriptions = map[idl.Substep]substepText{
 	idl.Substep_CHECK_DISK_SPACE:                                              substepText{"Checking disk space...", "Check disk space"},
 	idl.Substep_GENERATE_TARGET_CONFIG:                                        substepText{"Generating target cluster configuration...", "Generate target cluster configuration"},
 	idl.Substep_INIT_TARGET_CLUSTER:                                           substepText{"Creating target cluster...", "Create target cluster"},
-	idl.Substep_SETTING_DYNAMIC_LIBRARY_PATH_ON_TARGET_CLSUTER:                substepText{"Setting dynamic library path on target cluster...", "Set dynamic library path on target cluster"},
+	idl.Substep_SETTING_DYNAMIC_LIBRARY_PATH_ON_TARGET_CLUSTER:                substepText{"Setting dynamic library path on target cluster...", "Set dynamic library path on target cluster"},
 	idl.Substep_SHUTDOWN_TARGET_CLUSTER:                                       substepText{"Stopping target cluster...", "Stop target cluster"},
 	idl.Substep_BACKUP_TARGET_MASTER:                                          substepText{"Backing up target master...", "Back up target master"},
 	idl.Substep_CHECK_UPGRADE:                                                 substepText{"Running pg_upgrade checks...", "Run pg_upgrade checks"},
