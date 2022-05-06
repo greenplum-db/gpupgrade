@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package exectest provides helpers for test code that wants to mock out pieces
-// of the os/exec package, namely exec.Command().
+// of the os/exec package, namely exec.Command(). For explanations see:
+// https://web.archive.org/web/20220506055022/https://npf.io/2015/06/testing-exec-command/
+// https://web.archive.org/web/20220506055117/https://jamiethompson.me/posts/Unit-Testing-Exec-Command-In-Golang/
 package exectest
 
 import (
