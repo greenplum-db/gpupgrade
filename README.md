@@ -135,6 +135,9 @@ Checkout [vim-go](https://github.com/fatih/vim-go) and [go-delve](https://github
 
 #### IntelliJ
 
+##### Golang
+- In Preferences > Plugins, install the "Go" plugin from JetBrains.
+
 ##### Imports
 - Preferences > Editor > Code Style > Go > select "Imports" tab
   - uncheck "Use back quotes for imports"
@@ -161,12 +164,8 @@ Checkout [vim-go](https://github.com/fatih/vim-go) and [go-delve](https://github
   - For Relative Location: select "Before other comments" and check "Add blank line after"
 
 ##### Formatting
-- Install the "File Watchers" plugin
-- Preferences > Tools > File Watchers
-  - Add a new file watcher choosing "go fmt"
-  - Depending on your personal preference check "Auto-save edited files to trigger the watcher"
-- Now saving the file (ctl+s) will format the file.
-- References: https://blog.jetbrains.com/go/2021/01/12/running-go-fmt-on-save/
+- Preferences > Tools > Actions on Save
+  - check "Reformat code" and "Optimize imports"
 
 ### Build and Test
 
