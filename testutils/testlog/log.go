@@ -1,3 +1,6 @@
+// Copyright (c) 2017-2022 VMware, Inc. or its affiliates
+// SPDX-License-Identifier: Apache-2.0
+
 package testlog
 
 import (
@@ -5,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
+
 	"github.com/greenplum-db/gpupgrade/utils/syncbuf"
 )
 

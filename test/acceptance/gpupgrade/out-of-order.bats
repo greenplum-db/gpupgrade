@@ -1,8 +1,7 @@
 #! /usr/bin/env bats
-#
-# Copyright (c) 2017-2021 VMware, Inc. or its affiliates
+# Copyright (c) 2017-2022 VMware, Inc. or its affiliates
 # SPDX-License-Identifier: Apache-2.0
-#
+
 # This file provides negative test cases for when the user does not execute
 # upgrade steps in the correct order after starting the hub.
 

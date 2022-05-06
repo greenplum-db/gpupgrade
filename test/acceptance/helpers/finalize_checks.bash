@@ -1,6 +1,6 @@
-# Copyright (c) 2017-2021 VMware, Inc. or its affiliates
+# Copyright (c) 2017-2022 VMware, Inc. or its affiliates
 # SPDX-License-Identifier: Apache-2.0
-#
+
 # This file provides a single high-level function validate_mirrors_and_standby()
 # that takes a cluster with mirrors and a standby "through its paces" to
 # thoroughly test those mirrors and standby.

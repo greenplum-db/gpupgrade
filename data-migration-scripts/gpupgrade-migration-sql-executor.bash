@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-#
-# Copyright (c) 2017-2021 VMware, Inc. or its affiliates
+# Copyright (c) 2017-2022 VMware, Inc. or its affiliates
 # SPDX-License-Identifier: Apache-2.0
 
 function print_usage() {

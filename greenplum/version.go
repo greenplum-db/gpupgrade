@@ -1,4 +1,4 @@
-// Copyright (c) 2020 VMware, Inc. or its affiliates
+// Copyright (c) 2017-2022 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
 package greenplum
@@ -11,9 +11,8 @@ import (
 	"strings"
 
 	"github.com/blang/semver/v4"
-	"golang.org/x/xerrors"
-
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
+	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 )
