@@ -49,6 +49,7 @@ create_tablespace_with_tables() {
     echo "tablespace configuration:"
     cat "$TABLESPACE_CONFIG"
 
+    # unset LD_LIBRARY_PATH due to https://web.archive.org/web/20220506055918/https://groups.google.com/a/greenplum.org/g/gpdb-dev/c/JN-YwjCCReY/m/0L9wBOvlAQAJ
     (unset LD_LIBRARY_PATH; source "${GPHOME_SOURCE}"/greenplum_path.sh && gpfilespace --config "${TABLESPACE_CONFIG}")
 
     # create a tablespace in said filespace and some databases in that tablespace

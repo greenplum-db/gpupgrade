@@ -183,6 +183,7 @@ ensure_hardlinks_for_relfilenode_on_master_and_segments() {
     restore_cluster
 
     # Put the source and target clusters back the way they were.
+    # unset LD_LIBRARY_PATH due to https://web.archive.org/web/20220506055918/https://groups.google.com/a/greenplum.org/g/gpdb-dev/c/JN-YwjCCReY/m/0L9wBOvlAQAJ
     (unset LD_LIBRARY_PATH; source "$GPHOME_TARGET"/greenplum_path.sh && gpstop -a -d "$NEW_CLUSTER")
     start_source_cluster
 

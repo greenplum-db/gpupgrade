@@ -61,6 +61,7 @@ teardown() {
     # Sanity check the newly created master's location.
     [ "$newmasterdir" = $(expected_target_datadir "$masterdir") ]
 
+    # unset LD_LIBRARY_PATH due to https://web.archive.org/web/20220506055918/https://groups.google.com/a/greenplum.org/g/gpdb-dev/c/JN-YwjCCReY/m/0L9wBOvlAQAJ
     (unset LD_LIBRARY_PATH; PGPORT=$newport source "$GPHOME_TARGET"/greenplum_path.sh && gpstart -a -d "$newmasterdir")
 
     # Store the data directories for the new cluster.
@@ -115,6 +116,7 @@ teardown() {
     local newmasterdir="$(gpupgrade config show --target-datadir)"
     NEW_CLUSTER="${newmasterdir}"
 
+    # unset LD_LIBRARY_PATH due to https://web.archive.org/web/20220506055918/https://groups.google.com/a/greenplum.org/g/gpdb-dev/c/JN-YwjCCReY/m/0L9wBOvlAQAJ
     (unset LD_LIBRARY_PATH; PGPORT=$newport source "$GPHOME_TARGET"/greenplum_path.sh && gpstart -a -d "$newmasterdir")
 
     # save the actual ports

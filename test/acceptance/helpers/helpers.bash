@@ -56,6 +56,7 @@ isready() {
 
 # start_source_cluster() ensures that database is up before returning
 start_source_cluster() {
+    # unset LD_LIBRARY_PATH due to https://web.archive.org/web/20220506055918/https://groups.google.com/a/greenplum.org/g/gpdb-dev/c/JN-YwjCCReY/m/0L9wBOvlAQAJ
     isready || (unset LD_LIBRARY_PATH; source "$GPHOME_SOURCE"/greenplum_path.sh && "${GPHOME_SOURCE}"/bin/gpstart -a)
 }
 
@@ -65,6 +66,7 @@ stop_any_cluster() {
     gphome=$(awk '{ split($0, parts, "/bin/postgres"); print parts[1] }' "$MASTER_DATA_DIRECTORY"/postmaster.opts) \
         || return $?
 
+    # unset LD_LIBRARY_PATH due to https://web.archive.org/web/20220506055918/https://groups.google.com/a/greenplum.org/g/gpdb-dev/c/JN-YwjCCReY/m/0L9wBOvlAQAJ
     (unset LD_LIBRARY_PATH; source "$gphome"/greenplum_path.sh && gpstop -af) || return $?
 }
 
@@ -109,6 +111,7 @@ __gpdeletesystem() {
 
     # XXX gpdeletesystem returns 1 if there are warnings. There are always
     # warnings. So we ignore the exit code...
+    # unset LD_LIBRARY_PATH due to https://web.archive.org/web/20220506055918/https://groups.google.com/a/greenplum.org/g/gpdb-dev/c/JN-YwjCCReY/m/0L9wBOvlAQAJ
     (unset LD_LIBRARY_PATH; source $gphome/greenplum_path.sh && yes | PGPORT="$port" "$gpdeletesystem" -fd "$masterdir") || true
 }
 
