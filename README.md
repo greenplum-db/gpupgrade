@@ -155,12 +155,14 @@ Checkout [vim-go](https://github.com/fatih/vim-go) and [go-delve](https://github
   - Add new profile called "vmware" with the following text:
     
     ```
-    // Copyright (c) 2017-2021 VMware, Inc. or its affiliates
-    // SPDX-License-Identifier: Apache-2.0
+    Copyright (c) $originalComment.match("Copyright \(c\) (\d+)", 1, "-")$today.year VMware, Inc. or its affiliates
+    SPDX-License-Identifier: Apache-2.0
     ```
-- Preferences > Editor > Copyright > Formatting > Go
-  - select "Use custom formatting options"
-  - For Comment Type: check "Prefix each line" and select "use line comment"
+- Preferences > Editor > Copyright
+  - Select "vmware" for default project copyright.
+- Preferences > Editor > Copyright > Formatting
+  - Select "Use custom formatting options"
+  - For Comment Type: select "use line comment"
   - For Relative Location: select "Before other comments" and check "Add blank line after"
 
 ##### Formatting
