@@ -14,17 +14,17 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-func DeleteMasterAndPrimaryDataDirectories(streams step.OutStreams, agentConns []*idl.Connection, intermediate *greenplum.Cluster) error {
-	masterErr := make(chan error)
+func DeleteCoordinatorAndPrimaryDataDirectories(streams step.OutStreams, agentConns []*idl.Connection, intermediate *greenplum.Cluster) error {
+	coordinatorErr := make(chan error)
 	go func() {
-		masterErr <- upgrade.DeleteDirectories([]string{intermediate.MasterDataDir()}, upgrade.PostgresFiles, streams)
+		coordinatorErr <- upgrade.DeleteDirectories([]string{intermediate.CoordinatorDataDir()}, upgrade.PostgresFiles, streams)
 	}()
 
 	intermediateSegs := intermediate.SelectSegments(func(seg *greenplum.SegConfig) bool {
 		return seg.IsPrimary()
 	})
 	err := deleteDataDirectories(agentConns, intermediateSegs)
-	err = errorlist.Append(err, <-masterErr)
+	err = errorlist.Append(err, <-coordinatorErr)
 
 	return err
 }
@@ -61,7 +61,7 @@ func DeleteTargetTablespaces(streams step.OutStreams, agentConns []*idl.Connecti
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		errs <- DeleteTargetTablespacesOnMaster(streams, target, sourceTablespaces.GetMasterTablespaces(), intermediateCatalogVersion)
+		errs <- DeleteTargetTablespacesOnCoordinator(streams, target, sourceTablespaces.GetCoordinatorTablespaces(), intermediateCatalogVersion)
 	}()
 
 	errs <- DeleteTargetTablespacesOnPrimaries(agentConns, target, sourceTablespaces, intermediateCatalogVersion)
@@ -77,14 +77,14 @@ func DeleteTargetTablespaces(streams step.OutStreams, agentConns []*idl.Connecti
 	return err
 }
 
-func DeleteTargetTablespacesOnMaster(streams step.OutStreams, target *greenplum.Cluster, masterTablespaces greenplum.SegmentTablespaces, catalogVersion string) error {
+func DeleteTargetTablespacesOnCoordinator(streams step.OutStreams, target *greenplum.Cluster, coordinatorTablespaces greenplum.SegmentTablespaces, catalogVersion string) error {
 	var dirs []string
-	for _, tsInfo := range masterTablespaces {
+	for _, tsInfo := range coordinatorTablespaces {
 		if !tsInfo.IsUserDefined() {
 			continue
 		}
 
-		path := upgrade.TablespacePath(tsInfo.Location, target.Master().DbID, target.Version.Major, catalogVersion)
+		path := upgrade.TablespacePath(tsInfo.Location, target.Coordinator().DbID, target.Version.Major, catalogVersion)
 		dirs = append(dirs, path)
 	}
 
@@ -98,7 +98,7 @@ func DeleteTargetTablespacesOnPrimaries(agentConns []*idl.Connection, target *gr
 		}
 
 		primaries := target.SelectSegments(func(seg *greenplum.SegConfig) bool {
-			return seg.IsOnHost(conn.Hostname) && seg.IsPrimary() && !seg.IsMaster()
+			return seg.IsOnHost(conn.Hostname) && seg.IsPrimary() && !seg.IsCoordinator()
 		})
 
 		if len(primaries) == 0 {

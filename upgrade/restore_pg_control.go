@@ -14,7 +14,7 @@ import (
 )
 
 // RestorePgControl renames pg_control.old to pg_control so that
-// the master and segments can start after pg_upgrade is run in
+// the coordinator and segments can start after pg_upgrade is run in
 // link mode.
 // The dir passed to RestorePgControl must be a data directory.
 // It is idempotent as it already checks if the rename has occurred.

@@ -34,7 +34,7 @@ upgrade_cluster() {
         MODE=$1
         HBA_HOSTNAMES=$2
 
-        # place marker file in source master data directory
+        # place marker file in source coordinator data directory
         local marker_file=source-cluster.test-marker
         local datadirs=($(query_datadirs $GPHOME_SOURCE $PGPORT))
         for datadir in "${datadirs[@]}"; do

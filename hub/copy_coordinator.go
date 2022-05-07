@@ -81,21 +81,21 @@ func Copy(streams step.OutStreams, destinationDir string, sourceDirs, hosts []st
 	return errs
 }
 
-func CopyMasterDataDir(streams step.OutStreams, masterDataDir string, destination string, hosts []string) error {
+func CopyCoordinatorDataDir(streams step.OutStreams, coordinatorDataDir string, destination string, hosts []string) error {
 	// Make sure sourceDir ends with a trailing slash so that rsync will
 	// transfer the directory contents and not the directory itself.
-	source := []string{filepath.Clean(masterDataDir) + string(filepath.Separator)}
+	source := []string{filepath.Clean(coordinatorDataDir) + string(filepath.Separator)}
 	return Copy(streams, destination, source, hosts)
 }
 
-func CopyMasterTablespaces(streams step.OutStreams, tablespaces greenplum.Tablespaces, destinationDir string, hosts []string) error {
+func CopyCoordinatorTablespaces(streams step.OutStreams, tablespaces greenplum.Tablespaces, destinationDir string, hosts []string) error {
 	if tablespaces == nil {
 		return nil
 	}
 
 	// include tablespace mapping file which is used as a parameter to pg_upgrade
 	sourcePaths := []string{utils.GetTablespaceMappingFile()}
-	sourcePaths = append(sourcePaths, tablespaces.GetMasterTablespaces().UserDefinedTablespacesLocations()...)
+	sourcePaths = append(sourcePaths, tablespaces.GetCoordinatorTablespaces().UserDefinedTablespacesLocations()...)
 
 	return Copy(streams, destinationDir+string(os.PathSeparator), sourcePaths, hosts)
 }

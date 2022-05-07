@@ -116,7 +116,7 @@ func TestNewTablespaces(t *testing.T) {
 					Oid:  1663,
 					Name: "pg_default",
 					Info: greenplum.TablespaceInfo{
-						Location:    "/tmp/master/gpseg-1",
+						Location:    "/tmp/coordinator/gpseg-1",
 						UserDefined: 0,
 					},
 				},
@@ -133,7 +133,7 @@ func TestNewTablespaces(t *testing.T) {
 			expected: map[int]greenplum.SegmentTablespaces{
 				1: {
 					1663: {
-						Location:    "/tmp/master/gpseg-1",
+						Location:    "/tmp/coordinator/gpseg-1",
 						UserDefined: 0,
 					},
 				},
@@ -153,7 +153,7 @@ func TestNewTablespaces(t *testing.T) {
 					Oid:  1663,
 					Name: "pg_default",
 					Info: greenplum.TablespaceInfo{
-						Location:    "/tmp/master/gpseg-1",
+						Location:    "/tmp/coordinator/gpseg-1",
 						UserDefined: 0,
 					},
 				},
@@ -162,7 +162,7 @@ func TestNewTablespaces(t *testing.T) {
 					Oid:  1664,
 					Name: "my_tablespace",
 					Info: greenplum.TablespaceInfo{
-						Location:    "/tmp/master/1664",
+						Location:    "/tmp/coordinator/1664",
 						UserDefined: 1,
 					},
 				},
@@ -188,11 +188,11 @@ func TestNewTablespaces(t *testing.T) {
 			expected: map[int]greenplum.SegmentTablespaces{
 				1: {
 					1663: {
-						Location:    "/tmp/master/gpseg-1",
+						Location:    "/tmp/coordinator/gpseg-1",
 						UserDefined: 0,
 					},
 					1664: {
-						Location:    "/tmp/master/1664",
+						Location:    "/tmp/coordinator/1664",
 						UserDefined: 1,
 					},
 				},
@@ -222,7 +222,7 @@ func TestNewTablespaces(t *testing.T) {
 // response to a tablespace query.
 func MockTablespaceQueryResult() *sqlmock.Rows {
 	rows := sqlmock.NewRows([]string{"dbid", "oid", "name", "location", "userdefined"})
-	rows.AddRow(1, 1663, "pg_default", "/tmp/master_tablespace", 0)
+	rows.AddRow(1, 1663, "pg_default", "/tmp/coordinator_tablespace", 0)
 	rows.AddRow(2, 1663, "pg_default", "/tmp/my_tablespace", 0)
 
 	return rows
@@ -309,7 +309,7 @@ func TestTablespacesFromDB(t *testing.T) {
 		expectedTablespaces := greenplum.Tablespaces{
 			1: {
 				1663: {
-					Location:    "/tmp/master_tablespace",
+					Location:    "/tmp/coordinator_tablespace",
 					UserDefined: 0,
 				},
 			},
@@ -371,7 +371,7 @@ func TestWrite(t *testing.T) {
 					Oid:  1663,
 					Name: "default",
 					Info: greenplum.TablespaceInfo{
-						"/tmp/master/gpseg-1",
+						"/tmp/coordinator/gpseg-1",
 						0,
 					},
 				},
@@ -380,12 +380,12 @@ func TestWrite(t *testing.T) {
 					Oid:  1664,
 					Name: "my_tablespace",
 					Info: greenplum.TablespaceInfo{
-						"/tmp/master/gpseg-1",
+						"/tmp/coordinator/gpseg-1",
 						1,
 					},
 				},
 			},
-			expected: "1,1663,default,/tmp/master/gpseg-1,0\n2,1664,my_tablespace,/tmp/master/gpseg-1,1\n",
+			expected: "1,1663,default,/tmp/coordinator/gpseg-1,0\n2,1664,my_tablespace,/tmp/coordinator/gpseg-1,1\n",
 		},
 	}
 	for _, test := range tests {

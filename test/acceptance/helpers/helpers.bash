@@ -70,10 +70,10 @@ stop_any_cluster() {
     (unset LD_LIBRARY_PATH; source "$gphome"/greenplum_path.sh && gpstop -af) || return $?
 }
 
-# Sanity check that the passed directory looks like a valid master data
+# Sanity check that the passed directory looks like a valid coordinator data
 # directory for a target cluster. Intended to be called right before deleting
 # said directory.
-abort_unless_target_master() {
+abort_unless_target_coordinator() {
     local dir=$1
 
     local expected_suffix="*qddir/demoDataDir.*.-1"
@@ -81,43 +81,43 @@ abort_unless_target_master() {
         abort "cowardly refusing to delete $dir which does not look like an upgraded demo data directory. Expected suffix ${expected_suffix}"
 }
 
-# delete_cluster takes an master data directory and calls gpdeletesystem, and
+# delete_cluster takes an coordinator data directory and calls gpdeletesystem, and
 # removes the associated data directories.
 delete_cluster() {
     local gphome="$1"
-    local masterdir="$2"
+    local coordinator_dir="$2"
 
     # Perform a sanity check before deleting.
-    abort_unless_target_master "$masterdir"
+    abort_unless_target_coordinator "$coordinator_dir"
 
-    __gpdeletesystem "$gphome" "$masterdir"
+    __gpdeletesystem "$gphome" "$coordinator_dir"
 
     # XXX: Since gpugprade archives instead of removing data directories,
-    # gpupgrade will fail when copying the master data directory to segments
+    # gpupgrade will fail when copying the coordinator data directory to segments
     # with "file exists". To prevent this remove the data directories.
-    delete_target_datadirs "$masterdir"
+    delete_target_datadirs "$coordinator_dir"
 }
 
-# Calls gpdeletesystem on the cluster pointed to by the given master data
+# Calls gpdeletesystem on the cluster pointed to by the given coordinator data
 # directory.
 __gpdeletesystem() {
     local gphome="$1"
-    local masterdir="$2"
+    local coordinator_dir="$2"
 
-    # Look up the master port (fourth line of the postmaster PID file).
-    local port=$(awk 'NR == 4 { print $0 }' < "$masterdir/postmaster.pid")
+    # Look up the coordinator port (fourth line of the postmaster PID file).
+    local port=$(awk 'NR == 4 { print $0 }' < "$coordinator_dir/postmaster.pid")
 
     local gpdeletesystem="$gphome"/bin/gpdeletesystem
 
     # XXX gpdeletesystem returns 1 if there are warnings. There are always
     # warnings. So we ignore the exit code...
     # unset LD_LIBRARY_PATH due to https://web.archive.org/web/20220506055918/https://groups.google.com/a/greenplum.org/g/gpdb-dev/c/JN-YwjCCReY/m/0L9wBOvlAQAJ
-    (unset LD_LIBRARY_PATH; source $gphome/greenplum_path.sh && yes | PGPORT="$port" "$gpdeletesystem" -fd "$masterdir") || true
+    (unset LD_LIBRARY_PATH; source $gphome/greenplum_path.sh && yes | PGPORT="$port" "$gpdeletesystem" -fd "$coordinator_dir") || true
 }
 
 delete_target_datadirs() {
-    local masterdir="$1"
-    local datadir=$(dirname "$(dirname "$masterdir")")
+    local coordinator_dir="$1"
+    local datadir=$(dirname "$(dirname "$coordinator_dir")")
 
     rm -rf "${datadir}"/*/demoDataDir.*.[0-9]
 }
@@ -146,7 +146,7 @@ process_is_running() {
 # the upgradeID.
 #
 # NOTE for devs: this is just for getting the expected data directories, which
-# is an implementation detail. If you want the actual location of the new master
+# is an implementation detail. If you want the actual location of the new coordinator
 # data directory after an initialization, you can just ask the hub with
 #
 #    gpupgrade config show --target-datadir
@@ -229,7 +229,7 @@ query_tablespace_dirs(){
 }
 
 # get_rsync_pairs maps the data directory of every standby/mirror with the
-# corresponding master/primary. The map will later be used to rsync the
+# corresponding coordinator/primary. The map will later be used to rsync the
 # contents of the mirror back to the primary.
 get_rsync_pairs() {
     local gphome=$1
@@ -259,9 +259,9 @@ setup_restore_cluster() {
     # copy mode we can discard the duplicate copy of the datadir after the
     # test. Specifically, in link mode we undo the rename of pg_control file.
     if [ "$mode" == "--mode=link" ]; then
-        MASTER_AND_PRIMARY_DATADIRS=($(query_datadirs $GPHOME_SOURCE $PGPORT "role = 'p'"))
+        COORDINATOR_AND_PRIMARY_DATADIRS=($(query_datadirs $GPHOME_SOURCE $PGPORT "role = 'p'"))
     else
-        MASTER_AND_PRIMARY_DATADIRS=
+        COORDINATOR_AND_PRIMARY_DATADIRS=
     fi
 }
 
@@ -290,8 +290,8 @@ restore_cluster() {
                 --exclude=postmaster.pid \
                 --exclude=recovery.conf
         done
-    elif [[ -n ${MASTER_AND_PRIMARY_DATADIRS} ]]; then
-        for datadir in "${MASTER_AND_PRIMARY_DATADIRS[@]}"; do
+    elif [[ -n ${COORDINATOR_AND_PRIMARY_DATADIRS} ]]; then
+        for datadir in "${COORDINATOR_AND_PRIMARY_DATADIRS[@]}"; do
             mv "${datadir}/global/pg_control.old" "${datadir}/global/pg_control"
         done
     fi
@@ -340,7 +340,7 @@ backup_source_cluster() {
     local backup_dir=$1
 
     if [[ "$MASTER_DATA_DIRECTORY" != *"/datadirs/qddir/demoDataDir-1" ]]; then
-        abort "refusing to back up cluster with master '$MASTER_DATA_DIRECTORY'; demo directory layout required"
+        abort "refusing to back up cluster with coordinator '$MASTER_DATA_DIRECTORY'; demo directory layout required"
     fi
 
     # Don't use -p. It's important that the backup directory not exist so that

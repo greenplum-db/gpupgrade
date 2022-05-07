@@ -166,7 +166,7 @@ func TestUpdateDataDirectories(t *testing.T) {
 		return nil
 	}
 
-	t.Run("renames master data directories", func(t *testing.T) {
+	t.Run("renames coordinator data directories", func(t *testing.T) {
 		conf := new(hub.Config)
 
 		sourceDataDir, targetDataDir, cleanup := testutils.MustCreateDataDirs(t)
@@ -195,7 +195,7 @@ func TestUpdateDataDirectories(t *testing.T) {
 		testutils.VerifyRename(t, sourceDataDir, targetDataDir)
 	})
 
-	t.Run("returns error when renaming master data directories fails", func(t *testing.T) {
+	t.Run("returns error when renaming coordinator data directories fails", func(t *testing.T) {
 		expected := errors.New("permission denied")
 		hub.RenameDirectories = func(source, target string) error {
 			return expected

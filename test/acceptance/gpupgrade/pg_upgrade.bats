@@ -12,7 +12,7 @@ setup() {
     export GPUPGRADE_LOGDIR=~/gpAdminLogs/gpupgrade
     gpupgrade kill-services
 
-    # If this variable is set (to a master data directory), teardown() will call
+    # If this variable is set (to a coordinator data directory), teardown() will call
     # gpdeletesystem on this cluster.
     NEW_CLUSTER=
     KEEP_STATE_DIR=1
@@ -70,7 +70,7 @@ teardown() {
     KEEP_STATE_DIR=0
 }
 
-@test "gpupgrade initialize runs pg_upgrade --check on master and primaries" {
+@test "gpupgrade initialize runs pg_upgrade --check on coordinator and primaries" {
     skip_if_no_gpdb
 
     gpupgrade initialize \
@@ -100,7 +100,7 @@ teardown() {
 
 # Prints the number of unique primary gp_dbids on a system, as indicated by the
 # gp_dbid GUCs actually stored on each segment, NOT the gp_segment_configuration
-# stored on the master.
+# stored on the coordinator.
 count_primary_gp_dbids() {
     local gphome=$1
     local port=$2

@@ -209,7 +209,7 @@ func TestAgentConns(t *testing.T) {
 		ensureAgentConnsReachState(t, agentConns, connectivity.Shutdown)
 	})
 
-	t.Run("retrieves the agent connections for the source cluster hosts excluding the master", func(t *testing.T) {
+	t.Run("retrieves the agent connections for the source cluster hosts excluding the coordinator", func(t *testing.T) {
 		h := hub.New(conf, dialer, "")
 
 		go func() {
@@ -435,7 +435,7 @@ func TestAgentHosts(t *testing.T) {
 		cluster  *greenplum.Cluster
 		expected []string // must be in alphabetical order
 	}{{
-		"master excluded",
+		"coordinator excluded",
 		hub.MustCreateCluster(t, greenplum.SegConfigs{
 			{ContentID: -1, Hostname: "mdw", Role: greenplum.PrimaryRole},
 			{ContentID: 0, Hostname: "sdw1", Role: greenplum.PrimaryRole},
@@ -443,7 +443,7 @@ func TestAgentHosts(t *testing.T) {
 		}),
 		[]string{"sdw1"},
 	}, {
-		"master included if another segment is with it",
+		"coordinator included if another segment is with it",
 		hub.MustCreateCluster(t, greenplum.SegConfigs{
 			{ContentID: -1, Hostname: "mdw", Role: greenplum.PrimaryRole},
 			{ContentID: 0, Hostname: "mdw", Role: greenplum.PrimaryRole},

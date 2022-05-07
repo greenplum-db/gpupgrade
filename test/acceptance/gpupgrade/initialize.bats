@@ -13,7 +13,7 @@ setup() {
 
     export GPUPGRADE_HOME="${STATE_DIR}/gpupgrade"
 
-    # If this variable is set (to a master data directory), teardown() will call
+    # If this variable is set (to a coordinator data directory), teardown() will call
     # gpdeletesystem on this cluster.
     TARGET_CLUSTER=
 
@@ -314,10 +314,10 @@ wait_for_port_change() {
     delete_target_on_teardown
 
     # To simulate an init cluster failure, stop a segment and remove a datadir
-    local newmasterdir
-    newmasterdir="$(gpupgrade config show --target-datadir)"
+    local new_coordinator_dir
+    new_coordinator_dir="$(gpupgrade config show --target-datadir)"
     # unset LD_LIBRARY_PATH due to https://web.archive.org/web/20220506055918/https://groups.google.com/a/greenplum.org/g/gpdb-dev/c/JN-YwjCCReY/m/0L9wBOvlAQAJ
-    (unset LD_LIBRARY_PATH; PGPORT=$TARGET_PGPORT source "$GPHOME_TARGET"/greenplum_path.sh && gpstart -a -d "$newmasterdir")
+    (unset LD_LIBRARY_PATH; PGPORT=$TARGET_PGPORT source "$GPHOME_TARGET"/greenplum_path.sh && gpstart -a -d "$new_coordinator_dir")
 
     local datadir=$(query_datadirs "$GPHOME_TARGET" $TARGET_PGPORT "content=1")
     pg_ctl -D "$datadir" stop

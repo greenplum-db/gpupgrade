@@ -33,11 +33,11 @@ func ResetRecoversegCmd() {
 	hub.RecoversegCmd = exec.Command
 }
 
-func TestRsyncMasterAndPrimaries(t *testing.T) {
+func TestRsyncCoordinatorAndPrimaries(t *testing.T) {
 	testlog.SetupLogger()
 
 	cluster := hub.MustCreateCluster(t, greenplum.SegConfigs{
-		{DbID: 1, ContentID: -1, Hostname: "master", DataDir: "/data/qddir", Role: greenplum.PrimaryRole},
+		{DbID: 1, ContentID: -1, Hostname: "coordinator", DataDir: "/data/qddir", Role: greenplum.PrimaryRole},
 		{DbID: 2, ContentID: -1, Hostname: "standby", DataDir: "/data/standby", Role: greenplum.MirrorRole},
 		{DbID: 3, ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
 		{DbID: 4, ContentID: 0, Hostname: "msdw1", DataDir: "/data/dbfast_mirror1/seg1", Role: greenplum.MirrorRole},
@@ -49,7 +49,7 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 
 	tablespaces := testutils.CreateTablespaces()
 
-	t.Run("restores master in link mode using correct rsync arguments", func(t *testing.T) {
+	t.Run("restores coordinator in link mode using correct rsync arguments", func(t *testing.T) {
 		defer rsync.ResetRsyncCommand()
 		rsync.SetRsyncCommand(exectest.NewCommandWithVerifier(hub.Success, func(utility string, args ...string) {
 			if !strings.HasSuffix(utility, "rsync") {
@@ -80,13 +80,13 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 			}
 		}))
 
-		err := hub.RsyncMaster(&testutils.DevNullWithClose{}, cluster.Standby(), cluster.Master())
+		err := hub.RsyncCoordinator(&testutils.DevNullWithClose{}, cluster.Standby(), cluster.Coordinator())
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
 	})
 
-	t.Run("restores master tablespaces in link mode using correct rsync arguments", func(t *testing.T) {
+	t.Run("restores coordinator tablespaces in link mode using correct rsync arguments", func(t *testing.T) {
 		defer rsync.ResetRsyncCommand()
 		rsync.SetRsyncCommand(exectest.NewCommandWithVerifier(hub.Success, func(utility string, args ...string) {
 			if !strings.HasSuffix(utility, "rsync") {
@@ -111,7 +111,7 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 			}
 		}))
 
-		err := hub.RsyncMasterTablespaces(&testutils.DevNullWithClose{}, cluster.StandbyHostname(), tablespaces[cluster.Master().DbID], tablespaces[cluster.Standby().DbID])
+		err := hub.RsyncCoordinatorTablespaces(&testutils.DevNullWithClose{}, cluster.StandbyHostname(), tablespaces[cluster.Coordinator().DbID], tablespaces[cluster.Standby().DbID])
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -125,7 +125,7 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 			}
 
 			expected := []string{"-c", fmt.Sprintf("source /usr/local/greenplum-db/greenplum_path.sh && MASTER_DATA_DIRECTORY=%s PGPORT=%d "+
-				"/usr/local/greenplum-db/bin/gprecoverseg -a --hba-hostnames", cluster.MasterDataDir(), cluster.MasterPort())}
+				"/usr/local/greenplum-db/bin/gprecoverseg -a --hba-hostnames", cluster.CoordinatorDataDir(), cluster.CoordinatorPort())}
 			if !reflect.DeepEqual(args, expected) {
 				t.Errorf("got %q want %q", args, expected)
 			}
@@ -229,21 +229,21 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 		}
 	})
 
-	t.Run("errors when restoring the master fails in link mode", func(t *testing.T) {
+	t.Run("errors when restoring the coordinator fails in link mode", func(t *testing.T) {
 		rsync.SetRsyncCommand(exectest.NewCommand(hub.Failure))
 		defer rsync.ResetRsyncCommand()
 
-		err := hub.RsyncMaster(&testutils.DevNullWithClose{}, cluster.Standby(), cluster.Master())
+		err := hub.RsyncCoordinator(&testutils.DevNullWithClose{}, cluster.Standby(), cluster.Coordinator())
 		if err == nil {
 			t.Error("unexpected nil error")
 		}
 	})
 
-	t.Run("errors when restoring the master tablespaces fails in link mode", func(t *testing.T) {
+	t.Run("errors when restoring the coordinator tablespaces fails in link mode", func(t *testing.T) {
 		rsync.SetRsyncCommand(exectest.NewCommand(hub.Failure))
 		defer rsync.ResetRsyncCommand()
 
-		err := hub.RsyncMasterTablespaces(&testutils.DevNullWithClose{}, cluster.MasterHostname(), tablespaces[greenplum.MasterDbid], tablespaces[cluster.Standby().DbID])
+		err := hub.RsyncCoordinatorTablespaces(&testutils.DevNullWithClose{}, cluster.CoordinatorHostname(), tablespaces[greenplum.CoordinatorDbid], tablespaces[cluster.Standby().DbID])
 		if err == nil {
 			t.Error("unexpected nil error")
 		}
@@ -319,17 +319,17 @@ func TestRsyncMasterAndPrimaries(t *testing.T) {
 	})
 }
 
-// RestoreMasterAndPrimariesPgControl invokes the restoration of pg_control on
-// master and segments. So, not testing pg_control restoration on segments separately.
-func TestRestoreMasterAndPrimariesPgControl(t *testing.T) {
+// RestoreCoordinatorAndPrimariesPgControl invokes the restoration of pg_control on
+// coordinator and segments. So, not testing pg_control restoration on segments separately.
+func TestRestoreCoordinatorAndPrimariesPgControl(t *testing.T) {
 	testlog.SetupLogger()
 
-	t.Run("errors when restoring pg_control on the master and primaries fails", func(t *testing.T) {
+	t.Run("errors when restoring pg_control on the coordinator and primaries fails", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
 		cluster := hub.MustCreateCluster(t, greenplum.SegConfigs{
-			{ContentID: -1, Hostname: "master", DataDir: "/data/qddir", Role: greenplum.PrimaryRole},
+			{ContentID: -1, Hostname: "coordinator", DataDir: "/data/qddir", Role: greenplum.PrimaryRole},
 			{ContentID: -1, Hostname: "standby", DataDir: "/data/standby", Role: greenplum.MirrorRole},
 			{ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
 			{ContentID: 0, Hostname: "msdw1", DataDir: "/data/dbfast_mirror1/seg1", Role: greenplum.MirrorRole},
@@ -360,7 +360,7 @@ func TestRestoreMasterAndPrimariesPgControl(t *testing.T) {
 			{AgentClient: failedClient, Hostname: "sdw2"},
 		}
 
-		err := hub.RestoreMasterAndPrimariesPgControl(step.DevNullStream, agentConns, cluster)
+		err := hub.RestoreCoordinatorAndPrimariesPgControl(step.DevNullStream, agentConns, cluster)
 
 		var errs errorlist.Errors
 		if !errors.As(err, &errs) {
@@ -378,13 +378,13 @@ func TestRestoreMasterAndPrimariesPgControl(t *testing.T) {
 		}
 	})
 
-	t.Run("restores master and primaries pg_control successfully using correct arguments", func(t *testing.T) {
+	t.Run("restores coordinator and primaries pg_control successfully using correct arguments", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		masterDir := testutils.GetTempDir(t, "")
+		coordinatorDir := testutils.GetTempDir(t, "")
 		cluster := hub.MustCreateCluster(t, greenplum.SegConfigs{
-			{ContentID: -1, Hostname: "master", DataDir: masterDir, Role: greenplum.PrimaryRole},
+			{ContentID: -1, Hostname: "coordinator", DataDir: coordinatorDir, Role: greenplum.PrimaryRole},
 			{ContentID: -1, Hostname: "standby", DataDir: "/data/standby", Role: greenplum.MirrorRole},
 			{ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
 			{ContentID: 0, Hostname: "msdw1", DataDir: "/data/dbfast_mirror1/seg1", Role: greenplum.MirrorRole},
@@ -396,7 +396,7 @@ func TestRestoreMasterAndPrimariesPgControl(t *testing.T) {
 			{ContentID: 3, Hostname: "msdw2", DataDir: "/data/dbfast_mirror4/seg4", Role: greenplum.MirrorRole},
 		})
 
-		globalDir := filepath.Join(masterDir, "global")
+		globalDir := filepath.Join(coordinatorDir, "global")
 		err := os.Mkdir(globalDir, 0700)
 		if err != nil {
 			t.Fatalf("failed to create directory %s: %#v", globalDir, err)
@@ -429,7 +429,7 @@ func TestRestoreMasterAndPrimariesPgControl(t *testing.T) {
 			{AgentClient: sdw2, Hostname: "sdw2"},
 		}
 
-		err = hub.RestoreMasterAndPrimariesPgControl(step.DevNullStream, agentConns, cluster)
+		err = hub.RestoreCoordinatorAndPrimariesPgControl(step.DevNullStream, agentConns, cluster)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}

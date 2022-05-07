@@ -19,7 +19,7 @@ import (
 func UpgradeMirrorsUsingRsync(conn *greenplum.Conn, agentConns []*idl.Connection, source *greenplum.Cluster, intermediate *greenplum.Cluster, useHbaHostnames bool) error {
 	options := []greenplum.Option{
 		greenplum.ToTarget(),
-		greenplum.Port(intermediate.MasterPort()),
+		greenplum.Port(intermediate.CoordinatorPort()),
 	}
 
 	db, err := sql.Open("pgx", conn.URI(options...))
@@ -64,7 +64,7 @@ func UpgradeMirrorsUsingRsync(conn *greenplum.Conn, agentConns []*idl.Connection
 		return err
 	}
 
-	if err := intermediate.StartMasterOnly(step.DevNullStream); err != nil {
+	if err := intermediate.StartCoordinatorOnly(step.DevNullStream); err != nil {
 		return err
 	}
 
@@ -72,7 +72,7 @@ func UpgradeMirrorsUsingRsync(conn *greenplum.Conn, agentConns []*idl.Connection
 		return err
 	}
 
-	if err := intermediate.StopMasterOnly(step.DevNullStream); err != nil {
+	if err := intermediate.StopCoordinatorOnly(step.DevNullStream); err != nil {
 		return err
 	}
 
@@ -86,7 +86,7 @@ func UpgradeMirrorsUsingRsync(conn *greenplum.Conn, agentConns []*idl.Connection
 func RsyncMirrorDataDirsOnSegments(agentConns []*idl.Connection, source *greenplum.Cluster, intermediate *greenplum.Cluster) error {
 	request := func(conn *idl.Connection) error {
 		sourcePrimaries := source.SelectSegments(func(seg *greenplum.SegConfig) bool {
-			return seg.IsOnHost(conn.Hostname) && !seg.IsMaster() && seg.IsPrimary()
+			return seg.IsOnHost(conn.Hostname) && !seg.IsCoordinator() && seg.IsPrimary()
 		})
 
 		var opts []*idl.RsyncRequest_RsyncOptions
@@ -117,7 +117,7 @@ func RsyncMirrorDataDirsOnSegments(agentConns []*idl.Connection, source *greenpl
 func RsyncMirrorTablespacesOnSegments(agentConns []*idl.Connection, source *greenplum.Cluster, intermediate *greenplum.Cluster) error {
 	request := func(conn *idl.Connection) error {
 		sourcePrimaries := source.SelectSegments(func(seg *greenplum.SegConfig) bool {
-			return seg.IsOnHost(conn.Hostname) && !seg.IsMaster() && seg.IsPrimary()
+			return seg.IsOnHost(conn.Hostname) && !seg.IsCoordinator() && seg.IsPrimary()
 		})
 
 		var opts []*idl.RsyncRequest_RsyncOptions

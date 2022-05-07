@@ -24,7 +24,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-const MasterDbid = 1
+const CoordinatorDbid = 1
 
 type Cluster struct {
 	Destination idl.ClusterDestination
@@ -44,26 +44,26 @@ type Cluster struct {
 
 type ContentToSegConfig map[int]SegConfig
 
-func (c ContentToSegConfig) ExcludingMaster() ContentToSegConfig {
-	return c.excludingMasterOrStandby()
+func (c ContentToSegConfig) ExcludingCoordinator() ContentToSegConfig {
+	return c.excludingCoordinatorOrStandby()
 }
 
 func (c ContentToSegConfig) ExcludingStandby() ContentToSegConfig {
-	return c.excludingMasterOrStandby()
+	return c.excludingCoordinatorOrStandby()
 }
 
-func (c ContentToSegConfig) excludingMasterOrStandby() ContentToSegConfig {
-	segsExcludingMasterOrStandby := make(ContentToSegConfig)
+func (c ContentToSegConfig) excludingCoordinatorOrStandby() ContentToSegConfig {
+	segsExcludingCoordinatorOrStandby := make(ContentToSegConfig)
 
 	for _, seg := range c {
-		if seg.IsStandby() || seg.IsMaster() {
+		if seg.IsStandby() || seg.IsCoordinator() {
 			continue
 		}
 
-		segsExcludingMasterOrStandby[seg.ContentID] = seg
+		segsExcludingCoordinatorOrStandby[seg.ContentID] = seg
 	}
 
-	return segsExcludingMasterOrStandby
+	return segsExcludingCoordinatorOrStandby
 }
 
 // ClusterFromDB will create a Cluster by querying the passed DBConn for
@@ -93,7 +93,7 @@ func NewCluster(segments SegConfigs) (Cluster, error) {
 	cluster.Mirrors = make(map[int]SegConfig)
 
 	for _, seg := range segments {
-		if seg.IsPrimary() || seg.IsMaster() {
+		if seg.IsPrimary() || seg.IsCoordinator() {
 			cluster.Primaries[seg.ContentID] = seg
 			continue
 		}
@@ -109,11 +109,11 @@ func NewCluster(segments SegConfigs) (Cluster, error) {
 	return cluster, nil
 }
 
-func (c *Cluster) ExcludingMasterOrStandby() SegConfigs {
+func (c *Cluster) ExcludingCoordinatorOrStandby() SegConfigs {
 	segs := SegConfigs{}
 
 	for _, seg := range c.Primaries {
-		if seg.IsMaster() {
+		if seg.IsCoordinator() {
 			continue
 		}
 
@@ -131,20 +131,20 @@ func (c *Cluster) ExcludingMasterOrStandby() SegConfigs {
 	return segs
 }
 
-func (c *Cluster) Master() SegConfig {
+func (c *Cluster) Coordinator() SegConfig {
 	return c.Primaries[-1]
 }
 
-func (c *Cluster) MasterDataDir() string {
-	return c.Master().DataDir
+func (c *Cluster) CoordinatorDataDir() string {
+	return c.Coordinator().DataDir
 }
 
-func (c *Cluster) MasterPort() int {
-	return c.Master().Port
+func (c *Cluster) CoordinatorPort() int {
+	return c.Coordinator().Port
 }
 
-func (c *Cluster) MasterHostname() string {
-	return c.Master().Hostname
+func (c *Cluster) CoordinatorHostname() string {
+	return c.Coordinator().Hostname
 }
 
 // the standby might not exist, so it is the caller's responsibility
@@ -199,7 +199,7 @@ func (c *Cluster) HasAllMirrorsAndStandby() bool {
 func (c *Cluster) PrimaryHostnames() []string {
 	hostnames := make(map[string]bool)
 	for _, seg := range c.Primaries {
-		// Ignore the master.
+		// Ignore the coordinator.
 		if seg.ContentID >= 0 {
 			hostnames[seg.Hostname] = true
 		}
@@ -234,7 +234,7 @@ func (c Cluster) SelectSegments(selector func(*SegConfig) bool) SegConfigs {
 }
 
 func (c *Cluster) Start(stream step.OutStreams) error {
-	err := c.RunGreenplumCmd(stream, "gpstart", "-a", "-d", c.MasterDataDir())
+	err := c.RunGreenplumCmd(stream, "gpstart", "-a", "-d", c.CoordinatorDataDir())
 	if err != nil {
 		return xerrors.Errorf("starting %s cluster: %w", strings.ToLower(c.Destination.String()), err)
 	}
@@ -242,8 +242,8 @@ func (c *Cluster) Start(stream step.OutStreams) error {
 	return nil
 }
 
-func (c *Cluster) StartMasterOnly(stream step.OutStreams) error {
-	err := c.RunGreenplumCmd(stream, "gpstart", "-a", "-m", "-d", c.MasterDataDir())
+func (c *Cluster) StartCoordinatorOnly(stream step.OutStreams) error {
+	err := c.RunGreenplumCmd(stream, "gpstart", "-a", "-m", "-d", c.CoordinatorDataDir())
 	if err != nil {
 		return xerrors.Errorf("starting %s cluster in master only mode: %w", strings.ToLower(c.Destination.String()), err)
 	}
@@ -252,11 +252,11 @@ func (c *Cluster) StartMasterOnly(stream step.OutStreams) error {
 }
 
 func (c *Cluster) Stop(stream step.OutStreams) error {
-	// TODO: why can't we call IsMasterRunning for the !stop case?  If we do, we get this on the pipeline:
+	// TODO: why can't we call IsCoordinatorRunning for the !stop case?  If we do, we get this on the pipeline:
 	// Usage: pgrep [-flvx] [-d DELIM] [-n|-o] [-P PPIDLIST] [-g PGRPLIST] [-s SIDLIST]
 	// [-u EUIDLIST] [-U UIDLIST] [-G GIDLIST] [-t TERMLIST] [PATTERN]
 	//  pgrep: pidfile not valid
-	running, err := c.IsMasterRunning(stream)
+	running, err := c.IsCoordinatorRunning(stream)
 	if err != nil {
 		return err
 	}
@@ -265,7 +265,7 @@ func (c *Cluster) Stop(stream step.OutStreams) error {
 		return errors.New(fmt.Sprintf("Failed to stop %s cluster. Master is already stopped.", strings.ToLower(c.Destination.String())))
 	}
 
-	err = c.RunGreenplumCmd(stream, "gpstop", "-a", "-d", c.MasterDataDir())
+	err = c.RunGreenplumCmd(stream, "gpstop", "-a", "-d", c.CoordinatorDataDir())
 	if err != nil {
 		return xerrors.Errorf("stopping %s cluster: %w", strings.ToLower(c.Destination.String()), err)
 	}
@@ -273,12 +273,12 @@ func (c *Cluster) Stop(stream step.OutStreams) error {
 	return nil
 }
 
-func (c *Cluster) StopMasterOnly(stream step.OutStreams) error {
-	// TODO: why can't we call IsMasterRunning for the !stop case?  If we do, we get this on the pipeline:
+func (c *Cluster) StopCoordinatorOnly(stream step.OutStreams) error {
+	// TODO: why can't we call IsCoordinatorRunning for the !stop case?  If we do, we get this on the pipeline:
 	// Usage: pgrep [-flvx] [-d DELIM] [-n|-o] [-P PPIDLIST] [-g PGRPLIST] [-s SIDLIST]
 	// [-u EUIDLIST] [-U UIDLIST] [-G GIDLIST] [-t TERMLIST] [PATTERN]
 	//  pgrep: pidfile not valid
-	running, err := c.IsMasterRunning(stream)
+	running, err := c.IsCoordinatorRunning(stream)
 	if err != nil {
 		return err
 	}
@@ -287,7 +287,7 @@ func (c *Cluster) StopMasterOnly(stream step.OutStreams) error {
 		return errors.New(fmt.Sprintf("Failed to stop %s cluster in master only mode. Master is already stopped.", strings.ToLower(c.Destination.String())))
 	}
 
-	err = c.RunGreenplumCmd(stream, "gpstop", "-a", "-m", "-d", c.MasterDataDir())
+	err = c.RunGreenplumCmd(stream, "gpstop", "-a", "-m", "-d", c.CoordinatorDataDir())
 	if err != nil {
 		return xerrors.Errorf("stopping %s cluster: %w", strings.ToLower(c.Destination.String()), err)
 	}
@@ -295,20 +295,20 @@ func (c *Cluster) StopMasterOnly(stream step.OutStreams) error {
 	return nil
 }
 
-var isMasterRunningCommand = exec.Command
+var isCoordinatorRunningCommand = exec.Command
 
 // XXX: for internal testing only
-func SetIsMasterRunningCommand(command exectest.Command) {
-	isMasterRunningCommand = command
+func SetIsCoordinatorRunningCommand(command exectest.Command) {
+	isCoordinatorRunningCommand = command
 }
 
 // XXX: for internal testing only
-func ResetIsMasterRunningCommand() {
-	isMasterRunningCommand = exec.Command
+func ResetIsCoordinatorRunningCommand() {
+	isCoordinatorRunningCommand = exec.Command
 }
 
-func (c *Cluster) IsMasterRunning(stream step.OutStreams) (bool, error) {
-	path := filepath.Join(c.MasterDataDir(), "postmaster.pid")
+func (c *Cluster) IsCoordinatorRunning(stream step.OutStreams) (bool, error) {
+	path := filepath.Join(c.CoordinatorDataDir(), "postmaster.pid")
 	exist, err := upgrade.PathExist(path)
 	if err != nil {
 		return false, err
@@ -318,7 +318,7 @@ func (c *Cluster) IsMasterRunning(stream step.OutStreams) (bool, error) {
 		return false, err
 	}
 
-	cmd := isMasterRunningCommand("pgrep", "-F", path)
+	cmd := isCoordinatorRunningCommand("pgrep", "-F", path)
 
 	cmd.Stdout = stream.Stdout()
 	cmd.Stderr = stream.Stderr()
@@ -366,8 +366,8 @@ func (c *Cluster) runGreenplumCommand(streams step.OutStreams, utility string, a
 	args = append([]string{path}, args...)
 
 	cmd := greenplumCommand("bash", "-c", fmt.Sprintf("source %s/greenplum_path.sh && %s", c.GPHome, shellquote.Join(args...)))
-	cmd.Env = append(cmd.Env, fmt.Sprintf("%v=%v", "MASTER_DATA_DIRECTORY", c.MasterDataDir()))
-	cmd.Env = append(cmd.Env, fmt.Sprintf("%v=%v", "PGPORT", c.MasterPort()))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("%v=%v", "MASTER_DATA_DIRECTORY", c.CoordinatorDataDir()))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("%v=%v", "PGPORT", c.CoordinatorPort()))
 	cmd.Env = append(cmd.Env, envs...)
 
 	cmd.Stdout = streams.Stdout()
@@ -387,7 +387,7 @@ func (c *Cluster) WaitForClusterToBeReady(conn *Conn) error {
 
 	options := []Option{
 		destination,
-		Port(c.MasterPort()),
+		Port(c.CoordinatorPort()),
 	}
 
 	db, err := sql.Open("pgx", conn.URI(options...))
@@ -455,7 +455,7 @@ WHERE content > -1 AND status = 'u' AND (role = preferred_role) ` + whereClause)
 		return false, xerrors.Errorf("querying gp_segment_configuration: %w", err)
 	}
 
-	if segments != len(cluster.ExcludingMasterOrStandby()) {
+	if segments != len(cluster.ExcludingCoordinatorOrStandby()) {
 		return false, nil
 	}
 

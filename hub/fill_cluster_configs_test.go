@@ -43,7 +43,7 @@ func TestAssignDataDirsAndPorts(t *testing.T) {
 		}),
 	},
 		{
-			name: "gives master its own port regardless of host layout",
+			name: "gives coordinator its own port regardless of host layout",
 			cluster: MustCreateCluster(t, greenplum.SegConfigs{
 				{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
 				{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
@@ -88,7 +88,7 @@ func TestAssignDataDirsAndPorts(t *testing.T) {
 				{ContentID: 0, DbID: 3, Hostname: "sdw1", DataDir: expectedDataDir("/data/dbfast1/seg1"), Role: greenplum.PrimaryRole, Port: 50434},
 			}),
 		}, {
-			name: "deals with master and standby on the same host",
+			name: "deals with coordinator and standby on the same host",
 			cluster: MustCreateCluster(t, greenplum.SegConfigs{
 				{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
 				{ContentID: -1, DbID: 2, Hostname: "mdw", DataDir: "/data/standby", Role: greenplum.MirrorRole},
@@ -101,7 +101,7 @@ func TestAssignDataDirsAndPorts(t *testing.T) {
 				{ContentID: 0, DbID: 3, Hostname: "sdw1", DataDir: expectedDataDir("/data/dbfast1/seg1"), Role: greenplum.PrimaryRole, Port: 50434},
 			}),
 		}, {
-			name: "deals with master and standby on the same host as other segments",
+			name: "deals with coordinator and standby on the same host as other segments",
 			cluster: MustCreateCluster(t, greenplum.SegConfigs{
 				{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
 				{ContentID: -1, DbID: 2, Hostname: "mdw", DataDir: "/data/standby", Role: greenplum.MirrorRole},
@@ -262,7 +262,7 @@ func TestEnsureTempPortRangeDoesNotOverlapWithSourceClusterPorts(t *testing.T) {
 	})
 
 	t.Run("allow the same port on different hosts", func(t *testing.T) {
-		intermediate.Mirrors[-1] = greenplum.SegConfig{ContentID: -1, DbID: 8, Hostname: "smdw", DataDir: "/data/qddir/seg-1", Role: greenplum.MirrorRole, Port: source.MasterPort()}
+		intermediate.Mirrors[-1] = greenplum.SegConfig{ContentID: -1, DbID: 8, Hostname: "smdw", DataDir: "/data/qddir/seg-1", Role: greenplum.MirrorRole, Port: source.CoordinatorPort()}
 
 		err := ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(source, intermediate)
 		if err != nil {
@@ -276,7 +276,7 @@ func TestEnsureTempPortRangeDoesNotOverlapWithSourceClusterPorts(t *testing.T) {
 		intermediate    *greenplum.Cluster
 		conflictingPort int
 	}{{
-		name: "errors when source master port overlaps with intermediate target cluster ports",
+		name: "errors when source coordinator port overlaps with intermediate target cluster ports",
 		source: MustCreateCluster(t, greenplum.SegConfigs{
 			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole, Port: 15432},
 			{ContentID: -1, DbID: 8, Hostname: "smdw", DataDir: "/data/qddir/seg-1", Role: greenplum.MirrorRole, Port: 16432},

@@ -4,11 +4,11 @@ Multi-host environment for gpupgrade
 
 Creates three hosts via vagrant. One that runs the hub,
 one that runs the agent for the segments, and one that runs the
-agent for the standby master.
+agent for the standby coordinator.
 
-Also, a gpdb cluster with a master on the `hub` host, three
+Also, a gpdb cluster with a coordinator on the `hub` host, three
 segments on the `segment-agent` host, three mirrors on the
-`segment-agent` host, and one standby master on the
+`segment-agent` host, and one standby coordinator on the
 `standby-agent` host.
 
 ## Useful links for configuring Vagrant

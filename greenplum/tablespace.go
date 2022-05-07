@@ -55,8 +55,8 @@ type Tablespace struct {
 	Info TablespaceInfo
 }
 
-func (t Tablespaces) GetMasterTablespaces() SegmentTablespaces {
-	return t[MasterDbid]
+func (t Tablespaces) GetCoordinatorTablespaces() SegmentTablespaces {
+	return t[CoordinatorDbid]
 }
 
 func (s SegmentTablespaces) UserDefinedTablespacesLocations() []string {
@@ -80,8 +80,8 @@ func GetTablespaceLocationForDbId(t *idl.TablespaceInfo, dbId int) string {
 	return filepath.Join(t.Location, strconv.Itoa(dbId))
 }
 
-func GetMasterTablespaceLocation(basePath string, oid int) string {
-	return filepath.Join(basePath, strconv.Itoa(oid), strconv.Itoa(MasterDbid))
+func GetCoordinatorTablespaceLocation(basePath string, oid int) string {
+	return filepath.Join(basePath, strconv.Itoa(oid), strconv.Itoa(CoordinatorDbid))
 }
 
 func GetTablespaceTuples(db *sql.DB) (TablespaceTuples, error) {

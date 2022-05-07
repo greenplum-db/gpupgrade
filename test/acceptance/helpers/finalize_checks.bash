@@ -6,14 +6,14 @@
 # thoroughly test those mirrors and standby.
 
 check_synchronized_cluster() {
-    local master_host=$1
-    local master_port=$2
+    local coordinator_host=$1
+    local coordinator_port=$2
 
     for i in {1..10}; do
         local synced
-        synced=$(ssh -n "$master_host" "
+        synced=$(ssh -n "$coordinator_host" "
             source ${GPHOME_NEW}/greenplum_path.sh
-            psql -X -p $master_port -At -d postgres << EOF
+            psql -X -p $coordinator_port -At -d postgres << EOF
                 SELECT gp_request_fts_probe_scan();
                 SELECT EVERY(state='streaming' AND state IS NOT NULL)
                 FROM gp_stat_replication;
@@ -161,48 +161,48 @@ contents_without_mirror() {
     "
 }
 
-# |     step                        | mdw     | smdw    | sdw-p   | sdw-m   |
-# |---------------------------------|---------|---------|---------|---------|
-# | 1:  initial                     | master  | standby | primary | mirror  |
-# | 2a: failover stop               | -       | standby |   -     | mirror  |
-# | 2b: failover promote            | -       | master  |   -     | primary |
-# | 3:  restore mirrors and standby | standby | master  | mirror  | primary |
-# | 4a: rebalance mirrors           | standby | master  | primary | mirror  |
-# | 4b: rebalance standby           | standby |     -   | primary | mirror  |
-# | 4c: rebalance standby           | master  |     -   | primary | mirror  |
-# | 4d: rebalance standby           | master  | standby | primary | mirror  |
+# |     step                        | mdw         | smdw        | sdw-p   | sdw-m   |
+# |---------------------------------|-------------|-------------|---------|---------|
+# | 1:  initial                     | coordinator |   standby   | primary | mirror  |
+# | 2a: failover stop               |     -       |   standby   |   -     | mirror  |
+# | 2b: failover promote            |     -       | coordinator |   -     | primary |
+# | 3:  restore mirrors and standby |   standby   | coordinator | mirror  | primary |
+# | 4a: rebalance mirrors           |   standby   | coordinator | primary | mirror  |
+# | 4b: rebalance standby           |   standby   |     -       | primary | mirror  |
+# | 4c: rebalance standby           | coordinator |     -       | primary | mirror  |
+# | 4d: rebalance standby           | coordinator |   standby   | primary | mirror  |
 #
 # For rebalancing the standby, we followed these instructions:
 # https://gpdb.docs.pivotal.io/6-4/admin_guide/highavail/topics/g-restoring-master-mirroring-after-a-recovery.html#topic17
 #
-# NOTE: when in a given step of this test, keep in mind that the master
-#  switches back and forth between the mdw host("MASTER") and the smdw host("standby").
+# NOTE: when in a given step of this test, keep in mind that the coordinator
+#  switches back and forth between the mdw host("COORDINATOR") and the smdw host("standby").
 
 validate_mirrors_and_standby() {
     GPHOME_NEW=$1
-    local MASTER_HOST=$2
-    local MASTER_PORT=$3
+    local coordinator_host=$2
+    local coordinator_port=$3
 
     local noMirrors
-    noMirrors=$(contents_without_mirror "$GPHOME_NEW" "$MASTER_HOST" "$MASTER_PORT")
+    noMirrors=$(contents_without_mirror "$GPHOME_NEW" "$coordinator_host" "$coordinator_port")
     if [ -n "$noMirrors" ]; then
         echo "This test only works on full clusters but these content ids do not have mirrors: ${noMirrors}"
         exit 1
     fi
 
-    local master_data_dir
-    master_data_dir=$(ssh -n "${MASTER_HOST}" "
+    local coordinator_data_dir
+    coordinator_data_dir=$(ssh -n "${coordinator_host}" "
         source ${GPHOME_NEW}/greenplum_path.sh
-        psql -X -p $MASTER_PORT -At -d postgres -c \"
+        psql -X -p $coordinator_port -At -d postgres -c \"
             SELECT datadir FROM gp_segment_configuration
             WHERE content = -1 AND role = 'p'
         \"
     ")
 
     local standby_info
-    standby_info=$(ssh -n "${MASTER_HOST}" "
+    standby_info=$(ssh -n "${coordinator_host}" "
         source ${GPHOME_NEW}/greenplum_path.sh
-        psql -X -p $MASTER_PORT -AtF$'\t' -d postgres -c \"
+        psql -X -p $coordinator_port -AtF$'\t' -d postgres -c \"
             SELECT hostname, port, datadir FROM gp_segment_configuration
             WHERE content = -1 AND role = 'm'
         \"
@@ -210,22 +210,22 @@ validate_mirrors_and_standby() {
     read -r standby_host standby_port standby_data_dir <<<"${standby_info}"
 
     # step 1: initial
-    check_replication_connections "${MASTER_HOST}" "${MASTER_PORT}"
-    check_synchronized_cluster "${MASTER_HOST}" "${MASTER_PORT}"
-    wait_can_start_transactions "${MASTER_HOST}" "${MASTER_PORT}"
+    check_replication_connections "${coordinator_host}" "${coordinator_port}"
+    check_synchronized_cluster "${coordinator_host}" "${coordinator_port}"
+    wait_can_start_transactions "${coordinator_host}" "${coordinator_port}"
 
     local data_on_upgraded_cluster
-    data_on_upgraded_cluster=$(create_table_with_name on_upgraded_cluster 50 "${MASTER_HOST}" "${MASTER_PORT}")
+    data_on_upgraded_cluster=$(create_table_with_name on_upgraded_cluster 50 "${coordinator_host}" "${coordinator_port}")
 
     # step 2a: failover stop...
-    # FIXME: We should be able to stop both the master and primaries at once
+    # FIXME: We should be able to stop both the coordinator and primaries at once
     # with ">=-1". However, there appears to be a bug where the standby does not
     # have the correct or latest information after being promoted. The standby
     # has the table, and the segments have the data. But checking the data shows
     # nothing.
-    stop_segments_with_contents ">-1" "${MASTER_HOST}" "${MASTER_PORT}"
-    wait_can_start_transactions "${MASTER_HOST}" "${MASTER_PORT}"
-    stop_segments_with_contents "=-1" "${MASTER_HOST}" "${MASTER_PORT}"
+    stop_segments_with_contents ">-1" "${coordinator_host}" "${coordinator_port}"
+    wait_can_start_transactions "${coordinator_host}" "${coordinator_port}"
+    stop_segments_with_contents "=-1" "${coordinator_host}" "${coordinator_port}"
 
     # step 2b: failover promote...
     ssh -n "${standby_host}" "
@@ -249,15 +249,15 @@ validate_mirrors_and_standby() {
     wait_can_start_transactions $standby_host "${standby_port}"  #TODO: is this necessary?
 
     # sanity check both the demo cluster and CI cluster cases
-    if [[ $master_data_dir != *datadirs/qddir/demoDataDir* && $master_data_dir != */data/gpdata/master/gpseg-1* ]]; then
-        echo "cowardly refusing to delete $master_data_dir which does not look like a demo or CI master data dir"
+    if [[ $coordinator_data_dir != *datadirs/qddir/demoDataDir* && $coordinator_data_dir != */data/gpdata/master/gpseg-1* ]]; then
+        echo "cowardly refusing to delete $coordinator_data_dir which does not look like a demo or CI coordinator data dir"
         exit 1
     fi
-    ssh -n "${MASTER_HOST}" "rm -r ${master_data_dir}"
+    ssh -n "${coordinator_host}" "rm -r ${coordinator_data_dir}"
 
     ssh -n "${standby_host}" "
         source ${GPHOME_NEW}/greenplum_path.sh
-        export PGPORT=$standby_port; gpinitstandby -a -s $MASTER_HOST -P $MASTER_PORT -S $master_data_dir
+        export PGPORT=$standby_port; gpinitstandby -a -s $coordinator_host -P $coordinator_port -S $coordinator_data_dir
     "
     check_replication_connections "${standby_host}" "${standby_port}"
     check_synchronized_cluster "${standby_host}" "${standby_port}"
@@ -282,10 +282,10 @@ validate_mirrors_and_standby() {
     stop_segments_with_contents "=-1" "${standby_host}" "${standby_port}"
 
     # 4c: rebalance standby
-    ssh -n "${MASTER_HOST}" "
+    ssh -n "${coordinator_host}" "
         source ${GPHOME_NEW}/greenplum_path.sh
-        export PGPORT=$MASTER_PORT
-        gpactivatestandby -a -d $master_data_dir
+        export PGPORT=$coordinator_port
+        gpactivatestandby -a -d $coordinator_data_dir
     "
 
     # 4d: rebalance standby
@@ -297,16 +297,16 @@ validate_mirrors_and_standby() {
     fi
     ssh -n "${standby_host}" "rm -r $standby_data_dir"
 
-    ssh -n "${MASTER_HOST}" "
+    ssh -n "${coordinator_host}" "
         source ${GPHOME_NEW}/greenplum_path.sh
-        export PGPORT=$MASTER_PORT; gpinitstandby -a -s $standby_host -P $standby_port -S $standby_data_dir
+        export PGPORT=$coordinator_port; gpinitstandby -a -s $standby_host -P $standby_port -S $standby_data_dir
     "
-    check_replication_connections "${MASTER_HOST}" "${MASTER_PORT}"
-    check_synchronized_cluster "${MASTER_HOST}" "${MASTER_PORT}"
+    check_replication_connections "${coordinator_host}" "${coordinator_port}"
+    check_synchronized_cluster "${coordinator_host}" "${coordinator_port}"
 
-    check_data_matches on_upgraded_cluster "${data_on_upgraded_cluster}" "${MASTER_HOST}" "${MASTER_PORT}"
-    check_data_matches on_promoted_cluster "${data_on_promoted_cluster}" "${MASTER_HOST}" "${MASTER_PORT}"
-    check_data_matches on_unbalanced_cluster "${data_on_unbalanced_cluster}" "${MASTER_HOST}" "${MASTER_PORT}"
+    check_data_matches on_upgraded_cluster "${data_on_upgraded_cluster}" "${coordinator_host}" "${coordinator_port}"
+    check_data_matches on_promoted_cluster "${data_on_promoted_cluster}" "${coordinator_host}" "${coordinator_port}"
+    check_data_matches on_unbalanced_cluster "${data_on_unbalanced_cluster}" "${coordinator_host}" "${coordinator_port}"
 }
 
 

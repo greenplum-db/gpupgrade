@@ -40,7 +40,7 @@ func (s SegConfigs) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-func (s *SegConfig) IsMaster() bool {
+func (s *SegConfig) IsCoordinator() bool {
 	return s.ContentID == -1 && s.Role == PrimaryRole
 }
 

@@ -68,7 +68,7 @@ func TestStart(t *testing.T) {
 	})
 }
 
-func TestStartMasterOnly(t *testing.T) {
+func TestStartCoordinatorOnly(t *testing.T) {
 	testlog.SetupLogger()
 
 	dataDir := testutils.GetTempDir(t, "")
@@ -80,7 +80,7 @@ func TestStartMasterOnly(t *testing.T) {
 	source.GPHome = "/usr/local/source"
 	source.Destination = idl.ClusterDestination_SOURCE
 
-	t.Run("start master only succeeds", func(t *testing.T) {
+	t.Run("start coordinator only succeeds", func(t *testing.T) {
 		cmd := exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
 			expected := "bash"
 			if name != expected {
@@ -95,17 +95,17 @@ func TestStartMasterOnly(t *testing.T) {
 		greenplum.SetGreenplumCommand(cmd)
 		defer greenplum.ResetGreenplumCommand()
 
-		err := source.StartMasterOnly(step.DevNullStream)
+		err := source.StartCoordinatorOnly(step.DevNullStream)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
 	})
 
-	t.Run("start master only returns errors", func(t *testing.T) {
+	t.Run("start coordinator only returns errors", func(t *testing.T) {
 		greenplum.SetGreenplumCommand(exectest.NewCommand(FailedMain))
 		defer greenplum.ResetGreenplumCommand()
 
-		err := source.StartMasterOnly(step.DevNullStream)
+		err := source.StartCoordinatorOnly(step.DevNullStream)
 		var exitError *exec.ExitError
 		if !errors.As(err, &exitError) {
 			t.Errorf("got %T, want %T", err, exitError)
@@ -144,8 +144,8 @@ func TestStop(t *testing.T) {
 				t.Errorf("got %q want %q", args, expectedArgs)
 			}
 		})
-		greenplum.SetIsMasterRunningCommand(cmd)
-		defer greenplum.ResetIsMasterRunningCommand()
+		greenplum.SetIsCoordinatorRunningCommand(cmd)
+		defer greenplum.ResetIsCoordinatorRunningCommand()
 
 		cmd = exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
 			expected := "bash"
@@ -170,8 +170,8 @@ func TestStop(t *testing.T) {
 	t.Run("stop returns errors", func(t *testing.T) {
 		testutils.MustWriteToFile(t, filepath.Join(dataDir, "postmaster.pid"), "")
 
-		greenplum.SetIsMasterRunningCommand(exectest.NewCommand(Success))
-		defer greenplum.ResetIsMasterRunningCommand()
+		greenplum.SetIsCoordinatorRunningCommand(exectest.NewCommand(Success))
+		defer greenplum.ResetIsCoordinatorRunningCommand()
 
 		greenplum.SetGreenplumCommand(exectest.NewCommand(FailedMain))
 		defer greenplum.ResetGreenplumCommand()
@@ -191,8 +191,8 @@ func TestStop(t *testing.T) {
 	t.Run("stop detects if the cluster is already shutdown", func(t *testing.T) {
 		testutils.MustWriteToFile(t, filepath.Join(dataDir, "postmaster.pid"), "")
 
-		greenplum.SetIsMasterRunningCommand(exectest.NewCommand(IsPostmasterRunningCmd_MatchesNoProcesses))
-		defer greenplum.ResetIsMasterRunningCommand()
+		greenplum.SetIsCoordinatorRunningCommand(exectest.NewCommand(IsPostmasterRunningCmd_MatchesNoProcesses))
+		defer greenplum.ResetIsCoordinatorRunningCommand()
 
 		err := source.Stop(step.DevNullStream)
 		expected := "Failed to stop source cluster. Master is already stopped."
@@ -202,7 +202,7 @@ func TestStop(t *testing.T) {
 	})
 }
 
-func TestStopMasterOnly(t *testing.T) {
+func TestStopCoordinatorOnly(t *testing.T) {
 	testlog.SetupLogger()
 
 	dataDir := testutils.GetTempDir(t, "")
@@ -214,7 +214,7 @@ func TestStopMasterOnly(t *testing.T) {
 	source.GPHome = "/usr/local/source"
 	source.Destination = idl.ClusterDestination_SOURCE
 
-	t.Run("stop master only succeeds", func(t *testing.T) {
+	t.Run("stop coordinator only succeeds", func(t *testing.T) {
 		testutils.MustWriteToFile(t, filepath.Join(dataDir, "postmaster.pid"), "")
 
 		cmd := exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
@@ -228,8 +228,8 @@ func TestStopMasterOnly(t *testing.T) {
 				t.Errorf("got %q want %q", args, expectedArgs)
 			}
 		})
-		greenplum.SetIsMasterRunningCommand(cmd)
-		defer greenplum.ResetIsMasterRunningCommand()
+		greenplum.SetIsCoordinatorRunningCommand(cmd)
+		defer greenplum.ResetIsCoordinatorRunningCommand()
 
 		cmd = exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
 			expected := "bash"
@@ -245,22 +245,22 @@ func TestStopMasterOnly(t *testing.T) {
 		greenplum.SetGreenplumCommand(cmd)
 		defer greenplum.ResetGreenplumCommand()
 
-		err := source.StopMasterOnly(step.DevNullStream)
+		err := source.StopCoordinatorOnly(step.DevNullStream)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
 	})
 
-	t.Run("stop master only returns errors", func(t *testing.T) {
+	t.Run("stop coordinator only returns errors", func(t *testing.T) {
 		testutils.MustWriteToFile(t, filepath.Join(dataDir, "postmaster.pid"), "")
 
-		greenplum.SetIsMasterRunningCommand(exectest.NewCommand(Success))
-		defer greenplum.ResetIsMasterRunningCommand()
+		greenplum.SetIsCoordinatorRunningCommand(exectest.NewCommand(Success))
+		defer greenplum.ResetIsCoordinatorRunningCommand()
 
 		greenplum.SetGreenplumCommand(exectest.NewCommand(FailedMain))
 		defer greenplum.ResetGreenplumCommand()
 
-		err := source.StopMasterOnly(step.DevNullStream)
+		err := source.StopCoordinatorOnly(step.DevNullStream)
 		var exitError *exec.ExitError
 		if !errors.As(err, &exitError) {
 			t.Errorf("got %T, want %T", err, exitError)
@@ -272,13 +272,13 @@ func TestStopMasterOnly(t *testing.T) {
 		}
 	})
 
-	t.Run("stop master only detects if the cluster is already shutdown", func(t *testing.T) {
+	t.Run("stop coordinator only detects if the cluster is already shutdown", func(t *testing.T) {
 		testutils.MustWriteToFile(t, filepath.Join(dataDir, "postmaster.pid"), "")
 
-		greenplum.SetIsMasterRunningCommand(exectest.NewCommand(IsPostmasterRunningCmd_MatchesNoProcesses))
-		defer greenplum.ResetIsMasterRunningCommand()
+		greenplum.SetIsCoordinatorRunningCommand(exectest.NewCommand(IsPostmasterRunningCmd_MatchesNoProcesses))
+		defer greenplum.ResetIsCoordinatorRunningCommand()
 
-		err := source.StopMasterOnly(step.DevNullStream)
+		err := source.StopCoordinatorOnly(step.DevNullStream)
 		expected := "Failed to stop source cluster in master only mode. Master is already stopped."
 		if err.Error() != expected {
 			t.Errorf("got %q want %q", err.Error(), expected)
@@ -286,7 +286,7 @@ func TestStopMasterOnly(t *testing.T) {
 	})
 }
 
-func TestIsMasterRunning(t *testing.T) {
+func TestIsCoordinatorRunning(t *testing.T) {
 	testlog.SetupLogger()
 
 	dataDir := testutils.GetTempDir(t, "")
@@ -298,15 +298,15 @@ func TestIsMasterRunning(t *testing.T) {
 	source.GPHome = "/usr/local/source"
 	source.Destination = idl.ClusterDestination_SOURCE
 
-	t.Run("IsMasterRunning succeeds", func(t *testing.T) {
+	t.Run("IsCoordinatorRunning succeeds", func(t *testing.T) {
 		testutils.MustWriteToFile(t, filepath.Join(dataDir, "postmaster.pid"), "")
 
-		greenplum.SetIsMasterRunningCommand(exectest.NewCommand(Success))
-		defer greenplum.ResetIsMasterRunningCommand()
+		greenplum.SetIsCoordinatorRunningCommand(exectest.NewCommand(Success))
+		defer greenplum.ResetIsCoordinatorRunningCommand()
 
-		running, err := source.IsMasterRunning(step.DevNullStream)
+		running, err := source.IsCoordinatorRunning(step.DevNullStream)
 		if err != nil {
-			t.Errorf("IsMasterRunning returned error: %+v", err)
+			t.Errorf("IsCoordinatorRunning returned error: %+v", err)
 		}
 
 		if !running {
@@ -314,13 +314,13 @@ func TestIsMasterRunning(t *testing.T) {
 		}
 	})
 
-	t.Run("IsMasterRunning returns errors", func(t *testing.T) {
+	t.Run("IsCoordinatorRunning returns errors", func(t *testing.T) {
 		testutils.MustWriteToFile(t, filepath.Join(dataDir, "postmaster.pid"), "")
 
-		greenplum.SetIsMasterRunningCommand(exectest.NewCommand(IsPostmasterRunningCmd_Errors))
-		defer greenplum.ResetIsMasterRunningCommand()
+		greenplum.SetIsCoordinatorRunningCommand(exectest.NewCommand(IsPostmasterRunningCmd_Errors))
+		defer greenplum.ResetIsCoordinatorRunningCommand()
 
-		running, err := source.IsMasterRunning(step.DevNullStream)
+		running, err := source.IsCoordinatorRunning(step.DevNullStream)
 		var expected *exec.ExitError
 		if !errors.As(err, &expected) {
 			t.Errorf("expected error to contain type %T", expected)
@@ -331,14 +331,14 @@ func TestIsMasterRunning(t *testing.T) {
 		}
 	})
 
-	t.Run("IsMasterRunning returns false with no error when master data directory does not exist", func(t *testing.T) {
+	t.Run("IsCoordinatorRunning returns false with no error when coordinator data directory does not exist", func(t *testing.T) {
 		source := greenplum.MustCreateCluster(t, greenplum.SegConfigs{
 			{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/does/not/exist", Role: greenplum.PrimaryRole},
 		})
 
-		running, err := source.IsMasterRunning(step.DevNullStream)
+		running, err := source.IsCoordinatorRunning(step.DevNullStream)
 		if err != nil {
-			t.Errorf("IsMasterRunning returned error: %+v", err)
+			t.Errorf("IsCoordinatorRunning returned error: %+v", err)
 		}
 
 		if running {
@@ -349,12 +349,12 @@ func TestIsMasterRunning(t *testing.T) {
 	t.Run("returns false with no error when no processes were matched", func(t *testing.T) {
 		testutils.MustWriteToFile(t, filepath.Join(dataDir, "postmaster.pid"), "")
 
-		greenplum.SetIsMasterRunningCommand(exectest.NewCommand(IsPostmasterRunningCmd_MatchesNoProcesses))
-		defer greenplum.ResetIsMasterRunningCommand()
+		greenplum.SetIsCoordinatorRunningCommand(exectest.NewCommand(IsPostmasterRunningCmd_MatchesNoProcesses))
+		defer greenplum.ResetIsCoordinatorRunningCommand()
 
-		running, err := source.IsMasterRunning(step.DevNullStream)
+		running, err := source.IsCoordinatorRunning(step.DevNullStream)
 		if err != nil {
-			t.Errorf("IsMasterRunning returned error: %+v", err)
+			t.Errorf("IsCoordinatorRunning returned error: %+v", err)
 		}
 
 		if running {

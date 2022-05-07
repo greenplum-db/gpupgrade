@@ -5,11 +5,11 @@
 -- Validate that the upgradeable objects have been disabled during the upgrade
 --------------------------------------------------------------------------------
 
--- bpchar_pattern_ops index should be marked invalid on master and segments
+-- bpchar_pattern_ops index should be marked invalid on coordinator and segments
 SELECT DISTINCT indisvalid FROM pg_index WHERE indexrelid = 'bpchar_idx'::regclass;
 SELECT DISTINCT indisvalid FROM gp_dist_random('pg_index') WHERE indexrelid = 'bpchar_idx'::regclass;
 
--- bitmap index should be marked invalid on master and segments
+-- bitmap index should be marked invalid on coordinator and segments
 SELECT DISTINCT indisvalid FROM pg_index WHERE indexrelid = 'bitmap_idx'::regclass;
 SELECT DISTINCT indisvalid FROM gp_dist_random('pg_index') WHERE indexrelid = 'bitmap_idx'::regclass;
 

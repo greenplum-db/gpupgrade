@@ -52,7 +52,7 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 	})
 
 	st.Run(idl.Substep_UPDATE_TARGET_CATALOG, func(streams step.OutStreams) error {
-		if err := s.Intermediate.StartMasterOnly(streams); err != nil {
+		if err := s.Intermediate.StartCoordinatorOnly(streams); err != nil {
 			return err
 		}
 
@@ -60,7 +60,7 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 			return err
 		}
 
-		return s.Intermediate.StopMasterOnly(streams)
+		return s.Intermediate.StopCoordinatorOnly(streams)
 	})
 
 	st.Run(idl.Substep_UPDATE_DATA_DIRECTORIES, func(_ step.OutStreams) error {
@@ -94,23 +94,23 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 			return xerrors.Errorf("get log archive directory: %w", err)
 		}
 
-		return ArchiveLogDirectories(logArchiveDir, s.agentConns, s.Config.Target.MasterHostname())
+		return ArchiveLogDirectories(logArchiveDir, s.agentConns, s.Config.Target.CoordinatorHostname())
 	})
 
 	st.Run(idl.Substep_DELETE_SEGMENT_STATEDIRS, func(_ step.OutStreams) error {
-		return DeleteStateDirectories(s.agentConns, s.Source.MasterHostname())
+		return DeleteStateDirectories(s.agentConns, s.Source.CoordinatorHostname())
 	})
 
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_FinalizeResponse{
 		FinalizeResponse: &idl.FinalizeResponse{
-			TargetVersion:                     s.Target.Version.String(),
-			LogArchiveDirectory:               logArchiveDir,
-			ArchivedSourceMasterDataDirectory: s.Config.Intermediate.MasterDataDir() + upgrade.OldSuffix,
-			UpgradeID:                         s.Config.UpgradeID.String(),
+			TargetVersion:                          s.Target.Version.String(),
+			LogArchiveDirectory:                    logArchiveDir,
+			ArchivedSourceCoordinatorDataDirectory: s.Config.Intermediate.CoordinatorDataDir() + upgrade.OldSuffix,
+			UpgradeID:                              s.Config.UpgradeID.String(),
 			TargetCluster: &idl.Cluster{
-				GPHome:              s.Target.GPHome,
-				Port:                int32(s.Target.MasterPort()),
-				MasterDataDirectory: s.Target.MasterDataDir(),
+				GPHome:                   s.Target.GPHome,
+				Port:                     int32(s.Target.CoordinatorPort()),
+				CoordinatorDataDirectory: s.Target.CoordinatorDataDir(),
 			},
 		},
 	}}}}

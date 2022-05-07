@@ -27,12 +27,12 @@ teardown() {
 setup_state_dirs() {
     local hosts=("$@")
 
-    # Create a temporary state directory locally, on the master segment.
+    # Create a temporary state directory locally, on the coordinator segment.
     STATE_DIR=`mktemp -d /tmp/gpupgrade.XXXXXX`
     export GPUPGRADE_HOME="${STATE_DIR}/gpupgrade"
 
-    # This repeats the creation of STATE_DIR on the master (local) host, but
-    # `mkdir -p` will ignore that. We still need the teardown on the master
+    # This repeats the creation of STATE_DIR on the coordinator (local) host, but
+    # `mkdir -p` will ignore that. We still need the teardown on the coordinator
     # host.
     for host in "${hosts[@]}"; do
         ssh "$host" mkdir -p "$STATE_DIR"
@@ -117,7 +117,7 @@ query_host_datadirs() {
 
 test_revert_after_execute() {
     local mode="$1"
-    local target_master_port=6020
+    local target_coordinator_port=6020
     local old_config new_config mirrors primaries rows host datadir
 
     # Save segment configuration
@@ -162,7 +162,7 @@ test_revert_after_execute() {
         --source-gphome="$GPHOME_SOURCE" \
         --target-gphome="$GPHOME_TARGET" \
         --source-master-port="${PGPORT}" \
-        --temp-port-range ${target_master_port}-6040 \
+        --temp-port-range ${target_coordinator_port}-6040 \
         --disk-free-ratio 0 \
         --mode "$mode" \
         --automatic \
@@ -170,12 +170,12 @@ test_revert_after_execute() {
     gpupgrade execute --non-interactive --verbose
 
     # Modify the table on the target cluster
-    $PSQL -p $target_master_port postgres -c "TRUNCATE ${TABLE}"
+    $PSQL -p $target_coordinator_port postgres -c "TRUNCATE ${TABLE}"
 
     # Modify the table in the tablespace on the target cluster
     # Note: tablespace only work when upgrading from 5X.
     if is_GPDB5 "$GPHOME_SOURCE"; then
-        truncate_tablespace_data "$tablespace_table_prefix" "$target_master_port"
+        truncate_tablespace_data "$tablespace_table_prefix" "$target_coordinator_port"
     fi
 
     # Revert
@@ -212,7 +212,7 @@ test_revert_after_execute() {
     [ "$old_config" = "$new_config" ] || fail "actual config: $new_config, wanted: $old_config"
 
     # ensure target cluster is down
-    ! isready "${GPHOME_TARGET}" ${target_master_port} || fail "expected target cluster to not be running on port ${target_master_port}"
+    ! isready "${GPHOME_TARGET}" ${target_coordinator_port} || fail "expected target cluster to not be running on port ${target_coordinator_port}"
 
     is_source_standby_in_sync || fail "expected standby to eventually be in sync"
 }
@@ -255,7 +255,7 @@ test_revert_after_execute() {
 }
 
 # gp_segment_configuration does not show us the status correctly. We must check that the
-# sent_location from the master equals the replay_location of the standby.
+# sent_location from the coordinator equals the replay_location of the standby.
 is_source_standby_in_sync() {
     local INSYNC="f"
     local duration=600 # wait up to 10 minutes
@@ -286,18 +286,18 @@ is_source_standby_running() {
     fi
 }
 
-# setup_master_upgrade_failure will cause pg_upgrade on the master to fail.  It creates a table
-# with tuples but then moves its master data directory relfilenode away.
-setup_master_upgrade_failure() {
+# setup_coordinator_upgrade_failure will cause pg_upgrade on the coordinator to fail.  It creates a table
+# with tuples but then moves its coordinator data directory relfilenode away.
+setup_coordinator_upgrade_failure() {
     "$PSQL" postgres --single-transaction -f - <<"EOF"
-        CREATE TABLE master_failure (a int, b int);
-        INSERT INTO master_failure SELECT i, i FROM generate_series(1,10)i;
+        CREATE TABLE coordinator_failure (a int, b int);
+        INSERT INTO coordinator_failure SELECT i, i FROM generate_series(1,10)i;
 EOF
 
-    register_teardown "$PSQL" postgres -c "DROP TABLE IF EXISTS master_failure"
+    register_teardown "$PSQL" postgres -c "DROP TABLE IF EXISTS coordinator_failure"
 
     local file dboid
-    file=$("$GPHOME_SOURCE"/bin/psql -d postgres -Atc "SELECT relfilenode FROM pg_class WHERE relname='master_failure';")
+    file=$("$GPHOME_SOURCE"/bin/psql -d postgres -Atc "SELECT relfilenode FROM pg_class WHERE relname='coordinator_failure';")
     dboid=$("$GPHOME_SOURCE"/bin/psql -d postgres -Atc "SELECT oid FROM pg_database WHERE datname='postgres';")
     mv "$MASTER_DATA_DIRECTORY/base/$dboid/$file" "$MASTER_DATA_DIRECTORY/base/$dboid/$file.bkp"
     register_teardown mv "$MASTER_DATA_DIRECTORY/base/$dboid/$file.bkp" "$MASTER_DATA_DIRECTORY/base/$dboid/$file"
@@ -334,7 +334,7 @@ EOF
 test_revert_after_execute_pg_upgrade_failure() {
     local failed_substep="$1"
     local mode="$2"
-    local target_master_port=6020
+    local target_coordinator_port=6020
     local old_config new_config mirrors primaries rows
 
     # Save segment configuration
@@ -371,7 +371,7 @@ test_revert_after_execute_pg_upgrade_failure() {
         --source-gphome="$GPHOME_SOURCE" \
         --target-gphome="$GPHOME_TARGET" \
         --source-master-port="${PGPORT}" \
-        --temp-port-range ${target_master_port}-6040 \
+        --temp-port-range ${target_coordinator_port}-6040 \
         --disk-free-ratio 0 \
         --mode "$mode" \
         --automatic \
@@ -400,8 +400,8 @@ test_revert_after_execute_pg_upgrade_failure() {
     diff -U3 --speed-large-files "$MIGRATION_DIR"/before.sql "$MIGRATION_DIR"/after.sql
 
     # Verify that the marker files do not exist on primaries. Unlike for the
-    # successful execute case, a revert from a failed master upgrade should
-    # never require an rsync from mirrors, since the master hasn't been started
+    # successful execute case, a revert from a failed coordinator upgrade should
+    # never require an rsync from mirrors, since the coordinator hasn't been started
     # yet.
     primaries=$(query_host_datadirs "$GPHOME_SOURCE" "$PGPORT" "role='p'")
     while read -r host datadir; do
@@ -416,18 +416,18 @@ test_revert_after_execute_pg_upgrade_failure() {
     [ "$old_config" = "$new_config" ] || fail "actual config: $new_config, wanted: $old_config"
 
     # ensure target cluster is down
-    ! isready "${GPHOME_TARGET}" ${target_master_port} || fail "expected target cluster to not be running on port ${target_master_port}"
+    ! isready "${GPHOME_TARGET}" ${target_coordinator_port} || fail "expected target cluster to not be running on port ${target_coordinator_port}"
 
     is_source_standby_in_sync || fail "expected standby to eventually be in sync"
 }
 
-@test "reverting succeeds after copy-mode execute fails while upgrading master" {
-    setup_master_upgrade_failure
+@test "reverting succeeds after copy-mode execute fails while upgrading coordinator" {
+    setup_coordinator_upgrade_failure
     test_revert_after_execute_pg_upgrade_failure "Upgrading master" copy
 }
 
-@test "reverting succeeds after link-mode execute fails while upgrading master" {
-    setup_master_upgrade_failure
+@test "reverting succeeds after link-mode execute fails while upgrading coordinator" {
+    setup_coordinator_upgrade_failure
     test_revert_after_execute_pg_upgrade_failure "Upgrading master" link
 }
 

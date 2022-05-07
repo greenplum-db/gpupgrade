@@ -31,7 +31,7 @@ func TestTempDataDir(t *testing.T) {
 		expectedFormat string // %s will be replaced with id.String()
 	}{
 		{"/data/seg-1", "seg", "/data/seg.%s.-1"},
-		{"/data/master/gpseg-1", "gpseg", "/data/master/gpseg.%s.-1"},
+		{"/data/coordinator/gpseg-1", "gpseg", "/data/coordinator/gpseg.%s.-1"},
 		{"/data/seg1", "seg", "/data/seg.%s.1"},
 		{"/data/seg1/", "seg", "/data/seg.%s.1"},
 		{"/data/standby", "seg", "/data/standby.%s"},
@@ -51,15 +51,15 @@ func TestTempDataDir(t *testing.T) {
 func ExampleTempDataDir() {
 	var id upgrade.ID
 
-	master := upgrade.TempDataDir("/data/master/seg-1", "seg", id)
+	coordinator := upgrade.TempDataDir("/data/coordinator/seg-1", "seg", id)
 	standby := upgrade.TempDataDir("/data/standby", "seg", id)
 	segment := upgrade.TempDataDir("/data/primary/seg3", "seg", id)
 
-	fmt.Println(master)
+	fmt.Println(coordinator)
 	fmt.Println(standby)
 	fmt.Println(segment)
 	// Output:
-	// /data/master/seg.AAAAAAAAAAA.-1
+	// /data/coordinator/seg.AAAAAAAAAAA.-1
 	// /data/standby.AAAAAAAAAAA
 	// /data/primary/seg.AAAAAAAAAAA.3
 }
@@ -436,8 +436,8 @@ func TestDeleteDirectories(t *testing.T) {
 
 func TestTablespacePath(t *testing.T) {
 	t.Run("returns correct path", func(t *testing.T) {
-		path := upgrade.TablespacePath("/tmp/testfs/master/demoDataDir-1/16386", 1, 6, "301908232")
-		expected := "/tmp/testfs/master/demoDataDir-1/16386/1/GPDB_6_301908232"
+		path := upgrade.TablespacePath("/tmp/testfs/coordinator/demoDataDir-1/16386", 1, 6, "301908232")
+		expected := "/tmp/testfs/coordinator/demoDataDir-1/16386/1/GPDB_6_301908232"
 		if path != expected {
 			t.Errorf("got %q want %q", path, expected)
 		}

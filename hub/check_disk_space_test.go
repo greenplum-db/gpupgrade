@@ -22,31 +22,31 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/disk"
 )
 
-func MasterHostCheckDiskUsagePasses(streams step.OutStreams, d disk.Disk, requiredRatio float64, paths ...string) (disk.FileSystemDiskUsage, error) {
+func CoordinatorHostCheckDiskUsagePasses(streams step.OutStreams, d disk.Disk, requiredRatio float64, paths ...string) (disk.FileSystemDiskUsage, error) {
 	return nil, nil
 }
 
-func MasterHostErrorsWith(expected error) disk.CheckUsageType {
+func CoordinatorHostErrorsWith(expected error) disk.CheckUsageType {
 	return func(streams step.OutStreams, d disk.Disk, requiredRatio float64, paths ...string) (disk.FileSystemDiskUsage, error) {
 		return nil, expected
 	}
 }
 
-func MasterHostReturnsUsage(expected disk.FileSystemDiskUsage) disk.CheckUsageType {
+func CoordinatorHostReturnsUsage(expected disk.FileSystemDiskUsage) disk.CheckUsageType {
 	return func(streams step.OutStreams, d disk.Disk, requiredRatio float64, paths ...string) (disk.FileSystemDiskUsage, error) {
 		return expected, nil
 	}
 }
 
-func TestCheckDiskSpace_OnMaster(t *testing.T) {
+func TestCheckDiskSpace_OnCoordinator(t *testing.T) {
 	source := hub.MustCreateCluster(t, greenplum.SegConfigs{
 		{ContentID: -1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
 	})
 
 	tablespaces := greenplum.Tablespaces{}
 
-	t.Run("does not return disk usage or any errors when checking disk usage on master succeeds", func(t *testing.T) {
-		hub.SetCheckDiskUsage(MasterHostCheckDiskUsagePasses)
+	t.Run("does not return disk usage or any errors when checking disk usage on coordinator succeeds", func(t *testing.T) {
+		hub.SetCheckDiskUsage(CoordinatorHostCheckDiskUsagePasses)
 		defer hub.ResetCheckDiskUsage()
 
 		err := hub.CheckDiskSpace(step.DevNullStream, []*idl.Connection{}, 0, source, tablespaces)
@@ -55,9 +55,9 @@ func TestCheckDiskSpace_OnMaster(t *testing.T) {
 		}
 	})
 
-	t.Run("errors when checking disk usage on master fails", func(t *testing.T) {
+	t.Run("errors when checking disk usage on coordinator fails", func(t *testing.T) {
 		expected := errors.New("permission denied")
-		hub.SetCheckDiskUsage(MasterHostErrorsWith(expected))
+		hub.SetCheckDiskUsage(CoordinatorHostErrorsWith(expected))
 		defer hub.ResetCheckDiskUsage()
 
 		err := hub.CheckDiskSpace(step.DevNullStream, []*idl.Connection{}, 0, source, tablespaces)
@@ -66,14 +66,14 @@ func TestCheckDiskSpace_OnMaster(t *testing.T) {
 		}
 	})
 
-	t.Run("returns usage when checking disk usage on master", func(t *testing.T) {
+	t.Run("returns usage when checking disk usage on coordinator", func(t *testing.T) {
 		usage := idl.CheckDiskSpaceReply_DiskUsage{
 			Fs:        "/",
 			Host:      "mdw",
 			Available: 1024,
 			Required:  2048,
 		}
-		hub.SetCheckDiskUsage(MasterHostReturnsUsage(disk.FileSystemDiskUsage{&usage}))
+		hub.SetCheckDiskUsage(CoordinatorHostReturnsUsage(disk.FileSystemDiskUsage{&usage}))
 		defer hub.ResetCheckDiskUsage()
 
 		err := hub.CheckDiskSpace(step.DevNullStream, []*idl.Connection{}, 0, source, tablespaces)
@@ -96,7 +96,7 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 
 	tablespaces := testutils.CreateTablespaces()
 
-	hub.SetCheckDiskUsage(MasterHostCheckDiskUsagePasses)
+	hub.SetCheckDiskUsage(CoordinatorHostCheckDiskUsagePasses)
 	defer hub.ResetCheckDiskUsage()
 
 	t.Run("returns no error or usage when checking disk usage on segment hosts succeeds", func(t *testing.T) {
@@ -193,7 +193,7 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 		}
 	})
 
-	t.Run("combines usage across all hosts and removes duplicate usage between master and segments", func(t *testing.T) {
+	t.Run("combines usage across all hosts and removes duplicate usage between coordinator and segments", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -204,7 +204,7 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 				Available: 1024,
 				Required:  2048,
 			}}
-		hub.SetCheckDiskUsage(MasterHostReturnsUsage(mdwUsage))
+		hub.SetCheckDiskUsage(CoordinatorHostReturnsUsage(mdwUsage))
 		defer hub.ResetCheckDiskUsage()
 
 		primaryUsage := disk.FileSystemDiskUsage{
@@ -266,7 +266,7 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		hub.SetCheckDiskUsage(MasterHostCheckDiskUsagePasses)
+		hub.SetCheckDiskUsage(CoordinatorHostCheckDiskUsagePasses)
 		defer hub.ResetCheckDiskUsage()
 
 		sdw2 := mock_idl.NewMockAgentClient(ctrl)
@@ -279,11 +279,11 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 			{AgentClient: sdw2, Hostname: "sdw2"},
 		}
 
-		masterOnlyCluster := hub.MustCreateCluster(t, greenplum.SegConfigs{
+		coordinatorOnlyCluster := hub.MustCreateCluster(t, greenplum.SegConfigs{
 			{ContentID: -1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
 		})
 
-		err := hub.CheckDiskSpace(step.DevNullStream, agentConns, 0, masterOnlyCluster, tablespaces)
+		err := hub.CheckDiskSpace(step.DevNullStream, agentConns, 0, coordinatorOnlyCluster, tablespaces)
 		if err != nil {
 			t.Errorf("unexpected error %#v", err)
 		}

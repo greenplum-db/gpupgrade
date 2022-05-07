@@ -46,7 +46,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 	// If the intermediate target cluster is started, it must be stopped.
 	if s.Intermediate != nil {
 		st.AlwaysRun(idl.Substep_SHUTDOWN_TARGET_CLUSTER, func(streams step.OutStreams) error {
-			running, err := s.Intermediate.IsMasterRunning(streams)
+			running, err := s.Intermediate.IsCoordinatorRunning(streams)
 			if err != nil {
 				return err
 			}
@@ -60,13 +60,13 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 	}
 
 	st.RunConditionally(idl.Substep_DELETE_TARGET_CLUSTER_DATADIRS,
-		s.Intermediate.Primaries != nil && s.Intermediate.MasterDataDir() != "",
+		s.Intermediate.Primaries != nil && s.Intermediate.CoordinatorDataDir() != "",
 		func(streams step.OutStreams) error {
-			return DeleteMasterAndPrimaryDataDirectories(streams, s.agentConns, s.Intermediate)
+			return DeleteCoordinatorAndPrimaryDataDirectories(streams, s.agentConns, s.Intermediate)
 		})
 
 	st.RunConditionally(idl.Substep_DELETE_TABLESPACES,
-		s.Intermediate.Primaries != nil && s.Intermediate.MasterDataDir() != "",
+		s.Intermediate.Primaries != nil && s.Intermediate.CoordinatorDataDir() != "",
 		func(streams step.OutStreams) error {
 			return DeleteTargetTablespaces(streams, s.agentConns, s.Config.Intermediate, s.Intermediate.CatalogVersion, s.Source.Tablespaces)
 		})
@@ -78,7 +78,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 	// substep to clean up the pg_control.old file, since the rsync will not
 	// remove it.
 	st.RunConditionally(idl.Substep_RESTORE_PGCONTROL, s.LinkMode, func(streams step.OutStreams) error {
-		return RestoreMasterAndPrimariesPgControl(streams, s.agentConns, s.Source)
+		return RestoreCoordinatorAndPrimariesPgControl(streams, s.agentConns, s.Source)
 	})
 
 	// if the target cluster has been started at any point, we must restore the source
@@ -89,11 +89,11 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 	}
 
 	st.RunConditionally(idl.Substep_RESTORE_SOURCE_CLUSTER, s.LinkMode && targetStarted, func(stream step.OutStreams) error {
-		if err := RsyncMasterAndPrimaries(stream, s.agentConns, s.Source); err != nil {
+		if err := RsyncCoordinatorAndPrimaries(stream, s.agentConns, s.Source); err != nil {
 			return err
 		}
 
-		return RsyncMasterAndPrimariesTablespaces(stream, s.agentConns, s.Source)
+		return RsyncCoordinatorAndPrimariesTablespaces(stream, s.agentConns, s.Source)
 	})
 
 	handleMirrorStartupFailure, err := s.expectMirrorFailure()
@@ -101,7 +101,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		return err
 	}
 
-	sourceClusterIsRunning, err := s.Source.IsMasterRunning(step.DevNullStream)
+	sourceClusterIsRunning, err := s.Source.IsCoordinatorRunning(step.DevNullStream)
 	if err != nil {
 		return err
 	}
@@ -143,11 +143,11 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 			return xerrors.Errorf("get log archive directory: %w", err)
 		}
 
-		return ArchiveLogDirectories(logArchiveDir, s.agentConns, s.Config.Source.MasterHostname())
+		return ArchiveLogDirectories(logArchiveDir, s.agentConns, s.Config.Source.CoordinatorHostname())
 	})
 
 	st.Run(idl.Substep_DELETE_SEGMENT_STATEDIRS, func(_ step.OutStreams) error {
-		return DeleteStateDirectories(s.agentConns, s.Source.MasterHostname())
+		return DeleteStateDirectories(s.agentConns, s.Source.CoordinatorHostname())
 	})
 
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_RevertResponse{
@@ -155,8 +155,8 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 			SourceVersion:       s.Source.Version.String(),
 			LogArchiveDirectory: logArchiveDir,
 			Source: &idl.Cluster{
-				Port:                int32(s.Source.MasterPort()),
-				MasterDataDirectory: s.Source.MasterDataDir(),
+				Port:                     int32(s.Source.CoordinatorPort()),
+				CoordinatorDataDirectory: s.Source.CoordinatorDataDir(),
 			},
 		},
 	}}}}

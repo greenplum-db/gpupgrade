@@ -20,7 +20,7 @@ func TestDeleteStateDirectories(t *testing.T) {
 
 	t.Run("DeleteStateDirectories", func(t *testing.T) {
 		t.Run("deletes state directories on all hosts except for the host that gets passed in", func(t *testing.T) {
-			excludeHostname := "master-host"
+			excludeHostname := "coordinator-host"
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
@@ -36,13 +36,13 @@ func TestDeleteStateDirectories(t *testing.T) {
 				&idl.DeleteStateDirectoryRequest{},
 			).Return(&idl.DeleteStateDirectoryReply{}, nil)
 
-			masterHostClient := mock_idl.NewMockAgentClient(ctrl)
-			// NOTE: we expect no call to the master
+			coordinatorHostClient := mock_idl.NewMockAgentClient(ctrl)
+			// NOTE: we expect no call to the coordinator
 
 			agentConns := []*idl.Connection{
 				{AgentClient: sdw1Client, Hostname: "sdw1"},
 				{AgentClient: standbyClient, Hostname: "standby"},
-				{AgentClient: masterHostClient, Hostname: excludeHostname},
+				{AgentClient: coordinatorHostClient, Hostname: excludeHostname},
 			}
 
 			err := hub.DeleteStateDirectories(agentConns, excludeHostname)

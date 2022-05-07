@@ -30,7 +30,7 @@ import (
 )
 
 func gpinitsystem_Exits1() {
-	os.Stdout.WriteString("[WARN]:-Master open file limit is 256 should be >= 65535")
+	os.Stdout.WriteString("[WARN]:-Coordinator open file limit is 256 should be >= 65535")
 	os.Exit(1)
 }
 
@@ -365,19 +365,19 @@ func TestRunInitsystemForTargetCluster(t *testing.T) {
 	})
 }
 
-func TestGetMasterSegPrefix(t *testing.T) {
+func TestGetCoordinatorSegPrefix(t *testing.T) {
 	t.Run("returns a valid seg prefix given", func(t *testing.T) {
 		cases := []struct {
-			desc          string
-			MasterDataDir string
+			desc               string
+			CoordinatorDataDir string
 		}{
-			{"an absolute path", "/data/master/gpseg-1"},
-			{"a relative path", "../master/gpseg-1"},
+			{"an absolute path", "/data/coordinator/gpseg-1"},
+			{"a relative path", "../coordinator/gpseg-1"},
 			{"a implicitly relative path", "gpseg-1"},
 		}
 
 		for _, c := range cases {
-			actual, err := GetMasterSegPrefix(c.MasterDataDir)
+			actual, err := GetCoordinatorSegPrefix(c.CoordinatorDataDir)
 			if err != nil {
 				t.Fatalf("got %#v, want nil", err)
 			}
@@ -391,8 +391,8 @@ func TestGetMasterSegPrefix(t *testing.T) {
 
 	t.Run("returns errors when given", func(t *testing.T) {
 		cases := []struct {
-			desc          string
-			MasterDataDir string
+			desc               string
+			CoordinatorDataDir string
 		}{
 			{"the empty string", ""},
 			{"a path without a content identifier", "/opt/myseg"},
@@ -402,7 +402,7 @@ func TestGetMasterSegPrefix(t *testing.T) {
 		}
 
 		for _, c := range cases {
-			_, err := GetMasterSegPrefix(c.MasterDataDir)
+			_, err := GetCoordinatorSegPrefix(c.CoordinatorDataDir)
 			if err == nil {
 				t.Fatalf("got nil, want err")
 			}

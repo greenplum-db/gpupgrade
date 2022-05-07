@@ -22,15 +22,15 @@ func CheckDiskSpace(streams step.OutStreams, agentConns []*idl.Connection, diskF
 	errs := make(chan error, len(agentConns)+1)
 	usagesChan := make(chan disk.FileSystemDiskUsage, len(agentConns)+1)
 
-	// check disk space on master
+	// check disk space on coordinator
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 
-		masterDirs := []string{source.MasterDataDir()}
-		masterDirs = append(masterDirs, sourceTablespaces.GetMasterTablespaces().UserDefinedTablespacesLocations()...)
+		coordinatorDirs := []string{source.CoordinatorDataDir()}
+		coordinatorDirs = append(coordinatorDirs, sourceTablespaces.GetCoordinatorTablespaces().UserDefinedTablespacesLocations()...)
 
-		usage, err := checkDiskUsage(streams, disk.Local, diskFreeRatio, masterDirs...)
+		usage, err := checkDiskUsage(streams, disk.Local, diskFreeRatio, coordinatorDirs...)
 		errs <- err
 		usagesChan <- usage
 	}()
@@ -72,16 +72,16 @@ func checkDiskSpaceOnStandbyAndSegments(agentConns []*idl.Connection, errs chan<
 	for _, conn := range agentConns {
 		conn := conn
 
-		segmentsExcludingMaster := source.SelectSegments(func(seg *greenplum.SegConfig) bool {
-			return seg.IsOnHost(conn.Hostname) && !seg.IsMaster()
+		segmentsExcludingCoordinator := source.SelectSegments(func(seg *greenplum.SegConfig) bool {
+			return seg.IsOnHost(conn.Hostname) && !seg.IsCoordinator()
 		})
-		sort.Sort(segmentsExcludingMaster)
-		if len(segmentsExcludingMaster) == 0 {
+		sort.Sort(segmentsExcludingCoordinator)
+		if len(segmentsExcludingCoordinator) == 0 {
 			return
 		}
 
 		var dirs []string
-		for _, seg := range segmentsExcludingMaster {
+		for _, seg := range segmentsExcludingCoordinator {
 			dirs = append(dirs, seg.DataDir)
 			dirs = append(dirs, sourceTablespaces[seg.DbID].UserDefinedTablespacesLocations()...)
 		}

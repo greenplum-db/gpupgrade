@@ -92,7 +92,7 @@ recreate any additional tables, indexes, and roles that were dropped or
 altered to resolve migration issues.
 
 To restart the upgrade, run "gpupgrade initialize" again.`,
-				response.GetSourceVersion(), response.GetSource().GetPort(), response.GetSource().GetMasterDataDirectory(), response.GetLogArchiveDirectory()))
+				response.GetSourceVersion(), response.GetSource().GetPort(), response.GetSource().GetCoordinatorDataDirectory(), response.GetLogArchiveDirectory()))
 		},
 	}
 

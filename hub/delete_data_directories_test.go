@@ -25,7 +25,7 @@ import (
 
 func TestDeleteSegmentDataDirs(t *testing.T) {
 	primarySegConfigs := greenplum.SegConfigs{
-		{ContentID: -1, DbID: 0, Port: 25431, Hostname: "master", DataDir: "/data/qddir", Role: greenplum.PrimaryRole},
+		{ContentID: -1, DbID: 0, Port: 25431, Hostname: "coordinator", DataDir: "/data/qddir", Role: greenplum.PrimaryRole},
 		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
 		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 		{ContentID: 2, DbID: 4, Port: 25434, Hostname: "sdw1", DataDir: "/data/dbfast1/seg3", Role: greenplum.PrimaryRole},
@@ -34,8 +34,8 @@ func TestDeleteSegmentDataDirs(t *testing.T) {
 
 	testlog.SetupLogger()
 
-	t.Run("DeleteMasterAndPrimaryDataDirectories", func(t *testing.T) {
-		t.Run("deletes master and primary data directories", func(t *testing.T) {
+	t.Run("DeleteCoordinatorAndPrimaryDataDirectories", func(t *testing.T) {
+		t.Run("deletes coordinator and primary data directories", func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
@@ -66,9 +66,9 @@ func TestDeleteSegmentDataDirs(t *testing.T) {
 				{AgentClient: standbyClient, Hostname: "standby"},
 			}
 
-			intermediate := hub.MustCreateCluster(t, append(primarySegConfigs, greenplum.SegConfig{ContentID: -1, DbID: 0, Port: 25431, Hostname: "master", DataDir: "/data/qddir", Role: greenplum.PrimaryRole}))
+			intermediate := hub.MustCreateCluster(t, append(primarySegConfigs, greenplum.SegConfig{ContentID: -1, DbID: 0, Port: 25431, Hostname: "coordinator", DataDir: "/data/qddir", Role: greenplum.PrimaryRole}))
 
-			err := hub.DeleteMasterAndPrimaryDataDirectories(step.DevNullStream, agentConns, intermediate)
+			err := hub.DeleteCoordinatorAndPrimaryDataDirectories(step.DevNullStream, agentConns, intermediate)
 			if err != nil {
 				t.Errorf("unexpected err %#v", err)
 			}
@@ -96,9 +96,9 @@ func TestDeleteSegmentDataDirs(t *testing.T) {
 				{AgentClient: sdw2ClientFailed, Hostname: "sdw2"},
 			}
 
-			intermediate := hub.MustCreateCluster(t, append(primarySegConfigs, greenplum.SegConfig{ContentID: -1, DbID: 0, Port: 25431, Hostname: "master", DataDir: "/data/qddir", Role: greenplum.PrimaryRole}))
+			intermediate := hub.MustCreateCluster(t, append(primarySegConfigs, greenplum.SegConfig{ContentID: -1, DbID: 0, Port: 25431, Hostname: "coordinator", DataDir: "/data/qddir", Role: greenplum.PrimaryRole}))
 
-			err := hub.DeleteMasterAndPrimaryDataDirectories(step.DevNullStream, agentConns, intermediate)
+			err := hub.DeleteCoordinatorAndPrimaryDataDirectories(step.DevNullStream, agentConns, intermediate)
 
 			if !errors.Is(err, expected) {
 				t.Errorf("got error %#v, want %#v", err, expected)
@@ -109,7 +109,7 @@ func TestDeleteSegmentDataDirs(t *testing.T) {
 
 func TestDeleteTablespaceDirectories(t *testing.T) {
 	target := hub.MustCreateCluster(t, greenplum.SegConfigs{
-		{DbID: 1, ContentID: -1, Hostname: "master", DataDir: "/data/qddir", Role: greenplum.PrimaryRole},
+		{DbID: 1, ContentID: -1, Hostname: "coordinator", DataDir: "/data/qddir", Role: greenplum.PrimaryRole},
 		{DbID: 6, ContentID: -1, Hostname: "standby", DataDir: "/data/standby", Role: greenplum.MirrorRole},
 		{DbID: 2, ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
 		{DbID: 3, ContentID: 0, Hostname: "msdw1", DataDir: "/data/dbfast_mirror1/seg1", Role: greenplum.MirrorRole},
@@ -118,7 +118,7 @@ func TestDeleteTablespaceDirectories(t *testing.T) {
 	})
 	target.Version = semver.MustParse("6.1.0")
 
-	t.Run("deletes tablespace directories only on the master", func(t *testing.T) {
+	t.Run("deletes tablespace directories only on the coordinator", func(t *testing.T) {
 		tsDir1, _, tsLocation1 := testutils.MustMakeTablespaceDir(t, 16386)
 		defer testutils.MustRemoveAll(t, tsLocation1)
 
@@ -128,7 +128,7 @@ func TestDeleteTablespaceDirectories(t *testing.T) {
 		systemTsDir, systemDbIdDir, systemTsLocation := testutils.MustMakeTablespaceDir(t, 1700)
 		defer testutils.MustRemoveAll(t, systemTsLocation)
 
-		masterTablespaces := greenplum.SegmentTablespaces{
+		coordinatorTablespaces := greenplum.SegmentTablespaces{
 			16386: {
 				Location:    tsLocation1,
 				UserDefined: 1,
@@ -143,9 +143,9 @@ func TestDeleteTablespaceDirectories(t *testing.T) {
 			},
 		}
 
-		err := hub.DeleteTargetTablespacesOnMaster(step.DevNullStream, target, masterTablespaces, "301908232")
+		err := hub.DeleteTargetTablespacesOnCoordinator(step.DevNullStream, target, coordinatorTablespaces, "301908232")
 		if err != nil {
-			t.Errorf("DeleteTargetTablespacesOnMaster returned error %+v", err)
+			t.Errorf("DeleteTargetTablespacesOnCoordinator returned error %+v", err)
 		}
 
 		// verify user tablespace directories are deleted
@@ -170,11 +170,11 @@ func TestDeleteTablespaceDirectories(t *testing.T) {
 		tablespaces := map[int]greenplum.SegmentTablespaces{
 			1: {
 				16386: {
-					Location:    "/tmp/testfs/master/demoDataDir-1/16386",
+					Location:    "/tmp/testfs/coordinator/demoDataDir-1/16386",
 					UserDefined: 1,
 				},
 				16387: {
-					Location:    "/tmp/testfs/master/demoDataDir-1/16387",
+					Location:    "/tmp/testfs/coordinator/demoDataDir-1/16387",
 					UserDefined: 1,
 				},
 				1663: {
@@ -235,13 +235,13 @@ func TestDeleteTablespaceDirectories(t *testing.T) {
 				}}),
 		).Return(&idl.DeleteTablespaceReply{}, nil)
 
-		master := mock_idl.NewMockAgentClient(ctrl)
+		coordinator := mock_idl.NewMockAgentClient(ctrl)
 		standby := mock_idl.NewMockAgentClient(ctrl)
 
 		agentConns := []*idl.Connection{
 			{AgentClient: sdw1, Hostname: "sdw1"},
 			{AgentClient: sdw2, Hostname: "sdw2"},
-			{AgentClient: master, Hostname: "master"},
+			{AgentClient: coordinator, Hostname: "coordinator"},
 			{AgentClient: standby, Hostname: "standby"},
 		}
 

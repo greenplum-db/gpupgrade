@@ -35,16 +35,16 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 	})
 
 	st.Run(idl.Substep_UPGRADE_MASTER, func(streams step.OutStreams) error {
-		return UpgradeMaster(streams, s.Source, s.Intermediate, idl.PgOptions_upgrade, s.LinkMode)
+		return UpgradeCoordinator(streams, s.Source, s.Intermediate, idl.PgOptions_upgrade, s.LinkMode)
 	})
 
 	st.Run(idl.Substep_COPY_MASTER, func(streams step.OutStreams) error {
-		err := CopyMasterDataDir(streams, s.Intermediate.MasterDataDir(), utils.GetCoordinatorPostUpgradeBackupDir(), s.Intermediate.PrimaryHostnames())
+		err := CopyCoordinatorDataDir(streams, s.Intermediate.CoordinatorDataDir(), utils.GetCoordinatorPostUpgradeBackupDir(), s.Intermediate.PrimaryHostnames())
 		if err != nil {
 			return err
 		}
 
-		return CopyMasterTablespaces(streams, s.Source.Tablespaces, utils.GetTablespaceDir(), s.Intermediate.PrimaryHostnames())
+		return CopyCoordinatorTablespaces(streams, s.Source.Tablespaces, utils.GetTablespaceDir(), s.Intermediate.PrimaryHostnames())
 	})
 
 	st.Run(idl.Substep_UPGRADE_PRIMARIES, func(streams step.OutStreams) error {
@@ -58,8 +58,8 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_ExecuteResponse{
 		ExecuteResponse: &idl.ExecuteResponse{
 			Target: &idl.Cluster{
-				Port:                int32(s.Intermediate.MasterPort()),
-				MasterDataDirectory: s.Intermediate.MasterDataDir(),
+				Port:                     int32(s.Intermediate.CoordinatorPort()),
+				CoordinatorDataDirectory: s.Intermediate.CoordinatorDataDir(),
 			}},
 	}}}}
 

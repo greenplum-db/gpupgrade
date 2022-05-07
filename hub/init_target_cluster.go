@@ -27,7 +27,7 @@ var ErrUnknownCatalogVersion = errors.New("pg_controldata output is missing cata
 func (s *Server) GenerateInitsystemConfig() error {
 	options := []greenplum.Option{
 		greenplum.ToSource(),
-		greenplum.Port(s.Source.MasterPort()),
+		greenplum.Port(s.Source.CoordinatorPort()),
 	}
 
 	db, err := sql.Open("pgx", s.Connection.URI(options...))
@@ -44,7 +44,7 @@ func (s *Server) GenerateInitsystemConfig() error {
 }
 
 func (s *Server) writeConf(db *sql.DB) error {
-	gpinitsystemConfig, err := CreateInitialInitsystemConfig(s.Intermediate.MasterDataDir(), s.UseHbaHostnames)
+	gpinitsystemConfig, err := CreateInitialInitsystemConfig(s.Intermediate.CoordinatorDataDir(), s.UseHbaHostnames)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func (s *Server) RemoveIntermediateCluster(streams step.OutStreams) error {
 		return nil
 	}
 
-	running, err := s.Intermediate.IsMasterRunning(streams)
+	running, err := s.Intermediate.IsCoordinatorRunning(streams)
 	if err != nil {
 		return err
 	}
@@ -78,7 +78,7 @@ func (s *Server) RemoveIntermediateCluster(streams step.OutStreams) error {
 		}
 	}
 
-	err = DeleteMasterAndPrimaryDataDirectories(streams, s.agentConns, s.Intermediate)
+	err = DeleteCoordinatorAndPrimaryDataDirectories(streams, s.agentConns, s.Intermediate)
 	if err != nil {
 		return xerrors.Errorf("deleting target cluster data directories: %w", err)
 	}
@@ -132,10 +132,10 @@ func GetCheckpointSegmentsAndEncoding(gpinitsystemConfig []string, version semve
 	return gpinitsystemConfig, nil
 }
 
-func CreateInitialInitsystemConfig(targetMasterDataDir string, useHbaHostnames bool) ([]string, error) {
+func CreateInitialInitsystemConfig(targetCoordinatorDataDir string, useHbaHostnames bool) ([]string, error) {
 	gpinitsystemConfig := []string{`ARRAY_NAME="gp_upgrade cluster"`}
 
-	segPrefix, err := GetMasterSegPrefix(targetMasterDataDir)
+	segPrefix, err := GetCoordinatorSegPrefix(targetCoordinatorDataDir)
 	if err != nil {
 		return gpinitsystemConfig, xerrors.Errorf("determine master segment prefix: %w", err)
 	}
@@ -161,15 +161,15 @@ func WriteInitsystemFile(gpinitsystemConfig []string, gpinitsystemFilepath strin
 }
 
 func WriteSegmentArray(config []string, intermediate *greenplum.Cluster) ([]string, error) {
-	master := intermediate.Master()
+	coordinator := intermediate.Coordinator()
 	config = append(config,
 		fmt.Sprintf("QD_PRIMARY_ARRAY=%s~%s~%d~%s~%d~%d",
-			master.Hostname,
-			master.Hostname,
-			master.Port,
-			master.DataDir,
-			master.DbID,
-			master.ContentID,
+			coordinator.Hostname,
+			coordinator.Hostname,
+			coordinator.Port,
+			coordinator.DataDir,
+			coordinator.DbID,
+			coordinator.ContentID,
 		),
 	)
 
@@ -195,15 +195,15 @@ func WriteSegmentArray(config []string, intermediate *greenplum.Cluster) ([]stri
 	return config, nil
 }
 
-func GetMasterSegPrefix(datadir string) (string, error) {
-	const masterContentID = "-1"
+func GetCoordinatorSegPrefix(datadir string) (string, error) {
+	const coordinatorContentID = "-1"
 
 	base := path.Base(datadir)
-	if !strings.HasSuffix(base, masterContentID) {
+	if !strings.HasSuffix(base, coordinatorContentID) {
 		return "", fmt.Errorf("path requires a master content identifier: '%s'", datadir)
 	}
 
-	segPrefix := strings.TrimSuffix(base, masterContentID)
+	segPrefix := strings.TrimSuffix(base, coordinatorContentID)
 	if segPrefix == "" {
 		return "", fmt.Errorf("path has no segment prefix: '%s'", datadir)
 	}
@@ -212,7 +212,7 @@ func GetMasterSegPrefix(datadir string) (string, error) {
 
 func GetCatalogVersion(intermediate *greenplum.Cluster) (string, error) {
 	stream := &step.BufferedStreams{}
-	err := intermediate.RunGreenplumCmd(stream, "pg_controldata", intermediate.MasterDataDir())
+	err := intermediate.RunGreenplumCmd(stream, "pg_controldata", intermediate.CoordinatorDataDir())
 	if err != nil {
 		return "", err
 	}

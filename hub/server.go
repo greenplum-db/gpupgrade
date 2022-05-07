@@ -431,11 +431,11 @@ func LoadConfig(conf *Config, path string) error {
 func AgentHosts(c *greenplum.Cluster) []string {
 	uniqueHosts := make(map[string]bool)
 
-	excludingMaster := func(seg *greenplum.SegConfig) bool {
-		return !seg.IsMaster()
+	excludingCoordinator := func(seg *greenplum.SegConfig) bool {
+		return !seg.IsCoordinator()
 	}
 
-	for _, seg := range c.SelectSegments(excludingMaster) {
+	for _, seg := range c.SelectSegments(excludingCoordinator) {
 		uniqueHosts[seg.Hostname] = true
 	}
 

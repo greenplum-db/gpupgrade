@@ -78,7 +78,7 @@ CREATE ROLE gphdfs_user CREATEEXTTABLE(protocol='gphdfs', type='writable') CREAT
 -- create partitioned tables where the index relation name is not equal primary/unique key constraint name for the root
 -- Note that the naming of the constraint is key, not the type of constraint
 -- If the constraint is named, every partition will have the same named constraint and they all can be dropped with the same command
--- If the constraint is not named, greenplum generates a unique name for each partition as well as the master table. We can only drop the master tables constraint and the partition constraints remain in effect
+-- If the constraint is not named, greenplum generates a unique name for each partition as well as the coordinator table. We can only drop the coordinator tables constraint and the partition constraints remain in effect
 DROP TABLE IF EXISTS table_with_unique_constraint_p;
 CREATE TYPE unique_constraint_p_author_key AS (dummy int);
 CREATE TYPE unique_constraint_p_author_key1 AS (dummy int);

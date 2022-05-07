@@ -29,11 +29,11 @@ versions.
 
 gpupgrade consists of three processes that communicate using gRPC and protocol buffers:
 - CLI
-  - Runs on the master host
+  - Runs on the coordinator host
   - Consists of a gRPC client
 - Hub
-  - Runs on the master host
-  - Upgrades the master
+  - Runs on the coordinator host
+  - Upgrades the coordinator
   - Coordinates the agent processes
   - Consists of a gRPC client and server 
 - Agents
@@ -61,13 +61,13 @@ Running gpupgrade consists of several steps (ie: commands):
     and running pre-upgrade checks.
 - gpupgrade execute
   - This step will stop the source cluster. Downtime is needed.
-  - Substeps include upgrading the master, copying the master catalog to the segments, and upgrading the primaries.
+  - Substeps include upgrading the coordinator, copying the coordinator catalog to the segments, and upgrading the primaries.
   - The coordinator contains only catalog information and no data, and is used to upgrade the catalog of the primaries. 
     That is, after the target cluster coordinator is upgraded it's copied to each of the primary data directories on 
     the target cluster to upgrade their catalog. Next, the target cluster primaries data is upgraded using pg_upgrade.
 - gpupgrade finalize
   - After finalizing the upgrade cannot be reverted.
-  - Substeps include updating the data directories and master catalog, and upgrading the standby and mirrors.
+  - Substeps include updating the data directories and coordinator catalog, and upgrading the standby and mirrors.
 
 Optional steps (ie: commands):
 - gpupgrade revert
@@ -297,7 +297,7 @@ Logs are located on **_all hosts_**.
   - What step failed - initialize, execute, finalize, or revert?
   - What specific substep failed?
 - Identify the Failing Host
-  - Did the Hub (master) vs. Agent (segment) fail?
+  - Did the Hub (coordinator) vs. Agent (segment) fail?
   - What specific host failed?
 - Identify the Failed Utility
   - Did gpupgrade fail, or an underlying utility such as pg_upgrade, gpinitsystem, gpstart, etc.?

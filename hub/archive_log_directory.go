@@ -12,8 +12,8 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
-func ArchiveLogDirectories(logArchiveDir string, agentConns []*idl.Connection, targetMasterHost string) error {
-	// Archive log directory on master
+func ArchiveLogDirectories(logArchiveDir string, agentConns []*idl.Connection, targetCoordinatorHost string) error {
+	// Archive log directory on coordinator
 	logDir, err := utils.GetLogDir()
 	if err != nil {
 		return err
@@ -25,7 +25,7 @@ func ArchiveLogDirectories(logArchiveDir string, agentConns []*idl.Connection, t
 	}
 
 	// Archive log directory on segments
-	return ArchiveSegmentLogDirectories(agentConns, targetMasterHost, logArchiveDir)
+	return ArchiveSegmentLogDirectories(agentConns, targetCoordinatorHost, logArchiveDir)
 
 }
 

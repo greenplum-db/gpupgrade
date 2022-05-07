@@ -20,7 +20,7 @@ func AddReplicationEntriesOnPrimaries(agentConns []*idl.Connection, intermediate
 
 	request := func(conn *idl.Connection) error {
 		intermediatePrimaries := intermediate.SelectSegments(func(seg *greenplum.SegConfig) bool {
-			return seg.IsOnHost(conn.Hostname) && !seg.IsMaster() && seg.IsPrimary()
+			return seg.IsOnHost(conn.Hostname) && !seg.IsCoordinator() && seg.IsPrimary()
 		})
 
 		var entries []*idl.AddReplicationEntriesRequest_Entry

@@ -245,12 +245,12 @@ func TestUILoop(t *testing.T) {
 				msgs: msgStream{&idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{
 					Contents: &idl.Response_ExecuteResponse{ExecuteResponse: &idl.ExecuteResponse{
 						Target: &idl.Cluster{
-							Port:                15423,
-							MasterDataDirectory: "/data/gpseg-1",
+							Port:                     15423,
+							CoordinatorDataDirectory: "/data/gpseg-1",
 						}}}}}}},
 				expected: func(response *idl.Response) bool {
 					return response.GetExecuteResponse().GetTarget().GetPort() == 15423 &&
-						response.GetExecuteResponse().GetTarget().GetMasterDataDirectory() == "/data/gpseg-1"
+						response.GetExecuteResponse().GetTarget().GetCoordinatorDataDirectory() == "/data/gpseg-1"
 				},
 			},
 			{
@@ -258,12 +258,12 @@ func TestUILoop(t *testing.T) {
 				msgs: msgStream{&idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{
 					Contents: &idl.Response_FinalizeResponse{FinalizeResponse: &idl.FinalizeResponse{
 						TargetCluster: &idl.Cluster{
-							Port:                15433,
-							MasterDataDirectory: "/data/gpseg-10",
+							Port:                     15433,
+							CoordinatorDataDirectory: "/data/gpseg-10",
 						}}}}}}},
 				expected: func(response *idl.Response) bool {
 					return response.GetFinalizeResponse().GetTargetCluster().GetPort() == 15433 &&
-						response.GetFinalizeResponse().GetTargetCluster().GetMasterDataDirectory() == "/data/gpseg-10"
+						response.GetFinalizeResponse().GetTargetCluster().GetCoordinatorDataDirectory() == "/data/gpseg-10"
 				},
 			},
 			{
@@ -271,15 +271,15 @@ func TestUILoop(t *testing.T) {
 				msgs: msgStream{&idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{
 					Contents: &idl.Response_RevertResponse{RevertResponse: &idl.RevertResponse{
 						Source: &idl.Cluster{
-							Port:                1111,
-							MasterDataDirectory: "/data/gpseg-2",
+							Port:                     1111,
+							CoordinatorDataDirectory: "/data/gpseg-2",
 						},
 						SourceVersion:       "5.0",
 						LogArchiveDirectory: "/gpAdminLogs/1112",
 					}}}}}},
 				expected: func(response *idl.Response) bool {
 					return response.GetRevertResponse().GetSource().GetPort() == 1111 &&
-						response.GetRevertResponse().GetSource().GetMasterDataDirectory() == "/data/gpseg-2" &&
+						response.GetRevertResponse().GetSource().GetCoordinatorDataDirectory() == "/data/gpseg-2" &&
 						response.GetRevertResponse().GetSourceVersion() == "5.0" &&
 						response.GetRevertResponse().GetLogArchiveDirectory() == "/gpAdminLogs/1112"
 				},

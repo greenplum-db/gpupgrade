@@ -17,7 +17,7 @@ import (
 func UpgradePrimaries(agentConns []*idl.Connection, source *greenplum.Cluster, intermediate *greenplum.Cluster, action idl.PgOptions_Action, linkMode bool) error {
 	request := func(conn *idl.Connection) error {
 		intermediatePrimaries := intermediate.SelectSegments(func(seg *greenplum.SegConfig) bool {
-			return seg.IsOnHost(conn.Hostname) && seg.IsPrimary() && !seg.IsMaster()
+			return seg.IsOnHost(conn.Hostname) && seg.IsPrimary() && !seg.IsCoordinator()
 		})
 
 		var opts []*idl.PgOptions

@@ -29,7 +29,7 @@ var Excludes = []string{
 	"gp_dbid", "postgresql.conf", "backup_label.old", "postmaster.pid", "recovery.conf",
 }
 
-func RsyncMasterAndPrimaries(stream step.OutStreams, agentConns []*idl.Connection, source *greenplum.Cluster) error {
+func RsyncCoordinatorAndPrimaries(stream step.OutStreams, agentConns []*idl.Connection, source *greenplum.Cluster) error {
 
 	var wg sync.WaitGroup
 	errs := make(chan error, 2)
@@ -37,7 +37,7 @@ func RsyncMasterAndPrimaries(stream step.OutStreams, agentConns []*idl.Connectio
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		errs <- RsyncMaster(stream, source.Standby(), source.Master())
+		errs <- RsyncCoordinator(stream, source.Standby(), source.Coordinator())
 	}()
 
 	errs <- RsyncPrimaries(agentConns, source)
@@ -53,14 +53,14 @@ func RsyncMasterAndPrimaries(stream step.OutStreams, agentConns []*idl.Connectio
 	return err
 }
 
-func RsyncMasterAndPrimariesTablespaces(stream step.OutStreams, agentConns []*idl.Connection, source *greenplum.Cluster) error {
+func RsyncCoordinatorAndPrimariesTablespaces(stream step.OutStreams, agentConns []*idl.Connection, source *greenplum.Cluster) error {
 	var wg sync.WaitGroup
 	errs := make(chan error, 2)
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		errs <- RsyncMasterTablespaces(stream, source.StandbyHostname(), source.Tablespaces[source.Master().DbID], source.Tablespaces[source.Standby().DbID])
+		errs <- RsyncCoordinatorTablespaces(stream, source.StandbyHostname(), source.Tablespaces[source.Coordinator().DbID], source.Tablespaces[source.Standby().DbID])
 	}()
 
 	errs <- RsyncPrimariesTablespaces(agentConns, source, source.Tablespaces)
@@ -83,7 +83,7 @@ func Recoverseg(stream step.OutStreams, cluster *greenplum.Cluster, useHbaHostna
 	}
 
 	script := fmt.Sprintf("source %[1]s/greenplum_path.sh && MASTER_DATA_DIRECTORY=%[2]s PGPORT=%[3]d %[1]s/bin/gprecoverseg -a %[4]s",
-		cluster.GPHome, cluster.MasterDataDir(), cluster.MasterPort(), hbaHostnames)
+		cluster.GPHome, cluster.CoordinatorDataDir(), cluster.CoordinatorPort(), hbaHostnames)
 	cmd := RecoversegCmd("bash", "-c", script)
 
 	cmd.Stdout = stream.Stdout()
@@ -93,11 +93,11 @@ func Recoverseg(stream step.OutStreams, cluster *greenplum.Cluster, useHbaHostna
 	return cmd.Run()
 }
 
-func RsyncMaster(stream step.OutStreams, standby greenplum.SegConfig, master greenplum.SegConfig) error {
+func RsyncCoordinator(stream step.OutStreams, standby greenplum.SegConfig, coordinator greenplum.SegConfig) error {
 	opts := []rsync.Option{
 		rsync.WithSources(standby.DataDir + string(os.PathSeparator)),
 		rsync.WithSourceHost(standby.Hostname),
-		rsync.WithDestination(master.DataDir),
+		rsync.WithDestination(coordinator.DataDir),
 		rsync.WithOptions(Options...),
 		rsync.WithExcludedFiles(Excludes...),
 		rsync.WithStream(stream),
@@ -106,16 +106,16 @@ func RsyncMaster(stream step.OutStreams, standby greenplum.SegConfig, master gre
 	return rsync.Rsync(opts...)
 }
 
-func RsyncMasterTablespaces(stream step.OutStreams, standbyHostname string, masterTablespaces greenplum.SegmentTablespaces, standbyTablespaces greenplum.SegmentTablespaces) error {
-	for oid, masterTsInfo := range masterTablespaces {
-		if !masterTsInfo.IsUserDefined() {
+func RsyncCoordinatorTablespaces(stream step.OutStreams, standbyHostname string, coordinatorTablespaces greenplum.SegmentTablespaces, standbyTablespaces greenplum.SegmentTablespaces) error {
+	for oid, coordinatorTsInfo := range coordinatorTablespaces {
+		if !coordinatorTsInfo.IsUserDefined() {
 			continue
 		}
 
 		opts := []rsync.Option{
 			rsync.WithSourceHost(standbyHostname),
 			rsync.WithSources(standbyTablespaces[oid].Location + string(os.PathSeparator)),
-			rsync.WithDestination(masterTsInfo.Location),
+			rsync.WithDestination(coordinatorTsInfo.Location),
 			rsync.WithOptions(Options...),
 			rsync.WithStream(stream),
 		}
@@ -199,14 +199,14 @@ func RsyncPrimariesTablespaces(agentConns []*idl.Connection, source *greenplum.C
 	return ExecuteRPC(agentConns, request)
 }
 
-func RestoreMasterAndPrimariesPgControl(streams step.OutStreams, agentConns []*idl.Connection, source *greenplum.Cluster) error {
+func RestoreCoordinatorAndPrimariesPgControl(streams step.OutStreams, agentConns []*idl.Connection, source *greenplum.Cluster) error {
 	var wg sync.WaitGroup
 	errs := make(chan error, 2)
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		errs <- upgrade.RestorePgControl(source.MasterDataDir(), streams)
+		errs <- upgrade.RestorePgControl(source.CoordinatorDataDir(), streams)
 	}()
 
 	errs <- restorePrimariesPgControl(agentConns, source)

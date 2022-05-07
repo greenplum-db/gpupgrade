@@ -11,7 +11,7 @@ setup() {
     export GPUPGRADE_HOME="${STATE_DIR}/gpupgrade"
     gpupgrade kill-services
 
-    # If this variable is set (to a master data directory), teardown() will call
+    # If this variable is set (to a coordinator data directory), teardown() will call
     # gpdeletesystem on this cluster.
     NEW_CLUSTER=
 
@@ -41,7 +41,7 @@ teardown() {
         fi
     done <<< "$output"
 
-    local masterdir="${olddirs[$PGPORT]}"
+    local coordinator_dir="${olddirs[$PGPORT]}"
     local newport=6020
 
     gpupgrade initialize \
@@ -54,14 +54,14 @@ teardown() {
         --disk-free-ratio 0 3>&-
 
     # Make sure we clean up during teardown().
-    local newmasterdir="$(gpupgrade config show --target-datadir)"
-    NEW_CLUSTER="${newmasterdir}"
+    local new_coordinator_dir="$(gpupgrade config show --target-datadir)"
+    NEW_CLUSTER="${new_coordinator_dir}"
 
-    # Sanity check the newly created master's location.
-    [ "$newmasterdir" = $(expected_target_datadir "$masterdir") ]
+    # Sanity check the newly created coordinator's location.
+    [ "$new_coordinator_dir" = $(expected_target_datadir "$coordinator_dir") ]
 
     # unset LD_LIBRARY_PATH due to https://web.archive.org/web/20220506055918/https://groups.google.com/a/greenplum.org/g/gpdb-dev/c/JN-YwjCCReY/m/0L9wBOvlAQAJ
-    (unset LD_LIBRARY_PATH; PGPORT=$newport source "$GPHOME_TARGET"/greenplum_path.sh && gpstart -a -d "$newmasterdir")
+    (unset LD_LIBRARY_PATH; PGPORT=$newport source "$GPHOME_TARGET"/greenplum_path.sh && gpstart -a -d "$new_coordinator_dir")
 
     # Store the data directories for the new cluster.
     run get_segment_configuration "$GPHOME_TARGET" "$newport"
@@ -93,7 +93,7 @@ teardown() {
 }
 
 @test "initialize accepts a port range" {
-    # We need to have enough ports available for the master, standby, and
+    # We need to have enough ports available for the coordinator, standby, and
     # mirrors. As usual in these tests, we assume a standard demo cluster.
     # XXX: GPDB 5 demo cluster uses port 15432 by default so pick ports
     # not in the ephemeral range that do not conflict with it.
@@ -112,11 +112,11 @@ teardown() {
         --disk-free-ratio 0 3>&-
 
     # Make sure we clean up during teardown().
-    local newmasterdir="$(gpupgrade config show --target-datadir)"
-    NEW_CLUSTER="${newmasterdir}"
+    local new_coordinator_dir="$(gpupgrade config show --target-datadir)"
+    NEW_CLUSTER="${new_coordinator_dir}"
 
     # unset LD_LIBRARY_PATH due to https://web.archive.org/web/20220506055918/https://groups.google.com/a/greenplum.org/g/gpdb-dev/c/JN-YwjCCReY/m/0L9wBOvlAQAJ
-    (unset LD_LIBRARY_PATH; PGPORT=$newport source "$GPHOME_TARGET"/greenplum_path.sh && gpstart -a -d "$newmasterdir")
+    (unset LD_LIBRARY_PATH; PGPORT=$newport source "$GPHOME_TARGET"/greenplum_path.sh && gpstart -a -d "$new_coordinator_dir")
 
     # save the actual ports
     local actual_ports=$($PSQL -At -p $newport postgres -c "

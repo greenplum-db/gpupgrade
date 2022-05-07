@@ -21,22 +21,22 @@ import (
 
 func UpdateConfFiles(agentConns []*idl.Connection, _ step.OutStreams, version semver.Version, intermediate *greenplum.Cluster, target *greenplum.Cluster) error {
 	if version.Major < 7 {
-		// update gpperfmon.conf on master
+		// update gpperfmon.conf on coordinator
 		err := UpdateConfigurationFile([]*idl.UpdateFileConfOptions{{
-			Path:        filepath.Join(target.MasterDataDir(), "gpperfmon", "conf", "gpperfmon.conf"),
+			Path:        filepath.Join(target.CoordinatorDataDir(), "gpperfmon", "conf", "gpperfmon.conf"),
 			Pattern:     `^log_location = .*$`,
-			Replacement: fmt.Sprintf("log_location = %s", filepath.Join(target.MasterDataDir(), "gpperfmon", "logs")),
+			Replacement: fmt.Sprintf("log_location = %s", filepath.Join(target.CoordinatorDataDir(), "gpperfmon", "logs")),
 		}})
 		if err != nil {
 			return err
 		}
 	}
 
-	// update postgresql.conf on master
+	// update postgresql.conf on coordinator
 	err := UpdateConfigurationFile([]*idl.UpdateFileConfOptions{{
-		Path:        filepath.Join(target.MasterDataDir(), "postgresql.conf"),
-		Pattern:     fmt.Sprintf(`(^port[ \t]*=[ \t]*)%d([^0-9]|$)`, intermediate.MasterPort()),
-		Replacement: fmt.Sprintf(`\1%d\2`, target.MasterPort()),
+		Path:        filepath.Join(target.CoordinatorDataDir(), "postgresql.conf"),
+		Pattern:     fmt.Sprintf(`(^port[ \t]*=[ \t]*)%d([^0-9]|$)`, intermediate.CoordinatorPort()),
+		Replacement: fmt.Sprintf(`\1%d\2`, target.CoordinatorPort()),
 	}})
 	if err != nil {
 		return err
@@ -125,8 +125,8 @@ func UpdateRecoveryConfOnSegments(agentConns []*idl.Connection, version semver.V
 		if target.Standby().Hostname == conn.Hostname {
 			opt := &idl.UpdateFileConfOptions{
 				Path:        filepath.Join(target.StandbyDataDir(), file),
-				Pattern:     fmt.Sprintf(pattern, intermediateCluster.MasterPort()),
-				Replacement: fmt.Sprintf(replacement, target.MasterPort()),
+				Pattern:     fmt.Sprintf(pattern, intermediateCluster.CoordinatorPort()),
+				Replacement: fmt.Sprintf(replacement, target.CoordinatorPort()),
 			}
 
 			opts = append(opts, opt)

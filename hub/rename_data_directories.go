@@ -18,8 +18,8 @@ var RenameDirectories = upgrade.RenameDirectories
 type RenameMap = map[string][]*idl.RenameDirectories
 
 func RenameDataDirectories(agentConns []*idl.Connection, source *greenplum.Cluster, intermediate *greenplum.Cluster) error {
-	src := source.MasterDataDir()
-	dst := intermediate.MasterDataDir()
+	src := source.CoordinatorDataDir()
+	dst := intermediate.CoordinatorDataDir()
 	if err := RenameDirectories(src, dst); err != nil {
 		return xerrors.Errorf("renaming master data directories: %w", err)
 	}
@@ -41,7 +41,7 @@ func getRenameMap(source *greenplum.Cluster, intermediate *greenplum.Cluster) Re
 	m := make(RenameMap)
 
 	for _, seg := range source.Primaries {
-		if seg.IsMaster() {
+		if seg.IsCoordinator() {
 			continue
 		}
 

@@ -124,7 +124,7 @@ func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest
 	})
 
 	st.Run(idl.Substep_BACKUP_TARGET_MASTER, func(stream step.OutStreams) error {
-		sourceDir := s.Intermediate.MasterDataDir()
+		sourceDir := s.Intermediate.CoordinatorDataDir()
 		targetDir := utils.GetCoordinatorPreUpgradeBackupDir()
 
 		err := utils.System.MkdirAll(targetDir, 0700)
@@ -132,11 +132,11 @@ func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest
 			return err
 		}
 
-		return RsyncMasterDataDir(stream, sourceDir, targetDir)
+		return RsyncCoordinatorDataDir(stream, sourceDir, targetDir)
 	})
 
 	st.AlwaysRun(idl.Substep_CHECK_UPGRADE, func(stream step.OutStreams) error {
-		if err := UpgradeMaster(stream, s.Source, s.Intermediate, idl.PgOptions_check, s.LinkMode); err != nil {
+		if err := UpgradeCoordinator(stream, s.Source, s.Intermediate, idl.PgOptions_check, s.LinkMode); err != nil {
 			return err
 		}
 

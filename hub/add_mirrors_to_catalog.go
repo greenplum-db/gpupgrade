@@ -16,7 +16,7 @@ import (
 func addMirrorsToCatalog(conn *greenplum.Conn, intermediate *greenplum.Cluster) error {
 	options := []greenplum.Option{
 		greenplum.ToTarget(),
-		greenplum.Port(intermediate.MasterPort()),
+		greenplum.Port(intermediate.CoordinatorPort()),
 		greenplum.UtilityMode(),
 		greenplum.AllowSystemTableMods(),
 	}

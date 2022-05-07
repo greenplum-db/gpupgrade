@@ -101,24 +101,24 @@ func GenerateIntermediateCluster(source *greenplum.Cluster, ports []int, upgrade
 	var segPrefix string
 	nextPortIndex := 0
 
-	// XXX we can't handle a masterless cluster elsewhere in the code; we may
+	// XXX we can't handle a coordinatorless cluster elsewhere in the code; we may
 	// want to remove the "ok" check here and force NewCluster to error out
-	if master, ok := source.Primaries[-1]; ok {
-		// Reserve a port for the master.
+	if coordinator, ok := source.Primaries[-1]; ok {
+		// Reserve a port for the coordinator.
 		if nextPortIndex > len(ports)-1 {
 			return &greenplum.Cluster{}, errors.New("not enough ports")
 		}
 
 		// Save the segment prefix for later.
 		var err error
-		segPrefix, err = GetMasterSegPrefix(master.DataDir)
+		segPrefix, err = GetCoordinatorSegPrefix(coordinator.DataDir)
 		if err != nil {
 			return &greenplum.Cluster{}, err
 		}
 
-		master.Port = ports[nextPortIndex]
-		master.DataDir = upgrade.TempDataDir(master.DataDir, segPrefix, upgradeID)
-		intermediate.Primaries[-1] = master
+		coordinator.Port = ports[nextPortIndex]
+		coordinator.DataDir = upgrade.TempDataDir(coordinator.DataDir, segPrefix, upgradeID)
+		intermediate.Primaries[-1] = coordinator
 		nextPortIndex++
 	}
 

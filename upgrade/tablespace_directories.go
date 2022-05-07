@@ -39,7 +39,7 @@ func TablespacePath(tablespaceLocation string, dbID int, majorVersion uint64, ca
 //
 //   DIR
 //   ├── filespace.txt
-//   ├── master
+//   ├── coordinator
 //   │   ├── demoDataDir-1
 //   │   │   └── 16385
 //   │   │       ├── 1

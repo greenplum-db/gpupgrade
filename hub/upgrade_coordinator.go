@@ -25,32 +25,32 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
 
-func UpgradeMaster(streams step.OutStreams, source *greenplum.Cluster, intermediate *greenplum.Cluster, action idl.PgOptions_Action, linkMode bool) error {
+func UpgradeCoordinator(streams step.OutStreams, source *greenplum.Cluster, intermediate *greenplum.Cluster, action idl.PgOptions_Action, linkMode bool) error {
 	oldOptions := ""
-	// When upgrading from 5 the master must be provided with its standby's dbid to allow WAL to sync.
+	// When upgrading from 5 the coordinator must be provided with its standby's dbid to allow WAL to sync.
 	if source.Version.Major == 5 && source.HasStandby() {
 		oldOptions = fmt.Sprintf("-x %d", source.Standby().DbID)
 	}
 
 	opts := &idl.PgOptions{
 		Action:        action,
-		Role:          intermediate.Master().Role,
-		ContentID:     int32(intermediate.Master().ContentID),
+		Role:          intermediate.Coordinator().Role,
+		ContentID:     int32(intermediate.Coordinator().ContentID),
 		Mode:          idl.PgOptions_Dispatcher,
 		OldOptions:    oldOptions,
 		LinkMode:      linkMode,
 		TargetVersion: intermediate.Version.String(),
 		OldBinDir:     filepath.Join(source.GPHome, "bin"),
-		OldDataDir:    source.MasterDataDir(),
-		OldPort:       strconv.Itoa(source.MasterPort()),
-		OldDBID:       strconv.Itoa(source.Master().DbID),
+		OldDataDir:    source.CoordinatorDataDir(),
+		OldPort:       strconv.Itoa(source.CoordinatorPort()),
+		OldDBID:       strconv.Itoa(source.Coordinator().DbID),
 		NewBinDir:     filepath.Join(intermediate.GPHome, "bin"),
-		NewDataDir:    intermediate.MasterDataDir(),
-		NewPort:       strconv.Itoa(intermediate.MasterPort()),
-		NewDBID:       strconv.Itoa(intermediate.Master().DbID),
+		NewDataDir:    intermediate.CoordinatorDataDir(),
+		NewPort:       strconv.Itoa(intermediate.CoordinatorPort()),
+		NewDBID:       strconv.Itoa(intermediate.Coordinator().DbID),
 	}
 
-	err := RsyncMasterDataDir(streams, utils.GetCoordinatorPreUpgradeBackupDir(), intermediate.MasterDataDir())
+	err := RsyncCoordinatorDataDir(streams, utils.GetCoordinatorPreUpgradeBackupDir(), intermediate.CoordinatorDataDir())
 	if err != nil {
 		return err
 	}
@@ -117,7 +117,7 @@ func filesInDirectory(root string) ([]string, error) {
 	return files, nil
 }
 
-func RsyncMasterDataDir(stream step.OutStreams, sourceDir, targetDir string) error {
+func RsyncCoordinatorDataDir(stream step.OutStreams, sourceDir, targetDir string) error {
 	sourceDirRsync := filepath.Clean(sourceDir) + string(os.PathSeparator)
 
 	options := []rsync.Option{

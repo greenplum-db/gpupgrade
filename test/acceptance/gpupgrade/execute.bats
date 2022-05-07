@@ -12,7 +12,7 @@ setup() {
 
     gpupgrade kill-services
 
-    # If this variable is set (to a master data directory), teardown() will call
+    # If this variable is set (to a coordinator data directory), teardown() will call
     # gpdeletesystem on this cluster.
     NEW_CLUSTER=
     PSQL="$GPHOME_SOURCE"/bin/psql
@@ -33,7 +33,7 @@ teardown() {
     start_source_cluster
 }
 
-ensure_hardlinks_for_relfilenode_on_master_and_segments() {
+ensure_hardlinks_for_relfilenode_on_coordinator_and_segments() {
     local gphome=$1
     local port=$2
     local tablename=$3
@@ -97,7 +97,7 @@ ensure_hardlinks_for_relfilenode_on_master_and_segments() {
 
     $PSQL postgres -c "drop table if exists test_linking; create table test_linking (a int);"
 
-    ensure_hardlinks_for_relfilenode_on_master_and_segments $GPHOME_SOURCE $PGPORT 'test_linking' 1
+    ensure_hardlinks_for_relfilenode_on_coordinator_and_segments $GPHOME_SOURCE $PGPORT 'test_linking' 1
 
     gpupgrade initialize \
         --automatic \
@@ -113,12 +113,12 @@ ensure_hardlinks_for_relfilenode_on_master_and_segments() {
 
     gpupgrade execute --non-interactive --verbose
 
-    ensure_hardlinks_for_relfilenode_on_master_and_segments $GPHOME_TARGET 6020 'test_linking' 2
+    ensure_hardlinks_for_relfilenode_on_coordinator_and_segments $GPHOME_TARGET 6020 'test_linking' 2
 
     restore_cluster
 }
 
-@test "gpupgrade execute step to upgrade master should always rsync the master data dir from backup" {
+@test "gpupgrade execute step to upgrade coordinator should always rsync the coordinator data dir from backup" {
     require_gnu_stat
     setup_restore_cluster "--mode=link"
 
@@ -138,12 +138,12 @@ ensure_hardlinks_for_relfilenode_on_master_and_segments() {
     datadir="$(gpupgrade config show --target-datadir)"
     NEW_CLUSTER="${datadir}"
 
-    # Initialize creates a backup of the target master data dir, during execute
-    # upgrade master steps refreshes the content of the target master data dir
-    # with the existing backup. Remove the target master data directory to
-    # ensure that initialize created a backup and upgrade master refreshed the
-    # target master data directory with the backup.
-    abort_unless_target_master "${datadir}"
+    # Initialize creates a backup of the target coordinator data dir, during execute
+    # upgrade coordinator steps refreshes the content of the target coordinator data dir
+    # with the existing backup. Remove the target coordinator data directory to
+    # ensure that initialize created a backup and upgrade coordinator refreshed the
+    # target coordinator data directory with the backup.
+    abort_unless_target_coordinator "${datadir}"
     rm -rf "${datadir:?}"/*
 
     # create an extra file to ensure that its deleted during rsync as we pass
@@ -178,7 +178,7 @@ ensure_hardlinks_for_relfilenode_on_master_and_segments() {
 
     gpupgrade execute --non-interactive --verbose 3>&-
 
-    # On GPDB5, restore the primary and master directories before starting the cluster
+    # On GPDB5, restore the primary and coordinator directories before starting the cluster
     restore_cluster
 
     # Put the source and target clusters back the way they were.

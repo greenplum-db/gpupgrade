@@ -112,7 +112,7 @@ func RestoreTablespaces(tablespaces map[int32]*idl.TablespaceInfo, oldDBID strin
 		}
 
 		targetDir := greenplum.GetTablespaceLocationForDbId(tablespace, dbid)
-		sourceDir := greenplum.GetMasterTablespaceLocation(utils.GetTablespaceDir(), int(oid)) + string(os.PathSeparator)
+		sourceDir := greenplum.GetCoordinatorTablespaceLocation(utils.GetTablespaceDir(), int(oid)) + string(os.PathSeparator)
 
 		options := []rsync.Option{
 			rsync.WithSources(sourceDir),

@@ -80,7 +80,7 @@ If you are satisfied with the state of the cluster, run "gpupgrade finalize"
 to proceed with the upgrade.
 
 To return the cluster to its original state, run "gpupgrade revert".`,
-				response.GetTarget().GetPort(), response.GetTarget().GetMasterDataDirectory()))
+				response.GetTarget().GetPort(), response.GetTarget().GetCoordinatorDataDirectory()))
 		},
 	}
 
