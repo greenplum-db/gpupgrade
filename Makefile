@@ -24,7 +24,7 @@ depend-dev: export GOBIN := $(CURDIR)/dev-bin
 depend-dev: export GOFLAGS := -mod=readonly # do not update dependencies during installation
 depend-dev:
 	mkdir -p $(GOBIN)
-	go install github.com/golang/protobuf/protoc-gen-go
+	go install github.com/golang/protobuf/protoc-gen-go@v1.3.2
 	go install github.com/golang/mock/mockgen
 
 # NOTE: goimports subsumes the standard formatting rules of gofmt, but gofmt is
