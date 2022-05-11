@@ -15,6 +15,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
@@ -44,13 +45,13 @@ func TestGetTablespaces(t *testing.T) {
 				DbId: 1,
 				Oid:  1234,
 				Name: "pg_default",
-				Info: greenplum.TablespaceInfo{Location: "/tmp/pg_default_tablespace", UserDefined: 0},
+				Info: idl.TablespaceInfo{Location: "/tmp/pg_default_tablespace", UserDefined: false},
 			},
 			greenplum.Tablespace{
 				DbId: 2,
 				Oid:  1235,
 				Name: "my_tablespace",
-				Info: greenplum.TablespaceInfo{Location: "/tmp/my_tablespace", UserDefined: 1},
+				Info: idl.TablespaceInfo{Location: "/tmp/my_tablespace", UserDefined: true},
 			},
 		}
 
@@ -115,32 +116,32 @@ func TestNewTablespaces(t *testing.T) {
 					DbId: 1,
 					Oid:  1663,
 					Name: "pg_default",
-					Info: greenplum.TablespaceInfo{
+					Info: idl.TablespaceInfo{
 						Location:    "/tmp/coordinator/gpseg-1",
-						UserDefined: 0,
+						UserDefined: false,
 					},
 				},
 				{
 					DbId: 2,
 					Oid:  1663,
 					Name: "pg_default",
-					Info: greenplum.TablespaceInfo{
+					Info: idl.TablespaceInfo{
 						Location:    "/tmp/primary/gpseg-1",
-						UserDefined: 0,
+						UserDefined: false,
 					},
 				},
 			},
-			expected: map[int]greenplum.SegmentTablespaces{
+			expected: map[int32]greenplum.SegmentTablespaces{
 				1: {
 					1663: {
 						Location:    "/tmp/coordinator/gpseg-1",
-						UserDefined: 0,
+						UserDefined: false,
 					},
 				},
 				2: {
 					1663: {
 						Location:    "/tmp/primary/gpseg-1",
-						UserDefined: 0,
+						UserDefined: false,
 					},
 				},
 			},
@@ -152,58 +153,58 @@ func TestNewTablespaces(t *testing.T) {
 					DbId: 1,
 					Oid:  1663,
 					Name: "pg_default",
-					Info: greenplum.TablespaceInfo{
+					Info: idl.TablespaceInfo{
 						Location:    "/tmp/coordinator/gpseg-1",
-						UserDefined: 0,
+						UserDefined: false,
 					},
 				},
 				{
 					DbId: 1,
 					Oid:  1664,
 					Name: "my_tablespace",
-					Info: greenplum.TablespaceInfo{
+					Info: idl.TablespaceInfo{
 						Location:    "/tmp/coordinator/1664",
-						UserDefined: 1,
+						UserDefined: true,
 					},
 				},
 				{
 					DbId: 2,
 					Oid:  1663,
 					Name: "pg_default",
-					Info: greenplum.TablespaceInfo{
+					Info: idl.TablespaceInfo{
 						Location:    "/tmp/primary/gpseg0",
-						UserDefined: 0,
+						UserDefined: false,
 					},
 				},
 				{
 					DbId: 2,
 					Oid:  1664,
 					Name: "my_tablespace",
-					Info: greenplum.TablespaceInfo{
+					Info: idl.TablespaceInfo{
 						Location:    "/tmp/primary/1664",
-						UserDefined: 1,
+						UserDefined: true,
 					},
 				},
 			},
-			expected: map[int]greenplum.SegmentTablespaces{
+			expected: map[int32]greenplum.SegmentTablespaces{
 				1: {
 					1663: {
 						Location:    "/tmp/coordinator/gpseg-1",
-						UserDefined: 0,
+						UserDefined: false,
 					},
 					1664: {
 						Location:    "/tmp/coordinator/1664",
-						UserDefined: 1,
+						UserDefined: true,
 					},
 				},
 				2: {
 					1663: {
 						Location:    "/tmp/primary/gpseg0",
-						UserDefined: 0,
+						UserDefined: false,
 					},
 					1664: {
 						Location:    "/tmp/primary/1664",
-						UserDefined: 1,
+						UserDefined: true,
 					},
 				},
 			},
@@ -310,13 +311,13 @@ func TestTablespacesFromDB(t *testing.T) {
 			1: {
 				1663: {
 					Location:    "/tmp/coordinator_tablespace",
-					UserDefined: 0,
+					UserDefined: false,
 				},
 			},
 			2: {
 				1663: {
 					Location:    "/tmp/my_tablespace",
-					UserDefined: 0,
+					UserDefined: false,
 				},
 			},
 		}
@@ -370,18 +371,18 @@ func TestWrite(t *testing.T) {
 					DbId: 1,
 					Oid:  1663,
 					Name: "default",
-					Info: greenplum.TablespaceInfo{
-						"/tmp/coordinator/gpseg-1",
-						0,
+					Info: idl.TablespaceInfo{
+						Location:    "/tmp/coordinator/gpseg-1",
+						UserDefined: false,
 					},
 				},
 				greenplum.Tablespace{
 					DbId: 2,
 					Oid:  1664,
 					Name: "my_tablespace",
-					Info: greenplum.TablespaceInfo{
-						"/tmp/coordinator/gpseg-1",
-						1,
+					Info: idl.TablespaceInfo{
+						Location:    "/tmp/coordinator/gpseg-1",
+						UserDefined: true,
 					},
 				},
 			},
@@ -396,7 +397,7 @@ func TestWrite(t *testing.T) {
 				t.Errorf("Write() got error %v", err)
 			}
 			if data := w.String(); w.String() != test.expected {
-				t.Errorf("Write() gotW = %v, want %v", data, test.expected)
+				t.Errorf("Write() got %q, want %q", data, test.expected)
 			}
 		})
 	}

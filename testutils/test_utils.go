@@ -57,61 +57,61 @@ func CreateTablespaces() greenplum.Tablespaces {
 		1: {
 			16384: {
 				Location:    "/tmp/user_ts/m/qddir/16384",
-				UserDefined: 1,
+				UserDefined: true,
 			},
 			1663: {
 				Location:    "/tmp/m/qddir/base",
-				UserDefined: 0,
+				UserDefined: false,
 			},
 		},
 		2: {
 			16384: {
 				Location:    "/tmp/user_ts/m/standby/16384",
-				UserDefined: 1,
+				UserDefined: true,
 			},
 			1663: {
 				Location:    "/tmp/m/standby/base",
-				UserDefined: 0,
+				UserDefined: false,
 			},
 		},
 		3: {
 			16384: {
 				Location:    "/tmp/user_ts/p1/16384",
-				UserDefined: 1,
+				UserDefined: true,
 			},
 			1663: {
 				Location:    "/tmp/p1/base",
-				UserDefined: 0,
+				UserDefined: false,
 			},
 		},
 		4: {
 			16384: {
 				Location:    "/tmp/user_ts/m1/16384",
-				UserDefined: 1,
+				UserDefined: true,
 			},
 			1663: {
 				Location:    "/tmp/m1/base",
-				UserDefined: 0,
+				UserDefined: false,
 			},
 		},
 		5: {
 			16384: {
 				Location:    "/tmp/user_ts/p2/16384",
-				UserDefined: 1,
+				UserDefined: true,
 			},
 			1663: {
 				Location:    "/tmp/p2/base",
-				UserDefined: 0,
+				UserDefined: false,
 			},
 		},
 		6: {
 			16384: {
 				Location:    "/tmp/user_ts/m2/16384",
-				UserDefined: 1,
+				UserDefined: true,
 			},
 			1663: {
 				Location:    "/tmp/m2/base",
-				UserDefined: 0,
+				UserDefined: false,
 			},
 		},
 	}

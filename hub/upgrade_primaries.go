@@ -34,12 +34,12 @@ func UpgradePrimaries(agentConns []*idl.Connection, source *greenplum.Cluster, i
 				OldBinDir:     filepath.Join(source.GPHome, "bin"),
 				OldDataDir:    sourcePrimary.DataDir,
 				OldPort:       strconv.Itoa(sourcePrimary.Port),
-				OldDBID:       strconv.Itoa(sourcePrimary.DbID),
+				OldDBID:       strconv.Itoa(int(sourcePrimary.DbID)),
 				NewBinDir:     filepath.Join(intermediate.GPHome, "bin"),
 				NewDataDir:    intermediatePrimary.DataDir,
 				NewPort:       strconv.Itoa(intermediatePrimary.Port),
-				NewDBID:       strconv.Itoa(intermediatePrimary.DbID),
-				Tablespaces:   getProtoBufSegmentTablespaces(source.Tablespaces, intermediatePrimary.DbID),
+				NewDBID:       strconv.Itoa(int(intermediatePrimary.DbID)),
+				Tablespaces:   source.Tablespaces[int32(intermediatePrimary.DbID)],
 			}
 
 			opts = append(opts, opt)
@@ -55,20 +55,4 @@ func UpgradePrimaries(agentConns []*idl.Connection, source *greenplum.Cluster, i
 	}
 
 	return ExecuteRPC(agentConns, request)
-}
-
-// TODO: remove greenplum.TablespaceInfo in favor of idl.TablespaceInfo, and create a helper function if needed
-func getProtoBufSegmentTablespaces(tablespaces greenplum.Tablespaces, dbId int) map[int32]*idl.TablespaceInfo {
-	if tablespaces == nil {
-		return nil
-	}
-
-	segmentTablespaces := make(map[int32]*idl.TablespaceInfo)
-	for tsOid, tsInfo := range tablespaces[dbId] {
-		segmentTablespaces[int32(tsOid)] = &idl.TablespaceInfo{
-			Location:    tsInfo.Location,
-			UserDefined: tsInfo.IsUserDefined()}
-	}
-
-	return segmentTablespaces
 }

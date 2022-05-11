@@ -124,13 +124,13 @@ func RsyncMirrorTablespacesOnSegments(agentConns []*idl.Connection, source *gree
 		for _, sourcePrimary := range sourcePrimaries {
 			intermediateMirror := intermediate.Mirrors[sourcePrimary.ContentID]
 
-			for tsOid, sourcePrimaryTsInfo := range source.Tablespaces[sourcePrimary.DbID] {
-				if !sourcePrimaryTsInfo.IsUserDefined() {
+			for tsOid, sourcePrimaryTsInfo := range source.Tablespaces[int32(sourcePrimary.DbID)] {
+				if !sourcePrimaryTsInfo.GetUserDefined() {
 					continue
 				}
 
-				sourcePrimaryTsLocation := sourcePrimaryTsInfo.Location + string(os.PathSeparator)
-				sourceMirrorTsLocation := source.Tablespaces[intermediateMirror.DbID][tsOid].Location
+				sourcePrimaryTsLocation := sourcePrimaryTsInfo.GetLocation() + string(os.PathSeparator)
+				sourceMirrorTsLocation := source.Tablespaces[int32(intermediateMirror.DbID)][tsOid].GetLocation()
 
 				// On the source primary host rsync to the intermediate mirror host the source primary tablespaces.
 				opt := &idl.RsyncRequest_RsyncOptions{
@@ -162,20 +162,20 @@ func RenameMirrorTablespacesOnSegments(agentConns []*idl.Connection, source *gre
 			intermediatePrimary := intermediate.Primaries[intermediateMirror.ContentID]
 			sourcePrimary := source.Primaries[intermediateMirror.ContentID]
 
-			for tsOid, sourcePrimaryTsInfo := range source.Tablespaces[sourcePrimary.DbID] {
-				if !sourcePrimaryTsInfo.IsUserDefined() {
+			for tsOid, sourcePrimaryTsInfo := range source.Tablespaces[int32(sourcePrimary.DbID)] {
+				if !sourcePrimaryTsInfo.GetUserDefined() {
 					continue
 				}
 
-				sourceMirrorTsLocation := source.Tablespaces[intermediateMirror.DbID][tsOid].Location
-				sourcePrimaryTsLocation := sourcePrimaryTsInfo.Location
+				sourceMirrorTsLocation := source.Tablespaces[int32(intermediateMirror.DbID)][tsOid].GetLocation()
+				sourcePrimaryTsLocation := sourcePrimaryTsInfo.GetLocation()
 
 				// Since we bootstrapped the mirror tablespaces by coping the primary tablespaces we need to fix the
 				// directory names by renaming the primary DbID to the mirror DbID. We do this on the host containing
 				// the mirror tablespaces.
 				pair := &idl.RenameTablespacesRequest_RenamePair{
-					Source:      filepath.Join(sourceMirrorTsLocation, strconv.Itoa(intermediatePrimary.DbID)),
-					Destination: filepath.Join(sourcePrimaryTsLocation, strconv.Itoa(intermediateMirror.DbID)),
+					Source:      filepath.Join(sourceMirrorTsLocation, strconv.Itoa(int(intermediatePrimary.DbID))),
+					Destination: filepath.Join(sourcePrimaryTsLocation, strconv.Itoa(int(intermediateMirror.DbID))),
 				}
 
 				pairs = append(pairs, pair)

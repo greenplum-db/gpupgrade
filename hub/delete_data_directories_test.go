@@ -131,15 +131,15 @@ func TestDeleteTablespaceDirectories(t *testing.T) {
 		coordinatorTablespaces := greenplum.SegmentTablespaces{
 			16386: {
 				Location:    tsLocation1,
-				UserDefined: 1,
+				UserDefined: true,
 			},
 			16387: {
 				Location:    tsLocation2,
-				UserDefined: 1,
+				UserDefined: true,
 			},
 			1700: {
 				Location:    systemTsLocation,
-				UserDefined: 0,
+				UserDefined: false,
 			},
 		}
 
@@ -167,50 +167,50 @@ func TestDeleteTablespaceDirectories(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		tablespaces := map[int]greenplum.SegmentTablespaces{
+		tablespaces := map[int32]greenplum.SegmentTablespaces{
 			1: {
 				16386: {
 					Location:    "/tmp/testfs/coordinator/demoDataDir-1/16386",
-					UserDefined: 1,
+					UserDefined: true,
 				},
 				16387: {
 					Location:    "/tmp/testfs/coordinator/demoDataDir-1/16387",
-					UserDefined: 1,
+					UserDefined: true,
 				},
 				1663: {
 					// system tablespace locations do not include the tablespace oid
 					Location:    "/data/qddir/demoDataDir-1",
-					UserDefined: 0,
+					UserDefined: false,
 				},
 			},
 			2: {
 				16386: {
 					Location:    "/tmp/testfs/primary1/dbfast1/16386",
-					UserDefined: 1,
+					UserDefined: true,
 				},
 				16387: {
 					Location:    "/tmp/testfs/primary1/dbfast1/16387",
-					UserDefined: 1,
+					UserDefined: true,
 				},
 				1663: {
 					// system tablespace locations do not include the tablespace oid
 					Location:    "/data/dbfast1/seg1",
-					UserDefined: 0,
+					UserDefined: false,
 				},
 			},
 			4: {
 				16386: {
 					Location:    "/tmp/testfs/primary2/dbfast2/16386",
-					UserDefined: 1,
+					UserDefined: true,
 				},
 				16387: {
 					Location:    "/tmp/testfs/primary2/dbfast2/16387",
-					UserDefined: 1,
+					UserDefined: true,
 				},
 				1663: {
 					// system tablespace locations do not include the tablespace oid
 					Location:    "/data/dbfast2/seg2",
-					UserDefined: 0,
+					UserDefined: false,
 				},
 			},
 		}

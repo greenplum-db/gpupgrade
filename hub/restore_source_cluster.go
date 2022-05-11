@@ -60,7 +60,7 @@ func RsyncCoordinatorAndPrimariesTablespaces(stream step.OutStreams, agentConns 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		errs <- RsyncCoordinatorTablespaces(stream, source.StandbyHostname(), source.Tablespaces[source.Coordinator().DbID], source.Tablespaces[source.Standby().DbID])
+		errs <- RsyncCoordinatorTablespaces(stream, source.StandbyHostname(), source.Tablespaces[int32(source.Coordinator().DbID)], source.Tablespaces[int32(source.Standby().DbID)])
 	}()
 
 	errs <- RsyncPrimariesTablespaces(agentConns, source, source.Tablespaces)
@@ -108,14 +108,14 @@ func RsyncCoordinator(stream step.OutStreams, standby greenplum.SegConfig, coord
 
 func RsyncCoordinatorTablespaces(stream step.OutStreams, standbyHostname string, coordinatorTablespaces greenplum.SegmentTablespaces, standbyTablespaces greenplum.SegmentTablespaces) error {
 	for oid, coordinatorTsInfo := range coordinatorTablespaces {
-		if !coordinatorTsInfo.IsUserDefined() {
+		if !coordinatorTsInfo.GetUserDefined() {
 			continue
 		}
 
 		opts := []rsync.Option{
 			rsync.WithSourceHost(standbyHostname),
-			rsync.WithSources(standbyTablespaces[oid].Location + string(os.PathSeparator)),
-			rsync.WithDestination(coordinatorTsInfo.Location),
+			rsync.WithSources(standbyTablespaces[oid].GetLocation() + string(os.PathSeparator)),
+			rsync.WithDestination(coordinatorTsInfo.GetLocation()),
 			rsync.WithOptions(Options...),
 			rsync.WithStream(stream),
 		}
@@ -173,17 +173,17 @@ func RsyncPrimariesTablespaces(agentConns []*idl.Connection, source *greenplum.C
 		for _, mirror := range mirrors {
 			primary := source.Primaries[mirror.ContentID]
 
-			primaryTablespaces := tablespaces[primary.DbID]
-			mirrorTablespaces := tablespaces[mirror.DbID]
+			primaryTablespaces := tablespaces[int32(primary.DbID)]
+			mirrorTablespaces := tablespaces[int32(mirror.DbID)]
 			for oid, mirrorTsInfo := range mirrorTablespaces {
-				if !mirrorTsInfo.IsUserDefined() {
+				if !mirrorTsInfo.GetUserDefined() {
 					continue
 				}
 
 				opt := &idl.RsyncRequest_RsyncOptions{
-					Sources:         []string{mirrorTsInfo.Location + string(os.PathSeparator)},
+					Sources:         []string{mirrorTsInfo.GetLocation() + string(os.PathSeparator)},
 					DestinationHost: primary.Hostname,
-					Destination:     primaryTablespaces[oid].Location,
+					Destination:     primaryTablespaces[oid].GetLocation(),
 					Options:         Options,
 					ExcludedFiles:   Excludes,
 				}

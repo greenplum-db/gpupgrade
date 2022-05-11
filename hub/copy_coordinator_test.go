@@ -16,6 +16,7 @@ import (
 	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
@@ -211,28 +212,28 @@ func TestCopyCoordinatorTablespaces(t *testing.T) {
 
 	Tablespaces := greenplum.Tablespaces{
 		1: greenplum.SegmentTablespaces{
-			1663: greenplum.TablespaceInfo{
+			1663: &idl.TablespaceInfo{
 				Location:    "/tmp/tblspc1",
-				UserDefined: 0},
-			1664: greenplum.TablespaceInfo{
+				UserDefined: false},
+			1664: &idl.TablespaceInfo{
 				Location:    "/tmp/tblspc2",
-				UserDefined: 1},
+				UserDefined: true},
 		},
 		2: greenplum.SegmentTablespaces{
-			1663: greenplum.TablespaceInfo{
+			1663: &idl.TablespaceInfo{
 				Location:    "/tmp/primary1/tblspc1",
-				UserDefined: 0},
-			1664: greenplum.TablespaceInfo{
+				UserDefined: false},
+			1664: &idl.TablespaceInfo{
 				Location:    "/tmp/primary1/tblspc2",
-				UserDefined: 1},
+				UserDefined: true},
 		},
 		3: greenplum.SegmentTablespaces{
-			1663: greenplum.TablespaceInfo{
+			1663: &idl.TablespaceInfo{
 				Location:    "/tmp/primary2/tblspc1",
-				UserDefined: 0},
-			1664: greenplum.TablespaceInfo{
+				UserDefined: false},
+			1664: &idl.TablespaceInfo{
 				Location:    "/tmp/primary2/tblspc2",
-				UserDefined: 1},
+				UserDefined: true},
 		},
 	}
 

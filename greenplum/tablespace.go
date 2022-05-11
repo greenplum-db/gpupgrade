@@ -35,24 +35,19 @@ const tablespacesQuery = `
 		) upgrade_tablespace`
 
 // map<tablespaceOid, tablespaceInfo>
-type SegmentTablespaces map[int]TablespaceInfo
+type SegmentTablespaces map[int32]*idl.TablespaceInfo
 
 // map<DbID, map<tablespaceOid, tablespaceInfo>>
-type Tablespaces map[int]SegmentTablespaces
+type Tablespaces map[int32]SegmentTablespaces
 
 // slice of tablespace rows from database
 type TablespaceTuples []Tablespace
 
-type TablespaceInfo struct {
-	Location    string
-	UserDefined int
-}
-
 type Tablespace struct {
-	DbId int
-	Oid  int
+	DbId int32
+	Oid  int32
 	Name string
-	Info TablespaceInfo
+	Info idl.TablespaceInfo
 }
 
 func (t Tablespaces) GetCoordinatorTablespaces() SegmentTablespaces {
@@ -62,22 +57,18 @@ func (t Tablespaces) GetCoordinatorTablespaces() SegmentTablespaces {
 func (s SegmentTablespaces) UserDefinedTablespacesLocations() []string {
 	var dirs []string
 	for _, tsInfo := range s {
-		if !tsInfo.IsUserDefined() {
+		if !tsInfo.GetUserDefined() {
 			continue
 		}
 
-		dirs = append(dirs, tsInfo.Location)
+		dirs = append(dirs, tsInfo.GetLocation())
 	}
 
 	return dirs
 }
 
-func (t *TablespaceInfo) IsUserDefined() bool {
-	return t.UserDefined == 1
-}
-
 func GetTablespaceLocationForDbId(t *idl.TablespaceInfo, dbId int) string {
-	return filepath.Join(t.Location, strconv.Itoa(dbId))
+	return filepath.Join(t.GetLocation(), strconv.Itoa(dbId))
 }
 
 func GetCoordinatorTablespaceLocation(basePath string, oid int) string {
@@ -114,13 +105,13 @@ func GetTablespaceTuples(db *sql.DB) (TablespaceTuples, error) {
 func NewTablespaces(tuples TablespaceTuples) Tablespaces {
 	clusterTablespaceMap := make(Tablespaces)
 	for _, t := range tuples {
-		tablespaceInfo := TablespaceInfo{Location: t.Info.Location, UserDefined: t.Info.UserDefined}
+		tablespaceInfo := idl.TablespaceInfo{Location: t.Info.GetLocation(), UserDefined: t.Info.GetUserDefined()}
 		if segTablespaceMap, ok := clusterTablespaceMap[t.DbId]; ok {
-			segTablespaceMap[t.Oid] = tablespaceInfo
+			segTablespaceMap[t.Oid] = &tablespaceInfo
 			clusterTablespaceMap[t.DbId] = segTablespaceMap
 		} else {
 			segTablespaceMap := make(SegmentTablespaces)
-			segTablespaceMap[t.Oid] = tablespaceInfo
+			segTablespaceMap[t.Oid] = &tablespaceInfo
 			clusterTablespaceMap[t.DbId] = segTablespaceMap
 		}
 	}
@@ -133,17 +124,24 @@ func (t TablespaceTuples) Write(w io.Writer) error {
 	writer := csv.NewWriter(w)
 	for _, tablespace := range t {
 		line := []string{
-			strconv.Itoa(tablespace.DbId),
-			strconv.Itoa(tablespace.Oid),
+			strconv.Itoa(int(tablespace.DbId)),
+			strconv.Itoa(int(tablespace.Oid)),
 			tablespace.Name,
-			tablespace.Info.Location,
-			strconv.Itoa(tablespace.Info.UserDefined)}
+			tablespace.Info.GetLocation(),
+			boolToStrInt(tablespace.Info.GetUserDefined())}
 		if err := writer.Write(line); err != nil {
 			return xerrors.Errorf("write record %q: %w", line, err)
 		}
 	}
 	defer writer.Flush()
 	return nil
+}
+
+func boolToStrInt(b bool) string {
+	if b {
+		return "1"
+	}
+	return "0"
 }
 
 // main function which does the following:

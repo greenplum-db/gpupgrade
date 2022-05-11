@@ -111,7 +111,7 @@ func TestRsyncCoordinatorAndPrimaries(t *testing.T) {
 			}
 		}))
 
-		err := hub.RsyncCoordinatorTablespaces(&testutils.DevNullWithClose{}, cluster.StandbyHostname(), tablespaces[cluster.Coordinator().DbID], tablespaces[cluster.Standby().DbID])
+		err := hub.RsyncCoordinatorTablespaces(&testutils.DevNullWithClose{}, cluster.StandbyHostname(), tablespaces[int32(cluster.Coordinator().DbID)], tablespaces[int32(cluster.Standby().DbID)])
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -243,7 +243,7 @@ func TestRsyncCoordinatorAndPrimaries(t *testing.T) {
 		rsync.SetRsyncCommand(exectest.NewCommand(hub.Failure))
 		defer rsync.ResetRsyncCommand()
 
-		err := hub.RsyncCoordinatorTablespaces(&testutils.DevNullWithClose{}, cluster.CoordinatorHostname(), tablespaces[greenplum.CoordinatorDbid], tablespaces[cluster.Standby().DbID])
+		err := hub.RsyncCoordinatorTablespaces(&testutils.DevNullWithClose{}, cluster.CoordinatorHostname(), tablespaces[int32(greenplum.CoordinatorDbid)], tablespaces[int32(cluster.Standby().DbID)])
 		if err == nil {
 			t.Error("unexpected nil error")
 		}

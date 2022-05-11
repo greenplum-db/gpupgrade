@@ -79,8 +79,8 @@ func TestUpgradePrimaries(t *testing.T) {
 				OldDBID:       "1",
 				NewDataDir:    "/new/data/dir",
 				Tablespaces: map[int32]*idl.TablespaceInfo{
-					1663: {Name: "tblspc1", Location: "/tmp/primary1/1663", UserDefined: true},
-					1664: {Name: "tblspc2", Location: "/tmp/primary1/1664", UserDefined: true},
+					1663: {Location: "/tmp/primary1/1663", UserDefined: true},
+					1664: {Location: "/tmp/primary1/1664", UserDefined: true},
 				},
 			},
 		}
@@ -152,8 +152,8 @@ func TestUpgradePrimaries(t *testing.T) {
 				NewDBID:       "1",
 				NewDataDir:    "/new/data/dir",
 				Tablespaces: map[int32]*idl.TablespaceInfo{
-					1663: {Name: "tblspc1", Location: "/tmp/primary1/1663", UserDefined: true},
-					1664: {Name: "tblspc2", Location: "/tmp/primary1/1664", UserDefined: true},
+					1663: {Location: "/tmp/primary1/1663", UserDefined: true},
+					1664: {Location: "/tmp/primary1/1664", UserDefined: true},
 				},
 			},
 		}
@@ -184,8 +184,8 @@ func TestUpgradePrimaries(t *testing.T) {
 				OldDBID:       "1",
 				NewDataDir:    "/new/data/dir",
 				Tablespaces: map[int32]*idl.TablespaceInfo{
-					1663: {Name: "tblspc1", Location: "/tmp/primary1/1663", UserDefined: true},
-					1664: {Name: "tblspc2", Location: "/tmp/primary1/1664", UserDefined: true},
+					1663: {Location: "/tmp/primary1/1663", UserDefined: true},
+					1664: {Location: "/tmp/primary1/1664", UserDefined: true},
 				},
 			},
 		}
@@ -246,8 +246,8 @@ func TestRestoreTablespaces(t *testing.T) {
 		defer utils.ResetSystemFunctions()
 
 		tablespaces := map[int32]*idl.TablespaceInfo{
-			1663: {Name: "tblspc1", Location: "/tmp/primary1/1663", UserDefined: true},
-			1664: {Name: "tblspc2", Location: "/tmp/primary1/1664", UserDefined: true},
+			1663: {Location: "/tmp/primary1/1663", UserDefined: true},
+			1664: {Location: "/tmp/primary1/1664", UserDefined: true},
 		}
 
 		err := agent.RestoreTablespaces(tablespaces, "2", "/new/data/dir")
@@ -286,8 +286,8 @@ func TestRestoreTablespaces(t *testing.T) {
 		defer utils.ResetSystemFunctions()
 
 		tablespaces := map[int32]*idl.TablespaceInfo{
-			1663: {Name: "tblspc1", Location: "/tmp/primary1/1663", UserDefined: false},
-			1664: {Name: "tblspc2", Location: "/tmp/primary1/1664", UserDefined: true},
+			1663: {Location: "/tmp/primary1/1663", UserDefined: false},
+			1664: {Location: "/tmp/primary1/1664", UserDefined: true},
 		}
 
 		err := agent.RestoreTablespaces(tablespaces, "2", "/new/data/dir")
@@ -309,7 +309,7 @@ func TestRestoreTablespaces(t *testing.T) {
 		defer rsync.ResetRsyncCommand()
 
 		tablespaces := map[int32]*idl.TablespaceInfo{
-			1664: {Name: "tblspc2", Location: "/tmp/primary1/1664", UserDefined: true},
+			1664: {Location: "/tmp/primary1/1664", UserDefined: true},
 		}
 
 		err := agent.RestoreTablespaces(tablespaces, "2", "/new/data/dir")
@@ -330,7 +330,7 @@ func TestRestoreTablespaces(t *testing.T) {
 		defer utils.ResetSystemFunctions()
 
 		tablespaces := map[int32]*idl.TablespaceInfo{
-			1664: {Name: "tblspc2", Location: "/tmp/primary1/1664", UserDefined: true},
+			1664: {Location: "/tmp/primary1/1664", UserDefined: true},
 		}
 
 		err := agent.RestoreTablespaces(tablespaces, "2", "/new/data/dir")
@@ -355,7 +355,7 @@ func TestRestoreTablespaces(t *testing.T) {
 		defer utils.ResetSystemFunctions()
 
 		tablespaces := map[int32]*idl.TablespaceInfo{
-			1664: {Name: "tblspc2", Location: "/tmp/primary1/1664", UserDefined: true},
+			1664: {Location: "/tmp/primary1/1664", UserDefined: true},
 		}
 
 		err := agent.RestoreTablespaces(tablespaces, "2", "/new/data/dir")
@@ -385,7 +385,7 @@ func TestRestoreTablespaces(t *testing.T) {
 		defer utils.ResetSystemFunctions()
 
 		tablespaces := map[int32]*idl.TablespaceInfo{
-			1664: {Name: "tblspc2", Location: "/tmp/primary1/1664", UserDefined: true},
+			1664: {Location: "/tmp/primary1/1664", UserDefined: true},
 		}
 
 		err := agent.RestoreTablespaces(tablespaces, "2", "/new/data/dir")

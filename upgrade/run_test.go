@@ -307,8 +307,8 @@ func TestRun(t *testing.T) {
 				NewPort:       "7890",
 				NewDBID:       "99",
 				Tablespaces: map[int32]*idl.TablespaceInfo{
-					1663: {Name: "tblspc1", Location: "/tmp/primary1/1663", UserDefined: false},
-					1664: {Name: "tblspc2", Location: "/tmp/primary1/1664", UserDefined: true}},
+					1663: {Location: "/tmp/primary1/1663", UserDefined: false},
+					1664: {Location: "/tmp/primary1/1664", UserDefined: true}},
 			},
 		},
 		{

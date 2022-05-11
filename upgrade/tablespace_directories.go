@@ -20,10 +20,10 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-func TablespacePath(tablespaceLocation string, dbID int, majorVersion uint64, catalogVersion string) string {
+func TablespacePath(tablespaceLocation string, dbID int32, majorVersion uint64, catalogVersion string) string {
 	return filepath.Join(
 		tablespaceLocation,
-		strconv.Itoa(dbID),
+		strconv.Itoa(int(dbID)),
 		fmt.Sprintf("GPDB_%d_%s", majorVersion, catalogVersion),
 	)
 }

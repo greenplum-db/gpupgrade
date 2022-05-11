@@ -43,11 +43,11 @@ func UpgradeCoordinator(streams step.OutStreams, source *greenplum.Cluster, inte
 		OldBinDir:     filepath.Join(source.GPHome, "bin"),
 		OldDataDir:    source.CoordinatorDataDir(),
 		OldPort:       strconv.Itoa(source.CoordinatorPort()),
-		OldDBID:       strconv.Itoa(source.Coordinator().DbID),
+		OldDBID:       strconv.Itoa(int(source.Coordinator().DbID)),
 		NewBinDir:     filepath.Join(intermediate.GPHome, "bin"),
 		NewDataDir:    intermediate.CoordinatorDataDir(),
 		NewPort:       strconv.Itoa(intermediate.CoordinatorPort()),
-		NewDBID:       strconv.Itoa(intermediate.Coordinator().DbID),
+		NewDBID:       strconv.Itoa(int(intermediate.Coordinator().DbID)),
 	}
 
 	err := RsyncCoordinatorDataDir(streams, utils.GetCoordinatorPreUpgradeBackupDir(), intermediate.CoordinatorDataDir())

@@ -55,9 +55,8 @@ message PgOptions {
 }
 
 message TablespaceInfo {
-  string Name = 3;
-  string Location = 4;
-  bool UserDefined = 5;
+  string Location = 1;
+  bool UserDefined = 2;
 }
 
 message UpgradePrimariesRequest {
