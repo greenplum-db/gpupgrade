@@ -46,6 +46,14 @@ func TestGetHubPort(t *testing.T) {
 	})
 
 	t.Run("uses default port if the config file does not exist", func(t *testing.T) {
+		stateDir := testutils.GetTempDir(t, "")
+		defer testutils.MustRemoveAll(t, stateDir)
+
+		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
+		defer resetEnv()
+
+		testutils.PathMustNotExist(t, upgrade.GetConfigFile())
+
 		expected := upgrade.DefaultHubPort
 
 		port := getHubPort(true)
