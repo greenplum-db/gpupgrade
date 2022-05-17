@@ -377,6 +377,30 @@ func (c *Cluster) runGreenplumCommand(streams step.OutStreams, utility string, a
 	return cmd.Run()
 }
 
+func (c *Cluster) CheckActiveConnections(conn *Conn) error {
+	destination := ToTarget()
+	if c.Destination == idl.ClusterDestination_SOURCE {
+		destination = ToSource()
+	}
+
+	options := []Option{
+		destination,
+		Port(c.CoordinatorPort()),
+	}
+
+	db, err := sql.Open("pgx", conn.URI(options...))
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if cErr := db.Close(); cErr != nil {
+			err = errorlist.Append(err, cErr)
+		}
+	}()
+
+	return QueryPgStatActivity(db, c)
+}
+
 // WaitForClusterToBeReady waits until the timeout for all segments to be up,
 // in their preferred role, and synchronized.
 func (c *Cluster) WaitForClusterToBeReady(conn *Conn) error {
