@@ -37,35 +37,24 @@ func CreateStateDir() (err error) {
 	return nil
 }
 
-func CreateInitialClusterConfigs(hubPort int) (err error) {
-	// if empty json configuration file exists, skip recreating it
-	filename := upgrade.GetConfigFile()
-	_, err = os.Stat(filename)
+func CreateConfigFile(hubPort int) error {
+	path := upgrade.GetConfigFile()
 
-	// if the file exists, there will be no error or if there is an error it might
-	// also indicate that the file exists, in either case don't overwrite the file
-	if err == nil || os.IsExist(err) {
-		gplog.Debug("Initial cluster configuration file %s already present...skipping", filename)
+	exist, err := upgrade.PathExist(path)
+	if err != nil {
+		return xerrors.Errorf("checking configuration path %q: %w", path, err)
+	}
+
+	if exist {
+		gplog.Debug("Configuration file %s already present. Skipping.", path)
 		return nil
 	}
-
-	// if the err is anything other than file does not exist, error out
-	if !os.IsNotExist(err) {
-		gplog.Debug("Check to find presence of initial cluster configuration file %s failed", filename)
-		return err
-	}
-
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
 
 	// Bootstrap with the port to enable the CLI helper function connectToHub to
 	// work with both initialize and all other CLI commands. This overloads the
 	// hub's persisted configuration with that of the CLI when ideally these
 	// would be separate.
-	_, err = fmt.Fprintf(file, `{"Port": %d}`, hubPort) // the hub will fill the rest during initialization
+	err = os.WriteFile(path, []byte(fmt.Sprintf(`{"Port": %d}`, hubPort)), 0644)
 	if err != nil {
 		return err
 	}

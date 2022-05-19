@@ -255,7 +255,7 @@ func TestCreateInitialClusterConfigs(t *testing.T) {
 	t.Run("test idempotence", func(t *testing.T) {
 
 		{ // creates initial cluster config files if none exist or fails"
-			err = CreateInitialClusterConfigs(port)
+			err = CreateConfigFile(port)
 			if err != nil {
 				t.Fatalf("unexpected error %#v", err)
 			}
@@ -266,7 +266,7 @@ func TestCreateInitialClusterConfigs(t *testing.T) {
 		}
 
 		{ // creating cluster config files is idempotent
-			err = CreateInitialClusterConfigs(port)
+			err = CreateConfigFile(port)
 			if err != nil {
 				t.Fatalf("unexpected error %#v", err)
 			}
@@ -282,7 +282,7 @@ func TestCreateInitialClusterConfigs(t *testing.T) {
 		}
 
 		{ // creating cluster config files succeeds on multiple runs
-			err = CreateInitialClusterConfigs(port)
+			err = CreateConfigFile(port)
 			if err != nil {
 				t.Fatalf("unexpected error %#v", err)
 			}

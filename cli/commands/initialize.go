@@ -200,7 +200,7 @@ func initialize() *cobra.Command {
 			})
 
 			st.RunInternalSubstep(func() error {
-				return commanders.CreateInitialClusterConfigs(hubPort)
+				return commanders.CreateConfigFile(hubPort)
 			})
 
 			st.RunCLISubstep(idl.Substep_start_hub, func(streams step.OutStreams) error {

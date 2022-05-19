@@ -115,7 +115,7 @@ func TestHub(t *testing.T) {
 			t.Errorf("unexpected error got %+v", err)
 		}
 
-		err = commanders.CreateInitialClusterConfigs(upgrade.DefaultHubPort)
+		err = commanders.CreateConfigFile(upgrade.DefaultHubPort)
 		if err != nil {
 			t.Errorf("unexpected error got %+v", err)
 		}
