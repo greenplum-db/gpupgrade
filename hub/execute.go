@@ -15,7 +15,7 @@ import (
 )
 
 func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteServer) (err error) {
-	st, err := step.Begin(idl.Step_EXECUTE, stream, s.AgentConns)
+	st, err := step.Begin(idl.Step_execute, stream, s.AgentConns)
 	if err != nil {
 		return err
 	}
@@ -34,15 +34,15 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 		return s.Source.CheckActiveConnections(s.Connection)
 	})
 
-	st.Run(idl.Substep_SHUTDOWN_SOURCE_CLUSTER, func(streams step.OutStreams) error {
+	st.Run(idl.Substep_shutdown_source_cluster, func(streams step.OutStreams) error {
 		return s.Source.Stop(streams)
 	})
 
-	st.Run(idl.Substep_UPGRADE_MASTER, func(streams step.OutStreams) error {
+	st.Run(idl.Substep_upgrade_master, func(streams step.OutStreams) error {
 		return UpgradeCoordinator(streams, s.Source, s.Intermediate, idl.PgOptions_upgrade, s.LinkMode)
 	})
 
-	st.Run(idl.Substep_COPY_MASTER, func(streams step.OutStreams) error {
+	st.Run(idl.Substep_copy_master, func(streams step.OutStreams) error {
 		err := CopyCoordinatorDataDir(streams, s.Intermediate.CoordinatorDataDir(), utils.GetCoordinatorPostUpgradeBackupDir(), s.Intermediate.PrimaryHostnames())
 		if err != nil {
 			return err
@@ -51,11 +51,11 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 		return CopyCoordinatorTablespaces(streams, s.Source.Tablespaces, utils.GetTablespaceDir(), s.Intermediate.PrimaryHostnames())
 	})
 
-	st.Run(idl.Substep_UPGRADE_PRIMARIES, func(streams step.OutStreams) error {
+	st.Run(idl.Substep_upgrade_primaries, func(streams step.OutStreams) error {
 		return UpgradePrimaries(s.agentConns, s.Source, s.Intermediate, idl.PgOptions_upgrade, s.LinkMode)
 	})
 
-	st.Run(idl.Substep_START_TARGET_CLUSTER, func(streams step.OutStreams) error {
+	st.Run(idl.Substep_start_target_cluster, func(streams step.OutStreams) error {
 		return s.Intermediate.Start(streams)
 	})
 

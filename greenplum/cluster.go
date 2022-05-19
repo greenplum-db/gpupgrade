@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/blang/semver/v4"
@@ -236,7 +235,7 @@ func (c Cluster) SelectSegments(selector func(*SegConfig) bool) SegConfigs {
 func (c *Cluster) Start(stream step.OutStreams) error {
 	err := c.RunGreenplumCmd(stream, "gpstart", "-a", "-d", c.CoordinatorDataDir())
 	if err != nil {
-		return xerrors.Errorf("starting %s cluster: %w", strings.ToLower(c.Destination.String()), err)
+		return xerrors.Errorf("starting %s cluster: %w", c.Destination, err)
 	}
 
 	return nil
@@ -245,7 +244,7 @@ func (c *Cluster) Start(stream step.OutStreams) error {
 func (c *Cluster) StartCoordinatorOnly(stream step.OutStreams) error {
 	err := c.RunGreenplumCmd(stream, "gpstart", "-a", "-m", "-d", c.CoordinatorDataDir())
 	if err != nil {
-		return xerrors.Errorf("starting %s cluster in master only mode: %w", strings.ToLower(c.Destination.String()), err)
+		return xerrors.Errorf("starting %s cluster in master only mode: %w", c.Destination, err)
 	}
 
 	return nil
@@ -262,12 +261,12 @@ func (c *Cluster) Stop(stream step.OutStreams) error {
 	}
 
 	if !running {
-		return errors.New(fmt.Sprintf("Failed to stop %s cluster. Master is already stopped.", strings.ToLower(c.Destination.String())))
+		return errors.New(fmt.Sprintf("Failed to stop %s cluster. Master is already stopped.", c.Destination))
 	}
 
 	err = c.RunGreenplumCmd(stream, "gpstop", "-a", "-d", c.CoordinatorDataDir())
 	if err != nil {
-		return xerrors.Errorf("stopping %s cluster: %w", strings.ToLower(c.Destination.String()), err)
+		return xerrors.Errorf("stopping %s cluster: %w", c.Destination, err)
 	}
 
 	return nil
@@ -284,12 +283,12 @@ func (c *Cluster) StopCoordinatorOnly(stream step.OutStreams) error {
 	}
 
 	if !running {
-		return errors.New(fmt.Sprintf("Failed to stop %s cluster in master only mode. Master is already stopped.", strings.ToLower(c.Destination.String())))
+		return errors.New(fmt.Sprintf("Failed to stop %s cluster in master only mode. Master is already stopped.", c.Destination))
 	}
 
 	err = c.RunGreenplumCmd(stream, "gpstop", "-a", "-m", "-d", c.CoordinatorDataDir())
 	if err != nil {
-		return xerrors.Errorf("stopping %s cluster: %w", strings.ToLower(c.Destination.String()), err)
+		return xerrors.Errorf("stopping %s cluster: %w", c.Destination, err)
 	}
 
 	return nil
@@ -379,7 +378,7 @@ func (c *Cluster) runGreenplumCommand(streams step.OutStreams, utility string, a
 
 func (c *Cluster) CheckActiveConnections(conn *Conn) error {
 	destination := ToTarget()
-	if c.Destination == idl.ClusterDestination_SOURCE {
+	if c.Destination == idl.ClusterDestination_source {
 		destination = ToSource()
 	}
 
@@ -405,7 +404,7 @@ func (c *Cluster) CheckActiveConnections(conn *Conn) error {
 // in their preferred role, and synchronized.
 func (c *Cluster) WaitForClusterToBeReady(conn *Conn) error {
 	destination := ToTarget()
-	if c.Destination == idl.ClusterDestination_SOURCE {
+	if c.Destination == idl.ClusterDestination_source {
 		destination = ToSource()
 	}
 

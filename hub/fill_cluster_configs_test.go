@@ -158,7 +158,7 @@ func TestAssignDataDirsAndPorts(t *testing.T) {
 				t.Errorf("returned error %+v", err)
 			}
 
-			c.expected.Destination = idl.ClusterDestination_INTERMEDIATE
+			c.expected.Destination = idl.ClusterDestination_intermediate
 			if !reflect.DeepEqual(actual, c.expected) {
 				t.Errorf("GenerateIntermediateCluster(<cluster>, %v)=%v, want %v", c.ports, actual, c.expected)
 			}

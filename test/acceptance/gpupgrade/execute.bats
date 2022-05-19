@@ -187,7 +187,7 @@ ensure_hardlinks_for_relfilenode_on_coordinator_and_segments() {
     start_source_cluster
 
     # Mark every substep in the status file as failed. Then re-execute.
-    sed -i.bak -e 's/"COMPLETE"/"FAILED"/g' "$GPUPGRADE_HOME/substeps.json"
+    sed -i.bak -e 's/"complete"/"failed"/g' "$GPUPGRADE_HOME/substeps.json"
 
     gpupgrade execute --non-interactive --verbose 3>&-
 

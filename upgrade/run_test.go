@@ -294,7 +294,7 @@ func TestRun(t *testing.T) {
 			opts: idl.PgOptions{
 				Role:          greenplum.PrimaryRole,
 				ContentID:     3,
-				Mode:          idl.PgOptions_Dispatcher,
+				Mode:          idl.PgOptions_dispatcher,
 				OldOptions:    "-x 2",
 				Action:        idl.PgOptions_check,
 				LinkMode:      true,

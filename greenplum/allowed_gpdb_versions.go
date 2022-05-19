@@ -5,7 +5,6 @@ package greenplum
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/blang/semver/v4"
 
@@ -92,7 +91,7 @@ func VerifyCompatibleGPDBVersions(sourceGPHome, targetGPHome string) error {
 		return err
 	}
 
-	err = validateVersion(sourceVersion, idl.ClusterDestination_SOURCE)
+	err = validateVersion(sourceVersion, idl.ClusterDestination_source)
 	errs = errorlist.Append(errs, err)
 
 	targetVersion, err := Version(targetGPHome)
@@ -100,7 +99,7 @@ func VerifyCompatibleGPDBVersions(sourceGPHome, targetGPHome string) error {
 		return err
 	}
 
-	err = validateVersion(targetVersion, idl.ClusterDestination_TARGET)
+	err = validateVersion(targetVersion, idl.ClusterDestination_target)
 	errs = errorlist.Append(errs, err)
 
 	return errs
@@ -109,7 +108,7 @@ func VerifyCompatibleGPDBVersions(sourceGPHome, targetGPHome string) error {
 func validateVersion(versionStr string, destination idl.ClusterDestination) error {
 	versionsAllowed := sourceVersionAllowed
 	minVersions := minSourceVersions
-	if destination == idl.ClusterDestination_TARGET {
+	if destination == idl.ClusterDestination_target {
 		versionsAllowed = targetVersionAllowed
 		minVersions = minTargetVersions
 	}
@@ -120,7 +119,7 @@ func validateVersion(versionStr string, destination idl.ClusterDestination) erro
 		return fmt.Errorf("%s cluster version %s is not supported.  "+
 			"The minimum required version is %s. "+
 			"We recommend the latest version.",
-			strings.ToLower(destination.String()), version, min)
+			destination, version, min)
 	}
 
 	return nil

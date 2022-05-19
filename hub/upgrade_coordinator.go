@@ -31,7 +31,7 @@ func UpgradeCoordinator(streams step.OutStreams, source *greenplum.Cluster, inte
 		Action:        action,
 		Role:          intermediate.Coordinator().Role,
 		ContentID:     int32(intermediate.Coordinator().ContentID),
-		Mode:          idl.PgOptions_Dispatcher,
+		Mode:          idl.PgOptions_dispatcher,
 		OldOptions:    oldOptions,
 		LinkMode:      linkMode,
 		TargetVersion: intermediate.Version.String(),

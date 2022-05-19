@@ -25,13 +25,13 @@ service Agent {
 
 message PgOptions {
   enum Mode {
-    UNKNOWN_Mode = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
-    Dispatcher = 1;
-    Segment = 2;
+    unknown_mode = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
+    dispatcher = 1;
+    segment = 2;
   }
 
   enum Action {
-    UNKNOWN_Action = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
+    unknown_action = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
     upgrade = 1;
     check = 2;
   }

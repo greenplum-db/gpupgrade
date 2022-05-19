@@ -16,7 +16,7 @@ import (
 )
 
 func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_FinalizeServer) (err error) {
-	st, err := step.Begin(idl.Step_FINALIZE, stream, s.AgentConns)
+	st, err := step.Begin(idl.Step_finalize, stream, s.AgentConns)
 	if err != nil {
 		return err
 	}
@@ -35,27 +35,27 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 		return s.Intermediate.CheckActiveConnections(s.Connection)
 	})
 
-	st.RunConditionally(idl.Substep_UPGRADE_MIRRORS, s.Source.HasMirrors() && s.LinkMode, func(streams step.OutStreams) error {
+	st.RunConditionally(idl.Substep_upgrade_mirrors, s.Source.HasMirrors() && s.LinkMode, func(streams step.OutStreams) error {
 		return UpgradeMirrorsUsingRsync(s.Connection, s.agentConns, s.Source, s.Intermediate, s.UseHbaHostnames)
 	})
 
-	st.RunConditionally(idl.Substep_UPGRADE_MIRRORS, s.Source.HasMirrors() && !s.LinkMode, func(streams step.OutStreams) error {
+	st.RunConditionally(idl.Substep_upgrade_mirrors, s.Source.HasMirrors() && !s.LinkMode, func(streams step.OutStreams) error {
 		return UpgradeMirrorsUsingGpAddMirrors(streams, s.Intermediate, s.UseHbaHostnames)
 	})
 
-	st.RunConditionally(idl.Substep_UPGRADE_STANDBY, s.Source.HasStandby(), func(streams step.OutStreams) error {
+	st.RunConditionally(idl.Substep_upgrade_standby, s.Source.HasStandby(), func(streams step.OutStreams) error {
 		return UpgradeStandby(streams, s.Intermediate, s.UseHbaHostnames)
 	})
 
-	st.Run(idl.Substep_WAIT_FOR_CLUSTER_TO_BE_READY_AFTER_ADDING_MIRRORS_AND_STANDBY, func(streams step.OutStreams) error {
+	st.Run(idl.Substep_wait_for_cluster_to_be_ready_after_adding_mirrors_and_standby, func(streams step.OutStreams) error {
 		return s.Intermediate.WaitForClusterToBeReady(s.Connection)
 	})
 
-	st.Run(idl.Substep_SHUTDOWN_TARGET_CLUSTER, func(streams step.OutStreams) error {
+	st.Run(idl.Substep_shutdown_target_cluster, func(streams step.OutStreams) error {
 		return s.Intermediate.Stop(streams)
 	})
 
-	st.Run(idl.Substep_UPDATE_TARGET_CATALOG, func(streams step.OutStreams) error {
+	st.Run(idl.Substep_update_target_catalog, func(streams step.OutStreams) error {
 		if err := s.Intermediate.StartCoordinatorOnly(streams); err != nil {
 			return err
 		}
@@ -67,11 +67,11 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 		return s.Intermediate.StopCoordinatorOnly(streams)
 	})
 
-	st.Run(idl.Substep_UPDATE_DATA_DIRECTORIES, func(_ step.OutStreams) error {
+	st.Run(idl.Substep_update_data_directories, func(_ step.OutStreams) error {
 		return RenameDataDirectories(s.agentConns, s.Source, s.Intermediate)
 	})
 
-	st.Run(idl.Substep_UPDATE_TARGET_CONF_FILES, func(streams step.OutStreams) error {
+	st.Run(idl.Substep_update_target_conf_files, func(streams step.OutStreams) error {
 		return UpdateConfFiles(s.agentConns, streams,
 			s.Target.Version,
 			s.Intermediate,
@@ -79,20 +79,20 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 		)
 	})
 
-	st.Run(idl.Substep_START_TARGET_CLUSTER, func(streams step.OutStreams) error {
+	st.Run(idl.Substep_start_target_cluster, func(streams step.OutStreams) error {
 		return s.Target.Start(streams)
 	})
 
-	st.Run(idl.Substep_WAIT_FOR_CLUSTER_TO_BE_READY_AFTER_UPDATING_CATALOG, func(streams step.OutStreams) error {
+	st.Run(idl.Substep_wait_for_cluster_to_be_ready_after_updating_catalog, func(streams step.OutStreams) error {
 		return s.Target.WaitForClusterToBeReady(s.Connection)
 	})
 
-	st.Run(idl.Substep_STOP_TARGET_CLUSTER, func(streams step.OutStreams) error {
+	st.Run(idl.Substep_stop_target_cluster, func(streams step.OutStreams) error {
 		return s.Target.Stop(streams)
 	})
 
 	var logArchiveDir string
-	st.Run(idl.Substep_ARCHIVE_LOG_DIRECTORIES, func(_ step.OutStreams) error {
+	st.Run(idl.Substep_archive_log_directories, func(_ step.OutStreams) error {
 		logArchiveDir, err = s.GetLogArchiveDir()
 		if err != nil {
 			return xerrors.Errorf("get log archive directory: %w", err)
@@ -101,7 +101,7 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 		return ArchiveLogDirectories(logArchiveDir, s.agentConns, s.Config.Target.CoordinatorHostname())
 	})
 
-	st.Run(idl.Substep_DELETE_SEGMENT_STATEDIRS, func(_ step.OutStreams) error {
+	st.Run(idl.Substep_delete_segment_statedirs, func(_ step.OutStreams) error {
 		return DeleteStateDirectories(s.agentConns, s.Source.CoordinatorHostname())
 	})
 

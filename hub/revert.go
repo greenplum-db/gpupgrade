@@ -19,7 +19,7 @@ import (
 var ErrMissingMirrorsAndStandby = errors.New("Source cluster does not have mirrors and/or standby. Cannot restore source cluster. Please contact support.")
 
 func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) (err error) {
-	st, err := step.Begin(idl.Step_REVERT, stream, s.AgentConns)
+	st, err := step.Begin(idl.Step_revert, stream, s.AgentConns)
 	if err != nil {
 		return err
 	}
@@ -34,7 +34,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		}
 	}()
 
-	hasExecuteStarted, err := step.HasStarted(idl.Step_EXECUTE)
+	hasExecuteStarted, err := step.HasStarted(idl.Step_execute)
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 
 	// If the intermediate target cluster is started, it must be stopped.
 	if s.Intermediate != nil {
-		st.AlwaysRun(idl.Substep_SHUTDOWN_TARGET_CLUSTER, func(streams step.OutStreams) error {
+		st.AlwaysRun(idl.Substep_shutdown_target_cluster, func(streams step.OutStreams) error {
 			running, err := s.Intermediate.IsCoordinatorRunning(streams)
 			if err != nil {
 				return err
@@ -59,13 +59,13 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		})
 	}
 
-	st.RunConditionally(idl.Substep_DELETE_TARGET_CLUSTER_DATADIRS,
+	st.RunConditionally(idl.Substep_delete_target_cluster_datadirs,
 		s.Intermediate.Primaries != nil && s.Intermediate.CoordinatorDataDir() != "",
 		func(streams step.OutStreams) error {
 			return DeleteCoordinatorAndPrimaryDataDirectories(streams, s.agentConns, s.Intermediate)
 		})
 
-	st.RunConditionally(idl.Substep_DELETE_TABLESPACES,
+	st.RunConditionally(idl.Substep_delete_tablespaces,
 		s.Intermediate.Primaries != nil && s.Intermediate.CoordinatorDataDir() != "",
 		func(streams step.OutStreams) error {
 			return DeleteTargetTablespaces(streams, s.agentConns, s.Config.Intermediate, s.Intermediate.CatalogVersion, s.Source.Tablespaces)
@@ -77,18 +77,18 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 	// we're going to perform a full rsync restoration, we rely on this
 	// substep to clean up the pg_control.old file, since the rsync will not
 	// remove it.
-	st.RunConditionally(idl.Substep_RESTORE_PGCONTROL, s.LinkMode, func(streams step.OutStreams) error {
+	st.RunConditionally(idl.Substep_restore_pgcontrol, s.LinkMode, func(streams step.OutStreams) error {
 		return RestoreCoordinatorAndPrimariesPgControl(streams, s.agentConns, s.Source)
 	})
 
 	// if the target cluster has been started at any point, we must restore the source
 	// cluster as its files could have been modified.
-	targetStarted, err := step.HasRun(idl.Step_EXECUTE, idl.Substep_START_TARGET_CLUSTER)
+	targetStarted, err := step.HasRun(idl.Step_execute, idl.Substep_start_target_cluster)
 	if err != nil {
 		return err
 	}
 
-	st.RunConditionally(idl.Substep_RESTORE_SOURCE_CLUSTER, s.LinkMode && targetStarted, func(stream step.OutStreams) error {
+	st.RunConditionally(idl.Substep_restore_source_cluster, s.LinkMode && targetStarted, func(stream step.OutStreams) error {
 		if err := RsyncCoordinatorAndPrimaries(stream, s.agentConns, s.Source); err != nil {
 			return err
 		}
@@ -106,7 +106,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		return err
 	}
 
-	st.RunConditionally(idl.Substep_START_SOURCE_CLUSTER, !sourceClusterIsRunning, func(streams step.OutStreams) error {
+	st.RunConditionally(idl.Substep_start_source_cluster, !sourceClusterIsRunning, func(streams step.OutStreams) error {
 		err = s.Source.Start(streams)
 		var exitErr *exec.ExitError
 		if xerrors.As(err, &exitErr) {
@@ -132,12 +132,12 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 	// is left in a bad state after execute. This is because running pg_upgrade on
 	// a primary results in a checkpoint that does not get replicated on the mirror.
 	// Thus, when the mirror is started it panics and a gprecoverseg or rsync is needed.
-	st.RunConditionally(idl.Substep_RECOVERSEG_SOURCE_CLUSTER, handleMirrorStartupFailure && s.Source.Version.Major == 5, func(streams step.OutStreams) error {
+	st.RunConditionally(idl.Substep_recoverseg_source_cluster, handleMirrorStartupFailure && s.Source.Version.Major == 5, func(streams step.OutStreams) error {
 		return Recoverseg(streams, s.Source, s.UseHbaHostnames)
 	})
 
 	var logArchiveDir string
-	st.Run(idl.Substep_ARCHIVE_LOG_DIRECTORIES, func(_ step.OutStreams) error {
+	st.Run(idl.Substep_archive_log_directories, func(_ step.OutStreams) error {
 		logArchiveDir, err = s.GetLogArchiveDir()
 		if err != nil {
 			return xerrors.Errorf("get log archive directory: %w", err)
@@ -146,7 +146,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		return ArchiveLogDirectories(logArchiveDir, s.agentConns, s.Config.Source.CoordinatorHostname())
 	})
 
-	st.Run(idl.Substep_DELETE_SEGMENT_STATEDIRS, func(_ step.OutStreams) error {
+	st.Run(idl.Substep_delete_segment_statedirs, func(_ step.OutStreams) error {
 		return DeleteStateDirectories(s.agentConns, s.Source.CoordinatorHostname())
 	})
 
@@ -180,12 +180,12 @@ func (s *Server) expectMirrorFailure() (bool, error) {
 		return false, nil
 	}
 
-	hasRestoreRun, err := step.HasRun(idl.Step_REVERT, idl.Substep_RESTORE_SOURCE_CLUSTER)
+	hasRestoreRun, err := step.HasRun(idl.Step_revert, idl.Substep_restore_source_cluster)
 	if err != nil {
 		return false, err
 	}
 
-	primariesUpgraded, err := step.HasRun(idl.Step_EXECUTE, idl.Substep_UPGRADE_PRIMARIES)
+	primariesUpgraded, err := step.HasRun(idl.Step_execute, idl.Substep_upgrade_primaries)
 	if err != nil {
 		return false, err
 	}

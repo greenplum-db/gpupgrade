@@ -13,7 +13,7 @@ import (
 )
 
 func (s *Server) ArchiveLogDirectory(ctx context.Context, in *idl.ArchiveLogDirectoryRequest) (*idl.ArchiveLogDirectoryReply, error) {
-	gplog.Info("agent starting %s", idl.Substep_ARCHIVE_LOG_DIRECTORIES)
+	gplog.Info("agent starting %s", idl.Substep_archive_log_directories)
 
 	logdir, err := utils.GetLogDir()
 	if err != nil {

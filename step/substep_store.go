@@ -93,12 +93,12 @@ func (f *SubstepFileStore) ReadStep(step idl.Step) (map[string]PrettyStatus, err
 func (f *SubstepFileStore) Read(step idl.Step, substep idl.Substep) (idl.Status, error) {
 	sectionMap, err := f.ReadStep(step)
 	if err != nil {
-		return idl.Status_UNKNOWN_STATUS, err
+		return idl.Status_unknown_status, err
 	}
 
 	status, ok := sectionMap[substep.String()]
 	if !ok {
-		return idl.Status_UNKNOWN_STATUS, nil
+		return idl.Status_unknown_status, nil
 	}
 
 	return status.Status, nil

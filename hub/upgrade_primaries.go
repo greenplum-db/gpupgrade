@@ -28,7 +28,7 @@ func UpgradePrimaries(agentConns []*idl.Connection, source *greenplum.Cluster, i
 				Action:        action,
 				Role:          intermediatePrimary.Role,
 				ContentID:     int32(intermediatePrimary.ContentID),
-				Mode:          idl.PgOptions_Segment,
+				Mode:          idl.PgOptions_segment,
 				LinkMode:      linkMode,
 				TargetVersion: intermediate.Version.String(),
 				OldBinDir:     filepath.Join(source.GPHome, "bin"),

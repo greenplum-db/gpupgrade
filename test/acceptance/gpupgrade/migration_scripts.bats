@@ -57,7 +57,7 @@ teardown() {
     echo "$output"
     [ "$status" -ne 0 ] || fail "expected initialize to fail due to pg_upgrade check"
 
-    egrep "\"CHECK_UPGRADE\": \"FAILED\"" $GPUPGRADE_HOME/substeps.json
+    egrep "\"check_upgrade\": \"failed\"" $GPUPGRADE_HOME/substeps.json
     egrep "^Checking.*fatal$" ~/gpAdminLogs/gpupgrade/pg_upgrade/p-1/pg_upgrade_internal.log
 
     PGOPTIONS='--client-min-messages=warning' $PSQL -d $TEST_DBNAME -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql

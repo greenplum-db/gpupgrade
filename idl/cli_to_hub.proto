@@ -17,10 +17,10 @@ service CliToHub {
 }
 
 enum ClusterDestination {
-  UNKNOWN_DESTINATION = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
-  SOURCE = 1;
-  INTERMEDIATE = 2;
-  TARGET = 3;
+  unknown_destination = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
+  source = 1;
+  intermediate = 2;
+  target = 3;
 }
 
 message InitializeRequest {
@@ -57,58 +57,58 @@ message SubstepStatus {
 }
 
 enum Step {
-  UNKNOWN_STEP = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
-  INITIALIZE = 1;
-  EXECUTE = 2;
-  FINALIZE = 3;
-  REVERT = 4;
+  unknown_step = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
+  initialize = 1;
+  execute = 2;
+  finalize = 3;
+  revert = 4;
 }
 
 enum Substep {
-    UNKNOWN_SUBSTEP = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
-    SAVING_SOURCE_CLUSTER_CONFIG = 1;
-    START_HUB = 2;
-    START_AGENTS = 3;
-    CHECK_DISK_SPACE = 4;
-    GENERATE_TARGET_CONFIG = 5;
-    INIT_TARGET_CLUSTER = 6;
-    SHUTDOWN_TARGET_CLUSTER = 7;
-    BACKUP_TARGET_MASTER = 8;
-    CHECK_UPGRADE = 9;
-    SHUTDOWN_SOURCE_CLUSTER = 10;
-    UPGRADE_MASTER = 11;
-    COPY_MASTER = 12;
-    UPGRADE_PRIMARIES = 13;
-    START_TARGET_CLUSTER = 14;
-    UPDATE_TARGET_CATALOG = 15;
-    UPDATE_DATA_DIRECTORIES = 16;
-    UPDATE_TARGET_CONF_FILES = 17;
-    UPGRADE_STANDBY = 18;
-    UPGRADE_MIRRORS = 19;
-    DELETE_TABLESPACES = 20;
-    DELETE_TARGET_CLUSTER_DATADIRS = 21;
-    DELETE_SEGMENT_STATEDIRS = 22;
-    STOP_HUB_AND_AGENTS = 23;
-    DELETE_MASTER_STATEDIR = 24;
-    ARCHIVE_LOG_DIRECTORIES = 25;
-    RESTORE_SOURCE_CLUSTER = 26;
-    START_SOURCE_CLUSTER = 27;
-    RESTORE_PGCONTROL = 28;
-    RECOVERSEG_SOURCE_CLUSTER = 29;
-    STEP_STATUS = 30;
-    REMOVE_SOURCE_MIRRORS = 31;
-    WAIT_FOR_CLUSTER_TO_BE_READY_AFTER_ADDING_MIRRORS_AND_STANDBY = 32;
-    WAIT_FOR_CLUSTER_TO_BE_READY_AFTER_UPDATING_CATALOG = 33;
-    STOP_TARGET_CLUSTER = 34;
-    SETTING_DYNAMIC_LIBRARY_PATH_ON_TARGET_CLUSTER = 35;
+    unknown_substep = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
+    saving_source_cluster_config = 1;
+    start_hub = 2;
+    start_agents = 3;
+    check_disk_space = 4;
+    generate_target_config = 5;
+    init_target_cluster = 6;
+    shutdown_target_cluster = 7;
+    backup_target_master = 8;
+    check_upgrade = 9;
+    shutdown_source_cluster = 10;
+    upgrade_master = 11;
+    copy_master = 12;
+    upgrade_primaries = 13;
+    start_target_cluster = 14;
+    update_target_catalog = 15;
+    update_data_directories = 16;
+    update_target_conf_files = 17;
+    upgrade_standby = 18;
+    upgrade_mirrors = 19;
+    delete_tablespaces = 20;
+    delete_target_cluster_datadirs = 21;
+    delete_segment_statedirs = 22;
+    stop_hub_and_agents = 23;
+    delete_master_statedir = 24;
+    archive_log_directories = 25;
+    restore_source_cluster = 26;
+    start_source_cluster = 27;
+    restore_pgcontrol = 28;
+    recoverseg_source_cluster = 29;
+    step_status = 30;
+    remove_source_mirrors = 31;
+    wait_for_cluster_to_be_ready_after_adding_mirrors_and_standby = 32;
+    wait_for_cluster_to_be_ready_after_updating_catalog = 33;
+    stop_target_cluster = 34;
+    setting_dynamic_library_path_on_target_cluster = 35;
 }
 
 enum Status {
-    UNKNOWN_STATUS = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
-    RUNNING = 1;
-    COMPLETE = 2;
-    FAILED = 3;
-    SKIPPED = 4;
+    unknown_status = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
+    running = 1;
+    complete = 2;
+    failed = 3;
+    skipped = 4;
 }
 
 message PrepareInitClusterRequest {}
@@ -117,9 +117,9 @@ message PrepareInitClusterReply {}
 message Chunk {
   bytes buffer = 1;
   enum Type {
-    UNKNOWN = 0;
-    STDOUT = 1;
-    STDERR = 2;
+    unknown = 0;
+    stdout = 1;
+    stderr = 2;
   }
   Type type = 2;
 }

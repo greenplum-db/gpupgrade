@@ -19,7 +19,7 @@ import (
 )
 
 func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_InitializeServer) (err error) {
-	st, err := step.Begin(idl.Step_INITIALIZE, stream, s.AgentConns)
+	st, err := step.Begin(idl.Step_initialize, stream, s.AgentConns)
 	if err != nil {
 		return err
 	}
@@ -51,7 +51,7 @@ func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_Init
 		return nil
 	})
 
-	st.Run(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(stream step.OutStreams) error {
+	st.Run(idl.Substep_saving_source_cluster_config, func(stream step.OutStreams) error {
 		return FillConfiguration(s.Config, req, s.Connection, s.SaveConfig)
 	})
 
@@ -60,12 +60,12 @@ func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_Init
 		return upgrade.EnsureGpupgradeVersionsMatch(AgentHosts(s.Source))
 	})
 
-	st.Run(idl.Substep_START_AGENTS, func(_ step.OutStreams) error {
+	st.Run(idl.Substep_start_agents, func(_ step.OutStreams) error {
 		_, err := RestartAgents(context.Background(), nil, AgentHosts(s.Source), s.AgentPort, s.StateDir)
 		return err
 	})
 
-	st.RunConditionally(idl.Substep_CHECK_DISK_SPACE, req.GetDiskFreeRatio() > 0, func(streams step.OutStreams) error {
+	st.RunConditionally(idl.Substep_check_disk_space, req.GetDiskFreeRatio() > 0, func(streams step.OutStreams) error {
 		return CheckDiskSpace(streams, s.agentConns, req.GetDiskFreeRatio(), s.Source, s.Source.Tablespaces)
 	})
 
@@ -73,7 +73,7 @@ func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_Init
 }
 
 func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest, stream idl.CliToHub_InitializeCreateClusterServer) (err error) {
-	st, err := step.Begin(idl.Step_INITIALIZE, stream, s.AgentConns)
+	st, err := step.Begin(idl.Step_initialize, stream, s.AgentConns)
 	if err != nil {
 		return err
 	}
@@ -88,11 +88,11 @@ func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest
 		}
 	}()
 
-	st.Run(idl.Substep_GENERATE_TARGET_CONFIG, func(_ step.OutStreams) error {
+	st.Run(idl.Substep_generate_target_config, func(_ step.OutStreams) error {
 		return s.GenerateInitsystemConfig()
 	})
 
-	st.Run(idl.Substep_INIT_TARGET_CLUSTER, func(stream step.OutStreams) error {
+	st.Run(idl.Substep_init_target_cluster, func(stream step.OutStreams) error {
 		err := s.RemoveIntermediateCluster(stream)
 		if err != nil {
 			return err
@@ -115,15 +115,15 @@ func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest
 		return s.SaveConfig()
 	})
 
-	st.RunConditionally(idl.Substep_SETTING_DYNAMIC_LIBRARY_PATH_ON_TARGET_CLUSTER, req.GetDynamicLibraryPath() != upgrade.DefaultDynamicLibraryPath, func(stream step.OutStreams) error {
+	st.RunConditionally(idl.Substep_setting_dynamic_library_path_on_target_cluster, req.GetDynamicLibraryPath() != upgrade.DefaultDynamicLibraryPath, func(stream step.OutStreams) error {
 		return AppendDynamicLibraryPath(s.Intermediate, req.GetDynamicLibraryPath())
 	})
 
-	st.Run(idl.Substep_SHUTDOWN_TARGET_CLUSTER, func(stream step.OutStreams) error {
+	st.Run(idl.Substep_shutdown_target_cluster, func(stream step.OutStreams) error {
 		return s.Intermediate.Stop(stream)
 	})
 
-	st.Run(idl.Substep_BACKUP_TARGET_MASTER, func(stream step.OutStreams) error {
+	st.Run(idl.Substep_backup_target_master, func(stream step.OutStreams) error {
 		sourceDir := s.Intermediate.CoordinatorDataDir()
 		targetDir := utils.GetCoordinatorPreUpgradeBackupDir()
 
@@ -135,7 +135,7 @@ func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest
 		return RsyncCoordinatorDataDir(stream, sourceDir, targetDir)
 	})
 
-	st.AlwaysRun(idl.Substep_CHECK_UPGRADE, func(stream step.OutStreams) error {
+	st.AlwaysRun(idl.Substep_check_upgrade, func(stream step.OutStreams) error {
 		if err := UpgradeCoordinator(stream, s.Source, s.Intermediate, idl.PgOptions_check, s.LinkMode); err != nil {
 			return err
 		}

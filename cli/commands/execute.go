@@ -34,7 +34,7 @@ func execute() *cobra.Command {
 
 			confirmationText := fmt.Sprintf(executeConfirmationText, logdir)
 
-			st, err := commanders.NewStep(idl.Step_EXECUTE,
+			st, err := commanders.NewStep(idl.Step_execute,
 				&step.BufferedStreams{},
 				verbose,
 				nonInteractive,

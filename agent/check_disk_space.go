@@ -5,6 +5,7 @@ package agent
 
 import (
 	"context"
+
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -13,7 +14,7 @@ import (
 )
 
 func (s *Server) CheckDiskSpace(ctx context.Context, in *idl.CheckSegmentDiskSpaceRequest) (*idl.CheckDiskSpaceReply, error) {
-	gplog.Info("agent received request to %s", idl.Substep_CHECK_DISK_SPACE)
+	gplog.Info("agent received request to %s", idl.Substep_check_disk_space)
 
 	usage, err := disk.CheckUsage(step.DevNullStream, disk.Local, in.GetDiskFreeRatio(), in.GetDirs()...)
 	if err != nil {

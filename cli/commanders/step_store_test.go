@@ -37,13 +37,13 @@ func TestStepStore(t *testing.T) {
 	}
 
 	t.Run("write persists the step status", func(t *testing.T) {
-		expected := idl.Status_RUNNING
-		err := stepStore.Write(idl.Step_INITIALIZE, expected)
+		expected := idl.Status_running
+		err := stepStore.Write(idl.Step_initialize, expected)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
 
-		status, err := stepStore.Read(idl.Step_INITIALIZE)
+		status, err := stepStore.Read(idl.Step_initialize)
 		if err != nil {
 			t.Errorf("Read failed %#v", err)
 		}
@@ -93,18 +93,18 @@ func TestStepStore(t *testing.T) {
 			t.Fatalf("removing temp state directory: %v", err)
 		}
 
-		err = stepStore.Write(idl.Step_INITIALIZE, idl.Status_RUNNING)
+		err = stepStore.Write(idl.Step_initialize, idl.Status_running)
 		var pathErr *os.PathError
 		if !errors.As(err, &pathErr) {
 			t.Errorf("returned error type %T want %T", err, pathErr)
 		}
 
-		status, err := stepStore.Read(idl.Step_INITIALIZE)
+		status, err := stepStore.Read(idl.Step_initialize)
 		if !errors.As(err, &pathErr) {
 			t.Errorf("returned error type %T want %T", err, pathErr)
 		}
 
-		expected := idl.Status_UNKNOWN_STATUS
+		expected := idl.Status_unknown_status
 		if status != expected {
 			t.Errorf("got stauts %q want %q", status, expected)
 		}
@@ -140,7 +140,7 @@ func TestStepStore(t *testing.T) {
 			return true
 		}
 
-		hasStatus, err := stepStore.HasStatus(idl.Step_INITIALIZE, check)
+		hasStatus, err := stepStore.HasStatus(idl.Step_initialize, check)
 		var pathErr *os.PathError
 		if !errors.As(err, &pathErr) {
 			t.Errorf("returned error type %T want %T", err, pathErr)
@@ -156,14 +156,14 @@ func TestStepStore(t *testing.T) {
 	})
 
 	t.Run("HasStepStarted returns true if a step's status is running, complete, or failed", func(t *testing.T) {
-		statuses := []idl.Status{idl.Status_RUNNING, idl.Status_COMPLETE, idl.Status_FAILED}
+		statuses := []idl.Status{idl.Status_running, idl.Status_complete, idl.Status_failed}
 		for _, status := range statuses {
-			err := stepStore.Write(idl.Step_INITIALIZE, status)
+			err := stepStore.Write(idl.Step_initialize, status)
 			if err != nil {
 				t.Errorf("Write failed %#v", err)
 			}
 
-			started, err := stepStore.HasStepStarted(idl.Step_INITIALIZE)
+			started, err := stepStore.HasStepStarted(idl.Step_initialize)
 			if err != nil {
 				t.Errorf("HasStepStarted failed %#v", err)
 			}
@@ -175,7 +175,7 @@ func TestStepStore(t *testing.T) {
 	})
 
 	t.Run("HasStepStarted returns false if a step has not started", func(t *testing.T) {
-		started, err := stepStore.HasStepStarted(idl.Step_UNKNOWN_STEP)
+		started, err := stepStore.HasStepStarted(idl.Step_unknown_step)
 		if err != nil {
 			t.Errorf("HasStepStarted failed %#v", err)
 		}
@@ -186,12 +186,12 @@ func TestStepStore(t *testing.T) {
 	})
 
 	t.Run("HasStepCompleted returns true if a step's status is complete", func(t *testing.T) {
-		err := stepStore.Write(idl.Step_INITIALIZE, idl.Status_COMPLETE)
+		err := stepStore.Write(idl.Step_initialize, idl.Status_complete)
 		if err != nil {
 			t.Errorf("Write failed %#v", err)
 		}
 
-		completed, err := stepStore.HasStepCompleted(idl.Step_INITIALIZE)
+		completed, err := stepStore.HasStepCompleted(idl.Step_initialize)
 		if err != nil {
 			t.Errorf("HasStepCompleted failed %#v", err)
 		}
@@ -202,14 +202,14 @@ func TestStepStore(t *testing.T) {
 	})
 
 	t.Run("HasStepCompleted returns false if a step's status is not complete", func(t *testing.T) {
-		statuses := []idl.Status{idl.Status_RUNNING, idl.Status_FAILED, idl.Status_SKIPPED, idl.Status_UNKNOWN_STATUS}
+		statuses := []idl.Status{idl.Status_running, idl.Status_failed, idl.Status_skipped, idl.Status_unknown_status}
 		for _, status := range statuses {
-			err := stepStore.Write(idl.Step_INITIALIZE, status)
+			err := stepStore.Write(idl.Step_initialize, status)
 			if err != nil {
 				t.Errorf("Write failed %#v", err)
 			}
 
-			completed, err := stepStore.HasStepCompleted(idl.Step_INITIALIZE)
+			completed, err := stepStore.HasStepCompleted(idl.Step_initialize)
 			if err != nil {
 				t.Errorf("HasStepCompleted failed %#v", err)
 			}
@@ -254,84 +254,84 @@ func TestValidateStep(t *testing.T) {
 		// error cases when current step is initialize
 		{
 			"fails when initialize is run but execute has already started",
-			idl.Step_INITIALIZE,
-			[]stepStatus{{step: idl.Step_EXECUTE, status: idl.Status_RUNNING}},
+			idl.Step_initialize,
+			[]stepStatus{{step: idl.Step_execute, status: idl.Status_running}},
 			commanders.RunExecute,
 		},
 		{
 			"fails when initialize is run but finalize has started",
-			idl.Step_INITIALIZE,
+			idl.Step_initialize,
 			[]stepStatus{
-				{step: idl.Step_INITIALIZE, status: idl.Status_COMPLETE},
-				{step: idl.Step_EXECUTE, status: idl.Status_COMPLETE},
-				{step: idl.Step_FINALIZE, status: idl.Status_RUNNING}},
+				{step: idl.Step_initialize, status: idl.Status_complete},
+				{step: idl.Step_execute, status: idl.Status_complete},
+				{step: idl.Step_finalize, status: idl.Status_running}},
 			commanders.RunFinalize,
 		},
 		{
 			"fails when initialize is run but revert has started",
-			idl.Step_INITIALIZE,
-			[]stepStatus{{step: idl.Step_REVERT, status: idl.Status_RUNNING}},
+			idl.Step_initialize,
+			[]stepStatus{{step: idl.Step_revert, status: idl.Status_running}},
 			commanders.RunRevert,
 		},
 		// error cases when current step is execute
 		{
 			"fails when execute is run before initialize has completed",
-			idl.Step_EXECUTE,
+			idl.Step_execute,
 			[]stepStatus{},
 			commanders.RunInitialize,
 		},
 		{
 			"fails when execute is run but finalize has started",
-			idl.Step_EXECUTE,
+			idl.Step_execute,
 			[]stepStatus{
-				{step: idl.Step_INITIALIZE, status: idl.Status_COMPLETE},
-				{step: idl.Step_FINALIZE, status: idl.Status_RUNNING}},
+				{step: idl.Step_initialize, status: idl.Status_complete},
+				{step: idl.Step_finalize, status: idl.Status_running}},
 			commanders.RunFinalize,
 		},
 		{
 			"fails when execute is run but revert has started",
-			idl.Step_EXECUTE,
+			idl.Step_execute,
 			[]stepStatus{
-				{step: idl.Step_INITIALIZE, status: idl.Status_COMPLETE},
-				{step: idl.Step_REVERT, status: idl.Status_RUNNING}},
+				{step: idl.Step_initialize, status: idl.Status_complete},
+				{step: idl.Step_revert, status: idl.Status_running}},
 			commanders.RunRevert,
 		},
 		// error cases when current step is finalize
 		{
 			"fails when finalize is run before initialize has completed",
-			idl.Step_FINALIZE,
+			idl.Step_finalize,
 			[]stepStatus{},
 			commanders.RunInitialize,
 		},
 		{
 			"fails when finalize is run and execute has not started",
-			idl.Step_FINALIZE,
-			[]stepStatus{{step: idl.Step_INITIALIZE, status: idl.Status_COMPLETE}},
+			idl.Step_finalize,
+			[]stepStatus{{step: idl.Step_initialize, status: idl.Status_complete}},
 			commanders.RunExecute,
 		},
 		{
 			"fails when finalize is run but revert has started",
-			idl.Step_FINALIZE,
+			idl.Step_finalize,
 			[]stepStatus{
-				{step: idl.Step_INITIALIZE, status: idl.Status_COMPLETE},
-				{step: idl.Step_EXECUTE, status: idl.Status_FAILED},
-				{step: idl.Step_REVERT, status: idl.Status_FAILED}},
+				{step: idl.Step_initialize, status: idl.Status_complete},
+				{step: idl.Step_execute, status: idl.Status_failed},
+				{step: idl.Step_revert, status: idl.Status_failed}},
 			commanders.RunRevert,
 		},
 		// error cases when current step is revert
 		{
 			"fails when revert is run before initialize has completed",
-			idl.Step_REVERT,
+			idl.Step_revert,
 			[]stepStatus{},
 			commanders.RunInitialize,
 		},
 		{
 			"fails when revert is run but finalize has already been started",
-			idl.Step_REVERT,
+			idl.Step_revert,
 			[]stepStatus{
-				{step: idl.Step_INITIALIZE, status: idl.Status_COMPLETE},
-				{step: idl.Step_EXECUTE, status: idl.Status_COMPLETE},
-				{step: idl.Step_FINALIZE, status: idl.Status_RUNNING},
+				{step: idl.Step_initialize, status: idl.Status_complete},
+				{step: idl.Step_execute, status: idl.Status_complete},
+				{step: idl.Step_finalize, status: idl.Status_running},
 			},
 			commanders.RunFinalize,
 		},
@@ -365,74 +365,74 @@ func TestValidateStep(t *testing.T) {
 		// positive cases when current step is initialize
 		{
 			"can run initialize",
-			idl.Step_INITIALIZE,
+			idl.Step_initialize,
 			[]stepStatus{},
 		},
 		{
 			"can run initialize after initialize is running",
-			idl.Step_INITIALIZE,
-			[]stepStatus{{step: idl.Step_INITIALIZE, status: idl.Status_RUNNING}},
+			idl.Step_initialize,
+			[]stepStatus{{step: idl.Step_initialize, status: idl.Status_running}},
 		},
 		{
 			"can run initialize after initialize has failed",
-			idl.Step_INITIALIZE,
-			[]stepStatus{{step: idl.Step_INITIALIZE, status: idl.Status_FAILED}},
+			idl.Step_initialize,
+			[]stepStatus{{step: idl.Step_initialize, status: idl.Status_failed}},
 		},
 		{
 			"can run initialize after initialize is completed",
-			idl.Step_INITIALIZE,
-			[]stepStatus{{step: idl.Step_INITIALIZE, status: idl.Status_COMPLETE}},
+			idl.Step_initialize,
+			[]stepStatus{{step: idl.Step_initialize, status: idl.Status_complete}},
 		},
 		// positive cases when current step is execute
 		{
 			"can run execute after initialize has completed",
-			idl.Step_EXECUTE,
-			[]stepStatus{{step: idl.Step_INITIALIZE, status: idl.Status_COMPLETE}},
+			idl.Step_execute,
+			[]stepStatus{{step: idl.Step_initialize, status: idl.Status_complete}},
 		},
 		{
 			"can run execute after execute has failed",
-			idl.Step_EXECUTE,
+			idl.Step_execute,
 			[]stepStatus{
-				{step: idl.Step_INITIALIZE, status: idl.Status_COMPLETE},
-				{step: idl.Step_EXECUTE, status: idl.Status_FAILED}},
+				{step: idl.Step_initialize, status: idl.Status_complete},
+				{step: idl.Step_execute, status: idl.Status_failed}},
 		},
 		// positive cases when current step is finalize
 		{
 			"can run finalize after execute has completed",
-			idl.Step_FINALIZE,
+			idl.Step_finalize,
 			[]stepStatus{
-				{step: idl.Step_INITIALIZE, status: idl.Status_COMPLETE},
-				{step: idl.Step_EXECUTE, status: idl.Status_COMPLETE},
+				{step: idl.Step_initialize, status: idl.Status_complete},
+				{step: idl.Step_execute, status: idl.Status_complete},
 			},
 		},
 		{
 			"can run finalize after finalize has failed",
-			idl.Step_FINALIZE,
+			idl.Step_finalize,
 			[]stepStatus{
-				{step: idl.Step_INITIALIZE, status: idl.Status_COMPLETE},
-				{step: idl.Step_EXECUTE, status: idl.Status_COMPLETE},
-				{step: idl.Step_FINALIZE, status: idl.Status_FAILED}},
+				{step: idl.Step_initialize, status: idl.Status_complete},
+				{step: idl.Step_execute, status: idl.Status_complete},
+				{step: idl.Step_finalize, status: idl.Status_failed}},
 		},
 		// positive cases when current step is revert
 		{
 			"can run revert after initialize has started",
-			idl.Step_REVERT,
-			[]stepStatus{{step: idl.Step_INITIALIZE, status: idl.Status_RUNNING}},
+			idl.Step_revert,
+			[]stepStatus{{step: idl.Step_initialize, status: idl.Status_running}},
 		},
 		{
 			"can run revert after execute has started",
-			idl.Step_REVERT,
+			idl.Step_revert,
 			[]stepStatus{
-				{step: idl.Step_INITIALIZE, status: idl.Status_COMPLETE},
-				{step: idl.Step_EXECUTE, status: idl.Status_RUNNING},
+				{step: idl.Step_initialize, status: idl.Status_complete},
+				{step: idl.Step_execute, status: idl.Status_running},
 			},
 		},
 		{
 			"can run revert after revert has failed",
-			idl.Step_REVERT,
+			idl.Step_revert,
 			[]stepStatus{
-				{step: idl.Step_INITIALIZE, status: idl.Status_FAILED},
-				{step: idl.Step_REVERT, status: idl.Status_FAILED}},
+				{step: idl.Step_initialize, status: idl.Status_failed},
+				{step: idl.Step_revert, status: idl.Status_failed}},
 		},
 	}
 

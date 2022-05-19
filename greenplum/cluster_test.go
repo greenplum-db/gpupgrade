@@ -190,7 +190,7 @@ func TestClusterFromDB(t *testing.T) {
 		expected := errors.New("connection failed")
 		mock.ExpectQuery("SELECT ").WillReturnError(expected)
 
-		actualCluster, err := greenplum.ClusterFromDB(db, semver.MustParse("0.0.0"), "", idl.ClusterDestination_SOURCE)
+		actualCluster, err := greenplum.ClusterFromDB(db, semver.MustParse("0.0.0"), "", idl.ClusterDestination_source)
 		if !errors.Is(err, expected) {
 			t.Errorf("got %#v want %#v", err, expected)
 		}
@@ -210,7 +210,7 @@ func TestClusterFromDB(t *testing.T) {
 		queryErr := errors.New("failed to get segment configuration")
 		mock.ExpectQuery("SELECT .* FROM gp_segment_configuration").WillReturnError(queryErr)
 
-		actualCluster, err := greenplum.ClusterFromDB(db, semver.MustParse("0.0.0"), "", idl.ClusterDestination_SOURCE)
+		actualCluster, err := greenplum.ClusterFromDB(db, semver.MustParse("0.0.0"), "", idl.ClusterDestination_source)
 
 		if err == nil {
 			t.Errorf("Expected an error, but got nil")
@@ -234,7 +234,7 @@ func TestClusterFromDB(t *testing.T) {
 
 		gphome := "/usr/local/gpdb"
 		version := semver.MustParse("5.3.4")
-		destination := idl.ClusterDestination_INTERMEDIATE
+		destination := idl.ClusterDestination_intermediate
 		actualCluster, err := greenplum.ClusterFromDB(db, version, gphome, destination)
 		if err != nil {
 			t.Errorf("got unexpected error: %+v", err)

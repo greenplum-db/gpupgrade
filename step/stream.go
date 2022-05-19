@@ -86,11 +86,11 @@ func newMultiplexedStream(stream idl.MessageSender, writer io.Writer) *multiplex
 
 	m.stdout = &streamWriter{
 		multiplexedStream: m,
-		cType:             idl.Chunk_STDOUT,
+		cType:             idl.Chunk_stdout,
 	}
 	m.stderr = &streamWriter{
 		multiplexedStream: m,
-		cType:             idl.Chunk_STDERR,
+		cType:             idl.Chunk_stderr,
 	}
 
 	return m

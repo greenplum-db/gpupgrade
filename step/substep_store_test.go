@@ -30,7 +30,7 @@ func TestFileStore(t *testing.T) {
 	path := filepath.Join(tmpDir, step.SubstepsFileName)
 	fs := step.NewSubstepStoreUsingFile(path)
 
-	const initialize = idl.Step_INITIALIZE
+	const initialize = idl.Step_initialize
 
 	t.Run("ReadStep returns errors when failing to read", func(t *testing.T) {
 		_, err := fs.ReadStep(initialize)
@@ -40,7 +40,7 @@ func TestFileStore(t *testing.T) {
 	})
 
 	t.Run("Read returns errors when failing to read", func(t *testing.T) {
-		_, err := fs.Read(initialize, idl.Substep_CHECK_UPGRADE)
+		_, err := fs.Read(initialize, idl.Substep_check_upgrade)
 		if !os.IsNotExist(err) {
 			t.Errorf("returned error %#v, want ErrNotExist", err)
 		}
@@ -49,8 +49,8 @@ func TestFileStore(t *testing.T) {
 	t.Run("ReadStep reads the same status that was written", func(t *testing.T) {
 		clear(t, path)
 
-		substep := idl.Substep_CHECK_UPGRADE
-		status := idl.Status_COMPLETE
+		substep := idl.Substep_check_upgrade
+		status := idl.Status_complete
 
 		err := fs.Write(initialize, substep, status)
 		if err != nil {
@@ -71,8 +71,8 @@ func TestFileStore(t *testing.T) {
 	t.Run("reads the same status that was written", func(t *testing.T) {
 		clear(t, path)
 
-		substep := idl.Substep_CHECK_UPGRADE
-		expected := idl.Status_COMPLETE
+		substep := idl.Substep_check_upgrade
+		expected := idl.Status_complete
 
 		err := fs.Write(initialize, substep, expected)
 		if err != nil {
@@ -92,13 +92,13 @@ func TestFileStore(t *testing.T) {
 	t.Run("can write to the same substep in different sections", func(t *testing.T) {
 		clear(t, path)
 
-		substep := idl.Substep_CHECK_UPGRADE
+		substep := idl.Substep_check_upgrade
 		entries := []struct {
 			Section idl.Step
 			Status  idl.Status
 		}{
-			{Section: idl.Step_INITIALIZE, Status: idl.Status_FAILED},
-			{Section: idl.Step_EXECUTE, Status: idl.Status_COMPLETE},
+			{Section: idl.Step_initialize, Status: idl.Status_failed},
+			{Section: idl.Step_execute, Status: idl.Status_complete},
 		}
 
 		for _, e := range entries {
@@ -137,12 +137,12 @@ func TestFileStore(t *testing.T) {
 	t.Run("returns unknown status if requested step has not been written", func(t *testing.T) {
 		clear(t, path)
 
-		status, err := fs.Read(initialize, idl.Substep_INIT_TARGET_CLUSTER)
+		status, err := fs.Read(initialize, idl.Substep_init_target_cluster)
 		if err != nil {
 			t.Errorf("Read() returned error %#v", err)
 		}
 
-		expected := idl.Status_UNKNOWN_STATUS
+		expected := idl.Status_unknown_status
 		if status != expected {
 			t.Errorf("read %v, want %v", status, expected)
 		}
@@ -151,17 +151,17 @@ func TestFileStore(t *testing.T) {
 	t.Run("returns unknown status if substep was not written to the requested step", func(t *testing.T) {
 		clear(t, path)
 
-		err := fs.Write(initialize, idl.Substep_CHECK_UPGRADE, idl.Status_FAILED)
+		err := fs.Write(initialize, idl.Substep_check_upgrade, idl.Status_failed)
 		if err != nil {
 			t.Fatalf("Write() returned error %+v", err)
 		}
 
-		status, err := fs.Read(initialize, idl.Substep_INIT_TARGET_CLUSTER)
+		status, err := fs.Read(initialize, idl.Substep_init_target_cluster)
 		if err != nil {
 			t.Errorf("Read() returned error %#v", err)
 		}
 
-		expected := idl.Status_UNKNOWN_STATUS
+		expected := idl.Status_unknown_status
 		if status != expected {
 			t.Errorf("read %v, want %v", status, expected)
 		}
@@ -170,25 +170,25 @@ func TestFileStore(t *testing.T) {
 	t.Run("returns unknown status if substep was written to a different step", func(t *testing.T) {
 		clear(t, path)
 
-		err := fs.Write(idl.Step_FINALIZE, idl.Substep_INIT_TARGET_CLUSTER, idl.Status_FAILED)
+		err := fs.Write(idl.Step_finalize, idl.Substep_init_target_cluster, idl.Status_failed)
 		if err != nil {
 			t.Fatalf("Write() returned error %+v", err)
 		}
 
-		status, err := fs.Read(initialize, idl.Substep_INIT_TARGET_CLUSTER)
+		status, err := fs.Read(initialize, idl.Substep_init_target_cluster)
 		if err != nil {
 			t.Errorf("Read() returned error %#v", err)
 		}
 
-		expected := idl.Status_UNKNOWN_STATUS
+		expected := idl.Status_unknown_status
 		if status != expected {
 			t.Errorf("read %v, want %v", status, expected)
 		}
 	})
 
 	t.Run("uses human-readable serialization", func(t *testing.T) {
-		substep := idl.Substep_INIT_TARGET_CLUSTER
-		status := idl.Status_FAILED
+		substep := idl.Substep_init_target_cluster
+		status := idl.Status_failed
 		if err := fs.Write(initialize, substep, status); err != nil {
 			t.Fatalf("Write(): %+v", err)
 		}

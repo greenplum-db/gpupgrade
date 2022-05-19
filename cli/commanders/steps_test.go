@@ -44,15 +44,15 @@ func TestUILoop(t *testing.T) {
 		msgs := msgStream{
 			{Contents: &idl.Message_Chunk{Chunk: &idl.Chunk{
 				Buffer: []byte("my string1"),
-				Type:   idl.Chunk_STDOUT,
+				Type:   idl.Chunk_stdout,
 			}}},
 			{Contents: &idl.Message_Chunk{Chunk: &idl.Chunk{
 				Buffer: []byte("my error"),
-				Type:   idl.Chunk_STDERR,
+				Type:   idl.Chunk_stderr,
 			}}},
 			{Contents: &idl.Message_Chunk{Chunk: &idl.Chunk{
 				Buffer: []byte("my string2"),
-				Type:   idl.Chunk_STDOUT,
+				Type:   idl.Chunk_stdout,
 			}}},
 		}
 
@@ -127,24 +127,24 @@ func TestUILoop(t *testing.T) {
 	t.Run("writes status and stdout chunks serially in verbose mode", func(t *testing.T) {
 		msgs := msgStream{
 			{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-				Step:   idl.Substep_INIT_TARGET_CLUSTER,
-				Status: idl.Status_RUNNING,
+				Step:   idl.Substep_init_target_cluster,
+				Status: idl.Status_running,
 			}}},
 			{Contents: &idl.Message_Chunk{Chunk: &idl.Chunk{
 				Buffer: []byte("my string\n"),
-				Type:   idl.Chunk_STDOUT,
+				Type:   idl.Chunk_stdout,
 			}}},
 			{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-				Step:   idl.Substep_INIT_TARGET_CLUSTER,
-				Status: idl.Status_COMPLETE,
+				Step:   idl.Substep_init_target_cluster,
+				Status: idl.Status_complete,
 			}}},
 			{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-				Step:   idl.Substep_COPY_MASTER,
-				Status: idl.Status_SKIPPED,
+				Step:   idl.Substep_copy_master,
+				Status: idl.Status_skipped,
 			}}},
 			{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-				Step:   idl.Substep_UPGRADE_MASTER,
-				Status: idl.Status_FAILED,
+				Step:   idl.Substep_upgrade_master,
+				Status: idl.Status_failed,
 			}}},
 		}
 
@@ -177,24 +177,24 @@ func TestUILoop(t *testing.T) {
 	t.Run("overwrites status lines and ignores chunks in non-verbose mode", func(t *testing.T) {
 		msgs := msgStream{
 			{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-				Step:   idl.Substep_INIT_TARGET_CLUSTER,
-				Status: idl.Status_RUNNING,
+				Step:   idl.Substep_init_target_cluster,
+				Status: idl.Status_running,
 			}}},
 			{Contents: &idl.Message_Chunk{Chunk: &idl.Chunk{
 				Buffer: []byte("output ignored"),
-				Type:   idl.Chunk_STDOUT,
+				Type:   idl.Chunk_stdout,
 			}}},
 			{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-				Step:   idl.Substep_INIT_TARGET_CLUSTER,
-				Status: idl.Status_COMPLETE,
+				Step:   idl.Substep_init_target_cluster,
+				Status: idl.Status_complete,
 			}}},
 			{Contents: &idl.Message_Chunk{Chunk: &idl.Chunk{
 				Buffer: []byte("error ignored"),
-				Type:   idl.Chunk_STDERR,
+				Type:   idl.Chunk_stderr,
 			}}},
 			{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-				Step:   idl.Substep_UPGRADE_MASTER,
-				Status: idl.Status_FAILED,
+				Step:   idl.Substep_upgrade_master,
+				Status: idl.Status_failed,
 			}}},
 		}
 
@@ -305,14 +305,14 @@ func TestUILoop(t *testing.T) {
 		}{{
 			"bad step",
 			&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-				Step:   idl.Substep_UNKNOWN_SUBSTEP,
-				Status: idl.Status_COMPLETE,
+				Step:   idl.Substep_unknown_substep,
+				Status: idl.Status_complete,
 			}}},
 		}, {
 			"bad status",
 			&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-				Step:   idl.Substep_COPY_MASTER,
-				Status: idl.Status_UNKNOWN_STATUS,
+				Step:   idl.Substep_copy_master,
+				Status: idl.Status_unknown_status,
 			}}},
 		}, {
 			"bad message type",

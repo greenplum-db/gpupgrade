@@ -67,12 +67,12 @@ func TestMultiplexedStream(t *testing.T) {
 		mockStream.EXPECT().
 			Send(&idl.Message{Contents: &idl.Message_Chunk{Chunk: &idl.Chunk{
 				Buffer: []byte(expectedStdout),
-				Type:   idl.Chunk_STDOUT,
+				Type:   idl.Chunk_stdout,
 			}}})
 		mockStream.EXPECT().
 			Send(&idl.Message{Contents: &idl.Message_Chunk{Chunk: &idl.Chunk{
 				Buffer: []byte(expectedStderr),
-				Type:   idl.Chunk_STDERR,
+				Type:   idl.Chunk_stderr,
 			}}})
 
 		stream := newMultiplexedStream(mockStream, ioutil.Discard)

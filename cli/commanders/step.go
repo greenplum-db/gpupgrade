@@ -7,10 +7,11 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 	"os"
 	"strings"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/xerrors"
@@ -27,10 +28,10 @@ const StepsFileName = "steps.json"
 const nextActionRunRevertText = "If you would like to return the cluster to its original state, please run \"gpupgrade revert\".\n"
 
 var additionalNextActions = map[idl.Step]string{
-	idl.Step_INITIALIZE: nextActionRunRevertText,
-	idl.Step_EXECUTE:    nextActionRunRevertText,
-	idl.Step_FINALIZE:   "",
-	idl.Step_REVERT:     "",
+	idl.Step_initialize: nextActionRunRevertText,
+	idl.Step_execute:    nextActionRunRevertText,
+	idl.Step_finalize:   "",
+	idl.Step_revert:     "",
 }
 
 type Step struct {
@@ -71,12 +72,12 @@ func NewStep(currentStep idl.Step, streams *step.BufferedStreams, verbose bool, 
 		}
 	}
 
-	err = stepStore.Write(currentStep, idl.Status_RUNNING)
+	err = stepStore.Write(currentStep, idl.Status_running)
 	if err != nil {
 		return &Step{}, err
 	}
 
-	stepName := cases.Title(language.English).String(strings.ToLower(currentStep.String()))
+	stepName := cases.Title(language.English).String(currentStep.String())
 
 	fmt.Println()
 	fmt.Println(stepName + " in progress.")
@@ -143,7 +144,7 @@ func (s *Step) RunCLISubstep(substep idl.Substep, f func(streams step.OutStreams
 		logDuration(substep.String(), s.verbose, substepTimer.Stop())
 	}()
 
-	s.printStatus(substep, idl.Status_RUNNING)
+	s.printStatus(substep, idl.Status_running)
 
 	err = f(s.streams)
 	if s.verbose {
@@ -161,10 +162,10 @@ func (s *Step) RunCLISubstep(substep idl.Substep, f func(streams step.OutStreams
 	}
 
 	if err != nil {
-		status := idl.Status_FAILED
+		status := idl.Status_failed
 
 		if errors.Is(err, step.Skip) {
-			status = idl.Status_SKIPPED
+			status = idl.Status_skipped
 			err = nil
 		}
 
@@ -172,7 +173,7 @@ func (s *Step) RunCLISubstep(substep idl.Substep, f func(streams step.OutStreams
 		return
 	}
 
-	s.printStatus(substep, idl.Status_COMPLETE)
+	s.printStatus(substep, idl.Status_complete)
 }
 
 func (s *Step) DisableStore() {
@@ -182,9 +183,9 @@ func (s *Step) DisableStore() {
 func (s *Step) Complete(completedText string) error {
 	logDuration(s.stepName, s.verbose, s.timer.Stop())
 
-	status := idl.Status_COMPLETE
+	status := idl.Status_complete
 	if s.Err() != nil {
-		status = idl.Status_FAILED
+		status = idl.Status_failed
 	}
 
 	if s.stepStore != nil {
@@ -221,7 +222,7 @@ func (s *Step) printStatus(substep idl.Substep, status idl.Status) {
 
 	// Reset the cursor if the final status has been written. This prevents the
 	// status from a hub step from being on the same line as a CLI step.
-	if status != idl.Status_RUNNING {
+	if status != idl.Status_running {
 		fmt.Println()
 	}
 
@@ -239,7 +240,7 @@ func logDuration(operation string, verbose bool, timer *stopwatch.Stopwatch) {
 
 func Prompt(reader *bufio.Reader, step idl.Step) (bool, error) {
 	for {
-		fmt.Printf("Continue with gpupgrade %s?  Yy|Nn: ", strings.ToLower(step.String()))
+		fmt.Printf("Continue with gpupgrade %s?  Yy|Nn: ", step)
 		input, err := reader.ReadString('\n')
 		if err != nil {
 			return false, err

@@ -34,7 +34,7 @@ func revert() *cobra.Command {
 
 			confirmationText := fmt.Sprintf(revertConfirmationText, logdir)
 
-			st, err := commanders.NewStep(idl.Step_REVERT,
+			st, err := commanders.NewStep(idl.Step_revert,
 				&step.BufferedStreams{},
 				verbose,
 				nonInteractive,
@@ -63,11 +63,11 @@ func revert() *cobra.Command {
 				return nil
 			})
 
-			st.RunCLISubstep(idl.Substep_STOP_HUB_AND_AGENTS, func(streams step.OutStreams) error {
+			st.RunCLISubstep(idl.Substep_stop_hub_and_agents, func(streams step.OutStreams) error {
 				return stopHubAndAgents(false)
 			})
 
-			st.RunCLISubstep(idl.Substep_DELETE_MASTER_STATEDIR, func(streams step.OutStreams) error {
+			st.RunCLISubstep(idl.Substep_delete_master_statedir, func(streams step.OutStreams) error {
 				// Removing the state directory removes the step status file.
 				// Disable the store so the step framework does not try to write
 				// to a non-existent status file.

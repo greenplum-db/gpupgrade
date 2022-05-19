@@ -34,19 +34,19 @@ func TestStepRun(t *testing.T) {
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 		server.EXPECT().
 			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-				Step:   idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG,
-				Status: idl.Status_RUNNING,
+				Step:   idl.Substep_saving_source_cluster_config,
+				Status: idl.Status_running,
 			}}})
 		server.EXPECT().
 			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-				Step:   idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG,
-				Status: idl.Status_COMPLETE,
+				Step:   idl.Substep_saving_source_cluster_config,
+				Status: idl.Status_complete,
 			}}})
 
-		s := step.New(idl.Step_INITIALIZE, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_initialize, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
 
 		var called bool
-		s.Run(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
 			called = true
 			return nil
 		})
@@ -65,25 +65,25 @@ func TestStepRun(t *testing.T) {
 		gomock.InOrder(
 			server.EXPECT().
 				Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-					Step:   idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG,
-					Status: idl.Status_RUNNING,
+					Step:   idl.Substep_saving_source_cluster_config,
+					Status: idl.Status_running,
 				}}}),
 			server.EXPECT().
 				Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-					Step:   idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG,
-					Status: idl.Status_SKIPPED,
+					Step:   idl.Substep_saving_source_cluster_config,
+					Status: idl.Status_skipped,
 				}}}),
 		)
 
 		substepStore := &TestSubstepStore{}
-		s := step.New(idl.Step_INITIALIZE, server, substepStore, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_initialize, server, substepStore, &testutils.DevNullWithClose{})
 
-		s.Run(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
 			return step.Skip
 		})
 
-		if substepStore.Status != idl.Status_COMPLETE {
-			t.Errorf("substep status was %s, want %s", substepStore.Status, idl.Status_COMPLETE)
+		if substepStore.Status != idl.Status_complete {
+			t.Errorf("substep status was %s, want %s", substepStore.Status, idl.Status_complete)
 		}
 	})
 
@@ -94,31 +94,31 @@ func TestStepRun(t *testing.T) {
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 		server.EXPECT().
 			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-				Step:   idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG,
-				Status: idl.Status_RUNNING,
+				Step:   idl.Substep_saving_source_cluster_config,
+				Status: idl.Status_running,
 			}}})
 		server.EXPECT().
 			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-				Step:   idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG,
-				Status: idl.Status_COMPLETE,
+				Step:   idl.Substep_saving_source_cluster_config,
+				Status: idl.Status_complete,
 			}}})
 
 		substepStore := &TestSubstepStore{}
-		s := step.New(idl.Step_INITIALIZE, server, substepStore, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_initialize, server, substepStore, &testutils.DevNullWithClose{})
 
 		var status idl.Status
-		s.Run(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
 			// save off status to verify that it is running
 			status = substepStore.Status
 			return nil
 		})
 
-		expected := idl.Status_RUNNING
+		expected := idl.Status_running
 		if status != expected {
 			t.Errorf("got %q want %q", status, expected)
 		}
 
-		expected = idl.Status_COMPLETE
+		expected = idl.Status_complete
 		if substepStore.Status != expected {
 			t.Errorf("got %q want %q", substepStore.Status, expected)
 		}
@@ -131,20 +131,20 @@ func TestStepRun(t *testing.T) {
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 		server.EXPECT().
 			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-				Step:   idl.Substep_CHECK_UPGRADE,
-				Status: idl.Status_RUNNING,
+				Step:   idl.Substep_check_upgrade,
+				Status: idl.Status_running,
 			}}})
 		server.EXPECT().
 			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-				Step:   idl.Substep_CHECK_UPGRADE,
-				Status: idl.Status_COMPLETE,
+				Step:   idl.Substep_check_upgrade,
+				Status: idl.Status_complete,
 			}}})
 
-		substepStore := &TestSubstepStore{Status: idl.Status_COMPLETE}
-		s := step.New(idl.Step_INITIALIZE, server, substepStore, &testutils.DevNullWithClose{})
+		substepStore := &TestSubstepStore{Status: idl.Status_complete}
+		s := step.New(idl.Step_initialize, server, substepStore, &testutils.DevNullWithClose{})
 
 		var called bool
-		s.AlwaysRun(idl.Substep_CHECK_UPGRADE, func(streams step.OutStreams) error {
+		s.AlwaysRun(idl.Substep_check_upgrade, func(streams step.OutStreams) error {
 			called = true
 			return nil
 		})
@@ -161,14 +161,14 @@ func TestStepRun(t *testing.T) {
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 		server.EXPECT().
 			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-				Step:   idl.Substep_CHECK_UPGRADE,
-				Status: idl.Status_RUNNING,
+				Step:   idl.Substep_check_upgrade,
+				Status: idl.Status_running,
 			}}}).Times(0)
 
-		s := step.New(idl.Step_INITIALIZE, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_initialize, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
 
 		var called bool
-		s.RunConditionally(idl.Substep_CHECK_UPGRADE, false, func(streams step.OutStreams) error {
+		s.RunConditionally(idl.Substep_check_upgrade, false, func(streams step.OutStreams) error {
 			called = true
 			return nil
 		})
@@ -178,7 +178,7 @@ func TestStepRun(t *testing.T) {
 		}
 
 		contents := string(log.Bytes())
-		expected := "skipping " + idl.Substep_CHECK_UPGRADE.String()
+		expected := "skipping " + idl.Substep_check_upgrade.String()
 		if !strings.Contains(contents, expected) {
 			t.Errorf("expected %q in log file: %q", expected, contents)
 		}
@@ -191,19 +191,19 @@ func TestStepRun(t *testing.T) {
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 		server.EXPECT().
 			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-				Step:   idl.Substep_CHECK_UPGRADE,
-				Status: idl.Status_RUNNING,
+				Step:   idl.Substep_check_upgrade,
+				Status: idl.Status_running,
 			}}})
 		server.EXPECT().
 			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-				Step:   idl.Substep_CHECK_UPGRADE,
-				Status: idl.Status_COMPLETE,
+				Step:   idl.Substep_check_upgrade,
+				Status: idl.Status_complete,
 			}}})
 
-		s := step.New(idl.Step_INITIALIZE, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_initialize, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
 
 		var called bool
-		s.RunConditionally(idl.Substep_CHECK_UPGRADE, true, func(streams step.OutStreams) error {
+		s.RunConditionally(idl.Substep_check_upgrade, true, func(streams step.OutStreams) error {
 			called = true
 			return nil
 		})
@@ -220,19 +220,19 @@ func TestStepRun(t *testing.T) {
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 		server.EXPECT().
 			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-				Step:   idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG,
-				Status: idl.Status_RUNNING,
+				Step:   idl.Substep_saving_source_cluster_config,
+				Status: idl.Status_running,
 			}}})
 		server.EXPECT().
 			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-				Step:   idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG,
-				Status: idl.Status_FAILED,
+				Step:   idl.Substep_saving_source_cluster_config,
+				Status: idl.Status_failed,
 			}}})
 
-		s := step.New(idl.Step_INITIALIZE, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_initialize, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
 
 		var called bool
-		s.Run(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
 			called = true
 			return errors.New("oops")
 		})
@@ -249,10 +249,10 @@ func TestStepRun(t *testing.T) {
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 
 		failingSubstepStore := &TestSubstepStore{WriteErr: errors.New("oops")}
-		s := step.New(idl.Step_INITIALIZE, server, failingSubstepStore, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_initialize, server, failingSubstepStore, &testutils.DevNullWithClose{})
 
 		var called bool
-		s.Run(idl.Substep_CHECK_UPGRADE, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_check_upgrade, func(streams step.OutStreams) error {
 			called = true
 			return nil
 		})
@@ -273,15 +273,15 @@ func TestStepRun(t *testing.T) {
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 		server.EXPECT().
 			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-				Step:   idl.Substep_CHECK_UPGRADE,
-				Status: idl.Status_SKIPPED,
+				Step:   idl.Substep_check_upgrade,
+				Status: idl.Status_skipped,
 			}}})
 
-		substepStore := &TestSubstepStore{Status: idl.Status_COMPLETE}
-		s := step.New(idl.Step_INITIALIZE, server, substepStore, &testutils.DevNullWithClose{})
+		substepStore := &TestSubstepStore{Status: idl.Status_complete}
+		s := step.New(idl.Step_initialize, server, substepStore, &testutils.DevNullWithClose{})
 
 		var called bool
-		s.Run(idl.Substep_CHECK_UPGRADE, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_check_upgrade, func(streams step.OutStreams) error {
 			called = true
 			return nil
 		})
@@ -298,15 +298,15 @@ func TestStepRun(t *testing.T) {
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 		server.EXPECT().Send(gomock.Any()).AnyTimes()
 
-		s := step.New(idl.Step_INITIALIZE, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_initialize, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
 
 		expected := errors.New("oops")
-		s.Run(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
 			return expected
 		})
 
 		var called bool
-		s.Run(idl.Substep_START_AGENTS, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_start_agents, func(streams step.OutStreams) error {
 			called = true
 			return nil
 		})
@@ -327,11 +327,11 @@ func TestStepRun(t *testing.T) {
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 		server.EXPECT().Send(gomock.Any()).AnyTimes()
 
-		substepStore := &TestSubstepStore{Status: idl.Status_RUNNING}
-		s := step.New(idl.Step_INITIALIZE, server, substepStore, &testutils.DevNullWithClose{})
+		substepStore := &TestSubstepStore{Status: idl.Status_running}
+		s := step.New(idl.Step_initialize, server, substepStore, &testutils.DevNullWithClose{})
 
 		var called bool
-		s.Run(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
 			called = true
 			return nil
 		})
@@ -361,7 +361,7 @@ func TestHasStarted(t *testing.T) {
 		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", "does/not/exist")
 		defer resetEnv()
 
-		hasStarted, err := step.HasStarted(idl.Step_INITIALIZE)
+		hasStarted, err := step.HasStarted(idl.Step_initialize)
 		var expected *os.PathError
 		if !errors.As(err, &expected) {
 			t.Errorf("returned error %#v want %#v", err, expected)
@@ -382,7 +382,7 @@ func TestHasStarted(t *testing.T) {
 		path := filepath.Join(dir, step.SubstepsFileName)
 		testutils.MustWriteToFile(t, path, `{"}"`) // write a malformed JSON status file
 
-		hasStarted, err := step.HasStarted(idl.Step_INITIALIZE)
+		hasStarted, err := step.HasStarted(idl.Step_initialize)
 		if err == nil {
 			t.Errorf("expected error %#v got nil", err)
 		}
@@ -402,7 +402,7 @@ func TestHasStarted(t *testing.T) {
 		path := filepath.Join(dir, step.SubstepsFileName)
 		testutils.MustWriteToFile(t, path, "{}")
 
-		hasStarted, err := step.HasStarted(idl.Step_FINALIZE)
+		hasStarted, err := step.HasStarted(idl.Step_finalize)
 		if err != nil {
 			t.Errorf("HasStarted returned error %+v", err)
 		}
@@ -421,10 +421,10 @@ func TestHasStarted(t *testing.T) {
 
 		path := filepath.Join(dir, step.SubstepsFileName)
 		jsonContent := fmt.Sprintf("{\"%s\":{\"%s\":\"%s\"}}",
-			idl.Step_INITIALIZE, idl.Substep_BACKUP_TARGET_MASTER, idl.Status_COMPLETE)
+			idl.Step_initialize, idl.Substep_backup_target_master, idl.Status_complete)
 		testutils.MustWriteToFile(t, path, jsonContent)
 
-		hasStarted, err := step.HasStarted(idl.Step_INITIALIZE)
+		hasStarted, err := step.HasStarted(idl.Step_initialize)
 		if err != nil {
 			t.Errorf("HasStarted returned error %+v", err)
 		}
@@ -455,15 +455,15 @@ func TestHasRun(t *testing.T) {
 	}{
 		{
 			description: "returns true when substep is running",
-			status:      idl.Status_RUNNING,
+			status:      idl.Status_running,
 		},
 		{
 			description: "returns true when substep has completed",
-			status:      idl.Status_COMPLETE,
+			status:      idl.Status_complete,
 		},
 		{
 			description: "returns true when substep has errored",
-			status:      idl.Status_FAILED,
+			status:      idl.Status_failed,
 		},
 	}
 
@@ -474,12 +474,12 @@ func TestHasRun(t *testing.T) {
 				t.Fatalf("step.NewSubstepStore returned error %+v", err)
 			}
 
-			err = store.Write(idl.Step_INITIALIZE, idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, c.status)
+			err = store.Write(idl.Step_initialize, idl.Substep_saving_source_cluster_config, c.status)
 			if err != nil {
 				t.Errorf("store.Write returned error %+v", err)
 			}
 
-			hasRun, err := step.HasRun(idl.Step_INITIALIZE, idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG)
+			hasRun, err := step.HasRun(idl.Step_initialize, idl.Substep_saving_source_cluster_config)
 			if err != nil {
 				t.Errorf("HasRun returned error %+v", err)
 			}
@@ -494,7 +494,7 @@ func TestHasRun(t *testing.T) {
 		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", "does/not/exist")
 		defer resetEnv()
 
-		hasRun, err := step.HasRun(idl.Step_INITIALIZE, idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG)
+		hasRun, err := step.HasRun(idl.Step_initialize, idl.Substep_saving_source_cluster_config)
 		var expected *os.PathError
 		if !errors.As(err, &expected) {
 			t.Errorf("returned error %#v want %#v", err, expected)
@@ -515,7 +515,7 @@ func TestHasRun(t *testing.T) {
 		path := filepath.Join(dir, step.SubstepsFileName)
 		testutils.MustWriteToFile(t, path, `{"}"`) // write a malformed JSON status file
 
-		hasRun, err := step.HasRun(idl.Step_INITIALIZE, idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG)
+		hasRun, err := step.HasRun(idl.Step_initialize, idl.Substep_saving_source_cluster_config)
 		if err == nil {
 			t.Errorf("expected error %#v got nil", err)
 		}
@@ -535,7 +535,7 @@ func TestHasRun(t *testing.T) {
 		path := filepath.Join(dir, step.SubstepsFileName)
 		testutils.MustWriteToFile(t, path, "{}")
 
-		hasRan, err := step.HasRun(idl.Step_FINALIZE, idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG)
+		hasRan, err := step.HasRun(idl.Step_finalize, idl.Substep_saving_source_cluster_config)
 		if err != nil {
 			t.Errorf("HasRun returned error %+v", err)
 		}
@@ -567,17 +567,17 @@ func TestHasCompleted(t *testing.T) {
 	}{
 		{
 			description: "returns false when substep is running",
-			status:      idl.Status_RUNNING,
+			status:      idl.Status_running,
 			expected:    false,
 		},
 		{
 			description: "returns true when substep has completed",
-			status:      idl.Status_COMPLETE,
+			status:      idl.Status_complete,
 			expected:    true,
 		},
 		{
 			description: "returns false when substep has errored",
-			status:      idl.Status_FAILED,
+			status:      idl.Status_failed,
 			expected:    false,
 		},
 	}
@@ -589,12 +589,12 @@ func TestHasCompleted(t *testing.T) {
 				t.Fatalf("step.NewSubstepStore returned error %+v", err)
 			}
 
-			err = store.Write(idl.Step_INITIALIZE, idl.Substep_START_AGENTS, c.status)
+			err = store.Write(idl.Step_initialize, idl.Substep_start_agents, c.status)
 			if err != nil {
 				t.Errorf("store.Write returned error %+v", err)
 			}
 
-			hasRun, err := step.HasCompleted(idl.Step_INITIALIZE, idl.Substep_START_AGENTS)
+			hasRun, err := step.HasCompleted(idl.Step_initialize, idl.Substep_start_agents)
 			if err != nil {
 				t.Errorf("HasRun returned error %+v", err)
 			}
@@ -609,7 +609,7 @@ func TestHasCompleted(t *testing.T) {
 		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", "does/not/exist")
 		defer resetEnv()
 
-		hasRun, err := step.HasCompleted(idl.Step_INITIALIZE, idl.Substep_START_AGENTS)
+		hasRun, err := step.HasCompleted(idl.Step_initialize, idl.Substep_start_agents)
 		var expected *os.PathError
 		if !errors.As(err, &expected) {
 			t.Errorf("returned error %#v want %#v", err, expected)
@@ -630,7 +630,7 @@ func TestHasCompleted(t *testing.T) {
 		path := filepath.Join(dir, step.SubstepsFileName)
 		testutils.MustWriteToFile(t, path, `{"}"`) // write a malformed JSON status file
 
-		hasRun, err := step.HasCompleted(idl.Step_INITIALIZE, idl.Substep_START_AGENTS)
+		hasRun, err := step.HasCompleted(idl.Step_initialize, idl.Substep_start_agents)
 		if err == nil {
 			t.Errorf("expected error %#v got nil", err)
 		}
@@ -650,7 +650,7 @@ func TestHasCompleted(t *testing.T) {
 		path := filepath.Join(dir, step.SubstepsFileName)
 		testutils.MustWriteToFile(t, path, "{}")
 
-		hasRan, err := step.HasCompleted(idl.Step_FINALIZE, idl.Substep_START_AGENTS)
+		hasRan, err := step.HasCompleted(idl.Step_finalize, idl.Substep_start_agents)
 		if err != nil {
 			t.Errorf("HasRun returned error %+v", err)
 		}
@@ -664,7 +664,7 @@ func TestHasCompleted(t *testing.T) {
 func TestStepFinish(t *testing.T) {
 	t.Run("closes the output streams", func(t *testing.T) {
 		streams := &testutils.DevNullWithClose{}
-		s := step.New(idl.Step_INITIALIZE, nil, nil, streams)
+		s := step.New(idl.Step_initialize, nil, nil, streams)
 
 		err := s.Finish()
 		if err != nil {
@@ -679,7 +679,7 @@ func TestStepFinish(t *testing.T) {
 	t.Run("returns an error when failing to close the output streams", func(t *testing.T) {
 		expected := errors.New("oops")
 		streams := &testutils.DevNullWithClose{CloseErr: expected}
-		s := step.New(idl.Step_INITIALIZE, nil, nil, streams)
+		s := step.New(idl.Step_initialize, nil, nil, streams)
 
 		err := s.Finish()
 		if !errors.Is(err, expected) {
@@ -696,18 +696,18 @@ func TestStepErr(t *testing.T) {
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 		server.EXPECT().
 			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-				Step:   idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG,
-				Status: idl.Status_RUNNING,
+				Step:   idl.Substep_saving_source_cluster_config,
+				Status: idl.Status_running,
 			}}})
 		server.EXPECT().
 			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-				Step:   idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG,
-				Status: idl.Status_COMPLETE,
+				Step:   idl.Substep_saving_source_cluster_config,
+				Status: idl.Status_complete,
 			}}})
 
-		s := step.New(idl.Step_INITIALIZE, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_initialize, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
 
-		s.Run(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
 			return nil
 		})
 
@@ -724,19 +724,19 @@ func TestStepErr(t *testing.T) {
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 		server.EXPECT().
 			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-				Step:   idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG,
-				Status: idl.Status_RUNNING,
+				Step:   idl.Substep_saving_source_cluster_config,
+				Status: idl.Status_running,
 			}}})
 		server.EXPECT().
 			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-				Step:   idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG,
-				Status: idl.Status_FAILED,
+				Step:   idl.Substep_saving_source_cluster_config,
+				Status: idl.Status_failed,
 			}}})
 
-		s := step.New(idl.Step_INITIALIZE, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_initialize, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
 
 		expected := os.ErrPermission
-		s.Run(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
 			return expected
 		})
 
@@ -754,19 +754,19 @@ func TestStepErr(t *testing.T) {
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 		server.EXPECT().
 			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-				Step:   idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG,
-				Status: idl.Status_RUNNING,
+				Step:   idl.Substep_saving_source_cluster_config,
+				Status: idl.Status_running,
 			}}})
 		server.EXPECT().
 			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-				Step:   idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG,
-				Status: idl.Status_FAILED,
+				Step:   idl.Substep_saving_source_cluster_config,
+				Status: idl.Status_failed,
 			}}})
 
-		s := step.New(idl.Step_INITIALIZE, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_initialize, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
 
 		expected := utils.NewNextActionErr(os.ErrPermission, "change permissions to gpadmin")
-		s.Run(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
 			return expected
 		})
 
@@ -795,16 +795,16 @@ func TestStepErr(t *testing.T) {
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 		server.EXPECT().
 			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-				Step:   idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG,
-				Status: idl.Status_RUNNING,
+				Step:   idl.Substep_saving_source_cluster_config,
+				Status: idl.Status_running,
 			}}})
 		server.EXPECT().
 			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
-				Step:   idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG,
-				Status: idl.Status_FAILED,
+				Step:   idl.Substep_saving_source_cluster_config,
+				Status: idl.Status_failed,
 			}}})
 
-		s := step.New(idl.Step_INITIALIZE, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_initialize, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
 
 		expected1 := utils.NewNextActionErr(os.ErrPermission, "change permissions to gpadmin")
 		expected2 := utils.NewNextActionErr(os.ErrDeadlineExceeded, "stop and rerun")
@@ -815,7 +815,7 @@ func TestStepErr(t *testing.T) {
 			expected2,
 		}
 
-		s.Run(idl.Substep_SAVING_SOURCE_CLUSTER_CONFIG, func(streams step.OutStreams) error {
+		s.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
 			return errs
 		})
 

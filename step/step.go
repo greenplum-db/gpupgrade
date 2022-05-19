@@ -6,11 +6,12 @@ package step
 import (
 	"errors"
 	"fmt"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/greenplum-db/gp-common-go-libs/operating"
@@ -48,7 +49,7 @@ func Begin(step idl.Step, sender idl.MessageSender, agentConns func() ([]*idl.Co
 	//  tech debt that needs to be addressed. However, for the time being ensure
 	//  agentConns are properly populated at the start of each step, otherwise
 	//  the agentConns member variable can be nil.
-	agentsStarted, err := HasCompleted(idl.Step_INITIALIZE, idl.Substep_START_AGENTS)
+	agentsStarted, err := HasCompleted(idl.Step_initialize, idl.Substep_start_agents)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +66,7 @@ func Begin(step idl.Step, sender idl.MessageSender, agentConns func() ([]*idl.Co
 		return nil, err
 	}
 
-	path := filepath.Join(logdir, fmt.Sprintf("%s_%s.log", strings.ToLower(step.String()), operating.System.Now().Format("20060102")))
+	path := filepath.Join(logdir, fmt.Sprintf("%s_%s.log", step, operating.System.Now().Format("20060102")))
 	log, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
 		return nil, xerrors.Errorf(`step "%s": %w`, step, err)
@@ -107,13 +108,13 @@ func HasStarted(step idl.Step) (bool, error) {
 
 func HasRun(step idl.Step, substep idl.Substep) (bool, error) {
 	return hasStatus(step, substep, func(status idl.Status) bool {
-		return status != idl.Status_UNKNOWN_STATUS
+		return status != idl.Status_unknown_status
 	})
 }
 
 func HasCompleted(step idl.Step, substep idl.Substep) (bool, error) {
 	return hasStatus(step, substep, func(status idl.Status) bool {
-		return status == idl.Status_COMPLETE
+		return status == idl.Status_complete
 	})
 }
 
@@ -224,17 +225,17 @@ func (s *Step) run(substep idl.Substep, f func(OutStreams) error, alwaysRun bool
 		return
 	}
 
-	if status == idl.Status_RUNNING {
+	if status == idl.Status_running {
 		// TODO: Finalize error wording and recommended action
 		err = fmt.Errorf("Found previous substep %s was running. Manual intervention needed to cleanup. Please contact support.", substep)
-		s.sendStatus(substep, idl.Status_FAILED)
+		s.sendStatus(substep, idl.Status_failed)
 		return
 	}
 
 	// Only re-run substeps that are failed or pending. Do not skip substeps that must always be run.
-	if status == idl.Status_COMPLETE && !alwaysRun {
+	if status == idl.Status_complete && !alwaysRun {
 		// Only send the status back to the UI; don't re-persist to the store
-		s.sendStatus(substep, idl.Status_SKIPPED)
+		s.sendStatus(substep, idl.Status_skipped)
 		return
 	}
 
@@ -250,7 +251,7 @@ func (s *Step) run(substep idl.Substep, f func(OutStreams) error, alwaysRun bool
 		return
 	}
 
-	err = s.write(substep, idl.Status_RUNNING)
+	err = s.write(substep, idl.Status_running)
 	if err != nil {
 		return
 	}
@@ -260,25 +261,25 @@ func (s *Step) run(substep idl.Substep, f func(OutStreams) error, alwaysRun bool
 	switch {
 	case errors.Is(err, Skip):
 		// The substep has requested a manual skip; this isn't really an error.
-		err = s.write(substep, idl.Status_SKIPPED)
+		err = s.write(substep, idl.Status_skipped)
 		return
 
 	case err != nil:
-		if werr := s.write(substep, idl.Status_FAILED); werr != nil {
+		if werr := s.write(substep, idl.Status_failed); werr != nil {
 			err = errorlist.Append(err, werr)
 		}
 		return
 	}
 
-	err = s.write(substep, idl.Status_COMPLETE)
+	err = s.write(substep, idl.Status_complete)
 }
 
 func (s *Step) write(substep idl.Substep, status idl.Status) error {
 	storeStatus := status
-	if status == idl.Status_SKIPPED {
+	if status == idl.Status_skipped {
 		// Special case: we want to mark an explicitly-skipped substep COMPLETE
 		// on disk.
-		storeStatus = idl.Status_COMPLETE
+		storeStatus = idl.Status_complete
 	}
 
 	err := s.substepStore.Write(s.name, substep, storeStatus)

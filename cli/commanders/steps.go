@@ -22,10 +22,10 @@ type receiver interface {
 }
 
 var indicators = map[idl.Status]string{
-	idl.Status_RUNNING:  "[IN PROGRESS]",
-	idl.Status_COMPLETE: "[COMPLETE]",
-	idl.Status_FAILED:   "[FAILED]",
-	idl.Status_SKIPPED:  "[SKIPPED]",
+	idl.Status_running:  "[IN PROGRESS]",
+	idl.Status_complete: "[COMPLETE]",
+	idl.Status_failed:   "[FAILED]",
+	idl.Status_skipped:  "[SKIPPED]",
 }
 
 func Initialize(client idl.CliToHubClient, request *idl.InitializeRequest, verbose bool) (err error) {
@@ -136,9 +136,9 @@ func UILoop(stream receiver, verbose bool) (*idl.Response, error) {
 				continue
 			}
 
-			if x.Chunk.Type == idl.Chunk_STDOUT {
+			if x.Chunk.Type == idl.Chunk_stdout {
 				os.Stdout.Write(x.Chunk.Buffer)
-			} else if x.Chunk.Type == idl.Chunk_STDERR {
+			} else if x.Chunk.Type == idl.Chunk_stderr {
 				os.Stderr.Write(x.Chunk.Buffer)
 			}
 
@@ -147,7 +147,7 @@ func UILoop(stream receiver, verbose bool) (*idl.Response, error) {
 			// current step. (This behavior is switched off in verbose mode,
 			// because it interferes with the output stream.)
 			if !verbose {
-				if lastStep == idl.Substep_UNKNOWN_SUBSTEP {
+				if lastStep == idl.Substep_unknown_substep {
 					// This is the first call, so we don't need to "terminate"
 					// the previous line at all.
 				} else if x.Status.Step == lastStep {

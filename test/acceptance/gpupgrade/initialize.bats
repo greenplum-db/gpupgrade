@@ -326,10 +326,10 @@ wait_for_port_change() {
     # Ensure gpupgrade starts from initializing the target cluster.
     cat <<- EOF > "$GPUPGRADE_HOME/substeps.json"
         {
-          "INITIALIZE": {
-            "GENERATE_TARGET_CONFIG": "COMPLETE",
-            "SAVING_SOURCE_CLUSTER_CONFIG": "COMPLETE",
-            "START_AGENTS": "COMPLETE"
+          "initialize": {
+            "generate_target_config": "complete",
+            "saving_source_cluster_config": "complete",
+            "start_agents": "complete"
           }
         }
 	EOF
@@ -362,7 +362,7 @@ wait_for_port_change() {
     delete_target_on_teardown
 
     # Mark every substep in the status file as failed. Then re-initialize.
-    sed -i.bak -e 's/"COMPLETE"/"FAILED"/g' "$GPUPGRADE_HOME/substeps.json"
+    sed -i.bak -e 's/"complete"/"failed"/g' "$GPUPGRADE_HOME/substeps.json"
 
     gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \

@@ -171,7 +171,7 @@ func initialize() *cobra.Command {
 			confirmationText := fmt.Sprintf(initializeConfirmationText, logdir, configPath,
 				sourcePort, sourceGPHome, targetGPHome, mode, diskFreeRatio, useHbaHostnames, dynamicLibraryPath, ports, hubPort, agentPort)
 
-			st, err := commanders.NewStep(idl.Step_INITIALIZE,
+			st, err := commanders.NewStep(idl.Step_initialize,
 				&step.BufferedStreams{},
 				verbose,
 				nonInteractive,
@@ -203,7 +203,7 @@ func initialize() *cobra.Command {
 				return commanders.CreateInitialClusterConfigs(hubPort)
 			})
 
-			st.RunCLISubstep(idl.Substep_START_HUB, func(streams step.OutStreams) error {
+			st.RunCLISubstep(idl.Substep_start_hub, func(streams step.OutStreams) error {
 				return commanders.StartHub()
 			})
 

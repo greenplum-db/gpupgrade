@@ -28,7 +28,7 @@ func TestStart(t *testing.T) {
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: dataDir, Role: greenplum.PrimaryRole},
 	})
 	source.GPHome = "/usr/local/source"
-	source.Destination = idl.ClusterDestination_SOURCE
+	source.Destination = idl.ClusterDestination_source
 
 	t.Run("start succeeds", func(t *testing.T) {
 		cmd := exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
@@ -78,7 +78,7 @@ func TestStartCoordinatorOnly(t *testing.T) {
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: dataDir, Role: greenplum.PrimaryRole},
 	})
 	source.GPHome = "/usr/local/source"
-	source.Destination = idl.ClusterDestination_SOURCE
+	source.Destination = idl.ClusterDestination_source
 
 	t.Run("start coordinator only succeeds", func(t *testing.T) {
 		cmd := exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
@@ -128,7 +128,7 @@ func TestStop(t *testing.T) {
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: dataDir, Role: greenplum.PrimaryRole},
 	})
 	source.GPHome = "/usr/local/source"
-	source.Destination = idl.ClusterDestination_SOURCE
+	source.Destination = idl.ClusterDestination_source
 
 	t.Run("stop succeeds", func(t *testing.T) {
 		testutils.MustWriteToFile(t, filepath.Join(dataDir, "postmaster.pid"), "")
@@ -212,7 +212,7 @@ func TestStopCoordinatorOnly(t *testing.T) {
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: dataDir, Role: greenplum.PrimaryRole},
 	})
 	source.GPHome = "/usr/local/source"
-	source.Destination = idl.ClusterDestination_SOURCE
+	source.Destination = idl.ClusterDestination_source
 
 	t.Run("stop coordinator only succeeds", func(t *testing.T) {
 		testutils.MustWriteToFile(t, filepath.Join(dataDir, "postmaster.pid"), "")
@@ -296,7 +296,7 @@ func TestIsCoordinatorRunning(t *testing.T) {
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: dataDir, Role: greenplum.PrimaryRole},
 	})
 	source.GPHome = "/usr/local/source"
-	source.Destination = idl.ClusterDestination_SOURCE
+	source.Destination = idl.ClusterDestination_source
 
 	t.Run("IsCoordinatorRunning succeeds", func(t *testing.T) {
 		testutils.MustWriteToFile(t, filepath.Join(dataDir, "postmaster.pid"), "")

@@ -7,7 +7,6 @@ import (
 	"io"
 	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"github.com/blang/semver/v4"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
@@ -43,7 +42,7 @@ func Run(stdout, stderr io.Writer, opts *idl.PgOptions) error {
 		"--new-datadir", opts.GetNewDataDir(),
 		"--old-port", opts.GetOldPort(),
 		"--new-port", opts.GetNewPort(),
-		"--mode", strings.ToLower(opts.GetMode().String()),
+		"--mode", opts.GetMode().String(),
 	}
 
 	if opts.Action == idl.PgOptions_check {

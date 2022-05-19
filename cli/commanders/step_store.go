@@ -32,7 +32,7 @@ func NewStepStore() (*StepStore, error) {
 }
 
 func (s *StepStore) Write(stepName idl.Step, status idl.Status) error {
-	err := s.store.Write(stepName, idl.Substep_STEP_STATUS, status)
+	err := s.store.Write(stepName, idl.Substep_step_status, status)
 	if err != nil {
 		return err
 	}
@@ -41,9 +41,9 @@ func (s *StepStore) Write(stepName idl.Step, status idl.Status) error {
 }
 
 func (s *StepStore) Read(stepName idl.Step) (idl.Status, error) {
-	status, err := s.store.Read(stepName, idl.Substep_STEP_STATUS)
+	status, err := s.store.Read(stepName, idl.Substep_step_status)
 	if err != nil {
-		return idl.Status_UNKNOWN_STATUS, err
+		return idl.Status_unknown_status, err
 	}
 
 	return status, nil
@@ -51,19 +51,19 @@ func (s *StepStore) Read(stepName idl.Step) (idl.Status, error) {
 
 func (s *StepStore) HasStepStarted(step idl.Step) (bool, error) {
 	return s.HasStatus(step, func(status idl.Status) bool {
-		return status != idl.Status_UNKNOWN_STATUS
+		return status != idl.Status_unknown_status
 	})
 }
 
 func (s *StepStore) HasStepNotStarted(step idl.Step) (bool, error) {
 	return s.HasStatus(step, func(status idl.Status) bool {
-		return status == idl.Status_UNKNOWN_STATUS
+		return status == idl.Status_unknown_status
 	})
 }
 
 func (s *StepStore) HasStepCompleted(step idl.Step) (bool, error) {
 	return s.HasStatus(step, func(status idl.Status) bool {
-		return status == idl.Status_COMPLETE
+		return status == idl.Status_complete
 	})
 }
 
@@ -104,24 +104,24 @@ const RunRevert = `Revert is in progress. Please continue by running "gpupgrade 
 // conditions expected to have been met for the current step. The next action
 // message is printed if the condition is not met.
 var validate = map[idl.Step][]stepCondition{
-	idl.Step_INITIALIZE: {
-		{idl.Step_REVERT, (*StepStore).HasStepNotStarted, RunRevert},
-		{idl.Step_FINALIZE, (*StepStore).HasStepNotStarted, RunFinalize},
-		{idl.Step_EXECUTE, (*StepStore).HasStepNotStarted, RunExecute},
+	idl.Step_initialize: {
+		{idl.Step_revert, (*StepStore).HasStepNotStarted, RunRevert},
+		{idl.Step_finalize, (*StepStore).HasStepNotStarted, RunFinalize},
+		{idl.Step_execute, (*StepStore).HasStepNotStarted, RunExecute},
 	},
-	idl.Step_EXECUTE: {
-		{idl.Step_REVERT, (*StepStore).HasStepNotStarted, RunRevert},
-		{idl.Step_INITIALIZE, (*StepStore).HasStepCompleted, RunInitialize},
-		{idl.Step_FINALIZE, (*StepStore).HasStepNotStarted, RunFinalize},
+	idl.Step_execute: {
+		{idl.Step_revert, (*StepStore).HasStepNotStarted, RunRevert},
+		{idl.Step_initialize, (*StepStore).HasStepCompleted, RunInitialize},
+		{idl.Step_finalize, (*StepStore).HasStepNotStarted, RunFinalize},
 	},
-	idl.Step_FINALIZE: {
-		{idl.Step_REVERT, (*StepStore).HasStepNotStarted, RunRevert},
-		{idl.Step_INITIALIZE, (*StepStore).HasStepCompleted, RunInitialize},
-		{idl.Step_EXECUTE, (*StepStore).HasStepCompleted, RunExecute},
+	idl.Step_finalize: {
+		{idl.Step_revert, (*StepStore).HasStepNotStarted, RunRevert},
+		{idl.Step_initialize, (*StepStore).HasStepCompleted, RunInitialize},
+		{idl.Step_execute, (*StepStore).HasStepCompleted, RunExecute},
 	},
-	idl.Step_REVERT: {
-		{idl.Step_INITIALIZE, (*StepStore).HasStepStarted, RunInitialize},
-		{idl.Step_FINALIZE, (*StepStore).HasStepNotStarted, RunFinalize},
+	idl.Step_revert: {
+		{idl.Step_initialize, (*StepStore).HasStepStarted, RunInitialize},
+		{idl.Step_finalize, (*StepStore).HasStepNotStarted, RunFinalize},
 	},
 }
 

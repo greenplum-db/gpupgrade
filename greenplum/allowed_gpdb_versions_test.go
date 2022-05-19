@@ -115,7 +115,7 @@ func TestValidateVersionsErrorCases(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			err := validateVersion(c.localVersion, idl.ClusterDestination_SOURCE)
+			err := validateVersion(c.localVersion, idl.ClusterDestination_source)
 			if err.Error() != c.expected.Error() {
 				t.Errorf("got %s want %s", err, c.expected)
 			}
