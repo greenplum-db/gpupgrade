@@ -10,6 +10,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 type SpaceUsageErr struct {
@@ -60,7 +61,7 @@ func (d SpaceUsageErr) Table() [][]string {
 		rows = append(rows, []string{usage.GetHost(), usage.GetFs(), needed, available, required})
 	}
 
-	sort.Sort(tableRows(rows))
+	sort.Sort(utils.TableRows(rows))
 	rows = append([][]string{{"Hostname", "Filesystem", "Shortfall", "Available", "Required"}}, rows...)
 
 	return rows
@@ -76,25 +77,4 @@ func FormatBytes(kb uint64) string {
 		bytes /= 1000.0
 	}
 	return fmt.Sprintf("%.4g %s", bytes, "EB")
-}
-
-// tableRows attaches sort.Interface to a slice of string slices.
-type tableRows [][]string
-
-func (t tableRows) Len() int {
-	return len(t)
-}
-
-func (t tableRows) Less(i, j int) bool {
-	ri, rj := t[i], t[j]
-
-	// Sort by hostname, then by filesystem.
-	if ri[0] == rj[0] {
-		return ri[1] < rj[1]
-	}
-	return ri[0] < rj[0]
-}
-
-func (t tableRows) Swap(i, j int) {
-	t[i], t[j] = t[j], t[i]
 }

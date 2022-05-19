@@ -267,3 +267,24 @@ func RemoveDuplicates(input []string) []string {
 
 	return dedupe
 }
+
+// TableRows attaches sort.Interface to a slice of string slices.
+type TableRows [][]string
+
+func (t TableRows) Len() int {
+	return len(t)
+}
+
+func (t TableRows) Less(i, j int) bool {
+	ri, rj := t[i], t[j]
+
+	// Sort by hostname, then by filesystem.
+	if ri[0] == rj[0] {
+		return ri[1] < rj[1]
+	}
+	return ri[0] < rj[0]
+}
+
+func (t TableRows) Swap(i, j int) {
+	t[i], t[j] = t[j], t[i]
+}
