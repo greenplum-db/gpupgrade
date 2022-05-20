@@ -32,11 +32,11 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 	}()
 
 	st.RunInternalSubstep(func() error {
-		return s.Intermediate.CheckActiveConnections(s.Connection)
+		return s.Intermediate.CheckActiveConnections()
 	})
 
 	st.RunConditionally(idl.Substep_upgrade_mirrors, s.Source.HasMirrors() && s.LinkMode, func(streams step.OutStreams) error {
-		return UpgradeMirrorsUsingRsync(s.Connection, s.agentConns, s.Source, s.Intermediate, s.UseHbaHostnames)
+		return UpgradeMirrorsUsingRsync(s.agentConns, s.Source, s.Intermediate, s.UseHbaHostnames)
 	})
 
 	st.RunConditionally(idl.Substep_upgrade_mirrors, s.Source.HasMirrors() && !s.LinkMode, func(streams step.OutStreams) error {
@@ -48,7 +48,7 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 	})
 
 	st.Run(idl.Substep_wait_for_cluster_to_be_ready_after_adding_mirrors_and_standby, func(streams step.OutStreams) error {
-		return s.Intermediate.WaitForClusterToBeReady(s.Connection)
+		return s.Intermediate.WaitForClusterToBeReady()
 	})
 
 	st.Run(idl.Substep_shutdown_target_cluster, func(streams step.OutStreams) error {
@@ -60,7 +60,7 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 			return err
 		}
 
-		if err := UpdateCatalog(s.Connection, s.Intermediate, s.Target); err != nil {
+		if err := UpdateCatalog(s.Intermediate, s.Target); err != nil {
 			return err
 		}
 
@@ -84,7 +84,7 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 	})
 
 	st.Run(idl.Substep_wait_for_cluster_to_be_ready_after_updating_catalog, func(streams step.OutStreams) error {
-		return s.Target.WaitForClusterToBeReady(s.Connection)
+		return s.Target.WaitForClusterToBeReady()
 	})
 
 	st.Run(idl.Substep_stop_target_cluster, func(streams step.OutStreams) error {

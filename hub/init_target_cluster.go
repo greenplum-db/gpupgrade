@@ -24,13 +24,8 @@ import (
 
 var ErrUnknownCatalogVersion = errors.New("pg_controldata output is missing catalog version")
 
-func (s *Server) GenerateInitsystemConfig() error {
-	options := []greenplum.Option{
-		greenplum.ToSource(),
-		greenplum.Port(s.Source.CoordinatorPort()),
-	}
-
-	db, err := sql.Open("pgx", s.Connection.URI(options...))
+func (s *Server) GenerateInitsystemConfig(source *greenplum.Cluster) error {
+	db, err := sql.Open("pgx", source.Connection())
 	if err != nil {
 		return err
 	}

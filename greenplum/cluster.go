@@ -68,8 +68,13 @@ func (c ContentToSegConfig) excludingCoordinatorOrStandby() ContentToSegConfig {
 // ClusterFromDB will create a Cluster by querying the passed DBConn for
 // information. You must pass the cluster's gphome, since it cannot be
 // divined from the database.
-func ClusterFromDB(db *sql.DB, version semver.Version, gphome string, destination idl.ClusterDestination) (Cluster, error) {
-	segments, err := GetSegmentConfiguration(db, version)
+func ClusterFromDB(db *sql.DB, gphome string, destination idl.ClusterDestination) (Cluster, error) {
+	version, err := Version(gphome)
+	if err != nil {
+		return Cluster{}, err
+	}
+
+	segments, err := GetSegmentConfiguration(db, semver.MustParse(version))
 	if err != nil {
 		return Cluster{}, xerrors.Errorf("querying gp_segment_configuration: %w", err)
 	}
@@ -80,7 +85,7 @@ func ClusterFromDB(db *sql.DB, version semver.Version, gphome string, destinatio
 	}
 
 	cluster.Destination = destination
-	cluster.Version = version
+	cluster.Version = semver.MustParse(version)
 	cluster.GPHome = gphome
 
 	return cluster, nil
@@ -376,18 +381,8 @@ func (c *Cluster) runGreenplumCommand(streams step.OutStreams, utility string, a
 	return cmd.Run()
 }
 
-func (c *Cluster) CheckActiveConnections(conn *Conn) error {
-	destination := ToTarget()
-	if c.Destination == idl.ClusterDestination_source {
-		destination = ToSource()
-	}
-
-	options := []Option{
-		destination,
-		Port(c.CoordinatorPort()),
-	}
-
-	db, err := sql.Open("pgx", conn.URI(options...))
+func (c *Cluster) CheckActiveConnections() error {
+	db, err := sql.Open("pgx", c.Connection())
 	if err != nil {
 		return err
 	}
@@ -402,18 +397,8 @@ func (c *Cluster) CheckActiveConnections(conn *Conn) error {
 
 // WaitForClusterToBeReady waits until the timeout for all segments to be up,
 // in their preferred role, and synchronized.
-func (c *Cluster) WaitForClusterToBeReady(conn *Conn) error {
-	destination := ToTarget()
-	if c.Destination == idl.ClusterDestination_source {
-		destination = ToSource()
-	}
-
-	options := []Option{
-		destination,
-		Port(c.CoordinatorPort()),
-	}
-
-	db, err := sql.Open("pgx", conn.URI(options...))
+func (c *Cluster) WaitForClusterToBeReady() error {
+	db, err := sql.Open("pgx", c.Connection())
 	if err != nil {
 		return err
 	}

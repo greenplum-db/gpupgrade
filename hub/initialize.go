@@ -7,10 +7,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/blang/semver/v4"
 	"github.com/greenplum-db/gp-common-go-libs/gplog"
 
-	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
@@ -34,25 +32,8 @@ func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_Init
 		}
 	}()
 
-	st.RunInternalSubstep(func() error {
-		sourceVersion, err := greenplum.Version(req.SourceGPHome)
-		if err != nil {
-			return err
-		}
-
-		targetVersion, err := greenplum.Version(req.TargetGPHome)
-		if err != nil {
-			return err
-		}
-
-		conn := greenplum.Connection(semver.MustParse(sourceVersion), semver.MustParse(targetVersion))
-		s.Connection = conn
-
-		return nil
-	})
-
 	st.Run(idl.Substep_saving_source_cluster_config, func(stream step.OutStreams) error {
-		return FillConfiguration(s.Config, req, s.Connection, s.SaveConfig)
+		return FillConfiguration(s.Config, req, s.SaveConfig)
 	})
 
 	// Since the agents might not be up if gpupgrade is not properly installed, check it early on using ssh.
@@ -89,7 +70,7 @@ func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest
 	}()
 
 	st.Run(idl.Substep_generate_target_config, func(_ step.OutStreams) error {
-		return s.GenerateInitsystemConfig()
+		return s.GenerateInitsystemConfig(s.Source)
 	})
 
 	st.Run(idl.Substep_init_target_cluster, func(stream step.OutStreams) error {

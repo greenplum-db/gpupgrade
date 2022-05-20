@@ -31,7 +31,7 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 	}()
 
 	st.RunInternalSubstep(func() error {
-		return s.Source.CheckActiveConnections(s.Connection)
+		return s.Source.CheckActiveConnections()
 	})
 
 	st.Run(idl.Substep_shutdown_source_cluster, func(streams step.OutStreams) error {

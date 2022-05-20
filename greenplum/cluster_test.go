@@ -181,6 +181,9 @@ func TestClusterFromDB(t *testing.T) {
 	}()
 
 	t.Run("returns an error if connection fails", func(t *testing.T) {
+		greenplum.SetVersionCommand(exectest.NewCommand(greenplum.PostgresGPVersion_6_7_1))
+		defer greenplum.ResetVersionCommand()
+
 		db, mock, err := sqlmock.New()
 		if err != nil {
 			t.Fatalf("couldn't create sqlmock: %v", err)
@@ -190,7 +193,7 @@ func TestClusterFromDB(t *testing.T) {
 		expected := errors.New("connection failed")
 		mock.ExpectQuery("SELECT ").WillReturnError(expected)
 
-		actualCluster, err := greenplum.ClusterFromDB(db, semver.MustParse("0.0.0"), "", idl.ClusterDestination_source)
+		actualCluster, err := greenplum.ClusterFromDB(db, "", idl.ClusterDestination_source)
 		if !errors.Is(err, expected) {
 			t.Errorf("got %#v want %#v", err, expected)
 		}
@@ -201,6 +204,9 @@ func TestClusterFromDB(t *testing.T) {
 	})
 
 	t.Run("returns an error if the segment configuration query fails", func(t *testing.T) {
+		greenplum.SetVersionCommand(exectest.NewCommand(greenplum.PostgresGPVersion_6_7_1))
+		defer greenplum.ResetVersionCommand()
+
 		db, mock, err := sqlmock.New()
 		if err != nil {
 			t.Fatalf("couldn't create sqlmock: %v", err)
@@ -210,7 +216,7 @@ func TestClusterFromDB(t *testing.T) {
 		queryErr := errors.New("failed to get segment configuration")
 		mock.ExpectQuery("SELECT .* FROM gp_segment_configuration").WillReturnError(queryErr)
 
-		actualCluster, err := greenplum.ClusterFromDB(db, semver.MustParse("0.0.0"), "", idl.ClusterDestination_source)
+		actualCluster, err := greenplum.ClusterFromDB(db, "", idl.ClusterDestination_source)
 
 		if err == nil {
 			t.Errorf("Expected an error, but got nil")
@@ -224,6 +230,9 @@ func TestClusterFromDB(t *testing.T) {
 	})
 
 	t.Run("populates a cluster using DB information", func(t *testing.T) {
+		greenplum.SetVersionCommand(exectest.NewCommand(greenplum.PostgresGPVersion_6_7_1))
+		defer greenplum.ResetVersionCommand()
+
 		db, mock, err := sqlmock.New()
 		if err != nil {
 			t.Fatalf("couldn't create sqlmock: %v", err)
@@ -233,9 +242,9 @@ func TestClusterFromDB(t *testing.T) {
 		mock.ExpectQuery("SELECT .* FROM gp_segment_configuration").WillReturnRows(testutils.MockSegmentConfiguration())
 
 		gphome := "/usr/local/gpdb"
-		version := semver.MustParse("5.3.4")
+		version := semver.MustParse("6.7.1")
 		destination := idl.ClusterDestination_intermediate
-		actualCluster, err := greenplum.ClusterFromDB(db, version, gphome, destination)
+		actualCluster, err := greenplum.ClusterFromDB(db, gphome, destination)
 		if err != nil {
 			t.Errorf("got unexpected error: %+v", err)
 		}

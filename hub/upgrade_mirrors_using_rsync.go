@@ -16,13 +16,8 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-func UpgradeMirrorsUsingRsync(conn *greenplum.Conn, agentConns []*idl.Connection, source *greenplum.Cluster, intermediate *greenplum.Cluster, useHbaHostnames bool) error {
-	options := []greenplum.Option{
-		greenplum.ToTarget(),
-		greenplum.Port(intermediate.CoordinatorPort()),
-	}
-
-	db, err := sql.Open("pgx", conn.URI(options...))
+func UpgradeMirrorsUsingRsync(agentConns []*idl.Connection, source *greenplum.Cluster, intermediate *greenplum.Cluster, useHbaHostnames bool) error {
+	db, err := sql.Open("pgx", intermediate.Connection())
 	if err != nil {
 		return err
 	}
@@ -68,7 +63,7 @@ func UpgradeMirrorsUsingRsync(conn *greenplum.Conn, agentConns []*idl.Connection
 		return err
 	}
 
-	if err := addMirrorsToCatalog(conn, intermediate); err != nil {
+	if err := addMirrorsToCatalog(intermediate); err != nil {
 		return err
 	}
 

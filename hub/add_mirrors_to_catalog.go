@@ -13,15 +13,13 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-func addMirrorsToCatalog(conn *greenplum.Conn, intermediate *greenplum.Cluster) error {
+func addMirrorsToCatalog(intermediate *greenplum.Cluster) error {
 	options := []greenplum.Option{
-		greenplum.ToTarget(),
-		greenplum.Port(intermediate.CoordinatorPort()),
 		greenplum.UtilityMode(),
 		greenplum.AllowSystemTableMods(),
 	}
 
-	db, err := sql.Open("pgx", conn.URI(options...))
+	db, err := sql.Open("pgx", intermediate.Connection(options...))
 	if err != nil {
 		return err
 	}

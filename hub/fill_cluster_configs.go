@@ -19,14 +19,16 @@ import (
 )
 
 // FillConfiguration populates the Config saves it to disk.
-func FillConfiguration(config *Config, request *idl.InitializeRequest, conn *greenplum.Conn, saveConfig func() error) error {
-	options := []greenplum.Option{
-		greenplum.ToSource(),
-		greenplum.Port(int(request.GetSourcePort())),
-		greenplum.UtilityMode(),
+func FillConfiguration(config *Config, request *idl.InitializeRequest, saveConfig func() error) error {
+	tempSource, err := greenplum.NewCluster([]greenplum.SegConfig{})
+	if err != nil {
+		return err
 	}
 
-	db, err := sql.Open("pgx", conn.URI(options...))
+	tempSource.Destination = idl.ClusterDestination_source
+	conn := tempSource.Connection([]greenplum.Option{greenplum.Port(int(request.GetSourcePort())), greenplum.UtilityMode()}...)
+
+	db, err := sql.Open("pgx", conn)
 	if err != nil {
 		return err
 	}
@@ -40,12 +42,17 @@ func FillConfiguration(config *Config, request *idl.InitializeRequest, conn *gre
 	config.UseHbaHostnames = request.GetUseHbaHostnames()
 	config.UpgradeID = upgrade.NewID()
 
-	source, err := greenplum.ClusterFromDB(db, conn.SourceVersion, request.GetSourceGPHome(), idl.ClusterDestination_source)
+	source, err := greenplum.ClusterFromDB(db, request.GetSourceGPHome(), idl.ClusterDestination_source)
 	if err != nil {
 		return xerrors.Errorf("retrieve source configuration: %w", err)
 	}
 
-	err = source.WaitForClusterToBeReady(conn)
+	err = source.WaitForClusterToBeReady()
+	if err != nil {
+		return err
+	}
+
+	targetVersion, err := greenplum.Version(request.GetTargetGPHome())
 	if err != nil {
 		return err
 	}
@@ -55,7 +62,7 @@ func FillConfiguration(config *Config, request *idl.InitializeRequest, conn *gre
 	config.Target = &target
 	config.Target.Destination = idl.ClusterDestination_target
 	config.Target.GPHome = request.GetTargetGPHome()
-	config.Target.Version = conn.TargetVersion
+	config.Target.Version = semver.MustParse(targetVersion)
 	config.LinkMode = request.GetLinkMode()
 
 	var ports []int
@@ -63,7 +70,7 @@ func FillConfiguration(config *Config, request *idl.InitializeRequest, conn *gre
 		ports = append(ports, int(p))
 	}
 
-	config.Intermediate, err = GenerateIntermediateCluster(config.Source, ports, config.UpgradeID, conn.TargetVersion, request.GetTargetGPHome())
+	config.Intermediate, err = GenerateIntermediateCluster(config.Source, ports, config.UpgradeID, config.Target.Version, request.GetTargetGPHome())
 	if err != nil {
 		return err
 	}

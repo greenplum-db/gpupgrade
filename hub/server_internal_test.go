@@ -8,7 +8,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 )
@@ -28,7 +27,6 @@ func TestConfig(t *testing.T) {
 			source,
 			intermediate,
 			target,
-			&greenplum.Conn{},
 			12345,           // Port
 			54321,           // AgentPort
 			false,           // LinkMode

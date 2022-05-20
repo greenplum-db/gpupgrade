@@ -361,11 +361,6 @@ type Config struct {
 	// gpinitsystem execution in the initialize step; before that, it is nil.
 	Target *greenplum.Cluster
 
-	// Connection is a utility object that generates connection URIs to the
-	// source or target databases.  It also contains the Source.Version and
-	// Target.Version internally.
-	Connection *greenplum.Conn
-
 	Port            int
 	AgentPort       int
 	LinkMode        bool
