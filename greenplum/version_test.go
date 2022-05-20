@@ -8,7 +8,10 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"reflect"
 	"testing"
+
+	"github.com/blang/semver/v4"
 
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/testutils/testlog"
@@ -72,13 +75,13 @@ func TestVersion_Parsing(t *testing.T) {
 	cases := []struct {
 		name           string
 		versionCommand exectest.Main
-		expected       string
+		expected       semver.Version
 	}{
-		{name: "handles development versions", versionCommand: PostgresGPVersion_6_dev, expected: "6.0.0"},
-		{name: "handles beta versions", versionCommand: PostgresGPVersion_5_27_0_beta, expected: "5.27.0"},
-		{name: "handles release versions", versionCommand: PostgresGPVersion_6_7_1, expected: "6.7.1"},
-		{name: "handles large versions", versionCommand: PostgresGPVersion_11_341_31, expected: "11.341.31"},
-		{name: "handles multi line versions", versionCommand: PostgresGPVersion_MultiLine, expected: "6.18.2"},
+		{"handles development versions", PostgresGPVersion_6_dev, semver.MustParse("6.0.0")},
+		{"handles beta versions", PostgresGPVersion_5_27_0_beta, semver.MustParse("5.27.0")},
+		{"handles release versions", PostgresGPVersion_6_7_1, semver.MustParse("6.7.1")},
+		{"handles large versions", PostgresGPVersion_11_341_31, semver.MustParse("11.341.31")},
+		{"handles multi line versions", PostgresGPVersion_MultiLine, semver.MustParse("6.18.2")},
 	}
 
 	for _, c := range cases {
@@ -91,7 +94,7 @@ func TestVersion_Parsing(t *testing.T) {
 				t.Errorf("unexpected error: %+v", err)
 			}
 
-			if version != c.expected {
+			if !version.EQ(c.expected) {
 				t.Errorf("got version %v, want %v", version, c.expected)
 			}
 		})
@@ -116,7 +119,7 @@ func TestVersion_Parsing(t *testing.T) {
 				t.Errorf("got %q want %q", err, c.expected)
 			}
 
-			if version != "" {
+			if !reflect.DeepEqual(version, semver.Version{}) {
 				t.Errorf("unexpected version %q", version)
 			}
 		})

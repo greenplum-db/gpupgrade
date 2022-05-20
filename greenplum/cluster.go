@@ -74,7 +74,7 @@ func ClusterFromDB(db *sql.DB, gphome string, destination idl.ClusterDestination
 		return Cluster{}, err
 	}
 
-	segments, err := GetSegmentConfiguration(db, semver.MustParse(version))
+	segments, err := GetSegmentConfiguration(db, version)
 	if err != nil {
 		return Cluster{}, xerrors.Errorf("querying gp_segment_configuration: %w", err)
 	}
@@ -85,7 +85,7 @@ func ClusterFromDB(db *sql.DB, gphome string, destination idl.ClusterDestination
 	}
 
 	cluster.Destination = destination
-	cluster.Version = semver.MustParse(version)
+	cluster.Version = version
 	cluster.GPHome = gphome
 
 	return cluster, nil

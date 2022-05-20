@@ -97,18 +97,18 @@ func TestAllowedVersions(t *testing.T) {
 func TestValidateVersionsErrorCases(t *testing.T) {
 	cases := []struct {
 		name             string
-		localVersion     string
+		localVersion     semver.Version
 		testLocalVersion func(string) (semver.Version, error)
 		expected         error
 	}{
 		{
 			name:         "fails when GPDB version has unsupported minor versions",
-			localVersion: semver.MustParse("6.8.0").String(),
+			localVersion: semver.MustParse("6.8.0"),
 			expected:     errors.New("source cluster version 6.8.0 is not supported.  The minimum required version is 6.18.0. We recommend the latest version."),
 		},
 		{
 			name:         "fails when GPDB version has unsupported major versions",
-			localVersion: semver.MustParse("0.0.0").String(),
+			localVersion: semver.MustParse("0.0.0"),
 			expected:     errors.New("source cluster version 0.0.0 is not supported.  The minimum required version is 5.29.1. We recommend the latest version."),
 		},
 	}

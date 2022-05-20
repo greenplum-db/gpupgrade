@@ -29,32 +29,32 @@ func ResetVersionCommand() {
 	versionCommand = exec.Command
 }
 
-func Version(gphome string) (string, error) {
+func Version(gphome string) (semver.Version, error) {
 	cmd := versionCommand(filepath.Join(gphome, "bin", "postgres"), "--gp-version")
 	cmd.Env = []string{}
 
 	gplog.Debug(cmd.String())
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", fmt.Errorf("%q failed with %q: %w", cmd.String(), string(output), err)
+		return semver.Version{}, fmt.Errorf("%q failed with %q: %w", cmd.String(), string(output), err)
 	}
 
 	rawVersion := string(output)
 	parts := strings.SplitN(strings.TrimSpace(rawVersion), "postgres (Greenplum Database) ", 2)
 	if len(parts) != 2 {
-		return "", xerrors.Errorf(`Greenplum version %q is not of the form "postgres (Greenplum Database) #.#.#"`, rawVersion)
+		return semver.Version{}, xerrors.Errorf(`Greenplum version %q is not of the form "postgres (Greenplum Database) #.#.#"`, rawVersion)
 	}
 
 	pattern := regexp.MustCompile(`\d+\.\d+\.\d+`)
 	matches := pattern.FindStringSubmatch(parts[1])
 	if len(matches) < 1 {
-		return "", xerrors.Errorf("parsing Greenplum version %q: %w", rawVersion, err)
+		return semver.Version{}, xerrors.Errorf("parsing Greenplum version %q: %w", rawVersion, err)
 	}
 
 	version, err := semver.Parse(matches[0])
 	if err != nil {
-		return "", xerrors.Errorf("parsing Greenplum version %q: %w", rawVersion, err)
+		return semver.Version{}, xerrors.Errorf("parsing Greenplum version %q: %w", rawVersion, err)
 	}
 
-	return version.String(), nil
+	return version, nil
 }

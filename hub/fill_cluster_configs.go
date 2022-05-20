@@ -62,7 +62,7 @@ func FillConfiguration(config *Config, request *idl.InitializeRequest, saveConfi
 	config.Target = &target
 	config.Target.Destination = idl.ClusterDestination_target
 	config.Target.GPHome = request.GetTargetGPHome()
-	config.Target.Version = semver.MustParse(targetVersion)
+	config.Target.Version = targetVersion
 	config.LinkMode = request.GetLinkMode()
 
 	var ports []int

@@ -105,7 +105,7 @@ func VerifyCompatibleGPDBVersions(sourceGPHome, targetGPHome string) error {
 	return errs
 }
 
-func validateVersion(versionStr string, destination idl.ClusterDestination) error {
+func validateVersion(version semver.Version, destination idl.ClusterDestination) error {
 	versionsAllowed := sourceVersionAllowed
 	minVersions := minSourceVersions
 	if destination == idl.ClusterDestination_target {
@@ -113,7 +113,6 @@ func validateVersion(versionStr string, destination idl.ClusterDestination) erro
 		minVersions = minTargetVersions
 	}
 
-	version := semver.MustParse(versionStr)
 	if !versionsAllowed(version) {
 		min := getMinVersion(version, minVersions)
 		return fmt.Errorf("%s cluster version %s is not supported.  "+
