@@ -298,20 +298,19 @@ func TestUpgradeCoordinator(t *testing.T) {
 			t.Fatalf("got type %T want %T", err, nextActionsErr)
 		}
 
-		errText := fmt.Sprintf(`Checking for users assigned the gphdfs role                 fatal
+		nextAction := "Consult the pg_upgrade check output files located"
+		if !strings.Contains(nextActionsErr.NextAction, nextAction) {
+			t.Errorf("got %q want %q", nextActionsErr.NextAction, nextAction)
+		}
 
-| Your installation contains roles that have gphdfs privileges.
-| These privileges need to be revoked before upgrade.  A list
-| of roles and their corresponding gphdfs privileges that
-| must be revoked is provided in the file:
-|       %s/gphdfs_user_roles.txt
+		nextAction = "run pre-initialize data migration scripts "
+		if !strings.Contains(nextActionsErr.NextAction, nextAction) {
+			t.Errorf("got %q want %q", nextActionsErr.NextAction, nextAction)
+		}
 
-Failure, exiting`, pgUpgradeDir)
-		expected := fmt.Sprintf("check master: exit status 1\n\n%s", errText)
-		if err.Error() != expected {
-			t.Errorf("got  %q", err.Error())
-			t.Errorf("want %q", expected)
-
+		expected := errors.New("check master: exit status 1")
+		if errors.Is(err, expected) {
+			t.Errorf("got %v want %v", err, expected)
 		}
 	})
 
@@ -327,83 +326,6 @@ Failure, exiting`, pgUpgradeDir)
 		expected := "upgrade master: write failed"
 		if err.Error() != expected {
 			t.Errorf("got %q want %q", err.Error(), expected)
-		}
-	})
-
-	t.Run("when pg_upgrade check fails it adds stdout context to the error", func(t *testing.T) {
-		cases := []struct {
-			name     string
-			main     exectest.Main
-			expected string
-		}{
-			{
-				"without timing", PgCheckFailure, fmt.Sprintf(strings.TrimSpace(`
-Checking for users assigned the gphdfs role                 fatal
-
-| Your installation contains roles that have gphdfs privileges.
-| These privileges need to be revoked before upgrade.  A list
-| of roles and their corresponding gphdfs privileges that
-| must be revoked is provided in the file:
-|       %s/gphdfs_user_roles.txt
-
-Failure, exiting
-				`), pgUpgradeDir),
-			}, {
-				"with timing", PgCheckFailureWithTiming, fmt.Sprintf(strings.TrimSpace(`
-Checking for users assigned the gphdfs role                 fatal [ 36ms ]
-
-| Your installation contains roles that have gphdfs privileges.
-| These privileges need to be revoked before upgrade.  A list
-| of roles and their corresponding gphdfs privileges that
-| must be revoked is provided in the file:
-|       %s/gphdfs_user_roles.txt
-
-Failure, exiting
-				`), pgUpgradeDir),
-			},
-		}
-
-		utils.System.MkdirAll = func(path string, perms os.FileMode) error {
-			if path != pgUpgradeDir {
-				t.Fatalf("got pg_upgrade working directory %q want %q", path, pgUpgradeDir)
-			}
-
-			testutils.MustRemoveAll(t, pgUpgradeDir)
-			err := os.MkdirAll(path, perms)
-			if err != nil {
-				return err
-			}
-
-			testutils.MustWriteToFile(t, filepath.Join(pgUpgradeDir, "gphdfs_user_roles.txt"), "")
-			return nil
-		}
-		defer utils.ResetSystemFunctions()
-
-		for _, c := range cases {
-			t.Run(c.name, func(t *testing.T) {
-				rsync.SetRsyncCommand(exectest.NewCommand(hub.Success))
-				defer rsync.ResetRsyncCommand()
-
-				upgrade.SetPgUpgradeCommand(exectest.NewCommand(c.main))
-				defer upgrade.ResetPgUpgradeCommand()
-
-				err := hub.UpgradeCoordinator(new(step.BufferedStreams), source, intermediate, idl.PgOptions_check, false)
-				if err == nil {
-					t.Errorf("expected error, returned nil")
-				}
-
-				var nextActionsErr utils.NextActionErr
-				if !errors.As(err, &nextActionsErr) {
-					t.Fatalf("got type %T want %T", err, nextActionsErr)
-				}
-
-				expected := fmt.Sprintf("check master: exit status 1\n\n%s", c.expected)
-				if err.Error() != expected {
-					t.Errorf("got  %q", err.Error())
-					t.Errorf("want %q", expected)
-
-				}
-			})
 		}
 	})
 }

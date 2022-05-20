@@ -4,15 +4,10 @@
 package hub
 
 import (
-	"bufio"
-	"bytes"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 
 	"golang.org/x/xerrors"
 
@@ -55,66 +50,24 @@ func UpgradeCoordinator(streams step.OutStreams, source *greenplum.Cluster, inte
 		return err
 	}
 
-	// Buffer stdout to add context to errors.
-	stdout := new(bytes.Buffer)
-	tee := io.MultiWriter(streams.Stdout(), stdout)
-
-	runErr := upgrade.Run(tee, streams.Stderr(), opts)
-	if runErr != nil {
-		// For "fatal" errors add additional error context. This is useful for customers to see and understand
-		// pg_upgrade --check errors.
-		var text []string
-		var addText bool
-
-		scanner := bufio.NewScanner(stdout)
-		for scanner.Scan() {
-			line := scanner.Text()
-			if strings.Contains(line, "fatal") || addText {
-				addText = true
-				text = append(text, line)
-			}
-		}
-		errText := strings.Join(text, "\n")
-		if errText == "" {
-			return xerrors.Errorf("%s master: %v", action, runErr)
+	err = upgrade.Run(streams.Stdout(), streams.Stderr(), opts)
+	if err != nil {
+		if opts.Action != idl.PgOptions_check {
+			return xerrors.Errorf("%s master: %v", action, err)
 		}
 
-		upgradeDir, err := utils.GetPgUpgradeDir(opts.GetRole(), opts.GetContentID())
-		if err != nil {
-			runErr = errorlist.Append(runErr, err)
+		dir, dirErr := utils.GetPgUpgradeDir(opts.GetRole(), opts.GetContentID())
+		if dirErr != nil {
+			err = errorlist.Append(err, dirErr)
 		}
 
-		files, err := filesInDirectory(upgradeDir)
-		if err != nil {
-			runErr = errorlist.Append(runErr, err)
-		}
-
-		for _, file := range files {
-			// include the full path of any pg_upgrade error files
-			errText = strings.ReplaceAll(errText, file, filepath.Join(upgradeDir, file))
-		}
-
-		nextAction := `If you haven't run pre-initialize data migration scripts at the start, please run them.
-Consult the gpupgrade documentation for details on the pg_upgrade check error.`
-		return utils.NewNextActionErr(xerrors.Errorf("%s master: %s\n\n%v", action, runErr, errText), nextAction)
+		nextAction := fmt.Sprintf(`Consult the pg_upgrade check output files located: %s
+If you haven't run pre-initialize data migration scripts at the start, please run them.
+Consult the gpupgrade documentation for details on the pg_upgrade check error.`, dir)
+		return utils.NewNextActionErr(xerrors.Errorf("%s master: %v", action, err), nextAction)
 	}
 
 	return nil
-}
-
-// filesInDirectory returns a list of all filenames under the given root.
-func filesInDirectory(root string) ([]string, error) {
-	entries, err := ioutil.ReadDir(root)
-	if err != nil {
-		return nil, err
-	}
-
-	var files []string
-	for _, entry := range entries {
-		files = append(files, entry.Name())
-	}
-
-	return files, nil
 }
 
 func RsyncCoordinatorDataDir(stream step.OutStreams, sourceDir, targetDir string) error {
