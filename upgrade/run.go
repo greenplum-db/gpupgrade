@@ -48,6 +48,7 @@ func Run(stdout, stderr io.Writer, opts *idl.PgOptions) error {
 
 	if opts.Action == idl.PgOptions_check {
 		args = append(args, "--check")
+		args = append(args, "--continue-check-on-fatal")
 	}
 
 	if opts.LinkMode {

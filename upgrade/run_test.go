@@ -286,7 +286,8 @@ func TestRun(t *testing.T) {
 				"--old-port", "1234",
 				"--new-port", "7890",
 				"--mode", "dispatcher",
-				"--check", "--link",
+				"--check", "--continue-check-on-fatal",
+				"--link",
 				"--old-options", "-x 2",
 				"--old-gp-dbid", "88",
 				"--new-gp-dbid", "99"},
@@ -312,7 +313,7 @@ func TestRun(t *testing.T) {
 			},
 		},
 		{
-			name: "sets --check when Check	 is true",
+			name:        "sets --check when check is true",
 			expectedCmd: "pg_upgrade",
 			expectedArgs: []string{"--retain", "--progress",
 				"--old-bindir", "",
@@ -322,7 +323,7 @@ func TestRun(t *testing.T) {
 				"--old-port", "",
 				"--new-port", "",
 				"--mode", "unknown_mode",
-				"--check",
+				"--check", "--continue-check-on-fatal",
 				"--old-gp-dbid", "",
 				"--new-gp-dbid", ""},
 			opts: idl.PgOptions{
@@ -407,7 +408,7 @@ func TestRun(t *testing.T) {
 				"--old-port", "",
 				"--new-port", "",
 				"--mode", "unknown_mode",
-				"--check",
+				"--check", "--continue-check-on-fatal",
 				"--old-gp-dbid", "",
 				"--new-gp-dbid", ""},
 			opts: idl.PgOptions{
