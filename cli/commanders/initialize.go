@@ -65,25 +65,22 @@ func CreateConfigFile(hubPort int) error {
 func StartHub() (err error) {
 	running, err := IsHubRunning()
 	if err != nil {
-		gplog.Error("failed to determine if hub already running")
-		return err
+		return xerrors.Errorf("is hub running: %w", err)
 	}
+
 	if running {
-		gplog.Debug("gpupgrade hub already running...skipping.")
+		gplog.Debug("Hub already running. Skipping.")
 		return step.Skip
 	}
 
 	cmd := execCommandHubStart("gpupgrade", "hub", "--daemonize")
-	stdout, cmdErr := cmd.Output()
-	if cmdErr != nil {
-		err := xerrors.Errorf("start hub: %w", cmdErr)
-		if exitErr, ok := cmdErr.(*exec.ExitError); ok {
-			// Annotate with the Stderr capture, if we have it.
-			err = xerrors.Errorf("%s: %w", exitErr.Stderr, err)
-		}
-		return err
+	gplog.Debug(cmd.String())
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return xerrors.Errorf("%q failed with %q: %w", cmd.String(), string(output), err)
 	}
-	gplog.Debug("gpupgrade hub started successfully: %s", stdout)
+
+	gplog.Debug("%s", output)
 	return nil
 }
 
