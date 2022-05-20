@@ -16,22 +16,22 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
-// introduce this variable to allow exec.Command to be mocked out in tests
 var execCommandHubStart = exec.Command
 var execCommandHubCount = exec.Command
 
-// we create the state directory in the cli to ensure that at most one gpupgrade is occurring
-// at the same time.
+// CreateStateDir creates the state directory in the cli to ensure that at most
+// one gpupgrade is occurring at the same time.
 func CreateStateDir() (err error) {
 	stateDir := utils.GetStateDir()
+
 	err = os.Mkdir(stateDir, 0700)
 	if os.IsExist(err) {
-		gplog.Debug("State directory %s already present...skipping", stateDir)
+		gplog.Debug("State directory %s already present. Skipping.", stateDir)
 		return nil
 	}
+
 	if err != nil {
-		gplog.Debug("State directory %s could not be created.", stateDir)
-		return err
+		return xerrors.Errorf("creating state directory %q: %w", stateDir, err)
 	}
 
 	return nil
