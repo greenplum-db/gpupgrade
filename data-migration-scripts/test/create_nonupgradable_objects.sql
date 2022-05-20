@@ -72,9 +72,6 @@ ALTER TABLE table_with_primary_constraint ADD UNIQUE (author, title);
 INSERT INTO table_with_primary_constraint VALUES(1, 1);
 INSERT INTO table_with_primary_constraint VALUES(2, 2);
 
--- create role with gphdfs readable and writable privileges
-CREATE ROLE gphdfs_user CREATEEXTTABLE(protocol='gphdfs', type='writable') CREATEEXTTABLE(protocol='gphdfs', type='readable');
-
 -- create partitioned tables where the index relation name is not equal primary/unique key constraint name for the root
 -- Note that the naming of the constraint is key, not the type of constraint
 -- If the constraint is named, every partition will have the same named constraint and they all can be dropped with the same command
@@ -267,11 +264,12 @@ CREATE UNIQUE INDEX ml_partitioned_with_index_idx ON ml_partitioned_with_index(t
 
 -- Heterogeneous partition table with dropped column
 -- The root and only a subset of children have the dropped column reference.
-CREATE TABLE dropped_column (a int, b int, c char, d varchar(50)) DISTRIBUTED BY (c)
+CREATE TABLE dropped_column (a int CONSTRAINT positive_int CHECK (b > 0), b int DEFAULT 1, c char, d varchar(50)) DISTRIBUTED BY (c)
     PARTITION BY RANGE (a)
         (PARTITION part_1 START(1) END(5),
         PARTITION part_2 START(5));
 ALTER TABLE dropped_column DROP COLUMN d;
+ALTER TABLE dropped_column OWNER TO testrole;
 
 -- Splitting the subpartition leads to its rewrite, eliminating its dropped column
 -- reference. So, after this, only part_2 and the root partition will have a

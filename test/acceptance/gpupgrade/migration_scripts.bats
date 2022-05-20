@@ -25,12 +25,12 @@ setup() {
 
     PSQL="$GPHOME_SOURCE/bin/psql -X --no-align --tuples-only"
 
-    $PSQL -c "DROP DATABASE IF EXISTS $TEST_DBNAME;" -d $DEFAULT_DBNAME
-    $PSQL -c "DROP ROLE IF EXISTS $GPHDFS_USER;" -d $DEFAULT_DBNAME
-
+    $PSQL -f "$SCRIPTS_DIR"/test/setup_nonupgradable_objects.sql -d $DEFAULT_DBNAME
 }
 
 teardown() {
+    $PSQL -f "$SCRIPTS_DIR"/test/teardown_nonupgradable_objects.sql -d $DEFAULT_DBNAME
+
     # XXX Beware, BATS_TEST_SKIPPED is not a documented export.
     if [ -n "${BATS_TEST_SKIPPED}" ]; then
         return
@@ -42,8 +42,6 @@ teardown() {
 }
 
 @test "migration scripts generate sql to modify non-upgradeable objects and fix pg_upgrade check errors" {
-
-    $PSQL -c "CREATE DATABASE $TEST_DBNAME;" -d $DEFAULT_DBNAME
     PGOPTIONS='--client-min-messages=warning' $PSQL -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql -d $TEST_DBNAME
 
     run gpupgrade initialize \
@@ -67,6 +65,9 @@ teardown() {
     name_datatype_objects_before=$(get_name_datatypes "$GPHOME_SOURCE")
     fk_constraints_before=$(get_fk_constraints "$GPHOME_SOURCE")
     primary_unique_constraints_before=$(get_primary_unique_constraints "$GPHOME_SOURCE")
+    partition_owners_before=$(get_partition_owners "$GPHOME_SOURCE")
+    partition_constraints_before=$(get_partition_constraints "$GPHOME_SOURCE")
+    partition_defaults_before=$(get_partition_defaults "$GPHOME_SOURCE")
 
     MIGRATION_DIR=`mktemp -d /tmp/migration.XXXXXX`
     "$SCRIPTS_DIR"/gpupgrade-migration-sql-generator.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR" "$SCRIPTS_DIR"
@@ -94,6 +95,9 @@ teardown() {
     name_datatype_objects_after=$(get_name_datatypes "$GPHOME_TARGET")
     fk_constraints_after=$(get_fk_constraints "$GPHOME_TARGET")
     primary_unique_constraints_after=$(get_primary_unique_constraints "$GPHOME_TARGET")
+    partition_owners_after=$(get_partition_owners "$GPHOME_TARGET")
+    partition_constraints_after=$(get_partition_constraints "$GPHOME_TARGET")
+    partition_defaults_after=$(get_partition_defaults "$GPHOME_TARGET")
 
     # expect the index and tsquery datatype information to be same after the upgrade
     diff -U3 <(echo "$root_child_indexes_before") <(echo "$root_child_indexes_after")
@@ -101,10 +105,12 @@ teardown() {
     diff -U3 <(echo "$name_datatype_objects_before") <(echo "$name_datatype_objects_after")
     diff -U3 <(echo "$fk_constraints_before") <(echo "$fk_constraints_after")
     diff -U3 <(echo "$primary_unique_constraints_before") <(echo "$primary_unique_constraints_after")
+    diff -U3 <(echo "$partition_owners_before") <(echo "$partition_owners_after")
+    diff -U3 <(echo "$partition_constraints_before") <(echo "$partition_constraints_after")
+    diff -U3 <(echo "$partition_defaults_before") <(echo "$partition_defaults_after")
 }
 
 @test "after reverting recreate scripts must restore non-upgradeable objects" {
-    $PSQL -c "CREATE DATABASE $TEST_DBNAME;" -d $DEFAULT_DBNAME
     $PSQL -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql -d $TEST_DBNAME
 
     $PSQL -d $TEST_DBNAME -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
@@ -159,7 +165,6 @@ teardown() {
         skip "GPDB 5 does not support alternative PSQLRC locations"
     fi
 
-    $PSQL -c "CREATE DATABASE $TEST_DBNAME;" -d $DEFAULT_DBNAME
     $PSQL -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql -d $TEST_DBNAME
 
     MIGRATION_DIR=$(mktemp -d /tmp/migration.XXXXXX)
@@ -324,3 +329,56 @@ get_primary_unique_constraints() {
     ORDER BY 1,2,3;
     "
 }
+
+get_partition_owners() {
+    local gphome=$1
+    $gphome/bin/psql -d testdb -p "$PGPORT" -Atc "
+    SELECT c.relname, pg_catalog.pg_get_userbyid(c.relowner)
+    FROM pg_partition_rule pr
+        JOIN pg_class c ON c.oid = pr.parchildrelid
+    UNION
+    SELECT c.relname, pg_catalog.pg_get_userbyid(c.relowner)
+    FROM pg_partition p
+        JOIN pg_class c ON c.oid = p.parrelid
+    ORDER BY 1,2;
+    "
+}
+
+get_partition_constraints() {
+    local gphome=$1
+    $gphome/bin/psql -d "$TEST_DBNAME" -p "$PGPORT" -Atc "
+    SELECT c.relname, con.conname
+    FROM pg_partition_rule pr
+        JOIN pg_class c ON c.oid = pr.parchildrelid
+        JOIN pg_constraint con ON con.conrelid = c.oid
+    WHERE c.relname NOT LIKE 'table_with_primary_constraint%'
+        AND c.relname NOT LIKE 'table_with_unique_constraint%'
+    UNION
+    SELECT c.relname, con.conname
+    FROM pg_partition p
+        JOIN pg_class c ON c.oid = p.parrelid
+        JOIN pg_constraint con ON con.conrelid = c.oid
+    WHERE c.relname NOT LIKE 'table_with_primary_constraint%'
+        AND c.relname NOT LIKE 'table_with_unique_constraint%'
+    ORDER BY 1,2;
+    "
+}
+
+get_partition_defaults() {
+    local gphome=$1
+    $gphome/bin/psql -d "$TEST_DBNAME" -p "$PGPORT" -Atc "
+    SELECT c.relname, att.attname, ad.adnum, ad.adsrc
+    FROM pg_partition_rule pr
+        JOIN pg_class c ON c.oid = pr.parchildrelid
+        JOIN pg_attrdef ad ON ad.adrelid = pr.parchildrelid
+        JOIN pg_attribute att ON att.attrelid = c.oid and att.attnum = ad.adnum
+    UNION
+    SELECT c.relname, att.attname, ad.adnum, ad.adsrc
+    FROM pg_partition p
+        JOIN pg_class c ON c.oid = p.parrelid
+        JOIN pg_attrdef ad ON ad.adrelid = p.parrelid
+        JOIN pg_attribute att ON att.attrelid = c.oid and att.attnum = ad.adnum
+    ORDER BY 1,2,3,4;
+    "
+}
+

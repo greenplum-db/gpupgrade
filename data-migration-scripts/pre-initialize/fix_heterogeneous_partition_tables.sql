@@ -19,16 +19,17 @@ import plpy
 swap_sql = ""
 
 res1 = plpy.execute("""
-SELECT cp1.childnamespace, cp1.childrelname, rp.parrelname, p3.schemaname, p3.partitionname, p3.partitionrank, p3.partitionposition, p3.parentpartitiontablename
+SELECT cp1.childnamespace, cp1.childrelname, rp.parrelname, p3.schemaname, p3.partitionname, p3.partitionrank, p3.partitionposition, p3.parentpartitiontablename, cp1.childrelowner
     FROM (
             SELECT p.parrelid, rule.parchildrelid, n.nspname AS childnamespace, c.relname AS childrelname, c.relnatts AS childnatts,
-                   sum(CASE WHEN a.attisdropped THEN 1 ELSE 0 END) AS childnumattisdropped
+                   sum(CASE WHEN a.attisdropped THEN 1 ELSE 0 END) AS childnumattisdropped, r.rolname AS childrelowner
             FROM pg_catalog.pg_partition p
                 JOIN pg_catalog.pg_partition_rule rule ON p.oid=rule.paroid AND NOT p.paristemplate
                 JOIN pg_catalog.pg_class c ON rule.parchildrelid = c.oid AND NOT c.relhassubclass
                 JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
                 JOIN pg_catalog.pg_attribute a ON rule.parchildrelid = a.attrelid AND a.attnum > 0
-            GROUP BY p.parrelid, rule.parchildrelid, n.nspname, c.relname, c.relnatts
+                JOIN pg_roles r ON c.relowner = r.oid
+            GROUP BY p.parrelid, rule.parchildrelid, n.nspname, c.relname, c.relnatts, r.rolname
         ) cp1
         JOIN (
             SELECT p.parrelid, min(c.relnatts) AS minchildnatts, max(c.relnatts) AS maxchildnatts
@@ -63,6 +64,7 @@ if res1 is not None:
         partitionrank = i["partitionrank"]
         parrelname = i["parrelname"]
         childrelname = i["childrelname"]
+        childrelowner = i["childrelowner"]
         partitionposition = i["partitionposition"]
         parentpartitiontablename = i["parentpartitiontablename"]
 
@@ -93,7 +95,8 @@ if res1 is not None:
             plpy.error("Cannot read partition name or rank {0}".format(parentpartitiontablename))
 
         swap_sql = swap_sql + """
-CREATE TABLE __gpupgrade_tmp_executor.scratch_table AS SELECT * FROM {schemaname}.{childrelname};
+CREATE TABLE __gpupgrade_tmp_executor.scratch_table (LIKE {schemaname}.{childrelname} INCLUDING CONSTRAINTS INCLUDING DEFAULTS);
+ALTER TABLE __gpupgrade_tmp_executor.scratch_table OWNER TO {childrelowner};
 ALTER TABLE {schemaname}.{parrelname} {partition_sql} {exchange_sql} WITH TABLE __gpupgrade_tmp_executor.scratch_table;
 DROP TABLE __gpupgrade_tmp_executor.scratch_table;
 """.format(**locals())
