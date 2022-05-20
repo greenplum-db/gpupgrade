@@ -5,12 +5,8 @@ package hub
 
 import (
 	"context"
-	"fmt"
 	"os"
-	"os/exec"
 	"sync"
-
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -20,8 +16,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
 
-var RecoversegCmd = exec.Command
-
 var Options = []string{"--archive", "--compress", "--stats"}
 
 var Excludes = []string{
@@ -30,7 +24,6 @@ var Excludes = []string{
 }
 
 func RsyncCoordinatorAndPrimaries(stream step.OutStreams, agentConns []*idl.Connection, source *greenplum.Cluster) error {
-
 	var wg sync.WaitGroup
 	errs := make(chan error, 2)
 
@@ -77,20 +70,12 @@ func RsyncCoordinatorAndPrimariesTablespaces(stream step.OutStreams, agentConns 
 }
 
 func Recoverseg(stream step.OutStreams, cluster *greenplum.Cluster, useHbaHostnames bool) error {
-	hbaHostnames := ""
+	args := []string{"-a"}
 	if useHbaHostnames {
-		hbaHostnames = "--hba-hostnames"
+		args = append(args, "--hba-hostnames")
 	}
 
-	script := fmt.Sprintf("source %[1]s/greenplum_path.sh && MASTER_DATA_DIRECTORY=%[2]s PGPORT=%[3]d %[1]s/bin/gprecoverseg -a %[4]s",
-		cluster.GPHome, cluster.CoordinatorDataDir(), cluster.CoordinatorPort(), hbaHostnames)
-	cmd := RecoversegCmd("bash", "-c", script)
-
-	cmd.Stdout = stream.Stdout()
-	cmd.Stderr = stream.Stderr()
-
-	gplog.Info("running command: %q", cmd)
-	return cmd.Run()
+	return cluster.RunGreenplumCmd(stream, "gprecoverseg", args...)
 }
 
 func RsyncCoordinator(stream step.OutStreams, standby greenplum.SegConfig, coordinator greenplum.SegConfig) error {

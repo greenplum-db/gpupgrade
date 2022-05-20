@@ -29,10 +29,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
 
-func ResetRecoversegCmd() {
-	hub.RecoversegCmd = exec.Command
-}
-
 func TestRsyncCoordinatorAndPrimaries(t *testing.T) {
 	testlog.SetupLogger()
 
@@ -112,26 +108,6 @@ func TestRsyncCoordinatorAndPrimaries(t *testing.T) {
 		}))
 
 		err := hub.RsyncCoordinatorTablespaces(&testutils.DevNullWithClose{}, cluster.StandbyHostname(), tablespaces[int32(cluster.Coordinator().DbID)], tablespaces[int32(cluster.Standby().DbID)])
-		if err != nil {
-			t.Errorf("unexpected err %#v", err)
-		}
-	})
-
-	t.Run("restores mirrors in copy mode on GPDB5", func(t *testing.T) {
-		defer ResetRecoversegCmd()
-		hub.RecoversegCmd = exectest.NewCommandWithVerifier(hub.Success, func(utility string, args ...string) {
-			if utility != "bash" {
-				t.Errorf("got %q want bash", utility)
-			}
-
-			expected := []string{"-c", fmt.Sprintf("source /usr/local/greenplum-db/greenplum_path.sh && MASTER_DATA_DIRECTORY=%s PGPORT=%d "+
-				"/usr/local/greenplum-db/bin/gprecoverseg -a --hba-hostnames", cluster.CoordinatorDataDir(), cluster.CoordinatorPort())}
-			if !reflect.DeepEqual(args, expected) {
-				t.Errorf("got %q want %q", args, expected)
-			}
-		})
-
-		err := hub.Recoverseg(&testutils.DevNullWithClose{}, cluster, true)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -250,9 +226,6 @@ func TestRsyncCoordinatorAndPrimaries(t *testing.T) {
 	})
 
 	t.Run("errors when restoring the mirrors fails in copy mode on GPDB5", func(t *testing.T) {
-		defer ResetRecoversegCmd()
-		hub.RecoversegCmd = exectest.NewCommand(hub.Failure)
-
 		err := hub.Recoverseg(&testutils.DevNullWithClose{}, cluster, false)
 		var exitErr *exec.ExitError
 		if !errors.As(err, &exitErr) || exitErr.ExitCode() != 1 {
