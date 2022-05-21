@@ -5,6 +5,7 @@ package agent
 
 import (
 	"context"
+	"log"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
@@ -13,6 +14,8 @@ import (
 )
 
 func (s *Server) RestorePrimariesPgControl(ctx context.Context, in *idl.RestorePgControlRequest) (*idl.RestorePgControlReply, error) {
+	log.Printf("starting %s", idl.Substep_restore_pgcontrol)
+
 	var mErr error
 
 	for _, dir := range in.Datadirs {

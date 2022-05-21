@@ -4,13 +4,13 @@
 package disk
 
 import (
+	"log"
 	"os"
 
 	"golang.org/x/sys/unix"
 	"golang.org/x/xerrors"
 
 	sigar "github.com/cloudfoundry/gosigar"
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
@@ -78,7 +78,7 @@ func CheckUsage(streams step.OutStreams, d Disk, diskFreeRatio float64, paths ..
 	for _, f := range fs.List {
 		stat, err := d.Stat(f.DirName)
 		if os.IsPermission(err) {
-			gplog.Warn("Ignoring filesystem %s on host %s when checking disk space. Unable to stat filesystem due to %v.", f.DirName, hostname, err)
+			log.Printf("Ignoring filesystem %s on host %s when checking disk space. Unable to stat filesystem due to %v.", f.DirName, hostname, err)
 			continue
 		}
 
@@ -99,7 +99,7 @@ func CheckUsage(streams step.OutStreams, d Disk, diskFreeRatio float64, paths ..
 		total := usage.Used + usage.Avail
 		required := uint64(diskFreeRatio * float64(total))
 
-		gplog.Debug("%s: %d avail of %d required (%d used, %d total)",
+		log.Printf("%s: %d avail of %d required (%d used, %d total)",
 			path, usage.Avail, required, usage.Used, usage.Total)
 
 		if usage.Avail < required {

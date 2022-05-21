@@ -13,8 +13,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
@@ -46,7 +44,7 @@ func init() {
 }
 
 func TestCopy(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	t.Run("copies the directory only once per host", func(t *testing.T) {
 		sourceDir := []string{"/data/qddir/seg-1/"}
@@ -163,7 +161,7 @@ func TestCopy(t *testing.T) {
 }
 
 func TestCopyCoordinatorDataDir(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testlog.SetupTestLogger()
 
 	intermediate := MustCreateCluster(t, greenplum.SegConfigs{
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
@@ -196,7 +194,7 @@ func TestCopyCoordinatorDataDir(t *testing.T) {
 }
 
 func TestCopyCoordinatorTablespaces(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testlog.SetupTestLogger()
 
 	stateDir := testutils.GetTempDir(t, "")
 	defer os.RemoveAll(stateDir)

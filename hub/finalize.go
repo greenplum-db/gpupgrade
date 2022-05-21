@@ -4,9 +4,8 @@
 package hub
 
 import (
-	"fmt"
+	"log"
 
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -27,7 +26,7 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 		}
 
 		if err != nil {
-			gplog.Error(fmt.Sprintf("finalize: %s", err))
+			log.Printf("%s: %s", idl.Step_finalize, err)
 		}
 	}()
 

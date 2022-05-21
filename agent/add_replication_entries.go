@@ -6,19 +6,18 @@ package agent
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
-
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
 func (s *Server) AddReplicationEntries(ctx context.Context, req *idl.AddReplicationEntriesRequest) (*idl.AddReplicationEntriesReply, error) {
-	gplog.Info("agent received request to add replication entries to pg_hba.conf")
+	log.Print("starting add replication entries to pg_hba.conf")
 
 	err := AddReplicationEntriesToPgHbaConf(req.GetEntries())
 	if err != nil {

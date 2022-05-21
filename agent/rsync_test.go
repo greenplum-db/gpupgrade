@@ -29,7 +29,7 @@ import (
 )
 
 func TestRsync(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 	server := agent.NewServer(agent.Config{})
 
 	source := testutils.GetTempDir(t, "")
@@ -180,7 +180,7 @@ func TestRsync(t *testing.T) {
 }
 
 func TestRsyncTablespaceDirectories(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 	server := agent.NewServer(agent.Config{})
 
 	sourceTsLocationDir := "/filespace/demoDataDir0/16386"

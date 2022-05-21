@@ -205,7 +205,7 @@ func TestWriteSegmentArray(t *testing.T) {
 }
 
 func TestRunInitsystemForTargetCluster(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	stateDir := testutils.GetTempDir(t, "")
 	defer testutils.MustRemoveAll(t, stateDir)
@@ -411,7 +411,7 @@ func TestGetCoordinatorSegPrefix(t *testing.T) {
 }
 
 func TestGetCatalogVersion(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	intermediate := MustCreateCluster(t, greenplum.SegConfigs{
 		{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir_upgrade/seg-1", Role: greenplum.PrimaryRole, Port: 15433},

@@ -16,7 +16,7 @@ import (
 )
 
 func TestAppendDynamicLibraryPath(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	intermediate := hub.MustCreateCluster(t, greenplum.SegConfigs{
 		{DbID: 1, ContentID: -1, Hostname: "coordinator", DataDir: "/data/qddir/seg.HqtFHX54y0o.-1", Port: 50432, Role: greenplum.PrimaryRole},

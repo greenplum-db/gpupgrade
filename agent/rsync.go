@@ -6,10 +6,9 @@ package agent
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"sync"
-
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/upgrade"
@@ -19,7 +18,7 @@ import (
 )
 
 func (s *Server) RsyncDataDirectories(ctx context.Context, in *idl.RsyncRequest) (*idl.RsyncReply, error) {
-	gplog.Info("agent received request to rsync data directories")
+	log.Print("starting rsync data directories")
 
 	// verify source data directories
 	var mErr error
@@ -37,7 +36,7 @@ func (s *Server) RsyncDataDirectories(ctx context.Context, in *idl.RsyncRequest)
 }
 
 func (s *Server) RsyncTablespaceDirectories(ctx context.Context, in *idl.RsyncRequest) (*idl.RsyncReply, error) {
-	gplog.Info("agent received request to rsync tablespace directories")
+	log.Print("starting rsync tablespace directories")
 
 	// We can only verify the source directories since the destination
 	// directories are on another host.

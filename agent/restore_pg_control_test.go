@@ -10,18 +10,18 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/agent"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
 func TestServer_RestorePrimariesPgControl(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testlog.SetupTestLogger()
 	server := agent.NewServer(agent.Config{})
 
 	t.Run("bubbles up errors when no pg_control files exist", func(t *testing.T) {

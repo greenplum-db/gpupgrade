@@ -12,10 +12,9 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
@@ -34,7 +33,7 @@ func setupGlobalDir(t *testing.T) string {
 }
 
 func TestRestorePgControl(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testlog.SetupTestLogger()
 
 	t.Run("restores pg_control successfully", func(t *testing.T) {
 		var buf bytes.Buffer

@@ -12,16 +12,15 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/greenplum-db/gpupgrade/testutils"
-	"github.com/greenplum-db/gpupgrade/testutils/testlog"
-
 	"github.com/greenplum-db/gpupgrade/agent"
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 func TestArchiveLogDirectories(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 	server := agent.NewServer(agent.Config{})
 
 	t.Run("bubbles up errors", func(t *testing.T) {

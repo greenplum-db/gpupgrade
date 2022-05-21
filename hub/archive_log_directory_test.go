@@ -18,7 +18,7 @@ import (
 const newDir = "NewDirectory"
 
 func TestArchiveLogDirectories(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	t.Run("archive segment log directories", func(t *testing.T) {
 		ctrl := gomock.NewController(t)

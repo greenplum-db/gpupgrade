@@ -15,15 +15,15 @@ import (
 	"golang.org/x/sys/unix"
 
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/utils"
 
 	"github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/utils/disk"
 )
 
 func TestCheckUsage(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	host := "localhost"
 	utils.System.Hostname = func() (string, error) {

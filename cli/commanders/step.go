@@ -7,13 +7,13 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -48,7 +48,6 @@ type Step struct {
 func NewStep(currentStep idl.Step, streams *step.BufferedStreams, verbose bool, interactive bool, confirmationText string) (*Step, error) {
 	stepStore, err := NewStepStore()
 	if err != nil {
-		gplog.Error("creating step store: %v", err)
 		context := fmt.Sprintf("Note: If commands were issued in order, ensure gpupgrade can write to %s", utils.GetStateDir())
 		wrappedErr := xerrors.Errorf("%v\n\n%v", StepErr, context)
 		return &Step{}, utils.NewNextActionErr(wrappedErr, RunInitialize)
@@ -235,7 +234,7 @@ func logDuration(operation string, verbose bool, timer *stopwatch.Stopwatch) {
 		fmt.Println(msg)
 		fmt.Println()
 	}
-	gplog.Debug(msg)
+	log.Print(msg)
 }
 
 func Prompt(reader *bufio.Reader, step idl.Step) (bool, error) {

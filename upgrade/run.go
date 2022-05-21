@@ -5,11 +5,11 @@ package upgrade
 
 import (
 	"io"
+	"log"
 	"os/exec"
 	"path/filepath"
 
 	"github.com/blang/semver/v4"
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
@@ -79,7 +79,7 @@ func Run(stdout, stderr io.Writer, opts *idl.PgOptions) error {
 	// like PATH and PGPORT which are explicitly forbidden to be set.
 	cmd.Env = []string{}
 
-	gplog.Info(cmd.String())
+	log.Printf("Executing: %q", cmd.String())
 
 	return cmd.Run()
 }

@@ -25,7 +25,7 @@ import (
 )
 
 func TestStepRun(t *testing.T) {
-	_, _, log := testlog.SetupLogger()
+	logOutput := testlog.SetupTestLogger()
 
 	t.Run("marks a successful substep as complete", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
@@ -177,7 +177,7 @@ func TestStepRun(t *testing.T) {
 			t.Error("expected substep to not be called")
 		}
 
-		contents := string(log.Bytes())
+		contents := string(logOutput.Bytes())
 		expected := "skipping " + idl.Substep_check_upgrade.String()
 		if !strings.Contains(contents, expected) {
 			t.Errorf("expected %q in log file: %q", expected, contents)

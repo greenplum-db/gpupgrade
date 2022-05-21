@@ -30,7 +30,7 @@ import (
 )
 
 func TestRsyncCoordinatorAndPrimaries(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	cluster := hub.MustCreateCluster(t, greenplum.SegConfigs{
 		{DbID: 1, ContentID: -1, Hostname: "coordinator", DataDir: "/data/qddir", Role: greenplum.PrimaryRole},
@@ -295,7 +295,7 @@ func TestRsyncCoordinatorAndPrimaries(t *testing.T) {
 // RestoreCoordinatorAndPrimariesPgControl invokes the restoration of pg_control on
 // coordinator and segments. So, not testing pg_control restoration on segments separately.
 func TestRestoreCoordinatorAndPrimariesPgControl(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	t.Run("errors when restoring pg_control on the coordinator and primaries fails", func(t *testing.T) {
 		ctrl := gomock.NewController(t)

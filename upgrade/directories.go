@@ -7,12 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -96,7 +95,7 @@ func RenameDirectories(source, target string) error {
 	}
 
 	if !sourceExist {
-		gplog.Debug("Source directory not found when renaming %q to %q. It was already renamed from a previous run.", source, archive)
+		log.Printf("Source directory not found when renaming %q to %q. It was already renamed from a previous run.", source, archive)
 	}
 
 	if err := renameDataDirectory(target, source); err != nil {
@@ -222,7 +221,7 @@ func DeleteDirectories(directories []string, requiredPaths []string, streams ste
 
 	var mErr error
 	for _, directory := range directories {
-		gplog.Debug("Deleting directory: %q on host %q\n", directory, hostname)
+		log.Printf("Deleting directory: %q on host %q\n", directory, hostname)
 		_, err = fmt.Fprintf(streams.Stdout(), "Deleting directory: %q on host %q\n", directory, hostname)
 		if err != nil {
 			return err
@@ -235,7 +234,6 @@ func DeleteDirectories(directories []string, requiredPaths []string, streams ste
 
 		if !directoryExist {
 			fmt.Fprintf(streams.Stdout(), "directory: %q does not exist on host %q\n", directory, hostname)
-			gplog.Debug("Directory: %q does not exist on host %q\n", directory, hostname)
 			continue
 		}
 

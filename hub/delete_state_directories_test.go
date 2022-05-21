@@ -16,7 +16,7 @@ import (
 )
 
 func TestDeleteStateDirectories(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	t.Run("DeleteStateDirectories", func(t *testing.T) {
 		t.Run("deletes state directories on all hosts except for the host that gets passed in", func(t *testing.T) {

@@ -1,19 +1,19 @@
 // Copyright (c) 2017-2022 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
-package log_test
+package logger_test
 
 import (
 	"strings"
 	"testing"
 
 	"github.com/greenplum-db/gpupgrade/testutils/testlog"
-	"github.com/greenplum-db/gpupgrade/utils/log"
+	"github.com/greenplum-db/gpupgrade/utils/logger"
 )
 
 func TestWritePanics(t *testing.T) {
 	t.Run("writes panics to the log file", func(t *testing.T) {
-		_, _, buffer := testlog.SetupLogger()
+		buffer := testlog.SetupTestLogger()
 
 		expected := "ahhh"
 		defer func() {
@@ -25,7 +25,7 @@ func TestWritePanics(t *testing.T) {
 			}
 		}()
 
-		defer log.WritePanics()
+		defer logger.WritePanics()
 		panic(expected)
 	})
 }

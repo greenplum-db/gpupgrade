@@ -5,13 +5,13 @@ package greenplum
 
 import (
 	"fmt"
+	"log"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
 
 	"github.com/blang/semver/v4"
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
@@ -33,7 +33,7 @@ func Version(gphome string) (semver.Version, error) {
 	cmd := versionCommand(filepath.Join(gphome, "bin", "postgres"), "--gp-version")
 	cmd.Env = []string{}
 
-	gplog.Debug(cmd.String())
+	log.Printf("Executing: %q", cmd.String())
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return semver.Version{}, fmt.Errorf("%q failed with %q: %w", cmd.String(), string(output), err)

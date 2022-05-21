@@ -13,7 +13,7 @@ import (
 )
 
 func TestConnection(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	cases := []struct {
 		name     string

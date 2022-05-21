@@ -5,9 +5,9 @@ package greenplum
 
 import (
 	"database/sql"
+	"log"
 	"time"
 
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/xerrors"
 )
 
@@ -56,7 +56,7 @@ WHERE content > -1 AND status = 'u' AND (role = preferred_role) ` + whereClause)
 
 	if err := row.Scan(&segments); err != nil {
 		if err == sql.ErrNoRows {
-			gplog.Debug("no rows found when querying gp_segment_configuration")
+			log.Printf("no rows found when querying gp_segment_configuration")
 			return false, nil
 		}
 
@@ -75,7 +75,7 @@ WHERE content > -1 AND status = 'u' AND (role = preferred_role) ` + whereClause)
 	row = db.QueryRow("SELECT COUNT(*) FROM gp_stat_replication WHERE gp_segment_id = -1 AND state = 'streaming' AND sent_location = flush_location;")
 	if err := row.Scan(&segments); err != nil {
 		if err == sql.ErrNoRows {
-			gplog.Debug("no rows found when querying gp_stat_replication")
+			log.Printf("no rows found when querying gp_stat_replication")
 			return false, nil
 		}
 

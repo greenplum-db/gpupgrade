@@ -6,9 +6,7 @@ package commands
 import (
 	"fmt"
 	"os"
-	"runtime/debug"
 
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 
@@ -16,7 +14,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/daemon"
-	"github.com/greenplum-db/gpupgrade/utils/log"
+	"github.com/greenplum-db/gpupgrade/utils/logger"
 )
 
 func Hub() *cobra.Command {
@@ -30,13 +28,8 @@ func Hub() *cobra.Command {
 		Hidden: true,
 		Args:   cobra.MaximumNArgs(0), //no positional args allowed
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logdir, err := utils.GetLogDir()
-			if err != nil {
-				return err
-			}
-			gplog.InitializeLogging("hub", logdir)
-			debug.SetTraceback("all")
-			defer log.WritePanics()
+			logger.Initialize("hub")
+			defer logger.WritePanics()
 
 			stateDir := utils.GetStateDir()
 			finfo, err := os.Stat(stateDir)

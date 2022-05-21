@@ -14,7 +14,7 @@ import (
 )
 
 func TestRenameDirectories(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 	server := agent.NewServer(agent.Config{})
 
 	t.Run("bubbles up errors", func(t *testing.T) {

@@ -7,11 +7,11 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"strconv"
 	"sync"
 
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
@@ -23,7 +23,7 @@ import (
 )
 
 func (s *Server) UpgradePrimaries(ctx context.Context, req *idl.UpgradePrimariesRequest) (*idl.UpgradePrimariesReply, error) {
-	gplog.Info("agent starting %s", req.GetAction())
+	log.Printf("starting %s", req.GetAction())
 
 	err := upgradePrimariesInParallel(req.GetOpts())
 	if err != nil {

@@ -6,18 +6,17 @@ package agent
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"sync"
-
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
 func (s *Server) RenameTablespaces(ctx context.Context, req *idl.RenameTablespacesRequest) (*idl.RenameTablespacesReply, error) {
-	gplog.Info("agent received request to rename tablespaces")
+	log.Print("starting rename tablespaces")
 
 	err := renameTablespaces(req.GetRenamePairs())
 	if err != nil {
@@ -42,13 +41,13 @@ func renameTablespaces(pairs []*idl.RenameTablespacesRequest_RenamePair) error {
 		go func(pair *idl.RenameTablespacesRequest_RenamePair) {
 			defer wg.Done()
 
-			gplog.Info("mkdirAll: %q", filepath.Dir(pair.GetDestination()))
+			log.Printf("mkdirAll: %q", filepath.Dir(pair.GetDestination()))
 			err := os.MkdirAll(filepath.Dir(pair.GetDestination()), 0700)
 			if err != nil {
 				errs <- fmt.Errorf("on host %q: %w", hostname, err)
 			}
 
-			gplog.Info("rename: %q to %q", pair.GetSource(), pair.GetDestination())
+			log.Printf("rename: %q to %q", pair.GetSource(), pair.GetDestination())
 			err = os.Rename(pair.GetSource(), pair.GetDestination())
 			if err != nil {
 				errs <- fmt.Errorf("on host %q: %w", hostname, err)

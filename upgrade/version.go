@@ -5,12 +5,12 @@ package upgrade
 
 import (
 	"fmt"
+	"log"
 	"os/exec"
 	"sort"
 	"strings"
 	"sync"
 
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
@@ -62,13 +62,13 @@ func version(host string) (string, error) {
 	}
 
 	cmd := versionCommand(name, args...)
-	gplog.Debug(cmd.String())
+	log.Printf("Executing: %q", cmd.String())
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", xerrors.Errorf("%q failed with %q: %w", cmd.String(), string(output), err)
 	}
 
-	gplog.Debug("output: %q", output)
+	log.Printf("%q", output)
 
 	return string(output), nil
 }

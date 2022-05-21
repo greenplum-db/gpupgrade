@@ -7,10 +7,9 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"sync"
-
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 )
@@ -143,7 +142,7 @@ func (w *streamWriter) Write(p []byte) (int, error) {
 		})
 
 		if err != nil {
-			gplog.Info("halting client stream: %v", err)
+			log.Printf("halting client stream: %v", err)
 			w.stream = nil
 		}
 	}

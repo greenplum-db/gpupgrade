@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"os"
 	"path/filepath"
@@ -17,7 +18,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 	"google.golang.org/grpc"
@@ -32,7 +32,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/daemon"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
-	"github.com/greenplum-db/gpupgrade/utils/log"
+	"github.com/greenplum-db/gpupgrade/utils/logger"
 )
 
 var DialTimeout = 3 * time.Second
@@ -92,7 +92,7 @@ func (s *Server) Start() error {
 	// Set up an interceptor function to log any panics we get from request
 	// handlers.
 	interceptor := func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-		defer log.WritePanics()
+		defer logger.WritePanics()
 		return handler(ctx, req)
 	}
 	server := grpc.NewServer(grpc.UnaryInterceptor(interceptor))
@@ -111,7 +111,7 @@ func (s *Server) Start() error {
 	reflection.Register(server)
 
 	if s.daemon {
-		fmt.Printf("Hub started on port %d (pid %d)\n", s.Port, os.Getpid())
+		fmt.Printf("Hub started on port %d with pid %d\n", s.Port, os.Getpid())
 		daemon.Daemonize()
 	}
 
@@ -129,7 +129,7 @@ func (s *Server) Start() error {
 func (s *Server) StopServices(ctx context.Context, in *idl.StopServicesRequest) (*idl.StopServicesReply, error) {
 	err := s.StopAgents()
 	if err != nil {
-		gplog.Debug("failed to stop agents: %#v", err)
+		log.Printf("failed to stop agents: %#v", err)
 	}
 
 	s.Stop(false)
@@ -227,13 +227,13 @@ func RestartAgents(ctx context.Context,
 			if err == nil {
 				err = conn.Close()
 				if err != nil {
-					gplog.Error("failed to close agent connection to %s: %+v", host, err)
+					log.Printf("failed to close agent connection to %s: %+v", host, err)
 				}
 				return
 			}
 
-			gplog.Debug("failed to dial agent on %s: %+v", host, err)
-			gplog.Info("starting agent on %s", host)
+			log.Printf("failed to dial agent on %s: %v", host, err)
+			log.Printf("starting agent on %s", host)
 
 			path, err := utils.GetGpupgradePath()
 			if err != nil {
@@ -248,7 +248,7 @@ func RestartAgents(ctx context.Context,
 				return
 			}
 
-			gplog.Debug(string(stdout))
+			log.Print(string(stdout))
 			restartedHosts <- host
 		}(host)
 	}
@@ -282,7 +282,7 @@ func (s *Server) AgentConns() ([]*idl.Connection, error) {
 	if s.agentConns != nil {
 		err := EnsureConnsAreReady(s.agentConns)
 		if err != nil {
-			gplog.Error("ensureConnsAreReady failed: %s", err)
+			log.Printf("ensureConnsAreReady failed: %s", err)
 			return nil, err
 		}
 
@@ -297,7 +297,7 @@ func (s *Server) AgentConns() ([]*idl.Connection, error) {
 			grpc.WithInsecure(), grpc.WithBlock())
 		if err != nil {
 			err = xerrors.Errorf("grpcDialer failed: %w", err)
-			gplog.Error(err.Error())
+			log.Print(err.Error())
 			cancelFunc()
 			return nil, err
 		}
@@ -337,7 +337,7 @@ func (s *Server) closeAgentConns() {
 		currState := conn.Conn.GetState()
 		err := conn.Conn.Close()
 		if err != nil {
-			gplog.Info(fmt.Sprintf("Error closing hub to agent connection. host: %s, err: %s", conn.Hostname, err.Error()))
+			log.Printf("Error closing hub to agent connection. host: %s, err: %s", conn.Hostname, err.Error())
 		}
 		conn.Conn.WaitForStateChange(context.Background(), currState)
 	}

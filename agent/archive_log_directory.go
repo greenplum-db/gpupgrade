@@ -5,22 +5,21 @@ package agent
 
 import (
 	"context"
-
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
+	"log"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 func (s *Server) ArchiveLogDirectory(ctx context.Context, in *idl.ArchiveLogDirectoryRequest) (*idl.ArchiveLogDirectoryReply, error) {
-	gplog.Info("agent starting %s", idl.Substep_archive_log_directories)
+	log.Printf("starting %s", idl.Substep_archive_log_directories)
 
 	logdir, err := utils.GetLogDir()
 	if err != nil {
 		return &idl.ArchiveLogDirectoryReply{}, err
 	}
 
-	gplog.Debug("moving directory %q to %q", logdir, in.GetNewDir())
+	log.Printf("moving directory %q to %q", logdir, in.GetNewDir())
 	err = utils.Move(logdir, in.GetNewDir())
 	return &idl.ArchiveLogDirectoryReply{}, err
 }

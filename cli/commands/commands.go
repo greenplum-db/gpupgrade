@@ -33,11 +33,11 @@ package commands
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"time"
 
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"golang.org/x/xerrors"
@@ -281,7 +281,7 @@ func connectToHubOnPort(port int) (idl.CliToHubClient, error) {
 	if err != nil {
 		// Print a nicer error message if we can't connect to the hub.
 		if ctx.Err() == context.DeadlineExceeded {
-			gplog.Error("could not connect to the upgrade hub (did you run 'gpupgrade initialize'?)")
+			log.Printf("could not connect to the upgrade hub (did you run 'gpupgrade initialize'?)")
 		}
 		return nil, xerrors.Errorf("connecting to hub on port %d: %w", port, err)
 	}
@@ -305,7 +305,7 @@ func connTimeout() time.Duration {
 
 	duration, err := strconv.ParseFloat(seconds, 64)
 	if err != nil {
-		gplog.Warn(`GPUPGRADE_CONNECTION_TIMEOUT of "%s" is invalid (%s); using default of one second`,
+		log.Printf(`GPUPGRADE_CONNECTION_TIMEOUT of "%s" is invalid (%s); using default of one second`,
 			seconds, err)
 		return defaultDuration
 	}
@@ -329,7 +329,7 @@ func getHubPort(tryDefault bool) int {
 	if tryDefault && xerrors.As(err, &pathError) {
 		conf.Port = upgrade.DefaultHubPort
 	} else if err != nil {
-		gplog.Error("failed to retrieve hub port due to %v", err)
+		log.Printf("failed to retrieve hub port due to %v", err)
 		os.Exit(1)
 	}
 

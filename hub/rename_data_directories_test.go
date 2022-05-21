@@ -22,7 +22,7 @@ import (
 )
 
 func TestRenameSegmentDataDirs(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	m := hub.RenameMap{
 		"sdw1": {

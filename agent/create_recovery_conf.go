@@ -6,18 +6,17 @@ package agent
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"sync"
-
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
 func (s *Server) CreateRecoveryConf(ctx context.Context, req *idl.CreateRecoveryConfRequest) (*idl.CreateRecoveryConfReply, error) {
-	gplog.Info("agent received request to create recovery.conf")
+	log.Print("starting create recovery.conf")
 
 	err := createRecoveryConf(req.GetConnections())
 	if err != nil {

@@ -10,16 +10,15 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
-
 	"github.com/greenplum-db/gpupgrade/agent"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
 func TestRenameTablespaces(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testlog.SetupTestLogger()
 	server := agent.NewServer(agent.Config{})
 
 	t.Run("succeeds", func(t *testing.T) {

@@ -5,10 +5,10 @@ package commanders
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/step"
@@ -26,7 +26,7 @@ func CreateStateDir() (err error) {
 
 	err = os.Mkdir(stateDir, 0700)
 	if os.IsExist(err) {
-		gplog.Debug("State directory %s already present. Skipping.", stateDir)
+		log.Printf("State directory %s already present. Skipping.", stateDir)
 		return nil
 	}
 
@@ -46,7 +46,7 @@ func CreateConfigFile(hubPort int) error {
 	}
 
 	if exist {
-		gplog.Debug("Configuration file %s already present. Skipping.", path)
+		log.Printf("Configuration file %s already present. Skipping.", path)
 		return nil
 	}
 
@@ -69,18 +69,19 @@ func StartHub() (err error) {
 	}
 
 	if running {
-		gplog.Debug("Hub already running. Skipping.")
+		log.Printf("Hub already running. Skipping.")
 		return step.Skip
 	}
 
 	cmd := execCommandHubStart("gpupgrade", "hub", "--daemonize")
-	gplog.Debug(cmd.String())
+	log.Printf("Executing: %q", cmd.String())
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return xerrors.Errorf("%q failed with %q: %w", cmd.String(), string(output), err)
 	}
 
-	gplog.Debug("%s", output)
+	fmt.Println("Started hub")
+	log.Printf("%s", output)
 	return nil
 }
 

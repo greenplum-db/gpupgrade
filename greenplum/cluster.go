@@ -6,12 +6,12 @@ package greenplum
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"os/exec"
 	"path/filepath"
 	"time"
 
 	"github.com/blang/semver/v4"
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/kballard/go-shellquote"
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
@@ -327,8 +327,7 @@ func (c *Cluster) IsCoordinatorRunning(stream step.OutStreams) (bool, error) {
 	cmd.Stdout = stream.Stdout()
 	cmd.Stderr = stream.Stderr()
 
-	gplog.Debug("checking if master process is running with %s", cmd.String())
-
+	log.Printf("Executing: %q", cmd.String())
 	err = cmd.Run()
 	var exitErr *exec.ExitError
 	if xerrors.As(err, &exitErr) {
@@ -377,7 +376,7 @@ func (c *Cluster) runGreenplumCommand(streams step.OutStreams, utility string, a
 	cmd.Stdout = streams.Stdout()
 	cmd.Stderr = streams.Stderr()
 
-	gplog.Info("executing: %s", cmd.String())
+	log.Printf("Executing: %q", cmd.String())
 	return cmd.Run()
 }
 

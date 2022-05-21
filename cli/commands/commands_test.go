@@ -13,7 +13,7 @@ import (
 )
 
 func TestGetHubPort(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	t.Run("correctly pulls the port from the stored config", func(t *testing.T) {
 		stateDir := testutils.GetTempDir(t, "")

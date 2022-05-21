@@ -15,13 +15,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/greenplum-db/gp-common-go-libs/testhelper"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/agent"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
+	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
@@ -29,7 +29,7 @@ import (
 )
 
 func TestUpgradePrimaries(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testlog.SetupTestLogger()
 	server := agent.NewServer(agent.Config{})
 
 	t.Run("succeeds", func(t *testing.T) {
@@ -234,7 +234,7 @@ func TestUpgradePrimaries(t *testing.T) {
 }
 
 func TestRestoreTablespaces(t *testing.T) {
-	testhelper.SetupTestLogger()
+	testlog.SetupTestLogger()
 
 	t.Run("restores user defined tablespaces", func(t *testing.T) {
 		rsync.SetRsyncCommand(exectest.NewCommand(agent.Success))

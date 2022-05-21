@@ -5,8 +5,7 @@ package agent
 
 import (
 	"context"
-
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
+	"log"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
@@ -16,7 +15,7 @@ import (
 var DeleteDirectoriesFunc = upgrade.DeleteDirectories
 
 func (s *Server) DeleteStateDirectory(ctx context.Context, in *idl.DeleteStateDirectoryRequest) (*idl.DeleteStateDirectoryReply, error) {
-	gplog.Info("got a request to delete the state directory from the hub")
+	log.Printf("starting %s", idl.Substep_delete_segment_statedirs)
 
 	// pass an empty []string to avoid check for any pre-existing files,
 	// this call might come in before any stateDir files are created
@@ -25,14 +24,14 @@ func (s *Server) DeleteStateDirectory(ctx context.Context, in *idl.DeleteStateDi
 }
 
 func (s *Server) DeleteDataDirectories(ctx context.Context, in *idl.DeleteDataDirectoriesRequest) (*idl.DeleteDataDirectoriesReply, error) {
-	gplog.Info("got a request to delete data directories from the hub")
+	log.Printf("starting %s", idl.Substep_delete_target_cluster_datadirs)
 
 	err := DeleteDirectoriesFunc(in.Datadirs, upgrade.PostgresFiles, step.DevNullStream)
 	return &idl.DeleteDataDirectoriesReply{}, err
 }
 
 func (s *Server) DeleteTablespaceDirectories(ctx context.Context, in *idl.DeleteTablespaceRequest) (*idl.DeleteTablespaceReply, error) {
-	gplog.Info("got a request to delete tablespace directories from the hub")
+	log.Printf("starting %s", idl.Substep_delete_tablespaces)
 
 	err := upgrade.DeleteTablespaceDirectories(step.DevNullStream, in.GetDirs())
 	return &idl.DeleteTablespaceReply{}, err

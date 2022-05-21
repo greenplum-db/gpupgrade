@@ -47,7 +47,7 @@ func init() {
 }
 
 func TestGpupgradeVersion(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	t.Run("returns the version", func(t *testing.T) {
 		upgrade.SetLocalVersionCommand(exectest.NewCommand(gpupgrade_local_version))
@@ -88,7 +88,7 @@ func TestGpupgradeVersion(t *testing.T) {
 }
 
 func TestGpupgradeVersionOnHost(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 	host := "sdw1"
 
 	t.Run("returns remote version using -q to suppress motd banner messages from polluting the version output", func(t *testing.T) {
@@ -131,7 +131,7 @@ func TestGpupgradeVersionOnHost(t *testing.T) {
 }
 
 func TestEnsureVersionsMatch(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	t.Run("versions match", func(t *testing.T) {
 		upgrade.SetLocalVersionCommand(exectest.NewCommand(gpupgrade_local_version))

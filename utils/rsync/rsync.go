@@ -4,10 +4,10 @@
 package rsync
 
 import (
+	"log"
 	"os/exec"
 	"runtime"
 
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/pkg/errors"
 
 	"github.com/greenplum-db/gpupgrade/step"
@@ -70,7 +70,7 @@ func Rsync(options ...Option) error {
 		cmd.Stderr = opts.stream.Stderr()
 	}
 
-	gplog.Info(cmd.String())
+	log.Printf("Executing: %q", cmd.String())
 
 	err := cmd.Run()
 	if err != nil {

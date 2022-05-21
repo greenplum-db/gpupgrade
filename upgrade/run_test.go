@@ -57,7 +57,7 @@ func init() {
 }
 
 func TestRun(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	t.Run("creates the pg_upgrade working directory", func(t *testing.T) {
 		var called bool

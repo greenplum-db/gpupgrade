@@ -19,7 +19,7 @@ import (
 )
 
 func TestStart(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	dataDir := testutils.GetTempDir(t, "")
 	defer testutils.MustRemoveAll(t, dataDir)
@@ -69,7 +69,7 @@ func TestStart(t *testing.T) {
 }
 
 func TestStartCoordinatorOnly(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	dataDir := testutils.GetTempDir(t, "")
 	defer testutils.MustRemoveAll(t, dataDir)
@@ -119,7 +119,7 @@ func TestStartCoordinatorOnly(t *testing.T) {
 }
 
 func TestStop(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	dataDir := testutils.GetTempDir(t, "")
 	defer testutils.MustRemoveAll(t, dataDir)
@@ -203,7 +203,7 @@ func TestStop(t *testing.T) {
 }
 
 func TestStopCoordinatorOnly(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	dataDir := testutils.GetTempDir(t, "")
 	defer testutils.MustRemoveAll(t, dataDir)
@@ -287,7 +287,7 @@ func TestStopCoordinatorOnly(t *testing.T) {
 }
 
 func TestIsCoordinatorRunning(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	dataDir := testutils.GetTempDir(t, "")
 	defer testutils.MustRemoveAll(t, dataDir)

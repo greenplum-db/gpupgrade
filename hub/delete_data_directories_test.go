@@ -32,7 +32,7 @@ func TestDeleteSegmentDataDirs(t *testing.T) {
 		{ContentID: 3, DbID: 5, Port: 25435, Hostname: "sdw2", DataDir: "/data/dbfast2/seg4", Role: greenplum.PrimaryRole},
 	}
 
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	t.Run("DeleteCoordinatorAndPrimaryDataDirectories", func(t *testing.T) {
 		t.Run("deletes coordinator and primary data directories", func(t *testing.T) {

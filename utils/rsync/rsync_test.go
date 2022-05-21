@@ -32,7 +32,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestRsync(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	if _, err := exec.LookPath("rsync"); err != nil {
 		t.Fatalf("tests require rsync (%v)", err)

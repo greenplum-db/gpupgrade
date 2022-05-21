@@ -151,7 +151,7 @@ func TestPrimaryHostnames(t *testing.T) {
 	expectedCluster := testutils.CreateMultinodeSampleCluster("/tmp")
 	expectedCluster.GPHome = "/fake/path"
 	expectedCluster.Version = semver.MustParse("6.0.0")
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	defer func() {
 		os.RemoveAll(testStateDir)
@@ -174,7 +174,7 @@ func TestClusterFromDB(t *testing.T) {
 		t.Errorf("got error when creating tempdir: %+v", err)
 	}
 
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	defer func() {
 		os.RemoveAll(testStateDir)
@@ -378,7 +378,7 @@ func TestHasAllMirrorsAndStandby(t *testing.T) {
 }
 
 func TestRunGreenplumCmd(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	cluster := MustCreateCluster(t, greenplum.SegConfigs{
 		{DbID: 1, ContentID: -1, Hostname: "coordinator", DataDir: "/data/qddir/seg-1", Port: 15432, Role: greenplum.PrimaryRole},

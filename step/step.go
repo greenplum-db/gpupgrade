@@ -6,15 +6,15 @@ package step
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
-	"github.com/greenplum-db/gp-common-go-libs/operating"
 	"golang.org/x/xerrors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -66,7 +66,7 @@ func Begin(step idl.Step, sender idl.MessageSender, agentConns func() ([]*idl.Co
 		return nil, err
 	}
 
-	path := filepath.Join(logdir, fmt.Sprintf("%s_%s.log", step, operating.System.Now().Format("20060102")))
+	path := filepath.Join(logdir, fmt.Sprintf("%s_%s.log", step, time.Now().Format("20060102")))
 	log, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
 	if err != nil {
 		return nil, xerrors.Errorf(`step "%s": %w`, step, err)
@@ -197,7 +197,7 @@ func (s *Step) AlwaysRun(substep idl.Substep, f func(OutStreams) error) {
 
 func (s *Step) RunConditionally(substep idl.Substep, shouldRun bool, f func(OutStreams) error) {
 	if !shouldRun {
-		gplog.Debug("skipping %s", substep)
+		log.Printf("skipping %s", substep)
 		return
 	}
 

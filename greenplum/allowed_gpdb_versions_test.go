@@ -124,7 +124,7 @@ func TestValidateVersionsErrorCases(t *testing.T) {
 }
 
 func TestVerifyCompatibleGPDBVersions(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	t.Run("returns error when gphome is incorrect", func(t *testing.T) {
 		err := VerifyCompatibleGPDBVersions("/usr/local/greenplum-db-source-typo", "")

@@ -5,8 +5,7 @@ package hub
 
 import (
 	"context"
-
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
+	"log"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -19,7 +18,7 @@ func ArchiveLogDirectories(logArchiveDir string, agentConns []*idl.Connection, t
 		return err
 	}
 
-	gplog.Debug("archiving log directory %q to %q", logDir, logArchiveDir)
+	log.Printf("archiving log directory %q to %q", logDir, logArchiveDir)
 	if err = utils.Move(logDir, logArchiveDir); err != nil {
 		return err
 	}

@@ -18,7 +18,7 @@ import (
 )
 
 func TestDeleteDataDirectories(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	t.Run("deletes data directories", func(t *testing.T) {
 		utils.System.Hostname = func() (string, error) {
@@ -66,7 +66,7 @@ func TestDeleteDataDirectories(t *testing.T) {
 }
 
 func TestDeleteStateDirectory(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	t.Run("deletes the state directory", func(t *testing.T) {
 		utils.System.Hostname = func() (string, error) {

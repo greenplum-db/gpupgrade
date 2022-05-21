@@ -4,10 +4,9 @@
 package hub
 
 import (
-	"fmt"
+	"log"
 	"os/exec"
 
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
@@ -30,7 +29,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		}
 
 		if err != nil {
-			gplog.Error(fmt.Sprintf("revert: %s", err))
+			log.Printf("%s: %s", idl.Step_revert, err)
 		}
 	}()
 

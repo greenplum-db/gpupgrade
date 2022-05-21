@@ -26,7 +26,7 @@ import (
 const userRWX = 0700
 
 func TestDeleteNewTablespaceDirectories(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 	utils.System.Hostname = func() (s string, err error) {
 		return "", nil
 	}

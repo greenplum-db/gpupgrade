@@ -43,7 +43,7 @@ func init() {
 }
 
 func TestRestartAgent(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 	listener := bufconn.Listen(1024 * 1024)
 	agentServer := grpc.NewServer()
 	defer agentServer.Stop()

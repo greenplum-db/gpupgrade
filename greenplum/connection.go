@@ -5,10 +5,10 @@ package greenplum
 
 import (
 	"fmt"
+	"log"
 
-	_ "github.com/greenplum-db/gp-common-go-libs/dbconn" // used indirectly as the database driver
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
-	_ "github.com/jackc/pgx/v4" // used indirectly as the database driver
+	_ "github.com/jackc/pgx/v4"        // used indirectly as the database driver "pgx"
+	_ "github.com/jackc/pgx/v4/stdlib" // used indirectly as the database driver "pgx"
 )
 
 func (c *Cluster) Connection(options ...Option) string {
@@ -34,7 +34,7 @@ func (c *Cluster) Connection(options ...Option) string {
 		connURI += "&allow_system_table_mods=true"
 	}
 
-	gplog.Debug("connecting to %s cluster using: %q", c.Destination, connURI)
+	log.Printf("connecting to %s cluster with: %q", c.Destination, connURI)
 	return connURI
 }
 

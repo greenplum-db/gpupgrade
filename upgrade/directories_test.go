@@ -79,7 +79,7 @@ func TestGetArchiveDirectoryName(t *testing.T) {
 }
 
 func TestArchiveSource(t *testing.T) {
-	_, _, log := testlog.SetupLogger()
+	log := testlog.SetupTestLogger()
 
 	t.Run("successfully renames source to archive, and target to source", func(t *testing.T) {
 		source, target, cleanup := testutils.MustCreateDataDirs(t)
@@ -308,7 +308,7 @@ func setup(t *testing.T) (teardown func(), directories []string, requiredPaths [
 }
 
 func TestDeleteDirectories(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	utils.System.Hostname = func() (string, error) {
 		return "localhost.local", nil

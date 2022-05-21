@@ -12,6 +12,6 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 	os.Exit(exectest.Run(m))
 }

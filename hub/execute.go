@@ -4,9 +4,7 @@
 package hub
 
 import (
-	"fmt"
-
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
+	"log"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
@@ -26,7 +24,7 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 		}
 
 		if err != nil {
-			gplog.Error(fmt.Sprintf("execute: %s", err))
+			log.Printf("%s: %s", idl.Step_execute, err)
 		}
 	}()
 

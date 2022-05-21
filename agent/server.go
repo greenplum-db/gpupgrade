@@ -5,20 +5,19 @@ package agent
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"net"
 	"os"
 	"strconv"
 	"sync"
 
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils/daemon"
-	"github.com/greenplum-db/gpupgrade/utils/log"
+	"github.com/greenplum-db/gpupgrade/utils/logger"
 )
 
 type Server struct {
@@ -53,13 +52,13 @@ func (s *Server) Start() {
 	createIfNotExists(s.conf.StateDir)
 	lis, err := net.Listen("tcp", ":"+strconv.Itoa(s.conf.Port))
 	if err != nil {
-		gplog.Fatal(err, "failed to listen")
+		log.Fatalf("failed to listen: %v", err)
 	}
 
 	// Set up an interceptor function to log any panics we get from request
 	// handlers.
 	interceptor := func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-		defer log.WritePanics()
+		defer logger.WritePanics()
 		return handler(ctx, req)
 	}
 	server := grpc.NewServer(grpc.UnaryInterceptor(interceptor))
@@ -73,18 +72,13 @@ func (s *Server) Start() {
 	reflection.Register(server)
 
 	if s.daemon {
-		// Send an identifier string back to the hub, and log it locally for
-		// easier debugging.
-		info := fmt.Sprintf("Agent started on port %d (pid %d)", s.conf.Port, os.Getpid())
-
-		fmt.Println(info)
+		log.Printf("Agent started on port %d with pid %d", s.conf.Port, os.Getpid())
 		daemon.Daemonize()
-		gplog.Info(info)
 	}
 
 	err = server.Serve(lis)
 	if err != nil {
-		gplog.Fatal(err, "failed to serve: %s", err)
+		log.Fatalf("failed to serve: %v", err)
 	}
 
 	s.stopped <- struct{}{}
@@ -111,12 +105,12 @@ func createIfNotExists(dir string) {
 	// This is critical for our acceptance tests which often set GPUPGRADE_HOME.
 	err := os.Setenv("GPUPGRADE_HOME", dir)
 	if err != nil {
-		gplog.Fatal(err, "setting GPUPGRADE_HOME=%s on the agent", dir)
+		log.Fatalf("setting GPUPGRADE_HOME=%s on the agent: %v", dir, err)
 	}
 
 	exist, err := upgrade.PathExist(dir)
 	if err != nil {
-		gplog.Fatal(err, "")
+		log.Fatalf("%v", err)
 	}
 
 	if exist {
@@ -124,6 +118,6 @@ func createIfNotExists(dir string) {
 	}
 
 	if err := os.Mkdir(dir, 0777); err != nil {
-		gplog.Fatal(err, "failed to create state directory %q", dir)
+		log.Fatalf("failed to create state directory %q: %v", dir, err)
 	}
 }

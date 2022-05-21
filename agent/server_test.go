@@ -18,7 +18,7 @@ import (
 )
 
 func TestServerStart(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	t.Run("successfully starts and creates state directory if it does not exist", func(t *testing.T) {
 		tempDir := testutils.GetTempDir(t, "")

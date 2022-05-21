@@ -5,9 +5,8 @@ package upgrade
 
 import (
 	"fmt"
+	"log"
 	"path/filepath"
-
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
 
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -29,7 +28,7 @@ func RestorePgControl(dataDir string, streams step.OutStreams) error {
 	}
 
 	if renamed {
-		gplog.Debug("already renamed %q to %q", src, dst)
+		log.Printf("already renamed %q to %q", src, dst)
 		_, err = fmt.Fprintf(streams.Stdout(), "already renamed %q to %q", src, dst)
 		if err != nil {
 			return err
@@ -38,7 +37,7 @@ func RestorePgControl(dataDir string, streams step.OutStreams) error {
 		return nil
 	}
 
-	gplog.Debug("renaming %q to %q", src, dst)
+	log.Printf("renaming %q to %q", src, dst)
 	_, err = fmt.Fprintf(streams.Stdout(), "renaming %q to %q", src, dst)
 	if err != nil {
 		return err

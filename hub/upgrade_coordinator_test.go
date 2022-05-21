@@ -87,7 +87,7 @@ func init() {
 }
 
 func TestUpgradeCoordinator(t *testing.T) {
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	pgUpgradeDir, err := utils.GetPgUpgradeDir(greenplum.PrimaryRole, -1)
 	if err != nil {

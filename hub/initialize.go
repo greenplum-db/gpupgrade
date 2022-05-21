@@ -5,9 +5,7 @@ package hub
 
 import (
 	"context"
-	"fmt"
-
-	"github.com/greenplum-db/gp-common-go-libs/gplog"
+	"log"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
@@ -28,7 +26,7 @@ func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_Init
 		}
 
 		if err != nil {
-			gplog.Error(fmt.Sprintf("initialize: %s", err))
+			log.Printf("%s: %s", idl.Step_initialize, err)
 		}
 	}()
 
@@ -65,7 +63,7 @@ func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest
 		}
 
 		if err != nil {
-			gplog.Error(fmt.Sprintf("initialize: %s", err))
+			log.Printf("%s: %s", idl.Step_initialize, err)
 		}
 	}()
 

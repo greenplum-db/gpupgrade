@@ -52,7 +52,7 @@ func TestBufStream(t *testing.T) {
 }
 
 func TestMultiplexedStream(t *testing.T) {
-	_, _, log := testlog.SetupLogger()
+	logOutput := testlog.SetupTestLogger()
 
 	t.Run("forwards stdout and stderr to the stream", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
@@ -143,7 +143,7 @@ func TestMultiplexedStream(t *testing.T) {
 		}
 
 		expected := "halting client stream: error during send"
-		contents := string(log.Bytes())
+		contents := string(logOutput.Bytes())
 		if !strings.Contains(contents, expected) {
 			t.Errorf("log file %q does not contain %q", contents, expected)
 		}

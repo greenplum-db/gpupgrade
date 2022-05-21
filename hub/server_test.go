@@ -183,7 +183,7 @@ func TestAgentConns(t *testing.T) {
 		UpgradeID:    0,
 	}
 
-	testlog.SetupLogger()
+	testlog.SetupTestLogger()
 
 	t.Run("closes open connections when shutting down", func(t *testing.T) {
 		h := hub.New(conf, dialer, "")
