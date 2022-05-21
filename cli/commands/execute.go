@@ -6,6 +6,7 @@ package commands
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 
@@ -68,8 +69,9 @@ Execute completed successfully.
 
 The target cluster is now running. You may now run queries against the target 
 database and perform any other validation desired prior to finalizing your upgrade.
-PGPORT=%d
+source %s
 MASTER_DATA_DIRECTORY=%s
+PGPORT=%d
 
 WARNING: If any queries modify the target database prior to gpupgrade finalize, 
 it will be inconsistent with the source database. 
@@ -80,7 +82,9 @@ If you are satisfied with the state of the cluster, run "gpupgrade finalize"
 to proceed with the upgrade.
 
 To return the cluster to its original state, run "gpupgrade revert".`,
-				response.GetTarget().GetPort(), response.GetTarget().GetCoordinatorDataDirectory()))
+				filepath.Join(response.GetTarget().GetGPHome(), "greenplum_path.sh"),
+				response.GetTarget().GetCoordinatorDataDirectory(),
+				response.GetTarget().GetPort()))
 		},
 	}
 

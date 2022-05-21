@@ -80,9 +80,9 @@ func finalize() *cobra.Command {
 Finalize completed successfully.
 
 The target cluster has been upgraded to Greenplum %s:
-%s
-PGPORT=%d
+source %s
 MASTER_DATA_DIRECTORY=%s
+PGPORT=%d
 
 The source cluster is not running. If copy mode was used you may start 
 the source cluster, but not at the same time as the target cluster. 
@@ -107,8 +107,8 @@ To use the upgraded cluster:
    to resolve migration issues.`,
 				response.GetTargetVersion(),
 				filepath.Join(response.GetTargetCluster().GetGPHome(), "greenplum_path.sh"),
-				response.GetTargetCluster().GetPort(),
 				response.GetTargetCluster().GetCoordinatorDataDirectory(),
+				response.GetTargetCluster().GetPort(),
 				fmt.Sprintf("%s.<contentID>%s", response.GetUpgradeID(), upgrade.OldSuffix),
 				response.GetArchivedSourceCoordinatorDataDirectory(),
 				response.GetLogArchiveDirectory(),

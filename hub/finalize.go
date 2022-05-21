@@ -113,8 +113,8 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 			UpgradeID:                              s.Config.UpgradeID.String(),
 			TargetCluster: &idl.Cluster{
 				GPHome:                   s.Target.GPHome,
-				Port:                     int32(s.Target.CoordinatorPort()),
 				CoordinatorDataDirectory: s.Target.CoordinatorDataDir(),
+				Port:                     int32(s.Target.CoordinatorPort()),
 			},
 		},
 	}}}}

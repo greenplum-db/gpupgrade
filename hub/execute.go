@@ -62,8 +62,9 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_ExecuteResponse{
 		ExecuteResponse: &idl.ExecuteResponse{
 			Target: &idl.Cluster{
-				Port:                     int32(s.Intermediate.CoordinatorPort()),
+				GPHome:                   s.Intermediate.GPHome,
 				CoordinatorDataDirectory: s.Intermediate.CoordinatorDataDir(),
+				Port:                     int32(s.Intermediate.CoordinatorPort()),
 			}},
 	}}}}
 
