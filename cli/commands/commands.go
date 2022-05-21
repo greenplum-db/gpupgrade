@@ -186,7 +186,7 @@ var restartServices = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		running, err := commanders.IsHubRunning()
 		if err != nil {
-			return xerrors.Errorf("failed to determine if there is a hub running: %w", err)
+			return xerrors.Errorf("is a hub running: %w", err)
 		}
 
 		if !running {
@@ -223,7 +223,7 @@ var killServices = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		running, err := commanders.IsHubRunning()
 		if err != nil {
-			return xerrors.Errorf("failed to determine if there is a hub running: %w", err)
+			return xerrors.Errorf("is hub running: %w", err)
 		}
 
 		if !running {
@@ -242,7 +242,12 @@ var killServices = &cobra.Command{
 }
 
 func stopHubAndAgents(tryDefaultPort bool) error {
-	client, err := connectToHubOnPort(getHubPort(tryDefaultPort))
+	port, err := getHubPort(tryDefaultPort)
+	if err != nil {
+		return xerrors.Errorf("hub port: %w", err)
+	}
+
+	client, err := connectToHubOnPort(port)
 	if err != nil {
 		return err
 	}
@@ -264,7 +269,12 @@ func stopHubAndAgents(tryDefaultPort bool) error {
 
 // calls connectToHubOnPort() using the port defined in the configuration file
 func connectToHub() (idl.CliToHubClient, error) {
-	return connectToHubOnPort(getHubPort(false))
+	port, err := getHubPort(false)
+	if err != nil {
+		return nil, xerrors.Errorf("hub port: %w", err)
+	}
+
+	return connectToHubOnPort(port)
 }
 
 // connectToHubOnPort() performs a blocking connection to the hub based on the
@@ -279,11 +289,12 @@ func connectToHubOnPort(port int) (idl.CliToHubClient, error) {
 	address := "localhost:" + strconv.Itoa(port)
 	conn, err := grpc.DialContext(ctx, address, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
-		// Print a nicer error message if we can't connect to the hub.
+		err = xerrors.Errorf("connecting to hub on port %d: %w", port, err)
 		if ctx.Err() == context.DeadlineExceeded {
-			log.Printf("could not connect to the upgrade hub (did you run 'gpupgrade initialize'?)")
+			nextAction := `Try restarting the hub with "gpupgrade restart-services".`
+			return nil, utils.NewNextActionErr(err, nextAction)
 		}
-		return nil, xerrors.Errorf("connecting to hub on port %d: %w", port, err)
+		return nil, err
 	}
 
 	return idl.NewCliToHubClient(conn), nil
@@ -321,17 +332,18 @@ func connTimeout() time.Duration {
 // Any errors result in an os.Exit(1).
 // NOTE: This overloads the hub's persisted configuration with that of the
 // CLI when ideally these would be separate.
-func getHubPort(tryDefault bool) int {
+func getHubPort(tryDefault bool) (int, error) {
 	conf := &hub.Config{}
 	err := hub.LoadConfig(conf, upgrade.GetConfigFile())
 
 	var pathError *os.PathError
 	if tryDefault && xerrors.As(err, &pathError) {
-		conf.Port = upgrade.DefaultHubPort
-	} else if err != nil {
-		log.Printf("failed to retrieve hub port due to %v", err)
-		os.Exit(1)
+		return upgrade.DefaultHubPort, nil
 	}
 
-	return conf.Port
+	if err != nil {
+		return -1, xerrors.Errorf("load config: %w", err)
+	}
+
+	return conf.Port, nil
 }

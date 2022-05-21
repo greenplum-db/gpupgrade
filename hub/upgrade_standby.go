@@ -15,10 +15,10 @@ import (
 // before adding a new one for idempotency. In the happy-path, we expect this to
 // fail as there should not be an existing  standby for the cluster.
 func UpgradeStandby(streams step.OutStreams, intermediate *greenplum.Cluster, useHbaHostnames bool) error {
-	log.Printf("removing any existing standby master on target cluster")
 	err := intermediate.RunGreenplumCmd(streams, "gpinitstandby", "-r", "-a")
 	if err != nil {
-		log.Printf("error message from removing existing standby master (expected in the happy path): %v", err)
+		// FIXME: Don't ignore actual errors. Perhaps check if there is a standby to remove before attemtping.
+		log.Printf("Failed to remove existing standby. Expected during normal operation. %v", err)
 	}
 
 	args := []string{

@@ -129,10 +129,10 @@ func (s *Server) Start() error {
 func (s *Server) StopServices(ctx context.Context, in *idl.StopServicesRequest) (*idl.StopServicesReply, error) {
 	err := s.StopAgents()
 	if err != nil {
-		log.Printf("failed to stop agents: %#v", err)
+		log.Printf("stop agents: %v", err)
 	}
 
-	s.Stop(false)
+	defer s.Stop(false)
 	return &idl.StopServicesReply{}, nil
 }
 
@@ -227,7 +227,7 @@ func RestartAgents(ctx context.Context,
 			if err == nil {
 				err = conn.Close()
 				if err != nil {
-					log.Printf("failed to close agent connection to %s: %+v", host, err)
+					errs <- xerrors.Errorf("failed to close agent connection to %s: %v", host, err)
 				}
 				return
 			}
@@ -282,8 +282,7 @@ func (s *Server) AgentConns() ([]*idl.Connection, error) {
 	if s.agentConns != nil {
 		err := EnsureConnsAreReady(s.agentConns)
 		if err != nil {
-			log.Printf("ensureConnsAreReady failed: %s", err)
-			return nil, err
+			return nil, xerrors.Errorf("ensuring agent connections are ready: %w", err)
 		}
 
 		return s.agentConns, nil
@@ -296,10 +295,8 @@ func (s *Server) AgentConns() ([]*idl.Connection, error) {
 			host+":"+strconv.Itoa(s.AgentPort),
 			grpc.WithInsecure(), grpc.WithBlock())
 		if err != nil {
-			err = xerrors.Errorf("grpcDialer failed: %w", err)
-			log.Print(err.Error())
 			cancelFunc()
-			return nil, err
+			return nil, xerrors.Errorf("agent connections: %w", err)
 		}
 		s.agentConns = append(s.agentConns, &idl.Connection{
 			Conn:          conn,

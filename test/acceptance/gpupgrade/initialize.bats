@@ -147,7 +147,7 @@ outputContains() {
         echo "$output"
 
         [ "$status" -eq 1 ]
-        outputContains "could not connect to the upgrade hub (did you run 'gpupgrade initialize'?)"
+        outputContains 'Try restarting the hub with "gpupgrade restart-services".'
     done
 }
 

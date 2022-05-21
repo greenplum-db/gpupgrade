@@ -11,11 +11,11 @@ import (
 	"strconv"
 	"sync"
 
+	"golang.org/x/xerrors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
 	"github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils/daemon"
 	"github.com/greenplum-db/gpupgrade/utils/logger"
 )
@@ -49,10 +49,18 @@ func (s *Server) MakeDaemon() {
 }
 
 func (s *Server) Start() {
-	createIfNotExists(s.conf.StateDir)
+	err := createStateDirectory(s.conf.StateDir)
+	if err != nil {
+		log.Fatalf("failed to create state directory: %v", err)
+	}
+
 	lis, err := net.Listen("tcp", ":"+strconv.Itoa(s.conf.Port))
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		// FIXME: This should be log.Fatal which returns exit code 1. However,
+		//   with the --daemonize flag it returns exit code 0 indicating no
+		//   error to the caller. Thus, use log.Panic to return exit code 2 to
+		//   indicate an error.
+		log.Panicf("failed to listen: %v", err)
 	}
 
 	// Set up an interceptor function to log any panics we get from request
@@ -99,25 +107,18 @@ func (s *Server) Stop() {
 	}
 }
 
-func createIfNotExists(dir string) {
+func createStateDirectory(dir string) error {
 	// When the agent is started it is passed the state directory. Ensure it also
 	// sets GPUPGRADE_HOME in its environment such that utils functions work.
 	// This is critical for our acceptance tests which often set GPUPGRADE_HOME.
 	err := os.Setenv("GPUPGRADE_HOME", dir)
 	if err != nil {
-		log.Fatalf("setting GPUPGRADE_HOME=%s on the agent: %v", dir, err)
+		return xerrors.Errorf("set GPUPGRADE_HOME=%s: %w", dir, err)
 	}
 
-	exist, err := upgrade.PathExist(dir)
-	if err != nil {
-		log.Fatalf("%v", err)
+	if err := os.MkdirAll(dir, 0777); err != nil {
+		return xerrors.Errorf("create state directory %q: %w", dir, err)
 	}
 
-	if exist {
-		return
-	}
-
-	if err := os.Mkdir(dir, 0777); err != nil {
-		log.Fatalf("failed to create state directory %q: %v", dir, err)
-	}
+	return nil
 }

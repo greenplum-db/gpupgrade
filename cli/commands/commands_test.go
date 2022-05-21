@@ -32,13 +32,21 @@ func TestGetHubPort(t *testing.T) {
 		}
 
 		// looks up port from config file
-		port := getHubPort(false)
+		port, err := getHubPort(false)
+		if err != nil {
+			t.Errorf("unexpected err %#v", err)
+		}
+
 		if port != expected {
 			t.Errorf("got %d expected %d", port, expected)
 		}
 
 		// still looks up port from config file whn default port is allowed
-		port = getHubPort(true)
+		port, err = getHubPort(true)
+		if err != nil {
+			t.Errorf("unexpected err %#v", err)
+		}
+
 		if port != expected {
 			t.Errorf("got %d expected %d", port, expected)
 		}
@@ -56,7 +64,11 @@ func TestGetHubPort(t *testing.T) {
 
 		expected := upgrade.DefaultHubPort
 
-		port := getHubPort(true)
+		port, err := getHubPort(true)
+		if err != nil {
+			t.Errorf("unexpected err %#v", err)
+		}
+
 		if port != expected {
 			t.Errorf("got %d expected %d", port, expected)
 		}
