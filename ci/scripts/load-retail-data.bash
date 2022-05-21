@@ -120,8 +120,8 @@ ssh mdw "
     source ${GPHOME_SOURCE}/greenplum_path.sh
     export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
 
-    gpupgrade-migration-sql-generator.bash "$GPHOME_SOURCE" "$PGPORT" /tmp/migration
-    gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" /tmp/migration/pre-initialize || true
+    gpupgrade-migration-sql-generator.bash "$GPHOME_SOURCE" "$PGPORT" /home/gpadmin/gpupgrade
+    gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" /home/gpadmin/gpupgrade/pre-initialize || true
 
     # match root/child partition schemas
     psql -d gpdb_demo <<SQL_EOF

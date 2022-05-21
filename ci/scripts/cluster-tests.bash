@@ -22,8 +22,8 @@ function run_migration_scripts_and_tests() {
         export GOFLAGS="-mod=readonly" # do not update dependencies during build
 
         cd gpupgrade_src
-        data-migration-scripts/gpupgrade-migration-sql-generator.bash "$GPHOME_SOURCE" "$PGPORT" /tmp/migration data-migration-scripts
-        data-migration-scripts/gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" /tmp/migration/pre-initialize || true
+        data-migration-scripts/gpupgrade-migration-sql-generator.bash "$GPHOME_SOURCE" "$PGPORT" /home/gpadmin/gpupgrade ./data-migration-scripts
+        data-migration-scripts/gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" /home/gpadmin/gpupgrade/pre-initialize || true
 
         make
         make check --keep-going

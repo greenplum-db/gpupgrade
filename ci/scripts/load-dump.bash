@@ -36,8 +36,8 @@ time ssh -n mdw "
         DROP INDEX onek2_u2_prtl CASCADE;
 SQL_EOF
 
-    gpupgrade-migration-sql-generator.bash $GPHOME_SOURCE $PGPORT /tmp/migration
-    gpupgrade-migration-sql-executor.bash $GPHOME_SOURCE $PGPORT /tmp/migration/pre-initialize || true
+    gpupgrade-migration-sql-generator.bash $GPHOME_SOURCE $PGPORT /home/gpadmin/gpupgrade
+    gpupgrade-migration-sql-executor.bash $GPHOME_SOURCE $PGPORT /home/gpadmin/gpupgrade/pre-initialize || true
 "
 
 echo "Dropping views referencing deprecated objects..."
