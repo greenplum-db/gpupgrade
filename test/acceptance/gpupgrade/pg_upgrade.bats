@@ -62,7 +62,7 @@ teardown() {
 
     NEW_CLUSTER="$(gpupgrade config show --target-datadir)"
 
-    grep "Checking for indexes on partitioned tables                  fatal" "$GPUPGRADE_LOGDIR"/initialize_*.log
+    grep "Checking for indexes on partitioned tables                  fatal" "$GPUPGRADE_LOGDIR"/hub*.log
 
     # revert added index
     $PSQL -d postgres -p $PGPORT -c "DROP TABLE test_pg_upgrade CASCADE;"
@@ -83,7 +83,7 @@ teardown() {
 
     NEW_CLUSTER="$(gpupgrade config show --target-datadir)"
 
-    grep "Clusters are compatible" "$GPUPGRADE_LOGDIR"/initialize_*.log
+    grep "Clusters are compatible" "$GPUPGRADE_LOGDIR"/hub*.log
 
     [ -e ~/gpAdminLogs/gpupgrade/pg_upgrade/p-1/pg_upgrade_internal.log ]
     [ -e ~/gpAdminLogs/gpupgrade/pg_upgrade/p0/pg_upgrade_internal.log ]

@@ -34,7 +34,7 @@ func Hub() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			gplog.InitializeLogging("gpupgrade_hub", logdir)
+			gplog.InitializeLogging("hub", logdir)
 			debug.SetTraceback("all")
 			defer log.WritePanics()
 

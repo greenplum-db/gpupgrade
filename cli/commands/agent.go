@@ -30,7 +30,7 @@ func Agent() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			gplog.InitializeLogging("gpupgrade_agent", logdir)
+			gplog.InitializeLogging("agent", logdir)
 			defer log.WritePanics()
 
 			conf := agent.Config{

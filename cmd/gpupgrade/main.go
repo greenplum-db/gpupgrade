@@ -24,7 +24,7 @@ func main() {
 		fmt.Printf("\n%+v\n", err)
 		os.Exit(1)
 	}
-	gplog.InitializeLogging("gpupgrade_cli", logdir)
+	gplog.InitializeLogging("cli", logdir)
 
 	root := commands.BuildRootCommand()
 	// Silence usage since Cobra prints usage for all errors rather than just
