@@ -7,10 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"os"
-	"path/filepath"
 	"strings"
-	"time"
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -22,6 +19,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
+	"github.com/greenplum-db/gpupgrade/utils/logger"
 	"github.com/greenplum-db/gpupgrade/utils/stopwatch"
 )
 
@@ -61,20 +59,13 @@ func Begin(step idl.Step, sender idl.MessageSender, agentConns func() ([]*idl.Co
 		}
 	}
 
-	logdir, err := utils.GetLogDir()
+	logFile, err := logger.OpenFile("hub")
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf(`getting log file for step "%s": %w`, step, err)
 	}
 
-	path := filepath.Join(logdir, fmt.Sprintf("%s_%s.log", step, time.Now().Format("20060102")))
-	log, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
+	_, err = fmt.Fprintf(logFile, "\n%s in progress.\n", cases.Title(language.English).String(step.String()))
 	if err != nil {
-		return nil, xerrors.Errorf(`step "%s": %w`, step, err)
-	}
-
-	_, err = fmt.Fprintf(log, "\n%s in progress.\n", cases.Title(language.English).String(step.String()))
-	if err != nil {
-		log.Close()
 		return nil, xerrors.Errorf(`logging step "%s": %w`, step, err)
 	}
 
@@ -83,7 +74,7 @@ func Begin(step idl.Step, sender idl.MessageSender, agentConns func() ([]*idl.Co
 		return nil, err
 	}
 
-	streams := newMultiplexedStream(sender, log)
+	streams := newMultiplexedStream(sender, logFile)
 
 	return New(step, sender, substepStore, streams), nil
 }
