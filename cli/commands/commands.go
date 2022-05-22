@@ -32,10 +32,12 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -48,6 +50,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
@@ -184,17 +187,9 @@ var restartServices = &cobra.Command{
 	Short: "restarts hub/agents that are not currently running",
 	Long:  "restarts hub/agents that are not currently running",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		running, err := commanders.IsHubRunning()
-		if err != nil {
-			return xerrors.Errorf("is a hub running: %w", err)
-		}
-
-		if !running {
-			err = commanders.StartHub()
-			if err != nil {
-				return err
-			}
-			fmt.Println("Restarted hub")
+		err := commanders.StartHub()
+		if err != nil && !errors.Is(err, step.Skip) {
+			return err
 		}
 
 		client, err := connectToHub()
@@ -207,10 +202,7 @@ var restartServices = &cobra.Command{
 			return xerrors.Errorf("restarting agents: %w", err)
 		}
 
-		for _, host := range reply.GetAgentHosts() {
-			fmt.Printf("Restarted agent on: %s\n", host)
-		}
-
+		fmt.Printf("Restarted agents on: %s\n", strings.Join(reply.GetAgentHosts(), ", "))
 		return nil
 	},
 }
