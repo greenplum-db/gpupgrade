@@ -65,7 +65,7 @@ func finalize() *cobra.Command {
 			})
 
 			st.RunCLISubstep(idl.Substep_stop_hub_and_agents, func(streams step.OutStreams) error {
-				return stopHubAndAgents(false)
+				return stopHubAndAgents()
 			})
 
 			st.RunCLISubstep(idl.Substep_delete_master_statedir, func(streams step.OutStreams) error {

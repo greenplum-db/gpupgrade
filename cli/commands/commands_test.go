@@ -32,7 +32,7 @@ func TestGetHubPort(t *testing.T) {
 		}
 
 		// looks up port from config file
-		port, err := getHubPort(false)
+		port, err := hubPort()
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -42,7 +42,7 @@ func TestGetHubPort(t *testing.T) {
 		}
 
 		// still looks up port from config file whn default port is allowed
-		port, err = getHubPort(true)
+		port, err = hubPort()
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -62,15 +62,13 @@ func TestGetHubPort(t *testing.T) {
 
 		testutils.PathMustNotExist(t, upgrade.GetConfigFile())
 
-		expected := upgrade.DefaultHubPort
-
-		port, err := getHubPort(true)
+		port, err := hubPort()
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
 
-		if port != expected {
-			t.Errorf("got %d expected %d", port, expected)
+		if port != upgrade.DefaultHubPort {
+			t.Errorf("got %d expected %d", port, upgrade.DefaultHubPort)
 		}
 	})
 

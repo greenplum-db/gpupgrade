@@ -229,12 +229,12 @@ var killServices = &cobra.Command{
 			return nil
 		}
 
-		return stopHubAndAgents(true)
+		return stopHubAndAgents()
 	},
 }
 
-func stopHubAndAgents(tryDefaultPort bool) error {
-	port, err := getHubPort(tryDefaultPort)
+func stopHubAndAgents() error {
+	port, err := hubPort()
 	if err != nil {
 		return xerrors.Errorf("hub port: %w", err)
 	}
@@ -261,7 +261,7 @@ func stopHubAndAgents(tryDefaultPort bool) error {
 
 // calls connectToHubOnPort() using the port defined in the configuration file
 func connectToHub() (idl.CliToHubClient, error) {
-	port, err := getHubPort(false)
+	port, err := hubPort()
 	if err != nil {
 		return nil, xerrors.Errorf("hub port: %w", err)
 	}
@@ -316,20 +316,16 @@ func connTimeout() time.Duration {
 	return time.Duration(duration * float64(time.Second))
 }
 
-// This reads the hub's persisted configuration for the current
-// port.  If tryDefault is true and the configuration file does not exist,
-// it will use the default port.  This might be the case if the hub is
-// still running, even though the state directory, which contains the
-// hub's persistent configuration, has been deleted.
-// Any errors result in an os.Exit(1).
+// hubPort reads the gpupgrade persisted configuration for the current
+// port. If the configuration does not exist the default port is returned.
 // NOTE: This overloads the hub's persisted configuration with that of the
 // CLI when ideally these would be separate.
-func getHubPort(tryDefault bool) (int, error) {
+func hubPort() (int, error) {
 	conf := &hub.Config{}
 	err := hub.LoadConfig(conf, upgrade.GetConfigFile())
 
 	var pathError *os.PathError
-	if tryDefault && xerrors.As(err, &pathError) {
+	if xerrors.As(err, &pathError) {
 		return upgrade.DefaultHubPort, nil
 	}
 
