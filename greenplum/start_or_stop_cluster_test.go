@@ -66,6 +66,18 @@ func TestStart(t *testing.T) {
 			t.Errorf("got %q want %q", err.Error(), expected)
 		}
 	})
+
+	t.Run("start returns nil if the cluster is already running", func(t *testing.T) {
+		testutils.MustWriteToFile(t, filepath.Join(dataDir, "postmaster.pid"), "")
+
+		greenplum.SetIsCoordinatorRunningCommand(exectest.NewCommand(Success))
+		defer greenplum.ResetIsCoordinatorRunningCommand()
+
+		err := source.Start(step.DevNullStream)
+		if err != nil {
+			t.Errorf("got %v want %v", err, nil)
+		}
+	})
 }
 
 func TestStartCoordinatorOnly(t *testing.T) {
@@ -188,16 +200,15 @@ func TestStop(t *testing.T) {
 		}
 	})
 
-	t.Run("stop detects if the cluster is already shutdown", func(t *testing.T) {
+	t.Run("stop returns nil if the cluster is already stopped", func(t *testing.T) {
 		testutils.MustWriteToFile(t, filepath.Join(dataDir, "postmaster.pid"), "")
 
 		greenplum.SetIsCoordinatorRunningCommand(exectest.NewCommand(IsPostmasterRunningCmd_MatchesNoProcesses))
 		defer greenplum.ResetIsCoordinatorRunningCommand()
 
 		err := source.Stop(step.DevNullStream)
-		expected := "Failed to stop source cluster. Master is already stopped."
-		if err.Error() != expected {
-			t.Errorf("got %q want %q", err.Error(), expected)
+		if err != nil {
+			t.Errorf("got %v want %v", err, nil)
 		}
 	})
 }
@@ -272,16 +283,15 @@ func TestStopCoordinatorOnly(t *testing.T) {
 		}
 	})
 
-	t.Run("stop coordinator only detects if the cluster is already shutdown", func(t *testing.T) {
+	t.Run("stop coordinator returns nil if the cluster is already shutdown", func(t *testing.T) {
 		testutils.MustWriteToFile(t, filepath.Join(dataDir, "postmaster.pid"), "")
 
 		greenplum.SetIsCoordinatorRunningCommand(exectest.NewCommand(IsPostmasterRunningCmd_MatchesNoProcesses))
 		defer greenplum.ResetIsCoordinatorRunningCommand()
 
 		err := source.StopCoordinatorOnly(step.DevNullStream)
-		expected := "Failed to stop source cluster in master only mode. Master is already stopped."
-		if err.Error() != expected {
-			t.Errorf("got %q want %q", err.Error(), expected)
+		if err != nil {
+			t.Errorf("got %v want %v", err, nil)
 		}
 	})
 }

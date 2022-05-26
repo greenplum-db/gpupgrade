@@ -238,7 +238,16 @@ func (c Cluster) SelectSegments(selector func(*SegConfig) bool) SegConfigs {
 }
 
 func (c *Cluster) Start(stream step.OutStreams) error {
-	err := c.RunGreenplumCmd(stream, "gpstart", "-a", "-d", c.CoordinatorDataDir())
+	running, err := c.IsCoordinatorRunning(stream)
+	if err != nil {
+		return xerrors.Errorf("checking if coordinator is running: %w", err)
+	}
+
+	if running {
+		return nil
+	}
+
+	err = c.RunGreenplumCmd(stream, "gpstart", "-a", "-d", c.CoordinatorDataDir())
 	if err != nil {
 		return xerrors.Errorf("starting %s cluster: %w", c.Destination, err)
 	}
@@ -256,17 +265,13 @@ func (c *Cluster) StartCoordinatorOnly(stream step.OutStreams) error {
 }
 
 func (c *Cluster) Stop(stream step.OutStreams) error {
-	// TODO: why can't we call IsCoordinatorRunning for the !stop case?  If we do, we get this on the pipeline:
-	// Usage: pgrep [-flvx] [-d DELIM] [-n|-o] [-P PPIDLIST] [-g PGRPLIST] [-s SIDLIST]
-	// [-u EUIDLIST] [-U UIDLIST] [-G GIDLIST] [-t TERMLIST] [PATTERN]
-	//  pgrep: pidfile not valid
 	running, err := c.IsCoordinatorRunning(stream)
 	if err != nil {
-		return err
+		return xerrors.Errorf("checking if coordinator is running: %w", err)
 	}
 
 	if !running {
-		return errors.New(fmt.Sprintf("Failed to stop %s cluster. Master is already stopped.", c.Destination))
+		return nil
 	}
 
 	err = c.RunGreenplumCmd(stream, "gpstop", "-a", "-d", c.CoordinatorDataDir())
@@ -278,17 +283,13 @@ func (c *Cluster) Stop(stream step.OutStreams) error {
 }
 
 func (c *Cluster) StopCoordinatorOnly(stream step.OutStreams) error {
-	// TODO: why can't we call IsCoordinatorRunning for the !stop case?  If we do, we get this on the pipeline:
-	// Usage: pgrep [-flvx] [-d DELIM] [-n|-o] [-P PPIDLIST] [-g PGRPLIST] [-s SIDLIST]
-	// [-u EUIDLIST] [-U UIDLIST] [-G GIDLIST] [-t TERMLIST] [PATTERN]
-	//  pgrep: pidfile not valid
 	running, err := c.IsCoordinatorRunning(stream)
 	if err != nil {
-		return err
+		return xerrors.Errorf("checking if coordinator is running: %w", err)
 	}
 
 	if !running {
-		return errors.New(fmt.Sprintf("Failed to stop %s cluster in master only mode. Master is already stopped.", c.Destination))
+		return nil
 	}
 
 	err = c.RunGreenplumCmd(stream, "gpstop", "-a", "-m", "-d", c.CoordinatorDataDir())
