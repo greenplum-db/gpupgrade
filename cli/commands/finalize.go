@@ -79,10 +79,7 @@ func finalize() *cobra.Command {
 			return st.Complete(fmt.Sprintf(`
 Finalize completed successfully.
 
-The target cluster has been upgraded to Greenplum %s:
-source %s
-MASTER_DATA_DIRECTORY=%s
-PGPORT=%d
+The target cluster has been upgraded to Greenplum %s
 
 The source cluster is not running. If copy mode was used you may start 
 the source cluster, but not at the same time as the target cluster. 
@@ -101,14 +98,16 @@ To use the upgraded cluster:
 1. Update any scripts to source %s
 2. If applicable, update the greenplum-db symlink to point to the target 
    install location: %s -> %s
-3. In a new shell source %s and start the cluster with gpstart.
+3. In a new shell start the upgraded cluster.
+   source %s
+   MASTER_DATA_DIRECTORY=%s
+   PGPORT=%d
+   gpstart -a
+
    Execute the “post-finalize” data migration scripts, and recreate any 
    additional tables, indexes, and roles that were dropped or altered 
    to resolve migration issues.`,
 				response.GetTargetVersion(),
-				filepath.Join(response.GetTargetCluster().GetGPHome(), "greenplum_path.sh"),
-				response.GetTargetCluster().GetCoordinatorDataDirectory(),
-				response.GetTargetCluster().GetPort(),
 				fmt.Sprintf("%s.<contentID>%s", response.GetUpgradeID(), upgrade.OldSuffix),
 				response.GetArchivedSourceCoordinatorDataDirectory(),
 				response.GetLogArchiveDirectory(),
@@ -116,6 +115,8 @@ To use the upgraded cluster:
 				filepath.Join(filepath.Dir(response.GetTargetCluster().GetGPHome()), "greenplum-db"),
 				response.GetTargetCluster().GetGPHome(),
 				filepath.Join(response.GetTargetCluster().GetGPHome(), "greenplum_path.sh"),
+				response.GetTargetCluster().GetCoordinatorDataDirectory(),
+				response.GetTargetCluster().GetPort(),
 			))
 		},
 	}
