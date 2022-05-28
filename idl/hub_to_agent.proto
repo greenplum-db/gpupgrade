@@ -181,5 +181,3 @@ message AddReplicationEntriesRequest {
 }
 
 message AddReplicationEntriesReply {}
-
-

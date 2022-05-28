@@ -24,6 +24,8 @@ func init() {
 	exectest.RegisterMains(
 		Success,
 		Failure,
+		PathMain,
+		LdLibraryPathMain,
 		StreamingMain,
 		EnvironmentMain,
 	)
@@ -34,6 +36,14 @@ func Success() {}
 func Failure() {
 	os.Stderr.WriteString(os.ErrPermission.Error())
 	os.Exit(1)
+}
+
+func PathMain() {
+	fmt.Println(os.Getenv("PATH"))
+}
+
+func LdLibraryPathMain() {
+	fmt.Println(os.Getenv("LD_LIBRARY_PATH"))
 }
 
 const StreamingMainStdout = "expected\nstdout\n"

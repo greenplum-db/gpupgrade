@@ -44,6 +44,10 @@ func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_Init
 		return err
 	})
 
+	st.Run(idl.Substep_check_environment, func(streams step.OutStreams) error {
+		return CheckEnvironment(append(AgentHosts(s.Source), s.Source.CoordinatorHostname()), s.Source.GPHome, s.Intermediate.GPHome)
+	})
+
 	st.RunConditionally(idl.Substep_check_disk_space, req.GetDiskFreeRatio() > 0, func(streams step.OutStreams) error {
 		return CheckDiskSpace(streams, s.agentConns, req.GetDiskFreeRatio(), s.Source, s.Source.Tablespaces)
 	})
