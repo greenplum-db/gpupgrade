@@ -76,3 +76,11 @@ SELECT c, d FROM dropped_and_added_column WHERE a=10;
  10 | 10 
  10 | 10 
 (2 rows)
+
+SELECT c.relname, pg_catalog.pg_get_userbyid(c.relowner) as owner FROM pg_class c WHERE relname like 'p_alter_owner%';
+ relname               | owner    
+-----------------------+----------
+ p_alter_owner         | testrole 
+ p_alter_owner_1_prt_1 | testrole 
+ p_alter_owner_1_prt_2 | testrole 
+(3 rows)

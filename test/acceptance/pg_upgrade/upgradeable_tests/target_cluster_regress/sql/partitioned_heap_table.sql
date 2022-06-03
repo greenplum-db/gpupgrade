@@ -22,3 +22,7 @@ SELECT b, c FROM dropped_column WHERE a=10;
 SELECT b, c FROM root_has_dropped_column WHERE a=10;
 
 SELECT c, d FROM dropped_and_added_column WHERE a=10;
+
+SELECT c.relname, pg_catalog.pg_get_userbyid(c.relowner) as owner
+FROM pg_class c
+WHERE relname like 'p_alter_owner%';
