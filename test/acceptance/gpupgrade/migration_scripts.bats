@@ -20,7 +20,7 @@ setup() {
 
     PSQL="$GPHOME_SOURCE/bin/psql -X --no-align --tuples-only"
 
-    $PSQL -d postgres -v ON_ERROR_STOP=1 -f "$SCRIPTS_DIR"/test/setup_nonupgradable_objects.sql
+    $PSQL -d postgres -v ON_ERROR_STOP=0 -f "$SCRIPTS_DIR"/test/setup_nonupgradable_objects.sql
 }
 
 teardown() {
@@ -37,7 +37,7 @@ teardown() {
 }
 
 @test "migration scripts generate sql to modify non-upgradeable objects and fix pg_upgrade check errors" {
-    PGOPTIONS='--client-min-messages=warning' $PSQL -d testdb -v ON_ERROR_STOP=1 -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql
+    PGOPTIONS='--client-min-messages=warning' $PSQL -d testdb -v ON_ERROR_STOP=0 -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql
     run gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
         --target-gphome="$GPHOME_TARGET" \
@@ -52,7 +52,7 @@ teardown() {
     egrep "\"check_upgrade\": \"failed\"" $GPUPGRADE_HOME/substeps.json
     egrep "^Checking.*fatal$" ~/gpAdminLogs/gpupgrade/pg_upgrade/p-1/pg_upgrade_internal.log
 
-    PGOPTIONS='--client-min-messages=warning' $PSQL -d testdb -v ON_ERROR_STOP=1 -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
+    PGOPTIONS='--client-min-messages=warning' $PSQL -d testdb -v ON_ERROR_STOP=0 -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
 
     root_child_indexes_before=$(get_indexes "$GPHOME_SOURCE")
     tsquery_datatype_objects_before=$(get_tsquery_datatypes "$GPHOME_SOURCE")
@@ -108,7 +108,7 @@ teardown() {
 }
 
 @test "after reverting recreate scripts must restore non-upgradeable objects" {
-    $PSQL -d testdb -v ON_ERROR_STOP=1 -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql
+    $PSQL -d testdb -v ON_ERROR_STOP=0 -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql
     $PSQL -d testdb -v ON_ERROR_STOP=1 -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
 
     root_child_indexes_before=$(get_indexes "$GPHOME_SOURCE")
@@ -164,7 +164,7 @@ teardown() {
         skip "GPDB 5 does not support alternative PSQLRC locations"
     fi
 
-    $PSQL -d testdb -v ON_ERROR_STOP=1 -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql
+    $PSQL -d testdb -v ON_ERROR_STOP=0 -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql
 
     MIGRATION_DIR=$(mktemp -d /tmp/migration.XXXXXX)
     register_teardown rm -r "$MIGRATION_DIR"

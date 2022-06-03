@@ -62,7 +62,7 @@ wait_can_start_transactions() {
     for i in {1..10}; do
         ssh -n "${host}" "
             source ${GPHOME_NEW}/greenplum_path.sh
-            psql -X -p $port -At -d postgres << EOF
+            psql -v ON_ERROR_STOP=1 -X -p $port -At -d postgres << EOF
                 SELECT gp_request_fts_probe_scan();
                 BEGIN; CREATE TEMP TABLE temp_test(a int) DISTRIBUTED RANDOMLY; COMMIT;
 EOF

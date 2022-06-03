@@ -53,7 +53,7 @@ create_tablespace_with_tables() {
     (unset LD_LIBRARY_PATH; source "${GPHOME_SOURCE}"/greenplum_path.sh && gpfilespace --config "${TABLESPACE_CONFIG}")
 
     # create a tablespace in said filespace and some databases in that tablespace
-    "${GPHOME_SOURCE}"/bin/psql -d postgres -v ON_ERROR_STOP=1 <<- EOF
+    "${GPHOME_SOURCE}"/bin/psql -v ON_ERROR_STOP=1 -d postgres -v ON_ERROR_STOP=1 <<- EOF
         CREATE TABLESPACE batsTbsp FILESPACE batsFS;
 
         CREATE DATABASE foodb TABLESPACE batsTbsp;
@@ -61,7 +61,7 @@ create_tablespace_with_tables() {
 EOF
 
     # create various tables in the tablespace
-    "${GPHOME_SOURCE}"/bin/psql -d postgres -v ON_ERROR_STOP=1 <<- EOF
+    "${GPHOME_SOURCE}"/bin/psql -v ON_ERROR_STOP=1 -d postgres -v ON_ERROR_STOP=1 <<- EOF
         CREATE TABLE "${tablespace_table_prefix}_0" (a int) TABLESPACE batsTbsp;
         INSERT INTO "${tablespace_table_prefix}_0" SELECT i from generate_series(1,100)i;
 

@@ -19,7 +19,7 @@ time ssh -n gpadmin@mdw "
 
     source /usr/local/greenplum-db-source/greenplum_path.sh
     export PGOPTIONS='--client-min-messages=warning'
-    unxz < /tmp/dump.sql.xz | psql -f - postgres
+    unxz < /tmp/dump.sql.xz | psql -v ON_ERROR_STOP=0 -f - postgres
 "
 
 echo "Running the data migration scripts and workarounds on the source cluster..."
@@ -82,7 +82,7 @@ echo "${columns}" | while read -r schema table column; do
 
             source /usr/local/greenplum-db-source/greenplum_path.sh
 
-            psql regression -c 'SET SEARCH_PATH TO ${schema}; ALTER TABLE ${table} DROP COLUMN ${column} CASCADE;'
+            psql -v ON_ERROR_STOP=1 regression -c 'SET SEARCH_PATH TO ${schema}; ALTER TABLE ${table} DROP COLUMN ${column} CASCADE;'
         " || echo "Drop columns with abstime, reltime, tinterval user data types failed. Continuing..."
     fi
 done
@@ -118,6 +118,6 @@ ssh -n mdw "
 
     source /usr/local/greenplum-db-source/greenplum_path.sh
 
-    psql -d regression -c 'DROP FUNCTION public.myfunc(integer);
+    psql -v ON_ERROR_STOP=1 -d regression -c 'DROP FUNCTION public.myfunc(integer);
     DROP AGGREGATE public.newavg(integer);'
 " || echo "Dropping unsupported functions failed. Continuing..."

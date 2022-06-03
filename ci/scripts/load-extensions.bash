@@ -71,7 +71,7 @@ SQL_EOF
     echo 'Installing PostGIS...'
     gppkg -i /tmp/postgis_source.gppkg
     /usr/local/greenplum-db-source/share/postgresql/contrib/postgis-*/postgis_manager.sh postgres install
-    psql postgres -f /tmp/postgis_dump.sql
+    psql -v ON_ERROR_STOP=0 postgres -f /tmp/postgis_dump.sql
     psql -v ON_ERROR_STOP=1 -d postgres <<SQL_EOF
         -- Drop postgis views containing deprecated name datatypes
         DROP VIEW geography_columns;
@@ -254,7 +254,7 @@ SQL_EOF
 SQL_EOF
 
     echo 'Installing Fuzzy String Match...'
-    psql -d postgres -f /usr/local/greenplum-db-source/share/postgresql/contrib/fuzzystrmatch.sql
+    psql -v ON_ERROR_STOP=1 -d postgres -f /usr/local/greenplum-db-source/share/postgresql/contrib/fuzzystrmatch.sql
     psql -v ON_ERROR_STOP=1 -d postgres <<SQL_EOF
         CREATE VIEW fuzzystrmatch_test_view AS SELECT soundex('a'::text);
 SQL_EOF
@@ -262,7 +262,7 @@ SQL_EOF
     echo 'Installing citext...'
     echo 'Create a new db to avoid potential function overlaps with postgis to simplify the diff when comparing before and after upgrade.'
     createdb citext_db
-    psql -d citext_db -f /usr/local/greenplum-db-source/share/postgresql/contrib/citext.sql
+    psql -v ON_ERROR_STOP=1 -d citext_db -f /usr/local/greenplum-db-source/share/postgresql/contrib/citext.sql
     psql -v ON_ERROR_STOP=1 -d citext_db <<SQL_EOF
         CREATE TABLE citext_test_type (
             id bigint PRIMARY KEY,
