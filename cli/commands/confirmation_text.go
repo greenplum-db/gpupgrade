@@ -5,7 +5,6 @@ package commands
 
 const initializeConfirmationText = `
 You are about to initialize a major-version upgrade of Greenplum.
-This should be done only during a downtime window.
 
 gpupgrade initialize will perform a series of steps, including:
  - Check disk space

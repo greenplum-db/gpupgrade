@@ -83,7 +83,6 @@ func init() {
 
 const initializeHelp = `
 Runs pre-upgrade checks and prepares the cluster for upgrade.
-This command should be run only during a downtime window.
 
 Initialize will carry out the following steps:
 %s
