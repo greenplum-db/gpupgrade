@@ -353,13 +353,14 @@ backup_source_cluster() {
     local datadir_root
     datadir_root="$(realpath "$MASTER_DATA_DIRECTORY"/../..)"
 
-    gpstop -af
-    register_teardown gpstart -a
+    (source "$GPHOME_SOURCE"/greenplum_path.sh && "$GPHOME_SOURCE"/bin/gpstop -af)
+    register_teardown start_source_cluster
+
 
     rsync --archive "${datadir_root:?}"/ "${backup_dir:?}"/
     register_teardown rsync --archive -I --delete "${backup_dir:?}"/ "${datadir_root:?}"/
 
-    gpstart -a
+    (source "$GPHOME_SOURCE"/greenplum_path.sh && "$GPHOME_SOURCE"/bin/gpstart -a)
     register_teardown stop_any_cluster
 }
 
