@@ -18,18 +18,13 @@ setup() {
 
     backup_source_cluster "$STATE_DIR"/backup
 
-    TEST_SCHEMA=testschema # must match what is used in create_nonupgradable_objects.sql
-    TEST_DBNAME=testdb
-    DEFAULT_DBNAME=postgres
-    GPHDFS_USER=gphdfs_user
-
     PSQL="$GPHOME_SOURCE/bin/psql -X --no-align --tuples-only"
 
-    $PSQL -f "$SCRIPTS_DIR"/test/setup_nonupgradable_objects.sql -d $DEFAULT_DBNAME
+    $PSQL -f "$SCRIPTS_DIR"/test/setup_nonupgradable_objects.sql -d postgres
 }
 
 teardown() {
-    $PSQL -f "$SCRIPTS_DIR"/test/teardown_nonupgradable_objects.sql -d $DEFAULT_DBNAME
+    $PSQL -f "$SCRIPTS_DIR"/test/teardown_nonupgradable_objects.sql -d postgres
 
     # XXX Beware, BATS_TEST_SKIPPED is not a documented export.
     if [ -n "${BATS_TEST_SKIPPED}" ]; then
@@ -42,8 +37,7 @@ teardown() {
 }
 
 @test "migration scripts generate sql to modify non-upgradeable objects and fix pg_upgrade check errors" {
-    PGOPTIONS='--client-min-messages=warning' $PSQL -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql -d $TEST_DBNAME
-
+    PGOPTIONS='--client-min-messages=warning' $PSQL -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql -d testdb
     run gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
         --target-gphome="$GPHOME_TARGET" \
@@ -58,7 +52,7 @@ teardown() {
     egrep "\"check_upgrade\": \"failed\"" $GPUPGRADE_HOME/substeps.json
     egrep "^Checking.*fatal$" ~/gpAdminLogs/gpupgrade/pg_upgrade/p-1/pg_upgrade_internal.log
 
-    PGOPTIONS='--client-min-messages=warning' $PSQL -d $TEST_DBNAME -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
+    PGOPTIONS='--client-min-messages=warning' $PSQL -d testdb -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
 
     root_child_indexes_before=$(get_indexes "$GPHOME_SOURCE")
     tsquery_datatype_objects_before=$(get_tsquery_datatypes "$GPHOME_SOURCE")
@@ -111,9 +105,8 @@ teardown() {
 }
 
 @test "after reverting recreate scripts must restore non-upgradeable objects" {
-    $PSQL -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql -d $TEST_DBNAME
-
-    $PSQL -d $TEST_DBNAME -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
+    $PSQL -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql -d testdb
+    $PSQL -d testdb -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
 
     root_child_indexes_before=$(get_indexes "$GPHOME_SOURCE")
     tsquery_datatype_objects_before=$(get_tsquery_datatypes "$GPHOME_SOURCE")
@@ -122,7 +115,7 @@ teardown() {
     primary_unique_constraints_before=$(get_primary_unique_constraints "$GPHOME_SOURCE")
 
     # Ignore the test tables that break the diff for now.
-    EXCLUSIONS+="-T ${TEST_SCHEMA}.heterogeneous_ml_partition_table "
+    EXCLUSIONS+="-T testschema.heterogeneous_ml_partition_table "
 
     MIGRATION_DIR=`mktemp -d /tmp/migration.XXXXXX`
     register_teardown rm -r "$MIGRATION_DIR"
@@ -165,7 +158,7 @@ teardown() {
         skip "GPDB 5 does not support alternative PSQLRC locations"
     fi
 
-    $PSQL -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql -d $TEST_DBNAME
+    $PSQL -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql -d testdb
 
     MIGRATION_DIR=$(mktemp -d /tmp/migration.XXXXXX)
     register_teardown rm -r "$MIGRATION_DIR"
@@ -175,7 +168,7 @@ teardown() {
     printf '\! kill $PPID\n' > "$PSQLRC"
 
     "$SCRIPTS_DIR"/gpupgrade-migration-sql-generator.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR" "$SCRIPTS_DIR"
-    $PSQL -d $TEST_DBNAME -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
+    $PSQL -d testdb -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
     "$SCRIPTS_DIR"/gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/pre-initialize
 
     gpupgrade initialize \
@@ -193,14 +186,14 @@ teardown() {
 
 get_indexes() {
     local gphome=$1
-    $gphome/bin/psql -d "$TEST_DBNAME" -p "$PGPORT" -Atc "
+    $gphome/bin/psql -d testdb -p "$PGPORT" -Atc "
          SELECT indrelid::regclass, unnest(indkey)
          FROM pg_index pi
          JOIN pg_partition pp ON pi.indrelid=pp.parrelid
          JOIN pg_class pc ON pc.oid=pp.parrelid
          ORDER by 1,2;
         "
-    $gphome/bin/psql -d "$TEST_DBNAME" -p "$PGPORT" -Atc "
+    $gphome/bin/psql -d testdb -p "$PGPORT" -Atc "
         SELECT indrelid::regclass, unnest(indkey)
         FROM pg_index pi
         JOIN pg_partition_rule pp ON pi.indrelid=pp.parchildrelid
@@ -212,7 +205,7 @@ get_indexes() {
 
 get_tsquery_datatypes() {
     local gphome=$1
-    $gphome/bin/psql -d "$TEST_DBNAME" -p "$PGPORT" -Atc "
+    $gphome/bin/psql -d testdb -p "$PGPORT" -Atc "
         SELECT n.nspname, c.relname, a.attname
         FROM pg_catalog.pg_class c,
              pg_catalog.pg_namespace n,
@@ -235,7 +228,7 @@ get_tsquery_datatypes() {
 
 get_name_datatypes() {
     local gphome=$1
-    $gphome/bin/psql -d "$TEST_DBNAME" -p "$PGPORT" -Atc "
+    $gphome/bin/psql -d testdb -p "$PGPORT" -Atc "
         SELECT n.nspname, c.relname, a.attname
         FROM pg_catalog.pg_class c,
              pg_catalog.pg_namespace n,
@@ -258,7 +251,7 @@ get_name_datatypes() {
 
 get_fk_constraints() {
     local gphome=$1
-    $gphome/bin/psql -d "$TEST_DBNAME" -p "$PGPORT" -Atc "
+    $gphome/bin/psql -d testdb -p "$PGPORT" -Atc "
         SELECT nspname, relname, conname
         FROM pg_constraint cc
             JOIN
@@ -285,7 +278,7 @@ get_fk_constraints() {
 
 get_primary_unique_constraints() {
     local gphome=$1
-    $gphome/bin/psql -d "$TEST_DBNAME" -p "$PGPORT" -Atc "
+    $gphome/bin/psql -d testdb -p "$PGPORT" -Atc "
     WITH CTE as
     (
         SELECT oid, *
@@ -346,7 +339,7 @@ get_partition_owners() {
 
 get_partition_constraints() {
     local gphome=$1
-    $gphome/bin/psql -d "$TEST_DBNAME" -p "$PGPORT" -Atc "
+    $gphome/bin/psql -d testdb -p "$PGPORT" -Atc "
     SELECT c.relname, con.conname
     FROM pg_partition_rule pr
         JOIN pg_class c ON c.oid = pr.parchildrelid
@@ -366,7 +359,7 @@ get_partition_constraints() {
 
 get_partition_defaults() {
     local gphome=$1
-    $gphome/bin/psql -d "$TEST_DBNAME" -p "$PGPORT" -Atc "
+    $gphome/bin/psql -d testdb -p "$PGPORT" -Atc "
     SELECT c.relname, att.attname, ad.adnum, ad.adsrc
     FROM pg_partition_rule pr
         JOIN pg_class c ON c.oid = pr.parchildrelid
