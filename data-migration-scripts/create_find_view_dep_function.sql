@@ -20,11 +20,13 @@ import plpy
 leaf_view = plpy.execute("""
 SELECT
     schema,
-    view
+    view,
+    owner
 FROM (
     SELECT DISTINCT
         nv.nspname AS schema,
-        v.relname AS view
+        v.relname AS view,
+        pg_catalog.pg_get_userbyid(v.relowner) AS owner
     FROM
         pg_depend d
         JOIN pg_rewrite r ON r.oid = d.objid
@@ -53,14 +55,16 @@ FROM (
 checklist = {}
 view_order = 1
 for row in leaf_view:
-    checklist[(row['schema'], row['view'])] = view_order
+    checklist[(row['schema'], row['view'], row['owner'])] = view_order
 
 rows = plpy.execute("""
 SELECT
     nsp1.nspname AS depender_schema,
     depender,
+    depender_owner,
     nsp2.nspname AS dependee_schema,
-    dependee
+    dependee,
+    dependee_owner
 FROM
     pg_namespace AS nsp1,
     pg_namespace AS nsp2,
@@ -68,8 +72,10 @@ FROM
         SELECT
             c.relname depender,
             c.relnamespace AS depender_nsp,
+            pg_catalog.pg_get_userbyid(c.relowner) as depender_owner,
             c1.relname AS dependee,
-            c1.relnamespace AS dependee_nsp
+            c1.relnamespace AS dependee_nsp,
+            pg_catalog.pg_get_userbyid(c1.relowner) as dependee_owner
         FROM
             pg_rewrite AS rw,
             pg_depend AS d,
@@ -84,7 +90,7 @@ FROM
             AND c1.relkind = 'v'
             AND c.relname <> c1.relname
         GROUP BY
-            depender, depender_nsp, dependee, dependee_nsp
+            depender, depender_nsp, depender_owner, dependee, dependee_nsp, dependee_owner
     ) t1
 WHERE
     t1.depender_nsp = nsp1.oid
@@ -99,8 +105,8 @@ WHERE
 
 view2view = {}
 for row in rows:
-    key = (row['depender_schema'], row['depender'])
-    val = (row['dependee_schema'], row['dependee'])
+    key = (row['depender_schema'], row['depender'], row['depender_owner'])
+    val = (row['dependee_schema'], row['dependee'], row['dependee_owner'])
     view2view[key]=val
 
 while True:
@@ -115,9 +121,9 @@ while True:
         checklist.update(new_checklist)
 
 plpy.execute("DROP TABLE IF EXISTS  __gpupgrade_tmp_generator.__temp_views_list")
-plpy.execute("CREATE TABLE  __gpupgrade_tmp_generator.__temp_views_list (full_view_name TEXT, view_order INTEGER)")
+plpy.execute("CREATE TABLE  __gpupgrade_tmp_generator.__temp_views_list (full_view_name TEXT, view_owner TEXT, view_order INTEGER)")
 for v, view_order in checklist.items():
-    sql = "INSERT INTO  __gpupgrade_tmp_generator.__temp_views_list VALUES('{0}.{1}', {2})".format(v[0],v[1],view_order)
+    sql = "INSERT INTO  __gpupgrade_tmp_generator.__temp_views_list VALUES('{0}.{1}', '{2}', {3})".format(v[0],v[1],v[2],view_order)
     plpy.execute(sql)
 $$ LANGUAGE plpythonu;
 

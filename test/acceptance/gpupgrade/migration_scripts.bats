@@ -62,6 +62,7 @@ teardown() {
     partition_owners_before=$(get_partition_owners "$GPHOME_SOURCE")
     partition_constraints_before=$(get_partition_constraints "$GPHOME_SOURCE")
     partition_defaults_before=$(get_partition_defaults "$GPHOME_SOURCE")
+    view_owners_before=$(get_view_owners "$GPHOME_SOURCE")
 
     MIGRATION_DIR=`mktemp -d /tmp/migration.XXXXXX`
     "$SCRIPTS_DIR"/gpupgrade-migration-sql-generator.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR" "$SCRIPTS_DIR"
@@ -92,6 +93,7 @@ teardown() {
     partition_owners_after=$(get_partition_owners "$GPHOME_TARGET")
     partition_constraints_after=$(get_partition_constraints "$GPHOME_TARGET")
     partition_defaults_after=$(get_partition_defaults "$GPHOME_TARGET")
+    view_owners_after=$(get_view_owners "$GPHOME_TARGET")
 
     # expect the index and tsquery datatype information to be same after the upgrade
     diff -U3 <(echo "$root_child_indexes_before") <(echo "$root_child_indexes_after")
@@ -102,6 +104,7 @@ teardown() {
     diff -U3 <(echo "$partition_owners_before") <(echo "$partition_owners_after")
     diff -U3 <(echo "$partition_constraints_before") <(echo "$partition_constraints_after")
     diff -U3 <(echo "$partition_defaults_before") <(echo "$partition_defaults_after")
+    diff -U3 <(echo "$view_owners_before") <(echo "$view_owners_after")
 }
 
 @test "after reverting recreate scripts must restore non-upgradeable objects" {
@@ -113,6 +116,7 @@ teardown() {
     name_datatype_objects_before=$(get_name_datatypes "$GPHOME_SOURCE")
     fk_constraints_before=$(get_fk_constraints "$GPHOME_SOURCE")
     primary_unique_constraints_before=$(get_primary_unique_constraints "$GPHOME_SOURCE")
+    view_owners_before=$(get_view_owners "$GPHOME_SOURCE")
 
     # Ignore the test tables that break the diff for now.
     EXCLUSIONS+="-T testschema.heterogeneous_ml_partition_table "
@@ -142,6 +146,7 @@ teardown() {
     name_datatype_objects_after=$(get_name_datatypes "$GPHOME_SOURCE")
     fk_constraints_after=$(get_fk_constraints "$GPHOME_SOURCE")
     primary_unique_constraints_after=$(get_primary_unique_constraints "$GPHOME_SOURCE")
+    view_owners_after=$(get_view_owners "$GPHOME_TARGET")
 
     # expect the index and tsquery datatype information to be same after the upgrade
     diff -U3 <(echo "$root_child_indexes_before") <(echo "$root_child_indexes_after")
@@ -149,6 +154,7 @@ teardown() {
     diff -U3 <(echo "$name_datatype_objects_before") <(echo "$name_datatype_objects_after")
     diff -U3 <(echo "$fk_constraints_before") <(echo "$fk_constraints_after")
     diff -U3 <(echo "$primary_unique_constraints_before") <(echo "$primary_unique_constraints_after")
+    diff -U3 <(echo "$view_owners_before") <(echo "$view_owners_after")
 }
 
 @test "migration scripts ignore .psqlrc files" {
@@ -375,3 +381,12 @@ get_partition_defaults() {
     "
 }
 
+get_view_owners() {
+    local gphome=$1
+    $gphome/bin/psql -d testdb -p "$PGPORT" -Atc "
+    SELECT schemaname, viewname, viewowner
+    FROM pg_views
+    WHERE schemaname NOT IN ('pg_catalog', 'information_schema', 'gp_toolkit')
+    ORDER BY 1,2,3;
+    "
+}
