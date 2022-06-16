@@ -20,11 +20,11 @@ setup() {
 
     PSQL="$GPHOME_SOURCE/bin/psql -X --no-align --tuples-only"
 
-    $PSQL -f "$SCRIPTS_DIR"/test/setup_nonupgradable_objects.sql -d postgres
+    $PSQL -d postgres -f "$SCRIPTS_DIR"/test/setup_nonupgradable_objects.sql
 }
 
 teardown() {
-    $PSQL -f "$SCRIPTS_DIR"/test/teardown_nonupgradable_objects.sql -d postgres
+    $PSQL -d postgres -f "$SCRIPTS_DIR"/test/teardown_nonupgradable_objects.sql
 
     # XXX Beware, BATS_TEST_SKIPPED is not a documented export.
     if [ -n "${BATS_TEST_SKIPPED}" ]; then
@@ -37,7 +37,7 @@ teardown() {
 }
 
 @test "migration scripts generate sql to modify non-upgradeable objects and fix pg_upgrade check errors" {
-    PGOPTIONS='--client-min-messages=warning' $PSQL -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql -d testdb
+    PGOPTIONS='--client-min-messages=warning' $PSQL -d testdb -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql
     run gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
         --target-gphome="$GPHOME_TARGET" \
@@ -105,7 +105,7 @@ teardown() {
 }
 
 @test "after reverting recreate scripts must restore non-upgradeable objects" {
-    $PSQL -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql -d testdb
+    $PSQL -d testdb -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql
     $PSQL -d testdb -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
 
     root_child_indexes_before=$(get_indexes "$GPHOME_SOURCE")
@@ -158,7 +158,7 @@ teardown() {
         skip "GPDB 5 does not support alternative PSQLRC locations"
     fi
 
-    $PSQL -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql -d testdb
+    $PSQL -d testdb -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql
 
     MIGRATION_DIR=$(mktemp -d /tmp/migration.XXXXXX)
     register_teardown rm -r "$MIGRATION_DIR"
