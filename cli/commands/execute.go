@@ -70,8 +70,8 @@ Execute completed successfully.
 The target cluster is now running. You may now run queries against the target 
 database and perform any other validation desired prior to finalizing your upgrade.
 source %s
-MASTER_DATA_DIRECTORY=%s
-PGPORT=%d
+export MASTER_DATA_DIRECTORY=%s
+export PGPORT=%d
 
 WARNING: If any queries modify the target database prior to gpupgrade finalize, 
 it will be inconsistent with the source database. 

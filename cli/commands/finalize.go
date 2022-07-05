@@ -100,8 +100,8 @@ To use the upgraded cluster:
    install location: %s -> %s
 3. In a new shell start the upgraded cluster.
    source %s
-   MASTER_DATA_DIRECTORY=%s
-   PGPORT=%d
+   export MASTER_DATA_DIRECTORY=%s
+   export PGPORT=%d
    gpstart -a
 
    Execute the “post-finalize” data migration scripts, and recreate any 
