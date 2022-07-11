@@ -169,8 +169,8 @@ func RenameMirrorTablespacesOnSegments(agentConns []*idl.Connection, source *gre
 				// directory names by renaming the primary DbID to the mirror DbID. We do this on the host containing
 				// the mirror tablespaces.
 				pair := &idl.RenameTablespacesRequest_RenamePair{
-					Source:      filepath.Join(sourceMirrorTsLocation, strconv.Itoa(int(intermediatePrimary.DbID))),
-					Destination: filepath.Join(sourcePrimaryTsLocation, strconv.Itoa(int(intermediateMirror.DbID))),
+					Source:      filepath.Join(sourceMirrorTsLocation, strconv.Itoa(intermediatePrimary.DbID)),
+					Destination: filepath.Join(sourcePrimaryTsLocation, strconv.Itoa(intermediateMirror.DbID)),
 				}
 
 				pairs = append(pairs, pair)

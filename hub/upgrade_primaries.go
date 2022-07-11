@@ -34,11 +34,11 @@ func UpgradePrimaries(agentConns []*idl.Connection, source *greenplum.Cluster, i
 				OldBinDir:     filepath.Join(source.GPHome, "bin"),
 				OldDataDir:    sourcePrimary.DataDir,
 				OldPort:       strconv.Itoa(sourcePrimary.Port),
-				OldDBID:       strconv.Itoa(int(sourcePrimary.DbID)),
+				OldDBID:       strconv.Itoa(sourcePrimary.DbID),
 				NewBinDir:     filepath.Join(intermediate.GPHome, "bin"),
 				NewDataDir:    intermediatePrimary.DataDir,
 				NewPort:       strconv.Itoa(intermediatePrimary.Port),
-				NewDBID:       strconv.Itoa(int(intermediatePrimary.DbID)),
+				NewDBID:       strconv.Itoa(intermediatePrimary.DbID),
 				Tablespaces:   source.Tablespaces[int32(intermediatePrimary.DbID)],
 			}
 
