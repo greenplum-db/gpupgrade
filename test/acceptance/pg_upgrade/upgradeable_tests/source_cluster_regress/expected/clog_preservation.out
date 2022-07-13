@@ -1,0 +1,64 @@
+-- Copyright (c) 2017-2022 VMware, Inc. or its affiliates
+-- SPDX-License-Identifier: Apache-2.0
+
+-- Check to ensure that we don't accidentally truncate CLOG during segment
+-- upgrade and end up with unfrozen user tuples referring to truncated CLOG.
+-- Scanning such tuples post upgrade would result in clog lookup ERRORs such as:
+--   SELECT count(*) FROM foo;
+--   ERROR:  could not access status of transaction 693  (seg0 slice1 192.168.0.148:50434 pid=2191113)
+--   DETAIL:  Could not open file "pg_clog/0000": No such file or directory.
+
+--------------------------------------------------------------------------------
+-- Create and setup upgradeable objects
+--------------------------------------------------------------------------------
+
+CREATE TABLE foo(i int);
+CREATE
+
+-- Burn through 1 CLOG segment on seg 0, inserting some tuples along the way.
+-- These tuples would contain xmins that refer to CLOG that should not be
+-- truncated. We ensure that all tuples inserted end up in seg 0.
+
+!\retcode (/bin/bash -c "source ${GPHOME_SOURCE}/greenplum_path.sh && ${GPHOME_SOURCE}/bin/gpconfig -c debug_burn_xids -v on --skipvalidation");
+-- start_ignore
+-- end_ignore
+(exited with code 0)
+!\retcode (/bin/bash -c "source ${GPHOME_SOURCE}/greenplum_path.sh && ${GPHOME_SOURCE}/bin/gpstop -au");
+-- start_ignore
+-- end_ignore
+(exited with code 0)
+!\retcode echo "INSERT INTO foo VALUES(1);" > /tmp/clog_preservation.sql;
+-- start_ignore
+-- end_ignore
+(exited with code 0)
+
+!\retcode $GPHOME_SOURCE/bin/pgbench -n -f /tmp/clog_preservation.sql -c 8 -t 512 isolation2test;
+-- start_ignore
+transaction type: Custom query
+scaling factor: 1
+query mode: simple
+number of clients: 8
+number of threads: 1
+number of transactions per client: 512
+number of transactions actually processed: 4096/4096
+tps = 866.963260 (including connections establishing)
+tps = 870.915114 (excluding connections establishing)
+
+-- end_ignore
+(exited with code 0)
+
+!\retcode (/bin/bash -c "source ${GPHOME_SOURCE}/greenplum_path.sh && ${GPHOME_SOURCE}/bin/gpconfig -r debug_burn_xids --skipvalidation");
+-- start_ignore
+-- end_ignore
+(exited with code 0)
+!\retcode (/bin/bash -c "source ${GPHOME_SOURCE}/greenplum_path.sh && ${GPHOME_SOURCE}/bin/gpstop -au");
+-- start_ignore
+-- end_ignore
+(exited with code 0)
+!\retcode rm /tmp/clog_preservation.sql;
+-- start_ignore
+-- end_ignore
+(exited with code 0)
+
+-- NOTE: Do not scan the table here, as it will prevent CLOG lookups when we
+-- scan the table post upgrade (doing so sets visibility hint bits on the tuples).
