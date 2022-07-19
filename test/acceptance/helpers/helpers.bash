@@ -50,7 +50,7 @@ isready() {
         "$gphome"/bin/pg_isready -q -p "$port"
     else
         # 5X does not have pg_isready
-        "$gphome"/bin/psql postgres -p "$port" -qc "SELECT 1" &> /dev/null
+        "$gphome"/bin/psql -v ON_ERROR_STOP=1 -d postgres -p "$port" -qc "SELECT 1" &> /dev/null
     fi
 }
 
@@ -204,7 +204,7 @@ query_datadirs() {
         ORDER BY s.content, s.role"
     fi
 
-    run "$gphome"/bin/psql -At -p "$port" postgres -c "$sql"
+    run "$gphome"/bin/psql -v ON_ERROR_STOP=1 -At -p "$port" -d postgres -c "$sql"
     [ "$status" -eq 0 ] || fail "$output"
 
     echo "$output"
@@ -222,7 +222,7 @@ query_tablespace_dirs(){
         WHERE t.spcname not in ('pg_default', 'pg_global') AND role='m'
         ORDER BY s.content, s.role"
 
-    run "$gphome"/bin/psql -At -p "$port" postgres -c "$sql"
+    run "$gphome"/bin/psql -v ON_ERROR_STOP=1 -At -p "$port" -d postgres -c "$sql"
     [ "$status" -eq 0 ] || fail "$output"
 
     echo "$output"
@@ -240,7 +240,7 @@ get_rsync_pairs() {
     SELECT f1.datadir, f2.datadir FROM (SELECT * FROM CTE WHERE role='m') f1
     INNER JOIN (SELECT * FROM CTE where role='p') f2 on f1.content=f2.content;"
 
-    run "$gphome"/bin/psql -At -p "$port" postgres -c "$sql"
+    run "$gphome"/bin/psql -v ON_ERROR_STOP=1 -At -p "$port" -d postgres -c "$sql"
     [ "$status" -eq 0 ] || fail "$output"
 
     echo $output
@@ -304,7 +304,7 @@ get_segment_configuration() {
     local port=${2:-$PGPORT}
 
     if is_GPDB5 "$gphome"; then
-        "$gphome"/bin/psql -AXtF$'\t' -p "$port" postgres -c "
+        "$gphome"/bin/psql -v ON_ERROR_STOP=1 -AXtF$'\t' -p "$port" -d postgres -c "
             SELECT s.content, s.role, s.hostname, s.port, e.fselocation as datadir
             FROM gp_segment_configuration s
             JOIN pg_filespace_entry e ON s.dbid = e.fsedbid
@@ -313,7 +313,7 @@ get_segment_configuration() {
             ORDER BY s.content, s.role
         "
     else
-        "$gphome"/bin/psql -AXtF$'\t' -p "$port" postgres -c "
+        "$gphome"/bin/psql -v ON_ERROR_STOP=1 -AXtF$'\t' -p "$port" -d postgres -c "
             SELECT content, role, hostname, port, datadir
             FROM gp_segment_configuration
             ORDER BY content, role
@@ -326,7 +326,7 @@ all_hosts() {
     # Use GROUP BY/ORDER BY MIN() rather than SELECT DISTINCT so that results
     # are ordered by dbid; that's the host order most devs are used to for test
     # clusters.
-    "$GPHOME_SOURCE"/bin/psql -At postgres -c "
+    "$GPHOME_SOURCE"/bin/psql -v ON_ERROR_STOP=1 -At -d postgres -c "
         SELECT hostname
           FROM gp_segment_configuration
          GROUP BY hostname

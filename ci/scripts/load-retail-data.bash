@@ -59,8 +59,8 @@ ssh mdw <<EOF
 
     source ${GPHOME_SOURCE}/greenplum_path.sh
     cd /home/gpadmin/industry_demo
-    psql -d template1 -e -f data_generation/prep_database.sql
-    psql -d gpdb_demo -e -f data_generation/prep_external_tables.sql
+    psql -v ON_ERROR_STOP=1 -d template1 -e -f data_generation/prep_database.sql
+    psql -v ON_ERROR_STOP=1 -d gpdb_demo -e -f data_generation/prep_external_tables.sql
 EOF
 
 # copy extracted demo_data to segments and start gpfdist
@@ -88,24 +88,26 @@ time ssh mdw <<EOF
     gpstop -ar
 
     cd /home/gpadmin/industry_demo
-    psql -d gpdb_demo -e -f data_generation/prep_UDFs.sql
+    psql -v ON_ERROR_STOP=1 -d gpdb_demo -e -f data_generation/prep_UDFs.sql
 
     data_generation/prep_GUCs.sh
 
     # prepare data
-    psql -d gpdb_demo -e -f data_generation/prep_retail_xts_tables.sql
-    psql -d gpdb_demo -e -f data_generation/prep_dimensions.sql
-    psql -d gpdb_demo -e -f data_generation/prep_facts.sql
+    psql -v ON_ERROR_STOP=1 -d gpdb_demo -e -f data_generation/prep_retail_xts_tables.sql
+    psql -v ON_ERROR_STOP=1 -d gpdb_demo -e -f data_generation/prep_dimensions.sql
+    psql -v ON_ERROR_STOP=1 -d gpdb_demo -e -f data_generation/prep_facts.sql
 
     # generate data
-    psql -d gpdb_demo -e -f data_generation/gen_order_base.sql
-    psql -d gpdb_demo -e -f data_generation/gen_facts.sql
-    psql -d gpdb_demo -e -f data_generation/gen_load_files.sql
-    psql -d gpdb_demo -e -f data_generation/load_RFMT_Scores.sql
+    psql -v ON_ERROR_STOP=1 -d gpdb_demo -e -f data_generation/gen_order_base.sql
+    psql -v ON_ERROR_STOP=1 -d gpdb_demo -e -f data_generation/gen_facts.sql
+    # gen_load_files.sql is trying to query table that doesn't exist. Disabled
+    # ON_ERROR_STOP until we can look into why this is the case.
+    psql -v ON_ERROR_STOP=0 -d gpdb_demo -e -f data_generation/gen_load_files.sql
+    psql -v ON_ERROR_STOP=1 -d gpdb_demo -e -f data_generation/load_RFMT_Scores.sql
 
     # verify data
     # TODO: assert on the output of verification script
-    psql -d gpdb_demo -e -f data_generation/verify_data.sql
+    psql -v ON_ERROR_STOP=1 -d gpdb_demo -e -f data_generation/verify_data.sql
 
     # XXX: This is a workaround for the following pg_upgrade check failure:
     # "ERROR: could not create relation
@@ -124,7 +126,7 @@ ssh mdw "
     gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" /home/gpadmin/gpupgrade/pre-initialize || true
 
     # match root/child partition schemas
-    psql -d gpdb_demo <<SQL_EOF
+    psql -v ON_ERROR_STOP=1 -d gpdb_demo <<SQL_EOF
         ALTER TABLE retail_demo.order_lineitems SET SCHEMA retail_parts;
         ALTER TABLE retail_demo.shipment_lineitems SET SCHEMA retail_parts;
         ALTER TABLE retail_demo.orders SET SCHEMA retail_parts;

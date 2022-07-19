@@ -20,11 +20,14 @@ setup() {
 
     PSQL="$GPHOME_SOURCE/bin/psql -X --no-align --tuples-only"
 
-    $PSQL -d postgres -f "$SCRIPTS_DIR"/test/setup_nonupgradable_objects.sql
+    # Setup is creating a nonupgradable gphdfs user. Gphdfs is removed on 6x in
+    # favor of PXF, so this setup sql file will not pass on 6 -> 6 upgrade with
+    # ON_ERROR_STOP enabled.
+    $PSQL -v ON_ERROR_STOP=0 -d postgres -f "$SCRIPTS_DIR"/test/setup_nonupgradable_objects.sql
 }
 
 teardown() {
-    $PSQL -d postgres -f "$SCRIPTS_DIR"/test/teardown_nonupgradable_objects.sql
+    $PSQL -v ON_ERROR_STOP=1 -d postgres -f "$SCRIPTS_DIR"/test/teardown_nonupgradable_objects.sql
 
     # XXX Beware, BATS_TEST_SKIPPED is not a documented export.
     if [ -n "${BATS_TEST_SKIPPED}" ]; then
@@ -37,7 +40,10 @@ teardown() {
 }
 
 @test "migration scripts generate sql to modify non-upgradeable objects and fix pg_upgrade check errors" {
-    PGOPTIONS='--client-min-messages=warning' $PSQL -d testdb -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql
+    # This syntax in create_nonupgradable_objects.sql is not completely
+    # compatible with 6X. ON_ERROR_STOP is disabled until this incompatibility
+    # is resolved.
+    PGOPTIONS='--client-min-messages=warning' $PSQL -v ON_ERROR_STOP=0 -d testdb -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql
     run gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
         --target-gphome="$GPHOME_TARGET" \
@@ -52,7 +58,7 @@ teardown() {
     egrep "\"check_upgrade\": \"failed\"" $GPUPGRADE_HOME/substeps.json
     egrep "^Checking.*fatal$" ~/gpAdminLogs/gpupgrade/pg_upgrade/p-1/pg_upgrade_internal.log
 
-    PGOPTIONS='--client-min-messages=warning' $PSQL -d testdb -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
+    PGOPTIONS='--client-min-messages=warning' $PSQL -v ON_ERROR_STOP=1 -d testdb -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
 
     root_child_indexes_before=$(get_indexes "$GPHOME_SOURCE")
     tsquery_datatype_objects_before=$(get_tsquery_datatypes "$GPHOME_SOURCE")
@@ -108,8 +114,11 @@ teardown() {
 }
 
 @test "after reverting recreate scripts must restore non-upgradeable objects" {
-    $PSQL -d testdb -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql
-    $PSQL -d testdb -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
+    # This syntax in create_nonupgradable_objects.sql is not completely
+    # compatible with 6X. ON_ERROR_STOP is disabled until this incompatibility
+    # is resolved.
+    $PSQL -v ON_ERROR_STOP=0 -d testdb -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql
+    $PSQL -v ON_ERROR_STOP=1 -d testdb -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
 
     root_child_indexes_before=$(get_indexes "$GPHOME_SOURCE")
     tsquery_datatype_objects_before=$(get_tsquery_datatypes "$GPHOME_SOURCE")
@@ -164,7 +173,10 @@ teardown() {
         skip "GPDB 5 does not support alternative PSQLRC locations"
     fi
 
-    $PSQL -d testdb -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql
+    # This syntax in create_nonupgradable_objects.sql is not completely
+    # compatible with 6X. ON_ERROR_STOP is disabled until this incompatibility
+    # is resolved.
+    $PSQL -v ON_ERROR_STOP=0 -d testdb -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql
 
     MIGRATION_DIR=$(mktemp -d /tmp/migration.XXXXXX)
     register_teardown rm -r "$MIGRATION_DIR"
@@ -174,7 +186,7 @@ teardown() {
     printf '\! kill $PPID\n' > "$PSQLRC"
 
     "$SCRIPTS_DIR"/gpupgrade-migration-sql-generator.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR" "$SCRIPTS_DIR"
-    $PSQL -d testdb -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
+    $PSQL -v ON_ERROR_STOP=1 -d testdb -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
     "$SCRIPTS_DIR"/gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/pre-initialize
 
     gpupgrade initialize \
@@ -192,14 +204,14 @@ teardown() {
 
 get_indexes() {
     local gphome=$1
-    $gphome/bin/psql -d testdb -p "$PGPORT" -Atc "
+    $gphome/bin/psql -v ON_ERROR_STOP=1 -d testdb -p "$PGPORT" -Atc "
          SELECT indrelid::regclass, unnest(indkey)
          FROM pg_index pi
          JOIN pg_partition pp ON pi.indrelid=pp.parrelid
          JOIN pg_class pc ON pc.oid=pp.parrelid
          ORDER by 1,2;
         "
-    $gphome/bin/psql -d testdb -p "$PGPORT" -Atc "
+    $gphome/bin/psql -v ON_ERROR_STOP=1 -d testdb -p "$PGPORT" -Atc "
         SELECT indrelid::regclass, unnest(indkey)
         FROM pg_index pi
         JOIN pg_partition_rule pp ON pi.indrelid=pp.parchildrelid
@@ -211,7 +223,7 @@ get_indexes() {
 
 get_tsquery_datatypes() {
     local gphome=$1
-    $gphome/bin/psql -d testdb -p "$PGPORT" -Atc "
+    $gphome/bin/psql -v ON_ERROR_STOP=1 -d testdb -p "$PGPORT" -Atc "
         SELECT n.nspname, c.relname, a.attname
         FROM pg_catalog.pg_class c,
              pg_catalog.pg_namespace n,
@@ -234,7 +246,7 @@ get_tsquery_datatypes() {
 
 get_name_datatypes() {
     local gphome=$1
-    $gphome/bin/psql -d testdb -p "$PGPORT" -Atc "
+    $gphome/bin/psql -v ON_ERROR_STOP=1 -d testdb -p "$PGPORT" -Atc "
         SELECT n.nspname, c.relname, a.attname
         FROM pg_catalog.pg_class c,
              pg_catalog.pg_namespace n,
@@ -257,7 +269,7 @@ get_name_datatypes() {
 
 get_fk_constraints() {
     local gphome=$1
-    $gphome/bin/psql -d testdb -p "$PGPORT" -Atc "
+    $gphome/bin/psql -v ON_ERROR_STOP=1 -d testdb -p "$PGPORT" -Atc "
         SELECT nspname, relname, conname
         FROM pg_constraint cc
             JOIN
@@ -284,7 +296,7 @@ get_fk_constraints() {
 
 get_primary_unique_constraints() {
     local gphome=$1
-    $gphome/bin/psql -d testdb -p "$PGPORT" -Atc "
+    $gphome/bin/psql -v ON_ERROR_STOP=1 -d testdb -p "$PGPORT" -Atc "
     WITH CTE as
     (
         SELECT oid, *
@@ -331,7 +343,7 @@ get_primary_unique_constraints() {
 
 get_partition_owners() {
     local gphome=$1
-    $gphome/bin/psql -d testdb -p "$PGPORT" -Atc "
+    $gphome/bin/psql -v ON_ERROR_STOP=1 -d testdb -p "$PGPORT" -Atc "
     SELECT c.relname, pg_catalog.pg_get_userbyid(c.relowner)
     FROM pg_partition_rule pr
         JOIN pg_class c ON c.oid = pr.parchildrelid
@@ -345,7 +357,7 @@ get_partition_owners() {
 
 get_partition_constraints() {
     local gphome=$1
-    $gphome/bin/psql -d testdb -p "$PGPORT" -Atc "
+    $gphome/bin/psql -v ON_ERROR_STOP=1 -d testdb -p "$PGPORT" -Atc "
     SELECT c.relname, con.conname
     FROM pg_partition_rule pr
         JOIN pg_class c ON c.oid = pr.parchildrelid
@@ -365,7 +377,7 @@ get_partition_constraints() {
 
 get_partition_defaults() {
     local gphome=$1
-    $gphome/bin/psql -d testdb -p "$PGPORT" -Atc "
+    $gphome/bin/psql -v ON_ERROR_STOP=1 -d testdb -p "$PGPORT" -Atc "
     SELECT c.relname, att.attname, ad.adnum, ad.adsrc
     FROM pg_partition_rule pr
         JOIN pg_class c ON c.oid = pr.parchildrelid
@@ -383,7 +395,7 @@ get_partition_defaults() {
 
 get_view_owners() {
     local gphome=$1
-    $gphome/bin/psql -d testdb -p "$PGPORT" -Atc "
+    $gphome/bin/psql -v ON_ERROR_STOP=1 -d testdb -p "$PGPORT" -Atc "
     SELECT schemaname, viewname, viewowner
     FROM pg_views
     WHERE schemaname NOT IN ('pg_catalog', 'information_schema', 'gp_toolkit')

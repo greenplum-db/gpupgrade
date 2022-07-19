@@ -119,7 +119,7 @@ teardown() {
     (unset LD_LIBRARY_PATH; PGPORT=$newport source "$GPHOME_TARGET"/greenplum_path.sh && gpstart -a -d "$new_coordinator_dir")
 
     # save the actual ports
-    local actual_ports=$($PSQL -At -p $newport postgres -c "
+    local actual_ports=$($PSQL -v ON_ERROR_STOP=1 -At -p $newport postgres -c "
         select string_agg(port::text, ',' order by content) from gp_segment_configuration
     ")
 

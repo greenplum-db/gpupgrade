@@ -21,7 +21,7 @@ setup() {
 teardown() {
     skip_if_no_gpdb
 
-    $PSQL postgres -c "drop table if exists test_linking;"
+    $PSQL -v ON_ERROR_STOP=1 -d postgres -c "drop table if exists test_linking;"
 
     gpupgrade kill-services
     archive_state_dir "$STATE_DIR"
@@ -80,7 +80,7 @@ ensure_hardlinks_for_relfilenode_on_coordinator_and_segments() {
         AND c.relname = '$tablename';"
     fi
 
-    read -r -a relfilenodes <<< $("$gphome"/bin/psql postgres -p "$port" --tuples-only --no-align -c "$sql")
+    read -r -a relfilenodes <<< $("$gphome"/bin/psql -v ON_ERROR_STOP=1 -d postgres -p "$port" --tuples-only --no-align -c "$sql")
 
     for relfilenode in "${relfilenodes[@]}"; do
         local number_of_hardlinks=$($STAT --format "%h" "${relfilenode}")
@@ -95,7 +95,7 @@ ensure_hardlinks_for_relfilenode_on_coordinator_and_segments() {
 
     delete_target_datadirs "${MASTER_DATA_DIRECTORY}"
 
-    $PSQL postgres -c "drop table if exists test_linking; create table test_linking (a int);"
+    $PSQL -v ON_ERROR_STOP=1 -d postgres -c "drop table if exists test_linking; create table test_linking (a int);"
 
     ensure_hardlinks_for_relfilenode_on_coordinator_and_segments $GPHOME_SOURCE $PGPORT 'test_linking' 1
 

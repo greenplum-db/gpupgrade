@@ -58,7 +58,9 @@ main(){
     fi
 
     for file in ${files[*]}; do
-        local cmd="${GPHOME}/bin/psql -X -d postgres -p ${PGPORT} -f ${file} --echo-queries --quiet"
+        # Disabled ON_ERROR_STOP due to incompatibilties of deprecated objects
+        # on 6->6 upgrade that can will some scripts to fail.
+        local cmd="${GPHOME}/bin/psql -v ON_ERROR_STOP=0 -d postgres -p ${PGPORT} -f ${file} -X --echo-queries --quiet"
         echo "Executing command: ${cmd}" | tee -a "$log_file"
         ${cmd} 2>&1 | tee -a "$log_file"
     done

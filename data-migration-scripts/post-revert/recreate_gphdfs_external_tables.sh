@@ -24,7 +24,7 @@ main() {
     # influencing these queries. For 8.3 this is undocumented but still true.
     while read -r table; do
         tables+=(-t "$table")
-    done < <($psql -d "$DBNAME" -p "$PGPORT" -Atc "
+    done < <($psql -v ON_ERROR_STOP=1 -d "$DBNAME" -p "$PGPORT" -Atc "
         SELECT d.objid::regclass
         FROM pg_catalog.pg_depend d
                JOIN pg_catalog.pg_exttable x ON ( d.objid = x.reloid )

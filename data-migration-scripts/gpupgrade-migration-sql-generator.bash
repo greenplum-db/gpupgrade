@@ -42,7 +42,7 @@ INPUT_DIR=${4:-"$(dirname "$0")/greenplum/gpupgrade/data-migration-scripts"}
 APPLY_ONCE_FILES=("gen_alter_gphdfs_roles.sql")
 
 get_databases(){
-    databases=$("$GPHOME"/bin/psql -X -d postgres -p "$PGPORT" -Atc "SELECT datname FROM pg_database WHERE datname != 'template0';")
+    databases=$("$GPHOME"/bin/psql -v ON_ERROR_STOP=1 -d postgres -p "$PGPORT" -X -Atc "SELECT datname FROM pg_database WHERE datname != 'template0';")
     echo "$databases"
 }
 
@@ -59,7 +59,7 @@ exec_script(){
 
     local records
     if [[ $path == *".sql" ]]; then
-        records=$("$GPHOME"/bin/psql -X -q -d "$database" -p "$PGPORT" -Atf "$path")
+        records=$("$GPHOME"/bin/psql -v ON_ERROR_STOP=1 -d "$database" -p "$PGPORT" -X -q -Atf "$path")
     else
         records=$("$path" "$GPHOME" "$PGPORT" "$database")
     fi
@@ -103,18 +103,18 @@ execute_script_directory() {
 
     for database in "${databases[@]}"; do
         # Create the function for detecting dependent views
-        is_python_enabled=$("$GPHOME"/bin/psql -X -q -d "$database" -p "$PGPORT" -Atc "SELECT count(*) FROM pg_language WHERE lanname = 'plpythonu'")
+        is_python_enabled=$("$GPHOME"/bin/psql -v ON_ERROR_STOP=1 -d "$database" -p "$PGPORT" -X -q -Atc "SELECT count(*) FROM pg_language WHERE lanname = 'plpythonu'")
         if [ ! $is_python_enabled == 1 ]; then
-            is_python_enabled=$("$GPHOME"/bin/psql -X -q -d "$database" -p "$PGPORT" -Atc "CREATE LANGUAGE plpythonu")
+            is_python_enabled=$("$GPHOME"/bin/psql -v ON_ERROR_STOP=1 -d "$database" -p "$PGPORT" -X -q -Atc "CREATE LANGUAGE plpythonu")
         fi
         records=$(PGOPTIONS='--client-min-messages=warning' \
-            "$GPHOME"/bin/psql -X -q -d "$database" -p "$PGPORT" -Atc \
+            "$GPHOME"/bin/psql -v ON_ERROR_STOP=1 -d "$database" -p "$PGPORT" -X -q -Atc \
             "DROP SCHEMA IF EXISTS __gpupgrade_tmp_generator CASCADE")
 
         # Create a schema to use during generator run. This schema will be droppped at the end of generator process
         # which means the generated scripts cannot depend on it, they will use their own temp schema if necessary.
-        records=$("$GPHOME"/bin/psql -X -q -d "$database" -p "$PGPORT" -Atc "CREATE SCHEMA __gpupgrade_tmp_generator")
-        records=$("$GPHOME"/bin/psql -X -q -d "$database" -p "$PGPORT" -Atf "${INPUT_DIR}/create_find_view_dep_function.sql")
+        records=$("$GPHOME"/bin/psql -v ON_ERROR_STOP=1 -d "$database" -p "$PGPORT" -X -q -Atc "CREATE SCHEMA __gpupgrade_tmp_generator")
+        records=$("$GPHOME"/bin/psql -v ON_ERROR_STOP=1 -d "$database" -p "$PGPORT" -X -q -Atf "${INPUT_DIR}/create_find_view_dep_function.sql")
 
         for path in "${paths[@]}"; do
             # generate sql modifying shared objects only for default database
@@ -125,12 +125,12 @@ execute_script_directory() {
 
         # Drop the table of dependent views
         records=$(PGOPTIONS='--client-min-messages=warning' \
-            "$GPHOME"/bin/psql -X -q -d "$database" -p "$PGPORT" -Atc \
+            "$GPHOME"/bin/psql -v ON_ERROR_STOP=1 -d "$database" -p "$PGPORT" -X -q -Atc \
             "DROP TABLE IF EXISTS __gpupgrade_tmp_generator.__temp_views_list")
 
         # Drop the temp schema
         records=$(PGOPTIONS='--client-min-messages=warning' \
-            "$GPHOME"/bin/psql -X -q -d "$database" -p "$PGPORT" -Atc \
+            "$GPHOME"/bin/psql -v ON_ERROR_STOP=1 -d "$database" -p "$PGPORT" -X -q -Atc \
             "DROP SCHEMA IF EXISTS __gpupgrade_tmp_generator CASCADE")
     done
 

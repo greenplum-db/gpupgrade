@@ -51,14 +51,14 @@ delete_target_on_teardown() {
 }
 
 setup_check_upgrade_to_fail() {
-    $PSQL -d postgres -p $PGPORT -c "CREATE TABLE test_pg_upgrade(a int) DISTRIBUTED BY (a) PARTITION BY RANGE (a)(start (1) end(4) every(1));"
-    $PSQL -d postgres -p $PGPORT -c "CREATE UNIQUE INDEX fomo ON test_pg_upgrade (a);"
+    $PSQL -v ON_ERROR_STOP=1 -d postgres -p $PGPORT -c "CREATE TABLE test_pg_upgrade(a int) DISTRIBUTED BY (a) PARTITION BY RANGE (a)(start (1) end(4) every(1));"
+    $PSQL -v ON_ERROR_STOP=1 -d postgres -p $PGPORT -c "CREATE UNIQUE INDEX fomo ON test_pg_upgrade (a);"
 
     register_teardown teardown_check_upgrade_failure
 }
 
 teardown_check_upgrade_failure() {
-    $PSQL -d postgres -p $PGPORT -c "DROP TABLE IF EXISTS test_pg_upgrade CASCADE;"
+    $PSQL -v ON_ERROR_STOP=1 -d postgres -p $PGPORT -c "DROP TABLE IF EXISTS test_pg_upgrade CASCADE;"
 }
 
 release_held_port() {

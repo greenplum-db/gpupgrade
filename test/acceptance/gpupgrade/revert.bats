@@ -69,7 +69,7 @@ query_host_datadirs() {
         ORDER BY s.content, s.role"
     fi
 
-    run "$gphome"/bin/psql -AtF$'\t' -p "$port" postgres -c "$sql"
+    run "$gphome"/bin/psql -v ON_ERROR_STOP=1 -d postgres -AtF$'\t' -p "$port" -c "$sql"
     [ "$status" -eq 0 ] || fail "$output"
 
     echo "$output"
@@ -147,10 +147,10 @@ test_revert_after_execute() {
 
     # Add a table
     TABLE="should_be_reverted"
-    $PSQL postgres -c "CREATE TABLE ${TABLE} (a INT)"
-    register_teardown $PSQL postgres -c "DROP TABLE ${TABLE}"
+    $PSQL -v ON_ERROR_STOP=1 -d postgres -c "CREATE TABLE ${TABLE} (a INT)"
+    register_teardown $PSQL -v ON_ERROR_STOP=1 -d postgres -c "DROP TABLE ${TABLE}"
 
-    $PSQL postgres -c "INSERT INTO ${TABLE} VALUES (1), (2), (3)"
+    $PSQL -v ON_ERROR_STOP=1 -d postgres -c "INSERT INTO ${TABLE} VALUES (1), (2), (3)"
 
     MIGRATION_DIR=`mktemp -d /tmp/migration.XXXXXX`
     register_teardown rm -r "$MIGRATION_DIR"
@@ -170,7 +170,7 @@ test_revert_after_execute() {
     gpupgrade execute --non-interactive --verbose
 
     # Modify the table on the target cluster
-    $PSQL -p $target_coordinator_port postgres -c "TRUNCATE ${TABLE}"
+    $PSQL -v ON_ERROR_STOP=1 -d postgres -p $target_coordinator_port -c "TRUNCATE ${TABLE}"
 
     # Modify the table in the tablespace on the target cluster
     # Note: tablespace only work when upgrading from 5X.
@@ -182,7 +182,7 @@ test_revert_after_execute() {
     gpupgrade revert --non-interactive --verbose
 
     # Verify the table modifications were reverted
-    rows=$($PSQL postgres -Atc "SELECT COUNT(*) FROM ${TABLE}")
+    rows=$($PSQL -v ON_ERROR_STOP=1 -d postgres -Atc "SELECT COUNT(*) FROM ${TABLE}")
     if (( rows != 3 )); then
         fail "table ${TABLE} truncated after execute was not reverted: got $rows rows want 3"
     fi
@@ -205,7 +205,7 @@ test_revert_after_execute() {
     done <<< "$primaries"
 
     # Check that transactions can be started on the source
-    $PSQL postgres --single-transaction -c "SELECT version()" || fail "unable to start transaction"
+    $PSQL -v ON_ERROR_STOP=1 -d postgres --single-transaction -c "SELECT version()" || fail "unable to start transaction"
 
     # Check to make sure the old cluster still matches
     new_config=$(get_segment_configuration "${GPHOME_SOURCE}")
@@ -262,7 +262,7 @@ is_source_standby_in_sync() {
     local poll=5
 
     while (( duration > 0 )); do
-        INSYNC=$("$PSQL" -AXt postgres -c "SELECT sent_location=replay_location FROM pg_stat_replication")
+        INSYNC=$("$PSQL" -v ON_ERROR_STOP=1 -d postgres -AXt -c "SELECT sent_location=replay_location FROM pg_stat_replication")
 
         if [[ -z "$INSYNC" ]] && ! is_source_standby_running; then
             break # standby has disappeared
@@ -289,16 +289,16 @@ is_source_standby_running() {
 # setup_coordinator_upgrade_failure will cause pg_upgrade on the coordinator to fail.  It creates a table
 # with tuples but then moves its coordinator data directory relfilenode away.
 setup_coordinator_upgrade_failure() {
-    "$PSQL" postgres --single-transaction -f - <<"EOF"
+    "$PSQL" -v ON_ERROR_STOP=1 -d postgres --single-transaction -f - <<"EOF"
         CREATE TABLE coordinator_failure (a int, b int);
         INSERT INTO coordinator_failure SELECT i, i FROM generate_series(1,10)i;
 EOF
 
-    register_teardown "$PSQL" postgres -c "DROP TABLE IF EXISTS coordinator_failure"
+    register_teardown "$PSQL" -v ON_ERROR_STOP=1 -d postgres -c "DROP TABLE IF EXISTS coordinator_failure"
 
     local file dboid
-    file=$("$GPHOME_SOURCE"/bin/psql -d postgres -Atc "SELECT relfilenode FROM pg_class WHERE relname='coordinator_failure';")
-    dboid=$("$GPHOME_SOURCE"/bin/psql -d postgres -Atc "SELECT oid FROM pg_database WHERE datname='postgres';")
+    file=$("$GPHOME_SOURCE"/bin/psql -v ON_ERROR_STOP=1 -d postgres -Atc "SELECT relfilenode FROM pg_class WHERE relname='coordinator_failure';")
+    dboid=$("$GPHOME_SOURCE"/bin/psql -v ON_ERROR_STOP=1 -d postgres -Atc "SELECT oid FROM pg_database WHERE datname='postgres';")
     mv "$MASTER_DATA_DIRECTORY/base/$dboid/$file" "$MASTER_DATA_DIRECTORY/base/$dboid/$file.bkp"
     register_teardown mv "$MASTER_DATA_DIRECTORY/base/$dboid/$file.bkp" "$MASTER_DATA_DIRECTORY/base/$dboid/$file"
 }
@@ -307,16 +307,16 @@ EOF
 # with tuples but then moves its content 0 primary data directory relfilenode away.  Our test clusters should
 # always have a content 0 primary.
 setup_primary_upgrade_failure() {
-    "$PSQL" postgres --single-transaction -f - <<"EOF"
+    "$PSQL" -v ON_ERROR_STOP=1 -d postgres --single-transaction -f - <<"EOF"
         CREATE TABLE primary_failure_tbl (a int, b int);
         INSERT INTO primary_failure_tbl SELECT i, i FROM generate_series(1,10)i;
 EOF
-    register_teardown "$PSQL" postgres -c "DROP TABLE IF EXISTS primary_failure_tbl"
+    register_teardown "$PSQL" -v ON_ERROR_STOP=1 -d postgres -c "DROP TABLE IF EXISTS primary_failure_tbl"
 
     # NOTE: Before removing the relfile for primary_failure_tbl issue a checkpoint to flush the dirty buffers to disk.
     # Later we have a CREATE DATABASE statement which indirectly creates a checkpoint and if the dirty buffers exist at
     # that point the statement will fail.
-    "$PSQL" postgres --single-transaction -c "CHECKPOINT"
+    "$PSQL" -v ON_ERROR_STOP=1 -d postgres --single-transaction -c "CHECKPOINT"
 
     # get host and datadir for segment 0
     local host datadir
@@ -324,8 +324,8 @@ EOF
 
     # obtain the relfilenode and dbid of the table primary_failure_tbl on segment 0
     local file dboid
-    file=$("$GPHOME_SOURCE"/bin/psql -d postgres -Atc "SELECT relfilenode FROM gp_dist_random('pg_class') WHERE relname='primary_failure_tbl' AND gp_segment_id=0;")
-    dboid=$("$GPHOME_SOURCE"/bin/psql -d postgres -Atc "SELECT oid FROM gp_dist_random('pg_database') WHERE datname='postgres' and gp_segment_id=0;")
+    file=$("$GPHOME_SOURCE"/bin/psql -v ON_ERROR_STOP=1 -d postgres -Atc "SELECT relfilenode FROM gp_dist_random('pg_class') WHERE relname='primary_failure_tbl' AND gp_segment_id=0;")
+    dboid=$("$GPHOME_SOURCE"/bin/psql -v ON_ERROR_STOP=1 -d postgres -Atc "SELECT oid FROM gp_dist_random('pg_database') WHERE datname='postgres' and gp_segment_id=0;")
 
     ssh "$host" mv "$datadir/base/$dboid/$file" "$datadir/base/$dboid/$file.bkp"
     register_teardown ssh "$host" mv "$datadir/base/$dboid/$file.bkp" "$datadir/base/$dboid/$file"
@@ -357,10 +357,10 @@ test_revert_after_execute_pg_upgrade_failure() {
 
     # Add a table
     TABLE="should_be_reverted"
-    $PSQL postgres -c "CREATE TABLE ${TABLE} (a INT)"
-    register_teardown $PSQL postgres -c "DROP TABLE ${TABLE}"
+    $PSQL -v ON_ERROR_STOP=1 -d postgres -c "CREATE TABLE ${TABLE} (a INT)"
+    register_teardown $PSQL -v ON_ERROR_STOP=1 -d postgres -c "DROP TABLE ${TABLE}"
 
-    $PSQL postgres -c "INSERT INTO ${TABLE} VALUES (1), (2), (3)"
+    $PSQL -v ON_ERROR_STOP=1 -d postgres -c "INSERT INTO ${TABLE} VALUES (1), (2), (3)"
 
     MIGRATION_DIR=`mktemp -d /tmp/migration.XXXXXX`
     register_teardown rm -r "$MIGRATION_DIR"
@@ -387,7 +387,7 @@ test_revert_after_execute_pg_upgrade_failure() {
     gpupgrade revert --non-interactive --verbose
 
     # Verify the table is untouched
-    rows=$($PSQL postgres -Atc "SELECT COUNT(*) FROM ${TABLE}")
+    rows=$($PSQL -v ON_ERROR_STOP=1 -d postgres -Atc "SELECT COUNT(*) FROM ${TABLE}")
     if (( rows != 3 )); then
         fail "table ${TABLE} was not untouched: got $rows rows want 3"
     fi
@@ -409,7 +409,7 @@ test_revert_after_execute_pg_upgrade_failure() {
     done <<< "$primaries"
 
     # Check that transactions can be started on the source
-    $PSQL postgres --single-transaction -c "SELECT version()" || fail "unable to start transaction"
+    $PSQL -v ON_ERROR_STOP=1 -d postgres --single-transaction -c "SELECT version()" || fail "unable to start transaction"
 
     # Check to make sure the old cluster still matches
     new_config=$(get_segment_configuration "${GPHOME_SOURCE}")

@@ -36,7 +36,7 @@ teardown() {
 
     start_source_cluster
 
-    $PSQL -d postgres -p $PGPORT -c "DROP TABLE IF EXISTS test_pg_upgrade CASCADE;"
+    $PSQL -v ON_ERROR_STOP=1 -d postgres -p $PGPORT -c "DROP TABLE IF EXISTS test_pg_upgrade CASCADE;"
 }
 
 # yes, this will fail once we allow an index on a partition table
@@ -44,8 +44,8 @@ teardown() {
     skip_if_no_gpdb
 
     # add in a index on a partition table, which causes pg_upgrade --check to fail
-    $PSQL -d postgres -p $PGPORT -c "CREATE TABLE test_pg_upgrade(a int) DISTRIBUTED BY (a) PARTITION BY RANGE (a)(start (1) end(4) every(1));"
-    $PSQL -d postgres -p $PGPORT -c "CREATE UNIQUE INDEX fomo ON test_pg_upgrade (a);"
+    $PSQL -v ON_ERROR_STOP=1 -d postgres -p $PGPORT -c "CREATE TABLE test_pg_upgrade(a int) DISTRIBUTED BY (a) PARTITION BY RANGE (a)(start (1) end(4) every(1));"
+    $PSQL -v ON_ERROR_STOP=1 -d postgres -p $PGPORT -c "CREATE UNIQUE INDEX fomo ON test_pg_upgrade (a);"
 
     # Use --verbose to help debug cases where the grep fails. run() will hide
     # that output, so manually store the status and ignore the expected failure.
@@ -65,7 +65,7 @@ teardown() {
     grep "Checking for indexes on partitioned tables                  fatal" "$GPUPGRADE_LOGDIR"/hub*.log
 
     # revert added index
-    $PSQL -d postgres -p $PGPORT -c "DROP TABLE test_pg_upgrade CASCADE;"
+    $PSQL -v ON_ERROR_STOP=1 -d postgres -p $PGPORT -c "DROP TABLE test_pg_upgrade CASCADE;"
 
     KEEP_STATE_DIR=0
 }
