@@ -112,9 +112,16 @@ func TestRsync(t *testing.T) {
 			t.Errorf("expected an error")
 		}
 
-		var invalid *upgrade.InvalidDataDirectoryError
-		if !errors.As(invalid, &err) {
-			t.Errorf("got type %T want %T", err, invalid)
+		var errs errorlist.Errors
+		if !errors.As(err, &errs) {
+			t.Fatalf("got error %#v, want type %T", err, errs)
+		}
+
+		for _, err := range errs {
+			var invalid *upgrade.InvalidDataDirectoryError
+			if !errors.As(err, &invalid) {
+				t.Errorf("got type %T want %T", err, invalid)
+			}
 		}
 	})
 
@@ -141,9 +148,16 @@ func TestRsync(t *testing.T) {
 			t.Errorf("expected an error")
 		}
 
-		var invalid *upgrade.InvalidDataDirectoryError
-		if !errors.As(invalid, &err) {
-			t.Errorf("got type %T want %T", err, invalid)
+		var errs errorlist.Errors
+		if !errors.As(err, &errs) {
+			t.Fatalf("got error %#v, want type %T", err, errs)
+		}
+
+		for _, err := range errs {
+			var invalid *upgrade.InvalidDataDirectoryError
+			if !errors.As(err, &invalid) {
+				t.Errorf("got type %T want %T", err, invalid)
+			}
 		}
 	})
 
