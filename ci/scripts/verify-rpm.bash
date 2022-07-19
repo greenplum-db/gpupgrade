@@ -2,7 +2,7 @@
 # Copyright (c) 2017-2022 VMware, Inc. or its affiliates
 # SPDX-License-Identifier: Apache-2.0
 
-set -eux -o pipefail
+set -eu -o pipefail -o errtrace
 
 RPM=$1
 RELEASE=$2
@@ -52,4 +52,19 @@ main() {
   rpm -ev gpupgrade
 }
 
+log_error() {
+  echo "Error: line $(caller): ${BASH_COMMAND}"
+
+  echo "
+Are the tags synced and up to date between origin and the remote? This script expects the latest tag.
+If your dev pipeline is failing consider running:
+  git fetch --tags origin
+  git push --tags <yourRemoteName>
+If you recently tagged and the prod pipeline failed consider running:
+  git push --tags origin"
+}
+
+trap log_error ERR
+
 main
+
