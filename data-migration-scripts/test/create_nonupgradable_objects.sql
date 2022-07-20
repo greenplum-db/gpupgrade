@@ -307,3 +307,40 @@ ALTER TABLE heterogeneous_ml_partition_table DROP COLUMN region;
 ALTER TABLE heterogeneous_ml_partition_table ALTER PARTITION for (1) SPLIT PARTITION for (1) at (3) into (PARTITION p1, PARTITION p2);
 
 RESET search_path;
+
+-- parent partition with seg entries
+CREATE OR REPLACE FUNCTION insert_dummy_segentry(segrelfqname text)
+    RETURNS void AS
+$func$
+BEGIN /* in func */
+EXECUTE 'INSERT INTO ' || segrelfqname || ' VALUES(null)'; /* in func */
+END /* in func */
+$func$  LANGUAGE plpgsql;
+
+-- test AO parent partition with seg entries
+CREATE TABLE ao_root_partition (A INT, B INT) WITH (APPENDONLY=TRUE) DISTRIBUTED BY(A)
+    PARTITION BY RANGE(A)
+        SUBPARTITION BY RANGE(B)
+            SUBPARTITION TEMPLATE (START(1) END (5) EVERY(1)) (START (1) END (2) EVERY (1));
+
+INSERT INTO ao_root_partition SELECT 1,i FROM GENERATE_SERIES(1,4) AS i;
+-- Create an artificial aoseg entry for the root and interior partition.
+SET allow_system_table_mods TO DML;
+SELECT insert_dummy_segentry(s.interior_segrelfqname) FROM
+    (SELECT segrelid::regclass::text AS interior_segrelfqname FROM pg_appendonly
+     WHERE relid IN ('ao_root_partition'::regclass, 'ao_root_partition_1_prt_1'::regclass)) AS s;
+RESET allow_system_table_mods;
+
+-- test AOCO parent partition with seg entries
+CREATE TABLE aoco_root_partition (A INT, B INT) WITH (APPENDONLY=TRUE, ORIENTATION=COLUMN) DISTRIBUTED BY(A)
+    PARTITION BY RANGE(A)
+        SUBPARTITION BY RANGE(B)
+            SUBPARTITION TEMPLATE (START(1) END (5) EVERY(1)) (START (1) END (2) EVERY (1));
+
+INSERT INTO aoco_root_partition SELECT 1,i FROM GENERATE_SERIES(1,4) AS i;
+-- Create an artificial aocsseg entry for the root and interior partition.
+SET allow_system_table_mods TO DML;
+SELECT insert_dummy_segentry(s.interior_segrelfqname) FROM
+    (SELECT segrelid::regclass::text AS interior_segrelfqname FROM pg_appendonly
+     WHERE relid IN ('aoco_root_partition'::regclass, 'aoco_root_partition_1_prt_1'::regclass)) AS s;
+RESET allow_system_table_mods;
