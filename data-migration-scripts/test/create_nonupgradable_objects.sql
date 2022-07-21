@@ -49,7 +49,8 @@ CREATE INDEX sales_idx_bitmap on sales using bitmap(office_id);
 CREATE INDEX sales_1_prt_2_idx on sales_1_prt_2(office_id, region);
 CREATE INDEX sales_1_prt_3_2_prt_asia_idx on sales_1_prt_3_2_prt_asia(region);
 CREATE INDEX sales_1_prt_outlying_dates_idx on sales_1_prt_outlying_dates(trans_id);
-CREATE UNIQUE INDEX sales_unique_idx on sales(office_id);
+INSERT INTO sales VALUES (1, 2, 'usa');
+CREATE UNIQUE INDEX sales_unique_idx on sales(trans_id);
 
 -- create tables where the index relation name is not equal primary/unique key constraint name.
 -- we create a TYPE with the default name of the constraint that would have been created to force
