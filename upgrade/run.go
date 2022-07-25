@@ -45,6 +45,10 @@ func Run(stdout, stderr io.Writer, opts *idl.PgOptions) error {
 		"--mode", opts.GetMode().String(),
 	}
 
+	if opts.PgUpgradeVerbose {
+		args = append(args, "--verbose")
+	}
+
 	if opts.Action == idl.PgOptions_check {
 		args = append(args, "--check")
 		args = append(args, "--continue-check-on-fatal")

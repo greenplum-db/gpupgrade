@@ -36,6 +36,21 @@ teardown() {
     fi
 }
 
+@test "gpupgrade initialize fails when --pg-upgrade-verbose is used without --verbose" {
+    run gpupgrade initialize \
+        --automatic \
+        --source-gphome "$GPHOME_SOURCE" \
+        --target-gphome "$GPHOME_TARGET" \
+        --source-master-port "$PGPORT" \
+        --stop-before-cluster-creation \
+        --pg-upgrade-verbose
+
+    [ "$status" -eq 1 ]
+    if ! [[ "$output" = *'expected --verbose when using --pg-upgrade-verbose'* ]]; then
+        fail "actual: $output"
+    fi
+}
+
 @test "gpupgrade initialize --file with verbose uses the configured values" {
     config_file=${STATE_DIR}/gpupgrade_config
     cat <<- EOF > "$config_file"
@@ -46,7 +61,7 @@ teardown() {
 		stop-before-cluster-creation = true
 	EOF
 
-    gpupgrade initialize -a --verbose --file "$config_file"
+    gpupgrade initialize -a --verbose --pg-upgrade-verbose --file "$config_file"
 
     run gpupgrade config show --source-gphome
     [ "$status" -eq 0 ]
@@ -73,4 +88,21 @@ teardown() {
     run gpupgrade config show --target-gphome
     [ "$status" -eq 0 ]
     [ "$output" = "$GPHOME_TARGET" ]
+}
+
+@test "gpupgrade execute fails when --pg-upgrade-verbose is used without --verbose" {
+    gpupgrade initialize \
+        --automatic \
+        --source-gphome "$GPHOME_SOURCE" \
+        --target-gphome "$GPHOME_TARGET" \
+        --source-master-port "$PGPORT" \
+        --stop-before-cluster-creation \
+        --verbose
+
+    run gpupgrade execute --non-interactive --pg-upgrade-verbose
+
+    [ "$status" -eq 1 ]
+    if ! [[ "$output" = *'expected --verbose when using --pg-upgrade-verbose'* ]]; then
+        fail "actual: $output"
+    fi
 }

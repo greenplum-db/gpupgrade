@@ -36,9 +36,13 @@ message InitializeRequest {
 
 message InitializeCreateClusterRequest {
   string dynamicLibraryPath = 1;
+  bool pgUpgradeVerbose = 2;
 }
 
-message ExecuteRequest {}
+message ExecuteRequest {
+  bool pgUpgradeVerbose = 1;
+}
+
 message FinalizeRequest {}
 
 message RevertRequest {}

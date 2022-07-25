@@ -45,6 +45,7 @@ func initialize() *cobra.Command {
 	var diskFreeRatio float64
 	var stopBeforeClusterCreation bool
 	var verbose bool
+	var pgUpgradeVerbose bool
 	var skipVersionCheck bool
 	var ports string
 	var mode string
@@ -56,6 +57,10 @@ func initialize() *cobra.Command {
 		Short: "prepare the system for upgrade",
 		Long:  InitializeHelp,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if cmd.Flag("pg-upgrade-verbose").Changed && !cmd.Flag("verbose").Changed {
+				return fmt.Errorf("expected --verbose when using --pg-upgrade-verbose")
+			}
+
 			isAnyDevModeFlagSet := cmd.Flag("source-gphome").Changed ||
 				cmd.Flag("target-gphome").Changed ||
 				cmd.Flag("source-master-port").Changed
@@ -68,11 +73,11 @@ func initialize() *cobra.Command {
 			}
 
 			// If the file flag is set ensure no other flags are set except
-			// optionally verbose and automatic.
+			// optionally verbose, pg-upgrade-verbose, and automatic.
 			if cmd.Flag("file").Changed {
 				var err error
 				cmd.Flags().Visit(func(flag *pflag.Flag) {
-					if flag.Name != "file" && flag.Name != "verbose" && flag.Name != "automatic" {
+					if flag.Name != "file" && flag.Name != "verbose" && flag.Name != "pg-upgrade-verbose" && flag.Name != "automatic" {
 						err = errors.New("The file flag cannot be used with any other flag except verbose and automatic.")
 					}
 				})
@@ -240,6 +245,7 @@ func initialize() *cobra.Command {
 
 				request := &idl.InitializeCreateClusterRequest{
 					DynamicLibraryPath: dynamicLibraryPath,
+					PgUpgradeVerbose:   pgUpgradeVerbose,
 				}
 				response, err = commanders.InitializeCreateCluster(client, request, verbose)
 				if err != nil {
@@ -265,6 +271,7 @@ To return the cluster to its original state, run "gpupgrade revert".`,
 	}
 
 	subInit.Flags().BoolVarP(&verbose, "verbose", "v", false, "print the output stream from all substeps")
+	subInit.Flags().BoolVar(&pgUpgradeVerbose, "pg-upgrade-verbose", false, "execute pg_upgrade with --verbose")
 	subInit.Flags().StringVarP(&file, "file", "f", "", "the configuration file to use")
 	subInit.Flags().BoolVarP(&nonInteractive, "automatic", "a", false, "do not prompt for confirmation to proceed")
 	subInit.Flags().BoolVar(&nonInteractive, "non-interactive", false, "do not prompt for confirmation to proceed")

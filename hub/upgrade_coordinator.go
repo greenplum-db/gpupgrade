@@ -20,7 +20,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
 
-func UpgradeCoordinator(streams step.OutStreams, source *greenplum.Cluster, intermediate *greenplum.Cluster, action idl.PgOptions_Action, linkMode bool) error {
+func UpgradeCoordinator(streams step.OutStreams, pgUpgradeVerbose bool, source *greenplum.Cluster, intermediate *greenplum.Cluster, action idl.PgOptions_Action, linkMode bool) error {
 	oldOptions := ""
 	// When upgrading from 5 the coordinator must be provided with its standby's dbid to allow WAL to sync.
 	if source.Version.Major == 5 && source.HasStandby() {
@@ -28,21 +28,22 @@ func UpgradeCoordinator(streams step.OutStreams, source *greenplum.Cluster, inte
 	}
 
 	opts := &idl.PgOptions{
-		Action:        action,
-		Role:          intermediate.Coordinator().Role,
-		ContentID:     int32(intermediate.Coordinator().ContentID),
-		Mode:          idl.PgOptions_dispatcher,
-		OldOptions:    oldOptions,
-		LinkMode:      linkMode,
-		TargetVersion: intermediate.Version.String(),
-		OldBinDir:     filepath.Join(source.GPHome, "bin"),
-		OldDataDir:    source.CoordinatorDataDir(),
-		OldPort:       strconv.Itoa(source.CoordinatorPort()),
-		OldDBID:       strconv.Itoa(source.Coordinator().DbID),
-		NewBinDir:     filepath.Join(intermediate.GPHome, "bin"),
-		NewDataDir:    intermediate.CoordinatorDataDir(),
-		NewPort:       strconv.Itoa(intermediate.CoordinatorPort()),
-		NewDBID:       strconv.Itoa(intermediate.Coordinator().DbID),
+		PgUpgradeVerbose: pgUpgradeVerbose,
+		Action:           action,
+		Role:             intermediate.Coordinator().Role,
+		ContentID:        int32(intermediate.Coordinator().ContentID),
+		Mode:             idl.PgOptions_dispatcher,
+		OldOptions:       oldOptions,
+		LinkMode:         linkMode,
+		TargetVersion:    intermediate.Version.String(),
+		OldBinDir:        filepath.Join(source.GPHome, "bin"),
+		OldDataDir:       source.CoordinatorDataDir(),
+		OldPort:          strconv.Itoa(source.CoordinatorPort()),
+		OldDBID:          strconv.Itoa(source.Coordinator().DbID),
+		NewBinDir:        filepath.Join(intermediate.GPHome, "bin"),
+		NewDataDir:       intermediate.CoordinatorDataDir(),
+		NewPort:          strconv.Itoa(intermediate.CoordinatorPort()),
+		NewDBID:          strconv.Itoa(intermediate.Coordinator().DbID),
 	}
 
 	err := RsyncCoordinatorDataDir(streams, utils.GetCoordinatorPreUpgradeBackupDir(), intermediate.CoordinatorDataDir())

@@ -18,6 +18,7 @@ import (
 
 func execute() *cobra.Command {
 	var verbose bool
+	var pgUpgradeVerbose bool
 	var nonInteractive bool
 
 	cmd := &cobra.Command{
@@ -27,6 +28,10 @@ func execute() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			cmd.SilenceUsage = true
 			var response idl.ExecuteResponse
+
+			if cmd.Flag("pg-upgrade-verbose").Changed && !cmd.Flag("verbose").Changed {
+				return fmt.Errorf("expected --verbose when using --pg-upgrade-verbose")
+			}
 
 			logdir, err := utils.GetLogDir()
 			if err != nil {
@@ -56,7 +61,7 @@ func execute() *cobra.Command {
 					return err
 				}
 
-				response, err = commanders.Execute(client, verbose)
+				response, err = commanders.Execute(client, verbose, pgUpgradeVerbose)
 				if err != nil {
 					return err
 				}
@@ -89,6 +94,7 @@ To return the cluster to its original state, run "gpupgrade revert".`,
 	}
 
 	cmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print the output stream from all substeps")
+	cmd.Flags().BoolVar(&pgUpgradeVerbose, "pg-upgrade-verbose", false, "execute pg_upgrade with --verbose")
 	cmd.Flags().BoolVar(&nonInteractive, "non-interactive", false, "do not prompt for confirmation to proceed")
 	cmd.Flags().MarkHidden("non-interactive") //nolint
 

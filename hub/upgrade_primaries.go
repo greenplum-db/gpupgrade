@@ -14,7 +14,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 )
 
-func UpgradePrimaries(agentConns []*idl.Connection, source *greenplum.Cluster, intermediate *greenplum.Cluster, action idl.PgOptions_Action, linkMode bool) error {
+func UpgradePrimaries(agentConns []*idl.Connection, pgUpgradeVerbose bool, source *greenplum.Cluster, intermediate *greenplum.Cluster, action idl.PgOptions_Action, linkMode bool) error {
 	request := func(conn *idl.Connection) error {
 		intermediatePrimaries := intermediate.SelectSegments(func(seg *greenplum.SegConfig) bool {
 			return seg.IsOnHost(conn.Hostname) && seg.IsPrimary() && !seg.IsCoordinator()
@@ -25,21 +25,22 @@ func UpgradePrimaries(agentConns []*idl.Connection, source *greenplum.Cluster, i
 			sourcePrimary := source.Primaries[intermediatePrimary.ContentID]
 
 			opt := &idl.PgOptions{
-				Action:        action,
-				Role:          intermediatePrimary.Role,
-				ContentID:     int32(intermediatePrimary.ContentID),
-				Mode:          idl.PgOptions_segment,
-				LinkMode:      linkMode,
-				TargetVersion: intermediate.Version.String(),
-				OldBinDir:     filepath.Join(source.GPHome, "bin"),
-				OldDataDir:    sourcePrimary.DataDir,
-				OldPort:       strconv.Itoa(sourcePrimary.Port),
-				OldDBID:       strconv.Itoa(sourcePrimary.DbID),
-				NewBinDir:     filepath.Join(intermediate.GPHome, "bin"),
-				NewDataDir:    intermediatePrimary.DataDir,
-				NewPort:       strconv.Itoa(intermediatePrimary.Port),
-				NewDBID:       strconv.Itoa(intermediatePrimary.DbID),
-				Tablespaces:   source.Tablespaces[int32(intermediatePrimary.DbID)],
+				PgUpgradeVerbose: pgUpgradeVerbose,
+				Action:           action,
+				Role:             intermediatePrimary.Role,
+				ContentID:        int32(intermediatePrimary.ContentID),
+				Mode:             idl.PgOptions_segment,
+				LinkMode:         linkMode,
+				TargetVersion:    intermediate.Version.String(),
+				OldBinDir:        filepath.Join(source.GPHome, "bin"),
+				OldDataDir:       sourcePrimary.DataDir,
+				OldPort:          strconv.Itoa(sourcePrimary.Port),
+				OldDBID:          strconv.Itoa(sourcePrimary.DbID),
+				NewBinDir:        filepath.Join(intermediate.GPHome, "bin"),
+				NewDataDir:       intermediatePrimary.DataDir,
+				NewPort:          strconv.Itoa(intermediatePrimary.Port),
+				NewDBID:          strconv.Itoa(intermediatePrimary.DbID),
+				Tablespaces:      source.Tablespaces[int32(intermediatePrimary.DbID)],
 			}
 
 			opts = append(opts, opt)
