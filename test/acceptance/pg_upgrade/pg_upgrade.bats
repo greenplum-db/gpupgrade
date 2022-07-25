@@ -21,6 +21,11 @@ setup() {
 
     gpupgrade kill-services
 
+    # Set PYTHONPATH directly since it is needed when running the pg_upgrade tests locally. Normally one would source
+    # greenplum_path.sh, but that causes the following issues:
+    # https://web.archive.org/web/20220506055918/https://groups.google.com/a/greenplum.org/g/gpdb-dev/c/JN-YwjCCReY/m/0L9wBOvlAQAJ
+    export PYTHONPATH=${GPHOME_TARGET}/lib/python
+
     # Ensure that the cluster contains no non-upgradeable objects before the test
     # Note: This is especially important with a 5X demo cluster which contains
     # the gphdfs role by default.
@@ -36,6 +41,7 @@ teardown() {
 
     run_teardowns
     gpupgrade kill-services
+    unset PYTHONPATH
 }
 
 @test "pg_upgrade --check detects non-upgradeable objects" {
