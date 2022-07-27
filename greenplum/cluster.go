@@ -382,6 +382,17 @@ func (c *Cluster) runGreenplumCommand(streams step.OutStreams, utility string, a
 }
 
 func (c *Cluster) CheckActiveConnections() error {
+	running, err := c.IsCoordinatorRunning(step.DevNullStream)
+	if err != nil {
+		return err
+	}
+
+	if !running {
+		// If coordinator is not running assume the cluster is stopped and there
+		// are no active connections.
+		return nil
+	}
+
 	db, err := sql.Open("pgx", c.Connection())
 	if err != nil {
 		return err
