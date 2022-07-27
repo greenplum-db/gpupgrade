@@ -48,4 +48,6 @@ var SubstepDescriptions = map[idl.Substep]substepText{
 	idl.Substep_remove_source_mirrors:                                         substepText{"Removing source cluster data directories and tablespaces to save space...", "Remove source cluster data directories and tablespaces to save space..."},
 	idl.Substep_wait_for_cluster_to_be_ready_after_adding_mirrors_and_standby: substepText{"Waiting for cluster to be ready...", "Wait for cluster to be ready"},
 	idl.Substep_wait_for_cluster_to_be_ready_after_updating_catalog:           substepText{"Waiting for cluster to be ready...", "Wait for cluster to be ready"},
+	idl.Substep_check_active_connections_on_source_cluster:                    substepText{"Checking active connections on source cluster...", "Check active connections on source cluster"},
+	idl.Substep_check_active_connections_on_target_cluster:                    substepText{"Checking active connections on target cluster...", "Check active connections on target cluster"},
 }

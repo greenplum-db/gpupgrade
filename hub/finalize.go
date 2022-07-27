@@ -30,8 +30,8 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 		}
 	}()
 
-	st.RunInternalSubstep(func() error {
-		return s.Intermediate.CheckActiveConnections()
+	st.Run(idl.Substep_check_active_connections_on_target_cluster, func(streams step.OutStreams) error {
+		return s.Intermediate.CheckActiveConnections(streams)
 	})
 
 	st.RunConditionally(idl.Substep_upgrade_mirrors, s.Source.HasMirrors() && s.LinkMode, func(streams step.OutStreams) error {

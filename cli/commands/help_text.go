@@ -37,6 +37,7 @@ func init() {
 		idl.Substep_check_upgrade,
 	})
 	ExecuteHelp = GenerateHelpString(executeHelp, []idl.Substep{
+		idl.Substep_check_active_connections_on_source_cluster,
 		idl.Substep_shutdown_source_cluster,
 		idl.Substep_upgrade_master,
 		idl.Substep_copy_master,
@@ -44,6 +45,7 @@ func init() {
 		idl.Substep_start_target_cluster,
 	})
 	FinalizeHelp = GenerateHelpString(finalizeHelp, []idl.Substep{
+		idl.Substep_check_active_connections_on_target_cluster,
 		idl.Substep_remove_source_mirrors,
 		idl.Substep_upgrade_mirrors,
 		idl.Substep_upgrade_standby,

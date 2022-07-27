@@ -106,6 +106,8 @@ enum Substep {
     wait_for_cluster_to_be_ready_after_updating_catalog = 34;
     stop_target_cluster = 35;
     setting_dynamic_library_path_on_target_cluster = 36;
+    check_active_connections_on_source_cluster = 37;
+    check_active_connections_on_target_cluster = 38;
 }
 
 enum Status {

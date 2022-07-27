@@ -381,8 +381,8 @@ func (c *Cluster) runGreenplumCommand(streams step.OutStreams, utility string, a
 	return cmd.Run()
 }
 
-func (c *Cluster) CheckActiveConnections() error {
-	running, err := c.IsCoordinatorRunning(step.DevNullStream)
+func (c *Cluster) CheckActiveConnections(streams step.OutStreams) error {
+	running, err := c.IsCoordinatorRunning(streams)
 	if err != nil {
 		return err
 	}
