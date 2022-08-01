@@ -23,7 +23,7 @@
   on_failure:
     <<: *slack_alert
 
-{{range .GpupgradeJobs}}
+{{range .ClusterJobs}}
 - name: {{.Name}}
   plan:
     - in_parallel:

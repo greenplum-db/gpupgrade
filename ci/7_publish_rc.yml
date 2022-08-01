@@ -6,7 +6,7 @@
           passed:
             - build
             - nocluster-tests
-            {{- range .GpupgradeJobs}}
+            {{- range .ClusterJobs}}
             - {{ .Name }}
             {{- end}}
             {{- range .PgupgradeJobs}}
@@ -15,7 +15,7 @@
             {{- range .UpgradeJobs}}
             - {{ .Name }}
             {{- end}}
-            {{- range .MultihostGpupgradeJobs}}
+            {{- range .MultihostClusterJobs}}
             - {{ .Name }}
             {{- end}}
         - get: enterprise_rpm
@@ -27,7 +27,7 @@
             {{- range .PgupgradeJobs}}
             - {{.Name}}
             {{- end}}
-            {{- range .MultihostGpupgradeJobs}}
+            {{- range .MultihostClusterJobs}}
             - {{ .Name }}
             {{- end}}
         - get: oss_rpm

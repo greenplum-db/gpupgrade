@@ -1,4 +1,4 @@
-{{range .MultihostGpupgradeJobs}}
+{{range .MultihostClusterJobs}}
 - name: {{ .Name }}
   serial_groups: [{{ .BaseName }}]
   # Specifying serial groups so that only one platform runs at a time. For
