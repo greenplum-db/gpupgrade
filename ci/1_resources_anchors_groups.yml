@@ -39,9 +39,9 @@ resources:
 - name: retail_demo_src
   type: git
   source:
-    uri: ((retail-demo-git-remote))
+    uri: git@github.com:pivotal/gp-industry-retail-demo.git
     private_key: ((retail-demo-git-key))
-    branch: ((retail-demo-git-branch))
+    branch: master
 
 # gpupgrade tests with release candidates for the source and target version.
 # This allows for faster feedback for example when changes are made to
@@ -67,14 +67,14 @@ resources:
 - name: oss_rpm
   type: gcs
   source:
-    bucket: ((cm-intermediates-bucket))
+    bucket: gpupgrade-intermediates
     json_key: ((cm-gcs-service-account-key))
     versioned_file: oss/gpupgrade-intermediate.el7.x86_64.rpm
 
 - name: enterprise_rpm
   type: gcs
   source:
-    bucket: ((cm-intermediates-bucket))
+    bucket: gpupgrade-intermediates
     json_key: ((cm-gcs-service-account-key))
     versioned_file: enterprise/gpupgrade-intermediate.el7.x86_64.rpm
 
@@ -107,9 +107,9 @@ resources:
 - name: ccp_src
   type: git
   source:
-    branch: ((ccp-git-branch))
+    branch: master
     private_key: ((ccp-git-key))
-    uri: ((ccp-git-remote))
+    uri: git@github.com:pivotal/gp-concourse-cluster-provisioner.git
 
 - name: terraform
   type: terraform
@@ -123,7 +123,7 @@ resources:
     storage:
       access_key_id: ((tf-machine-access-key-id))
       secret_access_key: ((tf-machine-secret-access-key))
-      region_name: ((aws-region))
+      region_name: us-west-2
       # This is not parameterized, on purpose. All tfstates will go to this spot,
       # and different teams will place there clusters' tfstate files under different paths
       bucket: gpdb5-pipeline-dynamic-terraform
@@ -131,10 +131,10 @@ resources:
 
 - name: terraform.d
   source:
-    access_key_id: ((bucket-access-key-id))
+    access_key_id: ((aws-bucket-access-key-id))
+    secret_access_key: ((aws-bucket-secret-access-key))
+    region_name: us-west-2
     bucket: ccp-terraform-provider-plugins
-    region_name: ((aws-region))
-    secret_access_key: ((bucket-secret-access-key))
     versioned_file: plugin-cache.tgz
   type: s3
 
@@ -169,7 +169,7 @@ resources:
   type: gcs
   source:
     json_key: ((cm-gcs-service-account-key))
-    bucket: ((cm-intermediates-bucket))
+    bucket: gpupgrade-intermediates
     versioned_file: extensions/postgis215_dump.sql
 
 {{range .Versions}}
@@ -255,9 +255,9 @@ anchors:
   - &ccp_gen_cluster_default_params
     AWS_ACCESS_KEY_ID: ((tf-machine-access-key-id))
     AWS_SECRET_ACCESS_KEY: ((tf-machine-secret-access-key))
-    AWS_DEFAULT_REGION: ((aws-region))
+    AWS_DEFAULT_REGION: us-west-2
     BUCKET_PATH: clusters-google/
-    BUCKET_NAME: ((tf-bucket-name))
+    BUCKET_NAME: gpdb5-pipeline-dynamic-terraform
     CLOUD_PROVIDER: google
 
   - &ccp_destroy
@@ -290,13 +290,13 @@ anchors:
           params:
             GOOGLE_CREDENTIALS: ((google-service-account-key))
             GOOGLE_PROJECT_ID: ((google-project-id))
-            GOOGLE_ZONE: ((google-zone))
+            GOOGLE_ZONE: us-central1-a
             GOOGLE_SERVICE_ACCOUNT: ((google-service-account))
             AWS_ACCESS_KEY_ID: ((tf-machine-access-key-id))
             AWS_SECRET_ACCESS_KEY: ((tf-machine-secret-access-key))
-            AWS_DEFAULT_REGION: ((tf-machine-region))
+            AWS_DEFAULT_REGION: us-west-2
             BUCKET_PATH: clusters-google/
-            BUCKET_NAME: ((tf-bucket-name))
+            BUCKET_NAME: gpdb5-pipeline-dynamic-terraform
 
   - &slack_alert
     do:
