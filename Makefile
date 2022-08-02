@@ -195,10 +195,14 @@ endif
 WORKSPACE ?= ~/workspace
 PIPELINE_NAME ?= gpupgrade:$(shell git rev-parse --abbrev-ref HEAD | tr '/' ':')
 FLY_TARGET ?= cm
+
+# YAML templating is used to switch between prod and dev pipelines. The
+# environment variable JOB_TYPE is used to determine whether a dev or prod
+# pipeline is generated. It is used when go generate runs our yaml parser.
 ifeq ($(FLY_TARGET),prod)
-	TARGET := prod
+set-pipeline: export JOB_TYPE=prod
 else
-	TARGET := dev
+set-pipeline: export JOB_TYPE=dev
 endif
 
 .PHONY: set-pipeline expose-pipeline
@@ -220,14 +224,8 @@ set-pipeline:
 	go generate ./ci
 	#NOTE-- make sure your gpupgrade-git-remote uses an https style git"
 	#NOTE-- such as https://github.com/greenplum-db/gpupgrade.git"
-	# TODO: Keep this in sync with the README at github.com/greenplum-db/continuous-integration
 	fly -t $(FLY_TARGET) set-pipeline -p $(PIPELINE_NAME) \
 		-c ci/generated/pipeline.yml \
-		-l $(WORKSPACE)/gp-continuous-integration/secrets/gpupgrade.$(TARGET).yml \
-		-l $(WORKSPACE)/gp-continuous-integration/secrets/gpdb_common-ci-secrets.yml \
-		-l $(WORKSPACE)/gp-continuous-integration/secrets/gpdb_master-ci-secrets.$(TARGET).yml \
-		-l $(WORKSPACE)/gp-continuous-integration/secrets/ccp_ci_secrets_$(FLY_TARGET).yml \
-		-l $(WORKSPACE)/gp-continuous-integration/secrets/gp-upgrade-packaging.dev.yml \
 		-v gpupgrade-git-remote=$(GIT_URI) \
 		-v gpupgrade-git-branch=$(BRANCH)
 

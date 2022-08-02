@@ -134,7 +134,7 @@
             repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
             tag: latest
         params:
-          GOOGLE_CREDENTIALS: ((cm-gcs-service-account-key))
+          GOOGLE_CREDENTIALS: ((upgrade/cm-gcs-service-account-key))
           OS_VERSION: centos{{.CentosVersion}}
         inputs:
           - name: ccp_src

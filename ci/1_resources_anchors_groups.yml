@@ -40,7 +40,7 @@ resources:
   type: git
   source:
     uri: git@github.com:pivotal/gp-industry-retail-demo.git
-    private_key: ((retail-demo-git-key))
+    private_key: ((upgrade/retail-demo-git-key))
     branch: master
 
 # gpupgrade tests with release candidates for the source and target version.
@@ -68,28 +68,28 @@ resources:
   type: gcs
   source:
     bucket: gpupgrade-intermediates
-    json_key: ((cm-gcs-service-account-key))
+    json_key: ((upgrade/cm-gcs-service-account-key))
     versioned_file: oss/gpupgrade-intermediate.el7.x86_64.rpm
 
 - name: enterprise_rpm
   type: gcs
   source:
     bucket: gpupgrade-intermediates
-    json_key: ((cm-gcs-service-account-key))
+    json_key: ((upgrade/cm-gcs-service-account-key))
     versioned_file: enterprise/gpupgrade-intermediate.el7.x86_64.rpm
 
 - name: oss_rc_rpm
   type: gcs
   source:
-    bucket: ((cm-artifacts-bucket))
-    json_key: ((cm-gcs-service-account-key))
+    bucket: gpupgrade-artifacts-{{.JobType}}
+    json_key: ((upgrade/cm-gcs-service-account-key))
     regexp: release-candidates/oss/gpupgrade-(.*).rpm
 
 - name: enterprise_rc_rpm
   type: gcs
   source:
-    bucket: ((cm-artifacts-bucket))
-    json_key: ((cm-gcs-service-account-key))
+    bucket: gpupgrade-artifacts-{{.JobType}}
+    json_key: ((upgrade/cm-gcs-service-account-key))
     regexp: release-candidates/enterprise/gpupgrade-(.*).rpm
 
 - name: bats
@@ -102,13 +102,13 @@ resources:
 - name: slack-alert
   type: slack-notification
   source:
-    url: ((cm_webhook_url))
+    url: ((upgrade/{{.JobType}}/cm-slack-webhook-url))
 
 - name: ccp_src
   type: git
   source:
     branch: master
-    private_key: ((ccp-git-key))
+    private_key: ((gp-concourse-cluster-provisioner-git-key))
     uri: git@github.com:pivotal/gp-concourse-cluster-provisioner.git
 
 - name: terraform
@@ -117,9 +117,9 @@ resources:
     env:
       AWS_ACCESS_KEY_ID: ((tf-machine-access-key-id))
       AWS_SECRET_ACCESS_KEY: ((tf-machine-secret-access-key))
-      GOOGLE_CREDENTIALS: ((google-service-account-key))
+      GOOGLE_CREDENTIALS: ((upgrade/{{.JobType}}/google-service-account-key))
     vars:
-      project_id: ((google-project-id))
+      project_id: ((upgrade/{{.JobType}}/google-project-id))
     storage:
       access_key_id: ((tf-machine-access-key-id))
       secret_access_key: ((tf-machine-secret-access-key))
@@ -141,10 +141,10 @@ resources:
 - name: icw_planner_gpdb5_centos6_dump
   type: gcs
   source:
-    # FIXME: When flying a dev or prod pipeline we use the -dev or -prod bucket
-    # based on ccp_ci_secrets_$(FLY_TARGET).yml. However, for dev pipelines the
-    # -dev bucket does not have this artifact, causing all jobs that use this
-    # resource to hang. So for now hardcode it to the bucket with the artifact.
+    # FIXME: When flying a dev or prod pipeline we use the -dev or -prod
+    # bucket. However, for dev pipelines the -dev bucket does not have this
+    # artifact, causing all jobs that use this resource to hang. So for now
+    # hardcode it to the bucket with the artifact.
     # bucket: ((gcs-bucket-intermediates))
     bucket: pivotal-gpdb-concourse-resources-intermediates-prod
     json_key: ((concourse-gcs-resources-service-account-key))
@@ -153,10 +153,10 @@ resources:
 - name: icw_gporca_gpdb6_centos6_dump
   type: gcs
   source:
-    # FIXME: When flying a dev or prod pipeline we use the -dev or -prod bucket
-    # based on ccp_ci_secrets_$(FLY_TARGET).yml. However, for dev pipelines the
-    # -dev bucket does not have this artifact, causing all jobs that use this
-    # resource to hang. So for now hardcode it to the bucket with the artifact.
+    # FIXME: When flying a dev or prod pipeline we use the -dev or -prod
+    # bucket. However, for dev pipelines the -dev bucket does not have this
+    # artifact, causing all jobs that use this resource to hang. So for now
+    # hardcode it to the bucket with the artifact.
     # bucket: ((gcs-bucket-intermediates))
     bucket: pivotal-gpdb-concourse-resources-intermediates-prod
     json_key: ((concourse-gcs-resources-service-account-key))
@@ -168,7 +168,7 @@ resources:
 - name: postgis_2.1.5_dump
   type: gcs
   source:
-    json_key: ((cm-gcs-service-account-key))
+    json_key: ((upgrade/cm-gcs-service-account-key))
     bucket: gpupgrade-intermediates
     versioned_file: extensions/postgis215_dump.sql
 
@@ -209,7 +209,7 @@ resources:
 - name: pxf_6_gpdb{{.GPVersion}}_centos{{.CentosVersion}}_rpm
   type: gcs
   source:
-    json_key: ((pxf-storage-service-account-key))
+    json_key: ((ud/pxf/secrets/storage-service-account-key))
     bucket: data-gpdb-ud-pxf-build
     versioned_file: prod/snapshots/pxf6/pxf-gp{{.GPVersion}}.el{{.CentosVersion}}.tar.gz
 {{- end }}
@@ -288,10 +288,9 @@ anchors:
           run:
             path: ccp_src/google/ccp_failed_test.sh
           params:
-            GOOGLE_CREDENTIALS: ((google-service-account-key))
-            GOOGLE_PROJECT_ID: ((google-project-id))
+            GOOGLE_CREDENTIALS: ((upgrade/{{.JobType}}/google-service-account-key))
+            GOOGLE_PROJECT_ID: ((upgrade/{{.JobType}}/google-project-id))
             GOOGLE_ZONE: us-central1-a
-            GOOGLE_SERVICE_ACCOUNT: ((google-service-account))
             AWS_ACCESS_KEY_ID: ((tf-machine-access-key-id))
             AWS_SECRET_ACCESS_KEY: ((tf-machine-secret-access-key))
             AWS_DEFAULT_REGION: us-west-2

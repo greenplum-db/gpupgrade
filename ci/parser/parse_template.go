@@ -114,6 +114,7 @@ type Version struct {
 }
 
 type Data struct {
+	JobType                string
 	AllVersions            []string // combination of Source/Target
 	UpgradeJobs            []*UpgradeJob
 	LastTargetVersion      string
@@ -192,6 +193,7 @@ func init() {
 	}
 
 	data = Data{
+		JobType:                os.Getenv("JOB_TYPE"),
 		AllVersions:            deduplicate(sourceVersions, targetVersions),
 		UpgradeJobs:            upgradeJobs,
 		LastTargetVersion:      targetVersions[len(targetVersions)-1],
