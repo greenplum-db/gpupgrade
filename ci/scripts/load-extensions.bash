@@ -19,6 +19,7 @@ scp postgis_gppkg_source/postgis*.gppkg gpadmin@mdw:/tmp/postgis_source.gppkg
 scp sqldump/*.sql gpadmin@mdw:/tmp/postgis_dump.sql
 scp madlib_gppkg_source/madlib*.gppkg gpadmin@mdw:/tmp/madlib_source.gppkg
 scp plr_gppkg_source/plr*.gppkg gpadmin@mdw:/tmp/plr_source.gppkg
+scp plcontainer_gppkg_source/*.gppkg gpadmin@mdw:/tmp/plcontainer_source.gppkg
 
 echo "Installing extensions and sample data on source cluster..."
 
@@ -107,34 +108,19 @@ SQL_EOF
 
         CREATE VIEW test_norm_var AS SELECT id, r_norm(10,0,1) as x FROM (SELECT generate_series(1,30::bigint) AS ID) foo;
 SQL_EOF
-"
 
-install_plcontainer() {
-    echo "Installing plcontainer..."
+    echo 'Installing plcontainer...'
+    gppkg -i /tmp/plcontainer_source.gppkg
+    psql -v ON_ERROR_STOP=1 -d postgres <<SQL_EOF
+        CREATE EXTENSION plcontainer;
+        CREATE FUNCTION dummyPython() RETURNS text AS \\\$\\\$
+            # container: plc_python_shared
+            return 'hello from Python'
+        \\\$\\\$ LANGUAGE plcontainer;
 
-    scp plcontainer_gppkg_source/*.gppkg gpadmin@mdw:/tmp/plcontainer_source.gppkg
-
-    time ssh -n mdw "
-        set -eux -o pipefail
-
-        source /usr/local/greenplum-db-source/greenplum_path.sh
-        export MASTER_DATA_DIRECTORY=$MASTER_DATA_DIRECTORY
-
-        gppkg -i /tmp/plcontainer_source.gppkg
-
-        psql -v ON_ERROR_STOP=1 -d postgres <<SQL_EOF
-            CREATE EXTENSION plcontainer;
-            CREATE FUNCTION dummyPython() RETURNS text AS \\\$\\\$
-                # container: plc_python_shared
-                return 'hello from Python'
-            \\\$\\\$ LANGUAGE plcontainer;
-
-            CREATE VIEW plcontainer_view AS SELECT * FROM dummyPython();
+        CREATE VIEW plcontainer_view AS SELECT * FROM dummyPython();
 SQL_EOF
 "
-}
-
-test_plcontainer "$OS_VERSION" && install_plcontainer || echo "Skipping plcontainer for centos6 since its not supported..."
 
 install_pxf() {
     local PXF_BASE=/home/gpadmin/pxf
