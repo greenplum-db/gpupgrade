@@ -23,11 +23,24 @@ scp plcontainer_gppkg_source/*.gppkg gpadmin@mdw:/tmp/plcontainer_source.gppkg
 
 echo "Installing extensions and sample data on source cluster..."
 
+echo "Installing pxf on all hosts in the source cluster..."
+export PXF_BASE=/home/gpadmin/pxf
+echo "${GOOGLE_CREDENTIALS}" > /tmp/key.json
+# PXF SNAPSHOT builds are only available as an RPM inside a tar.gz
+tar -xf pxf_rpm_source/pxf*.tar.gz --directory pxf_rpm_source --strip-components=1 --wildcards '*.rpm'
+
 echo 'Installing GPDB extension dependencies...'
 mapfile -t hosts < cluster_env_files/hostfile_all
 for host in "${hosts[@]}"; do
+    scp pxf_rpm_source/*.rpm "gpadmin@${host}":/tmp/pxf_source.rpm
+    scp /tmp/key.json "gpadmin@${host}":/tmp/key.json
+
     ssh -n "centos@${host}" "
         set -eux -o pipefail
+
+        # FIXME: yum install pxf like the others, and chown like the others
+        sudo rpm -ivh /tmp/pxf_source.rpm
+        sudo chown -R gpadmin:gpadmin /usr/local/pxf*
 
         sudo yum install -y R # needed for plr
 
@@ -120,78 +133,46 @@ SQL_EOF
 
         CREATE VIEW plcontainer_view AS SELECT * FROM dummyPython();
 SQL_EOF
-"
 
-install_pxf() {
-    local PXF_BASE=/home/gpadmin/pxf
+    echo 'Installing pxf...'
+    export GPHOME=$GPHOME_SOURCE
+    export PXF_BASE=$PXF_BASE
 
-    echo "Installing pxf on all hosts in the source cluster..."
-    echo "${GOOGLE_CREDENTIALS}" > /tmp/key.json
+    /usr/local/pxf-*/bin/pxf cluster prepare
+    sed -i -e 's|^# export JAVA_HOME=.*|export JAVA_HOME=/usr/lib/jvm/jre|' $PXF_BASE/conf/pxf-env.sh
+    mkdir -p ${PXF_BASE}/servers/google
 
-    # PXF SNAPSHOT builds are only available as an RPM inside a tar.gz
-    tar -xf pxf_rpm_source/pxf*.tar.gz --directory pxf_rpm_source --strip-components=1 --wildcards '*.rpm'
+    cp /usr/local/pxf-*/templates/gs-site.xml ${PXF_BASE}/servers/google/
+    sed -i 's|YOUR_GOOGLE_STORAGE_KEYFILE|/tmp/key.json|' ${PXF_BASE}/servers/google/gs-site.xml
 
-    mapfile -t hosts < cluster_env_files/hostfile_all
-    for host in "${hosts[@]}"; do
-        scp pxf_rpm_source/*.rpm "gpadmin@${host}":/tmp/pxf_source.rpm
-        scp /tmp/key.json "gpadmin@${host}":/tmp/key.json
+    /usr/local/pxf-*/bin/pxf cluster register
+    /usr/local/pxf-*/bin/pxf cluster sync
+    /usr/local/pxf-*/bin/pxf cluster start
 
-        ssh -n "centos@${host}" "
-            set -eux -o pipefail
+    echo 'Load PXF data...'
+    psql -v ON_ERROR_STOP=1 -d postgres <<SQL_EOF
+        CREATE EXTENSION pxf;
 
-            echo 'Installing pxf...'
-            sudo rpm -ivh /tmp/pxf_source.rpm
-            sudo chown -R gpadmin:gpadmin /usr/local/pxf*
-        "
-    done
-
-    ssh -n mdw "
-        set -eux -o pipefail
-
-        source /usr/local/greenplum-db-source/greenplum_path.sh
-
-        echo 'Initialize pxf...'
-        export GPHOME=$GPHOME_SOURCE
-        export PXF_BASE=$PXF_BASE
-
-        /usr/local/pxf-*/bin/pxf cluster prepare
-        sed -i -e 's|^# export JAVA_HOME=.*|export JAVA_HOME=/usr/lib/jvm/jre|' $PXF_BASE/conf/pxf-env.sh
-        mkdir -p ${PXF_BASE}/servers/google
-
-        cp /usr/local/pxf-*/templates/gs-site.xml ${PXF_BASE}/servers/google/
-        sed -i 's|YOUR_GOOGLE_STORAGE_KEYFILE|/tmp/key.json|' ${PXF_BASE}/servers/google/gs-site.xml
-
-        /usr/local/pxf-*/bin/pxf cluster register
-        /usr/local/pxf-*/bin/pxf cluster sync
-        /usr/local/pxf-*/bin/pxf cluster start
-
-        echo 'Load PXF data...'
-        psql -v ON_ERROR_STOP=1 -d postgres <<SQL_EOF
-            CREATE EXTENSION pxf;
-
-            CREATE EXTERNAL TABLE pxf_read_test (a TEXT, b TEXT, c TEXT)
-                LOCATION ('pxf://tmp/dummy1'
-                          '?FRAGMENTER=org.greenplum.pxf.api.examples.DemoFragmenter'
-                          '&ACCESSOR=org.greenplum.pxf.api.examples.DemoAccessor'
-                          '&RESOLVER=org.greenplum.pxf.api.examples.DemoTextResolver')
-                FORMAT 'TEXT' (DELIMITER ',');
-            CREATE TABLE pxf_read_test_materialized AS SELECT * FROM pxf_read_test;
+        CREATE EXTERNAL TABLE pxf_read_test (a TEXT, b TEXT, c TEXT)
+            LOCATION ('pxf://tmp/dummy1'
+                      '?FRAGMENTER=org.greenplum.pxf.api.examples.DemoFragmenter'
+                      '&ACCESSOR=org.greenplum.pxf.api.examples.DemoAccessor'
+                      '&RESOLVER=org.greenplum.pxf.api.examples.DemoTextResolver')
+            FORMAT 'TEXT' (DELIMITER ',');
+        CREATE TABLE pxf_read_test_materialized AS SELECT * FROM pxf_read_test;
 
 
-            CREATE EXTERNAL TABLE pxf_parquet_read (id INTEGER, name TEXT, cdate DATE, amt DOUBLE PRECISION, grade TEXT,
-                                                b BOOLEAN, tm TIMESTAMP WITHOUT TIME ZONE, bg BIGINT, bin BYTEA,
-                                                sml SMALLINT, r REAL, vc1 CHARACTER VARYING(5), c1 CHARACTER(3),
-                                                dec1 NUMERIC, dec2 NUMERIC(5,2), dec3 NUMERIC(13,5), num1 INTEGER)
-                LOCATION ('pxf://gpupgrade-intermediates/extensions/pxf_parquet_types.parquet?PROFILE=gs:parquet&SERVER=google')
-                FORMAT 'CUSTOM' (FORMATTER='pxfwritable_import');
-            CREATE TABLE pxf_parquet_read_materialized AS SELECT * FROM pxf_parquet_read;
+        CREATE EXTERNAL TABLE pxf_parquet_read (id INTEGER, name TEXT, cdate DATE, amt DOUBLE PRECISION, grade TEXT,
+                                            b BOOLEAN, tm TIMESTAMP WITHOUT TIME ZONE, bg BIGINT, bin BYTEA,
+                                            sml SMALLINT, r REAL, vc1 CHARACTER VARYING(5), c1 CHARACTER(3),
+                                            dec1 NUMERIC, dec2 NUMERIC(5,2), dec3 NUMERIC(13,5), num1 INTEGER)
+            LOCATION ('pxf://gpupgrade-intermediates/extensions/pxf_parquet_types.parquet?PROFILE=gs:parquet&SERVER=google')
+            FORMAT 'CUSTOM' (FORMATTER='pxfwritable_import');
+        CREATE TABLE pxf_parquet_read_materialized AS SELECT * FROM pxf_parquet_read;
 SQL_EOF
 
-        /usr/local/pxf-*/bin/pxf cluster stop
+    /usr/local/pxf-*/bin/pxf cluster stop
 "
-}
-
-test_pxf "$OS_VERSION" && install_pxf || echo "Skipping pxf for centos6 since pxf6 for GPDB6 on centos6 is not supported..."
 
 echo "Installing postgres native extensions and sample data on source cluster..."
 time ssh -n mdw "

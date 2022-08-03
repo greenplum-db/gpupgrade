@@ -23,30 +23,28 @@ scp madlib_gppkg_target/madlib*.gppkg gpadmin@mdw:/tmp/madlib_target.gppkg
 scp plr_gppkg_target/plr*.gppkg gpadmin@mdw:/tmp/plr_target.gppkg
 scp plcontainer_gppkg_target/*.gppkg gpadmin@mdw:/tmp/plcontainer_target.gppkg
 
-if test_pxf "$OS_VERSION"; then
-    # PXF SNAPSHOT builds are only available as an RPM inside a tar.gz
-    tar -xf pxf_rpm_target/pxf*.tar.gz --directory pxf_rpm_target --strip-components=1 --wildcards '*.rpm'
+# PXF SNAPSHOT builds are only available as an RPM inside a tar.gz
+tar -xf pxf_rpm_target/pxf*.tar.gz --directory pxf_rpm_target --strip-components=1 --wildcards '*.rpm'
 
-    mapfile -t hosts < cluster_env_files/hostfile_all
-    for host in "${hosts[@]}"; do
-        scp pxf_rpm_target/*.rpm "gpadmin@${host}":/tmp/pxf_target.rpm
+mapfile -t hosts < cluster_env_files/hostfile_all
+for host in "${hosts[@]}"; do
+    scp pxf_rpm_target/*.rpm "gpadmin@${host}":/tmp/pxf_target.rpm
 
-        ssh -n "centos@${host}" "
-            set -eux -o pipefail
-
-            sudo rpm -ivh /tmp/pxf_target.rpm
-            sudo chown -R gpadmin:gpadmin /usr/local/pxf*
-        "
-    done
-
-    ssh -n mdw "
+    ssh -n "centos@${host}" "
         set -eux -o pipefail
-        export GPHOME=${GPHOME_SOURCE}
-        export PXF_BASE=/home/gpadmin/pxf
 
-        PGDATABASE=postgres /usr/local/pxf-gp5/bin/pxf-pre-gpupgrade
+        sudo rpm -ivh /tmp/pxf_target.rpm
+        sudo chown -R gpadmin:gpadmin /usr/local/pxf*
     "
-fi
+done
+
+ssh -n mdw "
+    set -eux -o pipefail
+    export GPHOME=${GPHOME_SOURCE}
+    export PXF_BASE=/home/gpadmin/pxf
+
+    PGDATABASE=postgres /usr/local/pxf-gp5/bin/pxf-pre-gpupgrade
+"
 
 if ! is_GPDB5 ${GPHOME_SOURCE}; then
     echo "Configuring GUCs before dumping the source cluster..."
@@ -88,13 +86,10 @@ time ssh -n mdw "
     gppkg -i /tmp/plr_target.gppkg
     gppkg -i /tmp/plcontainer_target.gppkg
 
-    $(typeset -f test_pxf) # allow local function on remote host
-    if test_pxf '$OS_VERSION'; then
-        echo 'Initialize PXF on target cluster...'
-        export PXF_BASE=/home/gpadmin/pxf
+    echo 'Initialize PXF on target cluster...'
+    export PXF_BASE=/home/gpadmin/pxf
 
-        /usr/local/pxf-gp6/bin/pxf cluster register
-    fi
+    /usr/local/pxf-gp6/bin/pxf cluster register
 
     # This is a band-aid workaround due to gptext tech debt that needs to be addressed.
     # Extension data belongs in the extension directory and 'not' in the server
@@ -152,16 +147,13 @@ ssh -n mdw "
     psql -v ON_ERROR_STOP=1 -d postgres -c 'DROP INDEX wmstest_geomidx CASCADE;'
     psql -v ON_ERROR_STOP=1 -d postgres -f /usr/local/greenplum-db-target/share/postgresql/contrib/postgis-*/postgis_enable_operators.sql
 
-    $(typeset -f test_pxf) # allow local function on remote host
-    if test_pxf '$OS_VERSION'; then
-        echo 'Starting pxf...'
-        export GPHOME=${GPHOME_TARGET}
-        export PXF_BASE=/home/gpadmin/pxf
+    echo 'Starting pxf...'
+    export GPHOME=${GPHOME_TARGET}
+    export PXF_BASE=/home/gpadmin/pxf
 
-        PGDATABASE=postgres /usr/local/pxf-gp6/bin/pxf-post-gpupgrade
+    PGDATABASE=postgres /usr/local/pxf-gp6/bin/pxf-post-gpupgrade
 
-        /usr/local/pxf-gp6/bin/pxf cluster start
-    fi
+    /usr/local/pxf-gp6/bin/pxf cluster start
 "
 
 echo "Upgrade successful..."
