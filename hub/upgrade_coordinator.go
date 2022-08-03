@@ -67,7 +67,7 @@ Refer to the gpupgrade documentation for details on the pg_upgrade check error.
 
 If you haven't already run the pre-initialize data migration scripts please run them.
 
-To connect to the intermedaite target cluster:
+To connect to the intermediate target cluster:
 source %s
 MASTER_DATA_DIRECTORY=%s
 PGPORT=%d`, dir, filepath.Join(intermediate.GPHome, "greenplum_path.sh"), intermediate.CoordinatorDataDir(), intermediate.CoordinatorPort())
