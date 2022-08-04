@@ -7,7 +7,7 @@ import (
 	"bufio"
 	"database/sql"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path"
 	"reflect"
 	"strings"
@@ -148,7 +148,7 @@ func CreateInitialInitsystemConfig(targetCoordinatorDataDir string, useHbaHostna
 func WriteInitsystemFile(gpinitsystemConfig []string, gpinitsystemFilepath string) error {
 	gpinitsystemContents := []byte(strings.Join(gpinitsystemConfig, "\n"))
 
-	err := ioutil.WriteFile(gpinitsystemFilepath, gpinitsystemContents, 0644)
+	err := os.WriteFile(gpinitsystemFilepath, gpinitsystemContents, 0644)
 	if err != nil {
 		return xerrors.Errorf("write gpinitsystem_config file: %w", err)
 	}

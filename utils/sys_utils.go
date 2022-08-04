@@ -6,7 +6,6 @@ package utils
 import (
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"net"
 	"os"
 	"os/exec"
@@ -76,8 +75,8 @@ func InitializeSystemFunctions() *SystemFunctions {
 		Rename:       os.Rename,
 		Stat:         os.Stat,
 		FilePathGlob: filepath.Glob,
-		ReadFile:     ioutil.ReadFile,
-		WriteFile:    ioutil.WriteFile,
+		ReadFile:     os.ReadFile,
+		WriteFile:    os.WriteFile,
 		Create:       os.Create,
 		Mkdir:        os.Mkdir,
 		Symlink:      os.Symlink,

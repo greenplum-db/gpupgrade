@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -91,7 +90,7 @@ func DeleteTablespaceDirectories(streams step.OutStreams, dirs []string) error {
 	for _, dir := range dirs {
 		parent := filepath.Dir(filepath.Clean(dir))
 
-		entries, err := ioutil.ReadDir(parent)
+		entries, err := os.ReadDir(parent)
 		if os.IsNotExist(err) {
 			// directory may have been already removed during previous execution
 			continue
@@ -220,7 +219,7 @@ func VerifyTablespaceDbIDDirectory(fsys fs.FS, dbID string) (bool, error) {
 // The expected tablespace directory layout is:
 //   /dir/<fsname>/<datadir>/<tablespaceOID>/<dbID>/GPDB_6_<catalogVersion>/<dbOID>/<relfilenode>
 func VerifyTablespaceDirectory(path string) (bool, error) {
-	entries, err := ioutil.ReadDir(path)
+	entries, err := os.ReadDir(path)
 	if err != nil {
 		return false, xerrors.Errorf("read tablespace directory %q: %w", path, err)
 	}

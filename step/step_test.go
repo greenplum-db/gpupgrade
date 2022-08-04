@@ -6,7 +6,6 @@ package step_test
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -347,7 +346,7 @@ func TestStepRun(t *testing.T) {
 }
 
 func TestHasStarted(t *testing.T) {
-	stateDir, err := ioutil.TempDir("", "")
+	stateDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -436,7 +435,7 @@ func TestHasStarted(t *testing.T) {
 }
 
 func TestHasRun(t *testing.T) {
-	stateDir, err := ioutil.TempDir("", "")
+	stateDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -547,7 +546,7 @@ func TestHasRun(t *testing.T) {
 }
 
 func TestHasCompleted(t *testing.T) {
-	stateDir, err := ioutil.TempDir("", "")
+	stateDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}

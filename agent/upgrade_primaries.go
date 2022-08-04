@@ -6,7 +6,7 @@ package agent
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"strconv"
@@ -74,7 +74,7 @@ func upgradePrimarySegment(host string, opt *idl.PgOptions) error {
 		}
 	}
 
-	err := upgrade.Run(ioutil.Discard, ioutil.Discard, opt)
+	err := upgrade.Run(io.Discard, io.Discard, opt)
 	if err != nil {
 		return xerrors.Errorf("%s primary on host %s with content %d: %w", opt.GetAction(), host, opt.GetContentID(), err)
 	}

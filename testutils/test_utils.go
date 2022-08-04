@@ -4,7 +4,6 @@
 package testutils
 
 import (
-	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
@@ -139,7 +138,7 @@ func MustGetPort(t *testing.T) int {
 func GetTempDir(t *testing.T, prefix string) string {
 	t.Helper()
 
-	dir, err := ioutil.TempDir("", prefix+"-")
+	dir, err := os.MkdirTemp("", prefix+"-")
 	if err != nil {
 		t.Fatalf("creating temporary directory: %+v", err)
 	}
@@ -176,7 +175,7 @@ func MustCreateDataDirs(t *testing.T) (string, string, func(*testing.T)) {
 	for _, dir := range []string{source, target} {
 		for _, f := range upgrade.PostgresFiles {
 			path := filepath.Join(dir, f)
-			err := ioutil.WriteFile(path, []byte(""), 0600)
+			err := os.WriteFile(path, []byte(""), 0600)
 			if err != nil {
 				t.Fatalf("failed creating postgres file %q: %+v", path, err)
 			}
@@ -196,7 +195,7 @@ func MustCreateDataDirs(t *testing.T) (string, string, func(*testing.T)) {
 func MustReadFile(t *testing.T, path string) string {
 	t.Helper()
 
-	buf, err := ioutil.ReadFile(path)
+	buf, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("error reading file %q: %v", path, err)
 	}
@@ -207,7 +206,7 @@ func MustReadFile(t *testing.T, path string) string {
 func MustWriteToFile(t *testing.T, path string, contents string) {
 	t.Helper()
 
-	err := ioutil.WriteFile(path, []byte(contents), 0600)
+	err := os.WriteFile(path, []byte(contents), 0600)
 	if err != nil {
 		t.Fatalf("error writing file %q: %v", path, err)
 	}

@@ -6,7 +6,6 @@ package step
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"sync"
@@ -31,11 +30,11 @@ var DevNullStream = devNullStream{}
 type devNullStream struct{}
 
 func (_ devNullStream) Stdout() io.Writer {
-	return ioutil.Discard
+	return io.Discard
 }
 
 func (_ devNullStream) Stderr() io.Writer {
-	return ioutil.Discard
+	return io.Discard
 }
 
 // BufferedStreams provides an implementation of OutStreams that stores

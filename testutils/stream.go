@@ -5,7 +5,6 @@ package testutils
 
 import (
 	"io"
-	"io/ioutil"
 )
 
 // DevNullWithClose implements step.OutStreams
@@ -18,7 +17,7 @@ func (s DevNullSpy) Stdout() io.Writer {
 }
 
 func (s DevNullSpy) Stderr() io.Writer {
-	return ioutil.Discard
+	return io.Discard
 }
 
 // FailingStreams is an implementation of OutStreams for which every call to a
@@ -43,11 +42,11 @@ type DevNullWithClose struct {
 }
 
 func (DevNullWithClose) Stdout() io.Writer {
-	return ioutil.Discard
+	return io.Discard
 }
 
 func (DevNullWithClose) Stderr() io.Writer {
-	return ioutil.Discard
+	return io.Discard
 }
 
 func (d *DevNullWithClose) Close() error {

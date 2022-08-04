@@ -6,7 +6,7 @@ package step
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	"golang.org/x/xerrors"
 
@@ -62,7 +62,7 @@ func (p *PrettyStatus) UnmarshalText(buf []byte) error {
 }
 
 func (f *SubstepFileStore) load() (prettyMap, error) {
-	data, err := ioutil.ReadFile(f.path)
+	data, err := os.ReadFile(f.path)
 	if err != nil {
 		return nil, err
 	}

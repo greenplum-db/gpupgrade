@@ -5,7 +5,6 @@ package greenplum_test
 
 import (
 	"errors"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"reflect"
@@ -144,7 +143,7 @@ func TestGetSegmentConfiguration(t *testing.T) {
 }
 
 func TestPrimaryHostnames(t *testing.T) {
-	testStateDir, err := ioutil.TempDir("", "")
+	testStateDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Errorf("got error when creating tempdir: %+v", err)
 	}
@@ -169,7 +168,7 @@ func TestPrimaryHostnames(t *testing.T) {
 }
 
 func TestClusterFromDB(t *testing.T) {
-	testStateDir, err := ioutil.TempDir("", "")
+	testStateDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Errorf("got error when creating tempdir: %+v", err)
 	}

@@ -7,7 +7,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"strings"
 	"testing"
 
@@ -75,7 +75,7 @@ func TestMultiplexedStream(t *testing.T) {
 				Type:   idl.Chunk_stderr,
 			}}})
 
-		stream := newMultiplexedStream(mockStream, ioutil.Discard)
+		stream := newMultiplexedStream(mockStream, io.Discard)
 		fmt.Fprint(stream.Stdout(), expectedStdout)
 		fmt.Fprint(stream.Stderr(), expectedStderr)
 	})

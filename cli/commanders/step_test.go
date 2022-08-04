@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,7 +21,7 @@ import (
 )
 
 func TestSubstep(t *testing.T) {
-	stateDir, err := ioutil.TempDir("", "")
+	stateDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -450,7 +449,7 @@ func TestSubstep(t *testing.T) {
 }
 
 func TestStepStatus(t *testing.T) {
-	stateDir, err := ioutil.TempDir("", "")
+	stateDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}

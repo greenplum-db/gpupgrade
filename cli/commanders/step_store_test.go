@@ -5,7 +5,6 @@ package commanders_test
 
 import (
 	"errors"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -18,7 +17,7 @@ import (
 )
 
 func TestStepStore(t *testing.T) {
-	stateDir, err := ioutil.TempDir("", "")
+	stateDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,7 +69,7 @@ func TestStepStore(t *testing.T) {
 	})
 
 	t.Run("write errors and read errors with unknown status when failing to get the steps status file", func(t *testing.T) {
-		stateDir, err := ioutil.TempDir("", "")
+		stateDir, err := os.MkdirTemp("", "")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -111,7 +110,7 @@ func TestStepStore(t *testing.T) {
 	})
 
 	t.Run("HasStatus errors with false when failing to get the steps status file", func(t *testing.T) {
-		stateDir, err := ioutil.TempDir("", "")
+		stateDir, err := os.MkdirTemp("", "")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -222,7 +221,7 @@ func TestStepStore(t *testing.T) {
 }
 
 func TestValidateStep(t *testing.T) {
-	stateDir, err := ioutil.TempDir("", "")
+	stateDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}

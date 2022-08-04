@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -494,7 +493,7 @@ func TestPathExist(t *testing.T) {
 
 func setupDirs(t *testing.T, subdirectories []string, requiredPaths []string) (tmpDir string, createdDirectories []string) {
 	var err error
-	tmpDir, err = ioutil.TempDir("", "")
+	tmpDir, err = os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatalf("error creating temporary directory: %v", err)
 	}

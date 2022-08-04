@@ -6,7 +6,6 @@ package commanders
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -161,7 +160,7 @@ func TestStartHub_FailsWhenStartingTheHubErrors(t *testing.T) {
 }
 
 func TestCreateStateDir(t *testing.T) {
-	home, err := ioutil.TempDir("", t.Name())
+	home, err := os.MkdirTemp("", t.Name())
 	if err != nil {
 		t.Fatalf("failed creating temp dir %#v", err)
 	}
@@ -225,7 +224,7 @@ func TestCreateStateDir(t *testing.T) {
 func TestCreateInitialClusterConfigs(t *testing.T) {
 	const port = -1
 
-	home, err := ioutil.TempDir("", t.Name())
+	home, err := os.MkdirTemp("", t.Name())
 	if err != nil {
 		t.Fatalf("failed creating temp dir %#v", err)
 	}

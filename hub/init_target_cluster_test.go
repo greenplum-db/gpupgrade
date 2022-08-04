@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"reflect"
@@ -543,5 +542,5 @@ func (s *stdoutBuffer) Stdout() io.Writer {
 }
 
 func (s *stdoutBuffer) Stderr() io.Writer {
-	return ioutil.Discard
+	return io.Discard
 }

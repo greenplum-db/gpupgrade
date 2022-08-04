@@ -5,7 +5,6 @@ package utils_test
 
 import (
 	"errors"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -18,7 +17,7 @@ import (
 )
 
 func TestJSONFile(t *testing.T) {
-	stateDir, err := ioutil.TempDir("", "")
+	stateDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}

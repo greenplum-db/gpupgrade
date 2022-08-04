@@ -4,7 +4,7 @@
 package commanders
 
 import (
-	"io/ioutil"
+	"io"
 	"os"
 	"sync"
 	"testing"
@@ -57,7 +57,7 @@ func BufferStandardDescriptors(t *testing.T) *descriptors {
 	go func() {
 		defer d.wg.Done()
 
-		d.outBytes, err = ioutil.ReadAll(rOut)
+		d.outBytes, err = io.ReadAll(rOut)
 		if err != nil {
 			errChan <- xerrors.Errorf("reading from stdout pipe: %w", err)
 		}
@@ -65,7 +65,7 @@ func BufferStandardDescriptors(t *testing.T) *descriptors {
 	go func() {
 		defer d.wg.Done()
 
-		d.errBytes, err = ioutil.ReadAll(rErr)
+		d.errBytes, err = io.ReadAll(rErr)
 		if err != nil {
 			errChan <- xerrors.Errorf("reading from stderr pipe: %w", err)
 		}
