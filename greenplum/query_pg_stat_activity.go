@@ -6,7 +6,6 @@ package greenplum
 import (
 	"database/sql"
 	"fmt"
-	"sort"
 	"strings"
 	"text/tabwriter"
 
@@ -25,37 +24,26 @@ type StatActivity struct {
 type StatActivities []StatActivity
 
 func (s StatActivities) Error() string {
-	var b strings.Builder
-	var t tabwriter.Writer
-	t.Init(&b, 0, 0, 2, ' ', 0)
+	var sb strings.Builder
+	var tw tabwriter.Writer
+	tw.Init(&sb, 0, 0, 1, ' ', 0)
 
-	for _, row := range s.table() {
-		for _, col := range row {
-			fmt.Fprintf(&t, "%s\t", col)
-		}
-		fmt.Fprintln(&t)
-	}
-
-	t.Flush()
-	return b.String()
-}
-
-func (s StatActivities) table() [][]string {
-	var rows [][]string
 	for _, activity := range s {
-		rows = append(rows, []string{activity.Application_name, activity.User, activity.Datname, activity.Query})
+		fmt.Fprintf(&tw, "Application:\t%s\n", activity.Application_name)
+		fmt.Fprintf(&tw, "User:\t%s\n", activity.User)
+		fmt.Fprintf(&tw, "Database:\t%s\n", activity.Datname)
+		fmt.Fprintf(&tw, "Query:\t%s\n", activity.Query)
+		fmt.Fprintln(&tw)
 	}
 
-	sort.Sort(utils.TableRows(rows))
-	rows = append([][]string{{"Application:", "User:", "Database:", "Query:"}}, rows...)
-
-	return rows
+	tw.Flush()
+	return sb.String()
 }
 
 func QueryPgStatActivity(db *sql.DB, cluster *Cluster) error {
-	query := `SELECT datname, usename, application_name, query FROM pg_stat_activity WHERE pid <> pg_backend_pid();`
+	query := `SELECT application_name, usename, datname, query FROM pg_stat_activity WHERE pid <> pg_backend_pid() ORDER BY application_name, usename, datname;`
 	if cluster.Version.Major < 6 {
-		query = `SELECT datname, usename, application_name, current_query FROM pg_stat_activity WHERE procpid <> pg_backend_pid();`
+		query = `SELECT application_name, usename, datname, current_query FROM pg_stat_activity WHERE procpid <> pg_backend_pid() ORDER BY application_name, usename, datname;`
 	}
 
 	rows, err := db.Query(query)
@@ -67,7 +55,7 @@ func QueryPgStatActivity(db *sql.DB, cluster *Cluster) error {
 	var activities StatActivities
 	for rows.Next() {
 		var activity StatActivity
-		err := rows.Scan(&activity.Datname, &activity.User, &activity.Application_name, &activity.Query)
+		err := rows.Scan(&activity.Application_name, &activity.User, &activity.Datname, &activity.Query)
 		if err != nil {
 			return xerrors.Errorf("pg_stat_activity: %w", err)
 		}

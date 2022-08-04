@@ -51,8 +51,8 @@ func TestQueryPgStatActivity(t *testing.T) {
 			target.Version = semver.MustParse("6.0.0")
 		}()
 
-		mock.ExpectQuery(`SELECT datname, usename, application_name, current_query FROM pg_stat_activity WHERE procpid <> pg_backend_pid\(\);`).
-			WillReturnRows(sqlmock.NewRows([]string{"datname", "usename", "application_name", "query"}))
+		mock.ExpectQuery(`SELECT application_name, usename, datname, current_query FROM pg_stat_activity WHERE procpid <> pg_backend_pid\(\) ORDER BY application_name, usename, datname;`).
+			WillReturnRows(sqlmock.NewRows([]string{"application_name", "usename", "datname", "query"}))
 
 		err = greenplum.QueryPgStatActivity(db, target)
 		if err != nil {
@@ -61,13 +61,13 @@ func TestQueryPgStatActivity(t *testing.T) {
 	})
 
 	t.Run("errors when pg_stat_activity shows active connections", func(t *testing.T) {
-		expectPgStatActivityToReturn(mock).WillReturnRows(sqlmock.NewRows([]string{"datname", "usename", "application_name", "query"}).
-			AddRow("postgres", "gpadmin", "etl_job", "SELECT * FROM my_table;").
-			AddRow("stats_db", "gpcc", "status_checker", "SELECT * FROM stats;"))
+		expectPgStatActivityToReturn(mock).WillReturnRows(sqlmock.NewRows([]string{"application_name", "usename", "datname", "query"}).
+			AddRow("etl_job", "gpadmin", "postgres", "SELECT * FROM my_table;").
+			AddRow("status_checker", "gpcc", "stats_db", "SELECT * FROM stats;"))
 
 		expected := greenplum.StatActivities{
-			{User: "gpadmin", Application_name: "etl_job", Datname: "postgres", Query: "SELECT * FROM my_table;"},
-			{User: "gpcc", Application_name: "status_checker", Datname: "stats_db", Query: "SELECT * FROM stats;"},
+			{Application_name: "etl_job", User: "gpadmin", Datname: "postgres", Query: "SELECT * FROM my_table;"},
+			{Application_name: "status_checker", User: "gpcc", Datname: "stats_db", Query: "SELECT * FROM stats;"},
 		}
 
 		err = greenplum.QueryPgStatActivity(db, target)
@@ -96,7 +96,7 @@ func TestQueryPgStatActivity(t *testing.T) {
 	})
 
 	t.Run("errors when failing to scan", func(t *testing.T) {
-		expectPgStatActivityToReturn(mock).WillReturnRows(sqlmock.NewRows([]string{"datname", "usename"}).
+		expectPgStatActivityToReturn(mock).WillReturnRows(sqlmock.NewRows([]string{"application_name", "usename"}).
 			AddRow("postgres", "gpadmin")) // return less fields than scan expects
 
 		err = greenplum.QueryPgStatActivity(db, target)
@@ -107,8 +107,8 @@ func TestQueryPgStatActivity(t *testing.T) {
 
 	t.Run("errors when iterating the rows cals", func(t *testing.T) {
 		expected := os.ErrPermission
-		expectPgStatActivityToReturn(mock).WillReturnRows(sqlmock.NewRows([]string{"datname", "usename", "application_name", "query"}).
-			AddRow("postgres", "gpadmin", "etl_job", "SELECT * FROM my_table;").
+		expectPgStatActivityToReturn(mock).WillReturnRows(sqlmock.NewRows([]string{"application_name", "usename", "datname", "query"}).
+			AddRow("etl_job", "gpadmin", "postgres", "SELECT * FROM my_table;").
 			RowError(0, expected))
 
 		err = greenplum.QueryPgStatActivity(db, target)
@@ -119,10 +119,10 @@ func TestQueryPgStatActivity(t *testing.T) {
 }
 
 func expectPgStatActivityToNotReturn(mock sqlmock.Sqlmock) {
-	mock.ExpectQuery(`SELECT datname, usename, application_name, query FROM pg_stat_activity WHERE pid <> pg_backend_pid\(\);`).
-		WillReturnRows(sqlmock.NewRows([]string{"datname", "usename", "application_name", "query"}))
+	mock.ExpectQuery(`SELECT application_name, usename, datname, query FROM pg_stat_activity WHERE pid <> pg_backend_pid\(\) ORDER BY application_name, usename, datname;`).
+		WillReturnRows(sqlmock.NewRows([]string{"application_name", "usename", "datname", "query"}))
 }
 
 func expectPgStatActivityToReturn(mock sqlmock.Sqlmock) *sqlmock.ExpectedQuery {
-	return mock.ExpectQuery(`SELECT datname, usename, application_name, query FROM pg_stat_activity WHERE pid <> pg_backend_pid\(\);`)
+	return mock.ExpectQuery(`SELECT application_name, usename, datname, query FROM pg_stat_activity WHERE pid <> pg_backend_pid\(\) ORDER BY application_name, usename, datname;`)
 }
