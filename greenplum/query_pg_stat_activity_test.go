@@ -66,8 +66,8 @@ func TestQueryPgStatActivity(t *testing.T) {
 			AddRow("stats_db", "gpcc", "status_checker", "SELECT * FROM stats;"))
 
 		expected := greenplum.StatActivities{
-			{Usename: "gpadmin", Application_name: "etl_job", Datname: "postgres", Query: "SELECT * FROM my_table;"},
-			{Usename: "gpcc", Application_name: "status_checker", Datname: "stats_db", Query: "SELECT * FROM stats;"},
+			{User: "gpadmin", Application_name: "etl_job", Datname: "postgres", Query: "SELECT * FROM my_table;"},
+			{User: "gpcc", Application_name: "status_checker", Datname: "stats_db", Query: "SELECT * FROM stats;"},
 		}
 
 		err = greenplum.QueryPgStatActivity(db, target)

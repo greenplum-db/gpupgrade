@@ -16,7 +16,7 @@ import (
 )
 
 type StatActivity struct {
-	Usename          string
+	User             string
 	Application_name string
 	Datname          string
 	Query            string
@@ -43,7 +43,7 @@ func (s StatActivities) Error() string {
 func (s StatActivities) table() [][]string {
 	var rows [][]string
 	for _, activity := range s {
-		rows = append(rows, []string{activity.Application_name, activity.Usename, activity.Datname, activity.Query})
+		rows = append(rows, []string{activity.Application_name, activity.User, activity.Datname, activity.Query})
 	}
 
 	sort.Sort(utils.TableRows(rows))
@@ -67,7 +67,7 @@ func QueryPgStatActivity(db *sql.DB, cluster *Cluster) error {
 	var activities StatActivities
 	for rows.Next() {
 		var activity StatActivity
-		err := rows.Scan(&activity.Datname, &activity.Usename, &activity.Application_name, &activity.Query)
+		err := rows.Scan(&activity.Datname, &activity.User, &activity.Application_name, &activity.Query)
 		if err != nil {
 			return xerrors.Errorf("pg_stat_activity: %w", err)
 		}
