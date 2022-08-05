@@ -37,7 +37,7 @@ func TestWaitForSegments(t *testing.T) {
 
 		expectFtsProbe(mock)
 		expectGpSegmentConfigurationToReturn(mock, 4)
-		expectGpStatReplicationToReturn(mock, 1)
+		expectGpStatReplicationToReturn(mock, 1, target.Version)
 
 		err = greenplum.WaitForSegments(db, timeout, target)
 		if err != nil {
@@ -86,7 +86,7 @@ func TestWaitForSegments(t *testing.T) {
 
 		expectFtsProbe(mock)
 		expectGpSegmentConfigurationWithoutMirrorsToReturn(mock, 2)
-		expectGpStatReplicationToReturn(mock, 1)
+		expectGpStatReplicationToReturn(mock, 1, target.Version)
 
 		err = greenplum.WaitForSegments(db, timeout, target)
 		if err != nil {
@@ -118,10 +118,28 @@ func TestWaitForSegments(t *testing.T) {
 		expectGpSegmentConfigurationToReturn(mock, 0)
 		expectFtsProbe(mock)
 		expectGpSegmentConfigurationToReturn(mock, 4)
-		expectGpStatReplicationToReturn(mock, 0)
+		expectGpStatReplicationToReturn(mock, 0, target.Version)
 		expectFtsProbe(mock)
 		expectGpSegmentConfigurationToReturn(mock, 4)
-		expectGpStatReplicationToReturn(mock, 1)
+		expectGpStatReplicationToReturn(mock, 1, target.Version)
+
+		err = greenplum.WaitForSegments(db, timeout, target)
+		if err != nil {
+			t.Errorf("unexpected error: %#v", err)
+		}
+	})
+
+	t.Run("uses correct gp_stat_replication fields if GPDB version is 7", func(t *testing.T) {
+		target.Version = semver.MustParse("7.0.0")
+
+		expectFtsProbe(mock)
+		expectGpSegmentConfigurationToReturn(mock, 0)
+		expectFtsProbe(mock)
+		expectGpSegmentConfigurationToReturn(mock, 4)
+		expectGpStatReplicationToReturn(mock, 0, target.Version)
+		expectFtsProbe(mock)
+		expectGpSegmentConfigurationToReturn(mock, 4)
+		expectGpStatReplicationToReturn(mock, 1, target.Version)
 
 		err = greenplum.WaitForSegments(db, timeout, target)
 		if err != nil {
@@ -160,8 +178,13 @@ WHERE content > -1 AND status = 'u' AND \(role = preferred_role\)`).
 		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(count))
 }
 
-func expectGpStatReplicationToReturn(mock sqlmock.Sqlmock, count int) {
-	mock.ExpectQuery(`SELECT COUNT\(\*\) FROM gp_stat_replication 
-WHERE gp_segment_id = -1 AND state = 'streaming' AND sent_location = flush_location;`).
+func expectGpStatReplicationToReturn(mock sqlmock.Sqlmock, count int, version semver.Version) {
+	whereClause := "sent_location = flush_location;"
+	if version.Major > 6 {
+		whereClause = "sent_lsn = flush_lsn;"
+	}
+
+	mock.ExpectQuery(`SELECT COUNT\(\*\) FROM gp_stat_replication
+WHERE gp_segment_id = -1 AND state = 'streaming' AND ` + whereClause).
 		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(count))
 }

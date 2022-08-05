@@ -72,7 +72,12 @@ WHERE content > -1 AND status = 'u' AND (role = preferred_role) ` + whereClause)
 		return true, nil
 	}
 
-	row = db.QueryRow("SELECT COUNT(*) FROM gp_stat_replication WHERE gp_segment_id = -1 AND state = 'streaming' AND sent_location = flush_location;")
+	whereClause = "sent_location = flush_location;"
+	if cluster.Version.Major > 6 {
+		whereClause = "sent_lsn = flush_lsn;"
+	}
+
+	row = db.QueryRow("SELECT COUNT(*) FROM gp_stat_replication WHERE gp_segment_id = -1 AND state = 'streaming' AND " + whereClause)
 	if err := row.Scan(&segments); err != nil {
 		if err == sql.ErrNoRows {
 			log.Printf("no rows found when querying gp_stat_replication")
