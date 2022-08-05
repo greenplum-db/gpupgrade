@@ -25,7 +25,14 @@ func FillConfiguration(config *Config, request *idl.InitializeRequest, saveConfi
 		return err
 	}
 
+	// Need greenplum version to use correct utility mode parameter when making the database connection URI.
+	sourceVersion, err := greenplum.Version(request.GetSourceGPHome())
+	if err != nil {
+		return err
+	}
+
 	tempSource.Destination = idl.ClusterDestination_source
+	tempSource.Version = sourceVersion
 	conn := tempSource.Connection([]greenplum.Option{greenplum.Port(int(request.GetSourcePort())), greenplum.UtilityMode()}...)
 
 	db, err := sql.Open("pgx", conn)
