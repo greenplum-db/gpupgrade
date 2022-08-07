@@ -7,118 +7,72 @@ import (
 	"fmt"
 
 	"github.com/blang/semver/v4"
-
-	"github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-// Note that we represent the source and target versions separately.  Another
-// option is a matrix explicitly listing supported source/target combinations.
-// However, pg_upgrade supports upgrade from any version to any version.
-// We are not sure yet if we are doing that for gpupgrade.
+// Change these values to bump the minimum supported versions and associated tests.
+var min5xVersion = "5.29.6"
+var min6xVersion = "6.21.0"
+var min7xVersion = "7.0.0"
 
-var (
-	// sourceVersionAllowed returns whether or not the given semver.Version is a
-	// valid source GPDB cluster version.
-	sourceVersionAllowed semver.Range
-
-	// targetVersionAllowed returns whether or not the given semver.Version is a
-	// valid target GPDB cluster version.
-	targetVersionAllowed semver.Range
-)
-
-// Source and Target Versions: modify these lists to control what will be allowed
-// by the utility.  Map entries are of the form: GPDB_VERSION : MIN_ALLOWED_SEMVER
-
-var minSourceVersions = map[int]string{
-	5: "5.29.6",
-	6: "6.21.0",
-}
-
-var minTargetVersions = map[int]string{
-	6: "6.21.0",
-}
-
-// The below boilerplate turns the source/targetRanges variables into
-// source/targetVersionAllowed. You shouldn't need to touch it.
-
-func init() {
-	accumulateRanges(&sourceVersionAllowed, minSourceVersions)
-	accumulateRanges(&targetVersionAllowed, minTargetVersions)
-}
-
-func accumulateRanges(a *semver.Range, minVersions map[int]string) {
-	for v, min := range minVersions {
-		// for example, 5: "5.28.0" becomes the Range string ">=5.28.0 <6.0.0"
-		str := fmt.Sprintf(">=%s <%d.0.0", min, v+1)
-		r := semver.MustParseRange(str)
-
-		if *a == nil {
-			*a = r
-		} else {
-			*a = a.OR(r)
-		}
-	}
-}
-
-// returns the version string that is the lowest of the major version of "version"
-// or the lowest version supported in minVersions otherwise
-func getMinVersion(version semver.Version, minVersions map[int]string) string {
-
-	major := version.Major
-	min, ok := minVersions[int(major)]
-	if ok {
-		return min
-	}
-
-	var lowest int
-	for major := range minVersions {
-		if lowest == 0 {
-			lowest = major
-		}
-		if major < lowest {
-			lowest = major
-		}
-	}
-	return semver.MustParse(minVersions[lowest]).String()
-}
+var GetSourceVersion = Version
+var GetTargetVersion = Version
 
 func VerifyCompatibleGPDBVersions(sourceGPHome, targetGPHome string) error {
-	var errs error
-
-	sourceVersion, err := Version(sourceGPHome)
+	sourceVersion, err := GetSourceVersion(sourceGPHome)
 	if err != nil {
 		return err
 	}
 
-	err = validateVersion(sourceVersion, idl.ClusterDestination_source)
-	errs = errorlist.Append(errs, err)
-
-	targetVersion, err := Version(targetGPHome)
+	targetVersion, err := GetTargetVersion(targetGPHome)
 	if err != nil {
 		return err
 	}
 
-	err = validateVersion(targetVersion, idl.ClusterDestination_target)
-	errs = errorlist.Append(errs, err)
-
-	return errs
+	return validate(sourceVersion, targetVersion)
 }
 
-func validateVersion(version semver.Version, destination idl.ClusterDestination) error {
-	versionsAllowed := sourceVersionAllowed
-	minVersions := minSourceVersions
-	if destination == idl.ClusterDestination_target {
-		versionsAllowed = targetVersionAllowed
-		minVersions = minTargetVersions
+func validate(sourceVersion semver.Version, targetVersion semver.Version) error {
+	var sourceRange, targetRange semver.Range
+	var minSourceVersion, minTargetVersion string
+
+	switch {
+	case sourceVersion.Major == 5 && targetVersion.Major == 6:
+		sourceRange = semver.MustParseRange(">=" + min5xVersion + " <6.0.0")
+		targetRange = semver.MustParseRange(">=" + min6xVersion + " <7.0.0")
+		minSourceVersion = min5xVersion
+		minTargetVersion = min6xVersion
+	case sourceVersion.Major == 6 && targetVersion.Major == 6:
+		sourceRange = semver.MustParseRange(">=" + min6xVersion + " <7.0.0")
+		targetRange = semver.MustParseRange(">=" + min6xVersion + " <7.0.0")
+		minSourceVersion = min6xVersion
+		minTargetVersion = min6xVersion
+	case sourceVersion.Major == 6 && targetVersion.Major == 7:
+		sourceRange = semver.MustParseRange(">=" + min6xVersion + " <7.0.0")
+		targetRange = semver.MustParseRange(">=" + min7xVersion + " <8.0.0")
+		minSourceVersion = min6xVersion
+		minTargetVersion = min7xVersion
+	case sourceVersion.Major == 7 && targetVersion.Major == 7:
+		sourceRange = semver.MustParseRange(">=" + min7xVersion + " <8.0.0")
+		targetRange = semver.MustParseRange(">=" + min7xVersion + " <8.0.0")
+		minSourceVersion = min7xVersion
+		minTargetVersion = min7xVersion
+	default:
+		return fmt.Errorf("Unsupported source and target versions. "+
+			"Found source version %s and target version %s. "+
+			"Upgrade is only supported for Greenplum 5 to 6 and Greenplum 6 to 7. "+
+			"Check the documentation for further information.", sourceVersion, targetVersion)
 	}
 
-	if !versionsAllowed(version) {
-		min := getMinVersion(version, minVersions)
-		return fmt.Errorf("%s cluster version %s is not supported.  "+
+	if !sourceRange(sourceVersion) {
+		return fmt.Errorf("Source cluster version %s is not supported. "+
 			"The minimum required version is %s. "+
-			"We recommend the latest version.",
-			destination, version, min)
+			"We recommend the latest version.", sourceVersion, minSourceVersion)
+	}
+
+	if !targetRange(targetVersion) {
+		return fmt.Errorf("Target cluster version %s is not supported. "+
+			"The minimum required version is %s. "+
+			"We recommend the latest version.", targetVersion, minTargetVersion)
 	}
 
 	return nil

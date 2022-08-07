@@ -5,157 +5,395 @@ package greenplum
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/blang/semver/v4"
 
-	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
-	"github.com/greenplum-db/gpupgrade/testutils/testlog"
-	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-func TestAllowedVersions(t *testing.T) {
-	cases := []struct {
-		name          string
-		versions      []string
-		validator     semver.Range
-		validatorName string
-		expected      bool
-	}{
-		{
-			"allowed source versions",
-			[]string{
-				"5.29.6",
-				"5.29.13",
-				"5.50.0",
-				"6.21.0",
-				"6.21.1",
-				"6.50.1",
-			},
-			sourceVersionAllowed,
-			"sourceVersionAllowed",
-			true,
-		}, {
-			"disallowed source versions",
-			[]string{
-				"4.3.0",
-				"5.0.0",
-				"5.28.11",
-				"5.29.0",
-				"6.0.0",
-				"6.17.9",
-				"7.0.0",
-			},
-			sourceVersionAllowed,
-			"sourceVersionAllowed",
-			false,
-		}, {
-			"allowed target versions",
-			[]string{
-				"6.21.0",
-				"6.21.1",
-				"6.50.1",
-			},
-			targetVersionAllowed,
-			"targetVersionAllowed",
-			true,
-		}, {
-			"disallowed target versions",
-			[]string{
-				"4.3.0",
-				"5.0.0",
-				"5.27.0",
-				"5.28.0",
-				"5.50.0",
-				"6.0.0",
-				"6.17.0",
-				"7.0.0",
-			},
-			targetVersionAllowed,
-			"targetVersionAllowed",
-			false,
-		},
-	}
-
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			for _, v := range c.versions {
-				ver := semver.MustParse(v)
-				actual := c.validator(ver)
-
-				if actual != c.expected {
-					t.Errorf("%s(%q) = %t, want %t", c.validatorName, v, actual, c.expected)
-				}
-			}
-		})
-	}
-}
-
-func TestValidateVersionsErrorCases(t *testing.T) {
-	cases := []struct {
-		name             string
-		localVersion     semver.Version
-		testLocalVersion func(string) (semver.Version, error)
-		expected         error
-	}{
-		{
-			name:         "fails when GPDB version has unsupported minor versions",
-			localVersion: semver.MustParse("6.8.0"),
-			expected:     errors.New("source cluster version 6.8.0 is not supported.  The minimum required version is 6.21.0. We recommend the latest version."),
-		},
-		{
-			name:         "fails when GPDB version has unsupported major versions",
-			localVersion: semver.MustParse("0.0.0"),
-			expected:     errors.New("source cluster version 0.0.0 is not supported.  The minimum required version is 5.29.6. We recommend the latest version."),
-		},
-	}
-
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			err := validateVersion(c.localVersion, idl.ClusterDestination_source)
-			if err.Error() != c.expected.Error() {
-				t.Errorf("got %s want %s", err, c.expected)
-			}
-		})
-	}
-}
-
 func TestVerifyCompatibleGPDBVersions(t *testing.T) {
-	testlog.SetupTestLogger()
+	t.Run("validates source and target cluster versions", func(t *testing.T) {
+		SetVersionCommand(exectest.NewCommand(PostgresGPVersion_6_99_0))
+		defer ResetVersionCommand()
 
-	t.Run("returns error when gphome is incorrect", func(t *testing.T) {
-		err := VerifyCompatibleGPDBVersions("/usr/local/greenplum-db-source-typo", "")
-		var pathError *os.PathError
-		if !errors.As(err, &pathError) {
-			t.Errorf("got type %T want %T", err, pathError)
+		err := VerifyCompatibleGPDBVersions("/usr/local/greenplum-db-source", "/usr/local/greenplum-db-target")
+		if err != nil {
+			t.Errorf("unexpected err %#v", err)
 		}
 	})
 
-	t.Run("returns combined errors when source and target cluster versions are invalid", func(t *testing.T) {
-		SetVersionCommand(exectest.NewCommand(PostgresGPVersion_0_0_0))
+	t.Run("errors when failing to get source cluster version", func(t *testing.T) {
+		expected := os.ErrNotExist
+		GetSourceVersion = func(gphome string) (semver.Version, error) {
+			return semver.Version{}, expected
+		}
+		defer func() {
+			GetSourceVersion = Version
+		}()
+
+		err := VerifyCompatibleGPDBVersions("", "")
+		if !errors.Is(err, expected) {
+			t.Errorf("got error %#v, want %#v", expected, err)
+		}
+	})
+
+	t.Run("errors when failing to get target cluster version", func(t *testing.T) {
+		GetSourceVersion = func(gphome string) (semver.Version, error) {
+			return semver.Version{}, nil
+		}
+		defer func() {
+			GetSourceVersion = Version
+		}()
+
+		expected := os.ErrNotExist
+		GetTargetVersion = func(gphome string) (semver.Version, error) {
+			return semver.Version{}, expected
+		}
+		defer func() {
+			GetTargetVersion = Version
+		}()
+
+		err := VerifyCompatibleGPDBVersions("", "")
+		if !errors.Is(err, expected) {
+			t.Errorf("got error %#v, want %#v", expected, err)
+		}
+	})
+
+	t.Run("errors when failing to validate cluster versions", func(t *testing.T) {
+		SetVersionCommand(exectest.NewCommand(PostgresGPVersion_11_341_31))
 		defer ResetVersionCommand()
 
 		err := VerifyCompatibleGPDBVersions("", "")
-		var errs errorlist.Errors
-		if !errors.As(err, &errs) {
-			t.Fatalf("got error %#v, want type %T", err, errs)
-		}
-
-		if len(errs) != 2 {
-			t.Errorf("got %d errors want 2", len(errs))
-		}
-
-		expected := "source cluster version 0.0.0 is not supported"
-		if !strings.Contains(errs[0].Error(), expected) {
-			t.Errorf("expected error %+v to contain %q", errs[0], expected)
-		}
-
-		expected = "target cluster version 0.0.0 is not supported"
-		if !strings.Contains(errs[1].Error(), expected) {
-			t.Errorf("expected error %+v to contain %q", errs[1], expected)
+		expected := "Unsupported source and target versions. " +
+			"Found source version 11.341.31 and target version 11.341.31. "
+		if !strings.Contains(err.Error(), expected) {
+			t.Errorf("expected error %+v to contain %q", err.Error(), expected)
 		}
 	})
+}
+
+func TestValidate(t *testing.T) {
+	min5xVersionIncrementedMinor := MustIncrementMinor(t, min5xVersion)
+	min5xVersionIncrementedPatch := MustIncrementPatch(t, min5xVersion)
+
+	min6xVersionIncrementedMinor := MustIncrementMinor(t, min6xVersion)
+	min6xVersionIncrementedPatch := MustIncrementPatch(t, min6xVersion)
+
+	min7xVersionIncrementedMinor := MustIncrementMinor(t, min7xVersion)
+	min7xVersionIncrementedPatch := MustIncrementPatch(t, min7xVersion)
+
+	t.Run("validates cluster versions", func(t *testing.T) {
+		cases := []struct {
+			name          string
+			sourceVersion semver.Version
+			targetVersion semver.Version
+		}{
+			// 5->6 allowed version tests
+			{
+				name:          "source and target versions are exactly the minimum supported versions",
+				sourceVersion: semver.MustParse(min5xVersion),
+				targetVersion: semver.MustParse(min6xVersion),
+			},
+			{
+				name:          "source version meets the minimum minor version",
+				sourceVersion: min5xVersionIncrementedMinor,
+				targetVersion: semver.MustParse(min6xVersion),
+			},
+			{
+				name:          "source version meets the minimum patch version",
+				sourceVersion: min5xVersionIncrementedPatch,
+				targetVersion: semver.MustParse(min6xVersion),
+			},
+			{
+				name:          "target version meets the minimum minor version",
+				sourceVersion: semver.MustParse(min5xVersion),
+				targetVersion: min6xVersionIncrementedMinor,
+			},
+			{
+				name:          "target version meets the minimum patch version",
+				sourceVersion: semver.MustParse(min5xVersion),
+				targetVersion: min6xVersionIncrementedPatch,
+			},
+			// 6->6 allowed version tests
+			{
+				name:          "source and target versions are exactly the minimum supported versions",
+				sourceVersion: semver.MustParse(min6xVersion),
+				targetVersion: semver.MustParse(min6xVersion),
+			},
+			{
+				name:          "source version meets the minimum minor version",
+				sourceVersion: min6xVersionIncrementedMinor,
+				targetVersion: semver.MustParse(min6xVersion),
+			},
+			{
+				name:          "source version meets the minimum patch version",
+				sourceVersion: min6xVersionIncrementedPatch,
+				targetVersion: semver.MustParse(min6xVersion),
+			},
+			{
+				name:          "target version meets the minimum minor version",
+				sourceVersion: semver.MustParse(min6xVersion),
+				targetVersion: min6xVersionIncrementedMinor,
+			},
+			{
+				name:          "target version meets the minimum patch version",
+				sourceVersion: semver.MustParse(min6xVersion),
+				targetVersion: min6xVersionIncrementedPatch,
+			},
+			// 6->7 allowed version tests
+			{
+				name:          "source and target versions are exactly the minimum supported versions",
+				sourceVersion: semver.MustParse(min6xVersion),
+				targetVersion: semver.MustParse(min7xVersion),
+			},
+			{
+				name:          "source version meets the minimum minor version",
+				sourceVersion: min6xVersionIncrementedMinor,
+				targetVersion: semver.MustParse(min7xVersion),
+			},
+			{
+				name:          "source version meets the minimum patch version",
+				sourceVersion: min6xVersionIncrementedPatch,
+				targetVersion: semver.MustParse(min7xVersion),
+			},
+			{
+				name:          "target version meets the minimum minor version",
+				sourceVersion: semver.MustParse(min6xVersion),
+				targetVersion: min7xVersionIncrementedMinor,
+			},
+			{
+				name:          "target version meets the minimum patch version",
+				sourceVersion: semver.MustParse(min6xVersion),
+				targetVersion: min7xVersionIncrementedPatch,
+			},
+			// 7->7 allowed version tests
+			{
+				name:          "source and target versions are exactly the minimum supported versions",
+				sourceVersion: semver.MustParse(min7xVersion),
+				targetVersion: semver.MustParse(min7xVersion),
+			},
+			{
+				name:          "source version meets the minimum minor version",
+				sourceVersion: min7xVersionIncrementedMinor,
+				targetVersion: semver.MustParse(min7xVersion),
+			},
+			{
+				name:          "source version meets the minimum patch version",
+				sourceVersion: min7xVersionIncrementedPatch,
+				targetVersion: semver.MustParse(min7xVersion),
+			},
+			{
+				name:          "target version meets the minimum minor version",
+				sourceVersion: semver.MustParse(min7xVersion),
+				targetVersion: min7xVersionIncrementedMinor,
+			},
+			{
+				name:          "target version meets the minimum patch version",
+				sourceVersion: semver.MustParse(min7xVersion),
+				targetVersion: min7xVersionIncrementedPatch,
+			},
+		}
+
+		for _, c := range cases {
+			t.Run(c.name, func(t *testing.T) {
+				err := validate(c.sourceVersion, c.targetVersion)
+				if err != nil {
+					t.Errorf("unexpected err %#v", err)
+				}
+			})
+		}
+	})
+
+	t.Run("errors for invalid cluster versions", func(t *testing.T) {
+		min5xVersionDecrementedMinor := MustDecrementMinor(t, min5xVersion)
+		min5xVersionDecrementedPatch := MustDecrementPatch(t, min5xVersion)
+
+		min6xVersionDecrementedMinor := MustDecrementMinor(t, min6xVersion)
+		min6xVersionDecrementedPatch := MustDecrementPatch(t, min6xVersion)
+
+		// NOTE: uncomment once we bump min7xVersion to be above 7.0.0
+		//min7xVersionDecrementedMinor := MustDecrementMinor(t, min7xVersion)
+		//min7xVersionDecrementedPatch := MustDecrementPatch(t, min7xVersion)
+
+		errorCases := []struct {
+			name          string
+			sourceVersion semver.Version
+			targetVersion semver.Version
+			toContain     string
+		}{
+			// generic disallowed version tests
+			{
+				name:          "source version is not supported",
+				sourceVersion: semver.MustParse("4.99.99"),
+				targetVersion: semver.MustParse(min6xVersion),
+				toContain:     "source version 4.99.99",
+			},
+			{
+				name:          "target version is not supported",
+				sourceVersion: semver.MustParse(min6xVersion),
+				targetVersion: semver.MustParse("50.0.0"),
+				toContain:     "target version 50.0.0",
+			},
+			// 5->6 disallowed version tests
+			{
+				name:          "source version does not meet the minimum minor version",
+				sourceVersion: min5xVersionDecrementedMinor,
+				targetVersion: semver.MustParse(min6xVersion),
+				toContain:     fmt.Sprintf("Source cluster version %s is not supported", min5xVersionDecrementedMinor),
+			},
+			{
+				name:          "source version does not meet the minimum patch version",
+				sourceVersion: min5xVersionDecrementedPatch,
+				targetVersion: semver.MustParse(min6xVersion),
+				toContain:     fmt.Sprintf("Source cluster version %s is not supported", min5xVersionDecrementedPatch),
+			},
+			{
+				name:          "target version does not meet the minimum minor version",
+				sourceVersion: semver.MustParse(min5xVersion),
+				targetVersion: min6xVersionDecrementedMinor,
+				toContain:     fmt.Sprintf("Target cluster version %s is not supported", min6xVersionDecrementedMinor),
+			},
+			{
+				name:          "target version does not meet the minimum patch version",
+				sourceVersion: semver.MustParse(min5xVersion),
+				targetVersion: min6xVersionDecrementedPatch,
+				toContain:     fmt.Sprintf("Target cluster version %s is not supported", min6xVersionDecrementedPatch),
+			},
+			// 6->6 disallowed version tests
+			{
+				name:          "source version does not meet the minimum minor version",
+				sourceVersion: min6xVersionDecrementedMinor,
+				targetVersion: semver.MustParse(min6xVersion),
+				toContain:     fmt.Sprintf("Source cluster version %s is not supported", min6xVersionDecrementedMinor),
+			},
+			{
+				name:          "source version does not meet the minimum patch version",
+				sourceVersion: min6xVersionDecrementedPatch,
+				targetVersion: semver.MustParse(min6xVersion),
+				toContain:     fmt.Sprintf("Source cluster version %s is not supported", min6xVersionDecrementedPatch),
+			},
+			{
+				name:          "target version does not meet the minimum minor version",
+				sourceVersion: semver.MustParse(min6xVersion),
+				targetVersion: min6xVersionDecrementedMinor,
+				toContain:     fmt.Sprintf("Target cluster version %s is not supported", min6xVersionDecrementedMinor),
+			},
+			{
+				name:          "target version does not meet the minimum patch version",
+				sourceVersion: semver.MustParse(min6xVersion),
+				targetVersion: min6xVersionDecrementedPatch,
+				toContain:     fmt.Sprintf("Target cluster version %s is not supported", min6xVersionDecrementedPatch),
+			},
+			// 6->7 disallowed version tests
+			{
+				name:          "source version does not meet the minimum minor version",
+				sourceVersion: min6xVersionDecrementedMinor,
+				targetVersion: semver.MustParse(min7xVersion),
+				toContain:     fmt.Sprintf("Source cluster version %s is not supported", min6xVersionDecrementedMinor),
+			},
+			{
+				name:          "source version does not meet the minimum patch version",
+				sourceVersion: min6xVersionDecrementedPatch,
+				targetVersion: semver.MustParse(min7xVersion),
+				toContain:     fmt.Sprintf("Source cluster version %s is not supported", min6xVersionDecrementedPatch),
+			},
+			// =========================================================================================================
+			// NOTE: uncomment once we bump min7xVersion to be above 7.0.0
+			// =========================================================================================================
+			//{
+			//	name:          "target version does not meet the minimum minor version",
+			//	sourceVersion: semver.MustParse(min6xVersion),
+			//	targetVersion: min7xVersionDecrementedMinor,
+			//	toContain:     fmt.Sprintf("Target cluster version %s is not supported", min7xVersionDecrementedMinor),
+			//},
+			//{
+			//	name:          "target version does not meet the minimum patch version",
+			//	sourceVersion: semver.MustParse(min6xVersion),
+			//	targetVersion: min7xVersionDecrementedPatch,
+			//	toContain:     fmt.Sprintf("Target cluster version %s is not supported", min7xVersionDecrementedPatch),
+			//},
+			//
+			//// 7->7 disallowed version tests
+			//{
+			//	name:          "source version does not meet the minimum minor version",
+			//	sourceVersion: min7xVersionDecrementedMinor,
+			//	targetVersion: semver.MustParse(min7xVersion),
+			//	toContain:     fmt.Sprintf("Source cluster version %s is not supported", min7xVersionDecrementedMinor),
+			//},
+			//{
+			//	name:          "source version does not meet the minimum patch version",
+			//	sourceVersion: min7xVersionDecrementedPatch,
+			//	targetVersion: semver.MustParse(min7xVersion),
+			//	toContain:     fmt.Sprintf("Source cluster version %s is not supported", min7xVersionDecrementedPatch),
+			//},
+			//{
+			//	name:          "target version does not meet the minimum minor version",
+			//	sourceVersion: semver.MustParse(min7xVersion),
+			//	targetVersion: min7xVersionDecrementedPatch,
+			//	toContain:     fmt.Sprintf("Target cluster version %s is not supported", min7xVersionDecrementedPatch),
+			//},
+			//{
+			//	name:          "target version does not meet the minimum patch version",
+			//	sourceVersion: semver.MustParse(min7xVersion),
+			//	targetVersion: min7xVersionDecrementedPatch,
+			//	toContain:     fmt.Sprintf("Target cluster version %s is not supported", min7xVersionDecrementedPatch),
+			//},
+		}
+
+		for _, c := range errorCases {
+			t.Run(c.name, func(t *testing.T) {
+				err := validate(c.sourceVersion, c.targetVersion)
+				if err == nil {
+					t.Error("expected error got nil")
+				}
+
+				if !strings.Contains(err.Error(), c.toContain) {
+					t.Errorf("expected error: %+v", err.Error())
+					t.Errorf("to contain: %q", c.toContain)
+				}
+			})
+		}
+	})
+}
+
+func MustIncrementMinor(t *testing.T, version string) semver.Version {
+	semverVersion := semver.MustParse(version)
+	err := semverVersion.IncrementMinor()
+	if err != nil {
+		t.Fatalf("failed to increment minor for version %q: %v", version, err)
+	}
+
+	return semverVersion
+}
+
+func MustIncrementPatch(t *testing.T, version string) semver.Version {
+	semverVersion := semver.MustParse(version)
+	err := semverVersion.IncrementPatch()
+	if err != nil {
+		t.Fatalf("failed to increment patch for version %q: %v", version, err)
+	}
+
+	return semverVersion
+}
+
+func MustDecrementMinor(t *testing.T, version string) semver.Version {
+	semverVersion := semver.MustParse(version)
+	semverVersion.Minor--
+	semverVersion.Patch = 0
+	return semverVersion
+}
+
+func MustDecrementPatch(t *testing.T, version string) semver.Version {
+	semverVersion := semver.MustParse(version)
+	if semverVersion.Patch == 0 {
+		semverVersion.Minor--
+		return semverVersion
+	}
+
+	semverVersion.Patch--
+	return semverVersion
 }

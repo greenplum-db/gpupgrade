@@ -29,6 +29,10 @@ func PostgresGPVersion_6_7_1() {
 	fmt.Println("postgres (Greenplum Database) 6.7.1 build commit:a21de286045072d8d1df64fa48752b7dfac8c1b7")
 }
 
+func PostgresGPVersion_6_99_0() {
+	fmt.Println("postgres (Greenplum Database) 6.99.0 build commit:a21de286045072d8d1df64fa48752b7dfac8c1b7")
+}
+
 func PostgresGPVersion_11_341_31() {
 	fmt.Println("postgres (Greenplum Database) 11.341.31 build commit:a21de286045072d8d1df64fa48752b7dfac8c1b7")
 }
@@ -60,6 +64,7 @@ func init() {
 		PostgresGPVersion_5_27_0_beta,
 		PostgresGPVersion_6_dev,
 		PostgresGPVersion_6_7_1,
+		PostgresGPVersion_6_99_0,
 		PostgresGPVersion_11_341_31,
 		PostgresGPVersion_MultiLine,
 		PostgresGPVersion_0_0_0,
