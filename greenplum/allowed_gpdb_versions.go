@@ -10,8 +10,8 @@ import (
 )
 
 // Change these values to bump the minimum supported versions and associated tests.
-var min5xVersion = "5.29.6"
-var min6xVersion = "6.21.0"
+var min5xVersion = "5.29.7"
+var min6xVersion = "6.21.1"
 var min7xVersion = "7.0.0"
 
 var GetSourceVersion = Version
