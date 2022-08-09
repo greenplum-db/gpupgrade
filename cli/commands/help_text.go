@@ -63,6 +63,7 @@ func init() {
 		idl.Substep_stop_target_cluster,
 	})
 	RevertHelp = GenerateHelpString(revertHelp, []idl.Substep{
+		idl.Substep_check_active_connections_on_target_cluster,
 		idl.Substep_shutdown_target_cluster,
 		idl.Substep_delete_target_cluster_datadirs,
 		idl.Substep_delete_tablespaces,

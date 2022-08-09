@@ -42,21 +42,13 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		return errors.New("Source cluster does not have mirrors and/or standby. Cannot restore source cluster. Please contact support.")
 	}
 
-	// If the intermediate target cluster is started, it must be stopped.
-	if s.Intermediate != nil {
-		st.AlwaysRun(idl.Substep_shutdown_target_cluster, func(streams step.OutStreams) error {
-			running, err := s.Intermediate.IsCoordinatorRunning(streams)
-			if err != nil {
-				return err
-			}
+	st.RunConditionally(idl.Substep_check_active_connections_on_target_cluster, s.Intermediate != nil, func(streams step.OutStreams) error {
+		return s.Intermediate.CheckActiveConnections(streams)
+	})
 
-			if !running {
-				return step.Skip
-			}
-
-			return s.Intermediate.Stop(streams)
-		})
-	}
+	st.RunConditionally(idl.Substep_shutdown_target_cluster, s.Intermediate != nil, func(streams step.OutStreams) error {
+		return s.Intermediate.Stop(streams)
+	})
 
 	st.RunConditionally(idl.Substep_delete_target_cluster_datadirs,
 		s.Intermediate.Primaries != nil && s.Intermediate.CoordinatorDataDir() != "",
