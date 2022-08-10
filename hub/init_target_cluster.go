@@ -62,18 +62,15 @@ func (s *Server) RemoveIntermediateCluster(streams step.OutStreams) error {
 		return nil
 	}
 
-	running, err := s.Intermediate.IsCoordinatorRunning(streams)
-	if err != nil {
+	if err := s.Intermediate.CheckActiveConnections(streams); err != nil {
 		return err
 	}
 
-	if running {
-		if err := s.Intermediate.Stop(streams); err != nil {
-			return err
-		}
+	if err := s.Intermediate.Stop(streams); err != nil {
+		return err
 	}
 
-	err = DeleteCoordinatorAndPrimaryDataDirectories(streams, s.agentConns, s.Intermediate)
+	err := DeleteCoordinatorAndPrimaryDataDirectories(streams, s.agentConns, s.Intermediate)
 	if err != nil {
 		return xerrors.Errorf("deleting target cluster data directories: %w", err)
 	}
