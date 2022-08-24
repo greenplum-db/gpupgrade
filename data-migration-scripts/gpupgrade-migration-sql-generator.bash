@@ -49,7 +49,7 @@ get_databases(){
 exec_script(){
     local database=$1
     local path=$2
-    local output_dir=$3
+    local output_dir=${3}/$(basename "$(dirname "$path")")
 
     local name
     name=$(basename "$path")
@@ -65,6 +65,8 @@ exec_script(){
     fi
 
     if [[ -n "$records" ]]; then
+        mkdir -p "$output_dir"
+
         # change database before header, to allow header to define SQL functions
         echo "\c $database" >> "${output_dir}/${output_file}"
 

@@ -1,6 +1,9 @@
 -- Copyright (c) 2017-2022 VMware, Inc. or its affiliates
 -- SPDX-License-Identifier: Apache-2.0
 
+-- Combine both name and tsquery scripts into the same subdirectory since both
+-- reply on this single recreate index script.
+
 -- generates create index statement to re-create indexes on deprecated types.
 
 SELECT pg_get_indexdef(xc.oid) || ';'

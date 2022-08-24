@@ -4,6 +4,9 @@
 -- generates a script to drop foreign key constraints.
 -- Foreign key constraints have to be dropped before primary/unique constraints to make sure that
 -- we can successfully drop the dependee constraints.
+-- Note that we primary and unique constraints need to be created before
+-- foreign key constraints such that they can be properly referenced referenced.
+-- Thus, we place them in the same subdirectory.
 SELECT
    'ALTER TABLE ' || pg_catalog.quote_ident(nspname) || '.' || pg_catalog.quote_ident(relname) || ' DROP CONSTRAINT ' || pg_catalog.quote_ident(conname) || ';'
 FROM
