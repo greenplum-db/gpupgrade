@@ -43,6 +43,7 @@ teardown() {
         --target-gphome "$GPHOME_TARGET" \
         --source-master-port "$PGPORT" \
         --stop-before-cluster-creation \
+        --disk-free-ratio 0 \
         --pg-upgrade-verbose
 
     [ "$status" -eq 1 ]
@@ -97,6 +98,7 @@ teardown() {
         --target-gphome "$GPHOME_TARGET" \
         --source-master-port "$PGPORT" \
         --stop-before-cluster-creation \
+        --disk-free-ratio 0 \
         --verbose
 
     run gpupgrade execute --non-interactive --pg-upgrade-verbose

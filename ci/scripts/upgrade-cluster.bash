@@ -35,7 +35,8 @@ time ssh -n mdw "
               --source-gphome $GPHOME_SOURCE \
               --source-master-port $PGPORT \
               --mode $MODE \
-              --temp-port-range 6020-6040
+              --temp-port-range 6020-6040 \
+              --disk-free-ratio 0
 
     gpupgrade execute --non-interactive
     gpupgrade finalize --non-interactive
