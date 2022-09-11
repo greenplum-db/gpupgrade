@@ -16,7 +16,7 @@ function run_migration_scripts_and_tests() {
 
         echo "Running data migration scripts to ensure a clean cluster..."
         gpupgrade-migration-sql-generator.bash "$GPHOME_SOURCE" "$PGPORT" /home/gpadmin/gpupgrade gpupgrade_src/data-migration-scripts
-        gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" /home/gpadmin/gpupgrade/pre-initialize || true
+        gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" /home/gpadmin/gpupgrade/initialize || true
 
         ./gpupgrade_src/test/acceptance/gpupgrade/revert.bats
   '

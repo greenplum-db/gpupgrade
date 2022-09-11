@@ -30,7 +30,7 @@ setup() {
     # Note: This is especially important with a 5X demo cluster which contains
     # the gphdfs role by default.
     "$DATA_MIGRATION_INPUT_DIR"/gpupgrade-migration-sql-generator.bash "$GPHOME_SOURCE" "$PGPORT" "$DATA_MIGRATION_OUTPUT_DIR" "$DATA_MIGRATION_INPUT_DIR"
-    "$DATA_MIGRATION_INPUT_DIR"/gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" "$DATA_MIGRATION_OUTPUT_DIR"/pre-initialize || true
+    "$DATA_MIGRATION_INPUT_DIR"/gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" "$DATA_MIGRATION_OUTPUT_DIR"/initialize || true
 }
 
 teardown() {

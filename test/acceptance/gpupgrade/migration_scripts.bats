@@ -72,7 +72,7 @@ teardown() {
 
     MIGRATION_DIR=`mktemp -d /tmp/migration.XXXXXX`
     "$SCRIPTS_DIR"/gpupgrade-migration-sql-generator.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR" "$SCRIPTS_DIR"
-    "$SCRIPTS_DIR"/gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/pre-initialize
+    "$SCRIPTS_DIR"/gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/initialize
 
     gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
@@ -88,7 +88,7 @@ teardown() {
     # unset LD_LIBRARY_PATH due to https://web.archive.org/web/20220506055918/https://groups.google.com/a/greenplum.org/g/gpdb-dev/c/JN-YwjCCReY/m/0L9wBOvlAQAJ
     (unset LD_LIBRARY_PATH; source "${GPHOME_TARGET}"/greenplum_path.sh && "${GPHOME_TARGET}"/bin/gpstart -a)
 
-    "$SCRIPTS_DIR"/gpupgrade-migration-sql-executor.bash "$GPHOME_TARGET" "$PGPORT" "$MIGRATION_DIR"/post-finalize
+    "$SCRIPTS_DIR"/gpupgrade-migration-sql-executor.bash "$GPHOME_TARGET" "$PGPORT" "$MIGRATION_DIR"/finalize
 
     # migration scripts should create the indexes on the target cluster
     root_child_indexes_after=$(get_indexes "$GPHOME_TARGET")
@@ -134,7 +134,7 @@ teardown() {
     register_teardown rm -r "$MIGRATION_DIR"
 
     $SCRIPTS_DIR/gpupgrade-migration-sql-generator.bash $GPHOME_SOURCE $PGPORT $MIGRATION_DIR "$SCRIPTS_DIR"
-    $SCRIPTS_DIR/gpupgrade-migration-sql-executor.bash $GPHOME_SOURCE $PGPORT $MIGRATION_DIR/pre-initialize
+    $SCRIPTS_DIR/gpupgrade-migration-sql-executor.bash $GPHOME_SOURCE $PGPORT $MIGRATION_DIR/initialize
 
     gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
@@ -147,7 +147,7 @@ teardown() {
     gpupgrade execute --non-interactive --verbose
     gpupgrade revert --non-interactive --verbose
 
-    $SCRIPTS_DIR/gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/post-revert
+    $SCRIPTS_DIR/gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/revert
 
     # migration scripts should create the indexes on the target cluster
     root_child_indexes_after=$(get_indexes "$GPHOME_SOURCE")
@@ -187,7 +187,7 @@ teardown() {
 
     "$SCRIPTS_DIR"/gpupgrade-migration-sql-generator.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR" "$SCRIPTS_DIR"
     $PSQL -v ON_ERROR_STOP=1 -d testdb -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
-    "$SCRIPTS_DIR"/gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/pre-initialize
+    "$SCRIPTS_DIR"/gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/initialize
 
     gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
@@ -199,7 +199,7 @@ teardown() {
         --verbose
     gpupgrade revert --non-interactive --verbose
 
-    "$SCRIPTS_DIR"/gpupgrade-migration-sql-executor.bash "$GPHOME_TARGET" "$PGPORT" "$MIGRATION_DIR"/post-revert
+    "$SCRIPTS_DIR"/gpupgrade-migration-sql-executor.bash "$GPHOME_TARGET" "$PGPORT" "$MIGRATION_DIR"/revert
 }
 
 get_indexes() {

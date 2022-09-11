@@ -65,7 +65,7 @@ func UpgradeCoordinator(streams step.OutStreams, pgUpgradeVerbose bool, source *
 		nextAction := fmt.Sprintf(`Consult the pg_upgrade check output files located: %s
 Refer to the gpupgrade documentation for details on the pg_upgrade check error.
 
-If you haven't already run the pre-initialize data migration scripts please run them.
+If you haven't already run the initialize data migration scripts please run them.
 
 To connect to the intermediate target cluster:
 source %s

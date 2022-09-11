@@ -104,7 +104,7 @@ To use the upgraded cluster:
    export PGPORT=%d
    gpstart -a
 
-   Execute the “post-finalize” data migration scripts, and recreate any 
+   Execute the “finalize” data migration scripts, and recreate any 
    additional tables, indexes, and roles that were dropped or altered 
    to resolve migration issues.`,
 				response.GetTargetVersion(),
