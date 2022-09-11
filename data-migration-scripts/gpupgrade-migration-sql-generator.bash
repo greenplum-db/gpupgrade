@@ -14,9 +14,9 @@ Usage: '$(basename $0)' <GPHOME> <PGPORT> <OUTPUT_DIR>
 
 The output directory structure is:
      <output directory>
-     + pre-initialize  drop and alter objects prior to "gpupgrade initialize"
-     + post-finalize   restore and recreate objects following "gpupgrade finalize"
-     + post-revert     restore objects following "gpupgrade revert"
+     + initialize  drop and alter objects prior to "gpupgrade initialize"
+     + finalize   restore and recreate objects following "gpupgrade finalize"
+     + revert     restore objects following "gpupgrade revert"
 
 After running gpupgrade-migration-sql-generator.bash, run gpupgrade-migration-sql-executor.bash.
 Run gpupgrade-migration-sql-executor.bash -h for more information.'
@@ -140,7 +140,7 @@ execute_script_directory() {
 }
 
 main(){
-    local dirs=(pre-initialize post-finalize post-revert stats)
+    local dirs=(initialize finalize revert stats)
     local databases=($(get_databases))
 
     local current_timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")

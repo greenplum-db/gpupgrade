@@ -39,7 +39,7 @@ time ssh -n mdw "
 SQL_EOF
 
     gpupgrade-migration-sql-generator.bash $GPHOME_SOURCE $PGPORT /home/gpadmin/gpupgrade
-    gpupgrade-migration-sql-executor.bash $GPHOME_SOURCE $PGPORT /home/gpadmin/gpupgrade/pre-initialize || true
+    gpupgrade-migration-sql-executor.bash $GPHOME_SOURCE $PGPORT /home/gpadmin/gpupgrade/initialize || true
 "
 
 echo "Dropping views referencing deprecated objects..."

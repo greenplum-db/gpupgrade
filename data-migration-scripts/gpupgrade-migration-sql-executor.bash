@@ -14,17 +14,17 @@ Usage: '$(basename $0)' <GPHOME> <PGPORT> <INPUT_DIR>
      <INPUT_DIR> : the directory containing the scripts to execute. This is the
                    <OUTPUT_DIR> you specified earlier in gpupgrade-migration-sql-generator.bash,
                    with a subdirectory appended as in the use cases below. The
-                   subdirectories are pre-initialize, post-finalize, and post-revert.
+                   subdirectories are initialize, finalize, and revert.
 
 Use cases:
 - Before "gpupgrade initialize", drop and alter objects:
-gpupgrade-migration-sql-executor.bash /path/to/gphome 5432 /path/to/output_dir/pre-initialize
+gpupgrade-migration-sql-executor.bash /path/to/gphome 5432 /path/to/output_dir/initialize
 
 - Following "gpupgrade finalize", restore and recreate objects:
-gpupgrade-migration-sql-executor.bash /path/to/gphome 5432 /path/to/output_dir/post-finalize
+gpupgrade-migration-sql-executor.bash /path/to/gphome 5432 /path/to/output_dir/finalize
 
 - Following "gpupgrade revert", restore objects:
-gpupgrade-migration-sql-executor.bash /path/to/gphome 5432 /path/to/output_dir/post-revert
+gpupgrade-migration-sql-executor.bash /path/to/gphome 5432 /path/to/output_dir/revert
 
 Log files can be found in INPUT_DIR/data_migration.log'
 }

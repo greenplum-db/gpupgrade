@@ -123,7 +123,7 @@ ssh mdw "
     export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
 
     gpupgrade-migration-sql-generator.bash "$GPHOME_SOURCE" "$PGPORT" /home/gpadmin/gpupgrade
-    gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" /home/gpadmin/gpupgrade/pre-initialize || true
+    gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" /home/gpadmin/gpupgrade/initialize || true
 
     # match root/child partition schemas
     psql -v ON_ERROR_STOP=1 -d gpdb_demo <<SQL_EOF
