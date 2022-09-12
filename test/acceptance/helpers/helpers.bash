@@ -184,6 +184,13 @@ is_GPDB5() {
     [[ $version =~ ^"postgres (Greenplum Database) 5." ]]
 }
 
+is_GPDB6() {
+    local gphome=$1
+    local version=$("$gphome"/bin/postgres --gp-version)
+
+    [[ $version =~ ^"postgres (Greenplum Database) 6." ]]
+}
+
 # query_datadirs returns the datadirs across various version of GPDB.
 # Arguments are GPHOME, PGPORT, and the WHERE clause to use when querying
 # gp_segment_configuration.

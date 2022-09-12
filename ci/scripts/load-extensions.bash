@@ -250,6 +250,6 @@ ssh -n mdw "
 
     source /usr/local/greenplum-db-source/greenplum_path.sh
 
-    gpupgrade-migration-sql-generator.bash $GPHOME_SOURCE $PGPORT /home/gpadmin/gpupgrade
-    gpupgrade-migration-sql-executor.bash $GPHOME_SOURCE $PGPORT /home/gpadmin/gpupgrade/initialize || true
+    gpupgrade generator --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --output-dir /home/gpadmin/gpupgrade
+    gpupgrade executor  --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --input-dir /home/gpadmin/gpupgrade --phase initialize
 "

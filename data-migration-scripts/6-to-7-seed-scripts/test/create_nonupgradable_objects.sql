@@ -326,7 +326,7 @@ CREATE TABLE ao_root_partition (A INT, B INT) WITH (APPENDONLY=TRUE) DISTRIBUTED
 
 INSERT INTO ao_root_partition SELECT 1,i FROM GENERATE_SERIES(1,4) AS i;
 -- Create an artificial aoseg entry for the root and interior partition.
-SET allow_system_table_mods TO DML;
+SET allow_system_table_mods TO TRUE;
 SELECT insert_dummy_segentry(s.interior_segrelfqname) FROM
     (SELECT segrelid::regclass::text AS interior_segrelfqname FROM pg_appendonly
      WHERE relid IN ('ao_root_partition'::regclass, 'ao_root_partition_1_prt_1'::regclass)) AS s;
@@ -340,7 +340,7 @@ CREATE TABLE aoco_root_partition (A INT, B INT) WITH (APPENDONLY=TRUE, ORIENTATI
 
 INSERT INTO aoco_root_partition SELECT 1,i FROM GENERATE_SERIES(1,4) AS i;
 -- Create an artificial aocsseg entry for the root and interior partition.
-SET allow_system_table_mods TO DML;
+SET allow_system_table_mods TO TRUE;
 SELECT insert_dummy_segentry(s.interior_segrelfqname) FROM
     (SELECT segrelid::regclass::text AS interior_segrelfqname FROM pg_appendonly
      WHERE relid IN ('aoco_root_partition'::regclass, 'aoco_root_partition_1_prt_1'::regclass)) AS s;

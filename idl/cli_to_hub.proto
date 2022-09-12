@@ -66,6 +66,7 @@ enum Step {
   execute = 2;
   finalize = 3;
   revert = 4;
+  stats = 5; // used for data migration script phase
 }
 
 enum Substep {

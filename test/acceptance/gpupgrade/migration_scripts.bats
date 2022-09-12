@@ -5,9 +5,14 @@
 load ../helpers/helpers
 load ../helpers/teardown_helpers
 
-SCRIPTS_DIR=$BATS_TEST_DIRNAME/../../../data-migration-scripts
+SEED_DIR=$BATS_TEST_DIRNAME/../../../data-migration-scripts
 
 setup() {
+    # FIXME: We should support testing the migration scripts.
+    if is_GPDB6 "$GPHOME_SOURCE"; then
+        skip "FIXME: migration scripts are not yet supported for 6-to-6 and 6-to-7 upgrades"
+    fi
+
     skip_if_no_gpdb
 
     STATE_DIR=$(mktemp -d /tmp/gpupgrade.XXXXXX)
@@ -20,20 +25,16 @@ setup() {
 
     PSQL="$GPHOME_SOURCE/bin/psql -X --no-align --tuples-only"
 
-    local seed_dir=6-to-7-seed-scripts
+    export VERSION_SEED_DIR=6-to-7-seed-scripts
     if is_GPDB5 "$GPHOME_SOURCE"; then
-        seed_dir=5-to-6-seed-scripts
+        export VERSION_SEED_DIR=5-to-6-seed-scripts
     fi
 
-    $PSQL -v ON_ERROR_STOP=1 -d postgres -f "$SCRIPTS_DIR"/"${seed_dir}"/test/setup_nonupgradable_objects.sql
+    $PSQL -v ON_ERROR_STOP=1 -d postgres -f "${SEED_DIR}"/"${VERSION_SEED_DIR}"/test/setup_nonupgradable_objects.sql
 }
 
 teardown() {
-    local seed_dir=6-to-7-seed-scripts
-    if is_GPDB5 "$GPHOME_SOURCE"; then
-        seed_dir=5-to-6-seed-scripts
-    fi
-    $PSQL -v ON_ERROR_STOP=1 -d postgres -f "$SCRIPTS_DIR"/"${seed_dir}"/test/teardown_nonupgradable_objects.sql
+    $PSQL -v ON_ERROR_STOP=1 -d postgres -f "${SEED_DIR}"/"${VERSION_SEED_DIR}"/test/teardown_nonupgradable_objects.sql
 
     # XXX Beware, BATS_TEST_SKIPPED is not a documented export.
     if [ -n "${BATS_TEST_SKIPPED}" ]; then
@@ -49,7 +50,7 @@ teardown() {
     # This syntax in create_nonupgradable_objects.sql is not completely
     # compatible with 6X. ON_ERROR_STOP is disabled until this incompatibility
     # is resolved.
-    PGOPTIONS='--client-min-messages=warning' $PSQL -v ON_ERROR_STOP=0 -d testdb -f "$SCRIPTS_DIR"/5-to-6-seed-scripts/test/create_nonupgradable_objects.sql
+    PGOPTIONS='--client-min-messages=warning' $PSQL -v ON_ERROR_STOP=0 -d testdb -f "${SEED_DIR}"/"${VERSION_SEED_DIR}"/test/create_nonupgradable_objects.sql
     run gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
         --target-gphome="$GPHOME_TARGET" \
@@ -64,7 +65,7 @@ teardown() {
     egrep "\"check_upgrade\": \"failed\"" $GPUPGRADE_HOME/substeps.json
     egrep "^Checking.*fatal$" ~/gpAdminLogs/gpupgrade/pg_upgrade/p-1/pg_upgrade_internal.log
 
-    PGOPTIONS='--client-min-messages=warning' $PSQL -v ON_ERROR_STOP=1 -d testdb -f "$SCRIPTS_DIR"/5-to-6-seed-scripts/test/drop_unfixable_objects.sql
+    PGOPTIONS='--client-min-messages=warning' $PSQL -v ON_ERROR_STOP=1 -d testdb -f "${SEED_DIR}"/"${VERSION_SEED_DIR}"/test/drop_unfixable_objects.sql
 
     root_child_indexes_before=$(get_indexes "$GPHOME_SOURCE")
     tsquery_datatype_objects_before=$(get_tsquery_datatypes "$GPHOME_SOURCE")
@@ -77,8 +78,8 @@ teardown() {
     view_owners_before=$(get_view_owners "$GPHOME_SOURCE")
 
     MIGRATION_DIR=`mktemp -d /tmp/migration.XXXXXX`
-    "$SCRIPTS_DIR"/gpupgrade-migration-sql-generator.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR" "$SCRIPTS_DIR"
-    "$SCRIPTS_DIR"/gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/initialize
+    gpupgrade generator --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --seed-dir "$SEED_DIR" --output-dir "$MIGRATION_DIR"
+    gpupgrade executor  --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --input-dir "$MIGRATION_DIR" --phase initialize
 
     gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
@@ -94,7 +95,7 @@ teardown() {
     # unset LD_LIBRARY_PATH due to https://web.archive.org/web/20220506055918/https://groups.google.com/a/greenplum.org/g/gpdb-dev/c/JN-YwjCCReY/m/0L9wBOvlAQAJ
     (unset LD_LIBRARY_PATH; source "${GPHOME_TARGET}"/greenplum_path.sh && "${GPHOME_TARGET}"/bin/gpstart -a)
 
-    "$SCRIPTS_DIR"/gpupgrade-migration-sql-executor.bash "$GPHOME_TARGET" "$PGPORT" "$MIGRATION_DIR"/finalize
+    gpupgrade executor --non-interactive --gphome "$GPHOME_TARGET" --port "$PGPORT" --input-dir "$MIGRATION_DIR" --phase finalize
 
     # migration scripts should create the indexes on the target cluster
     root_child_indexes_after=$(get_indexes "$GPHOME_TARGET")
@@ -123,8 +124,8 @@ teardown() {
     # This syntax in create_nonupgradable_objects.sql is not completely
     # compatible with 6X. ON_ERROR_STOP is disabled until this incompatibility
     # is resolved.
-    $PSQL -v ON_ERROR_STOP=0 -d testdb -f "$SCRIPTS_DIR"/5-to-6-seed-scripts/test/create_nonupgradable_objects.sql
-    $PSQL -v ON_ERROR_STOP=1 -d testdb -f "$SCRIPTS_DIR"/5-to-6-seed-scripts/test/drop_unfixable_objects.sql
+    $PSQL -v ON_ERROR_STOP=0 -d testdb -f "${SEED_DIR}"/"${VERSION_SEED_DIR}"/test/create_nonupgradable_objects.sql
+    $PSQL -v ON_ERROR_STOP=1 -d testdb -f "${SEED_DIR}"/"${VERSION_SEED_DIR}"/test/drop_unfixable_objects.sql
 
     root_child_indexes_before=$(get_indexes "$GPHOME_SOURCE")
     tsquery_datatype_objects_before=$(get_tsquery_datatypes "$GPHOME_SOURCE")
@@ -139,8 +140,8 @@ teardown() {
     MIGRATION_DIR=`mktemp -d /tmp/migration.XXXXXX`
     register_teardown rm -r "$MIGRATION_DIR"
 
-    $SCRIPTS_DIR/gpupgrade-migration-sql-generator.bash $GPHOME_SOURCE $PGPORT $MIGRATION_DIR "$SCRIPTS_DIR"
-    $SCRIPTS_DIR/gpupgrade-migration-sql-executor.bash $GPHOME_SOURCE $PGPORT $MIGRATION_DIR/initialize
+    gpupgrade generator --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --seed-dir "$SEED_DIR" --output-dir "$MIGRATION_DIR"
+    gpupgrade executor  --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --input-dir "$MIGRATION_DIR" --phase initialize
 
     gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
@@ -153,7 +154,7 @@ teardown() {
     gpupgrade execute --non-interactive --verbose
     gpupgrade revert --non-interactive --verbose
 
-    $SCRIPTS_DIR/gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/revert
+    gpupgrade executor --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --input-dir "$MIGRATION_DIR" --phase revert
 
     # migration scripts should create the indexes on the target cluster
     root_child_indexes_after=$(get_indexes "$GPHOME_SOURCE")
@@ -182,7 +183,7 @@ teardown() {
     # This syntax in create_nonupgradable_objects.sql is not completely
     # compatible with 6X. ON_ERROR_STOP is disabled until this incompatibility
     # is resolved.
-    $PSQL -v ON_ERROR_STOP=0 -d testdb -f "$SCRIPTS_DIR"/5-to-6-seed-scripts/test/create_nonupgradable_objects.sql
+    $PSQL -v ON_ERROR_STOP=0 -d testdb -f "${SEED_DIR}"/"${VERSION_SEED_DIR}"/test/create_nonupgradable_objects.sql
 
     MIGRATION_DIR=$(mktemp -d /tmp/migration.XXXXXX)
     register_teardown rm -r "$MIGRATION_DIR"
@@ -191,9 +192,9 @@ teardown() {
     export PSQLRC="$MIGRATION_DIR"/psqlrc
     printf '\! kill $PPID\n' > "$PSQLRC"
 
-    "$SCRIPTS_DIR"/gpupgrade-migration-sql-generator.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR" "$SCRIPTS_DIR"
-    $PSQL -v ON_ERROR_STOP=1 -d testdb -f "$SCRIPTS_DIR"/5-to-6-seed-scripts/test/drop_unfixable_objects.sql
-    "$SCRIPTS_DIR"/gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/initialize
+    gpupgrade generator --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --seed-dir "$SEED_DIR" --output-dir "$MIGRATION_DIR"
+    $PSQL -v ON_ERROR_STOP=1 -d testdb -f "${SEED_DIR}"/"${VERSION_SEED_DIR}"/test/drop_unfixable_objects.sql
+    gpupgrade executor  --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --input-dir "$MIGRATION_DIR" --phase initialize
 
     gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
@@ -205,7 +206,7 @@ teardown() {
         --verbose
     gpupgrade revert --non-interactive --verbose
 
-    "$SCRIPTS_DIR"/gpupgrade-migration-sql-executor.bash "$GPHOME_TARGET" "$PGPORT" "$MIGRATION_DIR"/revert
+    gpupgrade executor --non-interactive --gphome "$GPHOME_TARGET" --port "$PGPORT" --input-dir "$MIGRATION_DIR" --phase revert
 }
 
 get_indexes() {

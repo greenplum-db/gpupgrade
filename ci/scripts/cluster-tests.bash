@@ -19,13 +19,15 @@ function run_migration_scripts_and_tests() {
         set -eux -o pipefail
 
         export TERM=linux
+        export PATH=$PATH:$HOME/go/bin
         export GOFLAGS="-mod=readonly" # do not update dependencies during build
 
         cd gpupgrade_src
-        data-migration-scripts/gpupgrade-migration-sql-generator.bash "$GPHOME_SOURCE" "$PGPORT" /home/gpadmin/gpupgrade ./data-migration-scripts
-        data-migration-scripts/gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" /home/gpadmin/gpupgrade/initialize || true
+        make && make install
 
-        make
+        gpupgrade generator --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --seed-dir ./data-migration-scripts --output-dir /home/gpadmin/gpupgrade
+        gpupgrade executor  --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --input-dir /home/gpadmin/gpupgrade --phase initialize
+
         make check --keep-going
     '
 }

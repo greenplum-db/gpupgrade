@@ -4,7 +4,7 @@
 -- Generates a script to truncate non-empty segrels for AO and AOCO parent
 -- partitions.
 
-SELECT 'SET allow_system_table_mods TO DML;';
+SELECT 'SET allow_system_table_mods TO TRUE;';
 
 SELECT 'DELETE FROM ' || segrelid::regclass || ';'
 FROM pg_appendonly a JOIN pg_class c ON a.relid = c.oid
