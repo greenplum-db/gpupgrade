@@ -338,3 +338,26 @@ func MustGetExecutablePath(t *testing.T) string {
 
 	return filepath.Dir(path)
 }
+
+func SetStdin(t *testing.T, input string) func() {
+	t.Helper()
+
+	stdinReader, stdinWriter, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	origStdin := os.Stdin
+	os.Stdin = stdinReader
+
+	_, err = stdinWriter.WriteString(input)
+	if err != nil {
+		stdinWriter.Close()
+		os.Stdin = origStdin
+		t.Fatal(err)
+	}
+
+	return func() {
+		os.Stdin = origStdin
+	}
+}

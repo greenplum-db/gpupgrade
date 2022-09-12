@@ -46,6 +46,7 @@ type SystemFunctions struct {
 	RemoveAll    func(name string) error
 	Rename       func(oldpath, newpath string) error
 	ReadFile     func(filename string) ([]byte, error)
+	ReadFileFS   func(fs.FS, string) ([]byte, error)
 	WriteFile    func(filename string, data []byte, perm os.FileMode) error
 	Stat         func(name string) (os.FileInfo, error)
 	FilePathGlob func(pattern string) ([]string, error)
@@ -53,7 +54,7 @@ type SystemFunctions struct {
 	Mkdir        func(name string, perm os.FileMode) error
 	Symlink      func(oldname, newname string) error
 	Lstat        func(name string) (os.FileInfo, error)
-	ReadDir      func(fsys fs.FS, name string) ([]fs.DirEntry, error)
+	ReadDirFS    func(fsys fs.FS, name string) ([]fs.DirEntry, error)
 	StatFS       func(fsys fs.FS, name string) (fs.FileInfo, error)
 	DirFS        func(dir string) fs.FS
 }
@@ -76,12 +77,13 @@ func InitializeSystemFunctions() *SystemFunctions {
 		Stat:         os.Stat,
 		FilePathGlob: filepath.Glob,
 		ReadFile:     os.ReadFile,
+		ReadFileFS:   fs.ReadFile,
 		WriteFile:    os.WriteFile,
 		Create:       os.Create,
 		Mkdir:        os.Mkdir,
 		Symlink:      os.Symlink,
 		Lstat:        os.Lstat,
-		ReadDir:      fs.ReadDir,
+		ReadDirFS:    fs.ReadDir,
 		StatFS:       fs.Stat,
 		DirFS:        os.DirFS,
 	}
@@ -108,6 +110,19 @@ func GetLogDir() (string, error) {
 
 	logDir := filepath.Join(currentUser.HomeDir, "gpAdminLogs", "gpupgrade")
 	return logDir, nil
+}
+
+func GetDataMigrationSeedDir() string {
+	return filepath.Join("/", "usr", "local", "bin", "greenplum", "gpupgrade", "data-migration-scripts")
+}
+
+func GetDefaultDataMigrationGeneratedScriptsDir() (string, error) {
+	logDir, err := GetLogDir()
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(logDir, "data-migration-scripts"), nil
 }
 
 func GetTablespaceDir() string {

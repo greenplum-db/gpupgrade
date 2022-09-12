@@ -29,8 +29,6 @@ fi
 # executables
 mkdir -p %{buildroot}%{prefix}
 mv gpupgrade %{buildroot}%{prefix}
-mv data-migration-scripts/gpupgrade-migration-sql-generator.bash %{buildroot}%{prefix}/gpupgrade-migration-sql-generator.bash
-mv data-migration-scripts/gpupgrade-migration-sql-executor.bash %{buildroot}%{prefix}/gpupgrade-migration-sql-executor.bash
 
 # additional files
 mkdir -p %{buildroot}%{prefix}/greenplum/%{name}
@@ -43,8 +41,6 @@ mv open_source_licenses.txt %{buildroot}%{prefix}/greenplum/%{name}
 %files
 # executables
 %{prefix}/gpupgrade
-%{prefix}/gpupgrade-migration-sql-generator.bash
-%{prefix}/gpupgrade-migration-sql-executor.bash
 
 # additional files
 %dir %{prefix}/greenplum

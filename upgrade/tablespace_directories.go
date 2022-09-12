@@ -122,7 +122,7 @@ func DeleteTablespaceDirectories(streams step.OutStreams, dirs []string) error {
 // The input path is a tablespace location with the form
 // /dir/<fsname>/<datadir>/<tablespaceOID>
 func VerifyTablespaceLocation(fsys fs.FS, tsLocation string) error {
-	entries, err := utils.System.ReadDir(fsys, ".")
+	entries, err := utils.System.ReadDirFS(fsys, ".")
 	if err != nil {
 		return err
 	}

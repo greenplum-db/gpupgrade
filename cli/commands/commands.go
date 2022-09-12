@@ -86,6 +86,8 @@ func BuildRootCommand() *cobra.Command {
 
 	root.AddCommand(config)
 	root.AddCommand(version())
+	root.AddCommand(dataMigrationGenerator())
+	root.AddCommand(dataMigrationExecutor())
 	root.AddCommand(initialize())
 	root.AddCommand(execute())
 	root.AddCommand(finalize())

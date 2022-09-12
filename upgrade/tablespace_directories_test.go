@@ -294,11 +294,11 @@ func TestVerifyTablespaceDirectories(t *testing.T) {
 			filepath.Join("1", "GPDB_6_301908232"): {Mode: os.ModeDir},
 		}
 
-		utils.System.ReadDir = func(fsys fs.FS, name string) ([]fs.DirEntry, error) {
+		utils.System.ReadDirFS = func(fsys fs.FS, name string) ([]fs.DirEntry, error) {
 			return nil, os.ErrPermission
 		}
 		defer func() {
-			utils.System.ReadDir = fs.ReadDir
+			utils.System.ReadDirFS = fs.ReadDir
 		}()
 
 		err := upgrade.VerifyTablespaceLocation(ts, "/filespace/demoDataDir0/16386")

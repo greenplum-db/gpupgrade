@@ -10,7 +10,37 @@ import (
 	"testing"
 
 	"golang.org/x/xerrors"
+
+	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 )
+
+func Success() {}
+
+func FailedMain() {
+	os.Stderr.WriteString("oops!")
+	os.Exit(1)
+}
+
+const SuccessScriptOutput = "successfully executed data migration SQL script"
+
+func SuccessScript() {
+	os.Stdout.WriteString(SuccessScriptOutput)
+	os.Exit(0)
+}
+
+func FailedSqlAlreadyExists() {
+	os.Stdout.WriteString("ERROR:  language \"plpythonu\" already exists\n")
+	os.Exit(1)
+}
+
+func init() {
+	exectest.RegisterMains(
+		Success,
+		FailedMain,
+		SuccessScript,
+		FailedSqlAlreadyExists,
+	)
+}
 
 // descriptors is a helper to redirect os.Stdout and os.Stderr and buffer the
 // bytes that are written to them.

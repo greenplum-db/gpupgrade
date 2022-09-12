@@ -21,6 +21,8 @@ import (
 //     defer finishMock(mock, t)
 //
 func FinishMock(mock sqlmock.Sqlmock, t *testing.T) {
+	t.Helper()
+
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("%v", err)
 	}
