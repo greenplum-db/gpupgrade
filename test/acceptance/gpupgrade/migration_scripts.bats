@@ -23,11 +23,11 @@ setup() {
     # Setup is creating a nonupgradable gphdfs user. Gphdfs is removed on 6x in
     # favor of PXF, so this setup sql file will not pass on 6 -> 6 upgrade with
     # ON_ERROR_STOP enabled.
-    $PSQL -v ON_ERROR_STOP=0 -d postgres -f "$SCRIPTS_DIR"/test/setup_nonupgradable_objects.sql
+    $PSQL -v ON_ERROR_STOP=0 -d postgres -f "$SCRIPTS_DIR"/5-to-6-seed-scripts/test/setup_nonupgradable_objects.sql
 }
 
 teardown() {
-    $PSQL -v ON_ERROR_STOP=1 -d postgres -f "$SCRIPTS_DIR"/test/teardown_nonupgradable_objects.sql
+    $PSQL -v ON_ERROR_STOP=1 -d postgres -f "$SCRIPTS_DIR"/5-to-6-seed-scripts/test/teardown_nonupgradable_objects.sql
 
     # XXX Beware, BATS_TEST_SKIPPED is not a documented export.
     if [ -n "${BATS_TEST_SKIPPED}" ]; then
@@ -43,7 +43,7 @@ teardown() {
     # This syntax in create_nonupgradable_objects.sql is not completely
     # compatible with 6X. ON_ERROR_STOP is disabled until this incompatibility
     # is resolved.
-    PGOPTIONS='--client-min-messages=warning' $PSQL -v ON_ERROR_STOP=0 -d testdb -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql
+    PGOPTIONS='--client-min-messages=warning' $PSQL -v ON_ERROR_STOP=0 -d testdb -f "$SCRIPTS_DIR"/5-to-6-seed-scripts/test/create_nonupgradable_objects.sql
     run gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
         --target-gphome="$GPHOME_TARGET" \
@@ -58,7 +58,7 @@ teardown() {
     egrep "\"check_upgrade\": \"failed\"" $GPUPGRADE_HOME/substeps.json
     egrep "^Checking.*fatal$" ~/gpAdminLogs/gpupgrade/pg_upgrade/p-1/pg_upgrade_internal.log
 
-    PGOPTIONS='--client-min-messages=warning' $PSQL -v ON_ERROR_STOP=1 -d testdb -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
+    PGOPTIONS='--client-min-messages=warning' $PSQL -v ON_ERROR_STOP=1 -d testdb -f "$SCRIPTS_DIR"/5-to-6-seed-scripts/test/drop_unfixable_objects.sql
 
     root_child_indexes_before=$(get_indexes "$GPHOME_SOURCE")
     tsquery_datatype_objects_before=$(get_tsquery_datatypes "$GPHOME_SOURCE")
@@ -117,8 +117,8 @@ teardown() {
     # This syntax in create_nonupgradable_objects.sql is not completely
     # compatible with 6X. ON_ERROR_STOP is disabled until this incompatibility
     # is resolved.
-    $PSQL -v ON_ERROR_STOP=0 -d testdb -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql
-    $PSQL -v ON_ERROR_STOP=1 -d testdb -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
+    $PSQL -v ON_ERROR_STOP=0 -d testdb -f "$SCRIPTS_DIR"/5-to-6-seed-scripts/test/create_nonupgradable_objects.sql
+    $PSQL -v ON_ERROR_STOP=1 -d testdb -f "$SCRIPTS_DIR"/5-to-6-seed-scripts/test/drop_unfixable_objects.sql
 
     root_child_indexes_before=$(get_indexes "$GPHOME_SOURCE")
     tsquery_datatype_objects_before=$(get_tsquery_datatypes "$GPHOME_SOURCE")
@@ -176,7 +176,7 @@ teardown() {
     # This syntax in create_nonupgradable_objects.sql is not completely
     # compatible with 6X. ON_ERROR_STOP is disabled until this incompatibility
     # is resolved.
-    $PSQL -v ON_ERROR_STOP=0 -d testdb -f "$SCRIPTS_DIR"/test/create_nonupgradable_objects.sql
+    $PSQL -v ON_ERROR_STOP=0 -d testdb -f "$SCRIPTS_DIR"/5-to-6-seed-scripts/test/create_nonupgradable_objects.sql
 
     MIGRATION_DIR=$(mktemp -d /tmp/migration.XXXXXX)
     register_teardown rm -r "$MIGRATION_DIR"
@@ -186,7 +186,7 @@ teardown() {
     printf '\! kill $PPID\n' > "$PSQLRC"
 
     "$SCRIPTS_DIR"/gpupgrade-migration-sql-generator.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR" "$SCRIPTS_DIR"
-    $PSQL -v ON_ERROR_STOP=1 -d testdb -f "$SCRIPTS_DIR"/test/drop_unfixable_objects.sql
+    $PSQL -v ON_ERROR_STOP=1 -d testdb -f "$SCRIPTS_DIR"/5-to-6-seed-scripts/test/drop_unfixable_objects.sql
     "$SCRIPTS_DIR"/gpupgrade-migration-sql-executor.bash "$GPHOME_SOURCE" "$PGPORT" "$MIGRATION_DIR"/initialize
 
     gpupgrade initialize \

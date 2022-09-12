@@ -39,6 +39,7 @@ PGPORT=$2
 OUTPUT_DIR=$3
 # INPUT_DIR is a hidden option used for internal testing or support
 INPUT_DIR=${4:-"$(dirname "$0")/greenplum/gpupgrade/data-migration-scripts"}
+INPUT_DIR="${INPUT_DIR}/5-to-6-seed-scripts"
 APPLY_ONCE_FILES=("gen_alter_gphdfs_roles.sql")
 
 get_databases(){
