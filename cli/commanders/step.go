@@ -61,13 +61,9 @@ func NewStep(currentStep idl.Step, streams *step.BufferedStreams, verbose bool, 
 	if !interactive {
 		fmt.Println(confirmationText)
 
-		proceed, err := Prompt(bufio.NewReader(os.Stdin), currentStep)
+		err := Prompt(bufio.NewReader(os.Stdin), currentStep)
 		if err != nil {
 			return &Step{}, err
-		}
-
-		if !proceed {
-			return &Step{}, step.UserCanceled
 		}
 	}
 
@@ -237,12 +233,12 @@ func logDuration(operation string, verbose bool, timer *stopwatch.Stopwatch) {
 	log.Print(msg)
 }
 
-func Prompt(reader *bufio.Reader, step idl.Step) (bool, error) {
+func Prompt(reader *bufio.Reader, currentStep idl.Step) error {
 	for {
-		fmt.Printf("Continue with gpupgrade %s?  Yy|Nn: ", step)
+		fmt.Printf("Continue with gpupgrade %s?  Yy|Nn: ", currentStep)
 		input, err := reader.ReadString('\n')
 		if err != nil {
-			return false, err
+			return err
 		}
 
 		input = strings.ToLower(strings.TrimSpace(input))
@@ -251,11 +247,11 @@ func Prompt(reader *bufio.Reader, step idl.Step) (bool, error) {
 			fmt.Println()
 			fmt.Print("Proceeding with upgrade")
 			fmt.Println()
-			return true, nil
+			return nil
 		case "n":
 			fmt.Println()
-			fmt.Print("Canceling upgrade")
-			return false, nil
+			fmt.Print("Canceling...")
+			return step.UserCanceled
 		}
 	}
 }

@@ -682,40 +682,28 @@ func TestPrompt(t *testing.T) {
 	t.Run("returns error when failing to read input", func(t *testing.T) {
 		input := ""
 		reader := bufio.NewReader(strings.NewReader(input))
-		proceed, err := commanders.Prompt(reader, idl.Step_execute)
+		err := commanders.Prompt(reader, idl.Step_execute)
 		if err != io.EOF {
 			t.Errorf("Prompt(%q) returned error: %+v ", input, io.EOF)
-		}
-
-		if proceed != false {
-			t.Errorf("got proceed %t want false", proceed)
 		}
 	})
 
 	t.Run("returns true when user proceeds", func(t *testing.T) {
 		for _, input := range []string{"y\n", "Y\n"} {
 			reader := bufio.NewReader(strings.NewReader(input))
-			proceed, err := commanders.Prompt(reader, idl.Step_execute)
+			err := commanders.Prompt(reader, idl.Step_execute)
 			if err != nil {
 				t.Errorf("Prompt(%q) returned error: %+v ", input, err)
-			}
-
-			if proceed != true {
-				t.Errorf("got proceed %t want true", proceed)
 			}
 		}
 	})
 
-	t.Run("returns false when user cancels", func(t *testing.T) {
+	t.Run("returns step.UserCanceled when user cancels", func(t *testing.T) {
 		for _, input := range []string{"n\n", "N\n"} {
 			reader := bufio.NewReader(strings.NewReader(input))
-			proceed, err := commanders.Prompt(reader, idl.Step_execute)
-			if err != nil {
-				t.Errorf("Prompt(%q) returned error: %+v ", input, err)
-			}
-
-			if proceed != false {
-				t.Errorf("got proceed %t want false", proceed)
+			err := commanders.Prompt(reader, idl.Step_execute)
+			if !errors.Is(err, step.UserCanceled) {
+				t.Errorf("unexpected error %#v", err)
 			}
 		}
 	})
