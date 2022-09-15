@@ -40,8 +40,8 @@ Concourse has some weird caching issues.
 2. Fly a GPDB test pipeline to build a test release candidate RPM based on your branch using the `--build-test-rc` flag.  
 Example gen_pipeline commands: 
 - For 5X: `./gen_pipeline.py -t cm --build-test-rc -o /tmp/5X_rc.yml`
-- For 6X: `./gen_pipeline.py -t cm --build-test-rc -O 'centos6' 'centos7' 'photon3' -o /tmp/6X_rc.yml`
-- For 7X: `./gen_pipeline.py -t cm --build-test-rc -O centos7 -o /tmp/7X_rc.yml`
+- For 6X: `./gen_pipeline.py -t cm --build-test-rc -O 'centos6' 'centos7' 'photon3' 'rhel8' -o /tmp/6X_rc.yml`
+- For 7X: `./gen_pipeline.py -t cm --build-test-rc -O centos7 rhel8 -o /tmp/7X_rc.yml`
 
 3. Create a gpupgrade test branch and push it. Next, generate a gpupgrade test pipeline that uses the GPDB RC RPMs using 
 the appropriate environment variables:
