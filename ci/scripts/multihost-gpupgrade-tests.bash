@@ -30,7 +30,7 @@ main() {
     scp -rpq gpupgrade_src gpadmin@mdw:/home/gpadmin
 
     echo "Installing BATS..."
-    rsync --archive bats centos@mdw:~
+    rsync --archive bats centos@mdw:
     ssh centos@mdw sudo ./bats/install.sh /usr/local
 
     echo "Running data migration scripts and tests..."
