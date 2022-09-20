@@ -62,7 +62,7 @@ func Run(stdout, stderr io.Writer, opts *idl.PgOptions) error {
 		args = append(args, "--old-options", opts.GetOldOptions())
 	}
 
-	if opts.Action != idl.PgOptions_check {
+	if opts.Action != idl.PgOptions_check && semver.MustParse(opts.TargetVersion).Major < 7 {
 		args = append(args, "--old-tablespaces-file", utils.GetTablespaceMappingFile())
 	}
 
