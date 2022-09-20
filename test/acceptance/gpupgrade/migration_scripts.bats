@@ -20,14 +20,20 @@ setup() {
 
     PSQL="$GPHOME_SOURCE/bin/psql -X --no-align --tuples-only"
 
-    # Setup is creating a nonupgradable gphdfs user. Gphdfs is removed on 6x in
-    # favor of PXF, so this setup sql file will not pass on 6 -> 6 upgrade with
-    # ON_ERROR_STOP enabled.
-    $PSQL -v ON_ERROR_STOP=0 -d postgres -f "$SCRIPTS_DIR"/5-to-6-seed-scripts/test/setup_nonupgradable_objects.sql
+    local seed_dir=6-to-7-seed-scripts
+    if is_GPDB5 "$GPHOME_SOURCE"; then
+        seed_dir=5-to-6-seed-scripts
+    fi
+
+    $PSQL -v ON_ERROR_STOP=1 -d postgres -f "$SCRIPTS_DIR"/"${seed_dir}"/test/setup_nonupgradable_objects.sql
 }
 
 teardown() {
-    $PSQL -v ON_ERROR_STOP=1 -d postgres -f "$SCRIPTS_DIR"/5-to-6-seed-scripts/test/teardown_nonupgradable_objects.sql
+    local seed_dir=6-to-7-seed-scripts
+    if is_GPDB5 "$GPHOME_SOURCE"; then
+        seed_dir=5-to-6-seed-scripts
+    fi
+    $PSQL -v ON_ERROR_STOP=1 -d postgres -f "$SCRIPTS_DIR"/"${seed_dir}"/test/teardown_nonupgradable_objects.sql
 
     # XXX Beware, BATS_TEST_SKIPPED is not a documented export.
     if [ -n "${BATS_TEST_SKIPPED}" ]; then

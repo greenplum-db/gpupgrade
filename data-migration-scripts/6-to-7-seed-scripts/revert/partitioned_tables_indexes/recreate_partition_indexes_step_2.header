@@ -1,0 +1,5 @@
+-- The below CREATE INDEX statement will create the indexes on the leaf
+-- partitions only. Indexes on the root partition will be created via a
+-- separate step.
+-- This script recreates only child table specific indexes. Any index
+-- inherited from the root table will be filtered out.
