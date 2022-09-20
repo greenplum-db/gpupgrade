@@ -41,7 +41,7 @@ func (s StatActivities) Error() string {
 }
 
 func QueryPgStatActivity(db *sql.DB, cluster *Cluster) error {
-	query := `SELECT application_name, usename, datname, query FROM pg_stat_activity WHERE pid <> pg_backend_pid() ORDER BY application_name, usename, datname;`
+	query := `SELECT application_name, usename, datname, query FROM pg_stat_activity WHERE pid <> pg_backend_pid() AND datname <>'' ORDER BY application_name, usename, datname;`
 	if cluster.Version.Major < 6 {
 		query = `SELECT application_name, usename, datname, current_query FROM pg_stat_activity WHERE procpid <> pg_backend_pid() ORDER BY application_name, usename, datname;`
 	}
