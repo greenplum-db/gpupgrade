@@ -4,6 +4,7 @@
 package greenplum_test
 
 import (
+	"database/sql"
 	"errors"
 	"os"
 	"strings"
@@ -60,14 +61,14 @@ func TestQueryPgStatActivity(t *testing.T) {
 		}
 	})
 
-	t.Run("errors when pg_stat_activity shows active connections", func(t *testing.T) {
+	t.Run("errors when pg_stat_activity shows active connections and database is NULL", func(t *testing.T) {
 		expectPgStatActivityToReturn(mock).WillReturnRows(sqlmock.NewRows([]string{"application_name", "usename", "datname", "query"}).
-			AddRow("etl_job", "gpadmin", "postgres", "SELECT * FROM my_table;").
+			AddRow("etl_job", "gpadmin", nil, "SELECT * FROM my_table;").
 			AddRow("status_checker", "gpcc", "stats_db", "SELECT * FROM stats;"))
 
 		expected := greenplum.StatActivities{
-			{Application_name: "etl_job", User: "gpadmin", Datname: "postgres", Query: "SELECT * FROM my_table;"},
-			{Application_name: "status_checker", User: "gpcc", Datname: "stats_db", Query: "SELECT * FROM stats;"},
+			{Application_name: sql.NullString{String: "etl_job"}, User: sql.NullString{String: "gpadmin"}, Datname: sql.NullString{String: "", Valid: false}, Query: sql.NullString{String: "SELECT * FROM my_table;"}},
+			{Application_name: sql.NullString{String: "status_checker"}, User: sql.NullString{String: "gpcc"}, Datname: sql.NullString{String: "stats_db", Valid: true}, Query: sql.NullString{String: "SELECT * FROM stats;"}},
 		}
 
 		err = greenplum.QueryPgStatActivity(db, target)

@@ -15,10 +15,10 @@ import (
 )
 
 type StatActivity struct {
-	User             string
-	Application_name string
-	Datname          string
-	Query            string
+	User             sql.NullString
+	Application_name sql.NullString
+	Datname          sql.NullString
+	Query            sql.NullString
 }
 
 type StatActivities []StatActivity
@@ -29,10 +29,10 @@ func (s StatActivities) Error() string {
 	tw.Init(&sb, 0, 0, 1, ' ', 0)
 
 	for _, activity := range s {
-		fmt.Fprintf(&tw, "Application:\t%s\n", activity.Application_name)
-		fmt.Fprintf(&tw, "User:\t%s\n", activity.User)
-		fmt.Fprintf(&tw, "Database:\t%s\n", activity.Datname)
-		fmt.Fprintf(&tw, "Query:\t%s\n", activity.Query)
+		fmt.Fprintf(&tw, "Application:\t%s\n", activity.Application_name.String)
+		fmt.Fprintf(&tw, "User:\t%s\n", activity.User.String)
+		fmt.Fprintf(&tw, "Database:\t%s\n", activity.Datname.String)
+		fmt.Fprintf(&tw, "Query:\t%s\n", activity.Query.String)
 		fmt.Fprintln(&tw)
 	}
 
