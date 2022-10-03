@@ -6,10 +6,6 @@ cat << 'EOF'
 
 SELECT current_database();
 
--- Cluster Statistics
-SELECT hostname, COUNT(dbid) AS Primaries FROM pg_catalog.gp_segment_configuration WHERE role='p' GROUP BY hostname;
-SELECT hostname, COUNT(dbid) AS Mirrors FROM pg_catalog.gp_segment_configuration WHERE role='m' GROUP BY hostname;
-
 -- Extensions
 SELECT COUNT(*) AS InstalledExtensions FROM pg_catalog.pg_extension;
 

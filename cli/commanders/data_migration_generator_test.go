@@ -614,7 +614,7 @@ func TestGenerateMigrationScript(t *testing.T) {
 
 	t.Run("executes bash scripts for the correct database", func(t *testing.T) {
 		commanders.SetBashCommand(exectest.NewCommandWithVerifier(commanders.SuccessScript, func(utility string, args ...string) {
-			expectedUtility := filepath.Join(seedDir, idl.Step_stats.String(), "generate_stats", "generate_stats.sh")
+			expectedUtility := filepath.Join(seedDir, idl.Step_stats.String(), "database_stats", "generate_database_stats.sh")
 			if utility != expectedUtility {
 				t.Errorf("got %q want %q", utility, expectedUtility)
 			}
@@ -636,7 +636,7 @@ func TestGenerateMigrationScript(t *testing.T) {
 		utils.System.WriteFile = func(filename string, data []byte, perm os.FileMode) error {
 			writeGeneratedScriptCalled = true
 
-			expected := filepath.Join(outputDir, "current", idl.Step_stats.String(), "generate_stats", "migration_postgres_generate_stats.sql")
+			expected := filepath.Join(outputDir, "current", idl.Step_stats.String(), "database_stats", "migration_postgres_generate_database_stats.sql")
 			if filename != expected {
 				t.Errorf("got filename %q, want %q", filename, expected)
 			}
@@ -652,9 +652,9 @@ func TestGenerateMigrationScript(t *testing.T) {
 		defer utils.ResetSystemFunctions()
 
 		fsys := fstest.MapFS{
-			idl.Step_stats.String():                                                       {Mode: os.ModeDir},
-			filepath.Join(idl.Step_stats.String(), "generate_stats"):                      {Mode: os.ModeDir},
-			filepath.Join(idl.Step_stats.String(), "generate_stats", "generate_stats.sh"): {},
+			idl.Step_stats.String():                                                                {Mode: os.ModeDir},
+			filepath.Join(idl.Step_stats.String(), "database_stats"):                               {Mode: os.ModeDir},
+			filepath.Join(idl.Step_stats.String(), "database_stats", "generate_database_stats.sh"): {},
 		}
 
 		err := commanders.GenerateMigrationScript(idl.Step_stats, seedDir, fsys, outputDir, gphome, port, database)

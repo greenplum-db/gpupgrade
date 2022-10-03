@@ -205,7 +205,7 @@ re-run to detect the newly added objects.`)
 
 // Generate one global script for the postgres database rather than all databases.
 func isGlobalScript(scriptDir string, database string) bool {
-	return database != "postgres" && scriptDir == "gphdfs_user_roles"
+	return database != "postgres" && (scriptDir == "gphdfs_user_roles" || scriptDir == "cluster_stats")
 }
 
 func GenerateMigrationScript(phase idl.Step, seedDir string, seedDirFS fs.FS, outputDir string, gphome string, port int, database DatabaseName) error {
