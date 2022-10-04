@@ -68,6 +68,15 @@ func finalize() *cobra.Command {
 				return stopHubAndAgents()
 			})
 
+			st.RunCLISubstepConditionally(idl.Substep_execute_finalize_data_migration_scripts, !nonInteractive, func(streams step.OutStreams) error {
+				fmt.Println()
+				fmt.Println()
+
+				currentDir := filepath.Join(response.GetLogArchiveDirectory(), "data-migration-scripts", "current")
+				return commanders.ExecuteDataMigrationScripts(nonInteractive, response.GetTargetCluster().GPHome, int(response.GetTargetCluster().GetPort()),
+					utils.System.DirFS(currentDir), currentDir, idl.Step_finalize)
+			})
+
 			st.RunCLISubstep(idl.Substep_delete_master_statedir, func(streams step.OutStreams) error {
 				// Removing the state directory removes the step status file.
 				// Disable the store so the step framework does not try to write
@@ -98,25 +107,26 @@ To use the upgraded cluster:
 1. Update any scripts to source %s
 2. If applicable, update the greenplum-db symlink to point to the target 
    install location: %s -> %s
-3. In a new shell start the upgraded cluster.
+3. In a new shell:
    source %s
    export MASTER_DATA_DIRECTORY=%s
    export PGPORT=%d
-   gpstart -a
+   
+   And connect to the database
 
-   Execute the “finalize” data migration scripts, and recreate any 
-   additional tables, indexes, and roles that were dropped or altered 
-   to resolve migration issues.`,
+If you have not already, execute the “%s” data migration scripts with
+"gpupgrade executor --gphome %s --port %d --input-dir %s --phase %s"`,
 				response.GetTargetVersion(),
 				fmt.Sprintf("%s.<contentID>%s", response.GetUpgradeID(), upgrade.OldSuffix),
 				response.GetArchivedSourceCoordinatorDataDirectory(),
 				response.GetLogArchiveDirectory(),
 				filepath.Join(response.GetTargetCluster().GetGPHome(), "greenplum_path.sh"),
-				filepath.Join(filepath.Dir(response.GetTargetCluster().GetGPHome()), "greenplum-db"),
-				response.GetTargetCluster().GetGPHome(),
+				filepath.Join(filepath.Dir(response.GetTargetCluster().GetGPHome()), "greenplum-db"), response.GetTargetCluster().GetGPHome(),
 				filepath.Join(response.GetTargetCluster().GetGPHome(), "greenplum_path.sh"),
 				response.GetTargetCluster().GetCoordinatorDataDirectory(),
 				response.GetTargetCluster().GetPort(),
+				idl.Step_finalize,
+				response.GetTargetCluster().GetGPHome(), response.GetTargetCluster().GetPort(), filepath.Join(response.GetLogArchiveDirectory(), "data-migration-scripts"), idl.Step_finalize,
 			))
 		},
 	}

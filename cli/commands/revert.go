@@ -6,6 +6,7 @@ package commands
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 
@@ -67,6 +68,15 @@ func revert() *cobra.Command {
 				return stopHubAndAgents()
 			})
 
+			st.RunCLISubstepConditionally(idl.Substep_execute_revert_data_migration_scripts, !nonInteractive, func(streams step.OutStreams) error {
+				fmt.Println()
+				fmt.Println()
+
+				currentDir := filepath.Join(response.GetLogArchiveDirectory(), "data-migration-scripts", "current")
+				return commanders.ExecuteDataMigrationScripts(nonInteractive, response.GetSource().GPHome, int(response.GetSource().GetPort()),
+					utils.System.DirFS(currentDir), currentDir, idl.Step_revert)
+			})
+
 			st.RunCLISubstep(idl.Substep_delete_master_statedir, func(streams step.OutStreams) error {
 				// Removing the state directory removes the step status file.
 				// Disable the store so the step framework does not try to write
@@ -79,20 +89,24 @@ func revert() *cobra.Command {
 Revert completed successfully.
 
 The source cluster is now running version %s.
-export PGPORT=%d
+source %s
 export MASTER_DATA_DIRECTORY=%s
+export PGPORT=%d
 
 The gpupgrade logs can be found on the master and segment hosts in
 %s
 
 NEXT ACTIONS
 ------------
-To use the reverted cluster, run the “revert” data migration scripts, and
-recreate any additional tables, indexes, and roles that were dropped or
-altered to resolve migration issues.
+If you have not already, execute the “%s” data migration scripts with
+"gpupgrade executor --gphome %s --port %d --input-dir %s --phase %s"
 
 To restart the upgrade, run "gpupgrade initialize" again.`,
-				response.GetSourceVersion(), response.GetSource().GetPort(), response.GetSource().GetCoordinatorDataDirectory(), response.GetLogArchiveDirectory()))
+				response.GetSourceVersion(),
+				filepath.Join(response.GetSource().GetGPHome(), "greenplum_path.sh"), response.GetSource().GetCoordinatorDataDirectory(), response.GetSource().GetPort(),
+				response.GetLogArchiveDirectory(),
+				idl.Step_revert,
+				response.GetSource().GetGPHome(), response.GetSource().GetPort(), filepath.Join(response.GetLogArchiveDirectory(), "data-migration-scripts"), idl.Step_revert))
 		},
 	}
 

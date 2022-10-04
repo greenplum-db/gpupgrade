@@ -86,10 +86,6 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 		return s.Target.WaitForClusterToBeReady()
 	})
 
-	st.Run(idl.Substep_stop_target_cluster, func(streams step.OutStreams) error {
-		return s.Target.Stop(streams)
-	})
-
 	var logArchiveDir string
 	st.Run(idl.Substep_archive_log_directories, func(_ step.OutStreams) error {
 		logArchiveDir, err = s.GetLogArchiveDir()

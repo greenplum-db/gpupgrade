@@ -62,15 +62,24 @@ func UpgradeCoordinator(streams step.OutStreams, pgUpgradeVerbose bool, source *
 			err = errorlist.Append(err, dirErr)
 		}
 
+		generatedScriptsOutputDir, scriptsDirErr := utils.GetDefaultGeneratedDataMigrationScriptsDir()
+		if scriptsDirErr != nil {
+			err = errorlist.Append(err, scriptsDirErr)
+		}
+
 		nextAction := fmt.Sprintf(`Consult the pg_upgrade check output files located: %s
 Refer to the gpupgrade documentation for details on the pg_upgrade check error.
 
-If you haven't already run the initialize data migration scripts please run them.
+If you haven't already run the "initialize" data migration scripts with
+"gpupgrade initialize" or "gpupgrade executor --gphome %s --port %d --input-dir %s --phase initialize"
 
 To connect to the intermediate target cluster:
 source %s
 MASTER_DATA_DIRECTORY=%s
-PGPORT=%d`, dir, filepath.Join(intermediate.GPHome, "greenplum_path.sh"), intermediate.CoordinatorDataDir(), intermediate.CoordinatorPort())
+PGPORT=%d`, dir,
+			source.GPHome, source.CoordinatorPort(), generatedScriptsOutputDir,
+			filepath.Join(intermediate.GPHome, "greenplum_path.sh"), intermediate.CoordinatorDataDir(), intermediate.CoordinatorPort())
+
 		return utils.NewNextActionErr(xerrors.Errorf("%s master: %v", action, err), nextAction)
 	}
 

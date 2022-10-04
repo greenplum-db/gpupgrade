@@ -54,7 +54,10 @@ func TestExecuteDataMigrationScripts(t *testing.T) {
 		}
 		defer utils.ResetSystemFunctions()
 
-		err := commanders.ExecuteDataMigrationScripts(true, "", 0, currentDirFS, currentScriptDir, idl.Step_stats)
+		resetStdin := testutils.SetStdin(t, "a\n")
+		defer resetStdin()
+
+		err := commanders.ExecuteDataMigrationScripts(false, "", 0, currentDirFS, currentScriptDir, idl.Step_stats)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -65,7 +68,7 @@ func TestExecuteDataMigrationScripts(t *testing.T) {
 			t.Errorf("unexpected stderr %#v", string(stderr))
 		}
 
-		expected := "To receive an upgrade time estimate send the output of the executed stats scripts in"
+		expected := "To receive an upgrade time estimate send the stats output"
 		actual := string(stdout)
 		if !strings.Contains(actual, expected) {
 			t.Errorf("expected output %#v to contain %#v", actual, expected)
@@ -85,10 +88,15 @@ func TestExecuteDataMigrationScripts(t *testing.T) {
 	})
 
 	t.Run("errors when prompt fails", func(t *testing.T) {
-		err := commanders.ExecuteDataMigrationScripts(true, "", 0, currentDirFS, currentScriptDir, idl.Step_stats)
-		var expected *os.PathError
-		if !errors.As(err, &expected) {
-			t.Errorf("got error %#v, want %#v", err, expected)
+		expected := os.ErrPermission
+		utils.System.ReadDirFS = func(fsys fs.FS, name string) ([]fs.DirEntry, error) {
+			return nil, expected
+		}
+		defer utils.ResetSystemFunctions()
+
+		err := commanders.ExecuteDataMigrationScripts(false, "", 0, currentDirFS, currentScriptDir, idl.Step_stats)
+		if !errors.Is(err, expected) {
+			t.Errorf("got error %#v want %#v", err, expected)
 		}
 	})
 
@@ -106,7 +114,10 @@ func TestExecuteDataMigrationScripts(t *testing.T) {
 		}
 		defer utils.ResetSystemFunctions()
 
-		err := commanders.ExecuteDataMigrationScripts(true, "", 0, currentDirFS, currentScriptDir, idl.Step_stats)
+		resetStdin := testutils.SetStdin(t, "a\n")
+		defer resetStdin()
+
+		err := commanders.ExecuteDataMigrationScripts(false, "", 0, currentDirFS, currentScriptDir, idl.Step_stats)
 		var exitError *exec.ExitError
 		if !errors.As(err, &exitError) {
 			t.Errorf("got %T, want %T", err, exitError)
@@ -135,7 +146,10 @@ func TestExecuteDataMigrationScripts(t *testing.T) {
 		}
 		defer utils.ResetSystemFunctions()
 
-		err := commanders.ExecuteDataMigrationScripts(true, "", 0, currentDirFS, currentScriptDir, idl.Step_stats)
+		resetStdin := testutils.SetStdin(t, "a\n")
+		defer resetStdin()
+
+		err := commanders.ExecuteDataMigrationScripts(false, "", 0, currentDirFS, currentScriptDir, idl.Step_stats)
 		if !errors.Is(err, os.ErrPermission) {
 			t.Errorf("got error %#v want %#v", err, os.ErrPermission)
 		}
@@ -160,7 +174,10 @@ func TestExecuteDataMigrationScripts(t *testing.T) {
 		}
 		defer utils.ResetSystemFunctions()
 
-		err := commanders.ExecuteDataMigrationScripts(true, "", 0, currentDirFS, currentScriptDir, idl.Step_stats)
+		resetStdin := testutils.SetStdin(t, "a\n")
+		defer resetStdin()
+
+		err := commanders.ExecuteDataMigrationScripts(false, "", 0, currentDirFS, currentScriptDir, idl.Step_stats)
 		if !errors.Is(err, os.ErrPermission) {
 			t.Errorf("got error %#v want %#v", err, os.ErrPermission)
 		}
@@ -312,7 +329,7 @@ func TestExecuteDataMigrationScriptsPrompt(t *testing.T) {
 
 		expected := "\nExecuting 'all' of the \"initialize\" data migration scripts.\n"
 		actual := string(stdout)
-		if actual != expected {
+		if !strings.Contains(actual, expected) {
 			t.Errorf("expected output %#v to contain %#v", actual, expected)
 			t.Logf("actual:   %#v", actual)
 			t.Logf("expected: %#v", expected)
@@ -338,11 +355,20 @@ func TestExecuteDataMigrationScriptsPrompt(t *testing.T) {
 			t.Errorf("unexpected stderr %#v", string(stderr))
 		}
 
-		expected := "\nWould you like execute: [a]ll, [s]ome, or [n]one of the \"initialize\" data migration scripts? Or [q]uit?\n"
-		expected += "Select: \nSelecting 'some' of the initialize data migration scripts.\n"
-		expected += "Select which \"initialize\" data migration scripts to execute separated by commas. Or [q]uit?\n\n"
-		expected += "0: parent_partitions_with_seg_entries\n"
-		expected += "1: unique_primary_foreign_key_constraint\n\n"
+		expected := "\nScripts to apply:\n"
+		expected += "  0: parent_partitions_with_seg_entries\n"
+		expected += "     Fixes non-empty segment relfiles for AO and AOCO parent partitions\n\n  "
+		expected += "1: unique_primary_foreign_key_constraint\n"
+		expected += "     Drops constraints\n\n"
+		expected += "\nWhich \"initialize\" data migration SQL scripts to apply? \n"
+		expected += "  [a]ll\n"
+		expected += "  [s]ome\n"
+		expected += "  [n]one\n"
+		expected += "  [q]uit\n"
+		expected += "\nSelect: \n"
+		expected += "Select scripts to apply separated by commas. Or [q]uit?\n\n"
+		expected += "  0: parent_partitions_with_seg_entries\n"
+		expected += "  1: unique_primary_foreign_key_constraint\n\n"
 		expected += "Select: "
 
 		actual := string(stdout)
@@ -398,11 +424,24 @@ func TestExecuteDataMigrationScriptsPrompt(t *testing.T) {
 			t.Errorf("unexpected stderr %#v", string(stderr))
 		}
 
-		expected := "\nWould you like execute: [a]ll, [s]ome, or [n]one of the \"initialize\" data migration scripts? Or [q]uit?\n"
-		expected += "Select: "
-		expected += "\nWould you like execute: [a]ll, [s]ome, or [n]one of the \"initialize\" data migration scripts? Or [q]uit?\n"
-		expected += "Select: \n"
-		expected += "Quiting..."
+		expected := "\nScripts to apply:\n"
+		expected += "  0: parent_partitions_with_seg_entries\n"
+		expected += "     Fixes non-empty segment relfiles for AO and AOCO parent partitions\n\n  "
+		expected += "1: unique_primary_foreign_key_constraint\n"
+		expected += "     Drops constraints\n\n"
+		expected += "\nWhich \"initialize\" data migration SQL scripts to apply? \n"
+		expected += "  [a]ll\n"
+		expected += "  [s]ome\n"
+		expected += "  [n]one\n"
+		expected += "  [q]uit\n"
+		expected += "\nSelect: \n"
+		expected += "Which \"initialize\" data migration SQL scripts to apply? \n"
+		expected += "  [a]ll\n"
+		expected += "  [s]ome\n"
+		expected += "  [n]one\n"
+		expected += "  [q]uit\n"
+		expected += "\nSelect: \n"
+		expected += "Quiting...\n"
 
 		actual := string(stdout)
 		if actual != expected {
@@ -486,10 +525,10 @@ func TestSelectDataMigrationScriptsPrompt(t *testing.T) {
 			t.Errorf("unexpected stderr %#v", string(stderr))
 		}
 
-		expected := "Select which \"initialize\" data migration scripts to execute separated by commas. Or [q]uit?\n\n\n"
+		expected := "\nSelect scripts to apply separated by commas. Or [q]uit?\n\n\n"
 		expected += "Select: \n"
-		expected += "Invalid selection. Found \"0.5\" expected a number or numbers separated by commas.\n"
-		expected += "Select which \"initialize\" data migration scripts to execute separated by commas. Or [q]uit?\n\n\n"
+		expected += "Invalid selection. Found \"0.5\" expected a number or numbers separated by commas.\n\n"
+		expected += "Select scripts to apply separated by commas. Or [q]uit?\n\n\n"
 		expected += "Select: \n"
 		expected += "Quiting..."
 
@@ -535,24 +574,22 @@ func TestSelectDataMigrationScriptsPrompt(t *testing.T) {
 			t.Errorf("unexpected stderr %#v", string(stderr))
 		}
 
-		expected := "Select which \"initialize\" data migration scripts to execute separated by commas. Or [q]uit?\n\n"
-		expected += "0: parent_partitions_with_seg_entries\n"
-		expected += "1: unique_primary_foreign_key_constraint\n\n"
+		expected := "\nSelect scripts to apply separated by commas. Or [q]uit?\n\n"
+		expected += "  0: parent_partitions_with_seg_entries\n"
+		expected += "  1: unique_primary_foreign_key_constraint\n\n"
 		expected += "Select: \n"
-		expected += "You selected scripts:\n\n"
-		expected += "0: parent_partitions_with_seg_entries\n\n"
-		expected += "[c]ontinue, [e]dit selection, or [q]uit.\n"
-		expected += "Select: "
-		expected += "Select which \"initialize\" data migration scripts to execute separated by commas. Or [q]uit?\n\n"
-		expected += "0: parent_partitions_with_seg_entries\n"
-		expected += "1: unique_primary_foreign_key_constraint\n\n"
-		expected += "Select: \n"
-		expected += "You selected scripts:\n\n"
-		expected += "1: unique_primary_foreign_key_constraint\n\n"
+		expected += "Selected:\n\n"
+		expected += "  0: parent_partitions_with_seg_entries\n\n"
 		expected += "[c]ontinue, [e]dit selection, or [q]uit.\n"
 		expected += "Select: \n"
-		expected += "Executing the \"initialize\" data migration scripts:\n\n"
-		expected += "1: unique_primary_foreign_key_constraint\n\n"
+		expected += "Select scripts to apply separated by commas. Or [q]uit?\n\n"
+		expected += "  0: parent_partitions_with_seg_entries\n"
+		expected += "  1: unique_primary_foreign_key_constraint\n\n"
+		expected += "Select: \nSelected:\n\n"
+		expected += "  1: unique_primary_foreign_key_constraint\n\n"
+		expected += "[c]ontinue, [e]dit selection, or [q]uit.\n"
+		expected += "Select: \nExecuting the \"initialize\" data migration scripts:\n\n"
+		expected += "  1: unique_primary_foreign_key_constraint\n\n"
 
 		actual := string(stdout)
 		if actual != expected {
@@ -581,20 +618,19 @@ func TestSelectDataMigrationScriptsPrompt(t *testing.T) {
 			t.Errorf("unexpected stderr %#v", string(stderr))
 		}
 
-		expected := "Select which \"initialize\" data migration scripts to execute separated by commas. Or [q]uit?\n\n"
-		expected += "0: parent_partitions_with_seg_entries\n"
-		expected += "1: unique_primary_foreign_key_constraint\n\n"
+		expected := "\nSelect scripts to apply separated by commas. Or [q]uit?\n\n"
+		expected += "  0: parent_partitions_with_seg_entries\n"
+		expected += "  1: unique_primary_foreign_key_constraint\n\n"
 		expected += "Select: \n"
-		expected += "You selected scripts:\n\n"
-		expected += "0: parent_partitions_with_seg_entries\n\n"
+		expected += "Selected:\n\n"
+		expected += "  0: parent_partitions_with_seg_entries\n\n"
 		expected += "[c]ontinue, [e]dit selection, or [q]uit.\n"
-		expected += "Select: "
-		expected += "Select which \"initialize\" data migration scripts to execute separated by commas. Or [q]uit?\n\n"
-		expected += "0: parent_partitions_with_seg_entries\n"
-		expected += "1: unique_primary_foreign_key_constraint\n\n"
 		expected += "Select: \n"
-		expected += "You selected scripts:\n\n"
-		expected += "1: unique_primary_foreign_key_constraint\n\n"
+		expected += "Select scripts to apply separated by commas. Or [q]uit?\n\n"
+		expected += "  0: parent_partitions_with_seg_entries\n"
+		expected += "  1: unique_primary_foreign_key_constraint\n\n"
+		expected += "Select: \nSelected:\n\n"
+		expected += "  1: unique_primary_foreign_key_constraint\n\n"
 		expected += "[c]ontinue, [e]dit selection, or [q]uit.\n"
 		expected += "Select: \n"
 		expected += "Quiting..."
@@ -626,17 +662,17 @@ func TestSelectDataMigrationScriptsPrompt(t *testing.T) {
 			t.Errorf("unexpected stderr %#v", string(stderr))
 		}
 
-		expected := "Select which \"initialize\" data migration scripts to execute separated by commas. Or [q]uit?\n\n"
-		expected += "0: parent_partitions_with_seg_entries\n"
-		expected += "1: unique_primary_foreign_key_constraint\n\n"
+		expected := "\nSelect scripts to apply separated by commas. Or [q]uit?\n\n"
+		expected += "  0: parent_partitions_with_seg_entries\n"
+		expected += "  1: unique_primary_foreign_key_constraint\n\n"
 		expected += "Select: \n"
-		expected += "You selected scripts:\n\n"
-		expected += "0: parent_partitions_with_seg_entries\n\n"
+		expected += "Selected:\n\n"
+		expected += "  0: parent_partitions_with_seg_entries\n\n"
 		expected += "[c]ontinue, [e]dit selection, or [q]uit.\n"
-		expected += "Select: "
-		expected += "Select which \"initialize\" data migration scripts to execute separated by commas. Or [q]uit?\n\n"
-		expected += "0: parent_partitions_with_seg_entries\n"
-		expected += "1: unique_primary_foreign_key_constraint\n\n"
+		expected += "Select: \n"
+		expected += "Select scripts to apply separated by commas. Or [q]uit?\n\n"
+		expected += "  0: parent_partitions_with_seg_entries\n"
+		expected += "  1: unique_primary_foreign_key_constraint\n\n"
 		expected += "Select: \n"
 		expected += "Quiting..."
 

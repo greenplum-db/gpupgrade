@@ -394,7 +394,7 @@ func TestArchiveDataMigrationScriptsPrompt(t *testing.T) {
 		}
 
 		actual := string(stdout)
-		expected := "[a]rchive and re-generate scripts, [c]ontinue using previously generated scripts, or [q]uit."
+		expected := "[a]rchive and re-generate scripts"
 		matches := 0
 		for _, part := range strings.Split(actual, "\n") {
 			if strings.Contains(part, expected) {

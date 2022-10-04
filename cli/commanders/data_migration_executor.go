@@ -33,7 +33,18 @@ func ExecuteDataMigrationScripts(nonInteractive bool, gphome string, port int, c
 		return err
 	}
 
-	fmt.Printf("Before executing the %q data migration scripts you can view them in %s\n", phase, filepath.Join(currentScriptDir, phase.String()))
+	fmt.Printf("Inspect the %q data migration SQL scripts in\n%s\n", phase, filepath.Join(currentScriptDir, phase.String()))
+
+	if phase == idl.Step_stats {
+		fmt.Println()
+		fmt.Printf(`The %q data migration SQL scripts gather cluster-wide and 
+database specific statistics such as number of segments and 
+number of tables.
+
+To receive an upgrade time estimate send the stats output:
+%s
+`, phase, filepath.Join(currentScriptDir, phase.String()+".log"))
+	}
 
 	scriptDirsToRun, err := ExecuteDataMigrationScriptsPrompt(nonInteractive, bufio.NewReader(os.Stdin), currentScriptDir, currentScriptDirFS, phase)
 	if err != nil {
@@ -65,18 +76,20 @@ func ExecuteDataMigrationScripts(nonInteractive bool, gphome string, port int, c
 		}
 
 		if phase == idl.Step_stats {
-			fmt.Printf("To receive an upgrade time estimate send the output of the executed stats scripts in %s\n", outputPath)
+			fmt.Printf("To receive an upgrade time estimate send the stats output:\n%s\n\n", outputPath)
 		}
 	}
-
-	fmt.Printf("\nDone executing %q data migration scripts.\n", phase)
 
 	logDir, err := utils.GetLogDir()
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Logs located in %q and %q\n", logDir, currentScriptDir)
+	fmt.Printf(`Logs located in
+  %s
+  %s
+`, logDir, currentScriptDir)
+
 	return nil
 }
 
@@ -110,22 +123,43 @@ func ExecuteDataMigrationScriptSubDir(gphome string, port int, scriptDirFS fs.FS
 }
 
 func ExecuteDataMigrationScriptsPrompt(nonInteractive bool, reader *bufio.Reader, currentScriptDir string, currentScriptDirFS fs.FS, phase idl.Step) ([]string, error) {
+	entries, err := utils.System.ReadDirFS(currentScriptDirFS, phase.String())
+	if err != nil {
+		return nil, err
+	}
+
+	var allScripts Scripts
+	for i, script := range entries {
+		allScripts = append(allScripts, Script{Num: uint64(i), Name: script.Name()})
+	}
+
+	fmt.Println()
+	fmt.Printf(`Scripts to apply:
+%s`, allScripts.Description())
+
 	for {
 		var input = "a"
 		if !nonInteractive {
-			fmt.Printf("\nWould you like execute: [a]ll, [s]ome, or [n]one of the %q data migration scripts? Or [q]uit?\nSelect: ", phase)
+			fmt.Println()
+			fmt.Printf(`Which %q data migration SQL scripts to apply? 
+  [a]ll
+  [s]ome
+  [n]one
+  [q]uit
+
+Select: `, phase)
+
 			rawinput, err := reader.ReadString('\n')
 			if err != nil {
 				return nil, err
 			}
 
-			input = rawinput
+			input = strings.ToLower(strings.TrimSpace(rawinput))
 		}
 
-		input = strings.ToLower(strings.TrimSpace(input))
 		switch input {
 		case "a":
-			fmt.Printf("\nExecuting 'all' of the %q data migration scripts.\n", phase)
+			fmt.Printf("\nExecuting 'all' of the %q data migration scripts.\n\n", phase)
 			entries, err := utils.System.ReadDirFS(currentScriptDirFS, phase.String())
 			if err != nil {
 				return nil, err
@@ -138,7 +172,6 @@ func ExecuteDataMigrationScriptsPrompt(nonInteractive bool, reader *bufio.Reader
 
 			return scriptDirs, nil
 		case "s":
-			fmt.Printf("\nSelecting 'some' of the %s data migration scripts.\n", phase)
 			scriptDirs, err := SelectDataMigrationScriptsPrompt(bufio.NewReader(os.Stdin), currentScriptDir, currentScriptDirFS, phase)
 			if err != nil {
 				return nil, err
@@ -148,7 +181,7 @@ func ExecuteDataMigrationScriptsPrompt(nonInteractive bool, reader *bufio.Reader
 			fmt.Printf("\nProceeding with 'none' of the %s data migration scripts.\n", phase)
 			return nil, step.Skip
 		case "q":
-			fmt.Print("\nQuiting...")
+			fmt.Print("\nQuiting...\n")
 			return nil, step.UserCanceled
 		default:
 			continue
@@ -168,7 +201,7 @@ func SelectDataMigrationScriptsPrompt(reader *bufio.Reader, currentScriptDir str
 	}
 
 	for {
-		fmt.Printf("Select which %q data migration scripts to execute separated by commas. Or [q]uit?\n\n%s\nSelect: ", phase, allScripts)
+		fmt.Printf("\nSelect scripts to apply separated by commas. Or [q]uit?\n\n%s\nSelect: ", allScripts)
 		input, err := reader.ReadString('\n')
 		if err != nil {
 			return nil, err
@@ -187,7 +220,7 @@ func SelectDataMigrationScriptsPrompt(reader *bufio.Reader, currentScriptDir str
 			continue
 		}
 
-		fmt.Printf("\nYou selected scripts:\n\n%s\n", selectedScriptDirs)
+		fmt.Printf("\nSelected:\n\n%s\n", selectedScriptDirs)
 		fmt.Printf("[c]ontinue, [e]dit selection, or [q]uit.\nSelect: ")
 		input, err = reader.ReadString('\n')
 		if err != nil {

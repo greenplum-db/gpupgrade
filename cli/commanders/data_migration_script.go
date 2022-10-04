@@ -8,6 +8,18 @@ import (
 	"sort"
 )
 
+var scriptDescription = map[string]string{
+	"cluster_stats":                         "Generates cluster statistics such as number of segments",
+	"database_stats":                        "Generates database statistics such as number of indexes and tables",
+	"gphdfs_external_tables":                "Drops gphdfs external tables",
+	"gphdfs_user_roles":                     "Alters gphdfs user role to not create external tables",
+	"heterogeneous_partitioned_tables":      "Ensures child partitions have the same on-disk layout as their root",
+	"parent_partitions_with_seg_entries":    "Fixes non-empty segment relfiles for AO and AOCO parent partitions",
+	"partitioned_tables_indexes":            "Drops partition indexes",
+	"tables_using_name_and_tsquery":         "Alters NAME and TSQUERY column types to VARCHAR",
+	"unique_primary_foreign_key_constraint": "Drops constraints",
+}
+
 type Script struct {
 	Num  uint64
 	Name string
@@ -51,7 +63,17 @@ func (scripts Scripts) String() string {
 
 	var output string
 	for _, script := range scripts {
-		output += fmt.Sprintf("%d: %s\n", script.Num, script.Name)
+		output += fmt.Sprintf("  %d: %s\n", script.Num, script.Name)
+	}
+	return output
+}
+
+func (scripts Scripts) Description() string {
+	sort.Sort(scripts)
+
+	var output string
+	for _, script := range scripts {
+		output += fmt.Sprintf("  %d: %s\n     %s\n\n", script.Num, script.Name, scriptDescription[script.Name])
 	}
 	return output
 }

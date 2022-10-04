@@ -109,6 +109,11 @@ enum Substep {
     setting_dynamic_library_path_on_target_cluster = 36;
     check_active_connections_on_source_cluster = 37;
     check_active_connections_on_target_cluster = 38;
+    generate_data_migration_scripts = 39;
+    execute_stats_data_migration_scripts = 40;
+    execute_initialize_data_migration_scripts = 41;
+    execute_finalize_data_migration_scripts = 42;
+    execute_revert_data_migration_scripts = 43;
 }
 
 enum Status {

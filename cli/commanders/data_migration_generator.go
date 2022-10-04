@@ -23,6 +23,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
@@ -156,18 +157,29 @@ func ArchiveDataMigrationScriptsPrompt(nonInteractive bool, reader *bufio.Reader
 	}
 
 	for {
-		fmt.Printf("Previously generated data migration scripts found in\n%q from %s.\n\n", currentDir, currentDirModTime.Format(time.RFC1123Z))
-		fmt.Printf(`Archive and re-generate the data migration scripts if potentially new 
-problematic objects have been added since the scripts were previously generated. 
+		fmt.Printf(`Previously generated data migration scripts found from
+%s located in
+%s
 
-The generator takes a "snapshot" of the current source cluster to generate the scripts. 
-If new "problematic" objects are added after the generator was run, then the 
-previously generated scripts are outdated. The generator will need to be 
-re-run to detect the newly added objects.`)
+Archive and re-generate the data migration scripts if potentially 
+new problematic objects have been added since the scripts were 
+first generated. 
+
+The generator takes a "snapshot" of the current source cluster
+to generate the scripts. If new "problematic" objects are added 
+after the generator was run, then the previously generated 
+scripts are outdated. The generator will need to be re-run 
+to detect the newly added objects.`, currentDirModTime.Format(time.RFC1123Z), currentDir)
 
 		input := "a"
 		if !nonInteractive {
-			fmt.Printf("\n\n[a]rchive and re-generate scripts, [c]ontinue using previously generated scripts, or [q]uit.\nSelect: ")
+			fmt.Println()
+			fmt.Printf(`
+  [a]rchive and re-generate scripts
+  [c]ontinue using previously generated scripts
+  [q]uit
+
+Select: `)
 			rawInput, err := reader.ReadString('\n')
 			if err != nil {
 				return err
@@ -179,7 +191,17 @@ re-run to detect the newly added objects.`)
 		switch input {
 		case "a":
 			archiveDir := filepath.Join(outputDir, "archive", currentDirModTime.Format("2006-01-02T15:04"))
-			fmt.Printf("\nArchiving previously generated scripts under %q\n", archiveDir)
+			exist, err := upgrade.PathExist(archiveDir)
+			if err != nil {
+				return err
+			}
+
+			if exist {
+				log.Printf("Skip archiving data migration scripts as it already exists in %q\n", archiveDir)
+				return step.Skip
+			}
+
+			fmt.Printf("\nArchiving previously generated scripts under\n%q\n", archiveDir)
 			err = utils.System.MkdirAll(filepath.Dir(archiveDir), 0700)
 			if err != nil {
 				return fmt.Errorf("make directory: %w", err)
@@ -192,7 +214,7 @@ re-run to detect the newly added objects.`)
 
 			return nil
 		case "c":
-			fmt.Printf("\nContinuing with previously generated data migration scripts in %q.\n", currentDir)
+			fmt.Printf("\nContinuing with previously generated data migration scripts in\n%s\n", currentDir)
 			return step.Skip
 		case "q":
 			fmt.Print("\nQuiting...")

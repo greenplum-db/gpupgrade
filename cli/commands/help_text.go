@@ -24,6 +24,9 @@ var (
 
 func init() {
 	InitializeHelp = GenerateHelpString(initializeHelp, []idl.Substep{
+		idl.Substep_generate_data_migration_scripts,
+		idl.Substep_execute_stats_data_migration_scripts,
+		idl.Substep_execute_initialize_data_migration_scripts,
 		idl.Substep_start_hub,
 		idl.Substep_saving_source_cluster_config,
 		idl.Substep_start_agents,
@@ -61,6 +64,7 @@ func init() {
 		idl.Substep_stop_hub_and_agents,
 		idl.Substep_delete_master_statedir,
 		idl.Substep_stop_target_cluster,
+		idl.Substep_execute_finalize_data_migration_scripts,
 	})
 	RevertHelp = GenerateHelpString(revertHelp, []idl.Substep{
 		idl.Substep_check_active_connections_on_target_cluster,
@@ -75,6 +79,7 @@ func init() {
 		idl.Substep_delete_segment_statedirs,
 		idl.Substep_stop_hub_and_agents,
 		idl.Substep_delete_master_statedir,
+		idl.Substep_execute_revert_data_migration_scripts,
 	})
 	Help = map[string]string{
 		"initialize": InitializeHelp,
@@ -241,6 +246,10 @@ Optional Commands:
 
   revert          returns the cluster to its original state
                   Note: revert cannot be used after gpupgrade finalize
+
+  generate        generates data migration SQL scripts
+
+  apply           applies data migration SQL scripts
 
 Optional Flags:
 

@@ -146,8 +146,9 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 			SourceVersion:       s.Source.Version.String(),
 			LogArchiveDirectory: logArchiveDir,
 			Source: &idl.Cluster{
-				Port:                     int32(s.Source.CoordinatorPort()),
+				GPHome:                   s.Source.GPHome,
 				CoordinatorDataDirectory: s.Source.CoordinatorDataDir(),
+				Port:                     int32(s.Source.CoordinatorPort()),
 			},
 		},
 	}}}}

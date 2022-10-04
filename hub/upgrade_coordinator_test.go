@@ -303,7 +303,7 @@ func TestUpgradeCoordinator(t *testing.T) {
 			t.Errorf("got %q want %q", nextActionsErr.NextAction, nextAction)
 		}
 
-		nextAction = "run the initialize data migration scripts "
+		nextAction = `If you haven't already run the "initialize" data migration scripts with`
 		if !strings.Contains(nextActionsErr.NextAction, nextAction) {
 			t.Errorf("got %q want %q", nextActionsErr.NextAction, nextAction)
 		}

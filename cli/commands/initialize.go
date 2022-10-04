@@ -51,6 +51,7 @@ func initialize() *cobra.Command {
 	var mode string
 	var useHbaHostnames bool
 	var dynamicLibraryPath string
+	var dataMigrationSeedDir string
 
 	subInit := &cobra.Command{
 		Use:   "initialize",
@@ -199,6 +200,37 @@ func initialize() *cobra.Command {
 				return nil
 			})
 
+			generatedScriptsOutputDir, err := utils.GetDefaultGeneratedDataMigrationScriptsDir()
+			if err != nil {
+				return nil
+			}
+
+			st.RunCLISubstepConditionally(idl.Substep_generate_data_migration_scripts, !nonInteractive, func(streams step.OutStreams) error {
+				fmt.Println()
+				fmt.Println()
+
+				return commanders.GenerateDataMigrationScripts(nonInteractive, sourceGPHome, sourcePort,
+					filepath.Clean(dataMigrationSeedDir), generatedScriptsOutputDir, utils.System.DirFS(generatedScriptsOutputDir))
+			})
+
+			st.RunCLISubstepConditionally(idl.Substep_execute_stats_data_migration_scripts, !nonInteractive, func(streams step.OutStreams) error {
+				fmt.Println()
+				fmt.Println()
+
+				currentDir := filepath.Join(generatedScriptsOutputDir, "current")
+				return commanders.ExecuteDataMigrationScripts(nonInteractive, sourceGPHome, sourcePort,
+					utils.System.DirFS(currentDir), currentDir, idl.Step_stats)
+			})
+
+			st.RunCLISubstepConditionally(idl.Substep_execute_initialize_data_migration_scripts, !nonInteractive, func(streams step.OutStreams) error {
+				fmt.Println()
+				fmt.Println()
+
+				currentDir := filepath.Join(filepath.Clean(generatedScriptsOutputDir), "current")
+				return commanders.ExecuteDataMigrationScripts(nonInteractive, sourceGPHome, sourcePort,
+					utils.System.DirFS(currentDir), currentDir, idl.Step_initialize)
+			})
+
 			st.RunInternalSubstep(func() error {
 				return commanders.CreateConfigFile(hubPort)
 			})
@@ -257,11 +289,16 @@ Initialize completed successfully.
 %s
 NEXT ACTIONS
 ------------
+If you have not already, execute the "%s" and “%s” data migration scripts with
+"gpupgrade initialize" or "gpupgrade executor --gphome %s --port %d --input-dir %s --phase %s" (and --phase %s)
+
 To proceed with the upgrade, run "gpupgrade execute"
 followed by "gpupgrade finalize".
 
 To return the cluster to its original state, run "gpupgrade revert".`,
-				warningMessage))
+				warningMessage,
+				idl.Step_stats, idl.Step_initialize,
+				sourceGPHome, sourcePort, generatedScriptsOutputDir, idl.Step_stats, idl.Step_initialize))
 		},
 	}
 
@@ -285,6 +322,10 @@ To return the cluster to its original state, run "gpupgrade revert".`,
 	subInit.Flags().MarkHidden("stop-before-cluster-creation") //nolint
 	subInit.Flags().BoolVar(&skipVersionCheck, "skip-version-check", false, "disable source and target version check")
 	subInit.Flags().MarkHidden("skip-version-check") //nolint
+	// seed-dir is a hidden flag used for internal testing.
+	subInit.Flags().StringVar(&dataMigrationSeedDir, "seed-dir", utils.GetDataMigrationSeedDir(), "path to the seed scripts")
+	subInit.Flags().MarkHidden("seed-dir") //nolint
+
 	return addHelpToCommand(subInit, InitializeHelp)
 }
 
