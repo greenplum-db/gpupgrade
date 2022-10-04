@@ -229,6 +229,8 @@ func logDuration(operation string, verbose bool, timer *stopwatch.Stopwatch) {
 	if verbose {
 		fmt.Println(msg)
 		fmt.Println()
+		fmt.Println("-----------------------------------------------------------------------------")
+		fmt.Println()
 	}
 	log.Print(msg)
 }

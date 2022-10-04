@@ -294,7 +294,8 @@ func (s *Step) sendStatus(substep idl.Substep, status idl.Status) {
 }
 
 func (s *Step) printDuration(substep idl.Substep, timer *stopwatch.Stopwatch) error {
-	_, err := fmt.Fprintf(s.streams.Stdout(), "\n%s took %s\n\n", substep, timer.String())
+	divider := "-----------------------------------------------------------------------------"
+	_, err := fmt.Fprintf(s.streams.Stdout(), "\n%s took %s\n\n%s\n", substep, timer.String(), divider)
 	return err
 }
 

@@ -230,7 +230,7 @@ func TestSubstep(t *testing.T) {
 		}
 
 		expectedStdout := "\nInitialize in progress.\n\n"
-		expectedStdout += "Initialize took 0s\n\n\n"
+		expectedStdout += "Initialize took 0s\n\n-----------------------------------------------------------------------------\n\n\n"
 
 		stdout, stderr := d.Collect()
 		d.Close()
