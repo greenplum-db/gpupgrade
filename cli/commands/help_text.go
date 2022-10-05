@@ -172,17 +172,17 @@ Refer to documentation for instructions.
 
 Archived gpupgrade log files can be found on all hosts in %s-<upgradeID>-<timestamp>
 `
-const generatorHelp = `
+const generateHelp = `
 Generates data migration SQL scripts to resolve catalog inconsistencies between 
-the source and target clusters. After which run "gpupgrade executor".
+the source and target clusters. After which run "gpupgrade apply".
 This command does not require downtime.
 
-IMPORTANT: Running the data migration scripts generator takes a snapshot of the 
+IMPORTANT: Running the data migration scripts generate takes a snapshot of the 
 database. If any new data or objects that cannot be upgraded are created after 
-the generator is run, will be missed. In such scenario, re-run the generator 
-in order to detect the new data and objects.
+the generator is run, will be missed. In such scenario, re-generate in order 
+to detect the new data and objects.
 
-Usage: gpupgrade generator --gphome "$GPHOME" --port "$PGPORT"
+Usage: gpupgrade generate --gphome "$GPHOME" --port "$PGPORT"
 
 Required Flags:
 
@@ -194,13 +194,13 @@ Optional Flags:
   --output-dir    output path to the current generated data migration SQL files. 
                   Defaults to $HOME/gpAdminLogs/gpupgrade/data-migration-scripts
 `
-const executorHelp = `
-Executes data migration SQL scripts to resolve catalog inconsistencies between 
-the source and target clusters. First run "gpupgrade generator".
+const applyHelp = `
+Applies data migration SQL scripts to resolve catalog inconsistencies between 
+the source and target clusters. First run "gpupgrade generate".
 This command may require downtime depending on what scripts are run. See online 
 documentation for details.
 
-Usage: gpupgrade executor --gphome "$GPHOME" --port "$PGPORT" --phase initialize
+Usage: gpupgrade apply --gphome "$GPHOME" --port "$PGPORT" --phase initialize
 
 Required Flags:
 

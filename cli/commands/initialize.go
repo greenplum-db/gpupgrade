@@ -290,7 +290,7 @@ Initialize completed successfully.
 NEXT ACTIONS
 ------------
 If you have not already, execute the "%s" and “%s” data migration scripts with
-"gpupgrade initialize" or "gpupgrade executor --gphome %s --port %d --input-dir %s --phase %s" (and --phase %s)
+"gpupgrade initialize" or "gpupgrade apply --gphome %s --port %d --input-dir %s --phase %s" (and --phase %s)
 
 To proceed with the upgrade, run "gpupgrade execute"
 followed by "gpupgrade finalize".

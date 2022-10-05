@@ -115,7 +115,7 @@ To use the upgraded cluster:
    And connect to the database
 
 If you have not already, execute the “%s” data migration scripts with
-"gpupgrade executor --gphome %s --port %d --input-dir %s --phase %s"`,
+"gpupgrade apply --gphome %s --port %d --input-dir %s --phase %s"`,
 				response.GetTargetVersion(),
 				fmt.Sprintf("%s.<contentID>%s", response.GetUpgradeID(), upgrade.OldSuffix),
 				response.GetArchivedSourceCoordinatorDataDirectory(),

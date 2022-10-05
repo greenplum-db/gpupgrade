@@ -15,8 +15,8 @@ function run_migration_scripts_and_tests() {
         export PGPORT=5432
 
         echo "Running data migration scripts to ensure a clean cluster..."
-        gpupgrade generator --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT"
-        gpupgrade executor  --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --phase initialize
+        gpupgrade generate --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT"
+        gpupgrade apply    --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --phase initialize
 
         ./gpupgrade_src/test/acceptance/gpupgrade/revert.bats
   '

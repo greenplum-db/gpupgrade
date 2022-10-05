@@ -15,7 +15,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
-func dataMigrationGenerator() *cobra.Command {
+func dataMigrationGenerate() *cobra.Command {
 	var nonInteractive bool
 	var gphome string
 	var port int
@@ -23,9 +23,9 @@ func dataMigrationGenerator() *cobra.Command {
 	var outputDir string
 
 	dataMigrationGenerator := &cobra.Command{
-		Use:   "generator",
-		Short: "data migration SQL scripts generator",
-		Long:  "data migration SQL scripts generator",
+		Use:   "generate",
+		Short: "generate data migration SQL scripts",
+		Long:  "generate data migration SQL scripts",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			outputDir = filepath.Clean(outputDir)
 			seedDir = filepath.Clean(seedDir)
@@ -47,10 +47,10 @@ func dataMigrationGenerator() *cobra.Command {
 	dataMigrationGenerator.Flags().StringVar(&seedDir, "seed-dir", utils.GetDataMigrationSeedDir(), "path to the seed scripts")
 	dataMigrationGenerator.Flags().MarkHidden("seed-dir") //nolint
 
-	return addHelpToCommand(dataMigrationGenerator, generatorHelp)
+	return addHelpToCommand(dataMigrationGenerator, generateHelp)
 }
 
-func dataMigrationExecutor() *cobra.Command {
+func dataMigrationApply() *cobra.Command {
 	var nonInteractive bool
 	var gphome string
 	var port int
@@ -58,9 +58,9 @@ func dataMigrationExecutor() *cobra.Command {
 	var phase string
 
 	dataMigrationExecutor := &cobra.Command{
-		Use:   "executor",
-		Short: "data migration SQL scripts executor",
-		Long:  "data migration SQL scripts executor",
+		Use:   "apply",
+		Short: "apply data migration SQL scripts",
+		Long:  "apply data migration SQL scripts",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			parsedPhase, err := parsePhase(phase)
 			if err != nil {
@@ -89,7 +89,7 @@ func dataMigrationExecutor() *cobra.Command {
 	dataMigrationExecutor.Flags().StringVar(&inputDir, "input-dir", defaultGeneratedScriptsDir, "path to the generated data migration SQL files. Defaults to $HOME/gpAdminLogs/gpupgrade/data-migration-scripts")
 	dataMigrationExecutor.Flags().StringVar(&phase, "phase", "", `data migration phase. Either "pre-initialize", "post-finalize", "post-revert", or "stats".`)
 
-	return addHelpToCommand(dataMigrationExecutor, executorHelp)
+	return addHelpToCommand(dataMigrationExecutor, applyHelp)
 }
 
 func parsePhase(input string) (idl.Step, error) {

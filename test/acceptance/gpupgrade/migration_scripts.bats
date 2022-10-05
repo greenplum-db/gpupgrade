@@ -78,8 +78,8 @@ teardown() {
     view_owners_before=$(get_view_owners "$GPHOME_SOURCE")
 
     MIGRATION_DIR=`mktemp -d /tmp/migration.XXXXXX`
-    gpupgrade generator --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --seed-dir "$SEED_DIR" --output-dir "$MIGRATION_DIR"
-    gpupgrade executor  --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --input-dir "$MIGRATION_DIR" --phase initialize
+    gpupgrade generate --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --seed-dir "$SEED_DIR" --output-dir "$MIGRATION_DIR"
+    gpupgrade apply    --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --input-dir "$MIGRATION_DIR" --phase initialize
 
     gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
@@ -92,7 +92,7 @@ teardown() {
     gpupgrade execute --non-interactive --verbose
     gpupgrade finalize --non-interactive --verbose
 
-    gpupgrade executor --non-interactive --gphome "$GPHOME_TARGET" --port "$PGPORT" --input-dir "$MIGRATION_DIR" --phase finalize
+    gpupgrade apply --non-interactive --gphome "$GPHOME_TARGET" --port "$PGPORT" --input-dir "$MIGRATION_DIR" --phase finalize
 
     # migration scripts should create the indexes on the target cluster
     root_child_indexes_after=$(get_indexes "$GPHOME_TARGET")
@@ -137,8 +137,8 @@ teardown() {
     MIGRATION_DIR=`mktemp -d /tmp/migration.XXXXXX`
     register_teardown rm -r "$MIGRATION_DIR"
 
-    gpupgrade generator --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --seed-dir "$SEED_DIR" --output-dir "$MIGRATION_DIR"
-    gpupgrade executor  --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --input-dir "$MIGRATION_DIR" --phase initialize
+    gpupgrade generate --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --seed-dir "$SEED_DIR" --output-dir "$MIGRATION_DIR"
+    gpupgrade apply    --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --input-dir "$MIGRATION_DIR" --phase initialize
 
     gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
@@ -151,7 +151,7 @@ teardown() {
     gpupgrade execute --non-interactive --verbose
     gpupgrade revert --non-interactive --verbose
 
-    gpupgrade executor --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --input-dir "$MIGRATION_DIR" --phase revert
+    gpupgrade apply --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --input-dir "$MIGRATION_DIR" --phase revert
 
     # migration scripts should create the indexes on the target cluster
     root_child_indexes_after=$(get_indexes "$GPHOME_SOURCE")
@@ -189,9 +189,9 @@ teardown() {
     export PSQLRC="$MIGRATION_DIR"/psqlrc
     printf '\! kill $PPID\n' > "$PSQLRC"
 
-    gpupgrade generator --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --seed-dir "$SEED_DIR" --output-dir "$MIGRATION_DIR"
+    gpupgrade generate --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --seed-dir "$SEED_DIR" --output-dir "$MIGRATION_DIR"
     $PSQL -v ON_ERROR_STOP=1 -d testdb -f "${SEED_DIR}"/"${VERSION_SEED_DIR}"/test/drop_unfixable_objects.sql
-    gpupgrade executor  --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --input-dir "$MIGRATION_DIR" --phase initialize
+    gpupgrade apply    --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --input-dir "$MIGRATION_DIR" --phase initialize
 
     gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
@@ -203,7 +203,7 @@ teardown() {
         --verbose
     gpupgrade revert --non-interactive --verbose
 
-    gpupgrade executor --non-interactive --gphome "$GPHOME_TARGET" --port "$PGPORT" --input-dir "$MIGRATION_DIR" --phase revert
+    gpupgrade apply --non-interactive --gphome "$GPHOME_TARGET" --port "$PGPORT" --input-dir "$MIGRATION_DIR" --phase revert
 }
 
 get_indexes() {

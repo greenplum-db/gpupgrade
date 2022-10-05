@@ -71,7 +71,7 @@ func UpgradeCoordinator(streams step.OutStreams, pgUpgradeVerbose bool, source *
 Refer to the gpupgrade documentation for details on the pg_upgrade check error.
 
 If you haven't already run the "initialize" data migration scripts with
-"gpupgrade initialize" or "gpupgrade executor --gphome %s --port %d --input-dir %s --phase initialize"
+"gpupgrade initialize" or "gpupgrade apply --gphome %s --port %d --input-dir %s --phase initialize"
 
 To connect to the intermediate target cluster:
 source %s
