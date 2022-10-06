@@ -414,9 +414,9 @@ _gpupgrade_apply()
     noun_aliases=()
 }
 
-_gpupgrade_config_show()
+_gpupgrade_config_show_help()
 {
-    last_command="gpupgrade_config_show"
+    last_command="gpupgrade_config_show_help"
 
     command_aliases=()
 
@@ -428,6 +428,31 @@ _gpupgrade_config_show()
     flags_with_completion=()
     flags_completion=()
 
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_gpupgrade_config_show()
+{
+    last_command="gpupgrade_config_show"
+
+    command_aliases=()
+
+    commands=()
+    commands+=("help")
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--?")
+    flags+=("-?")
+    local_nonpersistent_flags+=("--?")
+    local_nonpersistent_flags+=("-?")
     flags+=("--id")
     local_nonpersistent_flags+=("--id")
     flags+=("--source-gphome")

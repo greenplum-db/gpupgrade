@@ -34,7 +34,7 @@ func (s *Server) GetConfig(ctx context.Context, in *idl.GetConfigRequest) (*idl.
 			resp.Value = strconv.Itoa(s.Intermediate.CoordinatorPort())
 		}
 	default:
-		return nil, status.Errorf(codes.NotFound, "%s is not a valid configuration key", in.Name)
+		return nil, status.Errorf(codes.NotFound, "%q is not a valid configuration key", in.Name)
 	}
 
 	return resp, nil

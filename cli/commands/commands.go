@@ -112,7 +112,7 @@ var config = &cobra.Command{
 }
 
 func createConfigShowSubcommand() *cobra.Command {
-	subShow := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "show",
 		Short: "show configuration settings",
 		Long:  "show configuration settings",
@@ -126,7 +126,7 @@ func createConfigShowSubcommand() *cobra.Command {
 			// are passed, assume we want to retrieve all of them.
 			var requests []*idl.GetConfigRequest
 			getRequest := func(flag *pflag.Flag) {
-				if flag.Name != "help" {
+				if flag.Name != "help" && flag.Name != "?" {
 					requests = append(requests, &idl.GetConfigRequest{
 						Name: flag.Name,
 					})
@@ -158,13 +158,13 @@ func createConfigShowSubcommand() *cobra.Command {
 		},
 	}
 
-	subShow.Flags().Bool("id", false, "show upgrade identifier")
-	subShow.Flags().Bool("source-gphome", false, "show path for the source Greenplum installation")
-	subShow.Flags().Bool("target-gphome", false, "show path for the target Greenplum installation")
-	subShow.Flags().Bool("target-datadir", false, "show temporary data directory for target gpdb cluster")
-	subShow.Flags().Bool("target-port", false, "show temporary master port for target cluster")
+	cmd.Flags().Bool("id", false, "show upgrade identifier")
+	cmd.Flags().Bool("source-gphome", false, "show path for the source Greenplum installation")
+	cmd.Flags().Bool("target-gphome", false, "show path for the target Greenplum installation")
+	cmd.Flags().Bool("target-datadir", false, "show temporary data directory for target gpdb cluster")
+	cmd.Flags().Bool("target-port", false, "show temporary master port for target cluster")
 
-	return subShow
+	return addHelpToCommand(cmd, ConfigHelp)
 }
 
 func version() *cobra.Command {

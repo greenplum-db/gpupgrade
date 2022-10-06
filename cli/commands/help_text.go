@@ -214,6 +214,27 @@ Optional Flags:
   --input-dir    path to the generated data migration SQL files. 
                  Defaults to $HOME/gpAdminLogs/gpupgrade/data-migration-scripts
 `
+const ConfigHelp = `
+The config subcommand allows one to view configuration parameters only after 
+initialize has started. It is useful for starting or connecting to the 
+target cluster by getting the target cluster data directory and port parameters.
+
+Usage: gpupgrade config show <flag>
+
+Optional Flags:
+
+--id               differentiates the intermediate target cluster directories. 
+                   The upgrade IO is also used when archiving the log directories
+                   and source cluster data directories after finalize.
+--source-gphome
+--target-gphome
+--target-datadir
+--target-port
+
+Example:
+  gpupgrade config show --target-datadir
+`
+
 const GlobalHelp = `
 gpupgrade performs an in-place cluster upgrade to the next major version.
 
@@ -250,6 +271,13 @@ Optional Commands:
   generate        generates data migration SQL scripts
 
   apply           applies data migration SQL scripts
+
+  config show     shows configuration parameters. 
+                  One can only view the configuration parameters only 
+after initialize has started. The config subcommand i
+s useful for getting the target cluster data directory 
+and port in order to start or connect to the target cluster.
+
 
 Optional Flags:
 
