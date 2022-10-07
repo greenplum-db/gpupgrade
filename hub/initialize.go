@@ -128,8 +128,7 @@ func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest
 
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_InitializeResponse{
 		InitializeResponse: &idl.InitializeResponse{
-			HasMirrors: s.Config.Source.HasMirrors(),
-			HasStandby: s.Config.Source.HasStandby(),
+			HasAllMirrorsAndStandby: s.Config.Source.HasAllMirrorsAndStandby(),
 		},
 	}}}}
 

@@ -4,15 +4,12 @@
 package commands
 
 import (
-	"fmt"
 	"reflect"
 	"strconv"
 	"testing"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-
-	"github.com/greenplum-db/gpupgrade/idl"
 )
 
 func TestParsePorts(t *testing.T) {
@@ -209,52 +206,4 @@ func TestAddFlags(t *testing.T) {
 			t.Errorf("expected error %#v got nil", err)
 		}
 	})
-}
-
-func TestInitializeWarningMessageIfAny(t *testing.T) {
-	cases := []struct {
-		name     string
-		input    idl.InitializeResponse
-		expected string
-	}{
-		{
-			name: "both standby and mirror does not exist",
-			input: idl.InitializeResponse{
-				HasMirrors: false,
-				HasStandby: false,
-			},
-			expected: fmt.Sprintf(InitializeWarningMessage, "standby and mirror segments"),
-		},
-		{
-			name: "only mirrors does not exist",
-			input: idl.InitializeResponse{
-				HasMirrors: false,
-				HasStandby: true,
-			},
-			expected: fmt.Sprintf(InitializeWarningMessage, "mirror segments"),
-		},
-		{
-			name: "only standby does not exist",
-			input: idl.InitializeResponse{
-				HasMirrors: true,
-				HasStandby: false,
-			},
-			expected: fmt.Sprintf(InitializeWarningMessage, "standby"),
-		},
-		{
-			name: "both standby and mirrors exist",
-			input: idl.InitializeResponse{
-				HasMirrors: true,
-				HasStandby: true,
-			},
-			expected: "",
-		},
-	}
-
-	for _, c := range cases {
-		resultMessage := InitializeWarningMessageIfAny(c.input)
-		if resultMessage != c.expected {
-			t.Errorf("got %q, want %q", resultMessage, c.expected)
-		}
-	}
 }

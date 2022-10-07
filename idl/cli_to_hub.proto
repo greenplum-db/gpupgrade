@@ -155,8 +155,7 @@ message Response {
 }
 
 message InitializeResponse {
-  bool HasMirrors = 1;
-  bool HasStandby = 2;
+  bool HasAllMirrorsAndStandby = 1;
 }
 
 message Cluster {

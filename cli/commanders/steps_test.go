@@ -233,11 +233,10 @@ func TestUILoop(t *testing.T) {
 				name: "processes initialize response successfully",
 				msgs: msgStream{&idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{
 					Contents: &idl.Response_InitializeResponse{InitializeResponse: &idl.InitializeResponse{
-						HasMirrors: true,
+						HasAllMirrorsAndStandby: true,
 					}}}}}},
 				expected: func(response *idl.Response) bool {
-					return response.GetInitializeResponse().GetHasMirrors() == true &&
-						response.GetInitializeResponse().GetHasStandby() == false
+					return response.GetInitializeResponse().GetHasAllMirrorsAndStandby() == true
 				},
 			},
 			{

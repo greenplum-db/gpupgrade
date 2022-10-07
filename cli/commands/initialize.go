@@ -24,17 +24,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-const InitializeWarningMessage = `
-WARNING
-_______
-The source cluster does not have %s.
-After "gpupgrade execute" has been run, there will be no way to
-return the cluster to its original state using "gpupgrade revert".
-
-If you do not already have a backup, we strongly recommend that
-you run "gpupgrade revert" now and take a backup of the cluster.
-`
-
 func initialize() *cobra.Command {
 	var file string
 	var nonInteractive bool
@@ -282,7 +271,10 @@ func initialize() *cobra.Command {
 				return nil
 			})
 
-			warningMessage := InitializeWarningMessageIfAny(response)
+			revertWarning := ""
+			if !response.GetHasAllMirrorsAndStandby() {
+				revertWarning = revertWarningText
+			}
 
 			return st.Complete(fmt.Sprintf(`
 Initialize completed successfully.
@@ -296,7 +288,7 @@ To proceed with the upgrade, run "gpupgrade execute"
 followed by "gpupgrade finalize".
 
 To return the cluster to its original state, run "gpupgrade revert".`,
-				warningMessage,
+				revertWarning,
 				idl.Step_stats, idl.Step_initialize,
 				sourceGPHome, sourcePort, generatedScriptsOutputDir, idl.Step_stats, idl.Step_initialize))
 		},
@@ -406,21 +398,4 @@ func addFlags(cmd *cobra.Command, flags map[string]string) error {
 	}
 
 	return nil
-}
-
-func InitializeWarningMessageIfAny(response idl.InitializeResponse) string {
-	message := ""
-	if !response.GetHasStandby() && !response.GetHasMirrors() {
-		message = "standby and mirror segments"
-	} else if !response.GetHasMirrors() {
-		message = "mirror segments"
-	} else if !response.GetHasStandby() {
-		message = "standby"
-	}
-
-	if message != "" {
-		return fmt.Sprintf(InitializeWarningMessage, message)
-	}
-
-	return message
 }
