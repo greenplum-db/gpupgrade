@@ -3,6 +3,8 @@
 
 package commands
 
+import "github.com/fatih/color"
+
 const initializeConfirmationText = `
 You are about to initialize a major-version upgrade of Greenplum.
 
@@ -96,7 +98,7 @@ WARNING: Do not perform operations on the source and target clusters until gpupg
 has completed.
 `
 
-const revertWarningText = `
+var revertWarningText = color.RedString(`
 WARNING
 _______
 The source cluster does not have standby and/or mirrors.
@@ -105,4 +107,4 @@ return the cluster to its original state using "gpupgrade revert".
 
 If you do not already have a backup, we strongly recommend that
 you run "gpupgrade revert" now and take a backup of the cluster.
-`
+`)
