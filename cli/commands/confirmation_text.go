@@ -43,7 +43,7 @@ To suppress this summary, use the --automatic | -a  flag.
 const executeConfirmationText = `
 You are about to run the "execute" command for a major-version upgrade of Greenplum.
 This should be done only during a downtime window.
-
+%s
 gpupgrade execute will perform a series of steps, including:
 - Upgrade master
 - Upgrade primary segments
