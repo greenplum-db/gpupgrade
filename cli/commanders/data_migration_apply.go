@@ -21,6 +21,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
+	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
 func ExecuteDataMigrationScripts(nonInteractive bool, gphome string, port int, currentScriptDirFS fs.FS, currentScriptDir string, phase idl.Step) error {
@@ -45,6 +46,18 @@ func ExecuteDataMigrationScripts(nonInteractive bool, gphome string, port int, c
 		return err
 	}
 
+	outputPath := filepath.Join(currentScriptDir, phase.String()+".log")
+	file, err := utils.System.OpenFile(outputPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if cErr := file.Close(); cErr != nil {
+			err = errorlist.Append(err, cErr)
+		}
+	}()
+
 	bar := progressbar.NewOptions(len(scriptDirsToRun), progressbar.OptionFullWidth(), progressbar.OptionShowCount(),
 		progressbar.OptionClearOnFinish(), progressbar.OptionSetPredictTime(true))
 
@@ -59,8 +72,7 @@ func ExecuteDataMigrationScripts(nonInteractive bool, gphome string, port int, c
 
 		log.Println(string(output))
 
-		outputPath := filepath.Join(currentScriptDir, phase.String()+".log")
-		err = utils.System.WriteFile(outputPath, output, 0644)
+		_, err = file.Write(output)
 		if err != nil {
 			return err
 		}

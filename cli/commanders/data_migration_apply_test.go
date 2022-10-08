@@ -104,6 +104,9 @@ func TestExecuteDataMigrationScripts(t *testing.T) {
 		commanders.SetPsqlFileCommand(exectest.NewCommand(commanders.FailedMain))
 		defer commanders.ResetPsqlFileCommand()
 
+		currentScriptDir := testutils.GetTempDir(t, "")
+		defer testutils.MustRemoveAll(t, currentScriptDir)
+
 		// This is mocking scriptDirFS
 		utils.System.DirFS = func(dir string) fs.FS {
 			return fstest.MapFS{
@@ -124,25 +127,17 @@ func TestExecuteDataMigrationScripts(t *testing.T) {
 		}
 	})
 
-	t.Run("errors when failing to write stats output log", func(t *testing.T) {
+	t.Run("errors when failing to open output log", func(t *testing.T) {
 		utils.System.DirFS = func(dir string) fs.FS {
 			return fstest.MapFS{
-				idl.Step_stats.String():                                  {Mode: os.ModeDir},
-				filepath.Join(idl.Step_stats.String(), "generate_stats"): {Mode: os.ModeDir},
-				filepath.Join(idl.Step_stats.String(), "generate_stats", "migration_postgres_generate_stats.sql"):  {},
-				filepath.Join(idl.Step_stats.String(), "generate_stats", "migration_template1_generate_stats.sql"): {},
+				idl.Step_stats.String(): {Mode: os.ModeDir},
 			}
 		}
 		defer utils.ResetSystemFunctions()
 
-		utils.System.MkdirAll = func(path string, perm os.FileMode) error {
-			return nil
-		}
-		defer utils.ResetSystemFunctions()
-
 		expected := os.ErrPermission
-		utils.System.WriteFile = func(filename string, data []byte, perm os.FileMode) error {
-			return expected
+		utils.System.OpenFile = func(name string, flag int, perm os.FileMode) (*os.File, error) {
+			return nil, expected
 		}
 		defer utils.ResetSystemFunctions()
 
@@ -156,17 +151,18 @@ func TestExecuteDataMigrationScripts(t *testing.T) {
 	})
 
 	t.Run("errors when failing to get log directory", func(t *testing.T) {
+		currentScriptDir := testutils.GetTempDir(t, "")
+		defer testutils.MustRemoveAll(t, currentScriptDir)
+
 		utils.System.DirFS = func(dir string) fs.FS {
 			return fstest.MapFS{
-				idl.Step_stats.String(): {Mode: os.ModeDir},
+				filepath.Join("migration_postgres_generate_stats.sql"): {},
 			}
 		}
 		defer utils.ResetSystemFunctions()
 
-		utils.System.WriteFile = func(filename string, data []byte, perm os.FileMode) error {
-			return nil
-		}
-		defer utils.ResetSystemFunctions()
+		commanders.SetPsqlFileCommand(exectest.NewCommand(commanders.SuccessScript))
+		defer commanders.ResetPsqlFileCommand()
 
 		expected := os.ErrPermission
 		utils.System.Current = func() (*user.User, error) {
