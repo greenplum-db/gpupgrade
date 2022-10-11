@@ -138,7 +138,7 @@ func MustGetPort(t *testing.T) int {
 func GetTempDir(t *testing.T, prefix string) string {
 	t.Helper()
 
-	dir, err := os.MkdirTemp("", prefix+"-")
+	dir, err := os.MkdirTemp("", prefix)
 	if err != nil {
 		t.Fatalf("creating temporary directory: %+v", err)
 	}
