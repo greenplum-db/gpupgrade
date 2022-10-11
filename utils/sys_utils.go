@@ -14,6 +14,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/google/renameio"
 
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
@@ -21,6 +22,7 @@ import (
 
 var (
 	System = InitializeSystemFunctions()
+	Bold   = color.New(color.Bold)
 )
 
 /*

@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/schollz/progressbar/v3"
 	"golang.org/x/xerrors"
 
@@ -26,25 +27,14 @@ func ExecuteDataMigrationScripts(nonInteractive bool, gphome string, port int, c
 	_, err := currentScriptDirFS.Open(phase.String())
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			fmt.Printf("No %q data migration scripts to execute in %q.\n", phase, filepath.Join(currentScriptDir, phase.String()))
+			fmt.Printf("No %q data migration scripts to execute in %s.\n", phase, utils.Bold.Sprint(filepath.Join(currentScriptDir, phase.String())))
 			return nil
 		}
 
 		return err
 	}
 
-	fmt.Printf("Inspect the %q data migration SQL scripts in\n%s\n", phase, filepath.Join(currentScriptDir, phase.String()))
-
-	if phase == idl.Step_stats {
-		fmt.Println()
-		fmt.Printf(`The %q data migration SQL scripts gather cluster-wide and 
-database specific statistics such as number of segments and 
-number of tables.
-
-To receive an upgrade time estimate send the stats output:
-%s
-`, phase, filepath.Join(currentScriptDir, phase.String()+".log"))
-	}
+	fmt.Printf("Inspect the %q data migration SQL scripts in\n%s\n", phase, utils.Bold.Sprint(filepath.Join(currentScriptDir, phase.String())))
 
 	scriptDirsToRun, err := ExecuteDataMigrationScriptsPrompt(nonInteractive, bufio.NewReader(os.Stdin), currentScriptDir, currentScriptDirFS, phase)
 	if err != nil {
@@ -74,10 +64,10 @@ To receive an upgrade time estimate send the stats output:
 		if err != nil {
 			return err
 		}
+	}
 
-		if phase == idl.Step_stats {
-			fmt.Printf("To receive an upgrade time estimate send the stats output:\n%s\n\n", outputPath)
-		}
+	if phase == idl.Step_stats {
+		fmt.Print(color.YellowString("To receive an upgrade time estimate send the stats output:\n%s\n\n", utils.Bold.Sprint(filepath.Join(currentScriptDir, phase.String()+".log"))))
 	}
 
 	logDir, err := utils.GetLogDir()
@@ -85,10 +75,10 @@ To receive an upgrade time estimate send the stats output:
 		return err
 	}
 
-	fmt.Printf(`Logs located in
-  %s
-  %s
-`, logDir, currentScriptDir)
+	fmt.Printf(`Logs:
+%s
+%s
+`, utils.Bold.Sprint(logDir), utils.Bold.Sprint(currentScriptDir))
 
 	return nil
 }
@@ -140,7 +130,6 @@ func ExecuteDataMigrationScriptsPrompt(nonInteractive bool, reader *bufio.Reader
 	for {
 		var input = "a"
 		if !nonInteractive {
-			fmt.Println()
 			fmt.Printf(`Which %q data migration SQL scripts to apply? 
   [a]ll
   [s]ome
@@ -201,7 +190,7 @@ func SelectDataMigrationScriptsPrompt(reader *bufio.Reader, currentScriptDir str
 	}
 
 	for {
-		fmt.Printf("\nSelect scripts to apply separated by commas. Or [q]uit?\n\n%s\nSelect: ", allScripts)
+		fmt.Printf("\nSelect scripts to apply separated by commas such as 1, 3. Or [q]uit?\n\n%s\nSelect: ", allScripts)
 		input, err := reader.ReadString('\n')
 		if err != nil {
 			return nil, err
@@ -252,7 +241,7 @@ func SelectDataMigrationScriptsPrompt(reader *bufio.Reader, currentScriptDir str
 func ParseSelection(input string, allScripts Scripts) (Scripts, error) {
 	input = strings.ToLower(strings.TrimSpace(input))
 	if input == "" {
-		return nil, fmt.Errorf("Expected a number or numbers separated by commas.")
+		return nil, fmt.Errorf("Expected a number or numbers separated by commas such as 1, 3.")
 	}
 
 	if input == "q" {
@@ -265,7 +254,7 @@ func ParseSelection(input string, allScripts Scripts) (Scripts, error) {
 	for _, selection := range selections {
 		i, err := strconv.ParseUint(strings.TrimSpace(selection), 10, 32)
 		if err != nil {
-			return nil, fmt.Errorf("Invalid selection. Found %q expected a number or numbers separated by commas.", selection)
+			return nil, fmt.Errorf("Invalid selection. Found %q expected a number or numbers separated by commas such as 1, 3.", selection)
 		}
 
 		selectedScripts = append(selectedScripts, allScripts.Find(i))

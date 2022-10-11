@@ -357,16 +357,16 @@ func TestExecuteDataMigrationScriptsPrompt(t *testing.T) {
 
 		expected := "\nScripts to apply:\n"
 		expected += "  0: parent_partitions_with_seg_entries\n"
-		expected += "     Fixes non-empty segment relfiles for AO and AOCO parent partitions\n\n  "
+		expected += "     - Fixes non-empty segment relfiles for AO and AOCO parent partitions\n\n  "
 		expected += "1: unique_primary_foreign_key_constraint\n"
-		expected += "     Drops constraints\n\n"
-		expected += "\nWhich \"initialize\" data migration SQL scripts to apply? \n"
+		expected += "     - Drops constraints\n\n"
+		expected += "Which \"initialize\" data migration SQL scripts to apply? \n"
 		expected += "  [a]ll\n"
 		expected += "  [s]ome\n"
 		expected += "  [n]one\n"
 		expected += "  [q]uit\n"
 		expected += "\nSelect: \n"
-		expected += "Select scripts to apply separated by commas. Or [q]uit?\n\n"
+		expected += "Select scripts to apply separated by commas such as 1, 3. Or [q]uit?\n\n"
 		expected += "  0: parent_partitions_with_seg_entries\n"
 		expected += "  1: unique_primary_foreign_key_constraint\n\n"
 		expected += "Select: "
@@ -426,15 +426,15 @@ func TestExecuteDataMigrationScriptsPrompt(t *testing.T) {
 
 		expected := "\nScripts to apply:\n"
 		expected += "  0: parent_partitions_with_seg_entries\n"
-		expected += "     Fixes non-empty segment relfiles for AO and AOCO parent partitions\n\n  "
+		expected += "     - Fixes non-empty segment relfiles for AO and AOCO parent partitions\n\n  "
 		expected += "1: unique_primary_foreign_key_constraint\n"
-		expected += "     Drops constraints\n\n"
-		expected += "\nWhich \"initialize\" data migration SQL scripts to apply? \n"
+		expected += "     - Drops constraints\n\n"
+		expected += "Which \"initialize\" data migration SQL scripts to apply? \n"
 		expected += "  [a]ll\n"
 		expected += "  [s]ome\n"
 		expected += "  [n]one\n"
 		expected += "  [q]uit\n"
-		expected += "\nSelect: \n"
+		expected += "\nSelect: "
 		expected += "Which \"initialize\" data migration SQL scripts to apply? \n"
 		expected += "  [a]ll\n"
 		expected += "  [s]ome\n"
@@ -525,10 +525,10 @@ func TestSelectDataMigrationScriptsPrompt(t *testing.T) {
 			t.Errorf("unexpected stderr %#v", string(stderr))
 		}
 
-		expected := "\nSelect scripts to apply separated by commas. Or [q]uit?\n\n\n"
+		expected := "\nSelect scripts to apply separated by commas such as 1, 3. Or [q]uit?\n\n\n"
 		expected += "Select: \n"
-		expected += "Invalid selection. Found \"0.5\" expected a number or numbers separated by commas.\n\n"
-		expected += "Select scripts to apply separated by commas. Or [q]uit?\n\n\n"
+		expected += "Invalid selection. Found \"0.5\" expected a number or numbers separated by commas such as 1, 3.\n\n"
+		expected += "Select scripts to apply separated by commas such as 1, 3. Or [q]uit?\n\n\n"
 		expected += "Select: \n"
 		expected += "Quiting..."
 
@@ -574,7 +574,7 @@ func TestSelectDataMigrationScriptsPrompt(t *testing.T) {
 			t.Errorf("unexpected stderr %#v", string(stderr))
 		}
 
-		expected := "\nSelect scripts to apply separated by commas. Or [q]uit?\n\n"
+		expected := "\nSelect scripts to apply separated by commas such as 1, 3. Or [q]uit?\n\n"
 		expected += "  0: parent_partitions_with_seg_entries\n"
 		expected += "  1: unique_primary_foreign_key_constraint\n\n"
 		expected += "Select: \n"
@@ -582,7 +582,7 @@ func TestSelectDataMigrationScriptsPrompt(t *testing.T) {
 		expected += "  0: parent_partitions_with_seg_entries\n\n"
 		expected += "[c]ontinue, [e]dit selection, or [q]uit.\n"
 		expected += "Select: \n"
-		expected += "Select scripts to apply separated by commas. Or [q]uit?\n\n"
+		expected += "Select scripts to apply separated by commas such as 1, 3. Or [q]uit?\n\n"
 		expected += "  0: parent_partitions_with_seg_entries\n"
 		expected += "  1: unique_primary_foreign_key_constraint\n\n"
 		expected += "Select: \nSelected:\n\n"
@@ -618,7 +618,7 @@ func TestSelectDataMigrationScriptsPrompt(t *testing.T) {
 			t.Errorf("unexpected stderr %#v", string(stderr))
 		}
 
-		expected := "\nSelect scripts to apply separated by commas. Or [q]uit?\n\n"
+		expected := "\nSelect scripts to apply separated by commas such as 1, 3. Or [q]uit?\n\n"
 		expected += "  0: parent_partitions_with_seg_entries\n"
 		expected += "  1: unique_primary_foreign_key_constraint\n\n"
 		expected += "Select: \n"
@@ -626,7 +626,7 @@ func TestSelectDataMigrationScriptsPrompt(t *testing.T) {
 		expected += "  0: parent_partitions_with_seg_entries\n\n"
 		expected += "[c]ontinue, [e]dit selection, or [q]uit.\n"
 		expected += "Select: \n"
-		expected += "Select scripts to apply separated by commas. Or [q]uit?\n\n"
+		expected += "Select scripts to apply separated by commas such as 1, 3. Or [q]uit?\n\n"
 		expected += "  0: parent_partitions_with_seg_entries\n"
 		expected += "  1: unique_primary_foreign_key_constraint\n\n"
 		expected += "Select: \nSelected:\n\n"
@@ -662,7 +662,7 @@ func TestSelectDataMigrationScriptsPrompt(t *testing.T) {
 			t.Errorf("unexpected stderr %#v", string(stderr))
 		}
 
-		expected := "\nSelect scripts to apply separated by commas. Or [q]uit?\n\n"
+		expected := "\nSelect scripts to apply separated by commas such as 1, 3. Or [q]uit?\n\n"
 		expected += "  0: parent_partitions_with_seg_entries\n"
 		expected += "  1: unique_primary_foreign_key_constraint\n\n"
 		expected += "Select: \n"
@@ -670,7 +670,7 @@ func TestSelectDataMigrationScriptsPrompt(t *testing.T) {
 		expected += "  0: parent_partitions_with_seg_entries\n\n"
 		expected += "[c]ontinue, [e]dit selection, or [q]uit.\n"
 		expected += "Select: \n"
-		expected += "Select scripts to apply separated by commas. Or [q]uit?\n\n"
+		expected += "Select scripts to apply separated by commas such as 1, 3. Or [q]uit?\n\n"
 		expected += "  0: parent_partitions_with_seg_entries\n"
 		expected += "  1: unique_primary_foreign_key_constraint\n\n"
 		expected += "Select: \n"
@@ -708,12 +708,12 @@ func TestParseSelection(t *testing.T) {
 		{
 			name:     "errors when input is empty",
 			input:    "",
-			expected: fmt.Errorf("Expected a number or numbers separated by commas."),
+			expected: fmt.Errorf("Expected a number or numbers separated by commas such as 1, 3."),
 		},
 		{
 			name:     "errors when input is whitespace",
 			input:    "  \t   \n",
-			expected: fmt.Errorf("Expected a number or numbers separated by commas."),
+			expected: fmt.Errorf("Expected a number or numbers separated by commas such as 1, 3."),
 		},
 		{
 			name:     "cancels when input is 'q'",
@@ -723,17 +723,17 @@ func TestParseSelection(t *testing.T) {
 		{
 			name:     "errors when selection is not a number",
 			input:    "A",
-			expected: fmt.Errorf("Invalid selection. Found %q expected a number or numbers separated by commas.", "a"),
+			expected: fmt.Errorf("Invalid selection. Found %q expected a number or numbers separated by commas such as 1, 3.", "a"),
 		},
 		{
 			name:     "errors when selection is not a positive number",
 			input:    "-1",
-			expected: fmt.Errorf("Invalid selection. Found %q expected a number or numbers separated by commas.", "-1"),
+			expected: fmt.Errorf("Invalid selection. Found %q expected a number or numbers separated by commas such as 1, 3.", "-1"),
 		},
 		{
 			name:     "errors when selection is not a whole number",
 			input:    "0.5",
-			expected: fmt.Errorf("Invalid selection. Found %q expected a number or numbers separated by commas.", "0.5"),
+			expected: fmt.Errorf("Invalid selection. Found %q expected a number or numbers separated by commas such as 1, 3.", "0.5"),
 		},
 	}
 

@@ -119,14 +119,17 @@ func GenerateDataMigrationScripts(nonInteractive bool, gphome string, port int, 
 		fmt.Println()
 	}
 
-	fmt.Printf("Generated data migration scripts are in %q\n", filepath.Join(outputDir, "current"))
-
 	logDir, err := utils.GetLogDir()
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Logs located in %q\n", logDir)
+	fmt.Printf(`Generated scripts:
+%s
+
+Logs:
+%s
+`, utils.Bold.Sprint(filepath.Join(outputDir, "current")), utils.Bold.Sprint(logDir))
 
 	return nil
 }
@@ -163,13 +166,14 @@ func ArchiveDataMigrationScriptsPrompt(nonInteractive bool, reader *bufio.Reader
 
 Archive and re-generate the data migration scripts if potentially 
 new problematic objects have been added since the scripts were 
-first generated. 
+first generated. If unsure its safe to archive and re-generate 
+the scripts.
 
 The generator takes a "snapshot" of the current source cluster
 to generate the scripts. If new "problematic" objects are added 
 after the generator was run, then the previously generated 
 scripts are outdated. The generator will need to be re-run 
-to detect the newly added objects.`, currentDirModTime.Format(time.RFC1123Z), currentDir)
+to detect the newly added objects.`, currentDirModTime.Format(time.RFC1123Z), utils.Bold.Sprint(currentDir))
 
 		input := "a"
 		if !nonInteractive {
@@ -197,11 +201,11 @@ Select: `)
 			}
 
 			if exist {
-				log.Printf("Skip archiving data migration scripts as it already exists in %q\n", archiveDir)
+				log.Printf("Skip archiving data migration scripts as it already exists in %s\n", utils.Bold.Sprint(archiveDir))
 				return step.Skip
 			}
 
-			fmt.Printf("\nArchiving previously generated scripts under\n%q\n", archiveDir)
+			fmt.Printf("\nArchiving previously generated scripts under\n%s\n", utils.Bold.Sprint(archiveDir))
 			err = utils.System.MkdirAll(filepath.Dir(archiveDir), 0700)
 			if err != nil {
 				return fmt.Errorf("make directory: %w", err)
@@ -214,7 +218,7 @@ Select: `)
 
 			return nil
 		case "c":
-			fmt.Printf("\nContinuing with previously generated data migration scripts in\n%s\n", currentDir)
+			fmt.Printf("\nContinuing with previously generated data migration scripts in\n%s\n", utils.Bold.Sprint(currentDir))
 			return step.Skip
 		case "q":
 			fmt.Print("\nQuiting...")

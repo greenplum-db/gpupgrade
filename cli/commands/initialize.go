@@ -281,16 +281,11 @@ Initialize completed successfully.
 %s
 NEXT ACTIONS
 ------------
-If you have not already, execute the "%s" and “%s” data migration scripts with
-"gpupgrade initialize" or "gpupgrade apply --gphome %s --port %d --input-dir %s --phase %s" (and --phase %s)
-
 To proceed with the upgrade, run "gpupgrade execute"
 followed by "gpupgrade finalize".
 
 To return the cluster to its original state, run "gpupgrade revert".`,
-				revertWarning,
-				idl.Step_stats, idl.Step_initialize,
-				sourceGPHome, sourcePort, generatedScriptsOutputDir, idl.Step_stats, idl.Step_initialize))
+				revertWarning))
 		},
 	}
 
