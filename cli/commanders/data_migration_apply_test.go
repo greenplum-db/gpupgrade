@@ -26,7 +26,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
-func TestExecuteDataMigrationScripts(t *testing.T) {
+func TestApplyDataMigrationScripts(t *testing.T) {
 	currentScriptDir := "/home/gpupgrade/data-migration/current"
 
 	currentDirFS := fstest.MapFS{
@@ -36,8 +36,8 @@ func TestExecuteDataMigrationScripts(t *testing.T) {
 		filepath.Join(idl.Step_stats.String(), "generate_stats", "migration_template1_generate_stats.sql"): {},
 	}
 
-	t.Run("returns when there are no scripts to execute", func(t *testing.T) {
-		err := commanders.ExecuteDataMigrationScripts(false, "", 0, currentDirFS, "", idl.Step_revert)
+	t.Run("returns when there are no scripts to apply", func(t *testing.T) {
+		err := commanders.ApplyDataMigrationScripts(false, "", 0, currentDirFS, "", idl.Step_revert)
 		if err != nil {
 			t.Fatalf("unexpected error %#v", err)
 		}
@@ -57,7 +57,7 @@ func TestExecuteDataMigrationScripts(t *testing.T) {
 		resetStdin := testutils.SetStdin(t, "a\n")
 		defer resetStdin()
 
-		err := commanders.ExecuteDataMigrationScripts(false, "", 0, currentDirFS, currentScriptDir, idl.Step_stats)
+		err := commanders.ApplyDataMigrationScripts(false, "", 0, currentDirFS, currentScriptDir, idl.Step_stats)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -81,7 +81,7 @@ func TestExecuteDataMigrationScripts(t *testing.T) {
 		resetStdin := testutils.SetStdin(t, "n\n")
 		defer resetStdin()
 
-		err := commanders.ExecuteDataMigrationScripts(false, "", 0, currentDirFS, currentScriptDir, idl.Step_stats)
+		err := commanders.ApplyDataMigrationScripts(false, "", 0, currentDirFS, currentScriptDir, idl.Step_stats)
 		if err != nil {
 			t.Fatalf("unexpected error %#v", err)
 		}
@@ -94,13 +94,13 @@ func TestExecuteDataMigrationScripts(t *testing.T) {
 		}
 		defer utils.ResetSystemFunctions()
 
-		err := commanders.ExecuteDataMigrationScripts(false, "", 0, currentDirFS, currentScriptDir, idl.Step_stats)
+		err := commanders.ApplyDataMigrationScripts(false, "", 0, currentDirFS, currentScriptDir, idl.Step_stats)
 		if !errors.Is(err, expected) {
 			t.Errorf("got error %#v want %#v", err, expected)
 		}
 	})
 
-	t.Run("errors when executing script sub directory fails", func(t *testing.T) {
+	t.Run("errors when applying script sub directory fails", func(t *testing.T) {
 		commanders.SetPsqlFileCommand(exectest.NewCommand(commanders.FailedMain))
 		defer commanders.ResetPsqlFileCommand()
 
@@ -120,7 +120,7 @@ func TestExecuteDataMigrationScripts(t *testing.T) {
 		resetStdin := testutils.SetStdin(t, "a\n")
 		defer resetStdin()
 
-		err := commanders.ExecuteDataMigrationScripts(false, "", 0, currentDirFS, currentScriptDir, idl.Step_stats)
+		err := commanders.ApplyDataMigrationScripts(false, "", 0, currentDirFS, currentScriptDir, idl.Step_stats)
 		var exitError *exec.ExitError
 		if !errors.As(err, &exitError) {
 			t.Errorf("got %T, want %T", err, exitError)
@@ -144,7 +144,7 @@ func TestExecuteDataMigrationScripts(t *testing.T) {
 		resetStdin := testutils.SetStdin(t, "a\n")
 		defer resetStdin()
 
-		err := commanders.ExecuteDataMigrationScripts(false, "", 0, currentDirFS, currentScriptDir, idl.Step_stats)
+		err := commanders.ApplyDataMigrationScripts(false, "", 0, currentDirFS, currentScriptDir, idl.Step_stats)
 		if !errors.Is(err, os.ErrPermission) {
 			t.Errorf("got error %#v want %#v", err, os.ErrPermission)
 		}
@@ -173,14 +173,14 @@ func TestExecuteDataMigrationScripts(t *testing.T) {
 		resetStdin := testutils.SetStdin(t, "a\n")
 		defer resetStdin()
 
-		err := commanders.ExecuteDataMigrationScripts(false, "", 0, currentDirFS, currentScriptDir, idl.Step_stats)
+		err := commanders.ApplyDataMigrationScripts(false, "", 0, currentDirFS, currentScriptDir, idl.Step_stats)
 		if !errors.Is(err, os.ErrPermission) {
 			t.Errorf("got error %#v want %#v", err, os.ErrPermission)
 		}
 	})
 }
 
-func TestExecuteDataMigrationScriptSubDir(t *testing.T) {
+func TestApplyDataMigrationScriptSubDir(t *testing.T) {
 	scriptSubDir := "/home/gpupgrade/data-migration/current/initialize/unique_primary_foreign_key_constraint"
 
 	t.Run("errors when failing to read current script directory", func(t *testing.T) {
@@ -189,7 +189,7 @@ func TestExecuteDataMigrationScriptSubDir(t *testing.T) {
 		}
 		defer utils.ResetSystemFunctions()
 
-		output, err := commanders.ExecuteDataMigrationScriptSubDir("", 0, fstest.MapFS{}, scriptSubDir)
+		output, err := commanders.ApplyDataMigrationScriptSubDir("", 0, fstest.MapFS{}, scriptSubDir)
 		if !errors.Is(err, os.ErrPermission) {
 			t.Errorf("got error %#v want %#v", err, os.ErrPermission)
 		}
@@ -200,7 +200,7 @@ func TestExecuteDataMigrationScriptSubDir(t *testing.T) {
 	})
 
 	t.Run("errors when no directories are in the current script directory", func(t *testing.T) {
-		output, err := commanders.ExecuteDataMigrationScriptSubDir("", 0, fstest.MapFS{}, scriptSubDir)
+		output, err := commanders.ApplyDataMigrationScriptSubDir("", 0, fstest.MapFS{}, scriptSubDir)
 		expected := fmt.Sprintf("No SQL files found in %q.", scriptSubDir)
 		if !strings.Contains(err.Error(), expected) {
 			t.Errorf("got error %#v, want %#v", err, expected)
@@ -211,7 +211,7 @@ func TestExecuteDataMigrationScriptSubDir(t *testing.T) {
 		}
 	})
 
-	t.Run("only executes sql files", func(t *testing.T) {
+	t.Run("only applies sql files", func(t *testing.T) {
 		commanders.SetPsqlFileCommand(exectest.NewCommand(commanders.SuccessScript))
 		defer commanders.ResetPsqlFileCommand()
 
@@ -221,7 +221,7 @@ func TestExecuteDataMigrationScriptSubDir(t *testing.T) {
 			"drop_postgres_indexes.bash":                                  {},
 		}
 
-		output, err := commanders.ExecuteDataMigrationScriptSubDir("", 0, fsys, scriptSubDir)
+		output, err := commanders.ApplyDataMigrationScriptSubDir("", 0, fsys, scriptSubDir)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -231,7 +231,7 @@ func TestExecuteDataMigrationScriptSubDir(t *testing.T) {
 		}
 	})
 
-	t.Run("errors when executing sql file fails", func(t *testing.T) {
+	t.Run("errors when applying sql file fails", func(t *testing.T) {
 		commanders.SetPsqlFileCommand(exectest.NewCommand(commanders.FailedMain))
 		defer commanders.ResetPsqlFileCommand()
 
@@ -239,7 +239,7 @@ func TestExecuteDataMigrationScriptSubDir(t *testing.T) {
 			"migration_postgres_gen_drop_constraint_2_primary_unique.sql": {},
 		}
 
-		output, err := commanders.ExecuteDataMigrationScriptSubDir("", 0, fsys, scriptSubDir)
+		output, err := commanders.ApplyDataMigrationScriptSubDir("", 0, fsys, scriptSubDir)
 		var exitError *exec.ExitError
 		if !errors.As(err, &exitError) {
 			t.Errorf("got %T, want %T", err, exitError)
@@ -251,7 +251,7 @@ func TestExecuteDataMigrationScriptSubDir(t *testing.T) {
 	})
 }
 
-func TestExecuteDataMigrationScriptsPrompt(t *testing.T) {
+func TestApplyDataMigrationScriptsPrompt(t *testing.T) {
 	currentScriptDir := "/home/gpupgrade/data-migration/current"
 	phase := idl.Step_initialize
 
@@ -267,7 +267,7 @@ func TestExecuteDataMigrationScriptsPrompt(t *testing.T) {
 
 	t.Run("errors when failing to read input", func(t *testing.T) {
 		reader := bufio.NewReader(strings.NewReader(""))
-		actualScriptDirs, err := commanders.ExecuteDataMigrationScriptsPrompt(false, reader, currentScriptDir, fsys, phase)
+		actualScriptDirs, err := commanders.ApplyDataMigrationScriptsPrompt(false, reader, currentScriptDir, fsys, phase)
 		expected := io.EOF
 		if !errors.Is(err, expected) {
 			t.Errorf("got error %#v, want %#v", err, expected)
@@ -278,9 +278,9 @@ func TestExecuteDataMigrationScriptsPrompt(t *testing.T) {
 		}
 	})
 
-	t.Run("executes all scripts when user selects 'a'll", func(t *testing.T) {
+	t.Run("applies all scripts when user selects 'a'll", func(t *testing.T) {
 		reader := bufio.NewReader(strings.NewReader("a\n"))
-		actualScriptDirs, err := commanders.ExecuteDataMigrationScriptsPrompt(false, reader, currentScriptDir, fsys, phase)
+		actualScriptDirs, err := commanders.ApplyDataMigrationScriptsPrompt(false, reader, currentScriptDir, fsys, phase)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -291,9 +291,9 @@ func TestExecuteDataMigrationScriptsPrompt(t *testing.T) {
 		}
 	})
 
-	t.Run("errors when executes all scripts fails to read phase directory in current generated script directory", func(t *testing.T) {
+	t.Run("errors when applies all scripts fails to read phase directory in current generated script directory", func(t *testing.T) {
 		reader := bufio.NewReader(strings.NewReader("a\n"))
-		actualScriptDirs, err := commanders.ExecuteDataMigrationScriptsPrompt(false, reader, currentScriptDir, fsys, idl.Step_unknown_step)
+		actualScriptDirs, err := commanders.ApplyDataMigrationScriptsPrompt(false, reader, currentScriptDir, fsys, idl.Step_unknown_step)
 		var expected *os.PathError
 		if !errors.As(err, &expected) {
 			t.Errorf("got error %#v, want %#v", err, expected)
@@ -304,10 +304,10 @@ func TestExecuteDataMigrationScriptsPrompt(t *testing.T) {
 		}
 	})
 
-	t.Run("does not prompt and executes all scripts when in non-interactive mode", func(t *testing.T) {
+	t.Run("does not prompt and applies all scripts when in non-interactive mode", func(t *testing.T) {
 		d := commanders.BufferStandardDescriptors(t)
 
-		actualScriptDirs, err := commanders.ExecuteDataMigrationScriptsPrompt(true, nil, currentScriptDir, fsys, phase)
+		actualScriptDirs, err := commanders.ApplyDataMigrationScriptsPrompt(true, nil, currentScriptDir, fsys, phase)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -323,7 +323,7 @@ func TestExecuteDataMigrationScriptsPrompt(t *testing.T) {
 			t.Errorf("unexpected stderr %#v", string(stderr))
 		}
 
-		expected := "\nExecuting 'all' of the \"initialize\" data migration scripts.\n"
+		expected := "\nApplying 'all' of the \"initialize\" data migration scripts.\n"
 		actual := string(stdout)
 		if !strings.Contains(actual, expected) {
 			t.Errorf("expected output %#v to contain %#v", actual, expected)
@@ -336,7 +336,7 @@ func TestExecuteDataMigrationScriptsPrompt(t *testing.T) {
 		d := commanders.BufferStandardDescriptors(t)
 
 		reader := bufio.NewReader(strings.NewReader("s\nb\n"))
-		actualScriptDirs, err := commanders.ExecuteDataMigrationScriptsPrompt(false, reader, currentScriptDir, fsys, phase)
+		actualScriptDirs, err := commanders.ApplyDataMigrationScriptsPrompt(false, reader, currentScriptDir, fsys, phase)
 		if !errors.Is(err, io.EOF) {
 			t.Errorf("got error %#v, want %#v", err, io.EOF)
 		}
@@ -377,7 +377,7 @@ func TestExecuteDataMigrationScriptsPrompt(t *testing.T) {
 
 	t.Run("returns skip error when user selects 'n'one", func(t *testing.T) {
 		reader := bufio.NewReader(strings.NewReader("n\n"))
-		actualScriptDirs, err := commanders.ExecuteDataMigrationScriptsPrompt(false, reader, currentScriptDir, fsys, phase)
+		actualScriptDirs, err := commanders.ApplyDataMigrationScriptsPrompt(false, reader, currentScriptDir, fsys, phase)
 		expected := step.Skip
 		if !errors.Is(err, expected) {
 			t.Errorf("got error %#v, want %#v", err, expected)
@@ -390,7 +390,7 @@ func TestExecuteDataMigrationScriptsPrompt(t *testing.T) {
 
 	t.Run("returns canceled error when user selects 'q'uit", func(t *testing.T) {
 		reader := bufio.NewReader(strings.NewReader("q\n"))
-		actualScriptDirs, err := commanders.ExecuteDataMigrationScriptsPrompt(false, reader, currentScriptDir, fsys, phase)
+		actualScriptDirs, err := commanders.ApplyDataMigrationScriptsPrompt(false, reader, currentScriptDir, fsys, phase)
 		expected := step.UserCanceled
 		if !errors.Is(err, expected) {
 			t.Errorf("got error %#v, want %#v", err, expected)
@@ -405,7 +405,7 @@ func TestExecuteDataMigrationScriptsPrompt(t *testing.T) {
 		d := commanders.BufferStandardDescriptors(t)
 
 		reader := bufio.NewReader(strings.NewReader("b\nq\n"))
-		actualScriptDirs, err := commanders.ExecuteDataMigrationScriptsPrompt(false, reader, currentScriptDir, fsys, phase)
+		actualScriptDirs, err := commanders.ApplyDataMigrationScriptsPrompt(false, reader, currentScriptDir, fsys, phase)
 		if !errors.Is(err, step.UserCanceled) {
 			t.Errorf("got error %#v, want %#v", err, step.UserCanceled)
 		}
@@ -584,7 +584,7 @@ func TestSelectDataMigrationScriptsPrompt(t *testing.T) {
 		expected += "Select: \nSelected:\n\n"
 		expected += "  1: unique_primary_foreign_key_constraint\n\n"
 		expected += "[c]ontinue, [e]dit selection, or [q]uit.\n"
-		expected += "Select: \nExecuting the \"initialize\" data migration scripts:\n\n"
+		expected += "Select: \nApplying the \"initialize\" data migration scripts:\n\n"
 		expected += "  1: unique_primary_foreign_key_constraint\n\n"
 
 		actual := string(stdout)

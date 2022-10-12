@@ -73,7 +73,7 @@ func revert() *cobra.Command {
 				fmt.Println()
 
 				currentDir := filepath.Join(response.GetLogArchiveDirectory(), "data-migration-scripts", "current")
-				return commanders.ExecuteDataMigrationScripts(nonInteractive, response.GetSource().GPHome, int(response.GetSource().GetPort()),
+				return commanders.ApplyDataMigrationScripts(nonInteractive, response.GetSource().GPHome, int(response.GetSource().GetPort()),
 					utils.System.DirFS(currentDir), currentDir, idl.Step_revert)
 			})
 

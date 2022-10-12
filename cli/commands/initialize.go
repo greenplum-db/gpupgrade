@@ -207,7 +207,7 @@ func initialize() *cobra.Command {
 				fmt.Println()
 
 				currentDir := filepath.Join(generatedScriptsOutputDir, "current")
-				return commanders.ExecuteDataMigrationScripts(nonInteractive, sourceGPHome, sourcePort,
+				return commanders.ApplyDataMigrationScripts(nonInteractive, sourceGPHome, sourcePort,
 					utils.System.DirFS(currentDir), currentDir, idl.Step_stats)
 			})
 
@@ -216,7 +216,7 @@ func initialize() *cobra.Command {
 				fmt.Println()
 
 				currentDir := filepath.Join(filepath.Clean(generatedScriptsOutputDir), "current")
-				return commanders.ExecuteDataMigrationScripts(nonInteractive, sourceGPHome, sourcePort,
+				return commanders.ApplyDataMigrationScripts(nonInteractive, sourceGPHome, sourcePort,
 					utils.System.DirFS(currentDir), currentDir, idl.Step_initialize)
 			})
 

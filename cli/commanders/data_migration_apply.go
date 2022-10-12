@@ -24,11 +24,11 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-func ExecuteDataMigrationScripts(nonInteractive bool, gphome string, port int, currentScriptDirFS fs.FS, currentScriptDir string, phase idl.Step) error {
+func ApplyDataMigrationScripts(nonInteractive bool, gphome string, port int, currentScriptDirFS fs.FS, currentScriptDir string, phase idl.Step) error {
 	_, err := currentScriptDirFS.Open(phase.String())
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			fmt.Printf("No %q data migration scripts to execute in %s.\n", phase, utils.Bold.Sprint(filepath.Join(currentScriptDir, phase.String())))
+			fmt.Printf("No %q data migration scripts to apply in %s.\n", phase, utils.Bold.Sprint(filepath.Join(currentScriptDir, phase.String())))
 			return nil
 		}
 
@@ -37,7 +37,7 @@ func ExecuteDataMigrationScripts(nonInteractive bool, gphome string, port int, c
 
 	fmt.Printf("Inspect the %q data migration SQL scripts in\n%s\n", phase, utils.Bold.Sprint(filepath.Join(currentScriptDir, phase.String())))
 
-	scriptDirsToRun, err := ExecuteDataMigrationScriptsPrompt(nonInteractive, bufio.NewReader(os.Stdin), currentScriptDir, currentScriptDirFS, phase)
+	scriptDirsToRun, err := ApplyDataMigrationScriptsPrompt(nonInteractive, bufio.NewReader(os.Stdin), currentScriptDir, currentScriptDirFS, phase)
 	if err != nil {
 		if errors.Is(err, step.Skip) {
 			return nil
@@ -70,7 +70,7 @@ func ExecuteDataMigrationScripts(nonInteractive bool, gphome string, port int, c
 		_ = bar.Add(1)
 		bar.Describe(fmt.Sprintf("  %s...", filepath.Base(scriptDir)))
 
-		output, err := ExecuteDataMigrationScriptSubDir(gphome, port, utils.System.DirFS(scriptDir), scriptDir)
+		output, err := ApplyDataMigrationScriptSubDir(gphome, port, utils.System.DirFS(scriptDir), scriptDir)
 		if err != nil {
 			return err
 		}
@@ -94,14 +94,14 @@ func ExecuteDataMigrationScripts(nonInteractive bool, gphome string, port int, c
 	return nil
 }
 
-func ExecuteDataMigrationScriptSubDir(gphome string, port int, scriptDirFS fs.FS, scriptDir string) ([]byte, error) {
+func ApplyDataMigrationScriptSubDir(gphome string, port int, scriptDirFS fs.FS, scriptDir string) ([]byte, error) {
 	entries, err := utils.System.ReadDirFS(scriptDirFS, ".")
 	if err != nil {
 		return nil, err
 	}
 
 	if len(entries) == 0 {
-		return nil, xerrors.Errorf("Failed to execute data migration script. No SQL files found in %q.", scriptDir)
+		return nil, xerrors.Errorf("Failed to apply data migration script. No SQL files found in %q.", scriptDir)
 	}
 
 	var outputs []byte
@@ -112,7 +112,7 @@ func ExecuteDataMigrationScriptSubDir(gphome string, port int, scriptDirFS fs.FS
 
 		// FIXME: Disabled ON_ERROR_STOP due to incompatibilities of deprecated objects on 6->6 upgrade that will cause
 		//  scripts to fail.
-		output, err := executeSQLFile(gphome, port, "postgres", filepath.Join(scriptDir, entry.Name()), "-v", "ON_ERROR_STOP=0", "--echo-queries")
+		output, err := applySQLFile(gphome, port, "postgres", filepath.Join(scriptDir, entry.Name()), "-v", "ON_ERROR_STOP=0", "--echo-queries")
 		if err != nil {
 			return nil, err
 		}
@@ -123,7 +123,7 @@ func ExecuteDataMigrationScriptSubDir(gphome string, port int, scriptDirFS fs.FS
 	return outputs, nil
 }
 
-func ExecuteDataMigrationScriptsPrompt(nonInteractive bool, reader *bufio.Reader, currentScriptDir string, currentScriptDirFS fs.FS, phase idl.Step) ([]string, error) {
+func ApplyDataMigrationScriptsPrompt(nonInteractive bool, reader *bufio.Reader, currentScriptDir string, currentScriptDirFS fs.FS, phase idl.Step) ([]string, error) {
 	entries, err := utils.System.ReadDirFS(currentScriptDirFS, phase.String())
 	if err != nil {
 		return nil, err
@@ -159,7 +159,7 @@ Select: `, phase)
 
 		switch input {
 		case "a":
-			fmt.Printf("\nExecuting 'all' of the %q data migration scripts.\n\n", phase)
+			fmt.Printf("\nApplying 'all' of the %q data migration scripts.\n\n", phase)
 			entries, err := utils.System.ReadDirFS(currentScriptDirFS, phase.String())
 			if err != nil {
 				return nil, err
@@ -230,7 +230,7 @@ func SelectDataMigrationScriptsPrompt(reader *bufio.Reader, currentScriptDir str
 		input = strings.ToLower(strings.TrimSpace(input))
 		switch input {
 		case "c":
-			fmt.Printf("\nExecuting the %q data migration scripts:\n\n%s\n", phase, selectedScriptDirs)
+			fmt.Printf("\nApplying the %q data migration scripts:\n\n%s\n", phase, selectedScriptDirs)
 
 			var scriptDirs []string
 			for _, dir := range selectedScriptDirs.Names() {

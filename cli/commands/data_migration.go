@@ -68,7 +68,7 @@ func dataMigrationApply() *cobra.Command {
 			}
 
 			currentDir := filepath.Join(filepath.Clean(inputDir), "current")
-			err = commanders.ExecuteDataMigrationScripts(nonInteractive, filepath.Clean(gphome), port, utils.System.DirFS(currentDir), currentDir, parsedPhase)
+			err = commanders.ApplyDataMigrationScripts(nonInteractive, filepath.Clean(gphome), port, utils.System.DirFS(currentDir), currentDir, parsedPhase)
 			if err != nil {
 				return err
 			}

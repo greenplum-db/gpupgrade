@@ -95,7 +95,7 @@ func GenerateDataMigrationScripts(nonInteractive bool, gphome string, port int, 
 
 		log.Println(string(output))
 
-		output, err = executeSQLFile(gphome, port, database.Datname, filepath.Join(seedDir, "create_find_view_dep_function.sql"))
+		output, err = applySQLFile(gphome, port, database.Datname, filepath.Join(seedDir, "create_find_view_dep_function.sql"))
 		if err != nil {
 			return err
 		}
@@ -263,7 +263,7 @@ func GenerateMigrationScript(phase idl.Step, seedDir string, seedDirFS fs.FS, ou
 		for _, script := range scripts {
 			var scriptOutput []byte
 			if strings.HasSuffix(script.Name(), ".sql") {
-				scriptOutput, err = executeSQLFile(gphome, port, database.Datname, filepath.Join(seedDir, phase.String(), scriptDir.Name(), script.Name()),
+				scriptOutput, err = applySQLFile(gphome, port, database.Datname, filepath.Join(seedDir, phase.String(), scriptDir.Name(), script.Name()),
 					"-v", "ON_ERROR_STOP=1", "--no-align", "--tuples-only")
 				if err != nil {
 					return err
