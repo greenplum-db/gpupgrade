@@ -46,7 +46,12 @@ func ExecuteDataMigrationScripts(nonInteractive bool, gphome string, port int, c
 		return err
 	}
 
-	outputPath := filepath.Join(currentScriptDir, phase.String()+".log")
+	logDir, err := utils.GetLogDir()
+	if err != nil {
+		return err
+	}
+
+	outputPath := filepath.Join(logDir, "apply_"+phase.String()+".log")
 	file, err := utils.System.OpenFile(outputPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
@@ -79,18 +84,12 @@ func ExecuteDataMigrationScripts(nonInteractive bool, gphome string, port int, c
 	}
 
 	if phase == idl.Step_stats {
-		fmt.Print(color.YellowString("To receive an upgrade time estimate send the stats output:\n%s\n\n", utils.Bold.Sprint(filepath.Join(currentScriptDir, phase.String()+".log"))))
-	}
-
-	logDir, err := utils.GetLogDir()
-	if err != nil {
-		return err
+		fmt.Print(color.YellowString("To receive an upgrade time estimate send the stats output:\n%s\n\n", utils.Bold.Sprint(filepath.Join(logDir, "apply_"+phase.String()+".log"))))
 	}
 
 	fmt.Printf(`Logs:
 %s
-%s
-`, utils.Bold.Sprint(logDir), utils.Bold.Sprint(currentScriptDir))
+`, utils.Bold.Sprint(logDir))
 
 	return nil
 }
