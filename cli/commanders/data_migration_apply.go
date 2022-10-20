@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/fatih/color"
 	"github.com/schollz/progressbar/v3"
@@ -63,26 +64,52 @@ func ApplyDataMigrationScripts(nonInteractive bool, gphome string, port int, cur
 		}
 	}()
 
+	var wg sync.WaitGroup
+	errChan := make(chan error, len(scriptDirsToRun))
+	outputChan := make(chan []byte, len(scriptDirsToRun))
 	bar := progressbar.NewOptions(len(scriptDirsToRun), progressbar.OptionFullWidth(), progressbar.OptionShowCount(),
 		progressbar.OptionClearOnFinish(), progressbar.OptionSetPredictTime(true))
 
 	for _, scriptDir := range scriptDirsToRun {
+		wg.Add(1)
 		_ = bar.Add(1)
 		bar.Describe(fmt.Sprintf("  %s...", filepath.Base(scriptDir)))
 
-		output, err := ApplyDataMigrationScriptSubDir(gphome, port, utils.System.DirFS(scriptDir), scriptDir)
+		go func(gphome string, port int, scriptDir string) {
+			defer wg.Done()
+
+			output, err := ApplyDataMigrationScriptSubDir(gphome, port, utils.System.DirFS(scriptDir), scriptDir)
+			if err != nil {
+				errChan <- err
+				return
+			}
+
+			outputChan <- output
+		}(gphome, port, scriptDir)
+
+		err = bar.Clear()
 		if err != nil {
 			return err
 		}
+	}
 
+	wg.Wait()
+	close(errChan)
+	close(outputChan)
+
+	var errs error
+	for e := range errChan {
+		errs = errorlist.Append(errs, e)
+	}
+
+	if errs != nil {
+		return errs
+	}
+
+	for output := range outputChan {
 		log.Println(string(output))
 
 		_, err = file.Write(output)
-		if err != nil {
-			return err
-		}
-
-		err = bar.Clear()
 		if err != nil {
 			return err
 		}
