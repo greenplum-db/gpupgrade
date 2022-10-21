@@ -81,6 +81,11 @@ func ApplyDataMigrationScripts(nonInteractive bool, gphome string, port int, cur
 		if err != nil {
 			return err
 		}
+
+		err = bar.Clear()
+		if err != nil {
+			return err
+		}
 	}
 
 	if phase == idl.Step_stats {
