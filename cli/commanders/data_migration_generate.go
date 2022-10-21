@@ -78,45 +78,10 @@ func GenerateDataMigrationScripts(nonInteractive bool, gphome string, port int, 
 
 	fmt.Printf("\nGenerating data migration scripts for %d databases...\n", len(databases))
 	for _, database := range databases {
-		output, err := executeSQLCommand(gphome, port, database.Datname, `CREATE LANGUAGE plpythonu;`)
-		if err != nil && !strings.Contains(err.Error(), "already exists") {
-			return err
-		}
-
-		log.Println(string(output))
-
-		// Create a schema to use while generating the scripts. However, the generated scripts cannot depend on this
-		// schema as its dropped at the end of the generation process. If necessary, the generated scripts can use their
-		// own temporary schema.
-		output, err = executeSQLCommand(gphome, port, database.Datname, `DROP SCHEMA IF EXISTS __gpupgrade_tmp_generator CASCADE; CREATE SCHEMA __gpupgrade_tmp_generator;`)
+		err = GenerateScriptsPerDatabase(database, gphome, port, seedDir, outputDir)
 		if err != nil {
 			return err
 		}
-
-		log.Println(string(output))
-
-		output, err = applySQLFile(gphome, port, database.Datname, filepath.Join(seedDir, "create_find_view_dep_function.sql"))
-		if err != nil {
-			return err
-		}
-
-		log.Println(string(output))
-
-		for _, phase := range MigrationScriptPhases {
-			fmt.Printf("  Generating %q scripts for %s...\n", phase, database.Datname)
-			err = GenerateMigrationScript(phase, seedDir, utils.System.DirFS(seedDir), outputDir, gphome, port, database)
-			if err != nil {
-				return err
-			}
-		}
-
-		output, err = executeSQLCommand(gphome, port, database.Datname, `DROP TABLE IF EXISTS __gpupgrade_tmp_generator.__temp_views_list; DROP SCHEMA IF EXISTS __gpupgrade_tmp_generator CASCADE;`)
-		if err != nil {
-			return err
-		}
-
-		log.Println(string(output))
-		fmt.Println()
 	}
 
 	logDir, err := utils.GetLogDir()
@@ -229,12 +194,55 @@ Select: `)
 	}
 }
 
+func GenerateScriptsPerDatabase(database DatabaseName, gphome string, port int, seedDir string, outputDir string) error {
+	output, err := executeSQLCommand(gphome, port, database.Datname, `CREATE LANGUAGE plpythonu;`)
+	if err != nil && !strings.Contains(err.Error(), "already exists") {
+		return err
+	}
+
+	log.Println(string(output))
+
+	// Create a schema to use while generating the scripts. However, the generated scripts cannot depend on this
+	// schema as its dropped at the end of the generation process. If necessary, the generated scripts can use their
+	// own temporary schema.
+	output, err = executeSQLCommand(gphome, port, database.Datname, `DROP SCHEMA IF EXISTS __gpupgrade_tmp_generator CASCADE; CREATE SCHEMA __gpupgrade_tmp_generator;`)
+	if err != nil {
+		return err
+	}
+
+	log.Println(string(output))
+
+	output, err = applySQLFile(gphome, port, database.Datname, filepath.Join(seedDir, "create_find_view_dep_function.sql"))
+	if err != nil {
+		return err
+	}
+
+	log.Println(string(output))
+
+	for _, phase := range MigrationScriptPhases {
+		fmt.Printf("  Generating %q scripts for %s...\n", phase, database.Datname)
+		err = GenerateScriptsPerPhase(phase, seedDir, utils.System.DirFS(seedDir), outputDir, gphome, port, database)
+		if err != nil {
+			return err
+		}
+	}
+
+	output, err = executeSQLCommand(gphome, port, database.Datname, `DROP TABLE IF EXISTS __gpupgrade_tmp_generator.__temp_views_list; DROP SCHEMA IF EXISTS __gpupgrade_tmp_generator CASCADE;`)
+	if err != nil {
+		return err
+	}
+
+	log.Println(string(output))
+	fmt.Println()
+	return nil
+}
+
 // Generate one global script for the postgres database rather than all databases.
 func isGlobalScript(scriptDir string, database string) bool {
 	return database != "postgres" && (scriptDir == "gphdfs_user_roles" || scriptDir == "cluster_stats")
 }
 
-func GenerateMigrationScript(phase idl.Step, seedDir string, seedDirFS fs.FS, outputDir string, gphome string, port int, database DatabaseName) error {
+func GenerateScriptsPerPhase(phase idl.Step, seedDir string, seedDirFS fs.FS, outputDir string, gphome string, port int, database DatabaseName) error {
 	scriptDirs, err := fs.ReadDir(seedDirFS, phase.String())
 	if err != nil {
 		return err

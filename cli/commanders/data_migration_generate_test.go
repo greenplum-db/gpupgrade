@@ -104,6 +104,137 @@ func TestGenerateDataMigrationScripts(t *testing.T) {
 			t.Errorf("got %+v, want %+v", err, expected)
 		}
 	})
+}
+
+func TestArchiveDataMigrationScriptsPrompt(t *testing.T) {
+	fsys := fstest.MapFS{
+		"current": {Mode: os.ModeDir},
+	}
+
+	t.Run("errors when failing to read current directory", func(t *testing.T) {
+		expected := os.ErrPermission
+		utils.System.ReadDirFS = func(fsys fs.FS, name string) ([]fs.DirEntry, error) {
+			return nil, expected
+		}
+		defer utils.ResetSystemFunctions()
+
+		err := commanders.ArchiveDataMigrationScriptsPrompt(false, nil, fsys, "")
+		if !errors.Is(err, expected) {
+			t.Errorf("got %v want %v", err, expected)
+		}
+	})
+
+	t.Run("returns if scripts are 'not' already generated and there is nothing to archive", func(t *testing.T) {
+		err := commanders.ArchiveDataMigrationScriptsPrompt(false, nil, fstest.MapFS{}, "")
+		if err != nil {
+			t.Errorf("unexpected error: %#v", err)
+		}
+	})
+
+	t.Run("errors when failing to read input", func(t *testing.T) {
+		reader := bufio.NewReader(strings.NewReader(""))
+		err := commanders.ArchiveDataMigrationScriptsPrompt(false, reader, fsys, "")
+		expected := io.EOF
+		if !errors.Is(err, expected) {
+			t.Errorf("got error %#v, want %#v", err, expected)
+		}
+	})
+
+	t.Run("archives previously generated scripts when user selects [a]rchive", func(t *testing.T) {
+		outputDir := testutils.GetTempDir(t, "")
+		defer testutils.MustRemoveAll(t, outputDir)
+
+		testutils.MustCreateDir(t, filepath.Join(outputDir, "current"))
+
+		reader := bufio.NewReader(strings.NewReader("a\n"))
+		err := commanders.ArchiveDataMigrationScriptsPrompt(false, reader, fsys, outputDir)
+		if err != nil {
+			t.Errorf("unexpected error: %#v", err)
+		}
+
+		testutils.PathMustExist(t, filepath.Join(outputDir, "archive"))
+		testutils.PathMustNotExist(t, filepath.Join(outputDir, "current"))
+	})
+
+	t.Run("errors when failing to make archive directory when user selects [a]rchive", func(t *testing.T) {
+		expected := os.ErrPermission
+		utils.System.MkdirAll = func(path string, perm os.FileMode) error {
+			return expected
+		}
+		defer utils.ResetSystemFunctions()
+
+		reader := bufio.NewReader(strings.NewReader("a\n"))
+		err := commanders.ArchiveDataMigrationScriptsPrompt(false, reader, fsys, "")
+		if !errors.Is(err, os.ErrPermission) {
+			t.Errorf("got error %#v want %#v", err, os.ErrPermission)
+		}
+	})
+
+	t.Run("errors when failing to move current directory to archive directory when user selects [a]rchive", func(t *testing.T) {
+		utils.System.MkdirAll = func(path string, perm os.FileMode) error {
+			return nil // don't actually create the directory which causes the later move to fail
+		}
+		defer utils.ResetSystemFunctions()
+
+		reader := bufio.NewReader(strings.NewReader("a\n"))
+		err := commanders.ArchiveDataMigrationScriptsPrompt(false, reader, fsys, "")
+		var exitError *exec.ExitError
+		if !errors.As(err, &exitError) {
+			t.Errorf("got %T, want %T", err, exitError)
+		}
+	})
+
+	t.Run("returns skip error when user selects 'c'ontinue", func(t *testing.T) {
+		reader := bufio.NewReader(strings.NewReader("c\n"))
+		err := commanders.ArchiveDataMigrationScriptsPrompt(false, reader, fsys, "")
+		expected := step.Skip
+		if !errors.Is(err, expected) {
+			t.Errorf("got error %#v, want %#v", err, expected)
+		}
+	})
+
+	t.Run("returns canceled error when user selects 'q'uit", func(t *testing.T) {
+		reader := bufio.NewReader(strings.NewReader("q\n"))
+		err := commanders.ArchiveDataMigrationScriptsPrompt(false, reader, fsys, "")
+		expected := step.UserCanceled
+		if !errors.Is(err, expected) {
+			t.Errorf("got error %#v, want %#v", err, expected)
+		}
+	})
+
+	t.Run("re-prompts when user enters 'b'ad input", func(t *testing.T) {
+		d := commanders.BufferStandardDescriptors(t)
+
+		reader := bufio.NewReader(strings.NewReader("b\nq\n"))
+		err := commanders.ArchiveDataMigrationScriptsPrompt(false, reader, fsys, "")
+		if !errors.Is(err, step.UserCanceled) {
+			t.Errorf("got error %#v, want %#v", err, step.UserCanceled)
+		}
+
+		stdout, stderr := d.Collect()
+		d.Close()
+		if len(stderr) != 0 {
+			t.Errorf("unexpected stderr %#v", string(stderr))
+		}
+
+		actual := string(stdout)
+		expected := "[a]rchive and re-generate scripts"
+		matches := 0
+		for _, part := range strings.Split(actual, "\n") {
+			if strings.Contains(part, expected) {
+				matches++
+			}
+		}
+
+		if matches != 2 {
+			t.Errorf("got %d matches, want 2", matches)
+		}
+	})
+}
+
+func TestGenerateScriptsPerDatabase(t *testing.T) {
+	greenplum.SetVersionCommand(exectest.NewCommand(PostgresGPVersion_6_7_1))
+	defer greenplum.ResetVersionCommand()
 
 	t.Run("does not error when plpythonu is present", func(t *testing.T) {
 		db, mock, err := sqlmock.New()
@@ -247,7 +378,7 @@ func TestGenerateDataMigrationScripts(t *testing.T) {
 		}
 	})
 
-	t.Run("errors when fialing to generate migration script", func(t *testing.T) {
+	t.Run("errors when failing to generate migration script", func(t *testing.T) {
 		db, mock, err := sqlmock.New()
 		if err != nil {
 			t.Fatalf("couldn't create sqlmock: %v", err)
@@ -282,133 +413,7 @@ func TestGenerateDataMigrationScripts(t *testing.T) {
 	})
 }
 
-func TestArchiveDataMigrationScriptsPrompt(t *testing.T) {
-	fsys := fstest.MapFS{
-		"current": {Mode: os.ModeDir},
-	}
-
-	t.Run("errors when failing to read current directory", func(t *testing.T) {
-		expected := os.ErrPermission
-		utils.System.ReadDirFS = func(fsys fs.FS, name string) ([]fs.DirEntry, error) {
-			return nil, expected
-		}
-		defer utils.ResetSystemFunctions()
-
-		err := commanders.ArchiveDataMigrationScriptsPrompt(false, nil, fsys, "")
-		if !errors.Is(err, expected) {
-			t.Errorf("got %v want %v", err, expected)
-		}
-	})
-
-	t.Run("returns if scripts are 'not' already generated and there is nothing to archive", func(t *testing.T) {
-		err := commanders.ArchiveDataMigrationScriptsPrompt(false, nil, fstest.MapFS{}, "")
-		if err != nil {
-			t.Errorf("unexpected error: %#v", err)
-		}
-	})
-
-	t.Run("errors when failing to read input", func(t *testing.T) {
-		reader := bufio.NewReader(strings.NewReader(""))
-		err := commanders.ArchiveDataMigrationScriptsPrompt(false, reader, fsys, "")
-		expected := io.EOF
-		if !errors.Is(err, expected) {
-			t.Errorf("got error %#v, want %#v", err, expected)
-		}
-	})
-
-	t.Run("archives previously generated scripts when user selects [a]rchive", func(t *testing.T) {
-		outputDir := testutils.GetTempDir(t, "")
-		defer testutils.MustRemoveAll(t, outputDir)
-
-		testutils.MustCreateDir(t, filepath.Join(outputDir, "current"))
-
-		reader := bufio.NewReader(strings.NewReader("a\n"))
-		err := commanders.ArchiveDataMigrationScriptsPrompt(false, reader, fsys, outputDir)
-		if err != nil {
-			t.Errorf("unexpected error: %#v", err)
-		}
-
-		testutils.PathMustExist(t, filepath.Join(outputDir, "archive"))
-		testutils.PathMustNotExist(t, filepath.Join(outputDir, "current"))
-	})
-
-	t.Run("errors when failing to make archive directory when user selects [a]rchive", func(t *testing.T) {
-		expected := os.ErrPermission
-		utils.System.MkdirAll = func(path string, perm os.FileMode) error {
-			return expected
-		}
-		defer utils.ResetSystemFunctions()
-
-		reader := bufio.NewReader(strings.NewReader("a\n"))
-		err := commanders.ArchiveDataMigrationScriptsPrompt(false, reader, fsys, "")
-		if !errors.Is(err, os.ErrPermission) {
-			t.Errorf("got error %#v want %#v", err, os.ErrPermission)
-		}
-	})
-
-	t.Run("errors when failing to move current directory to archive directory when user selects [a]rchive", func(t *testing.T) {
-		utils.System.MkdirAll = func(path string, perm os.FileMode) error {
-			return nil // don't actually create the directory which causes the later move to fail
-		}
-		defer utils.ResetSystemFunctions()
-
-		reader := bufio.NewReader(strings.NewReader("a\n"))
-		err := commanders.ArchiveDataMigrationScriptsPrompt(false, reader, fsys, "")
-		var exitError *exec.ExitError
-		if !errors.As(err, &exitError) {
-			t.Errorf("got %T, want %T", err, exitError)
-		}
-	})
-
-	t.Run("returns skip error when user selects 'c'ontinue", func(t *testing.T) {
-		reader := bufio.NewReader(strings.NewReader("c\n"))
-		err := commanders.ArchiveDataMigrationScriptsPrompt(false, reader, fsys, "")
-		expected := step.Skip
-		if !errors.Is(err, expected) {
-			t.Errorf("got error %#v, want %#v", err, expected)
-		}
-	})
-
-	t.Run("returns canceled error when user selects 'q'uit", func(t *testing.T) {
-		reader := bufio.NewReader(strings.NewReader("q\n"))
-		err := commanders.ArchiveDataMigrationScriptsPrompt(false, reader, fsys, "")
-		expected := step.UserCanceled
-		if !errors.Is(err, expected) {
-			t.Errorf("got error %#v, want %#v", err, expected)
-		}
-	})
-
-	t.Run("re-prompts when user enters 'b'ad input", func(t *testing.T) {
-		d := commanders.BufferStandardDescriptors(t)
-
-		reader := bufio.NewReader(strings.NewReader("b\nq\n"))
-		err := commanders.ArchiveDataMigrationScriptsPrompt(false, reader, fsys, "")
-		if !errors.Is(err, step.UserCanceled) {
-			t.Errorf("got error %#v, want %#v", err, step.UserCanceled)
-		}
-
-		stdout, stderr := d.Collect()
-		d.Close()
-		if len(stderr) != 0 {
-			t.Errorf("unexpected stderr %#v", string(stderr))
-		}
-
-		actual := string(stdout)
-		expected := "[a]rchive and re-generate scripts"
-		matches := 0
-		for _, part := range strings.Split(actual, "\n") {
-			if strings.Contains(part, expected) {
-				matches++
-			}
-		}
-
-		if matches != 2 {
-			t.Errorf("got %d matches, want 2", matches)
-		}
-	})
-}
-
-func TestGenerateMigrationScript(t *testing.T) {
+func TestGenerateScriptsPerPhase(t *testing.T) {
 	phase := idl.Step_initialize
 	gphome := "/usr/local/gpdb5"
 	port := 123
@@ -424,7 +429,7 @@ func TestGenerateMigrationScript(t *testing.T) {
 	}
 
 	t.Run("errors when failing to read seed directory", func(t *testing.T) {
-		err := commanders.GenerateMigrationScript(phase, seedDir, fstest.MapFS{}, outputDir, gphome, port, database)
+		err := commanders.GenerateScriptsPerPhase(phase, seedDir, fstest.MapFS{}, outputDir, gphome, port, database)
 		var expected *os.PathError
 		if !errors.As(err, &expected) {
 			t.Errorf("got error %#v, want %#v", err, expected)
@@ -436,7 +441,7 @@ func TestGenerateMigrationScript(t *testing.T) {
 			phase.String(): {Mode: os.ModeDir},
 		}
 
-		err := commanders.GenerateMigrationScript(phase, seedDir, fsys, outputDir, gphome, port, database)
+		err := commanders.GenerateScriptsPerPhase(phase, seedDir, fsys, outputDir, gphome, port, database)
 		expected := "No seed files found"
 		if !strings.Contains(err.Error(), expected) {
 			t.Errorf("got error %#v, want %#v", err, expected)
@@ -470,7 +475,7 @@ func TestGenerateMigrationScript(t *testing.T) {
 		}
 		defer utils.ResetSystemFunctions()
 
-		err := commanders.GenerateMigrationScript(phase, seedDir, fsys, outputDir, gphome, port, database)
+		err := commanders.GenerateScriptsPerPhase(phase, seedDir, fsys, outputDir, gphome, port, database)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -484,7 +489,7 @@ func TestGenerateMigrationScript(t *testing.T) {
 		commanders.SetPsqlFileCommand(exectest.NewCommand(commanders.FailedMain))
 		defer commanders.ResetPsqlFileCommand()
 
-		err := commanders.GenerateMigrationScript(phase, seedDir, fsys, outputDir, gphome, port, database)
+		err := commanders.GenerateScriptsPerPhase(phase, seedDir, fsys, outputDir, gphome, port, database)
 		var exitError *exec.ExitError
 		if !errors.As(err, &exitError) {
 			t.Errorf("got %T, want %T", err, exitError)
@@ -501,7 +506,7 @@ func TestGenerateMigrationScript(t *testing.T) {
 			filepath.Join(phase.String(), "gphdfs_user_roles", "some_bash_script.sh"): {},
 		}
 
-		err := commanders.GenerateMigrationScript(phase, seedDir, fsys, outputDir, gphome, port, database)
+		err := commanders.GenerateScriptsPerPhase(phase, seedDir, fsys, outputDir, gphome, port, database)
 		var exitError *exec.ExitError
 		if !errors.As(err, &exitError) {
 			t.Errorf("got %T, want %T", err, exitError)
@@ -518,7 +523,7 @@ func TestGenerateMigrationScript(t *testing.T) {
 			filepath.Join(phase.String(), "gphdfs_user_roles", "some_bash_script.bash"): {},
 		}
 
-		err := commanders.GenerateMigrationScript(phase, seedDir, fsys, outputDir, gphome, port, database)
+		err := commanders.GenerateScriptsPerPhase(phase, seedDir, fsys, outputDir, gphome, port, database)
 		var exitError *exec.ExitError
 		if !errors.As(err, &exitError) {
 			t.Errorf("got %T, want %T", err, exitError)
@@ -532,7 +537,7 @@ func TestGenerateMigrationScript(t *testing.T) {
 		}
 		defer utils.ResetSystemFunctions()
 
-		err := commanders.GenerateMigrationScript(phase, seedDir, fsys, outputDir, gphome, port, database)
+		err := commanders.GenerateScriptsPerPhase(phase, seedDir, fsys, outputDir, gphome, port, database)
 		if !errors.Is(err, expected) {
 			t.Errorf("got %v want %v", err, expected)
 		}
@@ -602,7 +607,7 @@ func TestGenerateMigrationScript(t *testing.T) {
 			filepath.Join(phase.String(), "unique_primary_foreign_key_constraint", "migration_postgres_gen_drop_constraint_2_primary_unique.sql"): {},
 		}
 
-		err := commanders.GenerateMigrationScript(phase, seedDir, fsys, outputDir, gphome, port, database)
+		err := commanders.GenerateScriptsPerPhase(phase, seedDir, fsys, outputDir, gphome, port, database)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -657,7 +662,7 @@ func TestGenerateMigrationScript(t *testing.T) {
 			filepath.Join(idl.Step_stats.String(), "database_stats", "generate_database_stats.sh"): {},
 		}
 
-		err := commanders.GenerateMigrationScript(idl.Step_stats, seedDir, fsys, outputDir, gphome, port, database)
+		err := commanders.GenerateScriptsPerPhase(idl.Step_stats, seedDir, fsys, outputDir, gphome, port, database)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -695,7 +700,7 @@ func TestGenerateMigrationScript(t *testing.T) {
 		}
 		defer utils.ResetSystemFunctions()
 
-		err := commanders.GenerateMigrationScript(phase, seedDir, fsys, outputDir, gphome, port, database)
+		err := commanders.GenerateScriptsPerPhase(phase, seedDir, fsys, outputDir, gphome, port, database)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -715,7 +720,7 @@ func TestGenerateMigrationScript(t *testing.T) {
 		}
 		defer utils.ResetSystemFunctions()
 
-		err := commanders.GenerateMigrationScript(phase, seedDir, fsys, outputDir, gphome, port, database)
+		err := commanders.GenerateScriptsPerPhase(phase, seedDir, fsys, outputDir, gphome, port, database)
 		if !errors.Is(err, os.ErrPermission) {
 			t.Errorf("got error %#v want %#v", err, os.ErrPermission)
 		}
@@ -736,7 +741,7 @@ func TestGenerateMigrationScript(t *testing.T) {
 		}
 		defer utils.ResetSystemFunctions()
 
-		err := commanders.GenerateMigrationScript(phase, seedDir, fsys, outputDir, gphome, port, database)
+		err := commanders.GenerateScriptsPerPhase(phase, seedDir, fsys, outputDir, gphome, port, database)
 		if !errors.Is(err, os.ErrPermission) {
 			t.Errorf("got error %#v want %#v", err, os.ErrPermission)
 		}
@@ -757,7 +762,7 @@ func TestGenerateMigrationScript(t *testing.T) {
 		}
 		defer utils.ResetSystemFunctions()
 
-		err := commanders.GenerateMigrationScript(phase, seedDir, fsys, outputDir, gphome, port, database)
+		err := commanders.GenerateScriptsPerPhase(phase, seedDir, fsys, outputDir, gphome, port, database)
 		if !errors.Is(err, os.ErrPermission) {
 			t.Errorf("got error %#v want %#v", err, os.ErrPermission)
 		}
