@@ -15,6 +15,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/schollz/progressbar/v3"
@@ -76,12 +77,34 @@ func GenerateDataMigrationScripts(nonInteractive bool, gphome string, port int, 
 		return err
 	}
 
+	var wg sync.WaitGroup
+	errChan := make(chan error, len(databases))
 	fmt.Printf("\nGenerating data migration scripts for %d databases...\n", len(databases))
+
 	for _, database := range databases {
-		err = GenerateScriptsPerDatabase(database, gphome, port, seedDir, outputDir)
-		if err != nil {
-			return err
-		}
+		wg.Add(1)
+
+		go func(database DatabaseName, gphome string, port int, seedDir string, outputDir string) {
+			defer wg.Done()
+
+			err = GenerateScriptsPerDatabase(database, gphome, port, seedDir, outputDir)
+			if err != nil {
+				errChan <- err
+				return
+			}
+		}(database, gphome, port, seedDir, outputDir)
+	}
+
+	wg.Wait()
+	close(errChan)
+
+	var errs error
+	for e := range errChan {
+		errs = errorlist.Append(errs, e)
+	}
+
+	if errs != nil {
+		return errs
 	}
 
 	logDir, err := utils.GetLogDir()
@@ -219,12 +242,34 @@ func GenerateScriptsPerDatabase(database DatabaseName, gphome string, port int, 
 
 	log.Println(string(output))
 
+	var wg sync.WaitGroup
+	errChan := make(chan error, len(MigrationScriptPhases))
+
 	for _, phase := range MigrationScriptPhases {
+		wg.Add(1)
 		fmt.Printf("  Generating %q scripts for %s...\n", phase, database.Datname)
-		err = GenerateScriptsPerPhase(phase, seedDir, utils.System.DirFS(seedDir), outputDir, gphome, port, database)
-		if err != nil {
-			return err
-		}
+
+		go func(phase idl.Step, database DatabaseName, gphome string, port int, seedDir string, outputDir string) {
+			defer wg.Done()
+
+			err = GenerateScriptsPerPhase(phase, seedDir, utils.System.DirFS(seedDir), outputDir, gphome, port, database)
+			if err != nil {
+				errChan <- err
+				return
+			}
+		}(phase, database, gphome, port, seedDir, outputDir)
+	}
+
+	wg.Wait()
+	close(errChan)
+
+	var errs error
+	for e := range errChan {
+		errs = errorlist.Append(errs, e)
+	}
+
+	if errs != nil {
+		return errs
 	}
 
 	output, err = executeSQLCommand(gphome, port, database.Datname, `DROP TABLE IF EXISTS __gpupgrade_tmp_generator.__temp_views_list; DROP SCHEMA IF EXISTS __gpupgrade_tmp_generator CASCADE;`)

@@ -28,6 +28,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/utils"
+	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
 func PostgresGPVersion_6_7_1() {
@@ -406,9 +407,20 @@ func TestGenerateScriptsPerDatabase(t *testing.T) {
 		defer commanders.ResetPsqlFileCommand()
 
 		err = commanders.GenerateDataMigrationScripts(false, "", 0, "", "", fstest.MapFS{})
-		var expected *os.PathError
-		if !errors.As(err, &expected) {
-			t.Errorf("got error %#v, want %#v", err, expected)
+		var errs errorlist.Errors
+		if !errors.As(err, &errs) {
+			t.Fatalf("got error %#v, want type %T", err, errs)
+		}
+
+		if len(errs) != len(commanders.MigrationScriptPhases) {
+			t.Errorf("got %d errors want %d", len(errs), len(commanders.MigrationScriptPhases))
+		}
+
+		for _, err := range errs {
+			var pathError *os.PathError
+			if !errors.As(err, &pathError) {
+				t.Errorf("got type %T want %T", err, pathError)
+			}
 		}
 	})
 }
