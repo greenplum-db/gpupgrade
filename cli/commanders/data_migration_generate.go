@@ -252,7 +252,7 @@ func GenerateScriptsPerDatabase(database DatabaseName, gphome string, port int, 
 		go func(phase idl.Step, database DatabaseName, gphome string, port int, seedDir string, outputDir string) {
 			defer wg.Done()
 
-			err = GenerateScriptsPerPhase(phase, seedDir, utils.System.DirFS(seedDir), outputDir, gphome, port, database)
+			err = GenerateScriptsPerPhase(phase, database, gphome, port, seedDir, utils.System.DirFS(seedDir), outputDir)
 			if err != nil {
 				errChan <- err
 				return
@@ -287,7 +287,7 @@ func isGlobalScript(scriptDir string, database string) bool {
 	return database != "postgres" && (scriptDir == "gphdfs_user_roles" || scriptDir == "cluster_stats")
 }
 
-func GenerateScriptsPerPhase(phase idl.Step, seedDir string, seedDirFS fs.FS, outputDir string, gphome string, port int, database DatabaseName) error {
+func GenerateScriptsPerPhase(phase idl.Step, database DatabaseName, gphome string, port int, seedDir string, seedDirFS fs.FS, outputDir string) error {
 	scriptDirs, err := fs.ReadDir(seedDirFS, phase.String())
 	if err != nil {
 		return err
