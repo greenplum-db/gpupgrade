@@ -484,7 +484,7 @@ func TestRun(t *testing.T) {
 			},
 		},
 		{
-			name:        "sets --old-tablespaces-file when upgrading and not calling --check",
+			name:        "sets --old-tablespaces-file when upgrading and not calling --check when target version is 6x",
 			expectedCmd: "pg_upgrade",
 			expectedArgs: []string{"--retain", "--progress",
 				"--old-bindir", "",
@@ -505,7 +505,7 @@ func TestRun(t *testing.T) {
 			},
 		},
 		{
-			name:        "sets --old-gp-dbid and --new-gp-dbid when target version is less than 7X",
+			name:        "sets --old-tablespaces-file, --old-gp-dbid, and --new-gp-dbid when target version is 6X",
 			expectedCmd: "pg_upgrade",
 			expectedArgs: []string{"--retain", "--progress",
 				"--old-bindir", "",
@@ -528,7 +528,7 @@ func TestRun(t *testing.T) {
 			},
 		},
 		{
-			name:        "does not set --old-gp-dbid and --new-gp-dbid when target version 7X or higher",
+			name:        "does not set --old-tablespaces-file, --old-gp-dbid, and --new-gp-dbid when target version is 7X or higher",
 			expectedCmd: "pg_upgrade",
 			expectedArgs: []string{"--retain", "--progress",
 				"--old-bindir", "",
@@ -537,8 +537,7 @@ func TestRun(t *testing.T) {
 				"--new-datadir", "",
 				"--old-port", "",
 				"--new-port", "",
-				"--mode", "unknown_mode",
-				"--old-tablespaces-file", utils.GetTablespaceMappingFile()},
+				"--mode", "unknown_mode"},
 			opts: idl.PgOptions{
 				Role:          greenplum.PrimaryRole,
 				ContentID:     3,

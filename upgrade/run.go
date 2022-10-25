@@ -62,12 +62,12 @@ func Run(stdout, stderr io.Writer, opts *idl.PgOptions) error {
 		args = append(args, "--old-options", opts.GetOldOptions())
 	}
 
-	if opts.Action != idl.PgOptions_check {
-		args = append(args, "--old-tablespaces-file", utils.GetTablespaceMappingFile())
-	}
-
 	// Below 7X, specify the dbid's for upgrading tablespaces.
 	if semver.MustParse(opts.TargetVersion).Major < 7 {
+		if opts.Action != idl.PgOptions_check {
+			args = append(args, "--old-tablespaces-file", utils.GetTablespaceMappingFile())
+		}
+
 		args = append(args, "--old-gp-dbid", opts.GetOldDBID())
 		args = append(args, "--new-gp-dbid", opts.GetNewDBID())
 	}
