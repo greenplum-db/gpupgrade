@@ -142,9 +142,7 @@ func ApplyDataMigrationScriptSubDir(gphome string, port int, scriptDirFS fs.FS, 
 			continue
 		}
 
-		// FIXME: Disabled ON_ERROR_STOP due to incompatibilities of deprecated objects on 6->6 upgrade that will cause
-		//  scripts to fail.
-		output, err := applySQLFile(gphome, port, "postgres", filepath.Join(scriptDir, entry.Name()), "-v", "ON_ERROR_STOP=0", "--echo-queries")
+		output, err := applySQLFile(gphome, port, "postgres", filepath.Join(scriptDir, entry.Name()), "-v", "ON_ERROR_STOP=1", "--echo-queries")
 		if err != nil {
 			return nil, err
 		}
