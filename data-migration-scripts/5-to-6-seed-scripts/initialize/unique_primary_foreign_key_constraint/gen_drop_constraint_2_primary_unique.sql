@@ -40,5 +40,7 @@ FROM
       ON cc.oid = con.conrelid
    JOIN
       pg_namespace n
-      ON (n.oid = cc.relnamespace);
+      ON (n.oid = cc.relnamespace)
+ORDER BY
+    con.oid DESC, cc.oid DESC;
 SELECT 'SET gp_enable_drop_key_constraint_child_partition=off;';
