@@ -31,6 +31,7 @@ func init() {
 		idl.Substep_saving_source_cluster_config,
 		idl.Substep_start_agents,
 		idl.Substep_check_environment,
+		idl.Substep_create_backupdir,
 		idl.Substep_check_disk_space,
 		idl.Substep_generate_target_config,
 		idl.Substep_init_target_cluster,
@@ -60,6 +61,7 @@ func init() {
 		idl.Substep_start_target_cluster,
 		idl.Substep_wait_for_cluster_to_be_ready_after_updating_catalog,
 		idl.Substep_archive_log_directories,
+		idl.Substep_delete_backupdir,
 		idl.Substep_delete_segment_statedirs,
 		idl.Substep_stop_hub_and_agents,
 		idl.Substep_delete_master_statedir,
@@ -76,6 +78,7 @@ func init() {
 		idl.Substep_start_source_cluster,
 		idl.Substep_recoverseg_source_cluster,
 		idl.Substep_archive_log_directories,
+		idl.Substep_delete_backupdir,
 		idl.Substep_delete_segment_statedirs,
 		idl.Substep_stop_hub_and_agents,
 		idl.Substep_delete_master_statedir,
@@ -129,6 +132,10 @@ Optional Flags:
   -h, --help                 displays help output for execute
   -v, --verbose              outputs detailed logs for execute
       --pg-upgrade-verbose   execute pg_upgrade with verbose internal logging. Requires the verbose flag.
+      --parent-backup-dir    The parent directory location used internally to store the backup of the 
+                             master data directory and user defined master tablespaces. Defaults to the 
+                             parent directory of the master data directory such as /data given 
+                             /data/master/gpseg-1.
 
 gpupgrade log files can be found on all hosts in %s
 `

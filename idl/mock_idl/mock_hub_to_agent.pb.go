@@ -96,6 +96,26 @@ func (mr *MockAgentClientMockRecorder) CheckDiskSpace(ctx, in interface{}, opts 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckDiskSpace", reflect.TypeOf((*MockAgentClient)(nil).CheckDiskSpace), varargs...)
 }
 
+// CreateBackupDirectory mocks base method.
+func (m *MockAgentClient) CreateBackupDirectory(ctx context.Context, in *idl.CreateBackupDirectoryRequest, opts ...grpc.CallOption) (*idl.CreateBackupDirectoryReply, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CreateBackupDirectory", varargs...)
+	ret0, _ := ret[0].(*idl.CreateBackupDirectoryReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateBackupDirectory indicates an expected call of CreateBackupDirectory.
+func (mr *MockAgentClientMockRecorder) CreateBackupDirectory(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBackupDirectory", reflect.TypeOf((*MockAgentClient)(nil).CreateBackupDirectory), varargs...)
+}
+
 // CreateRecoveryConf mocks base method.
 func (m *MockAgentClient) CreateRecoveryConf(ctx context.Context, in *idl.CreateRecoveryConfRequest, opts ...grpc.CallOption) (*idl.CreateRecoveryConfReply, error) {
 	m.ctrl.T.Helper()
@@ -114,6 +134,26 @@ func (mr *MockAgentClientMockRecorder) CreateRecoveryConf(ctx, in interface{}, o
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRecoveryConf", reflect.TypeOf((*MockAgentClient)(nil).CreateRecoveryConf), varargs...)
+}
+
+// DeleteBackupDirectory mocks base method.
+func (m *MockAgentClient) DeleteBackupDirectory(ctx context.Context, in *idl.DeleteBackupDirectoryRequest, opts ...grpc.CallOption) (*idl.DeleteBackupDirectoryReply, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DeleteBackupDirectory", varargs...)
+	ret0, _ := ret[0].(*idl.DeleteBackupDirectoryReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteBackupDirectory indicates an expected call of DeleteBackupDirectory.
+func (mr *MockAgentClientMockRecorder) DeleteBackupDirectory(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBackupDirectory", reflect.TypeOf((*MockAgentClient)(nil).DeleteBackupDirectory), varargs...)
 }
 
 // DeleteDataDirectories mocks base method.
@@ -404,6 +444,21 @@ func (mr *MockAgentServerMockRecorder) CheckDiskSpace(arg0, arg1 interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckDiskSpace", reflect.TypeOf((*MockAgentServer)(nil).CheckDiskSpace), arg0, arg1)
 }
 
+// CreateBackupDirectory mocks base method.
+func (m *MockAgentServer) CreateBackupDirectory(arg0 context.Context, arg1 *idl.CreateBackupDirectoryRequest) (*idl.CreateBackupDirectoryReply, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateBackupDirectory", arg0, arg1)
+	ret0, _ := ret[0].(*idl.CreateBackupDirectoryReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateBackupDirectory indicates an expected call of CreateBackupDirectory.
+func (mr *MockAgentServerMockRecorder) CreateBackupDirectory(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBackupDirectory", reflect.TypeOf((*MockAgentServer)(nil).CreateBackupDirectory), arg0, arg1)
+}
+
 // CreateRecoveryConf mocks base method.
 func (m *MockAgentServer) CreateRecoveryConf(arg0 context.Context, arg1 *idl.CreateRecoveryConfRequest) (*idl.CreateRecoveryConfReply, error) {
 	m.ctrl.T.Helper()
@@ -417,6 +472,21 @@ func (m *MockAgentServer) CreateRecoveryConf(arg0 context.Context, arg1 *idl.Cre
 func (mr *MockAgentServerMockRecorder) CreateRecoveryConf(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRecoveryConf", reflect.TypeOf((*MockAgentServer)(nil).CreateRecoveryConf), arg0, arg1)
+}
+
+// DeleteBackupDirectory mocks base method.
+func (m *MockAgentServer) DeleteBackupDirectory(arg0 context.Context, arg1 *idl.DeleteBackupDirectoryRequest) (*idl.DeleteBackupDirectoryReply, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteBackupDirectory", arg0, arg1)
+	ret0, _ := ret[0].(*idl.DeleteBackupDirectoryReply)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteBackupDirectory indicates an expected call of DeleteBackupDirectory.
+func (mr *MockAgentServerMockRecorder) DeleteBackupDirectory(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBackupDirectory", reflect.TypeOf((*MockAgentServer)(nil).DeleteBackupDirectory), arg0, arg1)
 }
 
 // DeleteDataDirectories mocks base method.

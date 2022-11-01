@@ -61,8 +61,8 @@ func InitializeCreateCluster(client idl.CliToHubClient, request *idl.InitializeC
 	return *initializeResponse, nil
 }
 
-func Execute(client idl.CliToHubClient, verbose bool, pgUpgradeVerbose bool) (idl.ExecuteResponse, error) {
-	stream, err := client.Execute(context.Background(), &idl.ExecuteRequest{PgUpgradeVerbose: pgUpgradeVerbose})
+func Execute(client idl.CliToHubClient, request *idl.ExecuteRequest, verbose bool) (idl.ExecuteResponse, error) {
+	stream, err := client.Execute(context.Background(), request)
 	if err != nil {
 		return idl.ExecuteResponse{}, err
 	}

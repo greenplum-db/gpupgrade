@@ -136,8 +136,8 @@ func (s *Server) StopServices(ctx context.Context, in *idl.StopServicesRequest) 
 	return &idl.StopServicesReply{}, nil
 }
 
-// TODO: add unit tests for this; this is currently tricky due to h.AgentConns()
-//    mutating global state
+// TODO: Add unit tests which is currently tricky due to h.AgentConns()
+//  mutating global state
 func (s *Server) StopAgents() error {
 	request := func(conn *idl.Connection) error {
 		_, err := conn.AgentClient.StopAgent(context.Background(), &idl.StopAgentRequest{})
@@ -344,6 +344,7 @@ func (s *Server) closeAgentConns() {
 // from disk during calls to Save() and Load().
 type Config struct {
 	LogArchiveDir string
+	BackupDir     string
 
 	// Source is the GPDB cluster that is being upgraded. It is populated during
 	// the generation of the cluster config in the initialize step; before that,

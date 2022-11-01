@@ -23,6 +23,15 @@ func (s *Server) DeleteStateDirectory(ctx context.Context, in *idl.DeleteStateDi
 	return &idl.DeleteStateDirectoryReply{}, err
 }
 
+func (s *Server) DeleteBackupDirectory(ctx context.Context, req *idl.DeleteBackupDirectoryRequest) (*idl.DeleteBackupDirectoryReply, error) {
+	log.Printf("starting %s", idl.Substep_delete_backupdir)
+
+	// pass an empty []string to avoid check for any pre-existing files,
+	// this call might come in before any backup files are created
+	err := DeleteDirectoriesFunc([]string{req.GetBackupDir()}, []string{}, step.DevNullStream)
+	return &idl.DeleteBackupDirectoryReply{}, err
+}
+
 func (s *Server) DeleteDataDirectories(ctx context.Context, in *idl.DeleteDataDirectoriesRequest) (*idl.DeleteDataDirectoriesReply, error) {
 	log.Printf("starting %s", idl.Substep_delete_target_cluster_datadirs)
 

@@ -31,7 +31,8 @@ message InitializeRequest {
     bool linkMode = 5;
     bool useHbaHostnames = 6;
     repeated uint32 ports = 7;
-    double diskFreeRatio = 8;
+    string parentBackupDir = 8;
+    double diskFreeRatio = 9;
 }
 
 message InitializeCreateClusterRequest {
@@ -41,6 +42,7 @@ message InitializeCreateClusterRequest {
 
 message ExecuteRequest {
   bool pgUpgradeVerbose = 1;
+  string parentBackupDir = 2;
 }
 
 message FinalizeRequest {}
@@ -114,6 +116,8 @@ enum Substep {
     execute_initialize_data_migration_scripts = 41;
     execute_finalize_data_migration_scripts = 42;
     execute_revert_data_migration_scripts = 43;
+    create_backupdir = 44;
+    delete_backupdir = 45;
 }
 
 enum Status {

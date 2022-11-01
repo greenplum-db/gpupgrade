@@ -4,7 +4,9 @@
 package hub
 
 import (
+	"fmt"
 	"log"
+	"path/filepath"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
@@ -41,12 +43,46 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 	})
 
 	st.Run(idl.Substep_copy_master, func(streams step.OutStreams) error {
-		err := CopyCoordinatorDataDir(streams, s.Intermediate.CoordinatorDataDir(), utils.GetCoordinatorPostUpgradeBackupDir(), s.Intermediate.PrimaryHostnames())
-		if err != nil {
-			return err
+		// The execute backup directory flag takes precedence over the value set
+		// during initialize. The execute flag is used as an emergency stop gap
+		// to set the backup directory where it is used without needing to
+		// revert and re-run initialize and execute.
+		if req.GetParentBackupDir() != "" {
+			err = DeleteBackupDirectories(streams, s.agentConns, s.BackupDir)
+			if err != nil {
+				return err
+			}
+
+			s.BackupDir = filepath.Join(req.GetParentBackupDir(), ".gpupgrade")
+			err = s.SaveConfig()
+			if err != nil {
+				return fmt.Errorf("save backup directory: %w", err)
+			}
+
+			err = CreateBackupDirectories(streams, s.agentConns, s.BackupDir)
+			if err != nil {
+				return err
+			}
 		}
 
-		return CopyCoordinatorTablespaces(streams, s.Source.Tablespaces, utils.GetTablespaceDir(), s.Intermediate.PrimaryHostnames())
+		nextAction := `Consider setting an alternative backup directory with
+"gpupgrade execute --verbose --parent-backup-dir /tmp/backup"
+
+This sets the location used internally to store a backup of the master data 
+directory and user defined master tablespaces. It defaults to the root directory 
+of the master data directory such as /data given /data/master/gpseg-1.`
+
+		err := CopyCoordinatorDataDir(streams, s.Intermediate.CoordinatorDataDir(), utils.GetCoordinatorPostUpgradeBackupDir(), s.Intermediate.PrimaryHostnames())
+		if err != nil {
+			return utils.NewNextActionErr(err, nextAction)
+		}
+
+		err = CopyCoordinatorTablespaces(streams, s.Source.Tablespaces, utils.GetTablespaceDir(), s.Intermediate.PrimaryHostnames())
+		if err != nil {
+			return utils.NewNextActionErr(err, nextAction)
+		}
+
+		return nil
 	})
 
 	st.Run(idl.Substep_upgrade_primaries, func(streams step.OutStreams) error {

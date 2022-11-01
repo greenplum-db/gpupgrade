@@ -62,6 +62,11 @@ func NewMockAgentServer() (*MockAgentServer, hub.Dialer, int) {
 	return mockServer, dialer, port
 }
 
+func (m *MockAgentServer) CreateBackupDirectory(context.Context, *idl.CreateBackupDirectoryRequest) (*idl.CreateBackupDirectoryReply, error) {
+	m.increaseCalls()
+	return &idl.CreateBackupDirectoryReply{}, nil
+}
+
 func (m *MockAgentServer) CheckDiskSpace(context.Context, *idl.CheckSegmentDiskSpaceRequest) (*idl.CheckDiskSpaceReply, error) {
 	m.increaseCalls()
 
@@ -96,6 +101,11 @@ func (m *MockAgentServer) DeleteDataDirectories(context.Context, *idl.DeleteData
 func (m *MockAgentServer) DeleteStateDirectory(context.Context, *idl.DeleteStateDirectoryRequest) (*idl.DeleteStateDirectoryReply, error) {
 	m.increaseCalls()
 	return &idl.DeleteStateDirectoryReply{}, nil
+}
+
+func (m *MockAgentServer) DeleteBackupDirectory(context.Context, *idl.DeleteBackupDirectoryRequest) (*idl.DeleteBackupDirectoryReply, error) {
+	m.increaseCalls()
+	return &idl.DeleteBackupDirectoryReply{}, nil
 }
 
 func (m *MockAgentServer) DeleteTablespaceDirectories(context.Context, *idl.DeleteTablespaceRequest) (*idl.DeleteTablespaceReply, error) {

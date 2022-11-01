@@ -96,6 +96,10 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 		return ArchiveLogDirectories(logArchiveDir, s.agentConns, s.Config.Target.CoordinatorHostname())
 	})
 
+	st.Run(idl.Substep_delete_backupdir, func(streams step.OutStreams) error {
+		return DeleteBackupDirectories(streams, s.agentConns, s.BackupDir)
+	})
+
 	st.Run(idl.Substep_delete_segment_statedirs, func(_ step.OutStreams) error {
 		return DeleteStateDirectories(s.agentConns, s.Source.CoordinatorHostname())
 	})

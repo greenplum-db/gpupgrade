@@ -6,11 +6,13 @@ syntax = "proto3";
 package idl;
 
 service Agent {
+  rpc CreateBackupDirectory (CreateBackupDirectoryRequest) returns (CreateBackupDirectoryReply) {}
   rpc CheckDiskSpace (CheckSegmentDiskSpaceRequest) returns (CheckDiskSpaceReply) {}
   rpc UpgradePrimaries (UpgradePrimariesRequest) returns (UpgradePrimariesReply) {}
   rpc RenameDirectories (RenameDirectoriesRequest) returns (RenameDirectoriesReply) {}
   rpc StopAgent (StopAgentRequest) returns (StopAgentReply) {}
   rpc DeleteDataDirectories (DeleteDataDirectoriesRequest) returns (DeleteDataDirectoriesReply) {}
+  rpc DeleteBackupDirectory (DeleteBackupDirectoryRequest) returns (DeleteBackupDirectoryReply) {}
   rpc DeleteStateDirectory (DeleteStateDirectoryRequest) returns (DeleteStateDirectoryReply) {}
   rpc DeleteTablespaceDirectories (DeleteTablespaceRequest) returns (DeleteTablespaceReply) {}
   rpc ArchiveLogDirectory (ArchiveLogDirectoryRequest) returns (ArchiveLogDirectoryReply) {}
@@ -67,6 +69,11 @@ message UpgradePrimariesRequest {
 
 message UpgradePrimariesReply {}
 
+message CreateBackupDirectoryRequest {
+  string backupDir = 1;
+}
+message CreateBackupDirectoryReply {}
+
 message DeleteDataDirectoriesRequest {
   repeated string datadirs = 1;
 }
@@ -74,6 +81,11 @@ message DeleteDataDirectoriesReply {}
 
 message DeleteStateDirectoryRequest {}
 message DeleteStateDirectoryReply {}
+
+message DeleteBackupDirectoryRequest {
+  string backupDir = 1;
+}
+message DeleteBackupDirectoryReply {}
 
 message DeleteTablespaceRequest {
   repeated string dirs = 1;

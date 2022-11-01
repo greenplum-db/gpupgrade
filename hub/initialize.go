@@ -5,7 +5,11 @@ package hub
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
@@ -55,6 +59,58 @@ func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_Init
 
 	st.Run(idl.Substep_check_environment, func(streams step.OutStreams) error {
 		return CheckEnvironment(append(AgentHosts(s.Source), s.Source.CoordinatorHostname()), s.Source.GPHome, s.Intermediate.GPHome)
+	})
+
+	st.Run(idl.Substep_create_backupdir, func(streams step.OutStreams) error {
+		// We do not combine the state directory and backup directory for
+		// several reasons:
+		// - The backup directory needs to be configurable since there
+		// may not be enough space in the default location. If the state and
+		// backup directories are combined and the backup directory needs to be
+		// changed, then we have to preserve gpupgrade state by copying
+		// substeps.json and config.json to the new location. This is awkward,
+		// hard to manage, and error prone.
+		// - The default state directory $HOME/.gpupgrade is known upfront with
+		// no dependencies. Whereas the default backup directory is based on the
+		// coordinator data directory. Having a state directory with no
+		// dependencies is much easier to create and remove during the gpupgrade
+		// lifecycle.
+
+		parentBackupDir := req.GetParentBackupDir()
+		if parentBackupDir == "" {
+			// Default to the root directory of the master data directory such
+			// as /data given /data/master/gpseg-1. The backup directory will be
+			// /data/.gpupgrade on all hosts.
+			//
+			// NOTE: We do not use the parent directory of the coordinator data
+			// directory such as /data/master since that is less likely to be
+			// the same across all hosts.
+			parts := strings.SplitAfterN(s.Source.CoordinatorDataDir(), string(os.PathSeparator), 3)
+			parentBackupDir = filepath.Clean(filepath.Join(parts[0], parts[1]))
+		}
+
+		s.BackupDir = filepath.Join(parentBackupDir, ".gpupgrade")
+		err = s.SaveConfig()
+		if err != nil {
+			return fmt.Errorf("save backup directory: %w", err)
+		}
+
+		err = CreateBackupDirectories(streams, s.agentConns, s.BackupDir)
+		if err != nil {
+			nextAction := `1. Run "gpupgrade revert"
+
+2. Consider specifying the "parent_backup_dir" parameter in gpupgrade_config.
+This sets the location used internally to store the backup of the master 
+data directory and user defined master tablespaces. It defaults to the root 
+directory of the master data directory such as /data given /data/master/gpseg-1.
+
+3. Re-run "gupgrade initialize"`
+			return utils.NewNextActionErr(err, nextAction)
+		}
+
+		// The following CheckDiskSpace encapsulates the backup directory since
+		// it usually is on the same filesystem as the data directories.
+		return nil
 	})
 
 	st.RunConditionally(idl.Substep_check_disk_space, req.GetDiskFreeRatio() > 0, func(streams step.OutStreams) error {
