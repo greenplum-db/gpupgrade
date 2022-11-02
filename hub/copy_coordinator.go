@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/blang/semver/v4"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
@@ -88,13 +89,17 @@ func CopyCoordinatorDataDir(streams step.OutStreams, coordinatorDataDir string, 
 	return Copy(streams, destination, source, hosts)
 }
 
-func CopyCoordinatorTablespaces(streams step.OutStreams, tablespaces greenplum.Tablespaces, destinationDir string, hosts []string) error {
-	if tablespaces == nil {
+func CopyCoordinatorTablespaces(streams step.OutStreams, sourceVersion semver.Version, tablespaces greenplum.Tablespaces, destinationDir string, hosts []string) error {
+	if tablespaces == nil && sourceVersion.Major != 5 {
 		return nil
 	}
 
-	// include tablespace mapping file which is used as a parameter to pg_upgrade
-	sourcePaths := []string{utils.GetTablespaceMappingFile()}
+	var sourcePaths []string
+	if sourceVersion.Major == 5 {
+		// 5X always needs to include the --old-tablespaces-file
+		sourcePaths = append(sourcePaths, utils.GetStateDirOldTablespacesFile())
+	}
+
 	sourcePaths = append(sourcePaths, tablespaces.GetCoordinatorTablespaces().UserDefinedTablespacesLocations()...)
 
 	return Copy(streams, destinationDir+string(os.PathSeparator), sourcePaths, hosts)

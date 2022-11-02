@@ -173,22 +173,17 @@ func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest
 
 	st.Run(idl.Substep_backup_target_master, func(stream step.OutStreams) error {
 		sourceDir := s.Intermediate.CoordinatorDataDir()
-		targetDir := utils.GetCoordinatorPreUpgradeBackupDir()
-
-		err := utils.System.MkdirAll(targetDir, 0700)
-		if err != nil {
-			return err
-		}
+		targetDir := utils.GetCoordinatorPreUpgradeBackupDir(s.BackupDir)
 
 		return RsyncCoordinatorDataDir(stream, sourceDir, targetDir)
 	})
 
 	st.AlwaysRun(idl.Substep_check_upgrade, func(stream step.OutStreams) error {
-		if err := UpgradeCoordinator(stream, req.PgUpgradeVerbose, s.Source, s.Intermediate, idl.PgOptions_check, s.LinkMode); err != nil {
+		if err := UpgradeCoordinator(stream, s.BackupDir, req.PgUpgradeVerbose, s.Source, s.Intermediate, idl.PgOptions_check, s.LinkMode); err != nil {
 			return err
 		}
 
-		return UpgradePrimaries(s.agentConns, req.PgUpgradeVerbose, s.Source, s.Intermediate, idl.PgOptions_check, s.LinkMode)
+		return UpgradePrimaries(s.agentConns, s.BackupDir, req.PgUpgradeVerbose, s.Source, s.Intermediate, idl.PgOptions_check, s.LinkMode)
 	})
 
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_InitializeResponse{

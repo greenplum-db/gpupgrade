@@ -39,7 +39,7 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 	})
 
 	st.Run(idl.Substep_upgrade_master, func(streams step.OutStreams) error {
-		return UpgradeCoordinator(streams, req.PgUpgradeVerbose, s.Source, s.Intermediate, idl.PgOptions_upgrade, s.LinkMode)
+		return UpgradeCoordinator(streams, s.BackupDir, req.PgUpgradeVerbose, s.Source, s.Intermediate, idl.PgOptions_upgrade, s.LinkMode)
 	})
 
 	st.Run(idl.Substep_copy_master, func(streams step.OutStreams) error {
@@ -72,12 +72,12 @@ This sets the location used internally to store a backup of the master data
 directory and user defined master tablespaces. It defaults to the root directory 
 of the master data directory such as /data given /data/master/gpseg-1.`
 
-		err := CopyCoordinatorDataDir(streams, s.Intermediate.CoordinatorDataDir(), utils.GetCoordinatorPostUpgradeBackupDir(), s.Intermediate.PrimaryHostnames())
+		err := CopyCoordinatorDataDir(streams, s.Intermediate.CoordinatorDataDir(), utils.GetCoordinatorPostUpgradeBackupDir(s.BackupDir), s.Intermediate.PrimaryHostnames())
 		if err != nil {
 			return utils.NewNextActionErr(err, nextAction)
 		}
 
-		err = CopyCoordinatorTablespaces(streams, s.Source.Tablespaces, utils.GetTablespaceDir(), s.Intermediate.PrimaryHostnames())
+		err = CopyCoordinatorTablespaces(streams, s.Source.Version, s.Source.Tablespaces, utils.GetTablespaceBackupDir(s.BackupDir), s.Intermediate.PrimaryHostnames())
 		if err != nil {
 			return utils.NewNextActionErr(err, nextAction)
 		}
@@ -86,7 +86,7 @@ of the master data directory such as /data given /data/master/gpseg-1.`
 	})
 
 	st.Run(idl.Substep_upgrade_primaries, func(streams step.OutStreams) error {
-		return UpgradePrimaries(s.agentConns, req.PgUpgradeVerbose, s.Source, s.Intermediate, idl.PgOptions_upgrade, s.LinkMode)
+		return UpgradePrimaries(s.agentConns, s.BackupDir, req.PgUpgradeVerbose, s.Source, s.Intermediate, idl.PgOptions_upgrade, s.LinkMode)
 	})
 
 	st.Run(idl.Substep_start_target_cluster, func(streams step.OutStreams) error {

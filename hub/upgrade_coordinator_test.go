@@ -89,6 +89,8 @@ func init() {
 func TestUpgradeCoordinator(t *testing.T) {
 	testlog.SetupTestLogger()
 
+	backupDir := "/data/.gpupgrade"
+
 	pgUpgradeDir, err := utils.GetPgUpgradeDir(greenplum.PrimaryRole, -1)
 	if err != nil {
 		t.Fatal(err)
@@ -114,7 +116,7 @@ func TestUpgradeCoordinator(t *testing.T) {
 		defer rsync.ResetRsyncCommand()
 
 		streams := new(step.BufferedStreams)
-		err := hub.UpgradeCoordinator(streams, false, source, intermediate, idl.PgOptions_check, false)
+		err := hub.UpgradeCoordinator(streams, backupDir, false, source, intermediate, idl.PgOptions_check, false)
 		if err != nil {
 			t.Fatalf("unexpected error %+v", err)
 		}
@@ -144,7 +146,7 @@ func TestUpgradeCoordinator(t *testing.T) {
 
 		source.Version = semver.MustParse("5.28.0")
 
-		err := hub.UpgradeCoordinator(step.DevNullStream, false, source, intermediate, idl.PgOptions_check, false)
+		err := hub.UpgradeCoordinator(step.DevNullStream, backupDir, false, source, intermediate, idl.PgOptions_check, false)
 		if err != nil {
 			t.Fatalf("unexpected error %+v", err)
 		}
@@ -165,7 +167,7 @@ func TestUpgradeCoordinator(t *testing.T) {
 
 		source.Version = semver.MustParse("6.10.0")
 
-		err := hub.UpgradeCoordinator(step.DevNullStream, false, source, intermediate, idl.PgOptions_check, false)
+		err := hub.UpgradeCoordinator(step.DevNullStream, backupDir, false, source, intermediate, idl.PgOptions_check, false)
 		if err != nil {
 			t.Fatalf("unexpected error %+v", err)
 		}
@@ -181,7 +183,7 @@ func TestUpgradeCoordinator(t *testing.T) {
 		}))
 		defer rsync.ResetRsyncCommand()
 
-		err := hub.UpgradeCoordinator(step.DevNullStream, false, source, intermediate, idl.PgOptions_check, false)
+		err := hub.UpgradeCoordinator(step.DevNullStream, backupDir, false, source, intermediate, idl.PgOptions_check, false)
 		if err != nil {
 			t.Fatalf("unexpected error %+v", err)
 		}
@@ -198,7 +200,7 @@ func TestUpgradeCoordinator(t *testing.T) {
 		rsync.SetRsyncCommand(exectest.NewCommand(hub.Failure))
 		defer rsync.ResetRsyncCommand()
 
-		err := hub.UpgradeCoordinator(step.DevNullStream, false, source, intermediate, idl.PgOptions_upgrade, false)
+		err := hub.UpgradeCoordinator(step.DevNullStream, backupDir, false, source, intermediate, idl.PgOptions_upgrade, false)
 		var actual *exec.ExitError
 		if !errors.As(err, &actual) {
 			t.Fatalf("got %#v want ExitError", err)
@@ -208,7 +210,7 @@ func TestUpgradeCoordinator(t *testing.T) {
 			t.Errorf("got %d want 1", actual.ExitCode())
 		}
 
-		expected := fmt.Sprintf("rsync %q to %q: exit status 1", utils.GetCoordinatorPreUpgradeBackupDir()+string(os.PathSeparator), intermediate.CoordinatorDataDir())
+		expected := fmt.Sprintf("rsync %q to %q: exit status 1", utils.GetCoordinatorPreUpgradeBackupDir(backupDir)+string(os.PathSeparator), intermediate.CoordinatorDataDir())
 		if err.Error() != expected {
 			t.Errorf("got error message %q want %q", err.Error(), expected)
 		}
@@ -230,7 +232,7 @@ func TestUpgradeCoordinator(t *testing.T) {
 			}
 
 			src := args[2]
-			expected := utils.GetCoordinatorPreUpgradeBackupDir() + string(os.PathSeparator)
+			expected := utils.GetCoordinatorPreUpgradeBackupDir(backupDir) + string(os.PathSeparator)
 			if src != expected {
 				t.Errorf("got source %q want %q", src, expected)
 			}
@@ -249,7 +251,7 @@ func TestUpgradeCoordinator(t *testing.T) {
 		}))
 		defer rsync.ResetRsyncCommand()
 
-		err := hub.UpgradeCoordinator(step.DevNullStream, false, source, intermediate, idl.PgOptions_upgrade, false)
+		err := hub.UpgradeCoordinator(step.DevNullStream, backupDir, false, source, intermediate, idl.PgOptions_upgrade, false)
 		if err != nil {
 			t.Fatalf("unexpected error %+v", err)
 		}
@@ -262,7 +264,7 @@ func TestUpgradeCoordinator(t *testing.T) {
 		upgrade.SetPgUpgradeCommand(exectest.NewCommand(hub.Failure))
 		defer upgrade.ResetPgUpgradeCommand()
 
-		err := hub.UpgradeCoordinator(new(step.BufferedStreams), false, source, intermediate, idl.PgOptions_upgrade, false)
+		err := hub.UpgradeCoordinator(new(step.BufferedStreams), backupDir, false, source, intermediate, idl.PgOptions_upgrade, false)
 		expected := "upgrade master: exit status 1"
 		if err.Error() != expected {
 			t.Errorf("got %q want %q", err.Error(), expected)
@@ -292,7 +294,7 @@ func TestUpgradeCoordinator(t *testing.T) {
 		upgrade.SetPgUpgradeCommand(exectest.NewCommand(PgCheckFailure))
 		defer upgrade.ResetPgUpgradeCommand()
 
-		err := hub.UpgradeCoordinator(new(step.BufferedStreams), false, source, intermediate, idl.PgOptions_check, false)
+		err := hub.UpgradeCoordinator(new(step.BufferedStreams), backupDir, false, source, intermediate, idl.PgOptions_check, false)
 		var nextActionsErr utils.NextActionErr
 		if !errors.As(err, &nextActionsErr) {
 			t.Fatalf("got type %T want %T", err, nextActionsErr)
@@ -322,7 +324,7 @@ func TestUpgradeCoordinator(t *testing.T) {
 		upgrade.SetPgUpgradeCommand(exectest.NewCommand(BlindlyWritingMain))
 		defer upgrade.ResetPgUpgradeCommand()
 
-		err := hub.UpgradeCoordinator(testutils.FailingStreams{Err: errors.New("write failed")}, false, source, intermediate, idl.PgOptions_upgrade, false)
+		err := hub.UpgradeCoordinator(testutils.FailingStreams{Err: errors.New("write failed")}, backupDir, false, source, intermediate, idl.PgOptions_upgrade, false)
 		expected := "upgrade master: write failed"
 		if err.Error() != expected {
 			t.Errorf("got %q want %q", err.Error(), expected)

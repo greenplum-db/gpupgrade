@@ -269,6 +269,8 @@ func TestRun(t *testing.T) {
 		}
 	})
 
+	backupDir := "/data/.gpupgrade"
+
 	cases := []struct {
 		name         string
 		expectedCmd  string
@@ -293,6 +295,7 @@ func TestRun(t *testing.T) {
 				"--old-gp-dbid", "88",
 				"--new-gp-dbid", "99"},
 			opts: idl.PgOptions{
+				BackupDir:        backupDir,
 				PgUpgradeVerbose: true,
 				Role:             greenplum.PrimaryRole,
 				ContentID:        3,
@@ -326,10 +329,11 @@ func TestRun(t *testing.T) {
 				"--new-port", "",
 				"--mode", "unknown_mode",
 				"--verbose",
-				"--old-tablespaces-file", utils.GetTablespaceMappingFile(),
+				"--old-tablespaces-file", utils.GetOldTablespacesFile(backupDir),
 				"--old-gp-dbid", "",
 				"--new-gp-dbid", ""},
 			opts: idl.PgOptions{
+				BackupDir:        backupDir,
 				PgUpgradeVerbose: true,
 				Role:             greenplum.PrimaryRole,
 				ContentID:        3,
@@ -347,10 +351,11 @@ func TestRun(t *testing.T) {
 				"--old-port", "",
 				"--new-port", "",
 				"--mode", "unknown_mode",
-				"--old-tablespaces-file", utils.GetTablespaceMappingFile(),
+				"--old-tablespaces-file", utils.GetOldTablespacesFile(backupDir),
 				"--old-gp-dbid", "",
 				"--new-gp-dbid", ""},
 			opts: idl.PgOptions{
+				BackupDir:     backupDir,
 				Role:          greenplum.PrimaryRole,
 				ContentID:     3,
 				TargetVersion: "6.20.0",
@@ -367,10 +372,11 @@ func TestRun(t *testing.T) {
 				"--old-port", "",
 				"--new-port", "",
 				"--mode", "unknown_mode",
-				"--old-tablespaces-file", utils.GetTablespaceMappingFile(),
+				"--old-tablespaces-file", utils.GetOldTablespacesFile(backupDir),
 				"--old-gp-dbid", "",
 				"--new-gp-dbid", ""},
 			opts: idl.PgOptions{
+				BackupDir:        backupDir,
 				PgUpgradeVerbose: false,
 				Role:             greenplum.PrimaryRole,
 				ContentID:        3,
@@ -392,6 +398,7 @@ func TestRun(t *testing.T) {
 				"--old-gp-dbid", "",
 				"--new-gp-dbid", ""},
 			opts: idl.PgOptions{
+				BackupDir:     backupDir,
 				Role:          greenplum.PrimaryRole,
 				ContentID:     3,
 				Action:        idl.PgOptions_check,
@@ -409,10 +416,11 @@ func TestRun(t *testing.T) {
 				"--old-port", "",
 				"--new-port", "",
 				"--mode", "unknown_mode",
-				"--old-tablespaces-file", utils.GetTablespaceMappingFile(),
+				"--old-tablespaces-file", utils.GetOldTablespacesFile(backupDir),
 				"--old-gp-dbid", "",
 				"--new-gp-dbid", ""},
 			opts: idl.PgOptions{
+				BackupDir:     backupDir,
 				Role:          greenplum.PrimaryRole,
 				ContentID:     3,
 				Action:        idl.PgOptions_upgrade,
@@ -431,10 +439,11 @@ func TestRun(t *testing.T) {
 				"--new-port", "",
 				"--mode", "unknown_mode",
 				"--link",
-				"--old-tablespaces-file", utils.GetTablespaceMappingFile(),
+				"--old-tablespaces-file", utils.GetOldTablespacesFile(backupDir),
 				"--old-gp-dbid", "",
 				"--new-gp-dbid", ""},
 			opts: idl.PgOptions{
+				BackupDir:     backupDir,
 				Role:          greenplum.PrimaryRole,
 				ContentID:     3,
 				LinkMode:      true,
@@ -452,10 +461,11 @@ func TestRun(t *testing.T) {
 				"--old-port", "",
 				"--new-port", "",
 				"--mode", "unknown_mode",
-				"--old-tablespaces-file", utils.GetTablespaceMappingFile(),
+				"--old-tablespaces-file", utils.GetOldTablespacesFile(backupDir),
 				"--old-gp-dbid", "",
 				"--new-gp-dbid", ""},
 			opts: idl.PgOptions{
+				BackupDir:     backupDir,
 				Role:          greenplum.PrimaryRole,
 				ContentID:     3,
 				LinkMode:      false,
@@ -477,6 +487,7 @@ func TestRun(t *testing.T) {
 				"--old-gp-dbid", "",
 				"--new-gp-dbid", ""},
 			opts: idl.PgOptions{
+				BackupDir:     backupDir,
 				Role:          greenplum.PrimaryRole,
 				ContentID:     -1,
 				Action:        idl.PgOptions_check,
@@ -494,10 +505,11 @@ func TestRun(t *testing.T) {
 				"--old-port", "",
 				"--new-port", "",
 				"--mode", "unknown_mode",
-				"--old-tablespaces-file", utils.GetTablespaceMappingFile(),
+				"--old-tablespaces-file", utils.GetOldTablespacesFile(backupDir),
 				"--old-gp-dbid", "",
 				"--new-gp-dbid", ""},
 			opts: idl.PgOptions{
+				BackupDir:     backupDir,
 				Role:          greenplum.PrimaryRole,
 				ContentID:     3,
 				Action:        idl.PgOptions_upgrade,
@@ -515,10 +527,11 @@ func TestRun(t *testing.T) {
 				"--old-port", "",
 				"--new-port", "",
 				"--mode", "unknown_mode",
-				"--old-tablespaces-file", utils.GetTablespaceMappingFile(),
+				"--old-tablespaces-file", utils.GetOldTablespacesFile(backupDir),
 				"--old-gp-dbid", "0",
 				"--new-gp-dbid", "1"},
 			opts: idl.PgOptions{
+				BackupDir:     backupDir,
 				Role:          greenplum.PrimaryRole,
 				ContentID:     3,
 				LinkMode:      false,
@@ -539,6 +552,7 @@ func TestRun(t *testing.T) {
 				"--new-port", "",
 				"--mode", "unknown_mode"},
 			opts: idl.PgOptions{
+				BackupDir:     backupDir,
 				Role:          greenplum.PrimaryRole,
 				ContentID:     3,
 				LinkMode:      false,
@@ -558,10 +572,11 @@ func TestRun(t *testing.T) {
 				"--old-port", "",
 				"--new-port", "",
 				"--mode", "unknown_mode",
-				"--old-tablespaces-file", utils.GetTablespaceMappingFile(),
+				"--old-tablespaces-file", utils.GetOldTablespacesFile(backupDir),
 				"--old-gp-dbid", "",
 				"--new-gp-dbid", ""},
 			opts: idl.PgOptions{
+				BackupDir:     backupDir,
 				Role:          greenplum.PrimaryRole,
 				ContentID:     3,
 				TargetVersion: "6.20.0",

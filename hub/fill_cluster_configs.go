@@ -87,11 +87,7 @@ func FillConfiguration(config *Config, request *idl.InitializeRequest, saveConfi
 	}
 
 	if config.Source.Version.Major == 5 {
-		if err := utils.System.MkdirAll(utils.GetTablespaceDir(), 0700); err != nil {
-			return xerrors.Errorf("create tablespace directory %q: %w", utils.GetTablespaceDir(), err)
-		}
-
-		config.Source.Tablespaces, err = greenplum.TablespacesFromDB(db, utils.GetTablespaceMappingFile())
+		config.Source.Tablespaces, err = greenplum.TablespacesFromDB(db, utils.GetStateDirOldTablespacesFile())
 		if err != nil {
 			return xerrors.Errorf("extract tablespace information: %w", err)
 		}

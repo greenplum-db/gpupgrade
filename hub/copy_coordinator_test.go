@@ -13,6 +13,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/blang/semver/v4"
+
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
@@ -235,18 +237,18 @@ func TestCopyCoordinatorTablespaces(t *testing.T) {
 		},
 	}
 
-	t.Run("copies tablespace mapping file and coordinator tablespace directory to each primary host", func(t *testing.T) {
+	t.Run("when source version is 5X it copy's the --old-tablespace-file and user defined coordinator tablespace locations to each primary host", func(t *testing.T) {
 		// The verifier function can be called in parallel, so use a channel to
 		// communicate which hosts were actually used.
 		hosts := make(chan string, len(intermediate.PrimaryHostnames()))
 
 		expectedArgs := []string{
 			"--archive", "--compress", "--delete", "--stats",
-			utils.GetTablespaceMappingFile(), "/tmp/tblspc2", "foobar/path/",
+			utils.GetStateDirOldTablespacesFile(), "/tmp/tblspc2", "foobar/path/",
 		}
 		execCommandVerifier(t, hosts, expectedArgs)
 
-		err := CopyCoordinatorTablespaces(step.DevNullStream, Tablespaces, "foobar/path", intermediate.PrimaryHostnames())
+		err := CopyCoordinatorTablespaces(step.DevNullStream, semver.MustParse("5.0.0"), Tablespaces, "foobar/path", intermediate.PrimaryHostnames())
 		if err != nil {
 			t.Errorf("copying coordinator tablespace directories and mapping file: %+v", err)
 		}
@@ -257,7 +259,51 @@ func TestCopyCoordinatorTablespaces(t *testing.T) {
 		verifyHosts(hosts, expectedHosts, t)
 	})
 
-	t.Run("CopyCoordinatorTablespaces returns nil if there is no tablespaces", func(t *testing.T) {
+	t.Run("when source version is 5X it still copy's the --old-tablespace-file even when there are no user defined coordinator tablespaces", func(t *testing.T) {
+		// The verifier function can be called in parallel, so use a channel to
+		// communicate which hosts were actually used.
+		hosts := make(chan string, len(intermediate.PrimaryHostnames()))
+
+		expectedArgs := []string{
+			"--archive", "--compress", "--delete", "--stats",
+			utils.GetStateDirOldTablespacesFile(), "foobar/path/",
+		}
+		execCommandVerifier(t, hosts, expectedArgs)
+
+		err := CopyCoordinatorTablespaces(step.DevNullStream, semver.MustParse("5.0.0"), nil, "foobar/path", intermediate.PrimaryHostnames())
+		if err != nil {
+			t.Errorf("got %+v, want nil", err)
+		}
+
+		close(hosts)
+
+		expectedHosts := []string{"host1", "host2"}
+		verifyHosts(hosts, expectedHosts, t)
+	})
+
+	t.Run("when source version is 6X and higher it does not copy the --old-tablespace-file", func(t *testing.T) {
+		// The verifier function can be called in parallel, so use a channel to
+		// communicate which hosts were actually used.
+		hosts := make(chan string, len(intermediate.PrimaryHostnames()))
+
+		expectedArgs := []string{
+			"--archive", "--compress", "--delete", "--stats",
+			"/tmp/tblspc2", "foobar/path/",
+		}
+		execCommandVerifier(t, hosts, expectedArgs)
+
+		err := CopyCoordinatorTablespaces(step.DevNullStream, semver.MustParse("6.0.0"), Tablespaces, "foobar/path", intermediate.PrimaryHostnames())
+		if err != nil {
+			t.Errorf("copying coordinator tablespace directories and mapping file: %+v", err)
+		}
+
+		close(hosts)
+
+		expectedHosts := []string{"host1", "host2"}
+		verifyHosts(hosts, expectedHosts, t)
+	})
+
+	t.Run("when source version is 6X and there are no tablespaces it does not copy", func(t *testing.T) {
 		// The verifier function can be called in parallel, so use a channel to
 		// communicate which hosts were actually used.
 		hosts := make(chan string, len(intermediate.PrimaryHostnames()))
@@ -265,9 +311,9 @@ func TestCopyCoordinatorTablespaces(t *testing.T) {
 		var expectedArgs []string
 		execCommandVerifier(t, hosts, expectedArgs)
 
-		err := CopyCoordinatorTablespaces(step.DevNullStream, nil, "foobar/path", intermediate.PrimaryHostnames())
+		err := CopyCoordinatorTablespaces(step.DevNullStream, semver.MustParse("6.0.0"), nil, "foobar/path", intermediate.PrimaryHostnames())
 		if err != nil {
-			t.Errorf("got %+v, want nil", err)
+			t.Errorf("copying coordinator tablespace directories and mapping file: %+v", err)
 		}
 
 		close(hosts)

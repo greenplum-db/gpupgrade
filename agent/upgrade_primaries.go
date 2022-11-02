@@ -63,12 +63,12 @@ func upgradePrimariesInParallel(opts []*idl.PgOptions) error {
 
 func upgradePrimarySegment(host string, opt *idl.PgOptions) error {
 	if opt.GetAction() != idl.PgOptions_check {
-		err := restoreBackup(utils.GetCoordinatorPostUpgradeBackupDir(), opt.GetNewDataDir())
+		err := restoreBackup(opt.GetBackupDir(), opt.GetNewDataDir())
 		if err != nil {
 			return xerrors.Errorf("restore backup of upgraded master data directory on host %s for content id %d: %w", host, opt.GetContentID(), err)
 		}
 
-		err = RestoreTablespaces(opt.GetTablespaces(), opt.GetOldDBID(), opt.GetNewDataDir())
+		err = RestoreTablespaces(opt.GetBackupDir(), opt.GetTablespaces(), opt.GetOldDBID(), opt.GetNewDataDir())
 		if err != nil {
 			return xerrors.Errorf("restore tablespace on host %s for content id %d: %w", host, opt.GetContentID(), err)
 		}
@@ -84,7 +84,7 @@ func upgradePrimarySegment(host string, opt *idl.PgOptions) error {
 
 func restoreBackup(backupDir string, newDataDir string) error {
 	options := []rsync.Option{
-		rsync.WithSources(backupDir + string(os.PathSeparator)),
+		rsync.WithSources(utils.GetCoordinatorPostUpgradeBackupDir(backupDir) + string(os.PathSeparator)),
 		rsync.WithDestination(newDataDir),
 		rsync.WithOptions("--archive", "--delete"),
 		rsync.WithExcludedFiles(
@@ -100,7 +100,7 @@ func restoreBackup(backupDir string, newDataDir string) error {
 	return rsync.Rsync(options...)
 }
 
-func RestoreTablespaces(tablespaces map[int32]*idl.TablespaceInfo, oldDBID string, newDataDir string) error {
+func RestoreTablespaces(backupDir string, tablespaces map[int32]*idl.TablespaceInfo, oldDBID string, newDataDir string) error {
 	dbid, err := strconv.Atoi(oldDBID)
 	if err != nil {
 		return err
@@ -112,7 +112,7 @@ func RestoreTablespaces(tablespaces map[int32]*idl.TablespaceInfo, oldDBID strin
 		}
 
 		targetDir := greenplum.GetTablespaceLocationForDbId(tablespace, dbid)
-		sourceDir := greenplum.GetCoordinatorTablespaceLocation(utils.GetTablespaceDir(), int(oid)) + string(os.PathSeparator)
+		sourceDir := greenplum.GetCoordinatorTablespaceLocation(utils.GetTablespaceBackupDir(backupDir), int(oid)) + string(os.PathSeparator)
 
 		options := []rsync.Option{
 			rsync.WithSources(sourceDir),

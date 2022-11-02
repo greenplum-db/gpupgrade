@@ -23,6 +23,8 @@ import (
 )
 
 func TestUpgradePrimaries(t *testing.T) {
+	backupDir := "/data/.gpupgrade"
+
 	source := hub.MustCreateCluster(t, greenplum.SegConfigs{
 		{DbID: 1, ContentID: -1, Hostname: "coordinator", DataDir: "/data/qddir/seg-1", Port: 15432, Role: greenplum.PrimaryRole},
 		{DbID: 2, ContentID: -1, Hostname: "standby", DataDir: "/data/standby", Port: 16432, Role: greenplum.MirrorRole},
@@ -67,6 +69,7 @@ func TestUpgradePrimaries(t *testing.T) {
 				Action: idl.PgOptions_check,
 				Opts: []*idl.PgOptions{
 					{
+						BackupDir:        backupDir,
 						PgUpgradeVerbose: true,
 						Action:           idl.PgOptions_check,
 						Role:             greenplum.PrimaryRole,
@@ -85,6 +88,7 @@ func TestUpgradePrimaries(t *testing.T) {
 						Tablespaces:      nil,
 					},
 					{
+						BackupDir:        backupDir,
 						PgUpgradeVerbose: true,
 						Action:           idl.PgOptions_check,
 						Role:             greenplum.PrimaryRole,
@@ -113,6 +117,7 @@ func TestUpgradePrimaries(t *testing.T) {
 				Action: idl.PgOptions_check,
 				Opts: []*idl.PgOptions{
 					{
+						BackupDir:        backupDir,
 						PgUpgradeVerbose: true,
 						Action:           idl.PgOptions_check,
 						Role:             greenplum.PrimaryRole,
@@ -131,6 +136,7 @@ func TestUpgradePrimaries(t *testing.T) {
 						Tablespaces:      nil,
 					},
 					{
+						BackupDir:        backupDir,
 						PgUpgradeVerbose: true,
 						Action:           idl.PgOptions_check,
 						Role:             greenplum.PrimaryRole,
@@ -157,7 +163,7 @@ func TestUpgradePrimaries(t *testing.T) {
 			{AgentClient: sdw2, Hostname: "sdw2"},
 		}
 
-		err := hub.UpgradePrimaries(agentConns, true, source, intermediate, idl.PgOptions_check, false)
+		err := hub.UpgradePrimaries(agentConns, backupDir, true, source, intermediate, idl.PgOptions_check, false)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -203,7 +209,7 @@ func TestUpgradePrimaries(t *testing.T) {
 				{AgentClient: sdw2, Hostname: "sdw2"},
 			}
 
-			err := hub.UpgradePrimaries(agentConns, false, source, intermediate, c.Action, true)
+			err := hub.UpgradePrimaries(agentConns, backupDir, false, source, intermediate, c.Action, true)
 			var errs errorlist.Errors
 			if !xerrors.As(err, &errs) {
 				t.Fatalf("error %#v does not contain type %T", err, errs)

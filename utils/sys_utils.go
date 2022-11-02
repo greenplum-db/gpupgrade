@@ -127,10 +127,6 @@ func GetDefaultGeneratedDataMigrationScriptsDir() (string, error) {
 	return filepath.Join(logDir, "data-migration-scripts"), nil
 }
 
-func GetTablespaceDir() string {
-	return filepath.Join(GetStateDir(), "tablespaces")
-}
-
 func GetInitsystemConfig() string {
 	return filepath.Join(GetStateDir(), "gpinitsystem_config")
 }
@@ -144,22 +140,34 @@ func GetPgUpgradeDir(role string, contentID int32) (string, error) {
 	return filepath.Join(logDir, "pg_upgrade", fmt.Sprintf(role+"%d", contentID)), nil
 }
 
-func GetCoordinatorPreUpgradeBackupDir() string {
-	return filepath.Join(GetStateDir(), "coordinator-pre-upgrade-backup")
-}
-
-func GetCoordinatorPostUpgradeBackupDir() string {
-	return filepath.Join(GetStateDir(), "coordinator-post-upgrade-backup")
-}
-
-// GetTablespaceMappingFile returns the tablespace input file for pg_upgrade used
-// to upgrade tablespaces.
-func GetTablespaceMappingFile() string {
-	return filepath.Join(GetTablespaceDir(), "tablespaces.txt")
-}
-
 func GetAddMirrorsConfig() string {
 	return filepath.Join(GetStateDir(), "add_mirrors_config")
+}
+
+func GetCoordinatorPreUpgradeBackupDir(backupDir string) string {
+	return filepath.Join(backupDir, "coordinator-pre-upgrade-backup")
+}
+
+func GetCoordinatorPostUpgradeBackupDir(backupDir string) string {
+	return filepath.Join(backupDir, "coordinator-post-upgrade-backup")
+}
+
+func GetTablespaceBackupDir(backupDir string) string {
+	return filepath.Join(backupDir, "tablespaces")
+}
+
+// GetOldTablespacesFile is the file location used when backing up the user
+// defined coordinator tablespaces. To upgrade tablespaces from 5->6 the
+// --old-tablespaces-file is needed by pg_upgrade.
+func GetOldTablespacesFile(backupDir string) string {
+	return filepath.Join(GetTablespaceBackupDir(backupDir), "tablespaces.txt")
+}
+
+// GetStateDirOldTablespacesFile is the file location used when creating the old
+// tablespaces file. To upgrade tablespaces from 5->6 the --old-tablespaces-file
+// is needed by pg_upgrade.
+func GetStateDirOldTablespacesFile() string {
+	return filepath.Join(GetStateDir(), "tablespaces.txt")
 }
 
 // Returns path to a JSON file, and if one does not exist it creates an empty
