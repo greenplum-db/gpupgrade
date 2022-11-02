@@ -41,7 +41,7 @@ resources:
   source:
     uri: git@github.com:pivotal/gp-industry-retail-demo.git
     private_key: ((upgrade/retail-demo-git-key))
-    branch: master
+    branch: main
 
 # gpupgrade tests with release candidates for the source and target version.
 # This allows for faster feedback for example when changes are made to
@@ -107,7 +107,7 @@ resources:
 - name: ccp_src
   type: git
   source:
-    branch: master
+    branch: main
     private_key: ((gp-concourse-cluster-provisioner-git-key))
     uri: git@github.com:pivotal/gp-concourse-cluster-provisioner.git
 
