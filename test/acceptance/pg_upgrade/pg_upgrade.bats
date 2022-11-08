@@ -26,6 +26,11 @@ setup() {
     # https://web.archive.org/web/20220506055918/https://groups.google.com/a/greenplum.org/g/gpdb-dev/c/JN-YwjCCReY/m/0L9wBOvlAQAJ
     export PYTHONPATH=${GPHOME_TARGET}/lib/python
 
+    export TEST_DIR="${BATS_TEST_DIRNAME}/6-to-7"
+    if is_GPDB5 "$GPHOME_SOURCE"; then
+        export TEST_DIR="${BATS_TEST_DIRNAME}/5-to-6"
+    fi
+
     # Ensure that the cluster contains no non-upgradeable objects before the test
     # Note: This is especially important with a 5X demo cluster which contains
     # the gphdfs role by default.
@@ -45,15 +50,15 @@ teardown() {
 }
 
 @test "pg_upgrade --check detects non-upgradeable objects" {
-    local schedule="${BATS_TEST_DIRNAME}/non_upgradeable_tests/non_upgradeable_schedule"
+    local schedule="${TEST_DIR}/non_upgradeable_tests/non_upgradeable_schedule"
     local tests_to_run=${NON_UPGRADEABLE_TESTS:---schedule=$schedule}
 
     # Note: pg_isolation2_regress requires being run from within the isolation2 directory.
     pushd "${ISOLATION2_PATH}"
         PGOPTIONS='-c optimizer=off' ./pg_isolation2_regress \
             --init-file=init_file_isolation2 \
-            --inputdir="${BATS_TEST_DIRNAME}/non_upgradeable_tests" \
-            --outputdir="${BATS_TEST_DIRNAME}/non_upgradeable_tests" \
+            --inputdir="${TEST_DIR}/non_upgradeable_tests" \
+            --outputdir="${TEST_DIR}/non_upgradeable_tests" \
             --psqldir="${GPHOME_SOURCE}/bin" \
             --port="${PGPORT}" \
             "${tests_to_run}"
@@ -63,14 +68,14 @@ teardown() {
 @test "pg_upgrade upgradeable tests" {
     # Create upgradeable objects in the source cluster
     # Note: pg_isolation2_regress requires being run from within the isolation2 directory.
-    local schedule="${BATS_TEST_DIRNAME}/upgradeable_tests/source_cluster_regress/upgradeable_source_schedule"
+    local schedule="${TEST_DIR}/upgradeable_tests/source_cluster_regress/upgradeable_source_schedule"
     local tests_to_run=${UPGRADEABLE_TESTS:---schedule=$schedule}
 
     pushd "${ISOLATION2_PATH}"
         PGOPTIONS='-c optimizer=off' ./pg_isolation2_regress \
             --init-file=init_file_isolation2 \
-            --inputdir="${BATS_TEST_DIRNAME}/upgradeable_tests/source_cluster_regress" \
-            --outputdir="${BATS_TEST_DIRNAME}/upgradeable_tests/source_cluster_regress" \
+            --inputdir="${TEST_DIR}/upgradeable_tests/source_cluster_regress" \
+            --outputdir="${TEST_DIR}/upgradeable_tests/source_cluster_regress" \
             --psqldir="${GPHOME_SOURCE}/bin" \
             --port="${PGPORT}" \
             "${tests_to_run}"
@@ -90,14 +95,14 @@ teardown() {
     # Assert that upgradeable objects have been upgraded against the target cluster.
     # Note: --use-existing is needed to use the isolation2test database
     # created as a result of running the source cluster tests.
-    schedule="${BATS_TEST_DIRNAME}/upgradeable_tests/target_cluster_regress/upgradeable_target_schedule"
+    schedule="${TEST_DIR}/upgradeable_tests/target_cluster_regress/upgradeable_target_schedule"
     tests_to_run=${UPGRADEABLE_TESTS:---schedule=$schedule}
 
     pushd "${ISOLATION2_PATH}"
         PGOPTIONS='-c optimizer=off' ./pg_isolation2_regress \
             --init-file=init_file_isolation2 \
-            --inputdir="${BATS_TEST_DIRNAME}/upgradeable_tests/target_cluster_regress" \
-            --outputdir="${BATS_TEST_DIRNAME}/upgradeable_tests/target_cluster_regress" \
+            --inputdir="${TEST_DIR}/upgradeable_tests/target_cluster_regress" \
+            --outputdir="${TEST_DIR}/upgradeable_tests/target_cluster_regress" \
             --use-existing \
             --psqldir="${GPHOME_TARGET}/bin" \
             --port="$(gpupgrade config show --target-port)" \

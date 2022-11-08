@@ -105,7 +105,7 @@ substitutions used to perform a "smart" diff.
 - `GPHOME_SOURCE`: The source cluster's installation path such as `/usr/local/gpdb5`.
 - `GPHOME_TARGET`: The target cluster's installation path such as `/usr/local/gpdb6`.
 - `ISOLATION2_PATH`: The path to the target gpdb version's pg_isolation2 binary
-  such as `~/workspace/gpdb6/src/test/regress`.
+  such as `~/workspace/gpdb6/src/test/isolation2`.
 2. Run the tests:
    * **Entire suite**: `bats test/acceptance/pg_upgrade/pg_upgrade.bats`
    * **Non-upgradeable tests**: `bats -f "pg_upgrade --check detects non-upgradeable objects" test/acceptance/pg_upgrade/pg_upgrade.bats`
