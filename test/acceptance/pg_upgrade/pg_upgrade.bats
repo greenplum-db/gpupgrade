@@ -21,14 +21,15 @@ setup() {
 
     gpupgrade kill-services
 
-    # Set PYTHONPATH directly since it is needed when running the pg_upgrade tests locally. Normally one would source
-    # greenplum_path.sh, but that causes the following issues:
-    # https://web.archive.org/web/20220506055918/https://groups.google.com/a/greenplum.org/g/gpdb-dev/c/JN-YwjCCReY/m/0L9wBOvlAQAJ
-    export PYTHONPATH=${GPHOME_TARGET}/lib/python
-
     export TEST_DIR="${BATS_TEST_DIRNAME}/6-to-7"
+    export BINDIR="bindir"
     if is_GPDB5 "$GPHOME_SOURCE"; then
         export TEST_DIR="${BATS_TEST_DIRNAME}/5-to-6"
+        export BINDIR="psqldir"
+        # Set PYTHONPATH directly since it is needed when running the pg_upgrade tests locally. Normally one would source
+        # greenplum_path.sh, but that causes the following issues:
+        # https://web.archive.org/web/20220506055918/https://groups.google.com/a/greenplum.org/g/gpdb-dev/c/JN-YwjCCReY/m/0L9wBOvlAQAJ
+        export PYTHONPATH=${GPHOME_TARGET}/lib/python
     fi
 
     # Ensure that the cluster contains no non-upgradeable objects before the test
@@ -59,7 +60,7 @@ teardown() {
             --init-file=init_file_isolation2 \
             --inputdir="${TEST_DIR}/non_upgradeable_tests" \
             --outputdir="${TEST_DIR}/non_upgradeable_tests" \
-            --psqldir="${GPHOME_SOURCE}/bin" \
+            --${BINDIR}="${GPHOME_SOURCE}/bin" \
             --port="${PGPORT}" \
             "${tests_to_run}"
     popd
@@ -76,7 +77,7 @@ teardown() {
             --init-file=init_file_isolation2 \
             --inputdir="${TEST_DIR}/upgradeable_tests/source_cluster_regress" \
             --outputdir="${TEST_DIR}/upgradeable_tests/source_cluster_regress" \
-            --psqldir="${GPHOME_SOURCE}/bin" \
+            --${BINDIR}="${GPHOME_SOURCE}/bin" \
             --port="${PGPORT}" \
             "${tests_to_run}"
     popd
@@ -104,7 +105,7 @@ teardown() {
             --inputdir="${TEST_DIR}/upgradeable_tests/target_cluster_regress" \
             --outputdir="${TEST_DIR}/upgradeable_tests/target_cluster_regress" \
             --use-existing \
-            --psqldir="${GPHOME_TARGET}/bin" \
+            --${BINDIR}="${GPHOME_TARGET}/bin" \
             --port="$(gpupgrade config show --target-port)" \
             "${tests_to_run}"
     popd

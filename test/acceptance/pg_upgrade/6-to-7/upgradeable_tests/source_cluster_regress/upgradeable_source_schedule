@@ -1,0 +1,2 @@
+test: user_defined_aggregates user_defined_types
+test: vacuum_freeze_tables
