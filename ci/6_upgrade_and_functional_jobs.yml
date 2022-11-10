@@ -12,11 +12,11 @@
         - get: gpupgrade_src
           passed: [ build ]
         - get: rpm_gpdb_source
-          resource: gpdb{{.Source}}_centos{{.CentosVersion}}_rpm
+          resource: gpdb{{.Source}}_{{.OSVersion}}_rpm
           trigger: true
         {{- if ne .Source .Target }}
         - get: rpm_gpdb_target
-          resource: gpdb{{.Target}}_centos{{.CentosVersion}}_rpm
+          resource: gpdb{{.Target}}_{{.OSVersion}}_rpm
           trigger: true
         {{- end }}
         - get: ccp_src
@@ -39,28 +39,28 @@
         {{- end }}
         {{- if .ExtensionsJob }}
         - get: gptext_targz # NOTE: The same gptext artifact is used for both the source and target clusters.
-          resource: gptext_3.x_gpdb6_rhel{{.CentosVersion}}_targz
+          resource: gptext_3.x_gpdb6_{{.OSVersion}}_targz
         - get: postgis_gppkg_source
-          resource: postgis_2.x_gpdb{{.Source}}_centos{{.CentosVersion}}_gppkg
+          resource: postgis_2.x_gpdb{{.Source}}_{{.OSVersion}}_gppkg
         - get: postgis_gppkg_target
-          resource: postgis_2.x_gpdb{{.Target}}_centos{{.CentosVersion}}_gppkg
+          resource: postgis_2.x_gpdb{{.Target}}_{{.OSVersion}}_gppkg
         - get: madlib_gppkg_source
-          resource: madlib_1.x_gpdb{{.Source}}_centos{{.CentosVersion}}_gppkg
+          resource: madlib_1.x_gpdb{{.Source}}_{{.OSVersion}}_gppkg
         - get: madlib_gppkg_target
-          resource: madlib_1.x_gpdb{{.Target}}_centos{{.CentosVersion}}_gppkg
+          resource: madlib_1.x_gpdb{{.Target}}_{{.OSVersion}}_gppkg
         - get: plr_gppkg_source
-          resource: plr_gpdb{{.Source}}_rhel{{.CentosVersion}}_gppkg
+          resource: plr_gpdb{{.Source}}_{{.OSVersion}}_gppkg
         - get: plr_gppkg_target
-          resource: plr_gpdb{{.Target}}_rhel{{.CentosVersion}}_gppkg
-        {{- if ne .CentosVersion "6" }}
+          resource: plr_gpdb{{.Target}}_{{.OSVersion}}_gppkg
+        {{- if ne .OSVersion "centos6" }}
         - get: pxf_rpm_source
-          resource: pxf_6_gpdb{{.Source}}_centos{{.CentosVersion}}_rpm
+          resource: pxf_6_gpdb{{.Source}}_{{.OSVersion}}_rpm
         - get: pxf_rpm_target
-          resource: pxf_6_gpdb{{.Target}}_centos{{.CentosVersion}}_rpm
+          resource: pxf_6_gpdb{{.Target}}_{{.OSVersion}}_rpm
         - get: plcontainer_gppkg_source
-          resource: plcontainer_1.x_gpdb5_rhel{{.CentosVersion}}_gppkg
+          resource: plcontainer_1.x_gpdb5_{{.OSVersion}}_gppkg
         - get: plcontainer_gppkg_target
-          resource: plcontainer_2.x_gpdb6_rhel{{.CentosVersion}}_gppkg
+          resource: plcontainer_2.x_gpdb6_{{.OSVersion}}_gppkg
         {{- end }}
         {{- end }}
     - put: terraform
@@ -74,7 +74,7 @@
           {{- end}}
           instance_type: n1-standard-2
           number_of_nodes: 4
-          PLATFORM: centos{{.CentosVersion}}
+          PLATFORM: {{.OSVersion}}
           # Decrease the reap time from the default of 8 hours now that there are
           # both centos6 and centos7 jobs in order to not overload concourse.
           ccp_reap_minutes: 180
@@ -82,7 +82,7 @@
       file: ccp_src/ci/tasks/gen_cluster.yml
       params:
         <<: *ccp_gen_cluster_default_params
-        PLATFORM: centos{{.CentosVersion}}
+        PLATFORM: {{.OSVersion}}
         GPDB_RPM: true
       input_mapping:
         gpdb_rpm: rpm_gpdb_source
@@ -135,7 +135,7 @@
             tag: latest
         params:
           GOOGLE_CREDENTIALS: ((upgrade/cm-gcs-service-account-key))
-          OS_VERSION: centos{{.CentosVersion}}
+          OS_VERSION: {{.OSVersion}}
         inputs:
           - name: ccp_src
           - name: cluster_env_files
@@ -145,7 +145,7 @@
           - name: madlib_gppkg_source
           - name: plr_gppkg_source
           - name: sqldump
-          {{- if ne .CentosVersion "6" }}
+          {{- if ne .OSVersion "centos6" }}
           - name: pxf_rpm_source
           - name: plcontainer_gppkg_source
           {{- end }}
@@ -178,7 +178,7 @@
             repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
             tag: latest
         params:
-          OS_VERSION: centos{{.CentosVersion}}
+          OS_VERSION: {{.OSVersion}}
         inputs:
           - name: ccp_src
           - name: cluster_env_files
@@ -186,7 +186,7 @@
           - name: postgis_gppkg_target
           - name: madlib_gppkg_target
           - name: plr_gppkg_target
-          {{- if ne .CentosVersion "6" }}
+          {{- if ne .OSVersion "centos6" }}
           - name: pxf_rpm_target
           - name: plcontainer_gppkg_target
           {{- end }}

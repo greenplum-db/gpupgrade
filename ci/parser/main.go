@@ -28,31 +28,36 @@ import (
 
 var versions = []Version{
 	{
-		sourceVersion: "5",
-		targetVersion: "6",
-		centosVersion: "6",
+		sourceVersion:   "5",
+		targetVersion:   "6",
+		osVersion:       "centos6",
+		osVersionNumber: "6",
 	},
 	{
-		sourceVersion: "5",
-		targetVersion: "6",
-		centosVersion: "7",
-		SpecialJobs:   true, // To avoid exploding the test matrix set specialJobs for 5->6 for only a single OS.
+		sourceVersion:   "5",
+		targetVersion:   "6",
+		osVersion:       "centos7",
+		osVersionNumber: "7",
+		SpecialJobs:     true, // To avoid exploding the test matrix set specialJobs for 5->6 for only a single OS.
 	},
 	{
-		sourceVersion: "6",
-		targetVersion: "6",
-		centosVersion: "7", // To avoid exploding the test matrix have 6->6 for only a single OS.
+		sourceVersion:   "6",
+		targetVersion:   "6",
+		osVersion:       "centos7", // To avoid exploding the test matrix have 6->6 for only a single OS.
+		osVersionNumber: "7",
 	},
 	//{
-	//	sourceVersion: "6",
-	//	targetVersion: "7",
-	//	centosVersion: "8",
-	//	SpecialJobs:   true,
+	//	sourceVersion:   "6",
+	//	targetVersion:   "7",
+	//	osVersion:       "rocky8",
+	//	osVersionNumber: "8",
+	//	SpecialJobs:     true,
 	//},
 	//{
-	//	sourceVersion: "7",
-	//	targetVersion: "7",
-	//	centosVersion: "8",
+	//	sourceVersion:   "7",
+	//	targetVersion:   "7",
+	//	osVersion:       "rocky8",
+	//	osVersionNumber: "8",
 	//},
 }
 
@@ -82,7 +87,8 @@ func init() {
 		}
 
 		gpdbVersion := GPDBVersion{
-			CentosVersion:    version.centosVersion,
+			OSVersion:        version.osVersion,
+			OSVersionNumber:  version.osVersionNumber,
 			GPDBVersion:      version.sourceVersion,
 			TestRCIdentifier: version.testRCIdentifier(),
 		}
@@ -92,7 +98,8 @@ func init() {
 		}
 
 		gpdbVersion = GPDBVersion{
-			CentosVersion:    version.centosVersion,
+			OSVersion:        version.osVersion,
+			OSVersionNumber:  version.osVersionNumber,
 			GPDBVersion:      version.targetVersion, // need to add all combinations of version
 			TestRCIdentifier: version.testRCIdentifier(),
 		}
@@ -102,28 +109,28 @@ func init() {
 		}
 
 		multihostClusterJobs = append(multihostClusterJobs, MultihostGpupgradeJob{
-			Source:        version.sourceVersion,
-			Target:        version.targetVersion,
-			CentosVersion: version.centosVersion,
+			Source:    version.sourceVersion,
+			Target:    version.targetVersion,
+			OSVersion: version.osVersion,
 		})
 
 		upgradeJobs = append(upgradeJobs, UpgradeJob{
-			Source:        version.sourceVersion,
-			Target:        version.targetVersion,
-			CentosVersion: version.centosVersion,
+			Source:    version.sourceVersion,
+			Target:    version.targetVersion,
+			OSVersion: version.osVersion,
 		})
 
 		if version.SpecialJobs {
 			clusterJobs = append(clusterJobs, ClusterJob{
-				Source:        version.sourceVersion,
-				Target:        version.targetVersion,
-				CentosVersion: version.centosVersion,
+				Source:    version.sourceVersion,
+				Target:    version.targetVersion,
+				OSVersion: version.osVersion,
 			})
 
 			pgupgradeJobs = append(pgupgradeJobs, PgUpgradeJob{
-				Source:        version.sourceVersion,
-				Target:        version.targetVersion,
-				CentosVersion: version.centosVersion,
+				Source:    version.sourceVersion,
+				Target:    version.targetVersion,
+				OSVersion: version.osVersion,
 			})
 		}
 	}
@@ -146,7 +153,7 @@ func init() {
 
 			job.Source = version.sourceVersion
 			job.Target = version.targetVersion
-			job.CentosVersion = version.centosVersion
+			job.OSVersion = version.osVersion
 
 			upgradeJobs = append(upgradeJobs, job)
 		}

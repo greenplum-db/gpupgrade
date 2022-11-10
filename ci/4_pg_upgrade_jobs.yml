@@ -13,10 +13,10 @@
           resource: gpdb{{.Target}}_src
         - get: bats
         - get: rpm_gpdb_source
-          resource: gpdb{{.Source}}_centos{{.CentosVersion}}_rpm
+          resource: gpdb{{.Source}}_{{.OSVersion}}_rpm
           trigger: true
         - get: rpm_gpdb_target
-          resource: gpdb{{.Target}}_centos{{.CentosVersion}}_rpm
+          resource: gpdb{{.Target}}_{{.OSVersion}}_rpm
           trigger: true
     - task: pg-upgrade-tests
       config:
@@ -26,7 +26,7 @@
           source:
             # NOTE: Since we build isolation2 the build image OS needs to match
             # the GPDB target version we are testing.
-            repository: gcr.io/data-gpdb-public-images/gpdb{{.Target}}-centos{{.CentosVersion}}-test
+            repository: gcr.io/data-gpdb-public-images/gpdb{{.Target}}-{{.OSVersion}}-test
             tag: latest
         inputs:
           - name: enterprise_rpm

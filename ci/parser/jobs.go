@@ -9,7 +9,7 @@ import "fmt"
 
 type ClusterJob struct {
 	Source, Target string
-	CentosVersion  string
+	OSVersion      string
 }
 
 type ClusterJobs []ClusterJob
@@ -27,11 +27,11 @@ type UpgradeJob struct {
 	LinkMode       bool
 	RetailDemo     bool
 	ExtensionsJob  bool
-	CentosVersion  string
+	OSVersion      string
 }
 
 func (j *UpgradeJob) Name() string {
-	return fmt.Sprintf("%s-centos-%s", j.BaseName(), j.CentosVersion)
+	return fmt.Sprintf("%s-%s", j.BaseName(), j.OSVersion)
 }
 
 // BaseName returns the pipeline job name without the operating system.
@@ -62,11 +62,11 @@ type UpgradeJobs []UpgradeJob
 
 type PgUpgradeJob struct {
 	Source, Target string
-	CentosVersion  string
+	OSVersion      string
 }
 
 func (p *PgUpgradeJob) Name() string {
-	return fmt.Sprintf("%s-centos-%s", p.BaseName(), p.CentosVersion)
+	return fmt.Sprintf("%s-%s", p.BaseName(), p.OSVersion)
 }
 
 // BaseName returns the pipeline job name without the operating system.
@@ -82,11 +82,11 @@ type PgUpgradeJobs []PgUpgradeJob
 
 type MultihostGpupgradeJob struct {
 	Source, Target string
-	CentosVersion  string
+	OSVersion      string
 }
 
 func (j *MultihostGpupgradeJob) Name() string {
-	return fmt.Sprintf("%s-centos-%s", j.BaseName(), j.CentosVersion)
+	return fmt.Sprintf("%s-%s", j.BaseName(), j.OSVersion)
 }
 
 // BaseName returns the pipeline job name without the operating system.

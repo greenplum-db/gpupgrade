@@ -9,10 +9,11 @@ import (
 )
 
 type Version struct {
-	sourceVersion string
-	targetVersion string
-	centosVersion string
-	SpecialJobs   bool
+	sourceVersion   string
+	targetVersion   string
+	osVersion       string
+	osVersionNumber string
+	SpecialJobs     bool
 }
 
 // testRCIdentifier returns the unique identifier used when naming the test
@@ -52,7 +53,8 @@ func (a MajorVersions) contains(needle string) bool {
 }
 
 type GPDBVersion struct {
-	CentosVersion    string
+	OSVersion        string
+	OSVersionNumber  string
 	GPDBVersion      string
 	TestRCIdentifier string
 }

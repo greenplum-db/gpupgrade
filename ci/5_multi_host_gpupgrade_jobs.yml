@@ -12,11 +12,11 @@
         - get: gpupgrade_src
           passed: [ build ]
         - get: rpm_gpdb_source
-          resource: gpdb{{.Source}}_centos{{.CentosVersion}}_rpm
+          resource: gpdb{{.Source}}_{{.OSVersion}}_rpm
           trigger: true
         {{- if ne .Source .Target }}
         - get: rpm_gpdb_target
-          resource: gpdb{{.Target}}_centos{{.CentosVersion}}_rpm
+          resource: gpdb{{.Target}}_{{.OSVersion}}_rpm
           trigger: true
         {{- end }}
         - get: ccp_src
@@ -31,7 +31,7 @@
           standby_master: true
           instance_type: n1-standard-2
           number_of_nodes: 4
-          PLATFORM: centos{{.CentosVersion}}
+          PLATFORM: {{.OSVersion}}
           # Decrease the reap time from the default of 8 hours now that there are
           # both centos6 and centos7 jobs in order to not overload concourse.
           ccp_reap_minutes: 180
@@ -39,7 +39,7 @@
       file: ccp_src/ci/tasks/gen_cluster.yml
       params:
         <<: *ccp_gen_cluster_default_params
-        PLATFORM: centos{{.CentosVersion}}
+        PLATFORM: {{.OSVersion}}
         GPDB_RPM: true
       input_mapping:
         gpdb_rpm: rpm_gpdb_source
