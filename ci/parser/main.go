@@ -2,15 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /*
-	This command is used to parse a template file using the text/template package.
-	Given a list of source versions and target versions, it will render these
-	versions into the places specified by the template.
+This command is used to parse a template file using the text/template package.
+Given a list of source versions and target versions, it will render these
+versions into the places specified by the template.
 
-	Usage:
-	parse_template template.yml output.yml
+Usage:
+parse_template template.yml output.yml
 
-	Note: This will overwrite the contents of output.yml (if the file already
-	exists) with the parsed output.
+Note: This will overwrite the contents of output.yml (if the file already
+exists) with the parsed output.
 */
 package main
 
@@ -46,19 +46,13 @@ var versions = []Version{
 	//{
 	//	sourceVersion: "6",
 	//	targetVersion: "7",
-	//	centosVersion: "7",
-	//	SpecialJobs:   true, // Delete this SpecialJobs field once the below 6->7 for centos8 is added.
-	//},
-	//{ // uncomment this block when we support centos8
-	//	sourceVersion: "6",
-	//	targetVersion: "7",
 	//	centosVersion: "8",
 	//	SpecialJobs:   true,
 	//},
 	//{
 	//	sourceVersion: "7",
 	//	targetVersion: "7",
-	//	centosVersion: "7", // Update to centos8 once when we support it.
+	//	centosVersion: "8",
 	//},
 }
 
