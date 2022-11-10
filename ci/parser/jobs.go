@@ -9,19 +9,10 @@ import "fmt"
 
 type ClusterJob struct {
 	Source, Target string
+	CentosVersion  string
 }
 
 type ClusterJobs []ClusterJob
-
-func (g ClusterJobs) contains(needle ClusterJob) bool {
-	for _, job := range g {
-		if needle == job {
-			return true
-		}
-	}
-
-	return false
-}
 
 func (j *ClusterJob) Name() string {
 	return fmt.Sprintf("%s-to-%s-cluster-tests", j.Source, j.Target)

@@ -107,15 +107,6 @@ func init() {
 			CentosVersion: version.centosVersion,
 		})
 
-		clusterJob := ClusterJob{
-			Source: version.sourceVersion,
-			Target: version.targetVersion,
-		}
-
-		if !clusterJobs.contains(clusterJob) {
-			clusterJobs = append(clusterJobs, clusterJob)
-		}
-
 		upgradeJobs = append(upgradeJobs, UpgradeJob{
 			Source:        version.sourceVersion,
 			Target:        version.targetVersion,
@@ -123,6 +114,12 @@ func init() {
 		})
 
 		if version.SpecialJobs {
+			clusterJobs = append(clusterJobs, ClusterJob{
+				Source:        version.sourceVersion,
+				Target:        version.targetVersion,
+				CentosVersion: version.centosVersion,
+			})
+
 			pgupgradeJobs = append(pgupgradeJobs, PgUpgradeJob{
 				Source:        version.sourceVersion,
 				Target:        version.targetVersion,

@@ -33,10 +33,10 @@
           resource: gpdb{{.Source}}_src
         - get: bats
         - get: rpm_gpdb_source
-          resource: gpdb{{.Source}}_centos7_rpm
+          resource: gpdb{{.Source}}_centos{{.CentosVersion}}_rpm
           trigger: true
         - get: rpm_gpdb_target
-          resource: gpdb{{.Target}}_centos7_rpm
+          resource: gpdb{{.Target}}_centos{{.CentosVersion}}_rpm
           trigger: true
     - task: cluster-tests
       config:
@@ -44,7 +44,7 @@
         image_resource:
           type: registry-image
           source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            repository: gcr.io/data-gpdb-public-images/gpdb{{.Target}}-centos{{.CentosVersion}}-test-golang
             tag: latest
         inputs:
           - name: gpupgrade_src
