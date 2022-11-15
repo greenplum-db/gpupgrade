@@ -117,13 +117,13 @@ func init() {
 				Target:    version.targetVersion,
 				OSVersion: version.osVersion,
 			})
-		}
 
-		multihostClusterJobs = append(multihostClusterJobs, MultihostGpupgradeJob{
-			Source:    version.sourceVersion,
-			Target:    version.targetVersion,
-			OSVersion: version.osVersion,
-		})
+			multihostClusterJobs = append(multihostClusterJobs, MultihostGpupgradeJob{
+				Source:    version.sourceVersion,
+				Target:    version.targetVersion,
+				OSVersion: version.osVersion,
+			})
+		}
 
 		upgradeJobs = append(upgradeJobs, UpgradeJob{
 			Source:    version.sourceVersion,
