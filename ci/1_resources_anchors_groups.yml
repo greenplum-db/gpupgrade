@@ -173,8 +173,9 @@ resources:
     versioned_file: extensions/postgis215_dump.sql
 
 {{range .GPDBVersions}}
-# To avoid too many jobs we only run extensions on a single OS version.
-{{- if eq .OSVersion "centos7" }}
+# To avoid too many jobs we only run extensions on when SpecialJobs is true for
+# select operating systems.
+{{- if or (eq .OSVersion "centos7") (eq .OSVersion "rocky8") }}
 - name: postgis_2.x_gpdb{{.GPDBVersion}}_{{.OSVersion}}_gppkg
   type: gcs
   source:
@@ -194,14 +195,12 @@ resources:
 # NOTE: The same gptext artifact is used for both gpdb5 and gpdb6. Also, the same
 # rhel6 artifact is used for both centos6 and centos7, since the rhel7 artifact
 # does not support gpdb5.
-{{- if ne .GPDBVersion "6" }}
-- name: gptext_3.x_gpdb6_{{.OSVersion}}_targz
+- name: gptext_3.x_gpdb{{.GPDBVersion}}_{{.OSVersion}}_targz
   type: gcs
   source:
     json_key: ((concourse-gcs-resources-service-account-key))
     bucket: pivotal-gpdb-concourse-resources-prod
     regexp: gptext/released/gpdb6/greenplum-text-(.*)-rhel6_x86_64.tar.gz
-{{- end}}
 
 # NOTE: Skip creating the pxf resources for centos6 since pxf6 is not
 # supported for centos6. Thus, we can only test pxf upgrades on centos7.
@@ -348,7 +347,7 @@ groups:
   - name: extensions
     jobs:
       {{- range .UpgradeJobs}}
-      {{- if .ExtensionsJob}}
+      {{- if .TestExtensions}}
       - {{.Name}}
       {{- end}}
       {{- end}}

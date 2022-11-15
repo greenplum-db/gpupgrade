@@ -26,7 +26,7 @@ type UpgradeJob struct {
 	NoStandby      bool
 	LinkMode       bool
 	RetailDemo     bool
-	ExtensionsJob  bool
+	TestExtensions bool
 	OSVersion      string
 }
 
@@ -49,7 +49,7 @@ func (j *UpgradeJob) BaseName() string {
 		suffix = "-link-mode"
 	case j.RetailDemo:
 		suffix = "-retail-demo"
-	case j.ExtensionsJob:
+	case j.TestExtensions:
 		suffix = "-extensions"
 	}
 

@@ -145,7 +145,7 @@ func init() {
 		{PrimariesOnly: true},
 		{NoStandby: true},
 		{RetailDemo: true},
-		{ExtensionsJob: true},
+		{TestExtensions: true},
 	}
 
 	// SpecialJobs cases for 5->6. (These are special-cased to avoid exploding the

@@ -14,7 +14,7 @@ export PGPORT=5432
 ./ccp_src/scripts/setup_ssh_to_cluster.sh
 
 echo "Copying extensions to the source cluster..."
-scp gptext_targz/greenplum-text*.tar.gz gpadmin@mdw:/tmp/gptext.tar.gz
+scp gptext_targz_source/greenplum-text*.tar.gz gpadmin@mdw:/tmp/gptext_source.tar.gz
 scp postgis_gppkg_source/postgis*.gppkg gpadmin@mdw:/tmp/postgis_source.gppkg
 scp sqldump/*.sql gpadmin@mdw:/tmp/postgis_dump.sql
 scp madlib_gppkg_source/madlib*.gppkg gpadmin@mdw:/tmp/madlib_source.gppkg
@@ -59,7 +59,7 @@ time ssh -n mdw "
     export MASTER_DATA_DIRECTORY=$MASTER_DATA_DIRECTORY
 
     echo 'Installing gptext...'
-    tar -xzvf /tmp/gptext.tar.gz -C /tmp/
+    tar -xzvf /tmp/gptext_source.tar.gz -C /tmp/
     chmod +x /tmp/greenplum-text*.bin
     sed -i -r 's/GPTEXT_HOSTS\=\(localhost\)/GPTEXT_HOSTS\=\"ALLSEGHOSTS\"/' /tmp/gptext_install_config
     sed -i -r 's/ZOO_HOSTS.*/ZOO_HOSTS\=\(mdw mdw mdw\)/' /tmp/gptext_install_config
