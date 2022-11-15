@@ -108,6 +108,17 @@ func init() {
 			gpdbVersions = append(gpdbVersions, gpdbVersion)
 		}
 
+		// To avoid too many duplicate clusterJobs have only one for different
+		// major versions (ie: SpecialJobs), and only one for same major
+		// versions (ie: 6-to-6 or 7-to-7).
+		if version.SpecialJobs || (version.sourceVersion == version.targetVersion) {
+			clusterJobs = append(clusterJobs, ClusterJob{
+				Source:    version.sourceVersion,
+				Target:    version.targetVersion,
+				OSVersion: version.osVersion,
+			})
+		}
+
 		multihostClusterJobs = append(multihostClusterJobs, MultihostGpupgradeJob{
 			Source:    version.sourceVersion,
 			Target:    version.targetVersion,
@@ -121,12 +132,6 @@ func init() {
 		})
 
 		if version.SpecialJobs {
-			clusterJobs = append(clusterJobs, ClusterJob{
-				Source:    version.sourceVersion,
-				Target:    version.targetVersion,
-				OSVersion: version.osVersion,
-			})
-
 			pgupgradeJobs = append(pgupgradeJobs, PgUpgradeJob{
 				Source:    version.sourceVersion,
 				Target:    version.targetVersion,

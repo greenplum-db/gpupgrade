@@ -14,8 +14,8 @@ type ClusterJob struct {
 
 type ClusterJobs []ClusterJob
 
-func (j *ClusterJob) Name() string {
-	return fmt.Sprintf("%s-to-%s-cluster-tests", j.Source, j.Target)
+func (c *ClusterJob) Name() string {
+	return fmt.Sprintf("%s-to-%s-cluster-tests-%s", c.Source, c.Target, c.OSVersion)
 }
 
 // upgrade jobs
