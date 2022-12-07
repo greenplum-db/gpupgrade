@@ -92,12 +92,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		return err
 	}
 
-	sourceClusterIsRunning, err := s.Source.IsCoordinatorRunning(step.DevNullStream)
-	if err != nil {
-		return err
-	}
-
-	st.RunConditionally(idl.Substep_start_source_cluster, !sourceClusterIsRunning, func(streams step.OutStreams) error {
+	st.Run(idl.Substep_start_source_cluster, func(streams step.OutStreams) error {
 		err = s.Source.Start(streams)
 		var exitErr *exec.ExitError
 		if xerrors.As(err, &exitErr) {
