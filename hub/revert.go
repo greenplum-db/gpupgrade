@@ -87,22 +87,25 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		return RsyncCoordinatorAndPrimariesTablespaces(stream, s.agentConns, s.Source)
 	})
 
-	handleMirrorStartupFailure, err := s.expectMirrorFailure()
+	primariesUpgraded, err := step.HasRun(idl.Step_execute, idl.Substep_upgrade_primaries)
 	if err != nil {
 		return err
 	}
+
+	// Due to a GPDB 5X issue upgrading the primaries results in an invalid
+	// checkpoint upon starting. The checkpoint needs to be replicated to the
+	// mirrors with rsync or gprecoverseg. When upgrading the mirrors during
+	// finalize the checkpoint is replicated. In copy mode the 5X source cluster
+	// mirrors do not start causing gpstart to return a non-zero exit status.
+	// Ignore such failures, as gprecoverseg is executed to bring up the mirrors.
+	// Running gprecoverseg is expected to not take long.
+	shouldHandle5XMirrorFailure := s.Source.Version.Major == 5 && !s.LinkMode && primariesUpgraded
 
 	st.Run(idl.Substep_start_source_cluster, func(streams step.OutStreams) error {
 		err = s.Source.Start(streams)
 		var exitErr *exec.ExitError
 		if xerrors.As(err, &exitErr) {
-			// In copy mode the gpdb 5x source cluster mirrors do not come
-			// up causing gpstart to return a non-zero exit status.
-			// Ignore such failures, as gprecoverseg executed later will bring
-			// the mirrors up
-			// TODO: For 5X investigate how to check for this case and not
-			//  ignore all errors with exit code 1.
-			if handleMirrorStartupFailure && exitErr.ExitCode() == 1 {
+			if exitErr.ExitCode() == 1 && shouldHandle5XMirrorFailure {
 				return nil
 			}
 		}
@@ -114,11 +117,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		return nil
 	})
 
-	// Restoring the mirrors is needed in copy mode on 5X since the source cluster
-	// is left in a bad state after execute. This is because running pg_upgrade on
-	// a primary results in a checkpoint that does not get replicated on the mirror.
-	// Thus, when the mirror is started it panics and a gprecoverseg or rsync is needed.
-	st.RunConditionally(idl.Substep_recoverseg_source_cluster, handleMirrorStartupFailure && s.Source.Version.Major == 5, func(streams step.OutStreams) error {
+	st.RunConditionally(idl.Substep_recoverseg_source_cluster, shouldHandle5XMirrorFailure, func(streams step.OutStreams) error {
 		return Recoverseg(streams, s.Source, s.UseHbaHostnames)
 	})
 
@@ -157,29 +156,4 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 	}
 
 	return st.Err()
-}
-
-// In 5X, running pg_upgrade on the primaries can cause the mirrors to receive an invalid
-// checkpoint upon starting. There are two ways to resolve this:
-// - Rsync from the corresponding mirrors
-// or
-// - Running recoverseg
-// If the former hasn't run yet, then we do expect mirror failure upon start, so return true.
-func (s *Server) expectMirrorFailure() (bool, error) {
-	// mirror startup failure is expected only for GPDB 5x
-	if s.Source.Version.Major != 5 {
-		return false, nil
-	}
-
-	hasRestoreRun, err := step.HasRun(idl.Step_revert, idl.Substep_restore_source_cluster)
-	if err != nil {
-		return false, err
-	}
-
-	primariesUpgraded, err := step.HasRun(idl.Step_execute, idl.Substep_upgrade_primaries)
-	if err != nil {
-		return false, err
-	}
-
-	return !hasRestoreRun && primariesUpgraded, nil
 }
