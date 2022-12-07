@@ -6,6 +6,7 @@ package hub_test
 import (
 	"errors"
 	"fmt"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -526,8 +527,13 @@ primary_slot_name = 'internal_wal_replication_slot'
 			t.Fatalf("got error count %d, want %d", len(errs), len(opts))
 		}
 
+		sedPath, err := exec.LookPath("sed")
+		if err != nil {
+			t.Fatalf("expected sed: %v", err)
+		}
+
 		for _, err := range errs {
-			expected := `update . using "/usr/bin/sed -E -i.bak s@@@ " failed with "sed:`
+			expected := fmt.Sprintf(`update . using "%s -E -i.bak s@@@ " failed with "sed:`, sedPath)
 			if !strings.HasPrefix(err.Error(), expected) {
 				t.Errorf("expected error to contain %q got %q", expected, err.Error())
 			}
