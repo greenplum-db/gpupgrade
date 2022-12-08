@@ -345,8 +345,16 @@ test_revert_after_execute_pg_upgrade_failure() {
     mirrors=$(query_host_datadirs "$GPHOME_SOURCE" "$PGPORT" "role='m'")
     while read -r mirror_host datadir; do
         ssh -n "$mirror_host" touch "$datadir/${MARKER}"
-        register_teardown ssh "$mirror_host" rm -f "$datadir/${MARKER}"
     done <<< "$mirrors"
+
+    # Cleanup marker files on "both" primaries and mirrors.
+    # This is especially important since link mode rsyncs
+    # the marker file to primaries, and the test can fail at any point.
+    local segments
+    segments=$(query_host_datadirs "$GPHOME_SOURCE" "$PGPORT")
+    while read -r host datadir; do
+        register_teardown ssh "$host" rm -f "$datadir/${MARKER}"
+    done <<< "$segments"
 
     # Add a tablespace, which only works when upgrading from 5X.
     if is_GPDB5 "$GPHOME_SOURCE"; then
@@ -405,7 +413,11 @@ test_revert_after_execute_pg_upgrade_failure() {
     # yet.
     primaries=$(query_host_datadirs "$GPHOME_SOURCE" "$PGPORT" "role='p'")
     while read -r host datadir; do
-        ssh -n "$host" "[ ! -f '${datadir}/${MARKER}' ]" || fail "revert resulted in unexpected ${MARKER} marker file in datadir: $host:$datadir"
+        if [ "$mode" = "link" ]; then
+            ssh -n "$host" "[ -f '${datadir}/${MARKER}' ]" || fail "in link mode using rsync expected ${MARKER} marker file to be in datadir: $host:$datadir"
+        else
+            ssh -n "$host" "[ ! -f '${datadir}/${MARKER}' ]" || fail "in copy mode using gprecoverseg unexpected ${MARKER} marker file in datadir: $host:$datadir"
+        fi
     done <<< "$primaries"
 
     # Check that transactions can be started on the source

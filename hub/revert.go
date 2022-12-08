@@ -72,14 +72,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		return RestoreCoordinatorAndPrimariesPgControl(streams, s.agentConns, s.Source)
 	})
 
-	// if the target cluster has been started at any point, we must restore the source
-	// cluster as its files could have been modified.
-	targetStarted, err := step.HasRun(idl.Step_execute, idl.Substep_start_target_cluster)
-	if err != nil {
-		return err
-	}
-
-	st.RunConditionally(idl.Substep_restore_source_cluster, s.LinkMode && targetStarted, func(stream step.OutStreams) error {
+	st.RunConditionally(idl.Substep_restore_source_cluster, s.LinkMode, func(stream step.OutStreams) error {
 		if err := RsyncCoordinatorAndPrimaries(stream, s.agentConns, s.Source); err != nil {
 			return err
 		}
