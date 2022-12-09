@@ -61,12 +61,7 @@ Cannot revert and restore the source cluster. Please contact support.`)
 			return DeleteTargetTablespaces(streams, s.agentConns, s.Config.Intermediate, s.Intermediate.CatalogVersion, s.Source.Tablespaces)
 		})
 
-	// For any of the link-mode cases described in the "Reverting to old
-	// cluster" section of https://www.postgresql.org/docs/9.4/pgupgrade.html,
-	// it is correct to restore the pg_control file. Even in the case where
-	// we're going to perform a full rsync restoration, we rely on this
-	// substep to clean up the pg_control.old file, since the rsync will not
-	// remove it.
+	// See "Reverting to old cluster" from https://www.postgresql.org/docs/9.4/pgupgrade.html
 	st.RunConditionally(idl.Substep_restore_pgcontrol, s.LinkMode, func(streams step.OutStreams) error {
 		return RestoreCoordinatorAndPrimariesPgControl(streams, s.agentConns, s.Source)
 	})

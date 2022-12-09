@@ -74,7 +74,15 @@ Optional steps (ie: commands):
   - To restore the cluster to the state before the upgrade.
   - Can be run after initialize or execute, but *not* finalize.
   - Substeps include deleting the target cluster, archiving the gpupgrade log 
-  directory, and restoring the source cluster.
+    directory, and restoring the source cluster.
+  - Reverting in copy mode consists of simply removing the target cluster.
+    However, due to a GPDB 5X bug gprecoverseg is needed.
+  - Reverting in link mode consists of restoring the pg_control file on the
+    primaries, and rsyncing the source cluster mirrors to the primaries.
+  - When the source cluster has no mirrors/standby:
+    - reverting during initialize is allowed in both copy and link mode
+    - reverting during execute is allowed in copy mode
+    - reverting during execute is *not* allowed in link mode
 
 ```
   start <---- run migration
