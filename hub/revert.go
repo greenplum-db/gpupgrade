@@ -15,8 +15,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-var ErrMissingMirrorsAndStandby = errors.New("Source cluster does not have mirrors and/or standby. Cannot restore source cluster. Please contact support.")
-
 func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) (err error) {
 	st, err := step.Begin(idl.Step_revert, stream, s.AgentConns)
 	if err != nil {
@@ -38,8 +36,9 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		return err
 	}
 
-	if hasExecuteStarted && !s.Source.HasAllMirrorsAndStandby() {
-		return errors.New("Source cluster does not have mirrors and/or standby. Cannot restore source cluster. Please contact support.")
+	if !s.Source.HasAllMirrorsAndStandby() && s.LinkMode && hasExecuteStarted {
+		return errors.New(`The source cluster does not have standby and/or mirrors and is being upgraded in link mode. Execute has started.
+Cannot revert and restore the source cluster. Please contact support.`)
 	}
 
 	st.RunConditionally(idl.Substep_check_active_connections_on_target_cluster, s.Intermediate != nil, func(streams step.OutStreams) error {
@@ -72,7 +71,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		return RestoreCoordinatorAndPrimariesPgControl(streams, s.agentConns, s.Source)
 	})
 
-	st.RunConditionally(idl.Substep_restore_source_cluster, s.LinkMode, func(stream step.OutStreams) error {
+	st.RunConditionally(idl.Substep_restore_source_cluster, s.LinkMode && s.Source.HasAllMirrorsAndStandby(), func(stream step.OutStreams) error {
 		if err := RsyncCoordinatorAndPrimaries(stream, s.agentConns, s.Source); err != nil {
 			return err
 		}

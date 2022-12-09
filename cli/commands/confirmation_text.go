@@ -101,8 +101,10 @@ has completed.
 var revertWarningText = color.RedString(`
 WARNING
 _______
-The source cluster does not have standby and/or mirrors.
-After "gpupgrade execute" has been run, there will be no way to
+The source cluster does not have standby and/or mirrors and 
+is being upgraded in link mode.
+
+Once "gpupgrade execute" has started, there will be no way to
 return the cluster to its original state using "gpupgrade revert".
 
 If you do not already have a backup, we strongly recommend that

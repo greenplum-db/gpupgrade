@@ -43,7 +43,7 @@ func execute() *cobra.Command {
 			}
 
 			revertWarning := ""
-			if !conf.Source.HasAllMirrorsAndStandby() {
+			if !conf.Source.HasAllMirrorsAndStandby() && conf.LinkMode {
 				revertWarning = revertWarningText
 			}
 

@@ -274,7 +274,7 @@ func initialize() *cobra.Command {
 			})
 
 			revertWarning := ""
-			if !response.GetHasAllMirrorsAndStandby() {
+			if !response.GetHasAllMirrorsAndStandby() && linkMode {
 				revertWarning = revertWarningText
 			}
 
