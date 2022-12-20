@@ -5,6 +5,11 @@
 -- Validate that the upgradeable objects are functional post-upgrade
 --------------------------------------------------------------------------------
 
-select * from users_with_check_constraints;
+SELECT * FROM heap_table_with_check_constraint;
+-- this insert should fail
+INSERT INTO heap_table_with_check_constraint VALUES (2, 'Jane');
 
-insert into users_with_check_constraints values (2, 'Jane');
+SELECT * FROM partition_table_with_check_constraint;
+-- this insert should fail
+INSERT INTO partition_table_with_check_constraint VALUES (1, 1, 3);
+

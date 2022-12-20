@@ -6,10 +6,20 @@
 --------------------------------------------------------------------------------
 -- Create and setup upgradeable objects
 --------------------------------------------------------------------------------
-create table users_with_check_constraints ( id int, name text check (id>=1 and id<2) );
+CREATE TABLE heap_table_with_check_constraint ( id INT, name text CHECK (id>=1 AND id<2) );
 CREATE
 
-insert into users_with_check_constraints values (1, 'Joe');
+INSERT INTO heap_table_with_check_constraint VALUES (1, 'Joe');
 INSERT 1
-insert into users_with_check_constraints values (2, 'Jane');
-ERROR:  new row for relation "users_with_check_constraints" violates check constraint "users_with_check_constraints_id_check"
+-- this insert should fail
+INSERT INTO heap_table_with_check_constraint VALUES (2, 'Jane');
+ERROR:  new row for relation "heap_table_with_check_constraint" violates check constraint "heap_table_with_check_constraint_id_check"
+
+CREATE TABLE partition_table_with_check_constraint ( a INT CONSTRAINT a_check CHECK (a+b>c), b INT, c INT) DISTRIBUTED BY (a) PARTITION BY RANGE(b) (PARTITION part START(0) END(4242));
+CREATE
+
+INSERT INTO partition_table_with_check_constraint SELECT i, i, i FROM generate_series(1, 10) i;
+INSERT 10
+-- this insert should fail
+INSERT INTO partition_table_with_check_constraint VALUES (1, 1, 3);
+ERROR:  new row for relation "partition_table_with_check_constraint_1_prt_part" violates check constraint "a_check"

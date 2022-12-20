@@ -6,10 +6,22 @@
 --------------------------------------------------------------------------------
 -- Create and setup upgradeable objects
 --------------------------------------------------------------------------------
-create table users_with_check_constraints (
-    id int, 
-    name text check (id>=1 and id<2)
+CREATE TABLE heap_table_with_check_constraint (
+    id INT,
+    name text CHECK (id>=1 AND id<2)
 );
 
-insert into users_with_check_constraints values (1, 'Joe');
-insert into users_with_check_constraints values (2, 'Jane');
+INSERT INTO heap_table_with_check_constraint VALUES (1, 'Joe');
+-- this insert should fail
+INSERT INTO heap_table_with_check_constraint VALUES (2, 'Jane');
+
+CREATE TABLE partition_table_with_check_constraint (
+    a INT CONSTRAINT a_check CHECK (a+b>c),
+    b INT,
+    c INT) DISTRIBUTED BY (a)
+    PARTITION BY RANGE(b)
+        (PARTITION part START(0) END(4242));
+
+INSERT INTO partition_table_with_check_constraint SELECT i, i, i FROM generate_series(1, 10) i;
+-- this insert should fail
+INSERT INTO partition_table_with_check_constraint VALUES (1, 1, 3);
