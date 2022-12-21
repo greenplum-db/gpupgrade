@@ -90,7 +90,7 @@ func init() {
 			OSVersion:        version.osVersion,
 			OSVersionNumber:  version.osVersionNumber,
 			GPDBVersion:      version.sourceVersion,
-			TestRCIdentifier: version.testRCIdentifier(),
+			TestRCIdentifier: testRCIdentifier(version.sourceVersion),
 		}
 
 		if !gpdbVersions.contains(gpdbVersion) {
@@ -101,7 +101,7 @@ func init() {
 			OSVersion:        version.osVersion,
 			OSVersionNumber:  version.osVersionNumber,
 			GPDBVersion:      version.targetVersion, // need to add all combinations of version
-			TestRCIdentifier: version.testRCIdentifier(),
+			TestRCIdentifier: testRCIdentifier(version.targetVersion),
 		}
 
 		if !gpdbVersions.contains(gpdbVersion) {
