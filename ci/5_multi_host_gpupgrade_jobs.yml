@@ -1,9 +1,5 @@
 {{range .MultihostAcceptanceJobs}}
 - name: {{ .Name }}
-  serial_groups: [{{ .BaseName }}]
-  # Specifying serial groups so that only one platform runs at a time. For
-  # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
-  # will prevent concourse from becoming overloaded.
   plan:
     - in_parallel:
         - get: enterprise_rpm

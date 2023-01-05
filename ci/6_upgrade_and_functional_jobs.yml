@@ -1,6 +1,6 @@
 {{range .UpgradeJobs}}
 - name: {{ .Name }}
-  serial_groups: [{{ .BaseName }}]
+  serial_groups: [{{ .Suffix }}]
   # Specifying serial groups so that only one platform runs at a time. For
   # example, 5-to-6-centos7 will only run after 5-to-6-centos6 completes. This
   # will prevent concourse from becoming overloaded.

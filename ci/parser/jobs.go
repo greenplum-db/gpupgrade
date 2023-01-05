@@ -15,7 +15,7 @@ type AcceptanceJob struct {
 type AcceptanceJobs []AcceptanceJob
 
 func (c *AcceptanceJob) Name() string {
-	return fmt.Sprintf("%s-to-%s-acceptance-tests-%s", c.Source, c.Target, c.OSVersion)
+	return fmt.Sprintf("%s-to-%s-%s-acceptance-tests", c.Source, c.Target, c.OSVersion)
 }
 
 // upgrade jobs
@@ -31,13 +31,13 @@ type UpgradeJob struct {
 }
 
 func (j *UpgradeJob) Name() string {
-	return fmt.Sprintf("%s-%s", j.BaseName(), j.OSVersion)
+	return fmt.Sprintf("%s-to-%s-%s-e2e%s", j.Source, j.Target, j.OSVersion, j.Suffix())
 }
 
-// BaseName returns the pipeline job name without the operating system.
+// Suffix returns the pipeline job name without the operating system.
 // This is used as a tag in Concourse's serial group to limit similar jobs
 // between operating systems from running at once to avoid overloading Concourse.
-func (j *UpgradeJob) BaseName() string {
+func (j *UpgradeJob) Suffix() string {
 	var suffix string
 
 	switch {
@@ -53,7 +53,7 @@ func (j *UpgradeJob) BaseName() string {
 		suffix = "-extension"
 	}
 
-	return fmt.Sprintf("%s-to-%s-e2e-%s", j.Source, j.Target, suffix)
+	return suffix
 }
 
 type UpgradeJobs []UpgradeJob
@@ -66,14 +66,7 @@ type PgUpgradeJob struct {
 }
 
 func (p *PgUpgradeJob) Name() string {
-	return fmt.Sprintf("%s-%s", p.BaseName(), p.OSVersion)
-}
-
-// BaseName returns the pipeline job name without the operating system.
-// This is used as a tag in Concourse's serial group to limit similar jobs
-// between operating systems from running at once to avoid overloading Concourse.
-func (p *PgUpgradeJob) BaseName() string {
-	return fmt.Sprintf("%s-to-%s-%s", p.Source, p.Target, "pg-upgrade-tests")
+	return fmt.Sprintf("%s-to-%s-%s-pg-upgrade-tests", p.Source, p.Target, p.OSVersion)
 }
 
 type PgUpgradeJobs []PgUpgradeJob
@@ -86,14 +79,7 @@ type MultihostAcceptanceJob struct {
 }
 
 func (j *MultihostAcceptanceJob) Name() string {
-	return fmt.Sprintf("%s-%s", j.BaseName(), j.OSVersion)
-}
-
-// BaseName returns the pipeline job name without the operating system.
-// This is used as a tag in Concourse's serial group to limit similar jobs
-// between operating systems from running at once to avoid overloading Concourse.
-func (j *MultihostAcceptanceJob) BaseName() string {
-	return fmt.Sprintf("%s-to-%s-%s", j.Source, j.Target, "multihost-acceptance-tests")
+	return fmt.Sprintf("%s-to-%s-%s-multihost-acceptance-tests", j.Source, j.Target, j.OSVersion)
 }
 
 type MultihostAcceptanceJobs []MultihostAcceptanceJob
