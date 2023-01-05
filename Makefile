@@ -33,43 +33,32 @@ format:
 		goimports -l -w agent/ cli/ db/ hub/ integrations/ testutils/ utils/
 		gofmt -l -w agent/ cli/ db/ hub/ integrations/ testutils/ utils/
 
+unit integration acceptance test: export PATH := $(CURDIR):$(PATH)
 
-.PHONY: check check-go gpupgrade-tests unit integration test
+.PHONY: unit
+unit:
+	go test -count=1 $(shell go list ./... | grep -v integrations$$ )
 
-# check runs all tests against the locally built gpupgrade binaries. Use -k to
-# continue after failures.
-check: check-go gpupgrade-tests
-check-go gpupgrade-tests: export PATH := $(CURDIR):$(PATH)
+.PHONY: integration
+integration:
+	go test -count=1 ./integrations
 
-TEST_PACKAGES := ./...
-
-# FIXME go test currently caches integration tests incorrectly, because we do
-# not register any dependency on the gpupgrade binary that we rely on for
-# testing. For now, disable test caching for the Make recipes with -count=1;
-# anyone who would like caching back can always use `go test` directly.
-check-go:
-	go test -count=1 $(TEST_PACKAGES)
-
-gpupgrade-tests:
+.PHONY: acceptance
+acceptance:
 	bats -r ./test/acceptance/gpupgrade
 
+# test runs all tests against the locally built gpupgrade binaries. Use -k to
+# continue after failures.
+.PHONY: test check
+test check: unit integration acceptance
+
+.PHONY: pg-upgrade-tests
 pg-upgrade-tests:
 	bats -r ./test/acceptance/pg_upgrade
-
-unit: TEST_PACKAGES := $(shell go list ./... | grep -v integrations$$ )
-unit: check-go
-
-integration: TEST_PACKAGES := ./integrations
-integration: check-go
-
-test: unit integration
 
 .PHONY: coverage
 coverage:
 	@./scripts/show_coverage.sh
-
-sshd_build:
-		make -C integrations/sshd
 
 BUILD_ENV = $($(OS)_ENV)
 

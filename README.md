@@ -181,8 +181,8 @@ Checkout [vim-go](https://github.com/fatih/vim-go) and [go-delve](https://github
 
 ```
 make         # builds gpupgrade binary locally
-make check   # runs tests
 make install # installs gpupgrade into $GOBIN
+make test    # runs all local tests
 ```
 
 Cross-compile with:
@@ -219,7 +219,7 @@ framework which can be installed on macOS with `brew install bats-core`.
 Please review the [integrations/README](https://github.com/greenplum-db/gpupgrade/blob/master/integrations/README.md).
 ```
 # Some tests require GPDB installed and running
-make gpupgrade-tests
+make acceptance
 make pg-upgrade-tests
 ```
 
@@ -236,7 +236,7 @@ bats -f "gpupgrade finalize should" test/acceptance/gpupgrade/finalize.bats
 #### All local tests
 ```
 # Runs all local tests
-make check
+make test --keep-going
 ```
 #### End-to-End tests
 Creates a Concourse pipeline that includes various multi-host X-to-Y upgrade and 
