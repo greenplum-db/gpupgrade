@@ -3,7 +3,10 @@
 
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // gpupgrade cluster jobs
 
@@ -34,9 +37,6 @@ func (j *UpgradeJob) Name() string {
 	return fmt.Sprintf("%s-to-%s-%s-e2e%s", j.Source, j.Target, j.OSVersion, j.Suffix())
 }
 
-// Suffix returns the pipeline job name without the operating system.
-// This is used as a tag in Concourse's serial group to limit similar jobs
-// between operating systems from running at once to avoid overloading Concourse.
 func (j *UpgradeJob) Suffix() string {
 	var suffix string
 
@@ -54,6 +54,11 @@ func (j *UpgradeJob) Suffix() string {
 	}
 
 	return suffix
+}
+
+// SerialGroup is used to prevent Concourse from becoming overloaded.
+func (j *UpgradeJob) SerialGroup() string {
+	return strings.TrimPrefix(j.Suffix(), "-")
 }
 
 type UpgradeJobs []UpgradeJob
