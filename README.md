@@ -194,7 +194,7 @@ Cross-compile with:
 ```
 gpupgrade initialize --file ./gpupgrade_config
 OR
-gpupgrade initialize --source-gphome "$GPHOME" --target-gphome "$GPHOME" --source-master-port 6000 --disk-free-ratio 0
+gpupgrade initialize --source-gphome "$GPHOME" --target-gphome "$GPHOME" --source-master-port 6000 --mode link --disk-free-ratio 0 --parent-backup-dir /tmp/gpupgrade
 gpupgrade execute
 gpupgrade finalize
 ```
@@ -205,6 +205,7 @@ gpupgrade finalize
 ```
 make unit
 ```
+
 #### Integration tests
 Tests that run against the gpupgrade binary to verify the interaction between 
 components. Before writing a new integration test please review the 
@@ -212,13 +213,14 @@ components. Before writing a new integration test please review the
 ```
 make integration
 ```
+
 #### Acceptance tests
 Tests more end-to-end acceptance-level behavior between components. Tests are 
 located in the `test` directory and use the [BATS (Bash Automated Testing System)](https://github.com/bats-core/bats-core) 
 framework which can be installed on macOS with `brew install bats-core`.
 Please review the [integration/README](https://github.com/greenplum-db/gpupgrade/blob/master/integration/README.md).
 ```
-# Some tests require GPDB installed and running
+# Requires a GPDB cluster installed and running
 make acceptance
 make pg-upgrade-tests
 ```
@@ -238,6 +240,7 @@ bats -f "gpupgrade finalize should" test/acceptance/gpupgrade/finalize.bats
 # Runs all local tests
 make test --keep-going
 ```
+
 #### End-to-End tests
 Creates a Concourse pipeline that includes various multi-host X-to-Y upgrade and 
 functional tests. These cannot be run locally.
