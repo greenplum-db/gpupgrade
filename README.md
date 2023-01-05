@@ -208,7 +208,7 @@ make unit
 #### Integration tests
 Tests that run against the gpupgrade binary to verify the interaction between 
 components. Before writing a new integration test please review the 
-[README](https://github.com/greenplum-db/gpupgrade/blob/master/integrations/README.md).
+[README](https://github.com/greenplum-db/gpupgrade/blob/master/integration/README.md).
 ```
 make integration
 ```
@@ -216,7 +216,7 @@ make integration
 Tests more end-to-end acceptance-level behavior between components. Tests are 
 located in the `test` directory and use the [BATS (Bash Automated Testing System)](https://github.com/bats-core/bats-core) 
 framework which can be installed on macOS with `brew install bats-core`.
-Please review the [integrations/README](https://github.com/greenplum-db/gpupgrade/blob/master/integrations/README.md).
+Please review the [integration/README](https://github.com/greenplum-db/gpupgrade/blob/master/integration/README.md).
 ```
 # Some tests require GPDB installed and running
 make acceptance
