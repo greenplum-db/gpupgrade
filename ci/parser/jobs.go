@@ -50,10 +50,10 @@ func (j *UpgradeJob) BaseName() string {
 	case j.RetailDemo:
 		suffix = "-retail-demo"
 	case j.TestExtensions:
-		suffix = "-extensions"
+		suffix = "-extension"
 	}
 
-	return fmt.Sprintf("%s-to-%s%s", j.Source, j.Target, suffix)
+	return fmt.Sprintf("%s-to-%s-e2e-%s", j.Source, j.Target, suffix)
 }
 
 type UpgradeJobs []UpgradeJob

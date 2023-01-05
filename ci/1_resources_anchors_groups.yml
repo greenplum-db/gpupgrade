@@ -330,21 +330,21 @@ groups:
       {{- range .MultihostAcceptanceJobs}}
       - {{.Name}}
       {{- end}}
-  - name: upgrade
+  - name: e2e-upgrade
     jobs:
       {{- range .UpgradeJobs}}
       {{- if not .RetailDemo}}
       - {{.Name}}
       {{- end}}
       {{- end}}
-  - name: functional
+  - name: e2e-functional
     jobs:
       {{- range .UpgradeJobs }}
       {{- if .RetailDemo }}
       - {{.Name}}
       {{- end }}
       {{- end }}
-  - name: extensions
+  - name: e2e-extension
     jobs:
       {{- range .UpgradeJobs}}
       {{- if .TestExtensions}}
