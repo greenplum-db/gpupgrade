@@ -1,4 +1,4 @@
-- name: nocluster-tests
+- name: unit-and-integration-tests
   plan:
     - in_parallel:
         - get: gpupgrade_src
@@ -6,7 +6,7 @@
         - get: bats
         - get: gpdb_src_source
           resource: gpdb5_src
-    - task: nocluster-tests
+    - task: unit-and-integration-tests
       config:
         platform: linux
         image_resource:
@@ -19,7 +19,7 @@
           - name: bats
           - name: gpdb_src_source
         run:
-          path: gpupgrade_src/ci/scripts/nocluster-tests.bash
+          path: gpupgrade_src/ci/scripts/unit-and-integration-tests.bash
   on_failure:
     <<: *slack_alert
 

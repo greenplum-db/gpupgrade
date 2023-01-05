@@ -5,7 +5,7 @@
           trigger: true
           passed:
             - build
-            - nocluster-tests
+            - unit-and-integration-tests
             {{- range .ClusterJobs}}
             - {{ .Name }}
             {{- end}}

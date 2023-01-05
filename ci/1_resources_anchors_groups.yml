@@ -308,7 +308,7 @@ groups:
     jobs:
       - build
       - lint
-      - nocluster-tests
+      - unit-and-integration-tests
       {{- range .ClusterJobs}}
       - {{.Name}}
       {{- end}}

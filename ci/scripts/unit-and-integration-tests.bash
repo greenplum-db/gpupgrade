@@ -14,7 +14,7 @@ function run_tests() {
 
         cd gpupgrade_src
         make
-        make check --keep-going
+        make unit integration --keep-going
     '
 }
 
