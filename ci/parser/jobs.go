@@ -7,15 +7,15 @@ import "fmt"
 
 // gpupgrade cluster jobs
 
-type ClusterJob struct {
+type AcceptanceJob struct {
 	Source, Target string
 	OSVersion      string
 }
 
-type ClusterJobs []ClusterJob
+type AcceptanceJobs []AcceptanceJob
 
-func (c *ClusterJob) Name() string {
-	return fmt.Sprintf("%s-to-%s-cluster-tests-%s", c.Source, c.Target, c.OSVersion)
+func (c *AcceptanceJob) Name() string {
+	return fmt.Sprintf("%s-to-%s-acceptance-tests-%s", c.Source, c.Target, c.OSVersion)
 }
 
 // upgrade jobs
@@ -80,20 +80,20 @@ type PgUpgradeJobs []PgUpgradeJob
 
 // multihost-gpupgrade jobs
 
-type MultihostGpupgradeJob struct {
+type MultihostAcceptanceJob struct {
 	Source, Target string
 	OSVersion      string
 }
 
-func (j *MultihostGpupgradeJob) Name() string {
+func (j *MultihostAcceptanceJob) Name() string {
 	return fmt.Sprintf("%s-%s", j.BaseName(), j.OSVersion)
 }
 
 // BaseName returns the pipeline job name without the operating system.
 // This is used as a tag in Concourse's serial group to limit similar jobs
 // between operating systems from running at once to avoid overloading Concourse.
-func (j *MultihostGpupgradeJob) BaseName() string {
-	return fmt.Sprintf("%s-to-%s-%s", j.Source, j.Target, "multihost-cluster-tests")
+func (j *MultihostAcceptanceJob) BaseName() string {
+	return fmt.Sprintf("%s-to-%s-%s", j.Source, j.Target, "multihost-acceptance-tests")
 }
 
-type MultihostClusterJobs []MultihostGpupgradeJob
+type MultihostAcceptanceJobs []MultihostAcceptanceJob

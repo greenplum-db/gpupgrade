@@ -309,25 +309,25 @@ groups:
       - build
       - lint
       - unit-and-integration-tests
-      {{- range .ClusterJobs}}
+      {{- range .AcceptanceJobs}}
       - {{.Name}}
       {{- end}}
       {{- range .PgupgradeJobs}}
       - {{.Name}}
       {{- end}}
-      {{- range .MultihostClusterJobs}}
+      {{- range .MultihostAcceptanceJobs}}
       - {{.Name}}
       {{- end}}
       {{- range .UpgradeJobs}}
       - {{.Name}}
       {{- end}}
       - publish-release-candidate
-  - name: cluster
+  - name: acceptance
     jobs:
-      {{- range .ClusterJobs}}
+      {{- range .AcceptanceJobs}}
       - {{.Name}}
       {{- end}}
-      {{- range .MultihostClusterJobs}}
+      {{- range .MultihostAcceptanceJobs}}
       - {{.Name}}
       {{- end}}
   - name: upgrade

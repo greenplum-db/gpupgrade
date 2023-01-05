@@ -62,13 +62,13 @@ var versions = []Version{
 }
 
 type Data struct {
-	JobType              string
-	MajorVersions        []string
-	GPDBVersions         GPDBVersions
-	ClusterJobs          ClusterJobs
-	MultihostClusterJobs MultihostClusterJobs
-	UpgradeJobs          UpgradeJobs
-	PgupgradeJobs        PgUpgradeJobs
+	JobType                 string
+	MajorVersions           []string
+	GPDBVersions            GPDBVersions
+	AcceptanceJobs          AcceptanceJobs
+	MultihostAcceptanceJobs MultihostAcceptanceJobs
+	UpgradeJobs             UpgradeJobs
+	PgupgradeJobs           PgUpgradeJobs
 }
 
 var data Data
@@ -76,8 +76,8 @@ var data Data
 func init() {
 	var majorVersions MajorVersions
 	var gpdbVersions GPDBVersions
-	var clusterJobs ClusterJobs
-	var multihostClusterJobs MultihostClusterJobs
+	var acceptanceJobs AcceptanceJobs
+	var multihostAcceptanceJobs MultihostAcceptanceJobs
 	var upgradeJobs UpgradeJobs
 	var pgupgradeJobs PgUpgradeJobs
 
@@ -108,17 +108,17 @@ func init() {
 			gpdbVersions = append(gpdbVersions, gpdbVersion)
 		}
 
-		// To avoid too many duplicate clusterJobs have only one for different
+		// To avoid too many duplicate acceptanceJobs have only one for different
 		// major versions (ie: SpecialJobs), and only one for same major
 		// versions (ie: 6-to-6 or 7-to-7).
 		if version.SpecialJobs || (version.sourceVersion == version.targetVersion) {
-			clusterJobs = append(clusterJobs, ClusterJob{
+			acceptanceJobs = append(acceptanceJobs, AcceptanceJob{
 				Source:    version.sourceVersion,
 				Target:    version.targetVersion,
 				OSVersion: version.osVersion,
 			})
 
-			multihostClusterJobs = append(multihostClusterJobs, MultihostGpupgradeJob{
+			multihostAcceptanceJobs = append(multihostAcceptanceJobs, MultihostAcceptanceJob{
 				Source:    version.sourceVersion,
 				Target:    version.targetVersion,
 				OSVersion: version.osVersion,
@@ -165,13 +165,13 @@ func init() {
 	}
 
 	data = Data{
-		JobType:              os.Getenv("JOB_TYPE"),
-		MajorVersions:        majorVersions,
-		GPDBVersions:         gpdbVersions,
-		ClusterJobs:          clusterJobs,
-		MultihostClusterJobs: multihostClusterJobs,
-		UpgradeJobs:          upgradeJobs,
-		PgupgradeJobs:        pgupgradeJobs,
+		JobType:                 os.Getenv("JOB_TYPE"),
+		MajorVersions:           majorVersions,
+		GPDBVersions:            gpdbVersions,
+		AcceptanceJobs:          acceptanceJobs,
+		MultihostAcceptanceJobs: multihostAcceptanceJobs,
+		UpgradeJobs:             upgradeJobs,
+		PgupgradeJobs:           pgupgradeJobs,
 	}
 }
 

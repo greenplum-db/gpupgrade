@@ -23,7 +23,7 @@
   on_failure:
     <<: *slack_alert
 
-{{range .ClusterJobs}}
+{{range .AcceptanceJobs}}
 - name: {{.Name}}
   plan:
     - in_parallel:
@@ -53,7 +53,7 @@
           - name: rpm_gpdb_target
           - name: bats
         run:
-          path: gpupgrade_src/ci/scripts/cluster-tests.bash
+          path: gpupgrade_src/ci/scripts/acceptance-tests.bash
       params:
         SOURCE_PACKAGE: greenplum-db-{{.Source}}
         TARGET_PACKAGE: greenplum-db-{{.Target}}

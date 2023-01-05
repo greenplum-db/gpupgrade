@@ -1,4 +1,4 @@
-{{range .MultihostClusterJobs}}
+{{range .MultihostAcceptanceJobs}}
 - name: {{ .Name }}
   serial_groups: [{{ .BaseName }}]
   # Specifying serial groups so that only one platform runs at a time. For
@@ -80,7 +80,7 @@
           - name: enterprise_rpm
           - name: bats
         run:
-          path: gpupgrade_src/ci/scripts/multihost-gpupgrade-tests.bash
+          path: gpupgrade_src/ci/scripts/acceptance-multihost-tests.bash
       params:
   ensure:
     <<: *set_failed

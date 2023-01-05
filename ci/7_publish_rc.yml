@@ -6,7 +6,7 @@
           passed:
             - build
             - unit-and-integration-tests
-            {{- range .ClusterJobs}}
+            {{- range .AcceptanceJobs}}
             - {{ .Name }}
             {{- end}}
             {{- range .PgupgradeJobs}}
@@ -15,7 +15,7 @@
             {{- range .UpgradeJobs}}
             - {{ .Name }}
             {{- end}}
-            {{- range .MultihostClusterJobs}}
+            {{- range .MultihostAcceptanceJobs}}
             - {{ .Name }}
             {{- end}}
         - get: enterprise_rpm
@@ -27,7 +27,7 @@
             {{- range .PgupgradeJobs}}
             - {{.Name}}
             {{- end}}
-            {{- range .MultihostClusterJobs}}
+            {{- range .MultihostAcceptanceJobs}}
             - {{ .Name }}
             {{- end}}
         - get: oss_rpm
