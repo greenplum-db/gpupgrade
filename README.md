@@ -4,7 +4,7 @@ gpupgrade runs [pg_upgrade](https://www.postgresql.org/docs/current/static/pgupg
 across all segments to upgrade a [Greenplum cluster](https://github.com/greenplum-db/gpdb)
 across major versions. For further details read the Greenplum Database Upgrade [documentation](https://gpdb.docs.pivotal.io/upgrade/) and [blog post](https://greenplum.org/greenplum-database-upgrade/). 
 We warmly welcome any feedback and
-[contributions](https://github.com/greenplum-db/gpupgrade/blob/master/CONTRIBUTING.md).
+[contributions](https://github.com/greenplum-db/gpupgrade/blob/main/CONTRIBUTING.md).
 
 **Purpose:**
 
@@ -209,7 +209,7 @@ make unit
 #### Integration tests
 Tests that run against the gpupgrade binary to verify the interaction between 
 components. Before writing a new integration test please review the 
-[README](https://github.com/greenplum-db/gpupgrade/blob/master/integration/README.md).
+[README](https://github.com/greenplum-db/gpupgrade/blob/main/integration/README.md).
 ```
 make integration
 ```
@@ -218,7 +218,7 @@ make integration
 Tests more end-to-end acceptance-level behavior between components. Tests are 
 located in the `test` directory and use the [BATS (Bash Automated Testing System)](https://github.com/bats-core/bats-core) 
 framework which can be installed on macOS with `brew install bats-core`.
-Please review the [integration/README](https://github.com/greenplum-db/gpupgrade/blob/master/integration/README.md).
+Please review the [integration/README](https://github.com/greenplum-db/gpupgrade/blob/main/integration/README.md).
 ```
 # Requires a GPDB cluster installed and running
 make acceptance
@@ -260,7 +260,7 @@ runs `go run ./parser/parse_template.go generated/template.yml generated/pipelin
 to create `ci/generated/pipeline.yml`. None of the generated files `template.yml` 
 or `pipeline.yml` are checked in.
 
-To update the production pipeline locally checkout master and be sure to pull 
+To update the production pipeline locally checkout main and be sure to pull 
 the latest code and fly with `PIPELINE_NAME=gpupgrade FLY_TARGET=prod make set-pipeline`
 
 To make the pipeline publicly visible run `make expose-pipeline`. This will 

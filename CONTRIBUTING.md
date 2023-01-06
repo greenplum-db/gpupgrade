@@ -1,6 +1,6 @@
 # Contributing
 
-We warmly welcome and appreciate contributions from the community! By participating you agree to the [code of conduct](https://github.com/greenplum-db/gpupgrade/blob/master/CODE-OF-CONDUCT.md).
+We warmly welcome and appreciate contributions from the community! By participating you agree to the [code of conduct](https://github.com/greenplum-db/gpupgrade/blob/main/CODE-OF-CONDUCT.md).
 
 ## Development
 - Gather input early and often rather than waiting until the end. 
@@ -56,7 +56,7 @@ Optimize the review experience for others. The goal is to make reviewing PRs eas
 
     - Try and follow similar coding styles as found throughout the code base.
 
-    - Rebase with master often to stay in sync with upstream.
+    - Rebase with main often to stay in sync with upstream.
 
     - Add appropriate tests and view coverage with `make coverage`.
 
@@ -80,9 +80,9 @@ Optimize the review experience for others. The goal is to make reviewing PRs eas
         git commit --squash <commit SHA>
         ```    
 
-    - Once approved, before merging into master squash your fixups with:
+    - Once approved, before merging into main squash your fixups with:
         ```
-        git rebase -i --autosquash origin/master
+        git rebase -i --autosquash origin/main
         git push --force-with-lease $USER <my-feature-branch>
         ```
 
@@ -95,7 +95,7 @@ Optimize the review experience for others. The goal is to make reviewing PRs eas
 - Use Github's “Start a review” feature to submit multiple comments into a single review.
 - Address PR comments with fixup or squash commits. This makes it easier for the review to see what changed.
   - Ideally wait until the PR has been approved to squash tehse commits, but sometimes it might be cleaner and easier to follow to combine them earlier.
-  - Rebasing your PR with master is good practice.
+  - Rebasing your PR with main is good practice.
 - Use Github’s “Resolve Conversation” button to indicate you addressed the feedback. There is no need for a comment unless you deviated from the reviewer's specific feedback.
 - Tag an individual person if you want a review from them, otherwise tag the "Upgrade" team. If you want a re-review, tag a specific person in a comment to send them a notification.
 
