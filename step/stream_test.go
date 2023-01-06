@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2022 VMware, Inc. or its affiliates
+// Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
 package step
@@ -19,7 +19,7 @@ import (
 )
 
 // Since we have no good way to test devNullStream, we instead
-//   provide an example.
+// provide an example.
 func ExampleDevNullStream() {
 	const (
 		stdout = "this command has progress..."

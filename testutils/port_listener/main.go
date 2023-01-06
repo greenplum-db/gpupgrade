@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2022 VMware, Inc. or its affiliates
+// Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
 // The port_listener utility listens on the specified port even during gRPC
@@ -6,8 +6,7 @@
 // than `lsof -Pi`.
 // Usage:
 //
-//   go run port_listener <port>
-//
+//	go run port_listener <port>
 package main
 
 import (

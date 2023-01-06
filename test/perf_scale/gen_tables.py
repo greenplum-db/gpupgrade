@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#  Copyright (c) 2017-2022 VMware, Inc. or its affiliates
+#  Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 #  SPDX-License-Identifier: Apache-2.0
 
 import argparse

@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2022 VMware, Inc. or its affiliates
+// Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
 package upgrade
@@ -29,38 +29,40 @@ func TablespacePath(tablespaceLocation string, dbID int32, majorVersion uint64, 
 
 // DeleteTablespaceDirectories deletes tablespace directories with the
 // following format:
-//   /dir/<fsname>/<datadir>/<tablespaceOid>/<dbId>/GPDB_<majorVersion>_<catalogVersion>
+//
+//	/dir/<fsname>/<datadir>/<tablespaceOid>/<dbId>/GPDB_<majorVersion>_<catalogVersion>
+//
 // It first deletes the specified directory and checks if its safe to delete the
 // parent dbID directory.
 //
 // Tablespace Directory Structure When Upgrading from 5X
 // =====================================================
 //
-//   DIR
-//   ├── filespace.txt
-//   ├── coordinator
-//   │   ├── demoDataDir-1
-//   │   │   └── 16385
-//   │   │       ├── 1
-//   │   │       │   └── GPDB_6_301908232
-//   │   │       │       └── 12812
-//   │   │       │           └── 16389
-//   │   │       └── 12094
-//   │   │           ├── 16384
-//   │   │           └── PG_VERSION
-//   ├── primary1
-//   │   └── demoDataDir0
-//   │       └── 16385
-//   │           ├── 12094
-//   │           │   ├── 16384
-//   │           │   └── PG_VERSION
-//   │           └── 2
-//   │               └── GPDB_6_301908232
-//   │                   └── 12812
-//   │                       └── 16389
+//	 DIR
+//	 ├── filespace.txt
+//	 ├── coordinator
+//	 │   ├── demoDataDir-1
+//	 │   │   └── 16385
+//	 │   │       ├── 1
+//	 │   │       │   └── GPDB_6_301908232
+//	 │   │       │       └── 12812
+//	 │   │       │           └── 16389
+//	 │   │       └── 12094
+//	 │   │           ├── 16384
+//	 │   │           └── PG_VERSION
+//	 ├── primary1
+//	 │   └── demoDataDir0
+//	 │       └── 16385
+//	 │           ├── 12094
+//	 │           │   ├── 16384
+//	 │           │   └── PG_VERSION
+//	 │           └── 2
+//	 │               └── GPDB_6_301908232
+//	 │                   └── 12812
+//	 │                       └── 16389
 //
-//  GPDB 5X:  /dir/<fsname>/<datadir>/<tablespaceOID>/<dbOID>/<relfilenode>
-//  GPDB 6X:  /dir/<fsname>/<datadir>/<tablespaceOID>/<dbID>/GPDB_6_<catalogVersion>/<dbOID>/<relfilenode>
+//	GPDB 5X:  /dir/<fsname>/<datadir>/<tablespaceOID>/<dbOID>/<relfilenode>
+//	GPDB 6X:  /dir/<fsname>/<datadir>/<tablespaceOID>/<dbID>/GPDB_6_<catalogVersion>/<dbOID>/<relfilenode>
 func DeleteTablespaceDirectories(streams step.OutStreams, dirs []string) error {
 	for _, dir := range dirs {
 		validTSDir, err := VerifyTablespaceDirectory(filepath.Dir(dir))
@@ -170,7 +172,7 @@ func VerifyTablespaceLocation(fsys fs.FS, tsLocation string) error {
 // No error is returned when the dbOid directory does not exist since
 // the user may not have created a table within the tablespace.
 // The expected tablespace directory layout is:
-//   /dir/<fsname>/<datadir>/<tablespaceOID>/<dbOID>/<relfilenode>
+// /dir/<fsname>/<datadir>/<tablespaceOID>/<dbOID>/<relfilenode>
 func VerifyLegacyTablespaceDbOIDDirectory(fsys fs.FS, dbOID string) (bool, error) {
 	path := filepath.Join(dbOID, PGVersion)
 	exist, err := PathExistInFS(fsys, path)
@@ -190,7 +192,7 @@ func VerifyLegacyTablespaceDbOIDDirectory(fsys fs.FS, dbOID string) (bool, error
 // and checks if the underlying directory starts with "GPDB_". Note that the
 // input path is one level down from the tablespace location.
 // The expected tablespace directory layout is:
-//   /dir/<fsname>/<datadir>/<tablespaceOID>/<dbID>/GPDB_6_<catalogVersion>/<dbOID>/<relfilenode>
+// /dir/<fsname>/<datadir>/<tablespaceOID>/<dbID>/GPDB_6_<catalogVersion>/<dbOID>/<relfilenode>
 func VerifyTablespaceDbIDDirectory(fsys fs.FS, dbID string) (bool, error) {
 	entries, err := fs.ReadDir(fsys, dbID)
 	if err != nil {
@@ -217,7 +219,7 @@ func VerifyTablespaceDbIDDirectory(fsys fs.FS, dbID string) (bool, error) {
 // and checks if the underlying directory starts with "GPDB_". Note that the
 // input path is one level down from the tablespace location.
 // The expected tablespace directory layout is:
-//   /dir/<fsname>/<datadir>/<tablespaceOID>/<dbID>/GPDB_6_<catalogVersion>/<dbOID>/<relfilenode>
+// /dir/<fsname>/<datadir>/<tablespaceOID>/<dbID>/GPDB_6_<catalogVersion>/<dbOID>/<relfilenode>
 func VerifyTablespaceDirectory(path string) (bool, error) {
 	entries, err := os.ReadDir(path)
 	if err != nil {

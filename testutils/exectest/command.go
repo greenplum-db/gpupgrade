@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2022 VMware, Inc. or its affiliates
+// Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
 // Package exectest provides helpers for test code that wants to mock out pieces
@@ -51,31 +51,29 @@ var runCalled = false
 // that any Main functions must be explicitly declared to the exectest package
 // by calling RegisterMains from the test package's init function:
 //
-//     func MyExecutable() {
-//         os.Exit(1)
-//     }
+//	func MyExecutable() {
+//	    os.Exit(1)
+//	}
 //
-//     func init() {
-//         exectest.RegisterMains(
-//             MyExecutable,
-//         )
-//     }
+//	func init() {
+//	    exectest.RegisterMains(
+//	        MyExecutable,
+//	    )
+//	}
 //
 // The second is that the test suite must be started using exectest.Run:
 //
-//     func TestMain(m *testing.M) {
-//         os.Exit(exectest.Run(m))
-//     }
+//	func TestMain(m *testing.M) {
+//	    os.Exit(exectest.Run(m))
+//	}
 //
 // Once these conditions are met, the function handed back from NewCommand may
 // be used exactly like you would use exec.Command():
 //
-//     execCommand := exectest.NewCommand(MyExecutable)
+//	execCommand := exectest.NewCommand(MyExecutable)
 //
-//     cmd := execCommand("/bin/bash", "-c", "sleep 15")
-//     cmd.Run() // this invokes MyExecutable, not Bash
-//
-//
+//	cmd := execCommand("/bin/bash", "-c", "sleep 15")
+//	cmd.Run() // this invokes MyExecutable, not Bash
 func NewCommand(m Main) Command {
 	// Sanity check. Ensure that our two boilerplate conditions have been met.
 	index := indexOf(m, mains)
@@ -104,17 +102,16 @@ func NewCommand(m Main) Command {
 // callback that is run against the supplied arguments. This allows unit tests
 // to explicitly check the arguments that are passed to exec.Command():
 //
-//     execCommand := exectest.NewCommandWithVerifier(MyExecutable,
-//         func(name string, arg ...string)) {
-//             if name != "/bin/bash" {
-//                 t.Errorf("didn't use Bash")
-//             }
-//         }
-//     )
+//	execCommand := exectest.NewCommandWithVerifier(MyExecutable,
+//	    func(name string, arg ...string)) {
+//	        if name != "/bin/bash" {
+//	            t.Errorf("didn't use Bash")
+//	        }
+//	    }
+//	)
 //
-//     execCommand("/bin/bash", "-c", "sleep 1") // succeeds
-//     execCommand("/bin/sh", "-c", "sleep 1")   // logs a test failure
-//
+//	execCommand("/bin/bash", "-c", "sleep 1") // succeeds
+//	execCommand("/bin/sh", "-c", "sleep 1")   // logs a test failure
 func NewCommandWithVerifier(m Main, verifier func(string, ...string)) Command {
 	cmdf := NewCommand(m)
 

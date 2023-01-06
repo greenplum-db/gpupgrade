@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2022 VMware, Inc. or its affiliates
+// Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
 /*
@@ -6,7 +6,7 @@ Package daemon provides utilities for programs that need to fork themselves into
 the background (for instance, a persistent server). Its primary function,
 MakeDaemonizable, adds the --daemonize option to a cobra.Command.
 
-Usage
+# Usage
 
 These utilities are designed for use with cobra.Command. Clients of the package
 need to do five things:
@@ -86,7 +86,7 @@ PersistentPreRun[E] steps; ErrSuccessfullyDaemonized will be returned from the
 PreRun step, which will stop further steps from executing. In the child process,
 and during execution without the --daemonize option, all steps run as usual.
 
-Motivation
+# Motivation
 
 This package helps solve a common race condition when initializing systems that
 have servers and dependent clients. Consider the following setup, where a client
@@ -141,7 +141,7 @@ This way, the server is guaranteed to either 1) be listening or 2) have
 terminated unexpectedly by the time the client's request is made, and error
 handling is greatly simplified.
 
-Implementation
+# Implementation
 
 The daemon package implements this signaling with standard POSIX streams and
 process exit codes, so no special client libraries are required. An intermediate
@@ -178,7 +178,6 @@ The full system looks like this:
 	| ----- make request ----------------------------------> |
 	| <-------------------------------------- response ----- |
 	|                                                        |
-
 */
 package daemon
 

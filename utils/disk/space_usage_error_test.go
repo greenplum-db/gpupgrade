@@ -1,13 +1,13 @@
-// Copyright (c) 2017-2022 VMware, Inc. or its affiliates
+// Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
 package disk_test
 
 import (
-	"github.com/greenplum-db/gpupgrade/idl"
 	"reflect"
 	"testing"
 
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils/disk"
 )
 
@@ -41,7 +41,7 @@ func TestFormatBytes(t *testing.T) {
 }
 
 func TestDiskSpaceError(t *testing.T) {
-	err := disk.NewSpaceUsageError(map[disk.FilesystemHost]*idl.CheckDiskSpaceReply_DiskUsage {
+	err := disk.NewSpaceUsageError(map[disk.FilesystemHost]*idl.CheckDiskSpaceReply_DiskUsage{
 		disk.FilesystemHost{Filesystem: "/", Host: "sdw1"}: {
 			Fs:        "/",
 			Host:      "sdw1",

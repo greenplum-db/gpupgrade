@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2022 VMware, Inc. or its affiliates
+// Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
 package errorlist
@@ -11,11 +11,11 @@ import (
 // Append takes at least two errors and combines them into a list. The rules are
 // as follows:
 //
-//  - If all of the errors being appended are nil, Append returns nil.
-//  - If exactly one of the errors being appended is non-nil, Append returns
-//    that error unchanged.
-//  - Otherwise, Append returns a slice of errors (wrapped in an Errors
-//    instance) consisting of the inputs, minus any nil errors.
+//   - If all of the errors being appended are nil, Append returns nil.
+//   - If exactly one of the errors being appended is non-nil, Append returns
+//     that error unchanged.
+//   - Otherwise, Append returns a slice of errors (wrapped in an Errors
+//     instance) consisting of the inputs, minus any nil errors.
 //
 // If any of the passed errors are themselves Errors slices, their contents will
 // be flattened into the resulting error. This behavior can be prevented by

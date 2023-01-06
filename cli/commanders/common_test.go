@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2022 VMware, Inc. or its affiliates
+// Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
 package commanders
@@ -45,12 +45,12 @@ func init() {
 // descriptors is a helper to redirect os.Stdout and os.Stderr and buffer the
 // bytes that are written to them.
 //
-//    d := BufferStandardDescriptors(t)
-//    defer d.Close()
+//	d := BufferStandardDescriptors(t)
+//	defer d.Close()
 //
-//    // write to os.Stdout and os.Stderr
+//	// write to os.Stdout and os.Stderr
 //
-//    bytesOut, bytesErr := d.Collect()
+//	bytesOut, bytesErr := d.Collect()
 //
 // All errors are handled through a t.Fatalf().
 type descriptors struct {

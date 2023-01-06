@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2022 VMware, Inc. or its affiliates
+// Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
 package testutils
@@ -14,12 +14,11 @@ import (
 // finishMock is a defer function to make the sqlmock API a little bit more like
 // gomock. Use it like this:
 //
-//     db, mock, err := sqlmock.New()
-//     if err != nil {
-//         t.Fatalf("couldn't create sqlmock: %v", err)
-//     }
-//     defer finishMock(mock, t)
-//
+//	db, mock, err := sqlmock.New()
+//	if err != nil {
+//	    t.Fatalf("couldn't create sqlmock: %v", err)
+//	}
+//	defer finishMock(mock, t)
 func FinishMock(mock sqlmock.Sqlmock, t *testing.T) {
 	t.Helper()
 

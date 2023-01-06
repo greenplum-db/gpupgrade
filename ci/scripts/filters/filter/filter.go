@@ -1,25 +1,25 @@
-// Copyright (c) 2017-2022 VMware, Inc. or its affiliates
+// Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
 /*
-	The filter command massages the post-upgrade SQL dump by removing known
-	differences. Different set of rules are applied for dump from greenplum
-	version 5 and 6. In general, the below set of rules are applied on the dump.
+The filter command massages the post-upgrade SQL dump by removing known
+differences. Different set of rules are applied for dump from greenplum
+version 5 and 6. In general, the below set of rules are applied on the dump.
 
-	- Line rules are regular expressions that will cause any matching lines to
-	be removed immediately.
+- Line rules are regular expressions that will cause any matching lines to
+be removed immediately.
 
-	- Block rules are regular expressions that cause any matching lines, and any
-	preceding comments or blank lines, to be removed.
+- Block rules are regular expressions that cause any matching lines, and any
+preceding comments or blank lines, to be removed.
 
-	- Formatting rules are a set of functions that can format the sql statement tokens
-	into a desired format
+- Formatting rules are a set of functions that can format the sql statement tokens
+into a desired format
 
-	filter reads from an input file and writes to stdout. Usage:
+filter reads from an input file and writes to stdout. Usage:
 
-		filter -version=5 -inputFile=dump.sql > dump-filtered.sql
+	filter -version=5 -inputFile=dump.sql > dump-filtered.sql
 
-	Error handling is basic: any failures result in a log.Fatal() call.
+Error handling is basic: any failures result in a log.Fatal() call.
 */
 package main
 

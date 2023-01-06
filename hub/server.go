@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2022 VMware, Inc. or its affiliates
+// Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
 package hub
@@ -136,8 +136,7 @@ func (s *Server) StopServices(ctx context.Context, in *idl.StopServicesRequest) 
 	return &idl.StopServicesReply{}, nil
 }
 
-// TODO: Add unit tests which is currently tricky due to h.AgentConns()
-//  mutating global state
+// TODO: Add unit tests which is currently tricky due to h.AgentConns() mutating global state
 func (s *Server) StopAgents() error {
 	request := func(conn *idl.Connection) error {
 		_, err := conn.AgentClient.StopAgent(context.Background(), &idl.StopAgentRequest{})

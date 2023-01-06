@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2022 VMware, Inc. or its affiliates
+// Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
 package upgrade_test
@@ -74,8 +74,8 @@ func TestIDCommand(_ *testing.T) {
 }
 
 // Make sure we are filtering out "--".  Empirical testing shows about 300 iterations
-//  are required to hit a "--", so we choose 10000 to ensure we'd catch an erroneous
-//  implementation.  This test takes 10ms on my laptop.
+// are required to hit a "--", so we choose 10000 to ensure we'd catch an erroneous
+// implementation.  This test takes 10ms on my laptop.
 func TestNoDoubleDash(t *testing.T) {
 	for i := 0; i < 10000; i++ {
 		id := upgrade.NewID()

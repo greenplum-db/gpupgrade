@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2022 VMware, Inc. or its affiliates
+// Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
 package step
@@ -24,7 +24,7 @@ type OutStreamsCloser interface {
 }
 
 // DevNullStream provides an implementation of OutStreams that drops
-//   all writes to it.
+// all writes to it.
 var DevNullStream = devNullStream{}
 
 type devNullStream struct{}
@@ -38,7 +38,7 @@ func (_ devNullStream) Stderr() io.Writer {
 }
 
 // BufferedStreams provides an implementation of OutStreams that stores
-//   all writes to underlying bytes.Buffer objects.
+// all writes to underlying bytes.Buffer objects.
 type BufferedStreams struct {
 	StdoutBuf bytes.Buffer
 	StderrBuf bytes.Buffer

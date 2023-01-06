@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2022 VMware, Inc. or its affiliates
+// Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
 package upgrade
@@ -60,15 +60,15 @@ func TempDataDir(datadir, segPrefix string, id ID) string {
 }
 
 // GetArchiveDirectoryName returns the name of the file to be used to store logs
-//   from this run of gpupgrade during a revert.
+// from this run of gpupgrade during a revert.
 func GetArchiveDirectoryName(id ID, t time.Time) string {
 	return fmt.Sprintf("gpupgrade-%s-%s", id.String(), t.Format("2006-01-02T15:04"))
 }
 
 // RenameDirectories archives the source directory, and renames
 // source to target. For example:
-//   source '/data/dbfast1/demoDataDir0' becomes archive '/data/dbfast1/demoDataDir.123ABC.0.old'
-//   target '/data/dbfast1/demoDataDir.123ABC.0' becomes source '/data/dbfast1/demoDataDir0'
+// source '/data/dbfast1/demoDataDir0' becomes archive '/data/dbfast1/demoDataDir.123ABC.0.old'
+// target '/data/dbfast1/demoDataDir.123ABC.0' becomes source '/data/dbfast1/demoDataDir0'
 func RenameDirectories(source, target string) error {
 	// Instead of manipulating the source to create the archive we append the
 	// old suffix to the target to achieve the same result.
