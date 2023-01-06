@@ -74,8 +74,8 @@ func TestUpgradePrimaries(t *testing.T) {
 						Action:           idl.PgOptions_check,
 						Role:             greenplum.PrimaryRole,
 						ContentID:        0,
-						Mode:             idl.PgOptions_segment,
-						LinkMode:         false,
+						PgUpgradeMode:    idl.PgOptions_segment,
+						Mode:             idl.Mode_copy,
 						TargetVersion:    "6.0.0",
 						OldBinDir:        "/usr/local/gpdb5/bin",
 						OldDataDir:       "/data/dbfast1/seg1",
@@ -93,8 +93,8 @@ func TestUpgradePrimaries(t *testing.T) {
 						Action:           idl.PgOptions_check,
 						Role:             greenplum.PrimaryRole,
 						ContentID:        2,
-						Mode:             idl.PgOptions_segment,
-						LinkMode:         false,
+						PgUpgradeMode:    idl.PgOptions_segment,
+						Mode:             idl.Mode_copy,
 						TargetVersion:    "6.0.0",
 						OldBinDir:        "/usr/local/gpdb5/bin",
 						OldDataDir:       "/data/dbfast3/seg3",
@@ -122,8 +122,8 @@ func TestUpgradePrimaries(t *testing.T) {
 						Action:           idl.PgOptions_check,
 						Role:             greenplum.PrimaryRole,
 						ContentID:        1,
-						Mode:             idl.PgOptions_segment,
-						LinkMode:         false,
+						PgUpgradeMode:    idl.PgOptions_segment,
+						Mode:             idl.Mode_copy,
 						TargetVersion:    "6.0.0",
 						OldBinDir:        "/usr/local/gpdb5/bin",
 						OldDataDir:       "/data/dbfast2/seg2",
@@ -141,8 +141,8 @@ func TestUpgradePrimaries(t *testing.T) {
 						Action:           idl.PgOptions_check,
 						Role:             greenplum.PrimaryRole,
 						ContentID:        3,
-						Mode:             idl.PgOptions_segment,
-						LinkMode:         false,
+						PgUpgradeMode:    idl.PgOptions_segment,
+						Mode:             idl.Mode_copy,
 						TargetVersion:    "6.0.0",
 						OldBinDir:        "/usr/local/gpdb5/bin",
 						OldDataDir:       "/data/dbfast4/seg4",
@@ -163,7 +163,7 @@ func TestUpgradePrimaries(t *testing.T) {
 			{AgentClient: sdw2, Hostname: "sdw2"},
 		}
 
-		err := hub.UpgradePrimaries(agentConns, backupDir, true, source, intermediate, idl.PgOptions_check, false)
+		err := hub.UpgradePrimaries(agentConns, backupDir, true, source, intermediate, idl.PgOptions_check, idl.Mode_copy)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -209,7 +209,7 @@ func TestUpgradePrimaries(t *testing.T) {
 				{AgentClient: sdw2, Hostname: "sdw2"},
 			}
 
-			err := hub.UpgradePrimaries(agentConns, backupDir, false, source, intermediate, c.Action, true)
+			err := hub.UpgradePrimaries(agentConns, backupDir, false, source, intermediate, c.Action, idl.Mode_link)
 			var errs errorlist.Errors
 			if !xerrors.As(err, &errs) {
 				t.Fatalf("error %#v does not contain type %T", err, errs)

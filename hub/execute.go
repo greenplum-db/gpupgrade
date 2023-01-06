@@ -39,7 +39,7 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 	})
 
 	st.Run(idl.Substep_upgrade_master, func(streams step.OutStreams) error {
-		return UpgradeCoordinator(streams, s.BackupDir, req.PgUpgradeVerbose, s.Source, s.Intermediate, idl.PgOptions_upgrade, s.LinkMode)
+		return UpgradeCoordinator(streams, s.BackupDir, req.PgUpgradeVerbose, s.Source, s.Intermediate, idl.PgOptions_upgrade, s.Mode)
 	})
 
 	st.Run(idl.Substep_copy_master, func(streams step.OutStreams) error {
@@ -86,7 +86,7 @@ of the master data directory such as /data given /data/master/gpseg-1.`
 	})
 
 	st.Run(idl.Substep_upgrade_primaries, func(streams step.OutStreams) error {
-		return UpgradePrimaries(s.agentConns, s.BackupDir, req.PgUpgradeVerbose, s.Source, s.Intermediate, idl.PgOptions_upgrade, s.LinkMode)
+		return UpgradePrimaries(s.agentConns, s.BackupDir, req.PgUpgradeVerbose, s.Source, s.Intermediate, idl.PgOptions_upgrade, s.Mode)
 	})
 
 	st.Run(idl.Substep_start_target_cluster, func(streams step.OutStreams) error {

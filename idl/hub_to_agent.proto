@@ -3,6 +3,8 @@
 
 syntax = "proto3";
 
+import "common.proto";
+
 package idl;
 
 service Agent {
@@ -26,8 +28,8 @@ service Agent {
 }
 
 message PgOptions {
-  enum Mode {
-    unknown_mode = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
+  enum PgUpgradeMode {
+    unknown_pgUpgradeMode = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
     dispatcher = 1;
     segment = 2;
   }
@@ -43,9 +45,9 @@ message PgOptions {
   Action action = 3;
   string role = 4;
   int32 contentID = 5;
-  Mode mode = 6;
+  PgUpgradeMode pgUpgradeMode = 6;
   string oldOptions = 7;
-  bool linkMode = 8;
+  Mode mode = 8;
   string targetVersion = 9;
   string oldBinDir = 10;
   string oldDataDir = 11;

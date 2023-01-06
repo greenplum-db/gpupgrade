@@ -360,7 +360,7 @@ type Config struct {
 
 	Port            int
 	AgentPort       int
-	LinkMode        bool
+	Mode            idl.Mode
 	UseHbaHostnames bool
 	UpgradeID       upgrade.ID
 }

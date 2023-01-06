@@ -10,6 +10,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+
+	"github.com/greenplum-db/gpupgrade/idl"
 )
 
 func TestParsePorts(t *testing.T) {
@@ -61,43 +63,43 @@ func TestParsePorts(t *testing.T) {
 	}
 }
 
-func TestIsLinkMode(t *testing.T) {
+func TestParseMode(t *testing.T) {
 	cases := []struct {
 		name     string
 		mode     string
-		expected bool
+		expected idl.Mode
 	}{
 		{
 			name:     "parses copy",
 			mode:     "copy",
-			expected: false,
+			expected: idl.Mode_copy,
 		},
 		{
 			name:     "parses link",
 			mode:     "link",
-			expected: true,
+			expected: idl.Mode_link,
 		},
 		{
 			name:     "parses capitalizations",
 			mode:     "LiNk",
-			expected: true,
+			expected: idl.Mode_link,
 		},
 		{
 			name:     "trims spaces",
 			mode:     " link  \t",
-			expected: true,
+			expected: idl.Mode_link,
 		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			linkMode, err := isLinkMode(c.mode)
+			mode, err := parseMode(c.mode)
 			if err != nil {
 				t.Errorf("unexpected error %#v", err)
 			}
 
-			if linkMode != c.expected {
-				t.Errorf("got %t want %t", linkMode, c.expected)
+			if mode != c.expected {
+				t.Errorf("got %s want %s", mode, c.expected)
 			}
 		})
 	}
@@ -122,13 +124,13 @@ func TestIsLinkMode(t *testing.T) {
 
 	for _, c := range errCases {
 		t.Run(c.name, func(t *testing.T) {
-			linkMode, err := isLinkMode(c.mode)
+			mode, err := parseMode(c.mode)
 			if err == nil {
-				t.Errorf("isLinkMode(%q) returned %v instead of an error", c.mode, err)
+				t.Errorf("parseMode(%q) returned %v instead of an error", c.mode, err)
 			}
 
-			if linkMode != false {
-				t.Errorf("got linkMode %t want %t", linkMode, false)
+			if mode != idl.Mode_unknown_mode {
+				t.Errorf("got mode %s want %s", mode, idl.Mode_unknown_mode)
 			}
 		})
 	}

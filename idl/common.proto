@@ -1,0 +1,19 @@
+// Copyright (c) 2017-2023 VMware, Inc. or its affiliates
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package idl;
+
+enum Mode {
+    unknown_mode = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
+    copy = 1;
+    link = 2;
+}
+
+enum ClusterDestination {
+  unknown_destination = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
+  source = 1;
+  intermediate = 2;
+  target = 3;
+}

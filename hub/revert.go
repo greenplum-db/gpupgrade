@@ -36,7 +36,7 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 		return err
 	}
 
-	if !s.Source.HasAllMirrorsAndStandby() && s.LinkMode && hasExecuteStarted {
+	if !s.Source.HasAllMirrorsAndStandby() && (s.Mode == idl.Mode_link) && hasExecuteStarted {
 		return errors.New(`The source cluster does not have standby and/or mirrors and is being upgraded in link mode. Execute has started.
 Cannot revert and restore the source cluster. Please contact support.`)
 	}
@@ -62,11 +62,11 @@ Cannot revert and restore the source cluster. Please contact support.`)
 		})
 
 	// See "Reverting to old cluster" from https://www.postgresql.org/docs/9.4/pgupgrade.html
-	st.RunConditionally(idl.Substep_restore_pgcontrol, s.LinkMode, func(streams step.OutStreams) error {
+	st.RunConditionally(idl.Substep_restore_pgcontrol, s.Mode == idl.Mode_link, func(streams step.OutStreams) error {
 		return RestoreCoordinatorAndPrimariesPgControl(streams, s.agentConns, s.Source)
 	})
 
-	st.RunConditionally(idl.Substep_restore_source_cluster, s.LinkMode && s.Source.HasAllMirrorsAndStandby(), func(stream step.OutStreams) error {
+	st.RunConditionally(idl.Substep_restore_source_cluster, s.Mode == idl.Mode_link && s.Source.HasAllMirrorsAndStandby(), func(stream step.OutStreams) error {
 		if err := RsyncCoordinatorAndPrimaries(stream, s.agentConns, s.Source); err != nil {
 			return err
 		}
@@ -86,7 +86,7 @@ Cannot revert and restore the source cluster. Please contact support.`)
 	// mirrors do not start causing gpstart to return a non-zero exit status.
 	// Ignore such failures, as gprecoverseg is executed to bring up the mirrors.
 	// Running gprecoverseg is expected to not take long.
-	shouldHandle5XMirrorFailure := s.Source.Version.Major == 5 && !s.LinkMode && primariesUpgraded
+	shouldHandle5XMirrorFailure := s.Source.Version.Major == 5 && s.Mode != idl.Mode_link && primariesUpgraded
 
 	st.Run(idl.Substep_start_source_cluster, func(streams step.OutStreams) error {
 		err = s.Source.Start(streams)

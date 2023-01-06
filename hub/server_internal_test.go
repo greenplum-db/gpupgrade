@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 )
@@ -30,7 +31,7 @@ func TestConfig(t *testing.T) {
 			target,
 			12345,           // Port
 			54321,           // AgentPort
-			false,           // LinkMode
+			idl.Mode_copy,   // Mode
 			false,           // UseHbaHostnames
 			upgrade.NewID(), // UpgradeID
 		}

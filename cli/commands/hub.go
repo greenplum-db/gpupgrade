@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/greenplum-db/gpupgrade/hub"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/daemon"
@@ -48,7 +49,7 @@ func Hub() *cobra.Command {
 			conf := &hub.Config{
 				Port:      port,
 				AgentPort: upgrade.DefaultAgentPort,
-				LinkMode:  false,
+				Mode:      idl.Mode_copy,
 			}
 
 			err = hub.LoadConfig(conf, upgrade.GetConfigFile())

@@ -4,7 +4,7 @@
 package idl
 
 // Creates the .pb.go protobuf definitions.
-//go:generate protoc --plugin=../dev-bin/protoc-gen-go --go_out=plugins=grpc:. cli_to_hub.proto hub_to_agent.proto
+//go:generate protoc --plugin=../dev-bin/protoc-gen-go --go_out=plugins=grpc:. common.proto cli_to_hub.proto hub_to_agent.proto
 
 // Generates mocks for the above definitions.
 //go:generate ../dev-bin/mockgen -destination mock_idl/mock_cli_to_hub.pb.go github.com/greenplum-db/gpupgrade/idl CliToHubClient,CliToHubServer,CliToHub_ExecuteServer,CliToHub_ExecuteClient

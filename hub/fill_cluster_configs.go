@@ -70,7 +70,7 @@ func FillConfiguration(config *Config, request *idl.InitializeRequest, saveConfi
 	config.Target.Destination = idl.ClusterDestination_target
 	config.Target.GPHome = request.GetTargetGPHome()
 	config.Target.Version = targetVersion
-	config.LinkMode = request.GetLinkMode()
+	config.Mode = request.GetMode()
 
 	var ports []int
 	for _, p := range request.GetPorts() {

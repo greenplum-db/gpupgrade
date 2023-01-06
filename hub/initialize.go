@@ -179,11 +179,11 @@ func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest
 	})
 
 	st.AlwaysRun(idl.Substep_check_upgrade, func(stream step.OutStreams) error {
-		if err := UpgradeCoordinator(stream, s.BackupDir, req.PgUpgradeVerbose, s.Source, s.Intermediate, idl.PgOptions_check, s.LinkMode); err != nil {
+		if err := UpgradeCoordinator(stream, s.BackupDir, req.PgUpgradeVerbose, s.Source, s.Intermediate, idl.PgOptions_check, s.Mode); err != nil {
 			return err
 		}
 
-		return UpgradePrimaries(s.agentConns, s.BackupDir, req.PgUpgradeVerbose, s.Source, s.Intermediate, idl.PgOptions_check, s.LinkMode)
+		return UpgradePrimaries(s.agentConns, s.BackupDir, req.PgUpgradeVerbose, s.Source, s.Intermediate, idl.PgOptions_check, s.Mode)
 	})
 
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_InitializeResponse{

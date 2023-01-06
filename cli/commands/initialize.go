@@ -115,16 +115,15 @@ func initialize() *cobra.Command {
 				}
 			}
 
-			linkMode, err := isLinkMode(mode)
+			mode, err := parseMode(mode)
 			if err != nil {
 				return err
 			}
 
 			// if diskFreeRatio is not explicitly set, use defaults
 			if !cmd.Flag("disk-free-ratio").Changed {
-				if linkMode {
-					diskFreeRatio = 0.2
-				} else {
+				diskFreeRatio = 0.2
+				if mode == idl.Mode_copy {
 					diskFreeRatio = 0.6
 				}
 			}
@@ -241,7 +240,7 @@ func initialize() *cobra.Command {
 					SourceGPHome:    filepath.Clean(sourceGPHome),
 					TargetGPHome:    filepath.Clean(targetGPHome),
 					SourcePort:      int32(sourcePort),
-					LinkMode:        linkMode,
+					Mode:            mode,
 					UseHbaHostnames: useHbaHostnames,
 					Ports:           parsedPorts,
 					ParentBackupDir: parentBackupDir,
@@ -274,7 +273,7 @@ func initialize() *cobra.Command {
 			})
 
 			revertWarning := ""
-			if !response.GetHasAllMirrorsAndStandby() && linkMode {
+			if !response.GetHasAllMirrorsAndStandby() && mode == idl.Mode_link {
 				revertWarning = revertWarningText
 			}
 
@@ -361,19 +360,21 @@ func parsePorts(val string) ([]uint32, error) {
 	return ports, nil
 }
 
-// isLinkMode parses the mode flag returning an error if it is not copy or link.
-// It returns true if mode is link.
-func isLinkMode(input string) (bool, error) {
-	choices := []string{"copy", "link"}
+// parseMode parses the mode flag returning an error if it is not a valid mode choice.
+func parseMode(input string) (idl.Mode, error) {
+	input = strings.ToLower(strings.TrimSpace(input))
+	if modeInt, ok := idl.Mode_value[input]; ok {
+		return idl.Mode(modeInt), nil
+	}
 
-	mode := strings.ToLower(strings.TrimSpace(input))
-	for _, choice := range choices {
-		if mode == choice {
-			return mode == "link", nil
+	var choices []string
+	for _, mode := range idl.Mode_name {
+		if mode != idl.Mode_unknown_mode.String() {
+			choices = append(choices, mode)
 		}
 	}
 
-	return false, fmt.Errorf("Invalid input %q. Please specify either %s.", input, strings.Join(choices, " or "))
+	return idl.Mode_unknown_mode, fmt.Errorf("Invalid input %q. Please specify either %s.", input, strings.Join(choices, ", "))
 }
 
 func addFlags(cmd *cobra.Command, flags map[string]string) error {

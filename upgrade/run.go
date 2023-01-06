@@ -42,29 +42,29 @@ func Run(stdout, stderr io.Writer, opts *idl.PgOptions) error {
 		"--new-datadir", opts.GetNewDataDir(),
 		"--old-port", opts.GetOldPort(),
 		"--new-port", opts.GetNewPort(),
-		"--mode", opts.GetMode().String(),
+		"--mode", opts.GetPgUpgradeMode().String(),
 	}
 
-	if opts.PgUpgradeVerbose {
+	if opts.GetPgUpgradeVerbose() {
 		args = append(args, "--verbose")
 	}
 
-	if opts.Action == idl.PgOptions_check {
+	if opts.GetAction() == idl.PgOptions_check {
 		args = append(args, "--check")
 		args = append(args, "--continue-check-on-fatal")
 	}
 
-	if opts.LinkMode {
+	if opts.GetMode() == idl.Mode_link {
 		args = append(args, "--link")
 	}
 
-	if opts.OldOptions != "" {
+	if opts.GetOldOptions() != "" {
 		args = append(args, "--old-options", opts.GetOldOptions())
 	}
 
 	// Below 7X, specify the dbid's for upgrading tablespaces.
-	if semver.MustParse(opts.TargetVersion).Major < 7 {
-		if opts.Action != idl.PgOptions_check {
+	if semver.MustParse(opts.GetTargetVersion()).Major < 7 {
+		if opts.GetAction() != idl.PgOptions_check {
 			args = append(args, "--old-tablespaces-file", utils.GetOldTablespacesFile(opts.GetBackupDir()))
 		}
 

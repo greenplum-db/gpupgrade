@@ -3,6 +3,8 @@
 
 syntax = "proto3";
 
+import "common.proto";
+
 package idl;
 
 service CliToHub {
@@ -16,19 +18,12 @@ service CliToHub {
     rpc StopServices(StopServicesRequest) returns (StopServicesReply) {}
 }
 
-enum ClusterDestination {
-  unknown_destination = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
-  source = 1;
-  intermediate = 2;
-  target = 3;
-}
-
 message InitializeRequest {
     int32 agentPort = 1;
     string sourceGPHome = 2;
     string targetGPHome = 3;
     int32 sourcePort = 4;
-    bool linkMode = 5;
+    Mode mode = 5;
     bool useHbaHostnames = 6;
     repeated uint32 ports = 7;
     string parentBackupDir = 8;
