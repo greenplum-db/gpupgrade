@@ -195,7 +195,7 @@
         run:
           path: gpupgrade_src/ci/scripts/upgrade-extensions.bash
       params:
-        MODE: "link"
+        MODE: link
         FILTER_DIFF: 1
         DIFF_FILE: extensions.diff
     {{- else }}
@@ -217,9 +217,7 @@
         {{- if ne .Source .Target }}
         FILTER_DIFF: 1
         {{- end }}
-        {{- if .LinkMode}}
-        MODE: "link"
-        {{- end}}
+        MODE: {{ .Mode }}
         {{- if .RetailDemo}}
         DIFF_FILE: retail_demo.diff
         {{- end }}

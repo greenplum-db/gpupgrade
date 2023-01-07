@@ -21,20 +21,29 @@ func (c *AcceptanceJob) Name() string {
 	return fmt.Sprintf("%s-to-%s-%s-acceptance-tests", c.Source, c.Target, c.OSVersion)
 }
 
+// Mode
+
+type Mode string
+
+const (
+	copy Mode = "copy"
+	link Mode = "link"
+)
+
 // upgrade jobs
 
 type UpgradeJob struct {
 	Source, Target string
 	PrimariesOnly  bool
 	NoStandby      bool
-	LinkMode       bool
+	Mode           Mode
 	RetailDemo     bool
 	TestExtensions bool
 	OSVersion      string
 }
 
 func (j *UpgradeJob) Name() string {
-	return fmt.Sprintf("%s-to-%s-%s-e2e%s", j.Source, j.Target, j.OSVersion, j.Suffix())
+	return fmt.Sprintf("%s-to-%s-%s-e2e-%s-mode%s", j.Source, j.Target, j.OSVersion, j.Mode, j.Suffix())
 }
 
 func (j *UpgradeJob) Suffix() string {
@@ -45,8 +54,6 @@ func (j *UpgradeJob) Suffix() string {
 		suffix = "-primaries-only"
 	case j.NoStandby:
 		suffix = "-no-standby"
-	case j.LinkMode:
-		suffix = "-link-mode"
 	case j.RetailDemo:
 		suffix = "-retail-demo"
 	case j.TestExtensions:

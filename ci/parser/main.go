@@ -129,6 +129,7 @@ func init() {
 			Source:    version.sourceVersion,
 			Target:    version.targetVersion,
 			OSVersion: version.osVersion,
+			Mode:      copy,
 		})
 
 		if version.SpecialJobs {
@@ -141,7 +142,6 @@ func init() {
 	}
 
 	specialUpgradeJobs := UpgradeJobs{
-		{LinkMode: true},
 		{PrimariesOnly: true},
 		{NoStandby: true},
 		{RetailDemo: true},
@@ -159,6 +159,7 @@ func init() {
 			job.Source = version.sourceVersion
 			job.Target = version.targetVersion
 			job.OSVersion = version.osVersion
+			job.Mode = link
 
 			upgradeJobs = append(upgradeJobs, job)
 		}
