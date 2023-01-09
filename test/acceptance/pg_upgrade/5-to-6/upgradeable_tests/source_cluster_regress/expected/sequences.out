@@ -1,0 +1,32 @@
+-- Copyright (c) 2017-2023 VMware, Inc. or its affiliates
+-- SPDX-License-Identifier: Apache-2.0
+
+-- Test to ensure that sequences can be upgraded.
+
+--------------------------------------------------------------------------------
+-- Create and setup upgradeable objects
+--------------------------------------------------------------------------------
+
+CREATE SEQUENCE serial_seq START 100;
+CREATE
+SELECT nextval('serial_seq');
+ nextval 
+---------
+ 100     
+(1 row)
+
+CREATE TABLE tbl_with_sequence(id INT NOT NULL DEFAULT nextval('serial_seq'), t text);
+CREATE
+ALTER SEQUENCE serial_seq OWNED BY tbl_with_sequence.id;
+ALTER
+
+INSERT INTO tbl_with_sequence(t) VALUES('test1');
+INSERT 1
+INSERT INTO tbl_with_sequence(t) VALUES('test2');
+INSERT 1
+
+SELECT * FROM serial_seq;
+ sequence_name | last_value | increment_by | max_value           | min_value | cache_value | log_cnt | is_cycled | is_called 
+---------------+------------+--------------+---------------------+-----------+-------------+---------+-----------+-----------
+ serial_seq    | 102        | 1            | 9223372036854775807 | 1         | 1           | 30      | f         | t         
+(1 row)
