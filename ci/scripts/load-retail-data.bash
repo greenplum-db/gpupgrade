@@ -14,8 +14,8 @@ export PGPORT=5432
 mapfile -t hosts < cluster_env_files/hostfile_all
 
 # Copy binaries to test runner container to help compile bm.so
-scp -qr mdw:${GPHOME_SOURCE} ${GPHOME_SOURCE}
-scp -qr mdw:${GPHOME_TARGET} ${GPHOME_TARGET}
+scp -qr cdw:${GPHOME_SOURCE} ${GPHOME_SOURCE}
+scp -qr cdw:${GPHOME_TARGET} ${GPHOME_TARGET}
 
 pushd retail_demo_src/box_muller/
   # make bm.so for source cluster
@@ -37,7 +37,7 @@ pushd retail_demo_src/box_muller/
   done
 popd
 
-# extract demo_data for both mdw and segments
+# extract demo_data for both cdw and segments
 pushd retail_demo_src
     tar xf demo_data.tar.xz
 
@@ -50,11 +50,11 @@ pushd retail_demo_src
     popd
 popd
 
-# copy extracted demo_data and retail_demo_src to mdw
-scp -qr retail_demo_src mdw:/home/gpadmin/industry_demo/
+# copy extracted demo_data and retail_demo_src to cdw
+scp -qr retail_demo_src cdw:/home/gpadmin/industry_demo/
 
 # create database and tables
-ssh mdw <<EOF
+ssh cdw <<EOF
     set -x
 
     source ${GPHOME_SOURCE}/greenplum_path.sh
@@ -77,12 +77,12 @@ for host in "${hosts[@]}"; do
 done
 
 # prepare and generate data
-time ssh mdw <<EOF
+time ssh cdw <<EOF
     set -eux -o pipefail
 
     source ${GPHOME_SOURCE}/greenplum_path.sh
     export PGPORT=${PGPORT}
-    export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
+    export MASTER_DATA_DIRECTORY=/data/gpdata/coordinator/gpseg-1
 
     # Why do we need to restart in order to have the bm.so extension take affect?
     gpstop -ar
@@ -116,11 +116,11 @@ time ssh mdw <<EOF
 EOF
 
 # perform upgrade fixups:
-ssh mdw "
+ssh cdw "
     set -eux -o pipefail
 
     source ${GPHOME_SOURCE}/greenplum_path.sh
-    export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
+    export MASTER_DATA_DIRECTORY=/data/gpdata/coordinator/gpseg-1
 
     gpupgrade generate --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --output-dir /home/gpadmin/gpupgrade
     gpupgrade apply    --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --input-dir /home/gpadmin/gpupgrade --phase initialize

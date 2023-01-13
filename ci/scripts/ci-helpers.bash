@@ -6,7 +6,7 @@ set -eux -o pipefail
 
 is_GPDB5() {
     local gphome=$1
-    version=$(ssh mdw "$gphome"/bin/postgres --gp-version)
+    version=$(ssh cdw "$gphome"/bin/postgres --gp-version)
     [[ $version =~ ^"postgres (Greenplum Database) 5." ]]
 }
 
@@ -15,11 +15,11 @@ is_GPDB5() {
 #    so change it to escape to match GPDB 5 representation
 configure_gpdb_gucs() {
     local gphome=$1
-    ssh -n mdw "
+    ssh -n cdw "
         set -eux -o pipefail
 
         source ${gphome}/greenplum_path.sh
-        export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
+        export MASTER_DATA_DIRECTORY=/data/gpdata/coordinator/gpseg-1
         gpconfig -c bytea_output -v escape
         gpstop -u
 "
@@ -27,11 +27,11 @@ configure_gpdb_gucs() {
 
 reindex_all_dbs() {
     local gphome=$1
-    ssh -n mdw "
+    ssh -n cdw "
         set -eux -o pipefail
 
         source ${gphome}/greenplum_path.sh
-        export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
+        export MASTER_DATA_DIRECTORY=/data/gpdata/coordinator/gpseg-1
         reindexdb -a
 "
 }
@@ -42,7 +42,7 @@ dump_sql() {
 
     echo "Dumping cluster contents from port ${port} to ${dumpfile}..."
 
-    ssh -n mdw "
+    ssh -n cdw "
         set -eux -o pipefail
 
         source ${GPHOME_TARGET}/greenplum_path.sh
@@ -60,11 +60,11 @@ compare_dumps() {
         # 5 to 6 requires some massaging of the diff due to expected changes.
         if (( $FILTER_DIFF )); then
             go build ./ci/scripts/filters/filter
-            scp ./filter mdw:/tmp/filter
+            scp ./filter cdw:/tmp/filter
 
             # First filter out any algorithmically-fixable differences, then
             # patch out the remaining expected diffs explicitly.
-            ssh mdw "
+            ssh cdw "
                 /tmp/filter -version=6 -inputFile='$target_dump' > '$target_dump.filtered'
                 patch -R '$target_dump.filtered'
             " < ./ci/scripts/filters/${DIFF_FILE}
@@ -72,7 +72,7 @@ compare_dumps() {
             target_dump="$target_dump.filtered"
 
             # Run the filter on the source dump
-            ssh -n mdw "
+            ssh -n cdw "
                 /tmp/filter -version=5 -inputFile='$source_dump' > '$source_dump.filtered'
             "
 
@@ -80,7 +80,7 @@ compare_dumps() {
         fi
     popd
 
-    ssh -n mdw "
+    ssh -n cdw "
         diff -U3 --speed-large-files --ignore-space-change --ignore-blank-lines '$source_dump' '$target_dump'
     "
 }

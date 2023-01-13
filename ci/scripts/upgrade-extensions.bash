@@ -12,16 +12,16 @@ DIFF_FILE=${DIFF_FILE:-"icw.diff"}
 
 export GPHOME_SOURCE=/usr/local/greenplum-db-source
 export GPHOME_TARGET=/usr/local/greenplum-db-target
-export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
+export MASTER_DATA_DIRECTORY=/data/gpdata/coordinator/gpseg-1
 export PGPORT=5432
 
 ./ccp_src/scripts/setup_ssh_to_cluster.sh
 
 echo "Copying extensions to the target cluster..."
-scp postgis_gppkg_target/postgis*.gppkg gpadmin@mdw:/tmp/postgis_target.gppkg
-scp madlib_gppkg_target/madlib*.gppkg gpadmin@mdw:/tmp/madlib_target.gppkg
-scp plr_gppkg_target/plr*.gppkg gpadmin@mdw:/tmp/plr_target.gppkg
-scp plcontainer_gppkg_target/*.gppkg gpadmin@mdw:/tmp/plcontainer_target.gppkg
+scp postgis_gppkg_target/postgis*.gppkg gpadmin@cdw:/tmp/postgis_target.gppkg
+scp madlib_gppkg_target/madlib*.gppkg gpadmin@cdw:/tmp/madlib_target.gppkg
+scp plr_gppkg_target/plr*.gppkg gpadmin@cdw:/tmp/plr_target.gppkg
+scp plcontainer_gppkg_target/*.gppkg gpadmin@cdw:/tmp/plcontainer_target.gppkg
 
 # PXF SNAPSHOT builds are only available as an RPM inside a tar.gz
 tar -xf pxf_rpm_target/pxf*.tar.gz --directory pxf_rpm_target --strip-components=1 --wildcards '*.rpm'
@@ -38,7 +38,7 @@ for host in "${hosts[@]}"; do
     "
 done
 
-ssh -n mdw "
+ssh -n cdw "
     set -eux -o pipefail
     export GPHOME=${GPHOME_SOURCE}
     export PXF_BASE=/home/gpadmin/pxf
@@ -55,7 +55,7 @@ echo "Dumping the source cluster for comparing after upgrade..."
 dump_sql $PGPORT /tmp/source.sql
 
 echo "Performing gpupgrade..."
-time ssh -n mdw "
+time ssh -n cdw "
     set -ex -o pipefail
 
     echo 'Running initialize to create target cluster....'
@@ -133,7 +133,7 @@ if ! compare_dumps /tmp/source.sql /tmp/target.sql; then
 fi
 
 echo "Applying post-upgrade extension fixups after comparing dumps..."
-ssh -n mdw "
+ssh -n cdw "
     set -eux -o pipefail
 
     source /usr/local/greenplum-db-target/greenplum_path.sh

@@ -249,7 +249,7 @@ validate_mirrors_and_standby() {
     wait_can_start_transactions $standby_host "${standby_port}"  #TODO: is this necessary?
 
     # sanity check both the demo cluster and CI cluster cases
-    if [[ $coordinator_data_dir != *datadirs/qddir/demoDataDir* && $coordinator_data_dir != */data/gpdata/master/gpseg-1* ]]; then
+    if [[ $coordinator_data_dir != *datadirs/qddir/demoDataDir* && $coordinator_data_dir != */data/gpdata/coordinator/gpseg-1* ]]; then
         echo "cowardly refusing to delete $coordinator_data_dir which does not look like a demo or CI coordinator data dir"
         exit 1
     fi
@@ -291,7 +291,7 @@ validate_mirrors_and_standby() {
     # 4d: rebalance standby
 
     # sanity check both the demo cluster and CI cluster cases
-    if [[ $standby_data_dir != *datadirs/standby* && $standby_data_dir != */data/gpdata/master/gpseg-1* ]]; then
+    if [[ $standby_data_dir != *datadirs/standby* && $standby_data_dir != */data/gpdata/coordinator/gpseg-1* ]]; then
         echo "cowardly refusing to delete $standby_data_dir which does not look like a demo or CI standby data dir"
         exit 1
     fi

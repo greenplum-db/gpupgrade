@@ -6,15 +6,15 @@ set -eux -o pipefail
 
 export GPHOME_SOURCE=/usr/local/greenplum-db-source
 export GPHOME_TARGET=/usr/local/greenplum-db-target
-export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
+export MASTER_DATA_DIRECTORY=/data/gpdata/coordinator/gpseg-1
 export PGPORT=5432
 
 ./ccp_src/scripts/setup_ssh_to_cluster.sh
 
-scp sqldump/dump.sql.xz gpadmin@mdw:/tmp/
+scp sqldump/dump.sql.xz gpadmin@cdw:/tmp/
 
 echo "Loading the SQL dump into the source cluster..."
-time ssh -n gpadmin@mdw "
+time ssh -n gpadmin@cdw "
     set -eux -o pipefail
 
     source /usr/local/greenplum-db-source/greenplum_path.sh
@@ -25,7 +25,7 @@ time ssh -n gpadmin@mdw "
 "
 
 echo "Running the data migration scripts and workarounds on the source cluster..."
-time ssh -n mdw "
+time ssh -n cdw "
     set -eux -o pipefail
 
     source /usr/local/greenplum-db-source/greenplum_path.sh
@@ -43,7 +43,7 @@ SQL_EOF
 "
 
 echo "Dropping views referencing deprecated objects..."
-ssh -n mdw "
+ssh -n cdw "
     set -eux -o pipefail
 
     source /usr/local/greenplum-db-source/greenplum_path.sh
@@ -53,7 +53,7 @@ ssh -n mdw "
 "
 
 echo "Dropping columns with abstime, reltime, tinterval user data types..."
-columns=$(ssh -n mdw "
+columns=$(ssh -n cdw "
     set -eux -o pipefail
 
     source /usr/local/greenplum-db-source/greenplum_path.sh
@@ -81,7 +81,7 @@ SQL_EOF
 
 echo "${columns}" | while read -r schema table column; do
     if [ -n "${column}" ]; then
-        ssh -n mdw "
+        ssh -n cdw "
             set -eux -o pipefail
 
             source /usr/local/greenplum-db-source/greenplum_path.sh
@@ -92,7 +92,7 @@ echo "${columns}" | while read -r schema table column; do
 done
 
 echo "Dropping gp_inject_fault extension used only for regression tests and not shipped..."
-databases=$(ssh -n mdw "
+databases=$(ssh -n cdw "
     set -eux -o pipefail
 
     source /usr/local/greenplum-db-source/greenplum_path.sh
@@ -106,7 +106,7 @@ SQL_EOF
 
 echo "${databases}" | while read -r database; do
     if [[ -n "${database}" ]]; then
-        ssh -n mdw "
+        ssh -n cdw "
             set -eux -o pipefail
 
             source /usr/local/greenplum-db-source/greenplum_path.sh
@@ -117,7 +117,7 @@ echo "${databases}" | while read -r database; do
 done
 
 echo "Dropping unsupported functions..."
-ssh -n mdw "
+ssh -n cdw "
     set -eux -o pipefail
 
     source /usr/local/greenplum-db-source/greenplum_path.sh

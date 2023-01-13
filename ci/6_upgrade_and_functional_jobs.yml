@@ -72,7 +72,7 @@
           {{- if .PrimariesOnly}}
           mirrors: false
           {{- else if not .NoStandby}}
-          standby_master: true
+          standby_coordinator: true
           {{- end}}
           instance_type: n1-standard-2
           number_of_nodes: 4
@@ -249,7 +249,7 @@
               source gpupgrade_src/test/acceptance/helpers/finalize_checks.bash
 
               echo 'Doing failover tests of mirrors and standby...'
-              validate_mirrors_and_standby /usr/local/greenplum-db-target mdw 5432
+              validate_mirrors_and_standby /usr/local/greenplum-db-target cdw 5432
     {{- end -}}
     {{- end }}
   ensure:

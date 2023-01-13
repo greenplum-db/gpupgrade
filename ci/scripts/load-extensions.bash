@@ -8,18 +8,18 @@ source gpupgrade_src/ci/scripts/ci-helpers.bash
 
 export GPHOME_SOURCE=/usr/local/greenplum-db-source
 export GPHOME_TARGET=/usr/local/greenplum-db-target
-export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
+export MASTER_DATA_DIRECTORY=/data/gpdata/coordinator/gpseg-1
 export PGPORT=5432
 
 ./ccp_src/scripts/setup_ssh_to_cluster.sh
 
 echo "Copying extensions to the source cluster..."
-scp gptext_targz_source/greenplum-text*.tar.gz gpadmin@mdw:/tmp/gptext_source.tar.gz
-scp postgis_gppkg_source/postgis*.gppkg gpadmin@mdw:/tmp/postgis_source.gppkg
-scp sqldump/*.sql gpadmin@mdw:/tmp/postgis_dump.sql
-scp madlib_gppkg_source/madlib*.gppkg gpadmin@mdw:/tmp/madlib_source.gppkg
-scp plr_gppkg_source/plr*.gppkg gpadmin@mdw:/tmp/plr_source.gppkg
-scp plcontainer_gppkg_source/*.gppkg gpadmin@mdw:/tmp/plcontainer_source.gppkg
+scp gptext_targz_source/greenplum-text*.tar.gz gpadmin@cdw:/tmp/gptext_source.tar.gz
+scp postgis_gppkg_source/postgis*.gppkg gpadmin@cdw:/tmp/postgis_source.gppkg
+scp sqldump/*.sql gpadmin@cdw:/tmp/postgis_dump.sql
+scp madlib_gppkg_source/madlib*.gppkg gpadmin@cdw:/tmp/madlib_source.gppkg
+scp plr_gppkg_source/plr*.gppkg gpadmin@cdw:/tmp/plr_source.gppkg
+scp plcontainer_gppkg_source/*.gppkg gpadmin@cdw:/tmp/plcontainer_source.gppkg
 
 echo "Installing extensions and sample data on source cluster..."
 
@@ -53,7 +53,7 @@ for host in "${hosts[@]}"; do
 done
 
 echo "Installing GPDB extensions and sample data on source cluster..."
-time ssh -n mdw "
+time ssh -n cdw "
     set -eux -o pipefail
     source /usr/local/greenplum-db-source/greenplum_path.sh
     export MASTER_DATA_DIRECTORY=$MASTER_DATA_DIRECTORY
@@ -62,7 +62,7 @@ time ssh -n mdw "
     tar -xzvf /tmp/gptext_source.tar.gz -C /tmp/
     chmod +x /tmp/greenplum-text*.bin
     sed -i -r 's/GPTEXT_HOSTS\=\(localhost\)/GPTEXT_HOSTS\=\"ALLSEGHOSTS\"/' /tmp/gptext_install_config
-    sed -i -r 's/ZOO_HOSTS.*/ZOO_HOSTS\=\(mdw mdw mdw\)/' /tmp/gptext_install_config
+    sed -i -r 's/ZOO_HOSTS.*/ZOO_HOSTS\=\(cdw cdw cdw\)/' /tmp/gptext_install_config
 
     /tmp/greenplum-text*.bin -c /tmp/gptext_install_config -d /usr/local/greenplum-db-text
     source /usr/local/greenplum-db-text/greenplum-text_path.sh
@@ -175,7 +175,7 @@ SQL_EOF
 "
 
 echo "Installing postgres native extensions and sample data on source cluster..."
-time ssh -n mdw "
+time ssh -n cdw "
     set -eux -o pipefail
 
     source /usr/local/greenplum-db-source/greenplum_path.sh
@@ -245,7 +245,7 @@ SQL_EOF
 "
 
 echo "Running the data migration scripts on the source cluster..."
-ssh -n mdw "
+ssh -n cdw "
     set -eux -o pipefail
 
     source /usr/local/greenplum-db-source/greenplum_path.sh

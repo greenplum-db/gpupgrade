@@ -24,7 +24,7 @@
       params:
         <<: *ccp_default_params
         vars:
-          standby_master: true
+          standby_coordinator: true
           instance_type: n1-standard-2
           number_of_nodes: 4
           PLATFORM: {{.OSVersion}}
