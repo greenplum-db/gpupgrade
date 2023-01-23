@@ -1,0 +1,26 @@
+-- Copyright (c) 2017-2023 VMware, Inc. or its affiliates
+-- SPDX-License-Identifier: Apache-2.0
+
+SELECT t.typname, te.typoptions FROM pg_type_encoding te LEFT JOIN pg_type t ON (t.oid=te.typid);
+ typname         | typoptions                                             
+-----------------+--------------------------------------------------------
+ _char_zlib_type | {compresstype=zlib,blocksize=16384,compresslevel=2}    
+ _int_rle_type   | {compresstype=rle_type,blocksize=8192,compresslevel=1} 
+ _mood           | {compresstype=zlib,blocksize=65536,compresslevel=4}    
+ char_zlib_type  | {compresstype=zlib,blocksize=16384,compresslevel=2}    
+ int_rle_type    | {compresstype=rle_type,blocksize=8192,compresslevel=1} 
+ mood            | {compresstype=zlib,blocksize=65536,compresslevel=4}    
+ us_zip_code     | {compresstype=zlib,blocksize=32768,compresslevel=3}    
+(7 rows)
+
+INSERT INTO aoco_custom_encoded_types VALUES (3, '444', 'd', '44444-4444', 'happy');
+INSERT 1
+
+SELECT * FROM aoco_custom_encoded_types;
+ a | b   | c | d          | e     
+---+-----+---+------------+-------
+ 0 | 1   | a | 11111      | sad   
+ 1 | 20  | b | 22222      | ok    
+ 2 | 123 | c | 33333-3333 | happy 
+ 3 | 444 | d | 44444-4444 | happy 
+(4 rows)
