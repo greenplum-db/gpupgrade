@@ -13,7 +13,7 @@ SELECT * FROM p_ao_table_with_multiple_segfiles;
  1  | Jane    
  1  | Jane    
 (5 rows)
-SELECT * FROM p_ao_table_with_multiple_segfiles;
+SELECT * FROM p_aoco_table_with_multiple_segfiles;
  id | name    
 ----+---------
  2  | Jane    

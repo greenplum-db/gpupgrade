@@ -4,4 +4,4 @@
 --------------------------------------------------------------------------------
 -- Validate that the upgradeable objects are functional post-upgrade
 --------------------------------------------------------------------------------
-SELECT * FROM ao_users;
+SELECT * FROM aoco_users;

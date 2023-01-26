@@ -5,4 +5,4 @@
 -- Validate that the upgradeable objects are functional post-upgrade
 --------------------------------------------------------------------------------
 SELECT * FROM p_ao_table_with_multiple_segfiles;
-SELECT * FROM p_ao_table_with_multiple_segfiles;
+SELECT * FROM p_aoco_table_with_multiple_segfiles;
