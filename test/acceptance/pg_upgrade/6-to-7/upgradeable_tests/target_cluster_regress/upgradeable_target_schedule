@@ -1,2 +1,2 @@
-test: user_defined_aggregates user_defined_types
+test: user_defined_aggregates user_defined_types aoco_dropped_col_and_encoding
 test: vacuum_freeze_tables
