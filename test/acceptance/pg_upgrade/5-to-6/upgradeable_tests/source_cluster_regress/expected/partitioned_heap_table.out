@@ -75,7 +75,7 @@ CREATE TABLE p_subpart_heap (id int, age int) DISTRIBUTED BY (id) PARTITION BY R
 CREATE
 INSERT INTO p_subpart_heap (id, age) VALUES (1, 10), (2, 20);
 INSERT 2
-VACUUM FREEZE;
+VACUUM FREEZE p_subpart_heap;
 VACUUM
 
 

@@ -54,7 +54,7 @@ ALTER TABLE p_split_partition_test SPLIT DEFAULT PARTITION START(2) END(5) INTO 
 CREATE TABLE p_subpart_heap (id int, age int) DISTRIBUTED BY (id) PARTITION BY RANGE (id) SUBPARTITION BY RANGE (age) (PARTITION partition_id START(1) END(3) 
 ( SUBPARTITION subpartition_age_first START(1) END(20), SUBPARTITION subpartition_age_second START(20) END(30) ));
 INSERT INTO p_subpart_heap (id, age) VALUES (1, 10), (2, 20);
-VACUUM FREEZE;
+VACUUM FREEZE p_subpart_heap;
 
 
 --
