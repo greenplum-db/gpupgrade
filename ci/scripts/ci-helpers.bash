@@ -63,10 +63,14 @@ compare_dumps() {
             scp ./filter cdw:/tmp/filter
 
             # First filter out any algorithmically-fixable differences, then
-            # patch out the remaining expected diffs explicitly.
+            # patch out the remaining expected diffs explicitly. We patch with
+            # --ignore-whitespace because the patches could have been created
+            # with `diff --ignore-space-change` which can cause some hunks to
+            # have missing whitespace diffs (this is actually a good thing to
+            # lower patch size).
             ssh cdw "
                 /tmp/filter -version=6 -inputFile='$target_dump' > '$target_dump.filtered'
-                patch -R '$target_dump.filtered'
+                patch --ignore-whitespace -R '$target_dump.filtered'
             " < ./ci/scripts/filters/${DIFF_FILE}
 
             target_dump="$target_dump.filtered"

@@ -1,16 +1,931 @@
---- source.sql	2019-11-19 16:15:52.000000000 -0700
-+++ /dev/fd/63	2019-11-19 18:02:03.000000000 -0700
-@@ -131,10 +132,11 @@
- SET xmloption = content;
- SET client_min_messages = warning;
- 
--SET default_tablespace = '';
--
- SET default_with_oids = false;
- 
-+
-+SET default_tablespace = '';
-+
+--- /tmp/source.sql.filtered	2023-02-09 02:17:34.344105368 +0000
++++ /tmp/target.sql.filtered	2023-02-09 02:40:54.721720361 +0000
+@@ -6206829,7 +6206842,7 @@
  --
- -- Name: test_table; Type: TABLE; Schema: public; Owner: gpadmin; Tablespace: 
+ 
+ CREATE VIEW public.locktest_master AS
+-SELECT COALESCE(CASE WHEN (c.relname ~~ 'pg_toast%index'::text) THEN 'toast index'::name WHEN (c.relname ~~ 'pg_toast%'::text) THEN 'toast table'::name WHEN (c.relname ~~ 'pg_aoseg%'::text) THEN 'aoseg table'::name WHEN (c.relname ~~ 'pg_aovisimap%index'::text) THEN 'aovisimap index'::name WHEN (c.relname ~~ 'pg_aovisimap%'::text) THEN 'aovisimap table'::name ELSE c.relname END, 'dropped table'::name) AS "coalesce", l.mode, l.locktype, 'master'::text AS node FROM (pg_locks l LEFT JOIN pg_class c ON ((((l.locktype = 'append-only segment file'::text) AND (l.relation = c.relfilenode)) OR ((l.locktype <> 'append-only segment file'::text) AND (l.relation = c.oid))))), pg_database d WHERE (((((l.relation IS NOT NULL) AND (l.database = d.oid)) AND (((c.relname <> 'gp_fault_strategy'::name) AND (c.relname <> 'locktest_master'::name)) OR (c.relname IS NULL))) AND (d.datname = current_database())) AND (l.gp_segment_id = (-1))) GROUP BY l.gp_segment_id, l.relation, c.relname, l.locktype, l.mode ORDER BY COALESCE(CASE WHEN (c.relname ~~ 'pg_toast%index'::text) THEN 'toast index'::name WHEN (c.relname ~~ 'pg_toast%'::text) THEN 'toast table'::name WHEN (c.relname ~~ 'pg_aoseg%'::text) THEN 'aoseg table'::name WHEN (c.relname ~~ 'pg_aovisimap%index'::text) THEN 'aovisimap index'::name WHEN (c.relname ~~ 'pg_aovisimap%'::text) THEN 'aovisimap table'::name ELSE c.relname END, 'dropped table'::name), l.locktype, l.mode;
++SELECT COALESCE(CASE WHEN (c.relname ~~ 'pg_toast%index'::text) THEN 'toast index'::name WHEN (c.relname ~~ 'pg_toast%'::text) THEN 'toast table'::name WHEN (c.relname ~~ 'pg_aoseg%'::text) THEN 'aoseg table'::name WHEN (c.relname ~~ 'pg_aovisimap%index'::text) THEN 'aovisimap index'::name WHEN (c.relname ~~ 'pg_aovisimap%'::text) THEN 'aovisimap table'::name ELSE c.relname END, 'dropped table'::name) AS "coalesce", l.mode, l.locktype, 'master'::text AS node FROM (pg_locks l LEFT JOIN pg_class c ON ((((l.locktype = 'append-only segment file'::text) AND (l.relation = c.relfilenode)) OR ((l.locktype <> 'append-only segment file'::text) AND (l.relation = c.oid))))), pg_database d WHERE (((((l.relation IS NOT NULL) AND (l.database = d.oid)) AND (((c.relname <> 'gp_fault_strategy'::name) AND (c.relname <> 'locktest_master'::name)) OR (c.relname IS NULL))) AND (d.datname = current_database())) AND (l.gp_segment_id = '-1'::integer)) GROUP BY l.gp_segment_id, l.relation, c.relname, l.locktype, l.mode ORDER BY COALESCE(CASE WHEN (c.relname ~~ 'pg_toast%index'::text) THEN 'toast index'::name WHEN (c.relname ~~ 'pg_toast%'::text) THEN 'toast table'::name WHEN (c.relname ~~ 'pg_aoseg%'::text) THEN 'aoseg table'::name WHEN (c.relname ~~ 'pg_aovisimap%index'::text) THEN 'aovisimap index'::name WHEN (c.relname ~~ 'pg_aovisimap%'::text) THEN 'aovisimap table'::name ELSE c.relname END, 'dropped table'::name), l.locktype, l.mode;
+ 
+ 
+ ALTER TABLE public.locktest_master OWNER TO gpadmin;
+@@ -6206839,7 +6206852,7 @@
  --
+ 
+ CREATE VIEW public.locktest_segments_dist AS
+-SELECT c.relname, l.mode, l.locktype, l.gp_segment_id AS node, l.relation FROM (pg_locks l LEFT JOIN pg_class c ON ((((l.locktype = 'append-only segment file'::text) AND (l.relation = c.relfilenode)) OR ((l.locktype <> 'append-only segment file'::text) AND (l.relation = c.oid))))), pg_database d WHERE (((((l.relation IS NOT NULL) AND (l.database = d.oid)) AND (((c.relname <> 'gp_fault_strategy'::name) AND (c.relname <> 'locktest_segments_dist'::name)) OR (c.relname IS NULL))) AND (d.datname = current_database())) AND (l.gp_segment_id > (-1))) GROUP BY l.gp_segment_id, l.relation, c.relname, l.locktype, l.mode;
++SELECT c.relname, l.mode, l.locktype, l.gp_segment_id AS node, l.relation FROM (pg_locks l LEFT JOIN pg_class c ON ((((l.locktype = 'append-only segment file'::text) AND (l.relation = c.relfilenode)) OR ((l.locktype <> 'append-only segment file'::text) AND (l.relation = c.oid))))), pg_database d WHERE (((((l.relation IS NOT NULL) AND (l.database = d.oid)) AND (((c.relname <> 'gp_fault_strategy'::name) AND (c.relname <> 'locktest_segments_dist'::name)) OR (c.relname IS NULL))) AND (d.datname = current_database())) AND (l.gp_segment_id > '-1'::integer)) GROUP BY l.gp_segment_id, l.relation, c.relname, l.locktype, l.mode;
+ 
+ 
+ ALTER TABLE public.locktest_segments_dist OWNER TO gpadmin;
+@@ -6287820,11 +6287838,11 @@
+ )
+  DISTRIBUTED BY (col1) PARTITION BY LIST(col2) 
+           (
+-          PARTITION part1 VALUES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) WITH (tablename='pt_lt_tab_1_prt_part1', appendonly=false ), 
+-          PARTITION part2 VALUES(11, 12, 13, 14, 15, 16, 17, 18, 19, 20) WITH (tablename='pt_lt_tab_1_prt_part2', appendonly=false ), 
+-          PARTITION part3 VALUES(21, 22, 23, 24, 25, 26, 27, 28, 29, 30) WITH (tablename='pt_lt_tab_1_prt_part3', appendonly=false ), 
+-          PARTITION part4 VALUES(31, 32, 33, 34, 35, 36, 37, 38, 39, 40) WITH (tablename='pt_lt_tab_1_prt_part4', appendonly=false ), 
+-          PARTITION part5 VALUES(41, 42, 43, 44, 45, 46, 47, 48, 49, 50) WITH (tablename='pt_lt_tab_1_prt_part5', appendonly=false )
++          PARTITION part1 VALUES('1', '2', '3', '4', '5', '6', '7', '8', '9', '10') WITH (tablename='pt_lt_tab_1_prt_part1', appendonly=false ), 
++          PARTITION part2 VALUES('11', '12', '13', '14', '15', '16', '17', '18', '19', '20') WITH (tablename='pt_lt_tab_1_prt_part2', appendonly=false ), 
++          PARTITION part3 VALUES('21', '22', '23', '24', '25', '26', '27', '28', '29', '30') WITH (tablename='pt_lt_tab_1_prt_part3', appendonly=false ), 
++          PARTITION part4 VALUES('31', '32', '33', '34', '35', '36', '37', '38', '39', '40') WITH (tablename='pt_lt_tab_1_prt_part4', appendonly=false ), 
++          PARTITION part5 VALUES('41', '42', '43', '44', '45', '46', '47', '48', '49', '50') WITH (tablename='pt_lt_tab_1_prt_part5', appendonly=false )
+           );
+  ;
+ 
+@@ -6287843,11 +6287861,11 @@
+ )
+  DISTRIBUTED BY (col1) PARTITION BY LIST(col2) 
+           (
+-          PARTITION part1 VALUES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) WITH (tablename='pt_lt_tab_df_1_prt_part1', appendonly=false ), 
+-          PARTITION part2 VALUES(11, 12, 13, 14, 15, 16, 17, 18, 19, 20) WITH (tablename='pt_lt_tab_df_1_prt_part2', appendonly=false ), 
+-          PARTITION part3 VALUES(21, 22, 23, 24, 25, 26, 27, 28, 29, 30) WITH (tablename='pt_lt_tab_df_1_prt_part3', appendonly=false ), 
+-          PARTITION part4 VALUES(31, 32, 33, 34, 35, 36, 37, 38, 39, 40) WITH (tablename='pt_lt_tab_df_1_prt_part4', appendonly=false ), 
+-          PARTITION part5 VALUES(41, 42, 43, 44, 45, 46, 47, 48, 49, 50) WITH (tablename='pt_lt_tab_df_1_prt_part5', appendonly=false ), 
++          PARTITION part1 VALUES('1', '2', '3', '4', '5', '6', '7', '8', '9', '10') WITH (tablename='pt_lt_tab_df_1_prt_part1', appendonly=false ), 
++          PARTITION part2 VALUES('11', '12', '13', '14', '15', '16', '17', '18', '19', '20') WITH (tablename='pt_lt_tab_df_1_prt_part2', appendonly=false ), 
++          PARTITION part3 VALUES('21', '22', '23', '24', '25', '26', '27', '28', '29', '30') WITH (tablename='pt_lt_tab_df_1_prt_part3', appendonly=false ), 
++          PARTITION part4 VALUES('31', '32', '33', '34', '35', '36', '37', '38', '39', '40') WITH (tablename='pt_lt_tab_df_1_prt_part4', appendonly=false ), 
++          PARTITION part5 VALUES('41', '42', '43', '44', '45', '46', '47', '48', '49', '50') WITH (tablename='pt_lt_tab_df_1_prt_part5', appendonly=false ), 
+           DEFAULT PARTITION def  WITH (tablename='pt_lt_tab_df_1_prt_def', appendonly=false )
+           );
+  ;
+@@ -6289286,43 +6289304,43 @@
+                   SUBPARTITION BY RANGE(l_commitdate)
+                           SUBPARTITION BY LIST(l_discount) 
+           (
+-          PARTITION p1 VALUES(0, 0.08) WITH (tablename='aopart_lineitem_1_prt_p1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ) 
++          PARTITION p1 VALUES('0', 0.08) WITH (tablename='aopart_lineitem_1_prt_p1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true )
+                   (
+                   START (1) END (1666667) EVERY (1666666) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ) 
+                           (
+                           START ('1992-01-31'::date) END ('1993-04-30'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_1_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_1_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_1_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_1_4_prt_3', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true )
+                                   ), 
+                           START ('1993-04-30'::date) END ('1994-07-31'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_2', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_2_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_2_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_2_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_2_4_prt_3', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true )
+                                   ), 
+                           START ('1994-07-31'::date) END ('1995-10-31'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_3', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_3_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_3_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_3_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_3_4_prt_3', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true )
+                                   ), 
+                           START ('1995-10-31'::date) END ('1997-01-31'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_4', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_4_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_4_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_4_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_4_4_prt_3', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true )
+                                   ), 
+                           START ('1997-01-31'::date) END ('1998-04-30'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_5', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_5_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_5_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_5_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_5_4_prt_3', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true )
+                                   ), 
+                           START ('1998-04-30'::date) END ('1998-11-01'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_6', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_6_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_6_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_6_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_1_3_prt_6_4_prt_3', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true )
+                                   )
+@@ -6289331,37 +6289349,37 @@
+                           (
+                           START ('1992-01-31'::date) END ('1993-04-30'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_1_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_1_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_1_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_1_4_prt_3', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true )
+                                   ), 
+                           START ('1993-04-30'::date) END ('1994-07-31'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_2', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_2_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_2_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_2_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_2_4_prt_3', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true )
+                                   ), 
+                           START ('1994-07-31'::date) END ('1995-10-31'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_3', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_3_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_3_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_3_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_3_4_prt_3', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true )
+                                   ), 
+                           START ('1995-10-31'::date) END ('1997-01-31'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_4', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_4_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_4_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_4_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_4_4_prt_3', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true )
+                                   ), 
+                           START ('1997-01-31'::date) END ('1998-04-30'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_5', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_5_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_5_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_5_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_5_4_prt_3', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true )
+                                   ), 
+                           START ('1998-04-30'::date) END ('1998-11-01'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_6', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_6_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_6_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_6_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_2_3_prt_6_4_prt_3', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true )
+                                   )
+@@ -6289370,37 +6289388,37 @@
+                           (
+                           START ('1992-01-31'::date) END ('1993-04-30'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_1_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_1_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_1_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_1_4_prt_3', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true )
+                                   ), 
+                           START ('1993-04-30'::date) END ('1994-07-31'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_2', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_2_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_2_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_2_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_2_4_prt_3', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true )
+                                   ), 
+                           START ('1994-07-31'::date) END ('1995-10-31'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_3', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_3_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_3_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_3_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_3_4_prt_3', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true )
+                                   ), 
+                           START ('1995-10-31'::date) END ('1997-01-31'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_4', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_4_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_4_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_4_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_4_4_prt_3', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true )
+                                   ), 
+                           START ('1997-01-31'::date) END ('1998-04-30'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_5', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_5_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_5_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_5_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_5_4_prt_3', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true )
+                                   ), 
+                           START ('1998-04-30'::date) END ('1998-11-01'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_6', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_6_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_6_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_6_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_3_3_prt_6_4_prt_3', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true )
+                                   )
+@@ -6289409,37 +6289427,37 @@
+                           (
+                           START ('1992-01-31'::date) END ('1993-04-30'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_1_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_1_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_1_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_1_4_prt_3', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true )
+                                   ), 
+                           START ('1993-04-30'::date) END ('1994-07-31'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_2', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_2_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_2_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_2_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_2_4_prt_3', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true )
+                                   ), 
+                           START ('1994-07-31'::date) END ('1995-10-31'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_3', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_3_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_3_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_3_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_3_4_prt_3', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true )
+                                   ), 
+                           START ('1995-10-31'::date) END ('1997-01-31'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_4', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_4_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_4_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_4_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_4_4_prt_3', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true )
+                                   ), 
+                           START ('1997-01-31'::date) END ('1998-04-30'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_5', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_5_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_5_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_5_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_5_4_prt_3', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true )
+                                   ), 
+                           START ('1998-04-30'::date) END ('1998-11-01'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_6', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_6_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_6_4_prt_1', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_6_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p1_2_prt_4_3_prt_6_4_prt_3', orientation=row, compresslevel=1, compresstype=zlib, appendonly=true, checksum=true )
+                                   )
+@@ -6289451,37 +6289469,37 @@
+                           (
+                           START ('1992-01-31'::date) END ('1993-04-30'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_1_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_1_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_1_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_1_4_prt_3', orientation=row, appendonly=true, checksum=false, compresslevel=3 )
+                                   ), 
+                           START ('1993-04-30'::date) END ('1994-07-31'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_2', orientation=row, appendonly=true, checksum=false, compresslevel=3 ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_2_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_2_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_2_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_2_4_prt_3', orientation=row, appendonly=true, checksum=false, compresslevel=3 )
+                                   ), 
+                           START ('1994-07-31'::date) END ('1995-10-31'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_3', orientation=row, appendonly=true, checksum=false, compresslevel=3 ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_3_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_3_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_3_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_3_4_prt_3', orientation=row, appendonly=true, checksum=false, compresslevel=3 )
+                                   ), 
+                           START ('1995-10-31'::date) END ('1997-01-31'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_4', orientation=row, appendonly=true, checksum=false, compresslevel=3 ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_4_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_4_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_4_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_4_4_prt_3', orientation=row, appendonly=true, checksum=false, compresslevel=3 )
+                                   ), 
+                           START ('1997-01-31'::date) END ('1998-04-30'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_5', orientation=row, appendonly=true, checksum=false, compresslevel=3 ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_5_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_5_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_5_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_5_4_prt_3', orientation=row, appendonly=true, checksum=false, compresslevel=3 )
+                                   ), 
+                           START ('1998-04-30'::date) END ('1998-11-01'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_6', orientation=row, appendonly=true, checksum=false, compresslevel=3 ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_6_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_6_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_6_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_1_3_prt_6_4_prt_3', orientation=row, appendonly=true, checksum=false, compresslevel=3 )
+                                   )
+@@ -6289490,37 +6289508,37 @@
+                           (
+                           START ('1992-01-31'::date) END ('1993-04-30'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_1_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_1_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_1_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_1_4_prt_3', orientation=row, appendonly=true, checksum=false, compresslevel=3 )
+                                   ), 
+                           START ('1993-04-30'::date) END ('1994-07-31'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_2', orientation=row, appendonly=true, checksum=false, compresslevel=3 ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_2_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_2_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_2_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_2_4_prt_3', orientation=row, appendonly=true, checksum=false, compresslevel=3 )
+                                   ), 
+                           START ('1994-07-31'::date) END ('1995-10-31'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_3', orientation=row, appendonly=true, checksum=false, compresslevel=3 ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_3_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_3_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_3_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_3_4_prt_3', orientation=row, appendonly=true, checksum=false, compresslevel=3 )
+                                   ), 
+                           START ('1995-10-31'::date) END ('1997-01-31'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_4', orientation=row, appendonly=true, checksum=false, compresslevel=3 ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_4_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_4_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_4_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_4_4_prt_3', orientation=row, appendonly=true, checksum=false, compresslevel=3 )
+                                   ), 
+                           START ('1997-01-31'::date) END ('1998-04-30'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_5', orientation=row, appendonly=true, checksum=false, compresslevel=3 ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_5_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_5_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_5_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_5_4_prt_3', orientation=row, appendonly=true, checksum=false, compresslevel=3 )
+                                   ), 
+                           START ('1998-04-30'::date) END ('1998-11-01'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_6', orientation=row, appendonly=true, checksum=false, compresslevel=3 ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_6_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_6_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_6_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_2_3_prt_6_4_prt_3', orientation=row, appendonly=true, checksum=false, compresslevel=3 )
+                                   )
+@@ -6289529,37 +6289547,37 @@
+                           (
+                           START ('1992-01-31'::date) END ('1993-04-30'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_1_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_1_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_1_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_1_4_prt_3', orientation=row, appendonly=true, checksum=false, compresslevel=3 )
+                                   ), 
+                           START ('1993-04-30'::date) END ('1994-07-31'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_2', orientation=row, appendonly=true, checksum=false, compresslevel=3 ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_2_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_2_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_2_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_2_4_prt_3', orientation=row, appendonly=true, checksum=false, compresslevel=3 )
+                                   ), 
+                           START ('1994-07-31'::date) END ('1995-10-31'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_3', orientation=row, appendonly=true, checksum=false, compresslevel=3 ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_3_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_3_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_3_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_3_4_prt_3', orientation=row, appendonly=true, checksum=false, compresslevel=3 )
+                                   ), 
+                           START ('1995-10-31'::date) END ('1997-01-31'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_4', orientation=row, appendonly=true, checksum=false, compresslevel=3 ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_4_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_4_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_4_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_4_4_prt_3', orientation=row, appendonly=true, checksum=false, compresslevel=3 )
+                                   ), 
+                           START ('1997-01-31'::date) END ('1998-04-30'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_5', orientation=row, appendonly=true, checksum=false, compresslevel=3 ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_5_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_5_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_5_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_5_4_prt_3', orientation=row, appendonly=true, checksum=false, compresslevel=3 )
+                                   ), 
+                           START ('1998-04-30'::date) END ('1998-11-01'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_6', orientation=row, appendonly=true, checksum=false, compresslevel=3 ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_6_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_6_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_6_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_3_3_prt_6_4_prt_3', orientation=row, appendonly=true, checksum=false, compresslevel=3 )
+                                   )
+@@ -6289568,37 +6289586,37 @@
+                           (
+                           START ('1992-01-31'::date) END ('1993-04-30'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_1_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_1_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_1_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_1_4_prt_3', orientation=row, appendonly=true, checksum=false, compresslevel=3 )
+                                   ), 
+                           START ('1993-04-30'::date) END ('1994-07-31'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_2', orientation=row, appendonly=true, checksum=false, compresslevel=3 ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_2_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_2_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_2_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_2_4_prt_3', orientation=row, appendonly=true, checksum=false, compresslevel=3 )
+                                   ), 
+                           START ('1994-07-31'::date) END ('1995-10-31'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_3', orientation=row, appendonly=true, checksum=false, compresslevel=3 ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_3_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_3_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_3_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_3_4_prt_3', orientation=row, appendonly=true, checksum=false, compresslevel=3 )
+                                   ), 
+                           START ('1995-10-31'::date) END ('1997-01-31'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_4', orientation=row, appendonly=true, checksum=false, compresslevel=3 ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_4_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_4_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_4_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_4_4_prt_3', orientation=row, appendonly=true, checksum=false, compresslevel=3 )
+                                   ), 
+                           START ('1997-01-31'::date) END ('1998-04-30'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_5', orientation=row, appendonly=true, checksum=false, compresslevel=3 ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_5_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_5_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_5_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_5_4_prt_3', orientation=row, appendonly=true, checksum=false, compresslevel=3 )
+                                   ), 
+                           START ('1998-04-30'::date) END ('1998-11-01'::date) EVERY ('1 year 3 mons'::interval) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_6', orientation=row, appendonly=true, checksum=false, compresslevel=3 ) 
+                                   (
+-                                  VALUES(0, 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_6_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
++                                  VALUES('0', 0.1) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_6_4_prt_1', orientation=row, appendonly=true, checksum=false, compresslevel=3 ), 
+                                   VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_6_4_prt_2', orientation=row, appendonly=true, checksum=false, compresstype=zlib, compresslevel=1 ), 
+                                   VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem_1_prt_p2_2_prt_4_3_prt_6_4_prt_3', orientation=row, appendonly=true, checksum=false, compresslevel=3 )
+                                   )
+@@ -6289608,7 +6289626,7 @@
+  ALTER TABLE public.aopart_lineitem ALTER PARTITION p1 ALTER PARTITION FOR (RANK(1)) 
+ SET SUBPARTITION TEMPLATE  
+           (
+-          VALUES(0, 0.1) WITH (tablename='aopart_lineitem'), 
++          VALUES('0', 0.1) WITH (tablename='aopart_lineitem'), 
+           VALUES(0.06, 0.01, 0.02, 0.07, 0.08) WITH (tablename='aopart_lineitem', appendonly=true, checksum=false, compresstype=zlib, compresslevel=1), 
+           VALUES(0.09, 0.05, 0.04, 0.03) WITH (tablename='aopart_lineitem')
+           );
+@@ -6289691,7 +6289709,7 @@
+           SUBPARTITION BY RANGE(o_orderdate)
+                   SUBPARTITION BY LIST(o_orderstatus) 
+           (
+-          PARTITION p1_1 START (1::bigint) END (2000001::bigint) EVERY (2000000) WITH (tablename='aopart_orders_1_prt_p1_1', appendonly=false ) 
++          PARTITION p1_1 START ('1'::bigint) END ('2000001'::bigint) EVERY (2000000) WITH (tablename='aopart_orders_1_prt_p1_1', appendonly=false )
+                   (
+                   SUBPARTITION sp1 START ('1992-01-01'::date) END ('1996-08-03'::date) WITH (tablename='aopart_orders_1_prt_p1_1_2_prt_sp1', appendonly=false ) 
+                           (
+@@ -6289702,7 +6289720,7 @@
+                           VALUES('F', 'O', 'P') WITH (tablename='aopart_orders_1_prt_p1_1_2_prt_sp2_3_prt_1', appendonly=false )
+                           )
+                   ), 
+-          PARTITION p1_2 START (2000001::bigint) END (4000001::bigint) EVERY (2000000) WITH (tablename='aopart_orders_1_prt_p1_2', appendonly=false ) 
++          PARTITION p1_2 START ('2000001'::bigint) END ('4000001'::bigint) EVERY (2000000) WITH (tablename='aopart_orders_1_prt_p1_2', appendonly=false )
+                   (
+                   SUBPARTITION sp1 START ('1992-01-01'::date) END ('1996-08-03'::date) WITH (tablename='aopart_orders_1_prt_p1_2_2_prt_sp1', appendonly=false ) 
+                           (
+@@ -6289713,7 +6289731,7 @@
+                           VALUES('F', 'O', 'P') WITH (tablename='aopart_orders_1_prt_p1_2_2_prt_sp2_3_prt_1', appendonly=false )
+                           )
+                   ), 
+-          PARTITION p1_3 START (4000001::bigint) END (6000001::bigint) EVERY (2000000) WITH (tablename='aopart_orders_1_prt_p1_3', appendonly=false ) 
++          PARTITION p1_3 START ('4000001'::bigint) END ('6000001'::bigint) EVERY (2000000) WITH (tablename='aopart_orders_1_prt_p1_3', appendonly=false )
+                   (
+                   SUBPARTITION sp1 START ('1992-01-01'::date) END ('1996-08-03'::date) WITH (tablename='aopart_orders_1_prt_p1_3_2_prt_sp1', appendonly=false ) 
+                           (
+@@ -6295634,7 +6295652,7 @@
+ )
+  DISTRIBUTED RANDOMLY PARTITION BY LIST(col2) 
+           (
+-          PARTITION part1 VALUES(1, 2, 3, 4, 5, 6, 7, 8, 9, 10) WITH (tablename='distrib_part_test_1_prt_part1', appendonly=false )
++          PARTITION part1 VALUES('1', '2', '3', '4', '5', '6', '7', '8', '9', '10') WITH (tablename='distrib_part_test_1_prt_part1', appendonly=false )
+           );
+  ;
+ 
+@@ -6295721,8 +6295739,8 @@
+ )
+  DISTRIBUTED BY (a) PARTITION BY LIST(b) 
+           (
+-          PARTITION one VALUES(1, 2, 3, 4, 5) WITH (tablename='dml_ao_check_r_1_prt_one', appendonly=false ), 
+-          PARTITION two VALUES(6, 7, 8, 9, 10) WITH (tablename='dml_ao_check_r_1_prt_two', appendonly=false ), 
++          PARTITION one VALUES('1', '2', '3', '4', '5') WITH (tablename='dml_ao_check_r_1_prt_one', appendonly=false ), 
++          PARTITION two VALUES('6', '7', '8', '9', '10') WITH (tablename='dml_ao_check_r_1_prt_two', appendonly=false ), 
+           DEFAULT PARTITION def  WITH (tablename='dml_ao_check_r_1_prt_def', appendonly=false )
+           );
+  ;
+@@ -6295793,8 +6295811,8 @@
+ WITH (appendonly='true')
+  DISTRIBUTED BY (a, b) PARTITION BY LIST(a, d) 
+           (
+-          PARTITION one VALUES( (1, 1),  (1, 2),  (1, 3),  (1, 4),  (1, 5)) WITH (tablename='dml_ao_pt_p_1_prt_one', orientation=row, appendonly=true ), 
+-          PARTITION two VALUES( (2, 1),  (2, 2),  (2, 3),  (2, 4),  (2, 5)) WITH (tablename='dml_ao_pt_p_1_prt_two', orientation=row, appendonly=true ), 
++          PARTITION one VALUES( (1, '1'),  (1, '2'),  (1, '3'),  (1, '4'),  (1, '5')) WITH (tablename='dml_ao_pt_p_1_prt_one', orientation=row, appendonly=true ), 
++          PARTITION two VALUES( (2, '1'),  (2, '2'),  (2, '3'),  (2, '4'),  (2, '5')) WITH (tablename='dml_ao_pt_p_1_prt_two', orientation=row, appendonly=true ), 
+           DEFAULT PARTITION def  WITH (tablename='dml_ao_pt_p_1_prt_def', orientation=row, appendonly=true )
+           );
+  ;
+@@ -6295878,7 +6295896,7 @@
+ 
+ CREATE TABLE public.dml_ao_r (
+     a integer,
+-    b integer DEFAULT (-1),
++    b integer DEFAULT '-1'::integer,
+     c text
+ )
+ WITH (appendonly='true')
+@@ -6295933,8 +6295951,8 @@
+ )
+  DISTRIBUTED BY (a) PARTITION BY LIST(b) 
+           (
+-          PARTITION one VALUES(1, 2, 3, 4, 5) WITH (tablename='dml_co_check_r_1_prt_one', appendonly=false ), 
+-          PARTITION two VALUES(6, 7, 8, 9, 10) WITH (tablename='dml_co_check_r_1_prt_two', appendonly=false ), 
++          PARTITION one VALUES('1', '2', '3', '4', '5') WITH (tablename='dml_co_check_r_1_prt_one', appendonly=false ), 
++          PARTITION two VALUES('6', '7', '8', '9', '10') WITH (tablename='dml_co_check_r_1_prt_two', appendonly=false ), 
+           DEFAULT PARTITION def  WITH (tablename='dml_co_check_r_1_prt_def', appendonly=false )
+           );
+  ;
+@@ -6296005,12 +6296023,12 @@
+ WITH (appendonly='true', orientation='column')
+  DISTRIBUTED BY (a, b) PARTITION BY LIST(a, d) 
+           (
+-          PARTITION one VALUES( (1, 1),  (1, 2),  (1, 3),  (1, 4),  (1, 5)) WITH (tablename='dml_co_pt_p_1_prt_one', appendonly=true, orientation=column ) 
++          PARTITION one VALUES( (1, '1'),  (1, '2'),  (1, '3'),  (1, '4'),  (1, '5')) WITH (tablename='dml_co_pt_p_1_prt_one', appendonly=true, orientation=column ) 
+                     COLUMN a ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN b ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN c ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN d ENCODING (compresstype=none, blocksize=32768, compresslevel=0), 
+-          PARTITION two VALUES( (2, 1),  (2, 2),  (2, 3),  (2, 4),  (2, 5)) WITH (tablename='dml_co_pt_p_1_prt_two', appendonly=true, orientation=column ) 
++          PARTITION two VALUES( (2, '1'),  (2, '2'),  (2, '3'),  (2, '4'),  (2, '5')) WITH (tablename='dml_co_pt_p_1_prt_two', appendonly=true, orientation=column ) 
+                     COLUMN a ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN b ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN c ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+@@ -6296275,7 +6296293,7 @@
+ 
+ CREATE TABLE public.dml_co_r (
+     a integer ENCODING (compresstype=none,blocksize=32768,compresslevel=0),
+-    b integer DEFAULT (-1) ENCODING (compresstype=none,blocksize=32768,compresslevel=0),
++    b integer DEFAULT '-1'::integer ENCODING (compresstype=none,blocksize=32768,compresslevel=0),
+     c text ENCODING (compresstype=none,blocksize=32768,compresslevel=0)
+ )
+ WITH (appendonly='true', orientation='column')
+@@ -6296330,8 +6296348,8 @@
+ )
+  DISTRIBUTED BY (a) PARTITION BY LIST(b) 
+           (
+-          PARTITION one VALUES(1, 2, 3, 4, 5) WITH (tablename='dml_heap_check_r_1_prt_one', appendonly=false ), 
+-          PARTITION two VALUES(6, 7, 8, 9, 10) WITH (tablename='dml_heap_check_r_1_prt_two', appendonly=false ), 
++          PARTITION one VALUES('1', '2', '3', '4', '5') WITH (tablename='dml_heap_check_r_1_prt_one', appendonly=false ), 
++          PARTITION two VALUES('6', '7', '8', '9', '10') WITH (tablename='dml_heap_check_r_1_prt_two', appendonly=false ), 
+           DEFAULT PARTITION def  WITH (tablename='dml_heap_check_r_1_prt_def', appendonly=false )
+           );
+  ;
+@@ -6296400,8 +6296418,8 @@
+ )
+  DISTRIBUTED BY (a, b) PARTITION BY LIST(a, d) 
+           (
+-          PARTITION one VALUES( (1, 1),  (1, 2),  (1, 3),  (1, 4),  (1, 5)) WITH (tablename='dml_heap_pt_p_1_prt_one', appendonly=false ), 
+-          PARTITION two VALUES( (2, 1),  (2, 2),  (2, 3),  (2, 4),  (2, 5)) WITH (tablename='dml_heap_pt_p_1_prt_two', appendonly=false ), 
++          PARTITION one VALUES( (1, '1'),  (1, '2'),  (1, '3'),  (1, '4'),  (1, '5')) WITH (tablename='dml_heap_pt_p_1_prt_one', appendonly=false ), 
++          PARTITION two VALUES( (2, '1'),  (2, '2'),  (2, '3'),  (2, '4'),  (2, '5')) WITH (tablename='dml_heap_pt_p_1_prt_two', appendonly=false ), 
+           DEFAULT PARTITION def  WITH (tablename='dml_heap_pt_p_1_prt_def', appendonly=false )
+           );
+  ;
+@@ -6296518,7 +6296536,7 @@
+ 
+ CREATE TABLE public.dml_heap_r (
+     a integer,
+-    b integer DEFAULT (-1),
++    b integer DEFAULT '-1'::integer,
+     c text
+ )
+  DISTRIBUTED BY (a);
+@@ -6296635,7 +6296653,7 @@
+     b integer,
+     c text,
+     d numeric,
+-    CONSTRAINT r_check_a CHECK ((a <> (-1)))
++    CONSTRAINT r_check_a CHECK ((a <> '-1'::integer))
+ )
+  DISTRIBUTED BY (a);
+ 
+@@ -6296654,16 +6296672,16 @@
+ )
+  DISTRIBUTED BY (b) PARTITION BY RANGE(d) 
+           (
+-          START (1::numeric) END (101::numeric) EVERY (100::numeric) WITH (tablename='dml_union_s_1_prt_2', appendonly=false ), 
+-          START (101::numeric) END (201::numeric) EVERY (100::numeric) WITH (tablename='dml_union_s_1_prt_3', appendonly=false ), 
+-          START (201::numeric) END (301::numeric) EVERY (100::numeric) WITH (tablename='dml_union_s_1_prt_4', appendonly=false ), 
+-          START (301::numeric) END (401::numeric) EVERY (100::numeric) WITH (tablename='dml_union_s_1_prt_5', appendonly=false ), 
+-          START (401::numeric) END (501::numeric) EVERY (100::numeric) WITH (tablename='dml_union_s_1_prt_6', appendonly=false ), 
+-          START (501::numeric) END (601::numeric) EVERY (100::numeric) WITH (tablename='dml_union_s_1_prt_7', appendonly=false ), 
+-          START (601::numeric) END (701::numeric) EVERY (100::numeric) WITH (tablename='dml_union_s_1_prt_8', appendonly=false ), 
+-          START (701::numeric) END (801::numeric) EVERY (100::numeric) WITH (tablename='dml_union_s_1_prt_9', appendonly=false ), 
+-          START (801::numeric) END (901::numeric) EVERY (100::numeric) WITH (tablename='dml_union_s_1_prt_10', appendonly=false ), 
+-          START (901::numeric) END (1001::numeric) EVERY (100::numeric) WITH (tablename='dml_union_s_1_prt_11', appendonly=false ), 
++          START ('1'::numeric) END ('101'::numeric) EVERY (100::numeric) WITH (tablename='dml_union_s_1_prt_2', appendonly=false ), 
++          START ('101'::numeric) END ('201'::numeric) EVERY (100::numeric) WITH (tablename='dml_union_s_1_prt_3', appendonly=false ), 
++          START ('201'::numeric) END ('301'::numeric) EVERY (100::numeric) WITH (tablename='dml_union_s_1_prt_4', appendonly=false ), 
++          START ('301'::numeric) END ('401'::numeric) EVERY (100::numeric) WITH (tablename='dml_union_s_1_prt_5', appendonly=false ), 
++          START ('401'::numeric) END ('501'::numeric) EVERY (100::numeric) WITH (tablename='dml_union_s_1_prt_6', appendonly=false ), 
++          START ('501'::numeric) END ('601'::numeric) EVERY (100::numeric) WITH (tablename='dml_union_s_1_prt_7', appendonly=false ), 
++          START ('601'::numeric) END ('701'::numeric) EVERY (100::numeric) WITH (tablename='dml_union_s_1_prt_8', appendonly=false ), 
++          START ('701'::numeric) END ('801'::numeric) EVERY (100::numeric) WITH (tablename='dml_union_s_1_prt_9', appendonly=false ), 
++          START ('801'::numeric) END ('901'::numeric) EVERY (100::numeric) WITH (tablename='dml_union_s_1_prt_10', appendonly=false ), 
++          START ('901'::numeric) END ('1001'::numeric) EVERY (100::numeric) WITH (tablename='dml_union_s_1_prt_11', appendonly=false ), 
+           DEFAULT PARTITION def  WITH (tablename='dml_union_s_1_prt_def', appendonly=false )
+           );
+  ;
+@@ -6298780,7 +6298798,7 @@
+ CREATE TABLE public.insert_tbl (
+     x integer DEFAULT nextval('public.insert_seq'::regclass),
+     y text DEFAULT '-NULL-'::text,
+-    z integer DEFAULT ((-1) * (nextval('public.insert_seq'::regclass) - 1)),
++    z integer DEFAULT ('-1'::integer * (nextval('public.insert_seq'::regclass) - 1)),
+     CONSTRAINT insert_con CHECK ((((x >= 3) AND (y <> 'check failed'::text)) AND (x < 8))),
+     CONSTRAINT insert_tbl_check CHECK (((x + z) = 0))
+ )
+@@ -6299011,7 +6299029,7 @@
+ --
+ 
+ CREATE VIEW public.locktest_master AS
+-SELECT COALESCE(CASE WHEN (c.relname ~~ 'pg_toast%index'::text) THEN 'toast index'::name WHEN (c.relname ~~ 'pg_toast%'::text) THEN 'toast table'::name WHEN (c.relname ~~ 'pg_aoseg%'::text) THEN 'aoseg table'::name WHEN (c.relname ~~ 'pg_aovisimap%index'::text) THEN 'aovisimap index'::name WHEN (c.relname ~~ 'pg_aovisimap%'::text) THEN 'aovisimap table'::name ELSE c.relname END, 'dropped table'::name) AS "coalesce", l.mode, l.locktype, 'master'::text AS node FROM (pg_locks l LEFT JOIN pg_class c ON ((((l.locktype = 'append-only segment file'::text) AND (l.relation = c.relfilenode)) OR ((l.locktype <> 'append-only segment file'::text) AND (l.relation = c.oid))))), pg_database d WHERE (((((l.relation IS NOT NULL) AND (l.database = d.oid)) AND (((c.relname <> 'gp_fault_strategy'::name) AND (c.relname <> 'locktest_master'::name)) OR (c.relname IS NULL))) AND (d.datname = current_database())) AND (l.gp_segment_id = (-1))) GROUP BY l.gp_segment_id, l.relation, c.relname, l.locktype, l.mode ORDER BY COALESCE(CASE WHEN (c.relname ~~ 'pg_toast%index'::text) THEN 'toast index'::name WHEN (c.relname ~~ 'pg_toast%'::text) THEN 'toast table'::name WHEN (c.relname ~~ 'pg_aoseg%'::text) THEN 'aoseg table'::name WHEN (c.relname ~~ 'pg_aovisimap%index'::text) THEN 'aovisimap index'::name WHEN (c.relname ~~ 'pg_aovisimap%'::text) THEN 'aovisimap table'::name ELSE c.relname END, 'dropped table'::name), l.locktype, l.mode;
++SELECT COALESCE(CASE WHEN (c.relname ~~ 'pg_toast%index'::text) THEN 'toast index'::name WHEN (c.relname ~~ 'pg_toast%'::text) THEN 'toast table'::name WHEN (c.relname ~~ 'pg_aoseg%'::text) THEN 'aoseg table'::name WHEN (c.relname ~~ 'pg_aovisimap%index'::text) THEN 'aovisimap index'::name WHEN (c.relname ~~ 'pg_aovisimap%'::text) THEN 'aovisimap table'::name ELSE c.relname END, 'dropped table'::name) AS "coalesce", l.mode, l.locktype, 'master'::text AS node FROM (pg_locks l LEFT JOIN pg_class c ON ((((l.locktype = 'append-only segment file'::text) AND (l.relation = c.relfilenode)) OR ((l.locktype <> 'append-only segment file'::text) AND (l.relation = c.oid))))), pg_database d WHERE (((((l.relation IS NOT NULL) AND (l.database = d.oid)) AND (((c.relname <> 'gp_fault_strategy'::name) AND (c.relname <> 'locktest_master'::name)) OR (c.relname IS NULL))) AND (d.datname = current_database())) AND (l.gp_segment_id = '-1'::integer)) GROUP BY l.gp_segment_id, l.relation, c.relname, l.locktype, l.mode ORDER BY COALESCE(CASE WHEN (c.relname ~~ 'pg_toast%index'::text) THEN 'toast index'::name WHEN (c.relname ~~ 'pg_toast%'::text) THEN 'toast table'::name WHEN (c.relname ~~ 'pg_aoseg%'::text) THEN 'aoseg table'::name WHEN (c.relname ~~ 'pg_aovisimap%index'::text) THEN 'aovisimap index'::name WHEN (c.relname ~~ 'pg_aovisimap%'::text) THEN 'aovisimap table'::name ELSE c.relname END, 'dropped table'::name), l.locktype, l.mode;
+ 
+ 
+ ALTER TABLE public.locktest_master OWNER TO gpadmin;
+@@ -6299021,7 +6299039,7 @@
+ --
+ 
+ CREATE VIEW public.locktest_segments_dist AS
+-SELECT c.relname, l.mode, l.locktype, l.gp_segment_id AS node, l.relation FROM (pg_locks l LEFT JOIN pg_class c ON ((((l.locktype = 'append-only segment file'::text) AND (l.relation = c.relfilenode)) OR ((l.locktype <> 'append-only segment file'::text) AND (l.relation = c.oid))))), pg_database d WHERE (((((l.relation IS NOT NULL) AND (l.database = d.oid)) AND (((c.relname <> 'gp_fault_strategy'::name) AND (c.relname <> 'locktest_segments_dist'::name)) OR (c.relname IS NULL))) AND (d.datname = current_database())) AND (l.gp_segment_id > (-1))) GROUP BY l.gp_segment_id, l.relation, c.relname, l.locktype, l.mode;
++SELECT c.relname, l.mode, l.locktype, l.gp_segment_id AS node, l.relation FROM (pg_locks l LEFT JOIN pg_class c ON ((((l.locktype = 'append-only segment file'::text) AND (l.relation = c.relfilenode)) OR ((l.locktype <> 'append-only segment file'::text) AND (l.relation = c.oid))))), pg_database d WHERE (((((l.relation IS NOT NULL) AND (l.database = d.oid)) AND (((c.relname <> 'gp_fault_strategy'::name) AND (c.relname <> 'locktest_segments_dist'::name)) OR (c.relname IS NULL))) AND (d.datname = current_database())) AND (l.gp_segment_id > '-1'::integer)) GROUP BY l.gp_segment_id, l.relation, c.relname, l.locktype, l.mode;
+ 
+ 
+ ALTER TABLE public.locktest_segments_dist OWNER TO gpadmin;
+@@ -6299399,79 +6299417,79 @@
+ WITH (appendonly='true', orientation='column', compresstype=zlib, compresslevel='5')
+  DISTRIBUTED BY (col1) PARTITION BY RANGE(wk_id) 
+           (
+-          START (1::smallint) END (2::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_2', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
++          START ('1'::smallint) END ('2'::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_2', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
+                     COLUMN col1 ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN wk_id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768), 
+-          START (2::smallint) END (3::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_3', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
++          START ('2'::smallint) END ('3'::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_3', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
+                     COLUMN col1 ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN wk_id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768), 
+-          START (3::smallint) END (4::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_4', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
++          START ('3'::smallint) END ('4'::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_4', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
+                     COLUMN col1 ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN wk_id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768), 
+-          START (4::smallint) END (5::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_5', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
++          START ('4'::smallint) END ('5'::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_5', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
+                     COLUMN col1 ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN wk_id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768), 
+-          START (5::smallint) END (6::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_6', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
++          START ('5'::smallint) END ('6'::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_6', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
+                     COLUMN col1 ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN wk_id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768), 
+-          START (6::smallint) END (7::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_7', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
++          START ('6'::smallint) END ('7'::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_7', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
+                     COLUMN col1 ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN wk_id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768), 
+-          START (7::smallint) END (8::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_8', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
++          START ('7'::smallint) END ('8'::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_8', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
+                     COLUMN col1 ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN wk_id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768), 
+-          START (8::smallint) END (9::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_9', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
++          START ('8'::smallint) END ('9'::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_9', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
+                     COLUMN col1 ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN wk_id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768), 
+-          START (9::smallint) END (10::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_10', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
++          START ('9'::smallint) END ('10'::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_10', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
+                     COLUMN col1 ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN wk_id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768), 
+-          START (10::smallint) END (11::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_11', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
++          START ('10'::smallint) END ('11'::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_11', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
+                     COLUMN col1 ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN wk_id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768), 
+-          START (11::smallint) END (12::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_12', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
++          START ('11'::smallint) END ('12'::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_12', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
+                     COLUMN col1 ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN wk_id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768), 
+-          START (12::smallint) END (13::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_13', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
++          START ('12'::smallint) END ('13'::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_13', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
+                     COLUMN col1 ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN wk_id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768), 
+-          START (13::smallint) END (14::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_14', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
++          START ('13'::smallint) END ('14'::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_14', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
+                     COLUMN col1 ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN wk_id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768), 
+-          START (14::smallint) END (15::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_15', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
++          START ('14'::smallint) END ('15'::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_15', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
+                     COLUMN col1 ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN wk_id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768), 
+-          START (15::smallint) END (16::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_16', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
++          START ('15'::smallint) END ('16'::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_16', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
+                     COLUMN col1 ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN wk_id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768), 
+-          START (16::smallint) END (17::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_17', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
++          START ('16'::smallint) END ('17'::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_17', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
+                     COLUMN col1 ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN wk_id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768), 
+-          START (17::smallint) END (18::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_18', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
++          START ('17'::smallint) END ('18'::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_18', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
+                     COLUMN col1 ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN wk_id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768), 
+-          START (18::smallint) END (19::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_19', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
++          START ('18'::smallint) END ('19'::smallint) EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_19', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
+                     COLUMN col1 ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN wk_id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768), 
+-          START (19::smallint) END (20::smallint) INCLUSIVE EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_20', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
++          START ('19'::smallint) END ('20'::smallint) INCLUSIVE EVERY (1) WITH (tablename='mpp25537_facttable1_1_prt_20', appendonly=true, orientation=column, compresstype=zlib, compresslevel=5 ) 
+                     COLUMN col1 ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN wk_id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768) 
+                     COLUMN id ENCODING (compresstype=zlib, compresslevel=5, blocksize=32768), 
+@@ -6299738,7 +6299756,7 @@
+                     COLUMN added_col2 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN added_col1 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                   (
+-                  START (0::double precision) END (1.XX::double precision) EVERY (2::double precision) WITH (tablename='multi_segfile_parttab_1_prt_p1_2_prt_2', checksum=true, appendonly=true, orientation=column, compresstype=zlib, compresslevel=1 ) 
++                  START ('0'::double precision) END ('1.XX'::double precision) EVERY (2::double precision) WITH (tablename='multi_segfile_parttab_1_prt_p1_2_prt_2', checksum=true, appendonly=true, orientation=column, compresstype=zlib, compresslevel=1 ) 
+                             COLUMN c_custkey ENCODING (compresstype=zlib, compresslevel=1, blocksize=32768) 
+                             COLUMN c_name ENCODING (compresstype=zlib, compresslevel=1, blocksize=32768) 
+                             COLUMN c_comment ENCODING (compresstype=zlib, compresslevel=1, blocksize=32768) 
+@@ -6299773,7 +6299791,7 @@
+                     COLUMN added_col2 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN added_col1 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                   (
+-                  START (0::double precision) END (1.XX::double precision) EVERY (2::double precision) WITH (tablename='multi_segfile_parttab_1_prt_p2_2_prt_2', checksum=true, appendonly=true, orientation=column, compresstype=zlib, compresslevel=1 ) 
++                  START ('0'::double precision) END ('1.XX'::double precision) EVERY (2::double precision) WITH (tablename='multi_segfile_parttab_1_prt_p2_2_prt_2', checksum=true, appendonly=true, orientation=column, compresstype=zlib, compresslevel=1 ) 
+                             COLUMN c_custkey ENCODING (compresstype=zlib, compresslevel=1, blocksize=32768) 
+                             COLUMN c_name ENCODING (compresstype=zlib, compresslevel=1, blocksize=32768) 
+                             COLUMN c_comment ENCODING (compresstype=zlib, compresslevel=1, blocksize=32768) 
+@@ -6299808,7 +6299826,7 @@
+                     COLUMN added_col2 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN added_col1 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                   (
+-                  START (0::double precision) END (1.XX::double precision) EVERY (2::double precision) WITH (tablename='multi_segfile_parttab_1_prt_p3_2_prt_2', checksum=true, appendonly=true, orientation=column, compresstype=zlib, compresslevel=1 ) 
++                  START ('0'::double precision) END ('1.XX'::double precision) EVERY (2::double precision) WITH (tablename='multi_segfile_parttab_1_prt_p3_2_prt_2', checksum=true, appendonly=true, orientation=column, compresstype=zlib, compresslevel=1 ) 
+                             COLUMN c_custkey ENCODING (compresstype=zlib, compresslevel=1, blocksize=32768) 
+                             COLUMN c_name ENCODING (compresstype=zlib, compresslevel=1, blocksize=32768) 
+                             COLUMN c_comment ENCODING (compresstype=zlib, compresslevel=1, blocksize=32768) 
+@@ -6299843,7 +6299861,7 @@
+                     COLUMN added_col2 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN added_col1 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                   (
+-                  START (0::double precision) END (1.XX::double precision) EVERY (2::double precision) WITH (tablename='multi_segfile_parttab_1_prt_others_2_prt_2', checksum=true, appendonly=true, orientation=column, compresstype=zlib, compresslevel=1 ) 
++                  START ('0'::double precision) END ('1.XX'::double precision) EVERY (2::double precision) WITH (tablename='multi_segfile_parttab_1_prt_others_2_prt_2', checksum=true, appendonly=true, orientation=column, compresstype=zlib, compresslevel=1 ) 
+                             COLUMN c_custkey ENCODING (compresstype=zlib, compresslevel=1, blocksize=32768) 
+                             COLUMN c_name ENCODING (compresstype=zlib, compresslevel=1, blocksize=32768) 
+                             COLUMN c_comment ENCODING (compresstype=zlib, compresslevel=1, blocksize=32768) 
+@@ -6299870,7 +6299888,7 @@
+  ALTER TABLE public.multi_segfile_parttab 
+ SET SUBPARTITION TEMPLATE  
+           (
+-          START (0::double precision) END (1.XX::double precision) EVERY (2::double precision) WITH (tablename='multi_segfile_parttab'), 
++          START ('0'::double precision) END ('1.XX'::double precision) EVERY (2::double precision) WITH (tablename='multi_segfile_parttab'), 
+           DEFAULT SUBPARTITION subothers  WITH (tablename='multi_segfile_parttab')
+           )
+ ;
+@@ -6299999,7 +6300017,7 @@
+                     COLUMN added_col2 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN added_col1 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                   (
+-                  START (0::double precision) END (1.XX::double precision) EVERY (2::double precision) WITH (tablename='multivarblock_parttab_1_prt_p1_2_prt_2', checksum=true, appendonly=true, orientation=column ) 
++                  START ('0'::double precision) END ('1.XX'::double precision) EVERY (2::double precision) WITH (tablename='multivarblock_parttab_1_prt_p1_2_prt_2', checksum=true, appendonly=true, orientation=column ) 
+                             COLUMN c_custkey ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                             COLUMN c_name ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                             COLUMN c_comment ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+@@ -6300034,7 +6300052,7 @@
+                     COLUMN added_col2 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN added_col1 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                   (
+-                  START (0::double precision) END (1.XX::double precision) EVERY (2::double precision) WITH (tablename='multivarblock_parttab_1_prt_p2_2_prt_2', checksum=true, appendonly=true, orientation=column ) 
++                  START ('0'::double precision) END ('1.XX'::double precision) EVERY (2::double precision) WITH (tablename='multivarblock_parttab_1_prt_p2_2_prt_2', checksum=true, appendonly=true, orientation=column ) 
+                             COLUMN c_custkey ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                             COLUMN c_name ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                             COLUMN c_comment ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+@@ -6300069,7 +6300087,7 @@
+                     COLUMN added_col2 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN added_col1 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                   (
+-                  START (0::double precision) END (1.XX::double precision) EVERY (2::double precision) WITH (tablename='multivarblock_parttab_1_prt_p3_2_prt_2', checksum=true, appendonly=true, orientation=column ) 
++                  START ('0'::double precision) END ('1.XX'::double precision) EVERY (2::double precision) WITH (tablename='multivarblock_parttab_1_prt_p3_2_prt_2', checksum=true, appendonly=true, orientation=column ) 
+                             COLUMN c_custkey ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                             COLUMN c_name ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                             COLUMN c_comment ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+@@ -6300104,7 +6300122,7 @@
+                     COLUMN added_col2 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN added_col1 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                   (
+-                  START (0::double precision) END (1.XX::double precision) EVERY (2::double precision) WITH (tablename='multivarblock_parttab_1_prt_others_2_prt_2', checksum=true, appendonly=true, orientation=column ) 
++                  START ('0'::double precision) END ('1.XX'::double precision) EVERY (2::double precision) WITH (tablename='multivarblock_parttab_1_prt_others_2_prt_2', checksum=true, appendonly=true, orientation=column ) 
+                             COLUMN c_custkey ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                             COLUMN c_name ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                             COLUMN c_comment ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+@@ -6300131,7 +6300149,7 @@
+  ALTER TABLE public.multivarblock_parttab 
+ SET SUBPARTITION TEMPLATE  
+           (
+-          START (0::double precision) END (1.XX::double precision) EVERY (2::double precision) WITH (tablename='multivarblock_parttab'), 
++          START ('0'::double precision) END ('1.XX'::double precision) EVERY (2::double precision) WITH (tablename='multivarblock_parttab'), 
+           DEFAULT SUBPARTITION subothers  WITH (tablename='multivarblock_parttab')
+           )
+ ;
+@@ -6305366,10 +6305384,10 @@
+ --
+ 
+ CREATE TABLE public.volatilefn_dml_int8 (
+-    col1 bigint DEFAULT 1000000000000000000::bigint,
+-    col2 bigint DEFAULT 1000000000000000000::bigint,
++    col1 bigint DEFAULT '1000000000000000000'::bigint,
++    col2 bigint DEFAULT '1000000000000000000'::bigint,
+     col3 integer,
+-    col4 bigint DEFAULT 1000000000000000000::bigint
++    col4 bigint DEFAULT '1000000000000000000'::bigint
+ )
+  DISTRIBUTED BY (col1) PARTITION BY LIST(col2) 
+           (
+@@ -6305385,8 +6305403,8 @@
+ --
+ 
+ CREATE TABLE public.volatilefn_dml_int8_candidate (
+-    col1 bigint DEFAULT 1000000000000000000::bigint,
+-    col2 bigint DEFAULT 1000000000000000000::bigint,
++    col1 bigint DEFAULT '1000000000000000000'::bigint,
++    col2 bigint DEFAULT '1000000000000000000'::bigint,
+     col3 integer,
+     col4 bigint
+ )
+@@ -6305875,7 +6305893,7 @@
+ 
+ CREATE TABLE qp_dml_oids.dml_ao (
+     a integer,
+-    b integer DEFAULT (-1),
++    b integer DEFAULT '-1'::integer,
+     c text
+ )
+ WITH (appendonly='true')
+@@ -6305942,7 +6305960,7 @@
+ CREATE TABLE qp_dml_oids.dml_heap_r (
+     col1 integer NOT NULL,
+     a integer,
+-    b integer DEFAULT (-1),
++    b integer DEFAULT '-1'::integer,
+     c text
+ )
+  DISTRIBUTED BY (a);
+@@ -6306520,70 +6306538,70 @@
+ WITH (appendonly='true', orientation='column')
+  DISTRIBUTED BY (loannumber) PARTITION BY RANGE(partvar) 
+           (
+-          START (0::smallint) END (10::smallint) EVERY (10) WITH (tablename='lossmithe_colstor_1_prt_1', appendonly=true, orientation=column ) 
++          START ('0'::smallint) END ('10'::smallint) EVERY (10) WITH (tablename='lossmithe_colstor_1_prt_1', appendonly=true, orientation=column ) 
+                     COLUMN loannumber ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN var1 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN var2 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN partvar ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN isinterestonly ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN upb ENCODING (compresstype=none, blocksize=32768, compresslevel=0), 
+-          START (10::smallint) END (20::smallint) EVERY (10) WITH (tablename='lossmithe_colstor_1_prt_2', appendonly=true, orientation=column ) 
++          START ('10'::smallint) END ('20'::smallint) EVERY (10) WITH (tablename='lossmithe_colstor_1_prt_2', appendonly=true, orientation=column ) 
+                     COLUMN loannumber ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN var1 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN var2 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN partvar ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN isinterestonly ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN upb ENCODING (compresstype=none, blocksize=32768, compresslevel=0), 
+-          START (20::smallint) END (30::smallint) EVERY (10) WITH (tablename='lossmithe_colstor_1_prt_3', appendonly=true, orientation=column ) 
++          START ('20'::smallint) END ('30'::smallint) EVERY (10) WITH (tablename='lossmithe_colstor_1_prt_3', appendonly=true, orientation=column ) 
+                     COLUMN loannumber ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN var1 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN var2 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN partvar ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN isinterestonly ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN upb ENCODING (compresstype=none, blocksize=32768, compresslevel=0), 
+-          START (30::smallint) END (40::smallint) EVERY (10) WITH (tablename='lossmithe_colstor_1_prt_4', appendonly=true, orientation=column ) 
++          START ('30'::smallint) END ('40'::smallint) EVERY (10) WITH (tablename='lossmithe_colstor_1_prt_4', appendonly=true, orientation=column ) 
+                     COLUMN loannumber ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN var1 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN var2 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN partvar ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN isinterestonly ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN upb ENCODING (compresstype=none, blocksize=32768, compresslevel=0), 
+-          START (40::smallint) END (50::smallint) EVERY (10) WITH (tablename='lossmithe_colstor_1_prt_5', appendonly=true, orientation=column ) 
++          START ('40'::smallint) END ('50'::smallint) EVERY (10) WITH (tablename='lossmithe_colstor_1_prt_5', appendonly=true, orientation=column ) 
+                     COLUMN loannumber ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN var1 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN var2 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN partvar ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN isinterestonly ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN upb ENCODING (compresstype=none, blocksize=32768, compresslevel=0), 
+-          START (50::smallint) END (60::smallint) EVERY (10) WITH (tablename='lossmithe_colstor_1_prt_6', appendonly=true, orientation=column ) 
++          START ('50'::smallint) END ('60'::smallint) EVERY (10) WITH (tablename='lossmithe_colstor_1_prt_6', appendonly=true, orientation=column ) 
+                     COLUMN loannumber ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN var1 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN var2 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN partvar ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN isinterestonly ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN upb ENCODING (compresstype=none, blocksize=32768, compresslevel=0), 
+-          START (60::smallint) END (70::smallint) EVERY (10) WITH (tablename='lossmithe_colstor_1_prt_7', appendonly=true, orientation=column ) 
++          START ('60'::smallint) END ('70'::smallint) EVERY (10) WITH (tablename='lossmithe_colstor_1_prt_7', appendonly=true, orientation=column ) 
+                     COLUMN loannumber ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN var1 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN var2 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN partvar ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN isinterestonly ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN upb ENCODING (compresstype=none, blocksize=32768, compresslevel=0), 
+-          START (70::smallint) END (80::smallint) EVERY (10) WITH (tablename='lossmithe_colstor_1_prt_8', appendonly=true, orientation=column ) 
++          START ('70'::smallint) END ('80'::smallint) EVERY (10) WITH (tablename='lossmithe_colstor_1_prt_8', appendonly=true, orientation=column ) 
+                     COLUMN loannumber ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN var1 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN var2 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN partvar ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN isinterestonly ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN upb ENCODING (compresstype=none, blocksize=32768, compresslevel=0), 
+-          START (80::smallint) END (90::smallint) EVERY (10) WITH (tablename='lossmithe_colstor_1_prt_9', appendonly=true, orientation=column ) 
++          START ('80'::smallint) END ('90'::smallint) EVERY (10) WITH (tablename='lossmithe_colstor_1_prt_9', appendonly=true, orientation=column ) 
+                     COLUMN loannumber ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN var1 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN var2 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN partvar ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN isinterestonly ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN upb ENCODING (compresstype=none, blocksize=32768, compresslevel=0), 
+-          START (90::smallint) END (100::smallint) EVERY (10) WITH (tablename='lossmithe_colstor_1_prt_10', appendonly=true, orientation=column ) 
++          START ('90'::smallint) END ('100'::smallint) EVERY (10) WITH (tablename='lossmithe_colstor_1_prt_10', appendonly=true, orientation=column ) 
+                     COLUMN loannumber ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN var1 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
+                     COLUMN var2 ENCODING (compresstype=none, blocksize=32768, compresslevel=0) 
