@@ -211,6 +211,8 @@ SELECT * FROM aocotable_fastsequence ORDER BY i;
 (50 rows)
 
 -- Verify INSERTs produce no duplicate ctids
+-- Verify using additional sessions since sessions 1 and 2 become disconnected
+-- due to the expected failed index query in session 1 causing a crash recovery.
 3: BEGIN;
 BEGIN
 3: INSERT INTO aocotable_fastsequence SELECT generate_series(1001, 1010);

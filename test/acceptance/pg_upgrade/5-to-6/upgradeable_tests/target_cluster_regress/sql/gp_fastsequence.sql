@@ -59,8 +59,8 @@ SET enable_seqscan = true;
 SELECT * FROM aocotable_fastsequence ORDER BY i;
 
 -- Verify INSERTs produce no duplicate ctids
--- Veried using additional sessions because the first failed index query
--- triggers crash recovery causes sessions 1 and 2 to disconnect.
+-- Verify using additional sessions since sessions 1 and 2 become disconnected
+-- due to the expected failed index query in session 1 causing a crash recovery.
 3: BEGIN;
 3: INSERT INTO aocotable_fastsequence SELECT generate_series(1001, 1010);
 4: INSERT INTO aocotable_fastsequence SELECT generate_series(1011, 1020);
