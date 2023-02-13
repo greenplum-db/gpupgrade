@@ -73,6 +73,11 @@ compare_dumps() {
                 patch --ignore-whitespace -R '$target_dump.filtered'
             " < ./ci/scripts/filters/${DIFF_FILE}
 
+            if [ $? -ne 0 ]; then
+                echo "error: patching failed"
+                exit 1
+            fi
+
             target_dump="$target_dump.filtered"
 
             # Run the filter on the source dump
