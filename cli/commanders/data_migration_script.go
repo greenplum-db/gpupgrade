@@ -9,8 +9,8 @@ import (
 )
 
 var scriptDescription = map[string]string{
-	"cluster_stats":                         "Generates cluster statistics such as number of segments",
-	"database_stats":                        "Generates database statistics such as number of indexes and tables",
+	"cluster_stats":                         "Generates cluster characteristics such as number of segments",
+	"database_stats":                        "Generates database characteristics such as number of indexes and tables",
 	"gphdfs_external_tables":                "Drops gphdfs external tables",
 	"gphdfs_user_roles":                     "Alters gphdfs user role to not create external tables",
 	"heterogeneous_partitioned_tables":      "Ensures child partitions have the same on-disk layout as their root",
