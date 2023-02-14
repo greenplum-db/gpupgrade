@@ -352,10 +352,10 @@ func TestApplyDataMigrationScriptsPrompt(t *testing.T) {
 		}
 
 		expected := "\nScripts to apply:\n"
-		expected += "  0: parent_partitions_with_seg_entries\n"
-		expected += "     - Fixes non-empty segment relfiles for AO and AOCO parent partitions\n\n  "
-		expected += "1: unique_primary_foreign_key_constraint\n"
-		expected += "     - Drops constraints\n\n"
+		expected += "  parent_partitions_with_seg_entries\n"
+		expected += "  - Fixes non-empty segment relfiles for AO and AOCO parent partitions\n\n"
+		expected += "  unique_primary_foreign_key_constraint\n"
+		expected += "  - Drops constraints\n\n"
 		expected += "Which \"initialize\" data migration SQL scripts to apply?\n\n"
 		expected += "WARNING: Data migration scripts can leave the source cluster in a non-optimal state \n"
 		expected += "         and can take time to fully revert.\n\n"
@@ -425,10 +425,10 @@ func TestApplyDataMigrationScriptsPrompt(t *testing.T) {
 		}
 
 		expected := "\nScripts to apply:\n"
-		expected += "  0: parent_partitions_with_seg_entries\n"
-		expected += "     - Fixes non-empty segment relfiles for AO and AOCO parent partitions\n\n  "
-		expected += "1: unique_primary_foreign_key_constraint\n"
-		expected += "     - Drops constraints\n\n"
+		expected += "  parent_partitions_with_seg_entries\n"
+		expected += "  - Fixes non-empty segment relfiles for AO and AOCO parent partitions\n\n"
+		expected += "  unique_primary_foreign_key_constraint\n"
+		expected += "  - Drops constraints\n\n"
 		expected += "Which \"initialize\" data migration SQL scripts to apply?\n\n"
 		expected += "WARNING: Data migration scripts can leave the source cluster in a non-optimal state \n"
 		expected += "         and can take time to fully revert.\n\n"

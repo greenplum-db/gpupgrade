@@ -73,7 +73,7 @@ func (scripts Scripts) Description() string {
 
 	var output string
 	for _, script := range scripts {
-		output += fmt.Sprintf("  %d: %s\n     - %s\n\n", script.Num, script.Name, scriptDescription[script.Name])
+		output += fmt.Sprintf("  %s\n  - %s\n\n", script.Name, scriptDescription[script.Name])
 	}
 	return output
 }
