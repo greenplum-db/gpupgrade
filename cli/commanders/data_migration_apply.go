@@ -171,7 +171,7 @@ func ApplyDataMigrationScriptsPrompt(nonInteractive bool, reader *bufio.Reader, 
 	for {
 		var input = "a"
 		if !nonInteractive {
-			fmt.Printf(`Which %q data migration SQL scripts to apply? 
+			prompt := fmt.Sprintf(`Which %q data migration SQL scripts to apply? 
   [a]ll
   [s]ome
   [n]one
@@ -179,6 +179,23 @@ func ApplyDataMigrationScriptsPrompt(nonInteractive bool, reader *bufio.Reader, 
 
 Select: `, phase)
 
+			if phase == idl.Step_initialize {
+				prompt = fmt.Sprintf(`Which %q data migration SQL scripts to apply?
+
+WARNING: Data migration scripts can leave the source cluster in a non-optimal state 
+         and can take time to fully revert.
+
+  [n]o scripts.   When running 'before' the upgrade to uncover pg_upgrade --check errors 
+                  there is no need to run the data migration SQL scripts.
+  [s]ome scripts. Usually run 'before' the upgrade during maintenance windows to run 
+                  selected scripts as suggested in the documentation.
+  [a]ll scripts.  Usually run 'during' the upgrade within the downtime window.
+  [q]uit
+
+Select: `, phase)
+			}
+
+			fmt.Print(prompt)
 			rawinput, err := reader.ReadString('\n')
 			if err != nil {
 				return nil, err

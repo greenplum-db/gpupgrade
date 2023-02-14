@@ -356,10 +356,14 @@ func TestApplyDataMigrationScriptsPrompt(t *testing.T) {
 		expected += "     - Fixes non-empty segment relfiles for AO and AOCO parent partitions\n\n  "
 		expected += "1: unique_primary_foreign_key_constraint\n"
 		expected += "     - Drops constraints\n\n"
-		expected += "Which \"initialize\" data migration SQL scripts to apply? \n"
-		expected += "  [a]ll\n"
-		expected += "  [s]ome\n"
-		expected += "  [n]one\n"
+		expected += "Which \"initialize\" data migration SQL scripts to apply?\n\n"
+		expected += "WARNING: Data migration scripts can leave the source cluster in a non-optimal state \n"
+		expected += "         and can take time to fully revert.\n\n"
+		expected += "  [n]o scripts.   When running 'before' the upgrade to uncover pg_upgrade --check errors \n"
+		expected += "                  there is no need to run the data migration SQL scripts.\n"
+		expected += "  [s]ome scripts. Usually run 'before' the upgrade during maintenance windows to run \n"
+		expected += "                  selected scripts as suggested in the documentation.\n"
+		expected += "  [a]ll scripts.  Usually run 'during' the upgrade within the downtime window.\n"
 		expected += "  [q]uit\n"
 		expected += "\nSelect: \n"
 		expected += "Select scripts to apply separated by commas such as 1, 3. Or [q]uit?\n\n"
@@ -425,13 +429,113 @@ func TestApplyDataMigrationScriptsPrompt(t *testing.T) {
 		expected += "     - Fixes non-empty segment relfiles for AO and AOCO parent partitions\n\n  "
 		expected += "1: unique_primary_foreign_key_constraint\n"
 		expected += "     - Drops constraints\n\n"
-		expected += "Which \"initialize\" data migration SQL scripts to apply? \n"
-		expected += "  [a]ll\n"
-		expected += "  [s]ome\n"
-		expected += "  [n]one\n"
+		expected += "Which \"initialize\" data migration SQL scripts to apply?\n\n"
+		expected += "WARNING: Data migration scripts can leave the source cluster in a non-optimal state \n"
+		expected += "         and can take time to fully revert.\n\n"
+		expected += "  [n]o scripts.   When running 'before' the upgrade to uncover pg_upgrade --check errors \n"
+		expected += "                  there is no need to run the data migration SQL scripts.\n"
+		expected += "  [s]ome scripts. Usually run 'before' the upgrade during maintenance windows to run \n"
+		expected += "                  selected scripts as suggested in the documentation.\n"
+		expected += "  [a]ll scripts.  Usually run 'during' the upgrade within the downtime window.\n"
 		expected += "  [q]uit\n"
 		expected += "\nSelect: "
-		expected += "Which \"initialize\" data migration SQL scripts to apply? \n"
+		expected += "Which \"initialize\" data migration SQL scripts to apply?\n\n"
+		expected += "WARNING: Data migration scripts can leave the source cluster in a non-optimal state \n"
+		expected += "         and can take time to fully revert.\n\n"
+		expected += "  [n]o scripts.   When running 'before' the upgrade to uncover pg_upgrade --check errors \n"
+		expected += "                  there is no need to run the data migration SQL scripts.\n"
+		expected += "  [s]ome scripts. Usually run 'before' the upgrade during maintenance windows to run \n"
+		expected += "                  selected scripts as suggested in the documentation.\n"
+		expected += "  [a]ll scripts.  Usually run 'during' the upgrade within the downtime window.\n"
+		expected += "  [q]uit\n"
+		expected += "\nSelect: \n"
+		expected += "Quiting...\n"
+
+		actual := string(stdout)
+		if actual != expected {
+			t.Errorf("expected output %#v to contain %#v", actual, expected)
+			t.Logf("actual:   %#v", actual)
+			t.Logf("expected: %#v", expected)
+		}
+	})
+
+	t.Run("when phase is initialize it displays warning and additional text on when to run scripts", func(t *testing.T) {
+		d := commanders.BufferStandardDescriptors(t)
+
+		reader := bufio.NewReader(strings.NewReader("q\n"))
+		actualScriptDirs, err := commanders.ApplyDataMigrationScriptsPrompt(false, reader, currentScriptDir, fsys, phase)
+		if !errors.Is(err, step.UserCanceled) {
+			t.Errorf("got error %#v, want %#v", err, step.UserCanceled)
+		}
+
+		if actualScriptDirs != nil {
+			t.Error("expected nil script directories")
+		}
+
+		stdout, stderr := d.Collect()
+		d.Close()
+		if len(stderr) != 0 {
+			t.Errorf("unexpected stderr %#v", string(stderr))
+		}
+
+		expected := "\nScripts to apply:\n"
+		expected += "  parent_partitions_with_seg_entries\n"
+		expected += "  - Fixes non-empty segment relfiles for AO and AOCO parent partitions\n\n"
+		expected += "  unique_primary_foreign_key_constraint\n"
+		expected += "  - Drops constraints\n\n"
+		expected += "Which \"initialize\" data migration SQL scripts to apply?\n\n"
+		expected += "WARNING: Data migration scripts can leave the source cluster in a non-optimal state \n"
+		expected += "         and can take time to fully revert.\n\n"
+		expected += "  [n]o scripts.   When running 'before' the upgrade to uncover pg_upgrade --check errors \n"
+		expected += "                  there is no need to run the data migration SQL scripts.\n"
+		expected += "  [s]ome scripts. Usually run 'before' the upgrade during maintenance windows to run \n"
+		expected += "                  selected scripts as suggested in the documentation.\n"
+		expected += "  [a]ll scripts.  Usually run 'during' the upgrade within the downtime window.\n"
+		expected += "  [q]uit\n"
+		expected += "\nSelect: \n"
+		expected += "Quiting...\n"
+
+		actual := string(stdout)
+		if actual != expected {
+			t.Errorf("expected output %#v to contain %#v", actual, expected)
+			t.Logf("actual:   %#v", actual)
+			t.Logf("expected: %#v", expected)
+		}
+	})
+
+	t.Run("when phase is 'not' initialize it does 'not' display a warning or additional text", func(t *testing.T) {
+		currentScriptDir := "/home/gpupgrade/data-migration/current"
+		phase := idl.Step_finalize
+
+		fsys := fstest.MapFS{
+			phase.String(): {Mode: os.ModeDir},
+			filepath.Join(phase.String(), "partitioned_tables_indexes"):                                                             {Mode: os.ModeDir},
+			filepath.Join(phase.String(), "partitioned_tables_indexes", "migration_postgres_recreate_partition_indexes_step_1.sql"): {},
+			filepath.Join(phase.String(), "partitioned_tables_indexes", "migration_postgres_recreate_partition_indexes_step_2.sql"): {},
+		}
+
+		d := commanders.BufferStandardDescriptors(t)
+
+		reader := bufio.NewReader(strings.NewReader("q\n"))
+		actualScriptDirs, err := commanders.ApplyDataMigrationScriptsPrompt(false, reader, currentScriptDir, fsys, phase)
+		if !errors.Is(err, step.UserCanceled) {
+			t.Errorf("got error %#v, want %#v", err, step.UserCanceled)
+		}
+
+		if actualScriptDirs != nil {
+			t.Error("expected nil script directories")
+		}
+
+		stdout, stderr := d.Collect()
+		d.Close()
+		if len(stderr) != 0 {
+			t.Errorf("unexpected stderr %#v", string(stderr))
+		}
+
+		expected := "\nScripts to apply:\n"
+		expected += "  partitioned_tables_indexes\n"
+		expected += "  - Drops partition indexes\n\n"
+		expected += "Which \"finalize\" data migration SQL scripts to apply? \n"
 		expected += "  [a]ll\n"
 		expected += "  [s]ome\n"
 		expected += "  [n]one\n"
