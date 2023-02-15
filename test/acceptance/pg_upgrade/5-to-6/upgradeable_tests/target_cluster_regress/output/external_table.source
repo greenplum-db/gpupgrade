@@ -1,0 +1,64 @@
+-- Copyright (c) 2017-2023 VMware, Inc. or its affiliates
+-- SPDX-License-Identifier: Apache-2.0
+
+--------------------------------------------------------------------------------
+-- Validate that the upgradeable objects are functional post-upgrade
+--------------------------------------------------------------------------------
+!&\retcode gpfdist -d @abs_srcdir@/../source_cluster_regress/data -p 8081 -l /tmp/gpfdist_external_table.log; 
+SELECT * FROM readable_external_table;
+ a | b 
+---+---
+ 1 | 2 
+ 3 | 4 
+(2 rows)
+
+INSERT INTO writable_external_table_with_serial_column_type VALUES (1);
+INSERT 1
+COPY writable_external_table_with_serial_column_type (a) FROM PROGRAM 'for i in `seq 1 3`; do echo $i; done' DELIMITER ',';
+COPY 3
+SELECT * FROM readable_external_table_with_serial_column_type;
+ a | b 
+---+---
+ 1 | 1 
+ 1 | 2 
+ 1 | 3 
+ 2 | 4 
+ 3 | 5 
+(5 rows)
+COPY (SELECT * FROM readable_external_table_with_serial_column_type) TO '/dev/null';
+COPY 5
+
+INSERT INTO writable_external_table_with_user_type_and_default_value VALUES (1);
+INSERT 1
+COPY writable_external_table_with_user_type_and_default_value (a) FROM PROGRAM 'for i in `seq 1 3`; do echo $i; done' DELIMITER ',';
+COPY 3
+SELECT * FROM readable_external_table_with_user_type_and_default_value;
+ a | b  
+---+----
+ 1 | 99 
+ 1 | 99 
+ 1 | 99 
+ 2 | 99 
+ 3 | 99 
+(5 rows)
+COPY (SELECT * FROM readable_external_table_with_user_type_and_default_value) TO '/dev/null';
+COPY 5
+
+INSERT INTO writable_external_table_with_dropped_column VALUES (1);
+INSERT 1
+COPY writable_external_table_with_dropped_column (a) FROM PROGRAM 'for i in `seq 1 3`; do echo $i; done' DELIMITER ',';
+COPY 3
+SELECT * FROM readable_external_table_with_dropped_column;
+ a 
+---
+ 1 
+ 1 
+ 3 
+ 1 
+ 2 
+(5 rows)
+COPY (SELECT * FROM readable_external_table_with_dropped_column) TO '/dev/null';
+COPY 5
+
+!\retcode pkill gpfdist;
+(exited with code 0)

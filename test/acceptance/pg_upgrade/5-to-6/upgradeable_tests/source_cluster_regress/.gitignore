@@ -1,3 +1,6 @@
 regression.diffs
 regression.out
 results/
+data/external_table_with_serial_column_type.csv
+data/external_table_with_user_type_and_default_value.csv
+data/external_table_with_dropped_column.csv

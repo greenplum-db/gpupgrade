@@ -6,4 +6,69 @@
 --------------------------------------------------------------------------------
 -- Create and setup upgradeable objects
 --------------------------------------------------------------------------------
-CREATE READABLE EXTERNAL TABLE r_t1 (a int, b int) LOCATION ('file://@hostname@/@abs_srcdir@/data/external_table_data.csv') FORMAT 'TEXT' (DELIMITER '|');
+-- truncate output files from any previous runs
+!\retcode > @abs_srcdir@/data/external_table_with_serial_column_type.csv;
+!\retcode > @abs_srcdir@/data/external_table_with_user_type_and_default_value.csv;
+!\retcode > @abs_srcdir@/data/external_table_with_dropped_column.csv;
+!&\retcode gpfdist -d @abs_srcdir@/data -p 8081 -l /tmp/gpfdist_external_table.log;
+
+-- Scenario 1: simple external table
+CREATE READABLE EXTERNAL TABLE readable_external_table (a int, b int)
+    LOCATION ('file://@hostname@/@abs_srcdir@/data/external_table.csv')
+    FORMAT 'TEXT' (DELIMITER '|');
+
+-- Scenario 2: external table with serial column type
+CREATE WRITABLE EXTERNAL TABLE writable_external_table_with_serial_column_type (a INT, b BIGSERIAL)
+    LOCATION ('gpfdist://@hostname@:8081/external_table_with_serial_column_type.csv')
+    FORMAT 'CSV' (DELIMITER ',' NULL '' ESCAPE '"' QUOTE '"') ENCODING 'UTF8' DISTRIBUTED RANDOMLY;
+
+CREATE READABLE EXTERNAL TABLE readable_external_table_with_serial_column_type(LIKE writable_external_table_with_serial_column_type)
+    LOCATION ('gpfdist://@hostname@:8081/external_table_with_serial_column_type.csv')
+    FORMAT 'CSV' (DELIMITER ',' NULL '' ESCAPE '"' QUOTE '"') ENCODING 'UTF8';
+
+INSERT INTO writable_external_table_with_serial_column_type VALUES (1);
+
+-- Scenario 3: can create external table with user defined type containing default value
+CREATE TYPE user_type_with_default_value;
+
+CREATE FUNCTION user_type_with_default_value_in(cstring)
+    RETURNS user_type_with_default_value AS 'int4in'
+    LANGUAGE internal IMMUTABLE STRICT;
+
+CREATE FUNCTION user_type_with_default_value_out(user_type_with_default_value)
+    RETURNS cstring AS 'int4out'
+    LANGUAGE internal IMMUTABLE STRICT;
+
+CREATE TYPE user_type_with_default_value(
+    input = user_type_with_default_value_in,
+    output = user_type_with_default_value_out,
+    internallength = 4,
+    default = 99,
+    passedbyvalue);
+
+CREATE WRITABLE EXTERNAL TABLE writable_external_table_with_user_type_and_default_value (a INT, b user_type_with_default_value)
+    LOCATION ('gpfdist://@hostname@:8081/external_table_with_user_type_and_default_value.csv')
+    FORMAT 'CSV' (DELIMITER ',' NULL '' ESCAPE '"' QUOTE '"') ENCODING 'UTF8' DISTRIBUTED RANDOMLY;
+
+CREATE READABLE EXTERNAL TABLE readable_external_table_with_user_type_and_default_value(LIKE writable_external_table_with_user_type_and_default_value)
+    LOCATION ('gpfdist://@hostname@:8081/external_table_with_user_type_and_default_value.csv')
+    FORMAT 'CSV' (DELIMITER ',' NULL '' ESCAPE '"' QUOTE '"') ENCODING 'UTF8';
+
+INSERT INTO writable_external_table_with_user_type_and_default_value VALUES (1);
+
+-- Scenario 4: external table with dropped columns
+CREATE WRITABLE EXTERNAL TABLE writable_external_table_with_dropped_column (a INT, b BIGSERIAL)
+    LOCATION ('gpfdist://@hostname@:8081/external_table_with_dropped_column.csv')
+    FORMAT 'CSV' (DELIMITER ',' NULL '' ESCAPE '"' QUOTE '"') ENCODING 'UTF8' DISTRIBUTED RANDOMLY;
+
+CREATE READABLE EXTERNAL TABLE readable_external_table_with_dropped_column(LIKE writable_external_table_with_dropped_column)
+    LOCATION ('gpfdist://@hostname@:8081/external_table_with_dropped_column.csv')
+    FORMAT 'CSV' (DELIMITER ',' NULL '' ESCAPE '"' QUOTE '"') ENCODING 'UTF8';
+
+INSERT INTO writable_external_table_with_dropped_column VALUES (1, 1);
+ALTER EXTERNAL TABLE writable_external_table_with_dropped_column DROP COLUMN b;
+ALTER EXTERNAL TABLE readable_external_table_with_dropped_column DROP COLUMN b;
+!\retcode > @abs_srcdir@/data/external_table_with_dropped_column.csv;
+INSERT INTO writable_external_table_with_dropped_column VALUES (1);
+
+!\retcode pkill gpfdist;
