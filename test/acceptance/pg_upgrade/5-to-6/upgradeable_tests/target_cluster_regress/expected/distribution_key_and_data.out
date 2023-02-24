@@ -1,0 +1,352 @@
+-- Copyright (c) 2017-2023 VMware, Inc. or its affiliates
+-- SPDX-License-Identifier: Apache-2.0
+
+--------------------------------------------------------------------------------
+-- Validate that the upgradeable objects are functional post-upgrade
+--------------------------------------------------------------------------------
+
+-- check data distribution
+SELECT gp_segment_id, * FROM gp_dist_random('single_col_dist_heap') ORDER BY 1, 2;
+ gp_segment_id | a  
+---------------+----
+ 0             | 1  
+ 0             | 2  
+ 1             | 3  
+ 1             | 4  
+ 1             | 5  
+ 1             | 6  
+ 1             | 7  
+ 2             | 8  
+ 2             | 9  
+ 2             | 10 
+(10 rows)
+SELECT gp_segment_id, * FROM gp_dist_random('single_col_dist_ao') ORDER BY 1, 2;
+ gp_segment_id | a  
+---------------+----
+ 0             | 1  
+ 0             | 2  
+ 1             | 3  
+ 1             | 4  
+ 1             | 5  
+ 1             | 6  
+ 1             | 7  
+ 2             | 8  
+ 2             | 9  
+ 2             | 10 
+(10 rows)
+SELECT gp_segment_id, * FROM gp_dist_random('single_col_dist_aoco') ORDER BY 1, 2;
+ gp_segment_id | a  
+---------------+----
+ 0             | 1  
+ 0             | 2  
+ 1             | 3  
+ 1             | 4  
+ 1             | 5  
+ 1             | 6  
+ 1             | 7  
+ 2             | 8  
+ 2             | 9  
+ 2             | 10 
+(10 rows)
+
+-- check distribution policy
+SELECT c.relname, dp.distkey, opc.opcname FROM gp_distribution_policy dp JOIN pg_class c ON dp.localoid = c.oid JOIN pg_opclass opc ON dp.distclass[0] = opc.oid WHERE c.relname LIKE 'single_col%' ORDER BY c.relname;
+ relname              | distkey | opcname          
+----------------------+---------+------------------
+ single_col_dist_ao   | 1       | cdbhash_int4_ops 
+ single_col_dist_aoco | 1       | cdbhash_int8_ops 
+ single_col_dist_heap | 1       | cdbhash_int2_ops 
+(3 rows)
+
+-- insert same rows int tables
+INSERT INTO single_col_dist_heap SELECT generate_series(1, 10);
+INSERT 10
+INSERT INTO single_col_dist_ao SELECT generate_series(1, 10);
+INSERT 10
+INSERT INTO single_col_dist_aoco SELECT generate_series(1, 10);
+INSERT 10
+
+-- check data was placed into expected segments
+SELECT count(*) from single_col_dist_heap;
+ count 
+-------
+ 20    
+(1 row)
+SELECT count(*) from single_col_dist_ao;
+ count 
+-------
+ 20    
+(1 row)
+SELECT count(*) from single_col_dist_aoco;
+ count 
+-------
+ 20    
+(1 row)
+SELECT gp_segment_id, * FROM gp_dist_random('single_col_dist_heap') GROUP BY 1, 2 ORDER BY 1, 2;
+ gp_segment_id | a  
+---------------+----
+ 0             | 1  
+ 0             | 2  
+ 1             | 3  
+ 1             | 4  
+ 1             | 5  
+ 1             | 6  
+ 1             | 7  
+ 2             | 8  
+ 2             | 9  
+ 2             | 10 
+(10 rows)
+SELECT gp_segment_id, * FROM gp_dist_random('single_col_dist_ao') GROUP BY 1, 2 ORDER BY 1, 2;
+ gp_segment_id | a  
+---------------+----
+ 0             | 1  
+ 0             | 2  
+ 1             | 3  
+ 1             | 4  
+ 1             | 5  
+ 1             | 6  
+ 1             | 7  
+ 2             | 8  
+ 2             | 9  
+ 2             | 10 
+(10 rows)
+SELECT gp_segment_id, * FROM gp_dist_random('single_col_dist_aoco') GROUP BY 1, 2 ORDER BY 1, 2;
+ gp_segment_id | a  
+---------------+----
+ 0             | 1  
+ 0             | 2  
+ 1             | 3  
+ 1             | 4  
+ 1             | 5  
+ 1             | 6  
+ 1             | 7  
+ 2             | 8  
+ 2             | 9  
+ 2             | 10 
+(10 rows)
+
+-- reorganize with the same distribution columns
+ALTER TABLE single_col_dist_heap SET WITH (reorganize=true) DISTRIBUTED BY (a);
+ALTER
+ALTER TABLE single_col_dist_ao SET WITH (reorganize=true) DISTRIBUTED BY (a);
+ALTER
+ALTER TABLE single_col_dist_aoco SET WITH (reorganize=true) DISTRIBUTED BY (a);
+ALTER
+
+-- check data distribution
+SELECT gp_segment_id, * FROM gp_dist_random('single_col_dist_heap') GROUP BY 1, 2 ORDER BY 1, 2;
+ gp_segment_id | a  
+---------------+----
+ 0             | 1  
+ 0             | 2  
+ 1             | 3  
+ 1             | 4  
+ 1             | 5  
+ 1             | 6  
+ 1             | 7  
+ 2             | 8  
+ 2             | 9  
+ 2             | 10 
+(10 rows)
+SELECT gp_segment_id, * FROM gp_dist_random('single_col_dist_ao') GROUP BY 1, 2 ORDER BY 1, 2;
+ gp_segment_id | a  
+---------------+----
+ 0             | 1  
+ 0             | 2  
+ 1             | 3  
+ 1             | 4  
+ 1             | 5  
+ 1             | 6  
+ 1             | 7  
+ 2             | 8  
+ 2             | 9  
+ 2             | 10 
+(10 rows)
+SELECT gp_segment_id, * FROM gp_dist_random('single_col_dist_aoco') GROUP BY 1, 2 ORDER BY 1, 2;
+ gp_segment_id | a  
+---------------+----
+ 0             | 1  
+ 0             | 2  
+ 1             | 3  
+ 1             | 4  
+ 1             | 5  
+ 1             | 6  
+ 1             | 7  
+ 2             | 8  
+ 2             | 9  
+ 2             | 10 
+(10 rows)
+
+
+
+-- check data distribution
+SELECT gp_segment_id, * FROM gp_dist_random('multi_col_dist_heap') ORDER BY 1, 2, 3;
+ gp_segment_id | a  | b 
+---------------+----+---
+ 0             | 7  | 1 
+ 0             | 10 | 1 
+ 1             | 1  | 1 
+ 1             | 4  | 1 
+ 1             | 5  | 1 
+ 1             | 8  | 1 
+ 1             | 9  | 1 
+ 2             | 2  | 1 
+ 2             | 3  | 1 
+ 2             | 6  | 1 
+(10 rows)
+SELECT gp_segment_id, * FROM gp_dist_random('multi_col_dist_ao') ORDER BY 1, 2, 3;
+ gp_segment_id | a  | b 
+---------------+----+---
+ 0             | 7  | 1 
+ 0             | 10 | 1 
+ 1             | 1  | 1 
+ 1             | 4  | 1 
+ 1             | 5  | 1 
+ 1             | 8  | 1 
+ 1             | 9  | 1 
+ 2             | 2  | 1 
+ 2             | 3  | 1 
+ 2             | 6  | 1 
+(10 rows)
+SELECT gp_segment_id, * FROM gp_dist_random('multi_col_dist_aoco') ORDER BY 1, 2, 3;
+ gp_segment_id | a  | b 
+---------------+----+---
+ 0             | 7  | 1 
+ 0             | 10 | 1 
+ 1             | 1  | 1 
+ 1             | 4  | 1 
+ 1             | 5  | 1 
+ 1             | 8  | 1 
+ 1             | 9  | 1 
+ 2             | 2  | 1 
+ 2             | 3  | 1 
+ 2             | 6  | 1 
+(10 rows)
+
+-- check distribution policy
+SELECT c.relname, dp.distkey, opc0.opcname, opc1.opcname FROM gp_distribution_policy dp JOIN pg_class c ON dp.localoid = c.oid JOIN pg_opclass opc0 ON dp.distclass[0] = opc0.oid JOIN pg_opclass opc1 ON dp.distclass[1] = opc1.oid WHERE c.relname LIKE 'multi_col%' ORDER BY c.relname;
+ relname             | distkey | opcname          | opcname          
+---------------------+---------+------------------+------------------
+ multi_col_dist_ao   | 1 2     | cdbhash_int4_ops | cdbhash_int4_ops 
+ multi_col_dist_aoco | 1 2     | cdbhash_int8_ops | cdbhash_int8_ops 
+ multi_col_dist_heap | 1 2     | cdbhash_int2_ops | cdbhash_int2_ops 
+(3 rows)
+
+-- insert same rows int tables
+INSERT INTO multi_col_dist_heap SELECT a, 1 AS b FROM generate_series(1,10) a;
+INSERT 10
+INSERT INTO multi_col_dist_ao SELECT a, 1 AS b FROM generate_series(1,10) a;
+INSERT 10
+INSERT INTO multi_col_dist_aoco SELECT a, 1 AS b FROM generate_series(1,10) a;
+INSERT 10
+
+-- check data was placed into expected segments
+SELECT count(*) from multi_col_dist_heap;
+ count 
+-------
+ 20    
+(1 row)
+SELECT count(*) from multi_col_dist_ao;
+ count 
+-------
+ 20    
+(1 row)
+SELECT count(*) from multi_col_dist_aoco;
+ count 
+-------
+ 20    
+(1 row)
+SELECT gp_segment_id, * FROM gp_dist_random('multi_col_dist_heap') GROUP BY 1, 2, 3 ORDER BY 1, 2, 3;
+ gp_segment_id | a  | b 
+---------------+----+---
+ 0             | 7  | 1 
+ 0             | 10 | 1 
+ 1             | 1  | 1 
+ 1             | 4  | 1 
+ 1             | 5  | 1 
+ 1             | 8  | 1 
+ 1             | 9  | 1 
+ 2             | 2  | 1 
+ 2             | 3  | 1 
+ 2             | 6  | 1 
+(10 rows)
+SELECT gp_segment_id, * FROM gp_dist_random('multi_col_dist_ao') GROUP BY 1, 2, 3 ORDER BY 1, 2, 3;
+ gp_segment_id | a  | b 
+---------------+----+---
+ 0             | 7  | 1 
+ 0             | 10 | 1 
+ 1             | 1  | 1 
+ 1             | 4  | 1 
+ 1             | 5  | 1 
+ 1             | 8  | 1 
+ 1             | 9  | 1 
+ 2             | 2  | 1 
+ 2             | 3  | 1 
+ 2             | 6  | 1 
+(10 rows)
+SELECT gp_segment_id, * FROM gp_dist_random('multi_col_dist_aoco') GROUP BY 1, 2, 3 ORDER BY 1, 2, 3;
+ gp_segment_id | a  | b 
+---------------+----+---
+ 0             | 7  | 1 
+ 0             | 10 | 1 
+ 1             | 1  | 1 
+ 1             | 4  | 1 
+ 1             | 5  | 1 
+ 1             | 8  | 1 
+ 1             | 9  | 1 
+ 2             | 2  | 1 
+ 2             | 3  | 1 
+ 2             | 6  | 1 
+(10 rows)
+
+-- reorganize with the same distribution columns
+ALTER TABLE multi_col_dist_heap SET WITH (reorganize=true) DISTRIBUTED BY (a, b);
+ALTER
+ALTER TABLE multi_col_dist_ao SET WITH (reorganize=true) DISTRIBUTED BY (a, b);
+ALTER
+ALTER TABLE multi_col_dist_aoco SET WITH (reorganize=true) DISTRIBUTED BY (a, b);
+ALTER
+
+-- check data distribution
+SELECT gp_segment_id, * FROM gp_dist_random('multi_col_dist_heap') GROUP BY 1, 2, 3 ORDER BY 1, 2, 3;
+ gp_segment_id | a  | b 
+---------------+----+---
+ 0             | 7  | 1 
+ 0             | 10 | 1 
+ 1             | 1  | 1 
+ 1             | 4  | 1 
+ 1             | 5  | 1 
+ 1             | 8  | 1 
+ 1             | 9  | 1 
+ 2             | 2  | 1 
+ 2             | 3  | 1 
+ 2             | 6  | 1 
+(10 rows)
+SELECT gp_segment_id, * FROM gp_dist_random('multi_col_dist_ao') GROUP BY 1, 2, 3 ORDER BY 1, 2, 3;
+ gp_segment_id | a  | b 
+---------------+----+---
+ 0             | 7  | 1 
+ 0             | 10 | 1 
+ 1             | 1  | 1 
+ 1             | 4  | 1 
+ 1             | 5  | 1 
+ 1             | 8  | 1 
+ 1             | 9  | 1 
+ 2             | 2  | 1 
+ 2             | 3  | 1 
+ 2             | 6  | 1 
+(10 rows)
+SELECT gp_segment_id, * FROM gp_dist_random('multi_col_dist_aoco') GROUP BY 1, 2, 3 ORDER BY 1, 2, 3;
+ gp_segment_id | a  | b 
+---------------+----+---
+ 0             | 7  | 1 
+ 0             | 10 | 1 
+ 1             | 1  | 1 
+ 1             | 4  | 1 
+ 1             | 5  | 1 
+ 1             | 8  | 1 
+ 1             | 9  | 1 
+ 2             | 2  | 1 
+ 2             | 3  | 1 
+ 2             | 6  | 1 
+(10 rows)
