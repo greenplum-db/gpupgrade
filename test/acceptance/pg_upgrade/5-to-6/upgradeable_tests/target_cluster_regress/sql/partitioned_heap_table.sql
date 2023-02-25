@@ -30,3 +30,9 @@ SELECT c, d FROM dropped_and_added_column WHERE a=10;
 SELECT c.relname, pg_catalog.pg_get_userbyid(c.relowner) as owner
 FROM pg_class c
 WHERE relname like 'p_alter_owner%';
+
+INSERT INTO equal_operator_not_in_search_path_table VALUES (1, '(1,1)');
+SELECT * FROM equal_operator_not_in_search_path_table;
+
+INSERT INTO equal_operator_not_in_search_path_table_multi_key VALUES (1, '(1,1)', 1);
+SELECT * FROM equal_operator_not_in_search_path_table_multi_key;

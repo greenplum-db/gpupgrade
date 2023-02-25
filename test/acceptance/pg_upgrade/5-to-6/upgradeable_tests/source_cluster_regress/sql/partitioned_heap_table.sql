@@ -109,3 +109,41 @@ INSERT INTO dropped_and_added_column SELECT i, i, i, i FROM generate_series(10, 
 CREATE ROLE testrole;
 CREATE TABLE p_alter_owner (id INTEGER, name TEXT) DISTRIBUTED BY (id) PARTITION BY RANGE(id) (START(1) END(3) EVERY(1));
 ALTER TABLE p_alter_owner OWNER TO testrole;
+
+--
+-- list partitioned by custom type where equality operator is in different schema
+-- Note: On 5X, inserts into the table won't work due to a bug where it assumes
+--       the equality operator is in pg_catalog. This is fixed in 6X so we'll at
+--       least test the table creation here.
+--
+
+CREATE TYPE equal_operator_not_in_search_path_type AS (a int, b int);
+CREATE FUNCTION equal_operator_not_in_search_path_func (equal_operator_not_in_search_path_type, equal_operator_not_in_search_path_type) RETURNS boolean
+  AS 'SELECT $1.a = $2.a;'
+  LANGUAGE SQL IMMUTABLE
+  RETURNS NULL ON NULL INPUT;
+
+CREATE SCHEMA equal_operator_not_in_search_path_schema;
+CREATE OPERATOR equal_operator_not_in_search_path_schema.= (
+        LEFTARG = equal_operator_not_in_search_path_type,
+        RIGHTARG = equal_operator_not_in_search_path_type,
+        PROCEDURE = equal_operator_not_in_search_path_func
+);
+
+CREATE OPERATOR CLASS equal_operator_not_in_search_path_opclass
+  DEFAULT FOR TYPE equal_operator_not_in_search_path_type
+  USING btree AS
+  OPERATOR 3 equal_operator_not_in_search_path_schema.=;
+
+SET search_path TO equal_operator_not_in_search_path_schema,"$user",public;
+CREATE TABLE public.equal_operator_not_in_search_path_table (a int, b equal_operator_not_in_search_path_type)
+DISTRIBUTED BY (a) PARTITION BY LIST(b)
+(
+  PARTITION part1 VALUES('(1,1)')
+);
+
+CREATE TABLE public.equal_operator_not_in_search_path_table_multi_key (a int, b equal_operator_not_in_search_path_type, c int)
+DISTRIBUTED BY (a) PARTITION BY LIST(b, c)
+(
+  PARTITION part1 VALUES(('(1,1)', 1))
+);

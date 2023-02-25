@@ -109,3 +109,19 @@ SELECT c.relname, pg_catalog.pg_get_userbyid(c.relowner) as owner FROM pg_class 
  p_alter_owner_1_prt_1 | testrole 
  p_alter_owner_1_prt_2 | testrole 
 (3 rows)
+
+INSERT INTO equal_operator_not_in_search_path_table VALUES (1, '(1,1)');
+INSERT 1
+SELECT * FROM equal_operator_not_in_search_path_table;
+ a | b     
+---+-------
+ 1 | (1,1) 
+(1 row)
+
+INSERT INTO equal_operator_not_in_search_path_table_multi_key VALUES (1, '(1,1)', 1);
+INSERT 1
+SELECT * FROM equal_operator_not_in_search_path_table_multi_key;
+ a | b     | c 
+---+-------+---
+ 1 | (1,1) | 1 
+(1 row)
