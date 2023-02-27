@@ -39,6 +39,31 @@ SELECT * FROM p_split_partition_test;
  4 | 4 
  5 | 5 
 (5 rows)
+INSERT INTO p_split_partition_test SELECT i, i FROM generate_series(6,10)i;
+INSERT 5
+ALTER TABLE p_split_partition_test SPLIT DEFAULT PARTITION START(6) END(10) INTO (PARTITION second_split, PARTITION extra);
+ALTER
+SELECT * FROM p_split_partition_test;
+ a  | b  
+----+----
+ 1  | 1  
+ 10 | 10 
+ 2  | 2  
+ 3  | 3  
+ 4  | 4  
+ 5  | 5  
+ 6  | 6  
+ 7  | 7  
+ 8  | 8  
+ 9  | 9  
+(10 rows)
+SELECT parname, parisdefault FROM pg_partition_rule pr JOIN pg_partition p ON pr.paroid = p.oid WHERE p.parrelid = 'p_split_partition_test'::regclass AND pr.parname != '';
+ parname      | parisdefault 
+--------------+--------------
+ extra        | t            
+ second_split | f            
+ splitted     | f            
+(3 rows)
 
 SELECT id, age FROM p_subpart_heap_1_prt_partition_id_2_prt_subpartition_age_first;
  id | age 

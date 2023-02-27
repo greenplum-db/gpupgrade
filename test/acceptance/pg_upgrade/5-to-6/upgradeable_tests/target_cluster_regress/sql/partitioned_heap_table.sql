@@ -12,6 +12,10 @@ SELECT * FROM p_add_partition_test;
 SELECT * FROM p_add_list_partition_test;
 
 SELECT * FROM p_split_partition_test;
+INSERT INTO p_split_partition_test SELECT i, i FROM generate_series(6,10)i;
+ALTER TABLE p_split_partition_test SPLIT DEFAULT PARTITION START(6) END(10) INTO (PARTITION second_split, PARTITION extra);
+SELECT * FROM p_split_partition_test;
+SELECT parname, parisdefault FROM pg_partition_rule pr JOIN pg_partition p ON pr.paroid = p.oid WHERE p.parrelid = 'p_split_partition_test'::regclass AND pr.parname != '';
 
 SELECT id, age FROM p_subpart_heap_1_prt_partition_id_2_prt_subpartition_age_first;
 SELECT id, age FROM p_subpart_heap_1_prt_partition_id_2_prt_subpartition_age_second;
