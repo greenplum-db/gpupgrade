@@ -1,2 +1,3 @@
 external_table.out
 exchange_external_partition.out
+partitioned_polymorphic_table.out

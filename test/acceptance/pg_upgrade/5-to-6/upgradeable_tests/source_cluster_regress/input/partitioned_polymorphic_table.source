@@ -1,0 +1,74 @@
+-- Copyright (c) 2017-2023 VMware, Inc. or its affiliates
+-- SPDX-License-Identifier: Apache-2.0
+
+-- Test to ensure that partitioned polymorphic tables can be
+-- upgraded. We create the tables with 2 heap, 1 AO, 1 AOCO, and 1
+-- external partitions. The root partition of each table will be
+-- either heap or AOCO.
+
+--------------------------------------------------------------------------------
+-- Create and setup upgradeable objects
+--------------------------------------------------------------------------------
+
+CREATE TABLE poly_range_partition_with_heap_root (a int, b int)
+PARTITION BY RANGE(b)
+(
+    PARTITION ext_part START(0) END(2),
+    PARTITION ao_part START(2) END(4) WITH (appendonly=true),
+    PARTITION aoco_part START(4) END(6) WITH (appendonly=true, orientation=column),
+    PARTITION heap_part_1 START(6) END(8) WITH (appendonly=false),
+    PARTITION heap_part_2 START(8) END(10) WITH (appendonly=false)
+);
+CREATE EXTERNAL TABLE external_table (a int, b int) LOCATION ('file://@hostname@/@abs_srcdir@/data/one_level_external_table_data.csv') FORMAT 'TEXT' (DELIMITER '|');
+ALTER TABLE poly_range_partition_with_heap_root EXCHANGE PARTITION ext_part WITH TABLE external_table WITHOUT VALIDATION;
+DROP TABLE external_table;
+INSERT INTO poly_range_partition_with_heap_root SELECT i, i FROM generate_series(2, 9)i;
+SELECT * FROM poly_range_partition_with_heap_root;
+
+CREATE TABLE poly_range_partition_with_aoco_root (a int, b int) WITH (appendonly=true, orientation=column)
+PARTITION BY RANGE(b)
+(
+    PARTITION ext_part START(0) END(2),
+    PARTITION ao_part START(2) END(4) WITH (appendonly=true),
+    PARTITION aoco_part START(4) END(6) WITH (appendonly=true, orientation=column),
+    PARTITION heap_part_1 START(6) END(8) WITH (appendonly=false),
+    PARTITION heap_part_2 START(8) END(10) WITH (appendonly=false)
+);
+CREATE EXTERNAL TABLE external_table (a int, b int) LOCATION ('file://@hostname@/@abs_srcdir@/data/one_level_external_table_data.csv') FORMAT 'TEXT' (DELIMITER '|');
+ALTER TABLE poly_range_partition_with_aoco_root EXCHANGE PARTITION ext_part WITH TABLE external_table WITHOUT VALIDATION;
+DROP TABLE external_table;
+INSERT INTO poly_range_partition_with_aoco_root SELECT i, i FROM generate_series(2, 9)i;
+SELECT * FROM poly_range_partition_with_aoco_root;
+
+CREATE TABLE poly_list_partition_with_heap_root (a int, b int)
+PARTITION BY LIST(b)
+(
+    PARTITION ext_part VALUES (0, 1),
+    PARTITION ao_part VALUES(2, 3) WITH (appendonly=true),
+    PARTITION aoco_part VALUES(4, 5) WITH (appendonly=true, orientation=column),
+    PARTITION heap_part_1 VALUES(6, 7) WITH (appendonly=false),
+    PARTITION heap_part_2 VALUES(8, 9) WITH (appendonly=false)
+);
+CREATE EXTERNAL TABLE external_table (a int, b int) LOCATION ('file://@hostname@/@abs_srcdir@/data/one_level_external_table_data.csv') FORMAT 'TEXT' (DELIMITER '|');
+ALTER TABLE poly_list_partition_with_heap_root EXCHANGE PARTITION ext_part WITH TABLE external_table WITHOUT VALIDATION;
+DROP TABLE external_table;
+INSERT INTO poly_list_partition_with_heap_root SELECT i, i FROM generate_series(2, 9)i;
+SELECT * FROM poly_list_partition_with_heap_root;
+
+CREATE TABLE poly_list_partition_with_aoco_root (a int, b int) WITH (appendonly=true, orientation=column)
+PARTITION BY LIST(b)
+(
+    PARTITION ext_part VALUES (0, 1),
+    PARTITION ao_part VALUES(2, 3) WITH (appendonly=true),
+    PARTITION aoco_part VALUES(4, 5) WITH (appendonly=true, orientation=column),
+    PARTITION heap_part_1 VALUES(6, 7) WITH (appendonly=false),
+    PARTITION heap_part_2 VALUES(8, 9) WITH (appendonly=false)
+);
+CREATE EXTERNAL TABLE external_table (a int, b int) LOCATION ('file://@hostname@/@abs_srcdir@/data/one_level_external_table_data.csv') FORMAT 'TEXT' (DELIMITER '|');
+ALTER TABLE poly_list_partition_with_aoco_root EXCHANGE PARTITION ext_part WITH TABLE external_table WITHOUT VALIDATION;
+DROP TABLE external_table;
+INSERT INTO poly_list_partition_with_aoco_root SELECT i, i FROM generate_series(2, 9)i;
+SELECT * FROM poly_list_partition_with_aoco_root;
+
+-- Show what the storage types of each partition are before upgrade
+SELECT relname, relstorage FROM pg_class WHERE relname SIMILAR TO 'poly_(list|range)_partition_with_(heap|aoco)_root%' ORDER BY relname;

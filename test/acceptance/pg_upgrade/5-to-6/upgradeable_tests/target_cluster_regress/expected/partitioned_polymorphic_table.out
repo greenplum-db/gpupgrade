@@ -1,0 +1,203 @@
+-- Copyright (c) 2017-2023 VMware, Inc. or its affiliates
+-- SPDX-License-Identifier: Apache-2.0
+
+--------------------------------------------------------------------------------
+-- Validate that the partitioned polymorphic tables work as expected
+-- after upgrade.
+--------------------------------------------------------------------------------
+
+-- Show what the storage types of each partition are after upgrade
+SELECT relname, relstorage FROM pg_class WHERE relname SIMILAR TO 'poly_(list|range)_partition_with_(heap|aoco)_root%' ORDER BY relname;
+ relname                                               | relstorage 
+-------------------------------------------------------+------------
+ poly_list_partition_with_aoco_root                    | c          
+ poly_list_partition_with_aoco_root_1_prt_ao_part      | a          
+ poly_list_partition_with_aoco_root_1_prt_aoco_part    | c          
+ poly_list_partition_with_aoco_root_1_prt_ext_part     | x          
+ poly_list_partition_with_aoco_root_1_prt_heap_part_1  | h          
+ poly_list_partition_with_aoco_root_1_prt_heap_part_2  | h          
+ poly_list_partition_with_heap_root                    | h          
+ poly_list_partition_with_heap_root_1_prt_ao_part      | a          
+ poly_list_partition_with_heap_root_1_prt_aoco_part    | c          
+ poly_list_partition_with_heap_root_1_prt_ext_part     | x          
+ poly_list_partition_with_heap_root_1_prt_heap_part_1  | h          
+ poly_list_partition_with_heap_root_1_prt_heap_part_2  | h          
+ poly_range_partition_with_aoco_root                   | c          
+ poly_range_partition_with_aoco_root_1_prt_ao_part     | a          
+ poly_range_partition_with_aoco_root_1_prt_aoco_part   | c          
+ poly_range_partition_with_aoco_root_1_prt_ext_part    | x          
+ poly_range_partition_with_aoco_root_1_prt_heap_part_1 | h          
+ poly_range_partition_with_aoco_root_1_prt_heap_part_2 | h          
+ poly_range_partition_with_heap_root                   | h          
+ poly_range_partition_with_heap_root_1_prt_ao_part     | a          
+ poly_range_partition_with_heap_root_1_prt_aoco_part   | c          
+ poly_range_partition_with_heap_root_1_prt_ext_part    | x          
+ poly_range_partition_with_heap_root_1_prt_heap_part_1 | h          
+ poly_range_partition_with_heap_root_1_prt_heap_part_2 | h          
+(24 rows)
+
+-- Run some simple DELETEs, UPDATEs, and INSERTs to see if things
+-- still work after upgrade
+SELECT * FROM poly_range_partition_with_heap_root;
+ a | b 
+---+---
+ 8 | 8 
+ 9 | 9 
+ 3 | 3 
+ 4 | 4 
+ 5 | 5 
+ 6 | 6 
+ 7 | 7 
+ 2 | 2 
+ 1 | 1 
+ 3 | 1 
+ 5 | 1 
+(11 rows)
+DELETE FROM poly_range_partition_with_heap_root WHERE b%2 = 0 AND b > 1;
+DELETE 4
+UPDATE poly_range_partition_with_heap_root SET b = b - 1 WHERE b > 1;
+UPDATE 4
+INSERT INTO poly_range_partition_with_heap_root SELECT 100 + i, i FROM generate_series(2, 9)i;
+INSERT 8
+SELECT * FROM poly_range_partition_with_heap_root;
+ a   | b 
+-----+---
+ 102 | 2 
+ 9   | 8 
+ 3   | 2 
+ 5   | 4 
+ 7   | 6 
+ 107 | 7 
+ 108 | 8 
+ 109 | 9 
+ 103 | 3 
+ 104 | 4 
+ 105 | 5 
+ 106 | 6 
+ 1   | 1 
+ 3   | 1 
+ 5   | 1 
+(15 rows)
+
+SELECT * FROM poly_range_partition_with_aoco_root;
+ a | b 
+---+---
+ 8 | 8 
+ 9 | 9 
+ 3 | 3 
+ 4 | 4 
+ 5 | 5 
+ 6 | 6 
+ 7 | 7 
+ 2 | 2 
+ 1 | 1 
+ 3 | 1 
+ 5 | 1 
+(11 rows)
+DELETE FROM poly_range_partition_with_aoco_root WHERE b%2 = 0 AND b > 1;
+DELETE 4
+UPDATE poly_range_partition_with_aoco_root SET b = b - 1 WHERE b > 1;
+UPDATE 4
+INSERT INTO poly_range_partition_with_aoco_root SELECT 100 + i, i FROM generate_series(2, 9)i;
+INSERT 8
+SELECT * FROM poly_range_partition_with_aoco_root;
+ a   | b 
+-----+---
+ 102 | 2 
+ 9   | 8 
+ 3   | 2 
+ 5   | 4 
+ 7   | 6 
+ 107 | 7 
+ 108 | 8 
+ 109 | 9 
+ 103 | 3 
+ 104 | 4 
+ 105 | 5 
+ 106 | 6 
+ 1   | 1 
+ 3   | 1 
+ 5   | 1 
+(15 rows)
+
+SELECT * FROM poly_list_partition_with_heap_root;
+ a | b 
+---+---
+ 8 | 8 
+ 9 | 9 
+ 2 | 2 
+ 1 | 1 
+ 3 | 1 
+ 5 | 1 
+ 3 | 3 
+ 4 | 4 
+ 5 | 5 
+ 6 | 6 
+ 7 | 7 
+(11 rows)
+DELETE FROM poly_list_partition_with_heap_root WHERE b%2 = 0 AND b > 1;
+DELETE 4
+UPDATE poly_list_partition_with_heap_root SET b = b - 1 WHERE b > 1;
+UPDATE 4
+INSERT INTO poly_list_partition_with_heap_root SELECT 100 + i, i FROM generate_series(2, 9)i;
+INSERT 8
+SELECT * FROM poly_list_partition_with_heap_root;
+ a   | b 
+-----+---
+ 102 | 2 
+ 9   | 8 
+ 3   | 2 
+ 5   | 4 
+ 7   | 6 
+ 107 | 7 
+ 108 | 8 
+ 109 | 9 
+ 103 | 3 
+ 104 | 4 
+ 105 | 5 
+ 106 | 6 
+ 1   | 1 
+ 3   | 1 
+ 5   | 1 
+(15 rows)
+
+SELECT * FROM poly_list_partition_with_aoco_root;
+ a | b 
+---+---
+ 8 | 8 
+ 9 | 9 
+ 2 | 2 
+ 1 | 1 
+ 3 | 1 
+ 5 | 1 
+ 3 | 3 
+ 4 | 4 
+ 5 | 5 
+ 6 | 6 
+ 7 | 7 
+(11 rows)
+DELETE FROM poly_list_partition_with_aoco_root WHERE b%2 = 0 AND b > 1;
+DELETE 4
+UPDATE poly_list_partition_with_aoco_root SET b = b - 1 WHERE b > 1;
+UPDATE 4
+INSERT INTO poly_list_partition_with_aoco_root SELECT 100 + i, i FROM generate_series(2, 9)i;
+INSERT 8
+SELECT * FROM poly_list_partition_with_aoco_root;
+ a   | b 
+-----+---
+ 102 | 2 
+ 9   | 8 
+ 3   | 2 
+ 5   | 4 
+ 7   | 6 
+ 107 | 7 
+ 108 | 8 
+ 109 | 9 
+ 103 | 3 
+ 104 | 4 
+ 105 | 5 
+ 106 | 6 
+ 1   | 1 
+ 3   | 1 
+ 5   | 1 
+(15 rows)
