@@ -6,5 +6,6 @@ test: distribution_key_and_data partitioned_polymorphic_table partitions_with_di
 test: clog_preservation
 test: vacuum_freeze_tables
 
-# This test will trigger crash recovery so it has to run by itself.
+# These tests will trigger crash recovery so they have to run by themselves.
 test: gp_fastsequence
+test: ao_indexes
