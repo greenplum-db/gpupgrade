@@ -1,0 +1,44 @@
+-- Copyright (c) 2017-2023 VMware, Inc. or its affiliates
+-- SPDX-License-Identifier: Apache-2.0
+
+-- Test to ensure that a table with name columns can be upgraded. This
+-- was previously banned but found to be upgradeable.
+
+--------------------------------------------------------------------------------
+-- Create and setup upgradeable objects
+--------------------------------------------------------------------------------
+
+-- The name columns are strategically placed to test on-disk alignment
+-- (padding) before and after upgrade. The int and text column are
+-- 4-byte aligned whereas the name column used to be 4-byte aligned
+-- but was changed in 5X to have no alignment needed.
+CREATE TABLE table_with_name_columns (a int, b name, c text, d name);
+CREATE
+CREATE INDEX table_with_name_columns_idx ON table_with_name_columns USING btree(b);
+CREATE
+
+INSERT INTO table_with_name_columns SELECT i, 'bbb' || i, 'ccc' || i, 'ddd' || i FROM generate_series(1,10)i;
+INSERT 10
+
+-- Do an insert that maxes out the name data type. The name data type
+-- is limited to 63 chars which will truncate the z. However, the text
+-- data type does not have this limitation and will store the ending z.
+INSERT INTO table_with_name_columns VALUES (88, 'aaaaaaaaaabbbbbbbbbbccccccccccddddddddddeeeeeeeeeeffffffffffgggz', 'aaaaaaaaaabbbbbbbbbbccccccccccddddddddddeeeeeeeeeeffffffffffgggz', 'aaaaaaaaaabbbbbbbbbbccccccccccddddddddddeeeeeeeeeeffffffffffgggz');
+INSERT 1
+
+-- Show the data before upgrade.
+SELECT * FROM table_with_name_columns;
+ a  | b                                                               | c                                                                | d                                                               
+----+-----------------------------------------------------------------+------------------------------------------------------------------+-----------------------------------------------------------------
+ 1  | bbb1                                                            | ccc1                                                             | ddd1                                                            
+ 2  | bbb2                                                            | ccc2                                                             | ddd2                                                            
+ 3  | bbb3                                                            | ccc3                                                             | ddd3                                                            
+ 4  | bbb4                                                            | ccc4                                                             | ddd4                                                            
+ 5  | bbb5                                                            | ccc5                                                             | ddd5                                                            
+ 6  | bbb6                                                            | ccc6                                                             | ddd6                                                            
+ 7  | bbb7                                                            | ccc7                                                             | ddd7                                                            
+ 88 | aaaaaaaaaabbbbbbbbbbccccccccccddddddddddeeeeeeeeeeffffffffffggg | aaaaaaaaaabbbbbbbbbbccccccccccddddddddddeeeeeeeeeeffffffffffgggz | aaaaaaaaaabbbbbbbbbbccccccccccddddddddddeeeeeeeeeeffffffffffggg 
+ 8  | bbb8                                                            | ccc8                                                             | ddd8                                                            
+ 9  | bbb9                                                            | ccc9                                                             | ddd9                                                            
+ 10 | bbb10                                                           | ccc10                                                            | ddd10                                                           
+(11 rows)
