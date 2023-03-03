@@ -4,6 +4,7 @@
 package commands
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"os"
@@ -219,6 +220,14 @@ func initialize() *cobra.Command {
 				return commanders.ApplyDataMigrationScripts(nonInteractive, sourceGPHome, sourcePort,
 					utils.System.DirFS(currentDir), currentDir, idl.Step_initialize)
 			})
+
+			if !nonInteractive {
+				fmt.Println()
+				err := commanders.Prompt(bufio.NewReader(os.Stdin), idl.Step_initialize)
+				if err != nil {
+					return err
+				}
+			}
 
 			st.RunInternalSubstep(func() error {
 				return commanders.CreateConfigFile(hubPort)
