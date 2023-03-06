@@ -80,7 +80,6 @@ func StartHub() (err error) {
 		return xerrors.Errorf("%q failed with %q: %w", cmd.String(), string(output), err)
 	}
 
-	fmt.Println("Started hub")
 	log.Printf("%s", output)
 	return nil
 }

@@ -194,6 +194,10 @@ var restartServices = &cobra.Command{
 			return err
 		}
 
+		if !errors.Is(err, step.Skip) {
+			fmt.Println("Restarted hub")
+		}
+
 		client, err := connectToHub()
 		if err != nil {
 			return err
