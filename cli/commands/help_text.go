@@ -31,7 +31,7 @@ func init() {
 		idl.Substep_saving_source_cluster_config,
 		idl.Substep_start_agents,
 		idl.Substep_check_environment,
-		idl.Substep_create_backupdir,
+		idl.Substep_create_backupdirs,
 		idl.Substep_check_disk_space,
 		idl.Substep_generate_target_config,
 		idl.Substep_init_target_cluster,

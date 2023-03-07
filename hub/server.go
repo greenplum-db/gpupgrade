@@ -343,7 +343,8 @@ func (s *Server) closeAgentConns() {
 // from disk during calls to Save() and Load().
 type Config struct {
 	LogArchiveDir string
-	BackupDir     string
+
+	BackupDirs BackupDirs
 
 	// Source is the GPDB cluster that is being upgraded. It is populated during
 	// the generation of the cluster config in the initialize step; before that,
@@ -364,6 +365,15 @@ type Config struct {
 	UseHbaHostnames bool
 	UpgradeID       upgrade.ID
 }
+
+type BackupDirs struct {
+	// Can collapse the CoordinatorBackupDir into AgentHostsToBackupDir once we run an agent on the coordinator
+	// to simplify various logic.
+	CoordinatorBackupDir  string
+	AgentHostsToBackupDir AgentHostsToBackupDir
+}
+
+type AgentHostsToBackupDir map[string]string
 
 func (c *Config) Load(r io.Reader) error {
 	dec := json.NewDecoder(r)

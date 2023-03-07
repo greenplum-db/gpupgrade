@@ -119,7 +119,7 @@ Cannot revert and restore the source cluster. Please contact support.`)
 	})
 
 	st.Run(idl.Substep_delete_backupdir, func(streams step.OutStreams) error {
-		return DeleteBackupDirectories(streams, s.agentConns, s.BackupDir)
+		return DeleteBackupDirectories(streams, s.agentConns, s.BackupDirs)
 	})
 
 	st.Run(idl.Substep_delete_segment_statedirs, func(_ step.OutStreams) error {

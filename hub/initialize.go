@@ -7,9 +7,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
@@ -61,7 +58,7 @@ func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_Init
 		return CheckEnvironment(append(AgentHosts(s.Source), s.Source.CoordinatorHostname()), s.Source.GPHome, s.Intermediate.GPHome)
 	})
 
-	st.Run(idl.Substep_create_backupdir, func(streams step.OutStreams) error {
+	st.Run(idl.Substep_create_backupdirs, func(streams step.OutStreams) error {
 		// We do not combine the state directory and backup directory for
 		// several reasons:
 		// - The backup directory needs to be configurable since there
@@ -72,37 +69,35 @@ func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_Init
 		// hard to manage, and error prone.
 		// - The default state directory $HOME/.gpupgrade is known upfront with
 		// no dependencies. Whereas the default backup directory is based on the
-		// coordinator data directory. Having a state directory with no
-		// dependencies is much easier to create and remove during the gpupgrade
-		// lifecycle.
-
-		parentBackupDir := req.GetParentBackupDir()
-		if parentBackupDir == "" {
-			// Default to the root directory of the master data directory such
-			// as /data given /data/master/gpseg-1. The backup directory will be
-			// /data/.gpupgrade on all hosts.
-			//
-			// NOTE: We do not use the parent directory of the coordinator data
-			// directory such as /data/master since that is less likely to be
-			// the same across all hosts.
-			parts := strings.SplitAfterN(s.Source.CoordinatorDataDir(), string(os.PathSeparator), 3)
-			parentBackupDir = filepath.Clean(filepath.Join(parts[0], parts[1]))
+		// data directories. Having a state directory with no dependencies is
+		// much easier to create and remove during the gpupgrade lifecycle.
+		s.BackupDirs, err = ParseParentBackupDirs(req.GetParentBackupDirs(), s.Source)
+		if err != nil {
+			return err
 		}
 
-		s.BackupDir = filepath.Join(parentBackupDir, ".gpupgrade")
 		err = s.SaveConfig()
 		if err != nil {
-			return fmt.Errorf("save backup directory: %w", err)
+			return fmt.Errorf("save backup directories: %w", err)
 		}
 
-		err = CreateBackupDirectories(streams, s.agentConns, s.BackupDir)
+		err = CreateBackupDirectories(streams, s.agentConns, s.BackupDirs)
 		if err != nil {
 			nextAction := `1. Run "gpupgrade revert"
 
-2. Consider specifying the "parent_backup_dir" parameter in gpupgrade_config.
-This sets the location used internally to store the backup of the master 
-data directory and user defined master tablespaces. It defaults to the root 
-directory of the master data directory such as /data given /data/master/gpseg-1.
+2. Consider setting the "parent_backup_dirs" parameter in gpupgrade_config.
+
+This sets the internal location to store the backup of the master data directory 
+and user defined master tablespaces. It defaults to the parent directory of each 
+primary data directory on each host including the standby. For example, 
+/data/coordinator given /data/coordinator/gpseg-1, and 
+/data1/primaries given /data1/primaries/gpseg1.
+
+The parent_backup_dirs parameter accepts either a single directory or multiple 
+host:directory pairs. To specify a single directory across all hosts set a 
+single directory such as /dir. To specify different directories for each host 
+use the form "host1:/dir1,host2:/dir2,host3:/dir3" where the first host must be 
+the master.
 
 3. Re-run "gupgrade initialize"`
 			return utils.NewNextActionErr(err, nextAction)
@@ -173,17 +168,17 @@ func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest
 
 	st.Run(idl.Substep_backup_target_master, func(stream step.OutStreams) error {
 		sourceDir := s.Intermediate.CoordinatorDataDir()
-		targetDir := utils.GetCoordinatorPreUpgradeBackupDir(s.BackupDir)
+		targetDir := utils.GetCoordinatorPreUpgradeBackupDir(s.BackupDirs.CoordinatorBackupDir)
 
 		return RsyncCoordinatorDataDir(stream, sourceDir, targetDir)
 	})
 
 	st.AlwaysRun(idl.Substep_check_upgrade, func(stream step.OutStreams) error {
-		if err := UpgradeCoordinator(stream, s.BackupDir, req.PgUpgradeVerbose, s.Source, s.Intermediate, idl.PgOptions_check, s.Mode); err != nil {
+		if err := UpgradeCoordinator(stream, s.BackupDirs.CoordinatorBackupDir, req.PgUpgradeVerbose, s.Source, s.Intermediate, idl.PgOptions_check, s.Mode); err != nil {
 			return err
 		}
 
-		return UpgradePrimaries(s.agentConns, s.BackupDir, req.PgUpgradeVerbose, s.Source, s.Intermediate, idl.PgOptions_check, s.Mode)
+		return UpgradePrimaries(s.agentConns, s.BackupDirs.AgentHostsToBackupDir, req.PgUpgradeVerbose, s.Source, s.Intermediate, idl.PgOptions_check, s.Mode)
 	})
 
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_InitializeResponse{

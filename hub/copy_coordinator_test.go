@@ -49,10 +49,12 @@ func TestCopy(t *testing.T) {
 	testlog.SetupTestLogger()
 
 	t.Run("copies the directory only once per host", func(t *testing.T) {
-		sourceDir := []string{"/data/qddir/seg-1/"}
-		targetHosts := []string{"localhost"}
+		sourceDirs := []string{"/data/qddir/seg-1/"}
 
-		// Validate the rsync call and arguments.
+		backupDirs := BackupDirs{}
+		backupDirs.AgentHostsToBackupDir = make(AgentHostsToBackupDir)
+		backupDirs.AgentHostsToBackupDir["localhost"] = "foobar/path"
+
 		cmd := exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
 			expected := "rsync"
 			if !strings.HasSuffix(name, expected) {
@@ -68,57 +70,69 @@ func TestCopy(t *testing.T) {
 			}
 		})
 		rsync.SetRsyncCommand(cmd)
+		defer rsync.ResetRsyncCommand()
 
-		err := Copy(step.DevNullStream, "foobar/path", sourceDir, targetHosts)
+		err := Copy(step.DevNullStream, sourceDirs, backupDirs.AgentHostsToBackupDir)
 		if err != nil {
 			t.Errorf("copying data directory: %+v", err)
 		}
 	})
 
 	t.Run("copies the data directory to each host", func(t *testing.T) {
-		// The verifier function can be called in parallel, so use a channel to
-		// communicate which hosts were actually used.
-		primaryHosts := []string{"host1", "host2"}
-		hosts := make(chan string, len(primaryHosts))
-		sourceDir := []string{"/data/qddir/seg-1"}
+		sourceDirs := []string{"/data/qddir/seg-1"}
 
-		expectedArgs := []string{
-			"--archive", "--compress", "--delete", "--stats",
-			"/data/qddir/seg-1", "foobar/path",
-		}
-		execCommandVerifier(t, hosts, expectedArgs)
+		backupDirs := BackupDirs{}
+		backupDirs.AgentHostsToBackupDir = make(AgentHostsToBackupDir)
+		backupDirs.AgentHostsToBackupDir["host1"] = "foobar1/path"
+		backupDirs.AgentHostsToBackupDir["host2"] = "foobar2/path"
 
-		err := Copy(step.DevNullStream, "foobar/path", sourceDir, primaryHosts)
+		actualArgsChan := make(chan []string, len(backupDirs.AgentHostsToBackupDir))
+
+		cmd := exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
+			expected := "rsync"
+			if !strings.HasSuffix(name, expected) {
+				t.Errorf("got %q, want %q", name, expected)
+			}
+
+			actualArgsChan <- args
+		})
+		rsync.SetRsyncCommand(cmd)
+		defer rsync.ResetRsyncCommand()
+
+		err := Copy(step.DevNullStream, sourceDirs, backupDirs.AgentHostsToBackupDir)
 		if err != nil {
 			t.Errorf("copying directory: %+v", err)
 		}
 
-		close(hosts)
+		close(actualArgsChan)
 
-		// Collect the hostnames for validation.
-		var actualHosts []string
-		for host := range hosts {
-			actualHosts = append(actualHosts, host)
+		var expectedArgs Args
+		for host, backupDir := range backupDirs.AgentHostsToBackupDir {
+			expectedArgs = append(expectedArgs, []string{
+				"--archive", "--compress", "--delete", "--stats",
+				"/data/qddir/seg-1", fmt.Sprintf("%s:%s", host, backupDir)})
 		}
-		sort.Strings(actualHosts) // receive order not guaranteed
 
-		expectedHosts := []string{"host1", "host2"}
-		if !reflect.DeepEqual(actualHosts, expectedHosts) {
-			t.Errorf("copied to hosts %q, want %q", actualHosts, expectedHosts)
-		}
+		verifyArgs(t, actualArgsChan, expectedArgs)
 	})
 
 	t.Run("returns errors when writing stdout and stderr buffers to the stream", func(t *testing.T) {
-		rsync.SetRsyncCommand(exectest.NewCommand(StreamingMain))
+		backupDirs := BackupDirs{}
+		backupDirs.AgentHostsToBackupDir = make(AgentHostsToBackupDir)
+		backupDirs.AgentHostsToBackupDir["localhost"] = "foobar/path"
+
 		streams := testutils.FailingStreams{Err: errors.New("e")}
 
-		err := Copy(streams, "", nil, []string{"localhost"})
+		rsync.SetRsyncCommand(exectest.NewCommand(StreamingMain))
+		defer rsync.ResetRsyncCommand()
 
-		// Make sure the errors are correctly propagated up.
+		err := Copy(streams, []string{""}, backupDirs.AgentHostsToBackupDir)
+
 		var errs errorlist.Errors
 		if !errors.As(err, &errs) {
 			t.Fatalf("returned %#v, want error type %T", err, errs)
 		}
+
 		for _, err := range errs {
 			if !errors.Is(err, streams.Err) {
 				t.Errorf("returned error %#v, want %#v", err, streams.Err)
@@ -127,13 +141,18 @@ func TestCopy(t *testing.T) {
 	})
 
 	t.Run("serializes rsync failures to the log stream", func(t *testing.T) {
-		rsync.SetRsyncCommand(exectest.NewCommand(RsyncFailure))
+		backupDirs := BackupDirs{}
+		backupDirs.AgentHostsToBackupDir = make(AgentHostsToBackupDir)
+		backupDirs.AgentHostsToBackupDir["sdw1"] = "foobar1/path"
+		backupDirs.AgentHostsToBackupDir["sdw2"] = "foobar2/path"
+
 		buffer := new(step.BufferedStreams)
-		hosts := []string{"mdw", "sdw1", "sdw2"}
 
-		err := Copy(buffer, "foobar/path", nil, hosts)
+		rsync.SetRsyncCommand(exectest.NewCommand(RsyncFailure))
+		defer rsync.ResetRsyncCommand()
 
-		// Make sure the errors are correctly propagated up.
+		err := Copy(buffer, []string{"data/coordinator"}, backupDirs.AgentHostsToBackupDir)
+
 		var errs errorlist.Errors
 		if !errors.As(err, &errs) {
 			t.Fatalf("returned %#v, want error type %T", err, errs)
@@ -155,7 +174,7 @@ func TestCopy(t *testing.T) {
 		// hosts. They should be serialized sanely, even though we may execute
 		// in parallel.
 		stderr := buffer.StderrBuf.String()
-		expected := strings.Repeat(rsyncErrorMessage, len(hosts))
+		expected := strings.Repeat(rsyncErrorMessage, len(backupDirs.AgentHostsToBackupDir))
 		if stderr != expected {
 			t.Errorf("got stderr:\n%v\nwant:\n%v", stderr, expected)
 		}
@@ -171,27 +190,41 @@ func TestCopyCoordinatorDataDir(t *testing.T) {
 		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 	})
 
+	backupDirs, err := ParseParentBackupDirs("", intermediate)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	t.Run("copies the coordinator data directory to each primary host", func(t *testing.T) {
-		// The verifier function can be called in parallel, so use a channel to
-		// communicate which hosts were actually used.
-		hosts := make(chan string, len(intermediate.PrimaryHostnames()))
+		actualArgsChan := make(chan []string, len(backupDirs.AgentHostsToBackupDir))
 
-		expectedArgs := []string{
-			"--archive", "--compress", "--delete", "--stats",
-			"/data/qddir/seg-1/", "foobar/path",
-		}
+		cmd := exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
+			expected := "rsync"
+			if !strings.HasSuffix(name, expected) {
+				t.Errorf("got %q, want %q", name, expected)
+			}
 
-		execCommandVerifier(t, hosts, expectedArgs)
+			actualArgsChan <- args
+		})
+		rsync.SetRsyncCommand(cmd)
+		defer rsync.ResetRsyncCommand()
 
-		err := CopyCoordinatorDataDir(step.DevNullStream, intermediate.CoordinatorDataDir(), "foobar/path", intermediate.PrimaryHostnames())
+		err := CopyCoordinatorDataDir(step.DevNullStream, intermediate.CoordinatorDataDir(), backupDirs.AgentHostsToBackupDir)
 		if err != nil {
 			t.Errorf("copying coordinator data directory: %+v", err)
 		}
 
-		close(hosts)
+		close(actualArgsChan)
 
-		expectedHosts := []string{"host1", "host2"}
-		verifyHosts(hosts, expectedHosts, t)
+		var expectedArgs Args
+		for host, backupDir := range backupDirs.AgentHostsToBackupDir {
+			expectedArgs = append(expectedArgs, []string{
+				"--archive", "--compress", "--delete", "--stats",
+				intermediate.CoordinatorDataDir() + string(os.PathSeparator),
+				fmt.Sprintf("%s:%s", host, utils.GetCoordinatorPostUpgradeBackupDir(backupDir))})
+		}
+
+		verifyArgs(t, actualArgsChan, expectedArgs)
 	})
 }
 
@@ -209,6 +242,11 @@ func TestCopyCoordinatorTablespaces(t *testing.T) {
 		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
 		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 	})
+
+	backupDirs, err := ParseParentBackupDirs("", intermediate)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	Tablespaces := greenplum.Tablespaces{
 		1: greenplum.SegmentTablespaces{
@@ -238,125 +276,162 @@ func TestCopyCoordinatorTablespaces(t *testing.T) {
 	}
 
 	t.Run("when source version is 5X it copy's the --old-tablespace-file and user defined coordinator tablespace locations to each primary host", func(t *testing.T) {
-		// The verifier function can be called in parallel, so use a channel to
-		// communicate which hosts were actually used.
-		hosts := make(chan string, len(intermediate.PrimaryHostnames()))
+		actualArgsChan := make(chan []string, len(backupDirs.AgentHostsToBackupDir))
 
-		expectedArgs := []string{
-			"--archive", "--compress", "--delete", "--stats",
-			utils.GetStateDirOldTablespacesFile(), "/tmp/tblspc2", "foobar/path/",
-		}
-		execCommandVerifier(t, hosts, expectedArgs)
+		cmd := exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
+			expected := "rsync"
+			if !strings.HasSuffix(name, expected) {
+				t.Errorf("got %q, want %q", name, expected)
+			}
 
-		err := CopyCoordinatorTablespaces(step.DevNullStream, semver.MustParse("5.0.0"), Tablespaces, "foobar/path", intermediate.PrimaryHostnames())
+			actualArgsChan <- args
+		})
+		rsync.SetRsyncCommand(cmd)
+		defer rsync.ResetRsyncCommand()
+
+		err := CopyCoordinatorTablespaces(step.DevNullStream, semver.MustParse("5.0.0"), Tablespaces, backupDirs.AgentHostsToBackupDir)
 		if err != nil {
 			t.Errorf("copying coordinator tablespace directories and mapping file: %+v", err)
 		}
 
-		close(hosts)
+		close(actualArgsChan)
 
-		expectedHosts := []string{"host1", "host2"}
-		verifyHosts(hosts, expectedHosts, t)
+		var expectedArgs Args
+		for host, backupDir := range backupDirs.AgentHostsToBackupDir {
+			expectedArgs = append(expectedArgs, []string{
+				"--archive", "--compress", "--delete", "--stats",
+				utils.GetStateDirOldTablespacesFile(), "/tmp/tblspc2",
+				fmt.Sprintf("%s:%s", host, utils.GetTablespaceBackupDir(backupDir)+string(os.PathSeparator))})
+		}
+
+		verifyArgs(t, actualArgsChan, expectedArgs)
 	})
 
 	t.Run("when source version is 5X it still copy's the --old-tablespace-file even when there are no user defined coordinator tablespaces", func(t *testing.T) {
-		// The verifier function can be called in parallel, so use a channel to
-		// communicate which hosts were actually used.
-		hosts := make(chan string, len(intermediate.PrimaryHostnames()))
+		actualArgsChan := make(chan []string, len(backupDirs.AgentHostsToBackupDir))
 
-		expectedArgs := []string{
-			"--archive", "--compress", "--delete", "--stats",
-			utils.GetStateDirOldTablespacesFile(), "foobar/path/",
-		}
-		execCommandVerifier(t, hosts, expectedArgs)
+		cmd := exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
+			expected := "rsync"
+			if !strings.HasSuffix(name, expected) {
+				t.Errorf("got %q, want %q", name, expected)
+			}
 
-		err := CopyCoordinatorTablespaces(step.DevNullStream, semver.MustParse("5.0.0"), nil, "foobar/path", intermediate.PrimaryHostnames())
+			actualArgsChan <- args
+		})
+		rsync.SetRsyncCommand(cmd)
+		defer rsync.ResetRsyncCommand()
+
+		err := CopyCoordinatorTablespaces(step.DevNullStream, semver.MustParse("5.0.0"), nil, backupDirs.AgentHostsToBackupDir)
 		if err != nil {
 			t.Errorf("got %+v, want nil", err)
 		}
 
-		close(hosts)
+		close(actualArgsChan)
 
-		expectedHosts := []string{"host1", "host2"}
-		verifyHosts(hosts, expectedHosts, t)
+		var expectedArgs Args
+		for host, backupDir := range backupDirs.AgentHostsToBackupDir {
+			expectedArgs = append(expectedArgs, []string{
+				"--archive", "--compress", "--delete", "--stats",
+				utils.GetStateDirOldTablespacesFile(),
+				fmt.Sprintf("%s:%s", host, utils.GetTablespaceBackupDir(backupDir)+string(os.PathSeparator))})
+		}
+
+		verifyArgs(t, actualArgsChan, expectedArgs)
 	})
 
 	t.Run("when source version is 6X and higher it does not copy the --old-tablespace-file", func(t *testing.T) {
-		// The verifier function can be called in parallel, so use a channel to
-		// communicate which hosts were actually used.
-		hosts := make(chan string, len(intermediate.PrimaryHostnames()))
+		actualArgsChan := make(chan []string, len(backupDirs.AgentHostsToBackupDir))
 
-		expectedArgs := []string{
-			"--archive", "--compress", "--delete", "--stats",
-			"/tmp/tblspc2", "foobar/path/",
-		}
-		execCommandVerifier(t, hosts, expectedArgs)
+		cmd := exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
+			expected := "rsync"
+			if !strings.HasSuffix(name, expected) {
+				t.Errorf("got %q, want %q", name, expected)
+			}
 
-		err := CopyCoordinatorTablespaces(step.DevNullStream, semver.MustParse("6.0.0"), Tablespaces, "foobar/path", intermediate.PrimaryHostnames())
+			actualArgsChan <- args
+		})
+		rsync.SetRsyncCommand(cmd)
+		defer rsync.ResetRsyncCommand()
+
+		err := CopyCoordinatorTablespaces(step.DevNullStream, semver.MustParse("6.0.0"), Tablespaces, backupDirs.AgentHostsToBackupDir)
 		if err != nil {
 			t.Errorf("copying coordinator tablespace directories and mapping file: %+v", err)
 		}
 
-		close(hosts)
+		close(actualArgsChan)
 
-		expectedHosts := []string{"host1", "host2"}
-		verifyHosts(hosts, expectedHosts, t)
+		var expectedArgs Args
+		for host, backupDir := range backupDirs.AgentHostsToBackupDir {
+			expectedArgs = append(expectedArgs, []string{
+				"--archive", "--compress", "--delete", "--stats",
+				"/tmp/tblspc2",
+				fmt.Sprintf("%s:%s", host, utils.GetTablespaceBackupDir(backupDir)+string(os.PathSeparator))})
+		}
+
+		verifyArgs(t, actualArgsChan, expectedArgs)
 	})
 
 	t.Run("when source version is 6X and there are no tablespaces it does not copy", func(t *testing.T) {
-		// The verifier function can be called in parallel, so use a channel to
-		// communicate which hosts were actually used.
-		hosts := make(chan string, len(intermediate.PrimaryHostnames()))
+		actualArgsChan := make(chan []string, len(backupDirs.AgentHostsToBackupDir))
 
-		var expectedArgs []string
-		execCommandVerifier(t, hosts, expectedArgs)
+		cmd := exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
+			expected := "rsync"
+			if !strings.HasSuffix(name, expected) {
+				t.Errorf("got %q, want %q", name, expected)
+			}
 
-		err := CopyCoordinatorTablespaces(step.DevNullStream, semver.MustParse("6.0.0"), nil, "foobar/path", intermediate.PrimaryHostnames())
+			actualArgsChan <- args
+		})
+		rsync.SetRsyncCommand(cmd)
+		defer rsync.ResetRsyncCommand()
+
+		err := CopyCoordinatorTablespaces(step.DevNullStream, semver.MustParse("6.0.0"), nil, backupDirs.AgentHostsToBackupDir)
 		if err != nil {
 			t.Errorf("copying coordinator tablespace directories and mapping file: %+v", err)
 		}
 
-		close(hosts)
+		close(actualArgsChan)
+		var actualArgs Args
+		for args := range actualArgsChan {
+			actualArgs = append(actualArgs, args)
+		}
+		sort.Sort(actualArgs)
 
-		if expectedArgs != nil {
+		if actualArgs != nil {
 			t.Errorf("Rsync() should not be invoked")
 		}
 	})
 }
 
-func verifyHosts(hosts chan string, expectedHosts []string, t *testing.T) {
-	// Collect the hostnames for validation.
-	var actualHosts []string
-	for host := range hosts {
-		actualHosts = append(actualHosts, host)
-	}
-	sort.Strings(actualHosts) // receive order not guaranteed
+type Args [][]string
 
-	if !reflect.DeepEqual(actualHosts, expectedHosts) {
-		t.Errorf("copied to hosts %q, want %q", actualHosts, expectedHosts)
-	}
+func (a Args) Len() int {
+	return len(a)
+}
+func (a Args) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+func (a Args) Less(i, j int) bool {
+	hosti := strings.SplitN(a[i][len(a[i])-1], ":", 2)[0]
+	hostj := strings.SplitN(a[j][len(a[j])-1], ":", 2)[0]
+
+	return hosti < hostj
 }
 
-// Validate the rsync call and arguments.
-func execCommandVerifier(t *testing.T, hosts chan string, expectedArgs []string) {
-	cmd := exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
-		expected := "rsync"
-		if !strings.HasSuffix(name, expected) {
-			t.Errorf("got %q, want %q", name, expected)
-		}
+func verifyArgs(t *testing.T, actualArgsChan chan []string, expectedArgs Args) {
+	t.Helper()
 
-		// The last argument is host:/destination/directory. Remove the
-		// host (saving it for later verification) to make comparison
-		// easier.
-		parts := strings.SplitN(args[len(args)-1], ":", 2)
-		host, dest := parts[0], parts[1]
-		args[len(args)-1] = dest
+	var actualArgs Args
+	for args := range actualArgsChan {
+		actualArgs = append(actualArgs, args)
+	}
 
-		if !reflect.DeepEqual(args, expectedArgs) {
-			t.Errorf("rsync invoked with %q, want %q", args, expectedArgs)
-		}
+	sort.Sort(actualArgs)
+	sort.Sort(expectedArgs)
 
-		hosts <- host
-	})
-	rsync.SetRsyncCommand(cmd)
+	if !reflect.DeepEqual(actualArgs, expectedArgs) {
+		t.Errorf("got %v want %v", actualArgs, expectedArgs)
+		t.Errorf("got  %v", actualArgs)
+		t.Errorf("want %v", expectedArgs)
+	}
 }

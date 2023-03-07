@@ -17,7 +17,7 @@ var SubstepDescriptions = map[idl.Substep]substepText{
 	idl.Substep_start_hub:                                                     substepText{"Starting gpupgrade hub process...", "Start gpupgrade hub process"},
 	idl.Substep_start_agents:                                                  substepText{"Starting gpupgrade agent processes...", "Start gpupgrade agent processes"},
 	idl.Substep_check_environment:                                             substepText{"Checking environment...", "Check environment"},
-	idl.Substep_create_backupdir:                                              substepText{"Creating internal backup directories on the segments...", "Create internal backup directories on the segments"},
+	idl.Substep_create_backupdirs:                                             substepText{"Creating internal backup directories on the segments...", "Create internal backup directories on the segments"},
 	idl.Substep_check_disk_space:                                              substepText{"Checking disk space...", "Check disk space"},
 	idl.Substep_generate_target_config:                                        substepText{"Generating target cluster configuration...", "Generate target cluster configuration"},
 	idl.Substep_init_target_cluster:                                           substepText{"Creating target cluster...", "Create target cluster"},

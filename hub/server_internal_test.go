@@ -25,7 +25,7 @@ func TestConfig(t *testing.T) {
 		// not clear with comments.
 		original := &Config{
 			"logArchiveDir",
-			"backupDir",
+			BackupDirs{},
 			source,
 			intermediate,
 			target,

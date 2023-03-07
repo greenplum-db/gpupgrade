@@ -14,7 +14,7 @@ import (
 )
 
 func (s *Server) CreateBackupDirectory(ctx context.Context, req *idl.CreateBackupDirectoryRequest) (*idl.CreateBackupDirectoryReply, error) {
-	log.Printf("starting %s", idl.Substep_create_backupdir)
+	log.Printf("starting %s", idl.Substep_create_backupdirs)
 
 	hostname, err := os.Hostname()
 	if err != nil {

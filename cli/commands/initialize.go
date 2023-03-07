@@ -32,7 +32,7 @@ func initialize() *cobra.Command {
 	var sourcePort int
 	var hubPort int
 	var agentPort int
-	var parentBackupDir string
+	var parentBackupDirs string
 	var diskFreeRatio float64
 	var stopBeforeClusterCreation bool
 	var verbose bool
@@ -246,15 +246,15 @@ func initialize() *cobra.Command {
 				}
 
 				request := &idl.InitializeRequest{
-					AgentPort:       int32(agentPort),
-					SourceGPHome:    filepath.Clean(sourceGPHome),
-					TargetGPHome:    filepath.Clean(targetGPHome),
-					SourcePort:      int32(sourcePort),
-					Mode:            mode,
-					UseHbaHostnames: useHbaHostnames,
-					Ports:           parsedPorts,
-					ParentBackupDir: parentBackupDir,
-					DiskFreeRatio:   diskFreeRatio,
+					AgentPort:        int32(agentPort),
+					SourceGPHome:     filepath.Clean(sourceGPHome),
+					TargetGPHome:     filepath.Clean(targetGPHome),
+					SourcePort:       int32(sourcePort),
+					Mode:             mode,
+					UseHbaHostnames:  useHbaHostnames,
+					Ports:            parsedPorts,
+					DiskFreeRatio:    diskFreeRatio,
+					ParentBackupDirs: parentBackupDirs,
 				}
 				err = commanders.Initialize(client, request, verbose)
 				if err != nil {
@@ -309,7 +309,10 @@ To return the cluster to its original state, run "gpupgrade revert".`,
 	subInit.Flags().StringVar(&sourceGPHome, "source-gphome", "", "path for the source Greenplum installation")
 	subInit.Flags().StringVar(&targetGPHome, "target-gphome", "", "path for the target Greenplum installation")
 	subInit.Flags().StringVar(&mode, "mode", "copy", "performs upgrade in either copy or link mode. Default is copy.")
-	subInit.Flags().StringVar(&parentBackupDir, "parent-backup-dir", "", "The parent directory location used internally to store the backup of the master data directory and user defined master tablespaces. Defaults to the root directory of the master data directory such as /data given /data/master/gpseg-1.")
+	subInit.Flags().StringVar(&parentBackupDirs, "parent-backup-dirs", "", "parent directories on each host to internally store the backup of the coordinator data directory and user defined coordinator tablespaces."+
+		"Defaults to the parent directory of each primary data directory on each primary host."+
+		"To specify a single directory across all hosts set /dir."+
+		"To specify different directories for each host use the form \"host1:/dir1,host2:/dir2,host3:/dir3\" where the first host must be the coordinator.")
 	subInit.Flags().Float64Var(&diskFreeRatio, "disk-free-ratio", 0.60, "percentage of disk space that must be available (from 0.0 - 1.0)")
 	subInit.Flags().BoolVar(&useHbaHostnames, "use-hba-hostnames", false, "use hostnames in pg_hba.conf")
 	subInit.Flags().StringVar(&dynamicLibraryPath, "dynamic-library-path", upgrade.DefaultDynamicLibraryPath, "sets the dynamic_library_path GUC to correctly find extensions installed outside their default location. Defaults to '$dynamic_library_path'.")

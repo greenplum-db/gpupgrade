@@ -22,7 +22,7 @@ func execute() *cobra.Command {
 	var verbose bool
 	var pgUpgradeVerbose bool
 	var nonInteractive bool
-	var parentBackupDir string
+	var parentBackupDirs string
 
 	cmd := &cobra.Command{
 		Use:   "execute",
@@ -77,7 +77,7 @@ func execute() *cobra.Command {
 
 				request := &idl.ExecuteRequest{
 					PgUpgradeVerbose: pgUpgradeVerbose,
-					ParentBackupDir:  parentBackupDir,
+					ParentBackupDirs: parentBackupDirs,
 				}
 				response, err = commanders.Execute(client, request, verbose)
 				if err != nil {
@@ -115,7 +115,10 @@ To return the cluster to its original state, run "gpupgrade revert".`,
 	cmd.Flags().BoolVar(&pgUpgradeVerbose, "pg-upgrade-verbose", false, "execute pg_upgrade with --verbose")
 	cmd.Flags().BoolVar(&nonInteractive, "non-interactive", false, "do not prompt for confirmation to proceed")
 	cmd.Flags().MarkHidden("non-interactive") //nolint
-	cmd.Flags().StringVar(&parentBackupDir, "parent-backup-dir", "", "The parent directory location used internally to store the backup of the master data directory and user defined master tablespaces. Defaults to the root directory of the master data directory such as /data given /data/master/gpseg-1.")
+	cmd.Flags().StringVar(&parentBackupDirs, "parent-backup-dirs", "", "parent directories on each host to internally store the backup of the coordinator data directory and user defined coordinator tablespaces."+
+		"Defaults to the parent directory of each primary data directory on each primary host."+
+		"To specify a single directory across all hosts set a single directory such as /dir."+
+		"To specify different directories for each host use the form \"host1:/dir1,host2:/dir2,host3:/dir3\" where the first host must be the coordinator.")
 
 	return addHelpToCommand(cmd, ExecuteHelp)
 }

@@ -6,7 +6,6 @@ package hub
 import (
 	"fmt"
 	"log"
-	"path/filepath"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
@@ -39,7 +38,7 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 	})
 
 	st.Run(idl.Substep_upgrade_master, func(streams step.OutStreams) error {
-		return UpgradeCoordinator(streams, s.BackupDir, req.PgUpgradeVerbose, s.Source, s.Intermediate, idl.PgOptions_upgrade, s.Mode)
+		return UpgradeCoordinator(streams, s.BackupDirs.CoordinatorBackupDir, req.PgUpgradeVerbose, s.Source, s.Intermediate, idl.PgOptions_upgrade, s.Mode)
 	})
 
 	st.Run(idl.Substep_copy_master, func(streams step.OutStreams) error {
@@ -47,37 +46,49 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 		// during initialize. The execute flag is used as an emergency stop gap
 		// to set the backup directory where it is used without needing to
 		// revert and re-run initialize and execute.
-		if req.GetParentBackupDir() != "" {
-			err = DeleteBackupDirectories(streams, s.agentConns, s.BackupDir)
+		if req.GetParentBackupDirs() != "" {
+			err = DeleteBackupDirectories(streams, s.agentConns, s.BackupDirs)
 			if err != nil {
 				return err
 			}
 
-			s.BackupDir = filepath.Join(req.GetParentBackupDir(), ".gpupgrade")
-			err = s.SaveConfig()
+			s.BackupDirs, err = ParseParentBackupDirs(req.GetParentBackupDirs(), s.Source)
 			if err != nil {
-				return fmt.Errorf("save backup directory: %w", err)
+				return err
 			}
 
-			err = CreateBackupDirectories(streams, s.agentConns, s.BackupDir)
+			err = s.SaveConfig()
+			if err != nil {
+				return fmt.Errorf("save backup directories: %w", err)
+			}
+
+			err = CreateBackupDirectories(streams, s.agentConns, s.BackupDirs)
 			if err != nil {
 				return err
 			}
 		}
 
 		nextAction := `Consider setting an alternative backup directory with
-"gpupgrade execute --verbose --parent-backup-dir /tmp/backup"
+"gpupgrade execute --verbose --parent-backup-dirs /data"
 
-This sets the location used internally to store a backup of the master data 
-directory and user defined master tablespaces. It defaults to the root directory 
-of the master data directory such as /data given /data/master/gpseg-1.`
+The parent_backup_dirs parameter sets the internal location to store the backup 
+of the master data directory and user defined master tablespaces. It defaults 
+to the parent directory of each primary data directory on each host including 
+the standby. For example, /data/coordinator given /data/coordinator/gpseg-1, and 
+/data1/primaries given /data1/primaries/gpseg1.
 
-		err := CopyCoordinatorDataDir(streams, s.Intermediate.CoordinatorDataDir(), utils.GetCoordinatorPostUpgradeBackupDir(s.BackupDir), s.Intermediate.PrimaryHostnames())
+The parent_backup_dirs parameter accepts either a single directory or multiple 
+host:directory pairs. To specify a single directory across all hosts set a 
+single directory such as /dir. To specify different directories for each host 
+use the form "host1:/dir1,host2:/dir2,host3:/dir3" where the first host must be 
+the master.`
+
+		err := CopyCoordinatorDataDir(streams, s.Intermediate.CoordinatorDataDir(), s.BackupDirs.AgentHostsToBackupDir)
 		if err != nil {
 			return utils.NewNextActionErr(err, nextAction)
 		}
 
-		err = CopyCoordinatorTablespaces(streams, s.Source.Version, s.Source.Tablespaces, utils.GetTablespaceBackupDir(s.BackupDir), s.Intermediate.PrimaryHostnames())
+		err = CopyCoordinatorTablespaces(streams, s.Source.Version, s.Source.Tablespaces, s.BackupDirs.AgentHostsToBackupDir)
 		if err != nil {
 			return utils.NewNextActionErr(err, nextAction)
 		}
@@ -86,7 +97,7 @@ of the master data directory such as /data given /data/master/gpseg-1.`
 	})
 
 	st.Run(idl.Substep_upgrade_primaries, func(streams step.OutStreams) error {
-		return UpgradePrimaries(s.agentConns, s.BackupDir, req.PgUpgradeVerbose, s.Source, s.Intermediate, idl.PgOptions_upgrade, s.Mode)
+		return UpgradePrimaries(s.agentConns, s.BackupDirs.AgentHostsToBackupDir, req.PgUpgradeVerbose, s.Source, s.Intermediate, idl.PgOptions_upgrade, s.Mode)
 	})
 
 	st.Run(idl.Substep_start_target_cluster, func(streams step.OutStreams) error {

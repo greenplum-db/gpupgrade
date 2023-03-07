@@ -26,19 +26,18 @@ type Result struct {
 	err    error
 }
 
-func Copy(streams step.OutStreams, destinationDir string, sourceDirs, hosts []string) error {
+func Copy(streams step.OutStreams, sourceDirs []string, agentHostsToBackupDir AgentHostsToBackupDir) error {
 	/*
 	 * Copy the directories once per host.
 	 */
 	var wg sync.WaitGroup
 
-	results := make(chan *Result, len(hosts))
+	results := make(chan *Result, len(agentHostsToBackupDir))
 
-	for _, hostname := range hosts {
-		hostname := hostname // capture range variable
+	for hostname, backupDir := range agentHostsToBackupDir {
 
 		wg.Add(1)
-		go func() {
+		go func(hostname string, backupDir string) {
 			defer wg.Done()
 
 			stream := &step.BufferedStreams{}
@@ -46,18 +45,18 @@ func Copy(streams step.OutStreams, destinationDir string, sourceDirs, hosts []st
 			options := []rsync.Option{
 				rsync.WithSources(sourceDirs...),
 				rsync.WithDestinationHost(hostname),
-				rsync.WithDestination(destinationDir),
+				rsync.WithDestination(backupDir),
 				rsync.WithOptions("--archive", "--compress", "--delete", "--stats"),
 				rsync.WithStream(stream),
 			}
 
 			err := rsync.Rsync(options...)
 			if err != nil {
-				err = xerrors.Errorf("copying source %q to destination %q on host %s: %w", sourceDirs, destinationDir, hostname, err)
+				err = xerrors.Errorf("copying source %q to destination %q on host %s: %w", sourceDirs, backupDir, hostname, err)
 			}
 			result := Result{stdout: stream.StdoutBuf, stderr: stream.StderrBuf, err: err}
 			results <- &result
-		}()
+		}(hostname, backupDir)
 	}
 
 	wg.Wait()
@@ -82,14 +81,20 @@ func Copy(streams step.OutStreams, destinationDir string, sourceDirs, hosts []st
 	return errs
 }
 
-func CopyCoordinatorDataDir(streams step.OutStreams, coordinatorDataDir string, destination string, hosts []string) error {
+func CopyCoordinatorDataDir(streams step.OutStreams, coordinatorDataDir string, agentHostsToBackupDir AgentHostsToBackupDir) error {
 	// Make sure sourceDir ends with a trailing slash so that rsync will
 	// transfer the directory contents and not the directory itself.
 	source := []string{filepath.Clean(coordinatorDataDir) + string(filepath.Separator)}
-	return Copy(streams, destination, source, hosts)
+
+	destinationHostToBackupDir := make(AgentHostsToBackupDir)
+	for host, backupDir := range agentHostsToBackupDir {
+		destinationHostToBackupDir[host] = utils.GetCoordinatorPostUpgradeBackupDir(backupDir)
+	}
+
+	return Copy(streams, source, destinationHostToBackupDir)
 }
 
-func CopyCoordinatorTablespaces(streams step.OutStreams, sourceVersion semver.Version, tablespaces greenplum.Tablespaces, destinationDir string, hosts []string) error {
+func CopyCoordinatorTablespaces(streams step.OutStreams, sourceVersion semver.Version, tablespaces greenplum.Tablespaces, agentHostsToBackupDir AgentHostsToBackupDir) error {
 	if tablespaces == nil && sourceVersion.Major != 5 {
 		return nil
 	}
@@ -102,5 +107,12 @@ func CopyCoordinatorTablespaces(streams step.OutStreams, sourceVersion semver.Ve
 
 	sourcePaths = append(sourcePaths, tablespaces.GetCoordinatorTablespaces().UserDefinedTablespacesLocations()...)
 
-	return Copy(streams, destinationDir+string(os.PathSeparator), sourcePaths, hosts)
+	destinationHostToBackupDir := make(AgentHostsToBackupDir)
+	for host, backupDir := range agentHostsToBackupDir {
+		// ensure the destination backup directory has a trailing slash so rsync
+		// will transfer the directory contents and not the directory itself.
+		destinationHostToBackupDir[host] = utils.GetTablespaceBackupDir(backupDir) + string(os.PathSeparator)
+	}
+
+	return Copy(streams, sourcePaths, destinationHostToBackupDir)
 }

@@ -23,7 +23,6 @@ import (
 )
 
 func TestUpgradePrimaries(t *testing.T) {
-	backupDir := "/data/.gpupgrade"
 
 	source := hub.MustCreateCluster(t, greenplum.SegConfigs{
 		{DbID: 1, ContentID: -1, Hostname: "coordinator", DataDir: "/data/qddir/seg-1", Port: 15432, Role: greenplum.PrimaryRole},
@@ -58,6 +57,11 @@ func TestUpgradePrimaries(t *testing.T) {
 	intermediate.GPHome = "/usr/local/gpdb6"
 	intermediate.Version = semver.MustParse("6.0.0")
 
+	backupDirs, err := hub.ParseParentBackupDirs("", source)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	t.Run("calls upgrades primaries on segments", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
@@ -69,7 +73,7 @@ func TestUpgradePrimaries(t *testing.T) {
 				Action: idl.PgOptions_check,
 				Opts: []*idl.PgOptions{
 					{
-						BackupDir:        backupDir,
+						BackupDir:        backupDirs.AgentHostsToBackupDir["sdw1"],
 						PgUpgradeVerbose: true,
 						Action:           idl.PgOptions_check,
 						Role:             greenplum.PrimaryRole,
@@ -88,7 +92,7 @@ func TestUpgradePrimaries(t *testing.T) {
 						Tablespaces:      nil,
 					},
 					{
-						BackupDir:        backupDir,
+						BackupDir:        backupDirs.AgentHostsToBackupDir["sdw1"],
 						PgUpgradeVerbose: true,
 						Action:           idl.PgOptions_check,
 						Role:             greenplum.PrimaryRole,
@@ -117,7 +121,7 @@ func TestUpgradePrimaries(t *testing.T) {
 				Action: idl.PgOptions_check,
 				Opts: []*idl.PgOptions{
 					{
-						BackupDir:        backupDir,
+						BackupDir:        backupDirs.AgentHostsToBackupDir["sdw2"],
 						PgUpgradeVerbose: true,
 						Action:           idl.PgOptions_check,
 						Role:             greenplum.PrimaryRole,
@@ -136,7 +140,7 @@ func TestUpgradePrimaries(t *testing.T) {
 						Tablespaces:      nil,
 					},
 					{
-						BackupDir:        backupDir,
+						BackupDir:        backupDirs.AgentHostsToBackupDir["sdw2"],
 						PgUpgradeVerbose: true,
 						Action:           idl.PgOptions_check,
 						Role:             greenplum.PrimaryRole,
@@ -163,7 +167,7 @@ func TestUpgradePrimaries(t *testing.T) {
 			{AgentClient: sdw2, Hostname: "sdw2"},
 		}
 
-		err := hub.UpgradePrimaries(agentConns, backupDir, true, source, intermediate, idl.PgOptions_check, idl.Mode_copy)
+		err := hub.UpgradePrimaries(agentConns, backupDirs.AgentHostsToBackupDir, true, source, intermediate, idl.PgOptions_check, idl.Mode_copy)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -209,7 +213,7 @@ func TestUpgradePrimaries(t *testing.T) {
 				{AgentClient: sdw2, Hostname: "sdw2"},
 			}
 
-			err := hub.UpgradePrimaries(agentConns, backupDir, false, source, intermediate, c.Action, idl.Mode_link)
+			err := hub.UpgradePrimaries(agentConns, backupDirs.AgentHostsToBackupDir, false, source, intermediate, c.Action, idl.Mode_link)
 			var errs errorlist.Errors
 			if !xerrors.As(err, &errs) {
 				t.Fatalf("error %#v does not contain type %T", err, errs)

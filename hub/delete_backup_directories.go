@@ -11,16 +11,18 @@ import (
 	"github.com/greenplum-db/gpupgrade/upgrade"
 )
 
-func DeleteBackupDirectories(streams step.OutStreams, agentConns []*idl.Connection, backupDir string) error {
-	// delete on coordinator
-	err := upgrade.DeleteDirectories([]string{backupDir}, []string{}, streams)
+func DeleteBackupDirectories(streams step.OutStreams, agentConns []*idl.Connection, backupDirs BackupDirs) error {
+	err := upgrade.DeleteDirectories([]string{backupDirs.CoordinatorBackupDir}, []string{}, streams)
 	if err != nil {
 		return err
 	}
 
-	// delete on segments
 	request := func(conn *idl.Connection) error {
-		req := &idl.DeleteBackupDirectoryRequest{BackupDir: backupDir}
+		if _, ok := backupDirs.AgentHostsToBackupDir[conn.Hostname]; !ok {
+			return nil
+		}
+
+		req := &idl.DeleteBackupDirectoryRequest{BackupDir: backupDirs.AgentHostsToBackupDir[conn.Hostname]}
 		_, err := conn.AgentClient.DeleteBackupDirectory(context.Background(), req)
 		return err
 	}
