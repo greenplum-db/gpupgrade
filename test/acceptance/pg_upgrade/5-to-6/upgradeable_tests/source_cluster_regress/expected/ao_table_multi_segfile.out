@@ -7,21 +7,213 @@
 --------------------------------------------------------------------------------
 -- Create and setup upgradeable objects
 --------------------------------------------------------------------------------
-CREATE TABLE ao_users (id integer, name text) WITH (appendonly=true) DISTRIBUTED BY (id);
+
+-- AO table with multiple segment files
+CREATE TABLE ao_multi_segment (id integer, name text) WITH (appendonly=true) DISTRIBUTED BY (id);
 CREATE
+
 1:BEGIN;
 BEGIN
-1:INSERT INTO ao_users VALUES (1, 'Jane');
-INSERT 1
-1:INSERT INTO ao_users VALUES (2, 'John');
-INSERT 1
-
 2:BEGIN;
 BEGIN
-2:INSERT INTO ao_users VALUES (3, 'Joe');
+1:INSERT INTO ao_multi_segment VALUES (1, 'Jane');
 INSERT 1
-
+1:INSERT INTO ao_multi_segment VALUES (2, 'John');
+INSERT 1
+2:INSERT INTO ao_multi_segment VALUES (3, 'Joe');
+INSERT 1
 1:END;
 END
 2:END;
 END
+
+SELECT * FROM ao_multi_segment ORDER BY id;
+ id | name 
+----+------
+ 1  | Jane 
+ 2  | John 
+ 3  | Joe  
+(3 rows)
+SELECT * FROM gp_toolkit.__gp_aoseg_name('ao_multi_segment') ORDER BY segno;
+ segno | eof | tupcount | varblockcount | eof_uncompressed | modcount | formatversion | state 
+-------+-----+----------+---------------+------------------+----------+---------------+-------
+ 1     | 0   | 2        | 0             | 0                | 2        | 3             | 1     
+ 2     | 0   | 1        | 0             | 0                | 1        | 3             | 1     
+(2 rows)
+SELECT gp_segment_id, (t).* FROM (SELECT gp_segment_id, gp_toolkit.__gp_aoseg_name('ao_multi_segment') AS t FROM gp_dist_random('gp_id')) AS x;
+ gp_segment_id | segno | eof | tupcount | varblockcount | eof_uncompressed | modcount | formatversion | state 
+---------------+-------+-----+----------+---------------+------------------+----------+---------------+-------
+ 0             | 1     | 80  | 2        | 2             | 80               | 2        | 3             | 1     
+ 1             | 2     | 40  | 1        | 1             | 40               | 1        | 3             | 1     
+(2 rows)
+
+
+
+-- AO table with deleted rows that meets compaction threshold
+CREATE TABLE ao_vacuum_compact_after_upgrade (a int, b int) WITH (appendonly=true);
+CREATE
+
+1: BEGIN;
+BEGIN
+1: INSERT INTO ao_vacuum_compact_after_upgrade SELECT i, i FROM generate_series(1,10)i;
+INSERT 10
+2: INSERT INTO ao_vacuum_compact_after_upgrade SELECT i, i FROM generate_series(11,20)i;
+INSERT 10
+1: COMMIT;
+COMMIT
+DELETE FROM ao_vacuum_compact_after_upgrade WHERE a > 5;
+DELETE 15
+
+SELECT * FROM ao_vacuum_compact_after_upgrade ORDER BY a;
+ a | b 
+---+---
+ 1 | 1 
+ 2 | 2 
+ 3 | 3 
+ 4 | 4 
+ 5 | 5 
+(5 rows)
+SELECT * FROM gp_toolkit.__gp_aoseg_name('ao_vacuum_compact_after_upgrade');
+ segno | eof | tupcount | varblockcount | eof_uncompressed | modcount | formatversion | state 
+-------+-----+----------+---------------+------------------+----------+---------------+-------
+ 1     | 0   | 10       | 0             | 0                | 2        | 3             | 1     
+ 2     | 0   | 10       | 0             | 0                | 1        | 3             | 1     
+(2 rows)
+SELECT gp_segment_id, (t).* FROM (SELECT gp_segment_id, gp_toolkit.__gp_aoseg_name('ao_vacuum_compact_after_upgrade') AS t FROM gp_dist_random('gp_id')) AS x;
+ gp_segment_id | segno | eof | tupcount | varblockcount | eof_uncompressed | modcount | formatversion | state 
+---------------+-------+-----+----------+---------------+------------------+----------+---------------+-------
+ 0             | 1     | 72  | 2        | 1             | 72               | 1        | 3             | 1     
+ 0             | 2     | 128 | 5        | 1             | 128              | 1        | 3             | 1     
+ 1             | 1     | 128 | 5        | 1             | 128              | 1        | 3             | 1     
+ 1             | 2     | 88  | 3        | 1             | 88               | 1        | 3             | 1     
+ 2             | 1     | 88  | 3        | 1             | 88               | 1        | 3             | 1     
+ 2             | 2     | 72  | 2        | 1             | 72               | 1        | 3             | 1     
+(6 rows)
+
+
+
+-- AO table with an AO segment in awaiting drop state
+CREATE TABLE ao_with_awaiting_drop_state_before_upgrade (a int, b int) WITH (appendonly=true);
+CREATE
+INSERT INTO ao_with_awaiting_drop_state_before_upgrade SELECT i, i FROM generate_series(1,10)i;
+INSERT 10
+DELETE FROM ao_with_awaiting_drop_state_before_upgrade;
+DELETE 10
+
+1: BEGIN;
+BEGIN
+1: SELECT * FROM ao_with_awaiting_drop_state_before_upgrade ORDER BY a;
+ a | b 
+---+---
+(0 rows)
+2: VACUUM ao_with_awaiting_drop_state_before_upgrade;
+VACUUM
+1: END;
+END
+
+SELECT * FROM ao_with_awaiting_drop_state_before_upgrade ORDER BY a;
+ a | b 
+---+---
+(0 rows)
+SELECT * FROM gp_toolkit.__gp_aoseg_name('ao_with_awaiting_drop_state_before_upgrade');
+ segno | eof | tupcount | varblockcount | eof_uncompressed | modcount | formatversion | state 
+-------+-----+----------+---------------+------------------+----------+---------------+-------
+ 1     | 0   | 10       | 0             | 0                | 2        | 3             | 1     
+(1 row)
+SELECT gp_segment_id, (t).* FROM (SELECT gp_segment_id, gp_toolkit.__gp_aoseg_name('ao_with_awaiting_drop_state_before_upgrade') AS t FROM gp_dist_random('gp_id')) AS x;
+ gp_segment_id | segno | eof | tupcount | varblockcount | eof_uncompressed | modcount | formatversion | state 
+---------------+-------+-----+----------+---------------+------------------+----------+---------------+-------
+ 0             | 1     | 72  | 2        | 1             | 72               | 1        | 3             | 2     
+ 0             | 2     | 0   | 0        | 0             | 0                | 1        | 3             | 1     
+ 1             | 1     | 128 | 5        | 1             | 128              | 1        | 3             | 2     
+ 1             | 2     | 0   | 0        | 0             | 0                | 1        | 3             | 1     
+ 2             | 1     | 88  | 3        | 1             | 88               | 1        | 3             | 2     
+ 2             | 2     | 0   | 0        | 0             | 0                | 1        | 3             | 1     
+(6 rows)
+
+INSERT INTO ao_with_awaiting_drop_state_before_upgrade SELECT i, i FROM generate_series(1,10)i;
+INSERT 10
+
+SELECT * FROM ao_with_awaiting_drop_state_before_upgrade ORDER BY a;
+ a  | b  
+----+----
+ 1  | 1  
+ 2  | 2  
+ 3  | 3  
+ 4  | 4  
+ 5  | 5  
+ 6  | 6  
+ 7  | 7  
+ 8  | 8  
+ 9  | 9  
+ 10 | 10 
+(10 rows)
+SELECT * FROM gp_toolkit.__gp_aoseg_name('ao_with_awaiting_drop_state_before_upgrade');
+ segno | eof | tupcount | varblockcount | eof_uncompressed | modcount | formatversion | state 
+-------+-----+----------+---------------+------------------+----------+---------------+-------
+ 1     | 0   | 10       | 0             | 0                | 2        | 3             | 1     
+ 2     | 0   | 10       | 0             | 0                | 1        | 3             | 1     
+(2 rows)
+SELECT gp_segment_id, (t).* FROM (SELECT gp_segment_id, gp_toolkit.__gp_aoseg_name('ao_with_awaiting_drop_state_before_upgrade') AS t FROM gp_dist_random('gp_id')) AS x;
+ gp_segment_id | segno | eof | tupcount | varblockcount | eof_uncompressed | modcount | formatversion | state 
+---------------+-------+-----+----------+---------------+------------------+----------+---------------+-------
+ 0             | 1     | 72  | 2        | 1             | 72               | 1        | 3             | 2     
+ 0             | 2     | 72  | 2        | 1             | 72               | 2        | 3             | 1     
+ 1             | 1     | 128 | 5        | 1             | 128              | 1        | 3             | 2     
+ 1             | 2     | 128 | 5        | 1             | 128              | 2        | 3             | 1     
+ 2             | 1     | 88  | 3        | 1             | 88               | 1        | 3             | 2     
+ 2             | 2     | 88  | 3        | 1             | 88               | 2        | 3             | 1     
+(6 rows)
+
+
+
+-- AO table with empty AO segments
+CREATE TABLE ao_with_empty_aosegs_before_upgrade (a int) WITH (appendonly=true);
+CREATE
+
+1: BEGIN;
+BEGIN
+2: BEGIN;
+BEGIN
+1: INSERT INTO ao_with_empty_aosegs_before_upgrade SELECT generate_series(1,10);
+INSERT 10
+2: INSERT INTO ao_with_empty_aosegs_before_upgrade SELECT generate_series(1,10);
+INSERT 10
+3: INSERT INTO ao_with_empty_aosegs_before_upgrade SELECT generate_series(11,20);
+INSERT 10
+1: COMMIT;
+COMMIT
+2: COMMIT;
+COMMIT
+DELETE FROM ao_with_empty_aosegs_before_upgrade;
+DELETE 30
+VACUUM ao_with_empty_aosegs_before_upgrade;
+VACUUM
+
+SELECT * FROM ao_with_empty_aosegs_before_upgrade ORDER BY a;
+ a 
+---
+(0 rows)
+SELECT * FROM gp_toolkit.__gp_aoseg_name('ao_with_empty_aosegs_before_upgrade');
+ segno | eof | tupcount | varblockcount | eof_uncompressed | modcount | formatversion | state 
+-------+-----+----------+---------------+------------------+----------+---------------+-------
+ 1     | 0   | 0        | 0             | 0                | 2        | 3             | 1     
+ 2     | 0   | 0        | 0             | 0                | 1        | 3             | 1     
+ 3     | 0   | 0        | 0             | 0                | 1        | 3             | 1     
+(3 rows)
+SELECT gp_segment_id, (t).* FROM (SELECT gp_segment_id, gp_toolkit.__gp_aoseg_name('ao_with_empty_aosegs_before_upgrade') AS t FROM gp_dist_random('gp_id')) AS x;
+ gp_segment_id | segno | eof | tupcount | varblockcount | eof_uncompressed | modcount | formatversion | state 
+---------------+-------+-----+----------+---------------+------------------+----------+---------------+-------
+ 0             | 1     | 0   | 0        | 0             | 0                | 1        | 3             | 1     
+ 0             | 2     | 0   | 0        | 0             | 0                | 1        | 3             | 1     
+ 0             | 3     | 0   | 0        | 0             | 0                | 1        | 3             | 1     
+ 0             | 4     | 0   | 0        | 0             | 0                | 3        | 3             | 1     
+ 1             | 1     | 0   | 0        | 0             | 0                | 1        | 3             | 1     
+ 1             | 2     | 0   | 0        | 0             | 0                | 1        | 3             | 1     
+ 1             | 3     | 0   | 0        | 0             | 0                | 1        | 3             | 1     
+ 1             | 4     | 0   | 0        | 0             | 0                | 3        | 3             | 1     
+ 2             | 1     | 0   | 0        | 0             | 0                | 1        | 3             | 1     
+ 2             | 2     | 0   | 0        | 0             | 0                | 1        | 3             | 1     
+ 2             | 3     | 0   | 0        | 0             | 0                | 1        | 3             | 1     
+ 2             | 4     | 0   | 0        | 0             | 0                | 3        | 3             | 1     
+(12 rows)
