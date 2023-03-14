@@ -221,13 +221,14 @@ func initialize() *cobra.Command {
 					utils.System.DirFS(currentDir), currentDir, idl.Step_initialize)
 			})
 
-			if !nonInteractive {
-				fmt.Println()
-				err := commanders.Prompt(bufio.NewReader(os.Stdin), idl.Step_initialize)
-				if err != nil {
-					return err
+			st.RunInternalSubstep(func() error {
+				if nonInteractive {
+					return nil
 				}
-			}
+				
+				fmt.Println()
+				return commanders.Prompt(bufio.NewReader(os.Stdin), idl.Step_initialize)
+			})
 
 			st.RunInternalSubstep(func() error {
 				return commanders.CreateConfigFile(hubPort)
