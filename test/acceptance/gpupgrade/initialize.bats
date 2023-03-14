@@ -25,7 +25,7 @@ setup() {
 
     gpupgrade kill-services
     gpupgrade initialize \
-        --automatic \
+        --non-interactive \
         --source-gphome="${GPHOME_SOURCE}" \
         --target-gphome="${GPHOME_TARGET}" \
         --source-master-port="${PGPORT}" \
@@ -167,7 +167,7 @@ outputContains() {
             --target-gphome="$GPHOME_TARGET" \
             --source-master-port="${PGPORT}" \
             --stop-before-cluster-creation \
-            --automatic \
+            --non-interactive \
             --verbose 3>&-
 
         # Trace which command we're on to make debugging easier.
@@ -188,7 +188,7 @@ outputContains() {
         --target-gphome="$GPHOME_TARGET" \
         --source-master-port="${PGPORT}" \
         --stop-before-cluster-creation \
-        --automatic \
+        --non-interactive \
         --verbose 3>&-
 
     [[ $output != *'CHECK_DISK_SPACE'* ]] || fail "Expected disk space check to have been skipped. $output"
@@ -204,7 +204,7 @@ outputContains() {
         --target-gphome "$GPHOME_TARGET" \
         --source-master-port "${PGPORT}" \
         --temp-port-range "${PGPORT}-$(($PGPORT + 20))" \
-        --automatic \
+        --non-interactive \
         --verbose 3>&-
 
     [ "$status" -eq 1 ] || fail
@@ -249,7 +249,7 @@ wait_for_port_change() {
         --source-master-port="${PGPORT}" \
         --disk-free-ratio 0 \
         --stop-before-cluster-creation \
-        --automatic \
+        --non-interactive \
         --verbose 3>&-
     [ "$status" -ne 0 ] || fail "expected start_agent substep to fail with port already in use: $output"
 
@@ -261,7 +261,7 @@ wait_for_port_change() {
         --source-master-port="${PGPORT}" \
         --disk-free-ratio 0 \
         --stop-before-cluster-creation \
-        --automatic \
+        --non-interactive \
         --verbose 3>&-
     [ "$status" -eq 0 ] || fail "expected start_agent substep to succeed: $output"
 }
@@ -273,7 +273,7 @@ wait_for_port_change() {
         --source-master-port="${PGPORT}" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
-        --automatic \
+        --non-interactive \
         --verbose 3>&-
 
     delete_target_on_teardown
@@ -285,7 +285,7 @@ wait_for_port_change() {
         --source-master-port="${PGPORT}" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
-        --automatic \
+        --non-interactive \
         --verbose 3>&-
 
     # Other substeps are skipped when marked completed in the state dir,
@@ -308,7 +308,7 @@ wait_for_port_change() {
         --source-master-port="${PGPORT}"\
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
-        --automatic \
+        --non-interactive \
         --verbose 3>&-
 
     delete_target_on_teardown
@@ -340,7 +340,7 @@ wait_for_port_change() {
         --source-master-port="${PGPORT}"\
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
-        --automatic \
+        --non-interactive \
         --verbose 3>&-
 }
 
@@ -356,7 +356,7 @@ wait_for_port_change() {
         --source-master-port="${PGPORT}"\
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
-        --automatic \
+        --non-interactive \
         --verbose 3>&-
 
     delete_target_on_teardown
@@ -370,7 +370,7 @@ wait_for_port_change() {
         --source-master-port="${PGPORT}"\
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
-        --automatic \
+        --non-interactive \
         --verbose 3>&-
 }
 
@@ -387,7 +387,7 @@ wait_for_port_change() {
         --source-master-port="${PGPORT}"\
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
-        --automatic \
+        --non-interactive \
         --verbose 3>&-
     register_teardown gpupgrade revert --non-interactive
 

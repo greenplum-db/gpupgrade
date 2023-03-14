@@ -109,7 +109,6 @@ Required Flags:
 
 Optional Flags:
 
-  -a, --automatic            suppress summary & confirmation dialog
   -h, --help                 displays help output for initialize
   -v, --verbose              outputs detailed logs for initialize
       --pg-upgrade-verbose   execute pg_upgrade with verbose internal logging. Requires the verbose flag.
@@ -261,8 +260,6 @@ Required Commands: Run the three commands in this order
                     -f, --file   config file containing upgrade parameters
                                  (e.g. gpupgrade_config)
 
-                  Optional Flags:
-                    -a, --automatic   suppress summary & confirmation dialog
 
   2. execute      upgrades the master and primary segments to the target
                   Greenplum version

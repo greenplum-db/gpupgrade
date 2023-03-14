@@ -57,7 +57,7 @@ teardown() {
         --source-master-port="${PGPORT}" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
-        --automatic \
+        --non-interactive \
         --verbose
     echo "$output"
     [ "$status" -ne 0 ] || fail "expected initialize to fail due to pg_upgrade check"
@@ -87,7 +87,7 @@ teardown() {
         --source-master-port="${PGPORT}" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
-        --automatic \
+        --non-interactive \
         --verbose
     gpupgrade execute --non-interactive --verbose
     gpupgrade finalize --non-interactive --verbose
@@ -146,7 +146,7 @@ teardown() {
         --source-master-port="${PGPORT}" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
-        --automatic \
+        --non-interactive \
         --verbose
     gpupgrade execute --non-interactive --verbose
     gpupgrade revert --non-interactive --verbose
@@ -199,7 +199,7 @@ teardown() {
         --source-master-port="${PGPORT}" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
-        --automatic \
+        --non-interactive \
         --verbose
     gpupgrade revert --non-interactive --verbose
 

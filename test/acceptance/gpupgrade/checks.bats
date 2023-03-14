@@ -83,7 +83,7 @@ are_equivalent_within_tolerance() {
     local datadir=$(query_datadirs $GPHOME_SOURCE $PGPORT "role='p' and content=-1")
 
     run gpupgrade initialize \
-        --automatic \
+        --non-interactive \
         --disk-free-ratio=1.0 \
         --source-gphome="$GPHOME_SOURCE" \
         --target-gphome="$GPHOME_TARGET" \

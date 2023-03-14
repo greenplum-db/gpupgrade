@@ -30,7 +30,7 @@ time ssh -n cdw "
     set -eux -o pipefail
 
     gpupgrade initialize \
-              --automatic \
+              --non-interactive \
               --target-gphome $GPHOME_TARGET \
               --source-gphome $GPHOME_SOURCE \
               --source-master-port $PGPORT \

@@ -610,7 +610,7 @@ func TestStepStatus(t *testing.T) {
 		}
 	})
 
-	t.Run("confirmation text is printed when not in automatic mode", func(t *testing.T) {
+	t.Run("confirmation text is printed when not in non-interactive mode", func(t *testing.T) {
 		dir := testutils.GetTempDir(t, "")
 		defer testutils.MustRemoveAll(t, dir)
 
@@ -654,7 +654,7 @@ Initialize in progress.
 		}
 	})
 
-	t.Run("confirmation text is not printed in automatic mode", func(t *testing.T) {
+	t.Run("confirmation text is not printed in non-interactive mode", func(t *testing.T) {
 		d := commanders.BufferStandardDescriptors(t)
 
 		_, err := commanders.NewStep(idl.Step_initialize, &step.BufferedStreams{}, false, true, "confirmation text")

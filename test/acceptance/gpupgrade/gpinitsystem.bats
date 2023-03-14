@@ -45,7 +45,7 @@ teardown() {
     local newport=6020
 
     gpupgrade initialize \
-        --automatic \
+        --non-interactive \
         --verbose \
         --source-gphome "$GPHOME_SOURCE" \
         --target-gphome "$GPHOME_TARGET" \
@@ -103,7 +103,7 @@ teardown() {
     local newport=30432
 
     gpupgrade initialize \
-        --automatic \
+        --non-interactive \
         --verbose \
         --source-gphome "$GPHOME_SOURCE" \
         --target-gphome "$GPHOME_TARGET" \

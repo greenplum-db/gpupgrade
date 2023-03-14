@@ -13,7 +13,7 @@ setup() {
     gpupgrade kill-services
 
     gpupgrade initialize \
-        --automatic \
+        --non-interactive \
         --source-gphome="${GPHOME_SOURCE}" \
         --target-gphome="${GPHOME_TARGET}" \
         --source-master-port="${PGPORT}" \

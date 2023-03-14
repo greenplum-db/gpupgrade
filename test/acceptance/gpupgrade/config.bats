@@ -15,7 +15,7 @@ setup() {
     TARGET_PGPORT=6020
 
     gpupgrade initialize \
-        --automatic \
+        --non-interactive \
         --source-gphome "$GPHOME_SOURCE" \
         --target-gphome "$GPHOME_TARGET" \
         --source-master-port "$PGPORT" \

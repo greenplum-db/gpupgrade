@@ -67,7 +67,7 @@ RESET allow_system_table_mods;
 -- s/segrel pg_aoseg.pg_aocsseg_\d+/segrel pg_aoseg.pg_aocsseg_XXXXX/
 --
 -- end_matchsubs
-!\retcode gpupgrade initialize --source-gphome="${GPHOME_SOURCE}" --target-gphome=${GPHOME_TARGET} --source-master-port=${PGPORT} --disk-free-ratio 0 --automatic;
+!\retcode gpupgrade initialize --source-gphome="${GPHOME_SOURCE}" --target-gphome=${GPHOME_TARGET} --source-master-port=${PGPORT} --disk-free-ratio 0 --non-interactive;
 ! cat ~/gpAdminLogs/gpupgrade/pg_upgrade/p-1/parent_partitions_with_seg_entries.txt | LC_ALL=C sort -b;
 
 --------------------------------------------------------------------------------

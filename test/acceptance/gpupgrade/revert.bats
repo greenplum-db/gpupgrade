@@ -84,7 +84,7 @@ query_host_datadirs() {
         --source-master-port="${PGPORT}" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
-        --automatic \
+        --non-interactive \
         --verbose 3>&-
 
     # grab cluster data before revert destroys it
@@ -165,7 +165,7 @@ test_revert_after_execute() {
         --temp-port-range ${target_coordinator_port}-6040 \
         --disk-free-ratio 0 \
         --mode "$mode" \
-        --automatic \
+        --non-interactive \
         --verbose 3>&-
     gpupgrade execute --non-interactive --verbose
 
@@ -232,7 +232,7 @@ test_revert_after_execute() {
         --source-master-port="${PGPORT}" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
-        --automatic \
+        --non-interactive \
         --verbose 3>&-
 
     gpupgrade execute --non-interactive --verbose
@@ -245,7 +245,7 @@ test_revert_after_execute() {
         --source-master-port="${PGPORT}" \
         --temp-port-range 6020-6040 \
         --disk-free-ratio 0 \
-        --automatic \
+        --non-interactive \
         --verbose 3>&-
 
     gpupgrade execute --non-interactive --verbose
@@ -382,7 +382,7 @@ test_revert_after_execute_pg_upgrade_failure() {
         --temp-port-range ${target_coordinator_port}-6040 \
         --disk-free-ratio 0 \
         --mode "$mode" \
-        --automatic \
+        --non-interactive \
         --verbose 3>&-
 
     # Execute should fail.

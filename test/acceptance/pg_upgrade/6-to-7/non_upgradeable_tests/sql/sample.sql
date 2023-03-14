@@ -10,7 +10,7 @@ INSERT INTO sample SELECT i FROM generate_series(1,5) i;
 --------------------------------------------------------------------------------
 -- Assert that pg_upgrade --check correctly detects the non-upgradeable objects
 --------------------------------------------------------------------------------
--- !\retcode gpupgrade initialize --source-gphome="${GPHOME_SOURCE}" --target-gphome=${GPHOME_TARGET} --source-master-port=${PGPORT} --disk-free-ratio 0 --automatic;
+-- !\retcode gpupgrade initialize --source-gphome="${GPHOME_SOURCE}" --target-gphome=${GPHOME_TARGET} --source-master-port=${PGPORT} --disk-free-ratio 0 --non-interactive;
 -- ! cat ~/gpAdminLogs/gpupgrade/pg_upgrade/p-1/gphdfs_user_roles.txt;
 
 --------------------------------------------------------------------------------

@@ -100,7 +100,7 @@ ensure_hardlinks_for_relfilenode_on_coordinator_and_segments() {
     ensure_hardlinks_for_relfilenode_on_coordinator_and_segments $GPHOME_SOURCE $PGPORT 'test_linking' 1
 
     gpupgrade initialize \
-        --automatic \
+        --non-interactive \
         --source-gphome="$GPHOME_SOURCE" \
         --target-gphome="$GPHOME_TARGET" \
         --source-master-port="${PGPORT}" \
@@ -125,7 +125,7 @@ ensure_hardlinks_for_relfilenode_on_coordinator_and_segments() {
     delete_target_datadirs "${MASTER_DATA_DIRECTORY}"
 
     gpupgrade initialize \
-        --automatic \
+        --non-interactive \
         --source-gphome="$GPHOME_SOURCE" \
         --target-gphome="$GPHOME_TARGET" \
         --source-master-port="${PGPORT}" \
@@ -166,7 +166,7 @@ ensure_hardlinks_for_relfilenode_on_coordinator_and_segments() {
     setup_restore_cluster "--mode=copy"
 
     gpupgrade initialize \
-        --automatic \
+        --non-interactive \
         --source-gphome="$GPHOME_SOURCE" \
         --target-gphome="$GPHOME_TARGET" \
         --source-master-port="${PGPORT}"\

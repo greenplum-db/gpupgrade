@@ -65,12 +65,12 @@ func initialize() *cobra.Command {
 			}
 
 			// If the file flag is set ensure no other flags are set except
-			// optionally verbose, pg-upgrade-verbose, and automatic.
+			// optionally verbose, pg-upgrade-verbose, and non-interactive.
 			if cmd.Flag("file").Changed {
 				var err error
 				cmd.Flags().Visit(func(flag *pflag.Flag) {
-					if flag.Name != "file" && flag.Name != "verbose" && flag.Name != "pg-upgrade-verbose" && flag.Name != "automatic" {
-						err = errors.New("The file flag cannot be used with any other flag except verbose and automatic.")
+					if flag.Name != "file" && flag.Name != "verbose" && flag.Name != "pg-upgrade-verbose" && flag.Name != "non-interactive" {
+						err = errors.New("The file flag cannot be used with any other flag except verbose and non-interactive.")
 					}
 				})
 				return err
@@ -225,7 +225,7 @@ func initialize() *cobra.Command {
 				if nonInteractive {
 					return nil
 				}
-				
+
 				fmt.Println()
 				return commanders.Prompt(bufio.NewReader(os.Stdin), idl.Step_initialize)
 			})
@@ -303,7 +303,6 @@ To return the cluster to its original state, run "gpupgrade revert".`,
 	subInit.Flags().BoolVarP(&verbose, "verbose", "v", false, "print the output stream from all substeps")
 	subInit.Flags().BoolVar(&pgUpgradeVerbose, "pg-upgrade-verbose", false, "execute pg_upgrade with --verbose")
 	subInit.Flags().StringVarP(&file, "file", "f", "", "the configuration file to use")
-	subInit.Flags().BoolVarP(&nonInteractive, "automatic", "a", false, "do not prompt for confirmation to proceed")
 	subInit.Flags().BoolVar(&nonInteractive, "non-interactive", false, "do not prompt for confirmation to proceed")
 	subInit.Flags().MarkHidden("non-interactive") //nolint
 	subInit.Flags().IntVar(&sourcePort, "source-master-port", 0, "master port for source gpdb cluster")

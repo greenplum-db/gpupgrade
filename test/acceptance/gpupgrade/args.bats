@@ -21,7 +21,7 @@ teardown() {
 }
 
 @test "gpupgrade initialize fails when passed insufficient arguments" {
-    run gpupgrade initialize -a
+    run gpupgrade initialize --non-interactive
     [ "$status" -eq 1 ]
     if ! [[ "$output" = *'Usage: gpupgrade initialize --file'* ]]; then
         fail "actual: $output"
@@ -29,7 +29,7 @@ teardown() {
 }
 
 @test "gpupgrade initialize fails when other flags are used with --file" {
-    run gpupgrade initialize -a --file /some/config --source-gphome /usr/local/source
+    run gpupgrade initialize --non-interactive --file /some/config --source-gphome /usr/local/source
     [ "$status" -eq 1 ]
     if ! [[ "$output" = *'The file flag cannot be used with any other flag'* ]]; then
         fail "actual: $output"
@@ -38,7 +38,7 @@ teardown() {
 
 @test "gpupgrade initialize fails when --pg-upgrade-verbose is used without --verbose" {
     run gpupgrade initialize \
-        --automatic \
+        --non-interactive \
         --source-gphome "$GPHOME_SOURCE" \
         --target-gphome "$GPHOME_TARGET" \
         --source-master-port "$PGPORT" \
@@ -62,7 +62,7 @@ teardown() {
 		stop-before-cluster-creation = true
 	EOF
 
-    gpupgrade initialize -a --verbose --pg-upgrade-verbose --file "$config_file"
+    gpupgrade initialize --non-interactive --verbose --pg-upgrade-verbose --file "$config_file"
 
     run gpupgrade config show --source-gphome
     [ "$status" -eq 0 ]
@@ -75,7 +75,7 @@ teardown() {
 
 @test "initialize sanitizes source-gphome and target-gphome" {
     gpupgrade initialize \
-        --automatic \
+        --non-interactive \
         --source-gphome "${GPHOME_SOURCE}/" \
         --target-gphome "${GPHOME_TARGET}//" \
         --source-master-port ${PGPORT} \
@@ -93,7 +93,7 @@ teardown() {
 
 @test "gpupgrade execute fails when --pg-upgrade-verbose is used without --verbose" {
     gpupgrade initialize \
-        --automatic \
+        --non-interactive \
         --source-gphome "$GPHOME_SOURCE" \
         --target-gphome "$GPHOME_TARGET" \
         --source-master-port "$PGPORT" \

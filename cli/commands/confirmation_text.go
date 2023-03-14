@@ -38,8 +38,6 @@ Before proceeding, ensure the following have occurred:
  - Generate and execute the data migration "initialize" scripts
  - Run gpcheckcat to ensure the source catalog has no inconsistencies
  - Run gpstate -e to ensure the source cluster's segments are up and in preferred roles
-
-To suppress this summary, use the --automatic | -a  flag.
 `
 
 const executeConfirmationText = `

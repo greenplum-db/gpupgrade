@@ -24,7 +24,7 @@ INSERT INTO mismatched_partition_indexes VALUES(1, 'apple', 1), (2, 'boss', 2);
 --------------------------------------------------------------------------------
 -- Assert that pg_upgrade --check correctly detects the non-upgradeable objects
 --------------------------------------------------------------------------------
-!\retcode gpupgrade initialize --source-gphome="${GPHOME_SOURCE}" --target-gphome=${GPHOME_TARGET} --source-master-port=${PGPORT} --disk-free-ratio 0 --automatic;
+!\retcode gpupgrade initialize --source-gphome="${GPHOME_SOURCE}" --target-gphome=${GPHOME_TARGET} --source-master-port=${PGPORT} --disk-free-ratio 0 --non-interactive;
 ! cat ~/gpAdminLogs/gpupgrade/pg_upgrade/p-1/mismatched_aopartition_indexes.txt;
 
 --------------------------------------------------------------------------------

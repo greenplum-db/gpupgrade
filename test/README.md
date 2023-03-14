@@ -87,7 +87,7 @@ When the test  is run the framework will generate the associated `.sql` and
 
 Note that this variable substitution is different from environment variable
 substitution within a `!\` shell context such as:
-`!\retcode gpupgrade initialize --source-gphome="${GPHOME_SOURCE}" --target-gphome=${GPHOME_TARGET} --source-master-port=${PGPORT} --disk-free-ratio 0 --automatic;`
+`!\retcode gpupgrade initialize --source-gphome="${GPHOME_SOURCE}" --target-gphome=${GPHOME_TARGET} --source-master-port=${PGPORT} --disk-free-ratio 0 --non-interactive;`
 
 
 2. Noteworthy isolation2 framework files (GPDB source repo):

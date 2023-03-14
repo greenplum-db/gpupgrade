@@ -62,7 +62,7 @@ time ssh -n cdw "
     echo 'Initialize expected to fail as target extension is not yet installed since target cluster is needed...'
     set +e
     gpupgrade initialize \
-              --automatic \
+              --non-interactive \
               --target-gphome $GPHOME_TARGET \
               --source-gphome $GPHOME_SOURCE \
               --source-master-port $PGPORT \
@@ -103,7 +103,7 @@ time ssh -n cdw "
 
     echo 'Finishing the upgrade...'
     gpupgrade initialize \
-              --automatic \
+              --non-interactive \
               --target-gphome $GPHOME_TARGET \
               --source-gphome $GPHOME_SOURCE \
               --source-master-port $PGPORT \

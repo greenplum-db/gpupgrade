@@ -88,7 +88,7 @@ teardown() {
         --target-gphome="$GPHOME_TARGET" \
         --source-master-port="${PGPORT}" \
         --disk-free-ratio 0 \
-        --automatic \
+        --non-interactive \
         --verbose
     register_teardown gpupgrade revert --non-interactive --verbose
     gpupgrade execute --non-interactive --verbose

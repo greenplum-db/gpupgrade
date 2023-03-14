@@ -20,7 +20,7 @@ INSERT INTO table_with_name_column VALUES(1, 'abc def');
 --------------------------------------------------------------------------------
 -- Assert that pg_upgrade --check correctly detects the non-upgradeable objects
 --------------------------------------------------------------------------------
-!\retcode gpupgrade initialize --source-gphome="${GPHOME_SOURCE}" --target-gphome=${GPHOME_TARGET} --source-master-port=${PGPORT} --disk-free-ratio 0 --automatic;
+!\retcode gpupgrade initialize --source-gphome="${GPHOME_SOURCE}" --target-gphome=${GPHOME_TARGET} --source-master-port=${PGPORT} --disk-free-ratio 0 --non-interactive;
 ! cat ~/gpAdminLogs/gpupgrade/pg_upgrade/p-1/tables_using_name.txt;
 
 --------------------------------------------------------------------------------
