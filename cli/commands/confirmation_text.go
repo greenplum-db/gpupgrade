@@ -35,7 +35,6 @@ finalized or reverted.
 
 Before proceeding, ensure the following have occurred:
  - Take a backup of the source Greenplum cluster
- - Generate and execute the data migration "initialize" scripts
  - Run gpcheckcat to ensure the source catalog has no inconsistencies
  - Run gpstate -e to ensure the source cluster's segments are up and in preferred roles
 `
