@@ -521,3 +521,12 @@ SELECT * FROM aoco_with_gist WHERE a @@ to_tsquery('footext5');
  'footext5' 
  'footext5' 
 (8 rows)
+
+
+
+-- Check unused aoblkdir edge case is filtered out and not upgraded
+SELECT c.relname AS relname, CASE WHEN a.blkdirrelid = 0 THEN 'False' ELSE 'True' END AS has_aoblkdir FROM pg_appendonly a JOIN pg_class c on c.oid=a.relid WHERE c.relname='aotable_with_all_indexes_dropped';
+ relname                          | has_aoblkdir 
+----------------------------------+--------------
+ aotable_with_all_indexes_dropped | False        
+(1 row)

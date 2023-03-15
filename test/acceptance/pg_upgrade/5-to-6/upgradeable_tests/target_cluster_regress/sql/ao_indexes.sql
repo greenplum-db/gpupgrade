@@ -96,3 +96,15 @@ SELECT * FROM ao_with_gist WHERE a @@ to_tsquery('footext5');
 SELECT * FROM aoco_with_btree WHERE a > 8;
 SELECT * FROM aoco_with_bitmap WHERE a = 4;
 SELECT * FROM aoco_with_gist WHERE a @@ to_tsquery('footext5');
+
+
+
+-- Check unused aoblkdir edge case is filtered out and not upgraded
+SELECT c.relname AS relname,
+CASE
+	WHEN a.blkdirrelid = 0 THEN 'False'
+	ELSE 'True'
+END AS has_aoblkdir
+FROM pg_appendonly a
+JOIN pg_class c on c.oid=a.relid
+WHERE c.relname='aotable_with_all_indexes_dropped';
