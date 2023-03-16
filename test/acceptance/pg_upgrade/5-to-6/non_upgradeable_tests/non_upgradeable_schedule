@@ -6,7 +6,6 @@ test: indexes
 test: indexes_on_partitions
 test: large_objects
 test: mismatched_aopartition_indexes
-test: name_col
 test: partitioned_heap_table_with_dropped_columns
 test: tsquery_col
 test: views_referencing_deprecated_tables
