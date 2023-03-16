@@ -1,6 +1,6 @@
---- /tmp/source.sql.filtered	2022-12-23 22:03:53.846048839 +0000
-+++ /tmp/target.sql.filtered	2022-12-23 22:03:38.451599198 +0000
-@@ -60245,32 +60246,32 @@
+--- /tmp/source.sql.filtered	2023-03-16 20:31:00.535051507 +0000
++++ /tmp/target.sql.filtered	2023-03-16 20:30:44.868530345 +0000
+@@ -60309,32 +60310,32 @@
  --
 
  CREATE OPERATOR public.&& (
@@ -41,7 +41,7 @@
 
  --
  -- Name: &&&; Type: OPERATOR; Schema: public; Owner: gpadmin
-@@ -60931,31 +60932,31 @@
+@@ -60995,31 +60996,31 @@
  --
 
  CREATE OPERATOR public.~ (
@@ -82,3 +82,21 @@
 
  --
  -- Name: ~; Type: OPERATOR; Schema: public; Owner: gpadmin
+@@ -61849,7 +61850,7 @@
+ --
+
+ CREATE VIEW public.raster_columns AS
+-SELECT current_database() AS r_table_catalog, n.nspname AS r_table_schema, c.relname AS r_table_name, a.attname AS r_raster_column, COALESCE(public._raster_constraint_info_srid(n.nspname, c.relname, a.attname), (SELECT public.st_srid('010100000000000000000000000000000000000000'::public.geometry) AS st_srid)) AS srid, public._raster_constraint_info_scale(n.nspname, c.relname, a.attname, 'x'::bpchar) AS scale_x, public._raster_constraint_info_scale(n.nspname, c.relname, a.attname, 'y'::bpchar) AS scale_y, public._raster_constraint_info_blocksize(n.nspname, c.relname, a.attname, 'width'::text) AS blocksize_x, public._raster_constraint_info_blocksize(n.nspname, c.relname, a.attname, 'height'::text) AS blocksize_y, COALESCE(public._raster_constraint_info_alignment(n.nspname, c.relname, a.attname), false) AS same_alignment, COALESCE(public._raster_constraint_info_regular_blocking(n.nspname, c.relname, a.attname), false) AS regular_blocking, public._raster_constraint_info_num_bands(n.nspname, c.relname, a.attname) AS num_bands, public._raster_constraint_info_pixel_types(n.nspname, c.relname, a.attname) AS pixel_types, public._raster_constraint_info_nodata_values(n.nspname, c.relname, a.attname) AS nodata_values, public._raster_constraint_info_out_db(n.nspname, c.relname, a.attname) AS out_db, public._raster_constraint_info_extent(n.nspname, c.relname, a.attname) AS extent FROM pg_class c, pg_attribute a, pg_type t, pg_namespace n WHERE (((((((t.typname = 'raster'::name) AND (a.attisdropped = false)) AND (a.atttypid = t.oid)) AND (a.attrelid = c.oid)) AND (c.relnamespace = n.oid)) AND ((c.relkind)::text = ANY ((ARRAY['r'::bpchar::character(1), 'v'::bpchar::character(1), 'm'::bpchar::character(1), 'f'::bpchar::character(1)])::text[]))) AND (NOT pg_is_other_temp_schema(c.relnamespace)));
++SELECT current_database() AS r_table_catalog, n.nspname AS r_table_schema, c.relname AS r_table_name, a.attname AS r_raster_column, COALESCE(public._raster_constraint_info_srid(n.nspname, c.relname, a.attname), (SELECT public.st_srid('010100000000000000000000000000000000000000'::public.geometry) AS st_srid)) AS srid, public._raster_constraint_info_scale(n.nspname, c.relname, a.attname, 'x'::bpchar) AS scale_x, public._raster_constraint_info_scale(n.nspname, c.relname, a.attname, 'y'::bpchar) AS scale_y, public._raster_constraint_info_blocksize(n.nspname, c.relname, a.attname, 'width'::text) AS blocksize_x, public._raster_constraint_info_blocksize(n.nspname, c.relname, a.attname, 'height'::text) AS blocksize_y, COALESCE(public._raster_constraint_info_alignment(n.nspname, c.relname, a.attname), false) AS same_alignment, COALESCE(public._raster_constraint_info_regular_blocking(n.nspname, c.relname, a.attname), false) AS regular_blocking, public._raster_constraint_info_num_bands(n.nspname, c.relname, a.attname) AS num_bands, public._raster_constraint_info_pixel_types(n.nspname, c.relname, a.attname) AS pixel_types, public._raster_constraint_info_nodata_values(n.nspname, c.relname, a.attname) AS nodata_values, public._raster_constraint_info_out_db(n.nspname, c.relname, a.attname) AS out_db, public._raster_constraint_info_extent(n.nspname, c.relname, a.attname) AS extent FROM pg_class c, pg_attribute a, pg_type t, pg_namespace n WHERE (((((((t.typname = 'raster'::name) AND (a.attisdropped = false)) AND (a.atttypid = t.oid)) AND (a.attrelid = c.oid)) AND (c.relnamespace = n.oid)) AND ((c.relkind)::text = ANY (ARRAY[('r'::character(1))::text, ('v'::character(1))::text, ('m'::character(1))::text, ('f'::character(1))::text]))) AND (NOT pg_is_other_temp_schema(c.relnamespace)));
+
+
+ ALTER TABLE public.raster_columns OWNER TO gpadmin;
+@@ -62068,7 +62069,7 @@
+ --
+
+ CREATE VIEW public.raster_overviews AS
+-SELECT current_database() AS o_table_catalog, n.nspname AS o_table_schema, c.relname AS o_table_name, a.attname AS o_raster_column, current_database() AS r_table_catalog, (split_part(split_part(s.consrc, '''::name'::text, 1), ''''::text, 2))::name AS r_table_schema, (split_part(split_part(s.consrc, '''::name'::text, 2), ''''::text, 2))::name AS r_table_name, (split_part(split_part(s.consrc, '''::name'::text, 3), ''''::text, 2))::name AS r_raster_column, (btrim(split_part(s.consrc, ','::text, 2)))::integer AS overview_factor FROM pg_class c, pg_attribute a, pg_type t, pg_namespace n, pg_constraint s WHERE ((((((((((t.typname = 'raster'::name) AND (a.attisdropped = false)) AND (a.atttypid = t.oid)) AND (a.attrelid = c.oid)) AND (c.relnamespace = n.oid)) AND ((c.relkind)::text = ANY ((ARRAY['r'::bpchar::character(1), 'v'::bpchar::character(1), 'm'::bpchar::character(1), 'f'::bpchar::character(1)])::text[]))) AND (s.connamespace = n.oid)) AND (s.conrelid = c.oid)) AND (s.consrc ~~ '%_overview_constraint(%'::text)) AND (NOT pg_is_other_temp_schema(c.relnamespace)));
++SELECT current_database() AS o_table_catalog, n.nspname AS o_table_schema, c.relname AS o_table_name, a.attname AS o_raster_column, current_database() AS r_table_catalog, (split_part(split_part(s.consrc, '''::name'::text, 1), ''''::text, 2))::name AS r_table_schema, (split_part(split_part(s.consrc, '''::name'::text, 2), ''''::text, 2))::name AS r_table_name, (split_part(split_part(s.consrc, '''::name'::text, 3), ''''::text, 2))::name AS r_raster_column, (btrim(split_part(s.consrc, ','::text, 2)))::integer AS overview_factor FROM pg_class c, pg_attribute a, pg_type t, pg_namespace n, pg_constraint s WHERE ((((((((((t.typname = 'raster'::name) AND (a.attisdropped = false)) AND (a.atttypid = t.oid)) AND (a.attrelid = c.oid)) AND (c.relnamespace = n.oid)) AND ((c.relkind)::text = ANY (ARRAY[('r'::character(1))::text, ('v'::character(1))::text, ('m'::character(1))::text, ('f'::character(1))::text]))) AND (s.connamespace = n.oid)) AND (s.conrelid = c.oid)) AND (s.consrc ~~ '%_overview_constraint(%'::text)) AND (NOT pg_is_other_temp_schema(c.relnamespace)));
+
+
+ ALTER TABLE public.raster_overviews OWNER TO gpadmin;

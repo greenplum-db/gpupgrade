@@ -138,9 +138,6 @@ ssh -n cdw "
 
     source /usr/local/greenplum-db-target/greenplum_path.sh
 
-    echo 'Recreating dropped views that contained the deprecated name datatype...'
-    psql -v ON_ERROR_STOP=1 -d postgres -f /usr/local/greenplum-db-target/share/postgresql/contrib/postgis-*/postgis_replace_views.sql
-
     echo 'Dropping operator dependent objects in order to successfully drop and recreate postgis operators...'
     psql -v ON_ERROR_STOP=1 -d postgres -c 'DROP INDEX wmstest_geomidx CASCADE;'
     psql -v ON_ERROR_STOP=1 -d postgres -f /usr/local/greenplum-db-target/share/postgresql/contrib/postgis-*/postgis_enable_operators.sql

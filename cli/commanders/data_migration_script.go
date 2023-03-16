@@ -16,7 +16,7 @@ var scriptDescription = map[string]string{
 	"heterogeneous_partitioned_tables":      "Ensures child partitions have the same on-disk layout as their root",
 	"parent_partitions_with_seg_entries":    "Fixes non-empty segment relfiles for AO and AOCO parent partitions",
 	"partitioned_tables_indexes":            "Drops partition indexes",
-	"tables_using_name_and_tsquery":         "Alters NAME and TSQUERY column types to VARCHAR",
+	"tables_using_tsquery_type":             "Alters TSQUERY column types to VARCHAR",
 	"unique_primary_foreign_key_constraint": "Drops constraints",
 }
 

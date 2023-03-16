@@ -109,46 +109,6 @@ CREATE EXTERNAL TABLE "ext gphdfs" (name text) -- whitespace in the name
 	LOCATION ('gphdfs://example.com/data/filename.txt')
 	FORMAT 'TEXT' (DELIMITER '|');
 
--- create name datatype attributes as the not-first column
-DROP TABLE IF EXISTS table_with_name_as_second_column;
-CREATE TABLE table_with_name_as_second_column (a int, "first last" name);
-INSERT INTO table_with_name_as_second_column VALUES(1, 'George Washington');
-INSERT INTO table_with_name_as_second_column VALUES(1, 'Henry Ford');
--- create partition table with name datatype attribute as the not-first column as the partition key
-DROP TABLE IF EXISTS partition_table_partitioned_by_name_type;
-CREATE TABLE partition_table_partitioned_by_name_type(a int, b name) PARTITION BY RANGE (b) (START('a') END('z'));
--- create table with name datatype attribute as the not-first column as the distribution key
-DROP TABLE IF EXISTS table_distributed_by_name_type;
-CREATE TABLE table_distributed_by_name_type(a int, b name) DISTRIBUTED BY (b);
-INSERT INTO table_distributed_by_name_type VALUES (1,'z'),(2,'x');
--- create table / views with name datatype
-CREATE TABLE t1_with_name(a name, b name) DISTRIBUTED RANDOMLY;
-INSERT INTO t1_with_name SELECT 'aaa', 'bbb';
-CREATE TABLE t2_with_name(a int, b name) DISTRIBUTED RANDOMLY;
-INSERT INTO t2_with_name SELECT 1, 'bbb';
-CREATE VIEW v2_on_t2_with_name AS SELECT * FROM t2_with_name;
-ALTER TABLE v2_on_t2_with_name OWNER TO test_role1;
--- multilevel partition table with partitioning keys using name datatype
-CREATE TABLE multilevel_part_with_partition_col_name_datatype (trans_id int, country name, amount decimal(9,2), region name)
-DISTRIBUTED BY (trans_id)
-PARTITION BY LIST (country)
-SUBPARTITION BY LIST (region)
-SUBPARTITION TEMPLATE
-( SUBPARTITION south VALUES ('south'),
-    DEFAULT SUBPARTITION other_regions)
-    (PARTITION usa VALUES ('usa'),
-    DEFAULT PARTITION outlying_country );
--- multilevel partition table with partitioning keys using not using name datatype
-CREATE TABLE multilevel_part_with_partition_col_text_datatype (trans_id int, country text, state name, region text)
-DISTRIBUTED BY (trans_id)
-PARTITION BY LIST (country)
-SUBPARTITION BY LIST (region)
-SUBPARTITION TEMPLATE
-( SUBPARTITION south VALUES ('south'),
-    DEFAULT SUBPARTITION other_regions)
-    (PARTITION usa VALUES ('usa'),
-    DEFAULT PARTITION outlying_country );
-
 -- create tables with tsquery datatype
 DROP TABLE IF EXISTS table_with_tsquery_datatype_columns;
 CREATE TABLE table_with_tsquery_datatype_columns(a tsquery, b tsquery, c tsquery, d int)
@@ -174,70 +134,26 @@ CREATE INDEX tsquery_cluster_comment_idx ON tsquery_cluster_comment(j);
 ALTER TABLE tsquery_cluster_comment CLUSTER ON tsquery_cluster_comment_idx;
 COMMENT ON INDEX tsquery_cluster_comment_idx IS 'hello world';
 
--- Index tests on name
---composite index
-DROP TABLE IF EXISTS name_composite;
-CREATE TABLE name_composite(i int, j name, k name);
-CREATE INDEX name_composite_idx ON name_composite(j, k);
---clustered index with comment
-DROP TABLE IF EXISTS name_cluster_comment;
-CREATE TABLE name_cluster_comment(i int, j name);
-CREATE INDEX name_cluster_comment_idx ON name_cluster_comment(j);
-ALTER TABLE name_cluster_comment CLUSTER ON name_cluster_comment_idx;
-COMMENT ON INDEX name_cluster_comment_idx IS 'hello world';
-
 -- inherits with tsquery column
 DROP TABLE IF EXISTS tsquery_inherits;
 CREATE TABLE tsquery_inherits (
     e      tsquery
 ) INHERITS (table_with_tsquery_datatype_columns);
 
--- inherits with name and tsquery columns
-DROP TABLE IF EXISTS table_with_name_column;
-CREATE TABLE table_with_name_tsquery (
+-- inherits with tsquery columns
+CREATE TABLE table_with_tsquery (
     name       text,
-    population name,
     altitude   tsquery
 );
-CREATE INDEX table_with_name_tsquery_name_idx on table_with_name_tsquery(population);
-CREATE INDEX table_with_name_tsquery_tsquery_idx on table_with_name_tsquery(altitude);
+CREATE INDEX table_with_tsquery_tsquery_idx on table_with_tsquery(altitude);
 
-DROP TABLE IF EXISTS name_inherits;
-CREATE TABLE name_inherits (
-    state      char(2)
-) INHERITS (table_with_name_tsquery);
+-- view on tsquery from the same table
+DROP VIEW IF EXISTS view_on_tsquery;
+CREATE VIEW view_on_tsquery AS SELECT * FROM table_with_tsquery;
 
--- view on a view on a name column with owner different than the underlying table
-DROP VIEW IF EXISTS v3_on_v2_recursive;
-CREATE VIEW v3_on_v2_recursive AS SELECT * FROM v2_on_t2_with_name;
-ALTER TABLE v3_on_v2_recursive OWNER TO test_role2;
-
--- Third level recursive view on a name column
-DROP VIEW IF EXISTS v4_on_v3_recursive;
-CREATE VIEW v4_on_v3_recursive AS SELECT * FROM v3_on_v2_recursive;
-
--- view on a table with view that doesn't actually depend on the name column
--- this one should not be dropped since its dependent columns are not changing
-DROP VIEW IF EXISTS v4_on_t2_no_name;
-CREATE VIEW v4_on_t2_no_name AS SELECT a, 1::INTEGER AS i FROM t2_with_name;
-
--- view on both name and tsquery from the same table
-DROP VIEW IF EXISTS view_on_name_tsquery;
-CREATE VIEW view_on_name_tsquery AS SELECT * FROM table_with_name_tsquery;
-
--- view on both name and tsquery from multiple tables
-DROP VIEW IF EXISTS view_on_name_tsquery_mult_tables;
-CREATE VIEW view_on_name_tsquery_mult_tables AS SELECT t1.population, t2.altitude FROM table_with_name_tsquery t1, table_with_name_tsquery t2;
-
-CREATE TABLE sales_name (trans_id int, office_name name, region text)
-    DISTRIBUTED BY (trans_id)
-    PARTITION BY LIST (office_name)
-            ( PARTITION usa VALUES ('usa'),
-            PARTITION asia VALUES ('asia'),
-            PARTITION europe VALUES ('europe'),
-            DEFAULT PARTITION other_regions);
-
-CREATE INDEX sales_name_idx on sales_name(office_name);
+-- view on tsquery from multiple tables
+DROP VIEW IF EXISTS view_on_tsquery_mult_tables;
+CREATE VIEW view_on_tsquery_mult_tables AS SELECT t1.name, t2.altitude FROM table_with_tsquery t1, table_with_tsquery t2;
 
 CREATE TABLE sales_tsquery (trans_id int, office_tsquery tsquery, region text)
     DISTRIBUTED BY (trans_id)

@@ -89,12 +89,6 @@ SQL_EOF
     # cluster due to deprication on 6X. Disabling ON_ERROR_STOP until this is
     # fixed.
     psql -v ON_ERROR_STOP=0 postgres -f /tmp/postgis_dump.sql
-    psql -v ON_ERROR_STOP=1 -d postgres <<SQL_EOF
-        -- Drop postgis views containing deprecated name datatypes
-        DROP VIEW geography_columns;
-        DROP VIEW raster_columns;
-        DROP VIEW raster_overviews;
-SQL_EOF
 
     echo 'Installing MADlib...'
     gppkg -i /tmp/madlib_source.gppkg
