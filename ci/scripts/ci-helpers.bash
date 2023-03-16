@@ -60,7 +60,7 @@ compare_dumps() {
         # 5 to 6 requires some massaging of the diff due to expected changes.
         if (( $FILTER_DIFF )); then
             go build ./ci/scripts/filters/filter
-            scp ./filter cdw:/tmp/filter
+            scp ./filter ./ci/scripts/filters/"${DIFF_FILE}" cdw:/tmp
 
             # First filter out any algorithmically-fixable differences, then
             # patch out the remaining expected diffs explicitly. We patch with
@@ -70,8 +70,8 @@ compare_dumps() {
             # lower patch size).
             ssh cdw "
                 /tmp/filter -version=6 -inputFile='$target_dump' > '$target_dump.filtered'
-                patch --ignore-whitespace -R '$target_dump.filtered'
-            " < ./ci/scripts/filters/${DIFF_FILE}
+                patch --ignore-whitespace -R '$target_dump.filtered' /tmp/${DIFF_FILE}
+            "
 
             if [ $? -ne 0 ]; then
                 echo "error: patching failed"
