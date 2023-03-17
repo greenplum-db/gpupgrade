@@ -25,7 +25,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-func ApplyDataMigrationScripts(nonInteractive bool, gphome string, port int, currentScriptDirFS fs.FS, currentScriptDir string, phase idl.Step) error {
+func ApplyDataMigrationScripts(nonInteractive bool, gphome string, port int, logDir string, currentScriptDirFS fs.FS, currentScriptDir string, phase idl.Step) error {
 	_, err := currentScriptDirFS.Open(phase.String())
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -44,11 +44,6 @@ func ApplyDataMigrationScripts(nonInteractive bool, gphome string, port int, cur
 			return nil
 		}
 
-		return err
-	}
-
-	logDir, err := utils.GetLogDir()
-	if err != nil {
 		return err
 	}
 

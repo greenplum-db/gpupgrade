@@ -54,6 +54,7 @@ func dataMigrationApply() *cobra.Command {
 	var nonInteractive bool
 	var gphome string
 	var port int
+	var logDir string
 	var inputDir string
 	var phase string
 
@@ -68,7 +69,7 @@ func dataMigrationApply() *cobra.Command {
 			}
 
 			currentDir := filepath.Join(filepath.Clean(inputDir), "current")
-			err = commanders.ApplyDataMigrationScripts(nonInteractive, filepath.Clean(gphome), port, utils.System.DirFS(currentDir), currentDir, parsedPhase)
+			err = commanders.ApplyDataMigrationScripts(nonInteractive, filepath.Clean(gphome), port, logDir, utils.System.DirFS(currentDir), currentDir, parsedPhase)
 			if err != nil {
 				return err
 			}
@@ -82,10 +83,16 @@ func dataMigrationApply() *cobra.Command {
 		return nil
 	}
 
+	logDir, err = utils.GetLogDir()
+	if err != nil {
+		return nil
+	}
+
 	dataMigrationExecutor.Flags().BoolVar(&nonInteractive, "non-interactive", false, "do not prompt to proceed")
 	dataMigrationExecutor.Flags().MarkHidden("non-interactive") //nolint
 	dataMigrationExecutor.Flags().StringVar(&gphome, "gphome", "", "path to the Greenplum installation")
 	dataMigrationExecutor.Flags().IntVar(&port, "port", 0, "master port for Greenplum cluster")
+	dataMigrationExecutor.Flags().StringVar(&logDir, "log-dir", logDir, "gpupgrade log directory which for finalize or revert is the archived log directory. Defaults to $HOME/gpAdminLogs/gpupgrade")
 	dataMigrationExecutor.Flags().StringVar(&inputDir, "input-dir", defaultGeneratedScriptsDir, "path to the generated data migration SQL files. Defaults to $HOME/gpAdminLogs/gpupgrade/data-migration-scripts")
 	dataMigrationExecutor.Flags().StringVar(&phase, "phase", "", `data migration phase. Either "pre-initialize", "post-finalize", "post-revert", or "stats".`)
 
