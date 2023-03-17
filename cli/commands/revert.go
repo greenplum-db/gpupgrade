@@ -56,7 +56,10 @@ func revert() *cobra.Command {
 					return err
 				}
 
-				response, err = commanders.Revert(client, verbose)
+				request := &idl.RevertRequest{
+					NonInteractive: nonInteractive,
+				}
+				response, err = commanders.Revert(client, request, verbose)
 				if err != nil {
 					return err
 				}
@@ -66,15 +69,6 @@ func revert() *cobra.Command {
 
 			st.RunCLISubstep(idl.Substep_stop_hub_and_agents, func(streams step.OutStreams) error {
 				return stopHubAndAgents()
-			})
-
-			st.RunCLISubstepConditionally(idl.Substep_execute_revert_data_migration_scripts, !nonInteractive, func(streams step.OutStreams) error {
-				fmt.Println()
-				fmt.Println()
-
-				currentDir := filepath.Join(response.GetLogArchiveDirectory(), "data-migration-scripts", "current")
-				return commanders.ApplyDataMigrationScripts(nonInteractive, response.GetSource().GPHome, int(response.GetSource().GetPort()),
-					utils.System.DirFS(currentDir), currentDir, idl.Step_revert)
 			})
 
 			st.RunCLISubstep(idl.Substep_delete_master_statedir, func(streams step.OutStreams) error {

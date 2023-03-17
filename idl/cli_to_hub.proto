@@ -40,9 +40,13 @@ message ExecuteRequest {
   string parentBackupDir = 2;
 }
 
-message FinalizeRequest {}
+message FinalizeRequest {
+  bool nonInteractive = 1;
+}
 
-message RevertRequest {}
+message RevertRequest {
+  bool nonInteractive = 1;
+}
 
 message RestartAgentsRequest {}
 message RestartAgentsReply {

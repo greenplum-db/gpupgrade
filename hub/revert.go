@@ -4,18 +4,22 @@
 package hub
 
 import (
+	"fmt"
 	"log"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) (err error) {
+func (s *Server) Revert(req *idl.RevertRequest, stream idl.CliToHub_RevertServer) (err error) {
 	st, err := step.Begin(idl.Step_revert, stream, s.AgentConns)
 	if err != nil {
 		return err
@@ -106,6 +110,20 @@ Cannot revert and restore the source cluster. Please contact support.`)
 
 	st.RunConditionally(idl.Substep_recoverseg_source_cluster, shouldHandle5XMirrorFailure, func(streams step.OutStreams) error {
 		return Recoverseg(streams, s.Source, s.UseHbaHostnames)
+	})
+
+	st.RunConditionally(idl.Substep_execute_revert_data_migration_scripts, !req.GetNonInteractive(), func(streams step.OutStreams) error {
+		fmt.Println()
+		fmt.Println()
+
+		generatedScriptsOutputDir, err := utils.GetDefaultGeneratedDataMigrationScriptsDir()
+		if err != nil {
+			return nil
+		}
+
+		currentDir := filepath.Join(filepath.Clean(generatedScriptsOutputDir), "current")
+		return commanders.ApplyDataMigrationScripts(req.GetNonInteractive(), s.Source.GPHome, s.Source.CoordinatorPort(),
+			utils.System.DirFS(currentDir), currentDir, idl.Step_revert)
 	})
 
 	var logArchiveDir string

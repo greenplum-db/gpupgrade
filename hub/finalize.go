@@ -4,13 +4,17 @@
 package hub
 
 import (
+	"fmt"
 	"log"
+	"path/filepath"
 
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
+	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
@@ -84,6 +88,20 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 
 	st.Run(idl.Substep_wait_for_cluster_to_be_ready_after_updating_catalog, func(streams step.OutStreams) error {
 		return s.Target.WaitForClusterToBeReady()
+	})
+
+	st.RunConditionally(idl.Substep_execute_finalize_data_migration_scripts, !req.GetNonInteractive(), func(streams step.OutStreams) error {
+		fmt.Println()
+		fmt.Println()
+
+		generatedScriptsOutputDir, err := utils.GetDefaultGeneratedDataMigrationScriptsDir()
+		if err != nil {
+			return nil
+		}
+
+		currentDir := filepath.Join(filepath.Clean(generatedScriptsOutputDir), "current")
+		return commanders.ApplyDataMigrationScripts(req.GetNonInteractive(), s.Target.GPHome, s.Target.CoordinatorPort(),
+			utils.System.DirFS(currentDir), currentDir, idl.Step_finalize)
 	})
 
 	var logArchiveDir string

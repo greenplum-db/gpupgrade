@@ -80,8 +80,8 @@ func Execute(client idl.CliToHubClient, request *idl.ExecuteRequest, verbose boo
 	return *executeResponse, nil
 }
 
-func Finalize(client idl.CliToHubClient, verbose bool) (idl.FinalizeResponse, error) {
-	stream, err := client.Finalize(context.Background(), &idl.FinalizeRequest{})
+func Finalize(client idl.CliToHubClient, request *idl.FinalizeRequest, verbose bool) (idl.FinalizeResponse, error) {
+	stream, err := client.Finalize(context.Background(), request)
 	if err != nil {
 		return idl.FinalizeResponse{}, err
 	}
@@ -99,8 +99,8 @@ func Finalize(client idl.CliToHubClient, verbose bool) (idl.FinalizeResponse, er
 	return *finalizeResponse, nil
 }
 
-func Revert(client idl.CliToHubClient, verbose bool) (idl.RevertResponse, error) {
-	stream, err := client.Revert(context.Background(), &idl.RevertRequest{})
+func Revert(client idl.CliToHubClient, request *idl.RevertRequest, verbose bool) (idl.RevertResponse, error) {
+	stream, err := client.Revert(context.Background(), request)
 	if err != nil {
 		return idl.RevertResponse{}, err
 	}
