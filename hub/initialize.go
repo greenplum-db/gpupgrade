@@ -32,7 +32,7 @@ func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_Init
 	}()
 
 	st.Run(idl.Substep_saving_source_cluster_config, func(stream step.OutStreams) error {
-		return FillConfiguration(s.Config, req, s.SaveConfig)
+		return FillConfiguration(s.Config, req, s.Config.SaveConfig)
 	})
 
 	// Since the agents might not be up if gpupgrade is not properly installed, check it early on using ssh.
@@ -76,7 +76,7 @@ func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_Init
 			return err
 		}
 
-		err = s.SaveConfig()
+		err = s.Config.SaveConfig()
 		if err != nil {
 			return fmt.Errorf("save backup directories: %w", err)
 		}
@@ -155,7 +155,7 @@ func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest
 		}
 
 		s.Intermediate.CatalogVersion = catalogVersion
-		return s.SaveConfig()
+		return s.Config.SaveConfig()
 	})
 
 	st.RunConditionally(idl.Substep_setting_dynamic_library_path_on_target_cluster, req.GetDynamicLibraryPath() != upgrade.DefaultDynamicLibraryPath, func(stream step.OutStreams) error {

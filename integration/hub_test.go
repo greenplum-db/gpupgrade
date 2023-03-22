@@ -115,7 +115,9 @@ func TestHub(t *testing.T) {
 			t.Errorf("unexpected error got %+v", err)
 		}
 
-		err = commanders.CreateConfigFile(upgrade.DefaultHubPort)
+		mockSourcePort := 8888
+		mockSourceDataDir := "/mock/data/gpseg-1"
+		err = commanders.CreateConfigFile(upgrade.DefaultHubPort, mockSourcePort, mockSourceDataDir)
 		if err != nil {
 			t.Errorf("unexpected error got %+v", err)
 		}

@@ -4,13 +4,14 @@
 package commanders
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"os/exec"
 
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -37,7 +38,7 @@ func CreateStateDir() (err error) {
 	return nil
 }
 
-func CreateConfigFile(hubPort int) error {
+func CreateConfigFile(hubPort int, sourcePort int, sourceGPHome string) error {
 	path := upgrade.GetConfigFile()
 
 	exist, err := upgrade.PathExist(path)
@@ -53,13 +54,17 @@ func CreateConfigFile(hubPort int) error {
 	// Bootstrap with the port to enable the CLI helper function connectToHub to
 	// work with both initialize and all other CLI commands. This overloads the
 	// hub's persisted configuration with that of the CLI when ideally these
-	// would be separate.
-	err = os.WriteFile(path, []byte(fmt.Sprintf(`{"Port": %d}`, hubPort)), 0644)
-	if err != nil {
-		return err
-	}
+	// would be separate. Also bootstrap with the source $GPHOME and coordinator
+	// port to handle the initialize scenario where the user quits before the
+	// InitializeRequest is sent to the hub and wants to revert.
+	config := hub.Config{}
+	config.Port = hubPort
+	config.Source = &greenplum.Cluster{}
+	config.Source.Primaries = make(greenplum.ContentToSegConfig)
+	config.Source.Primaries[-1] = greenplum.SegConfig{Port: sourcePort}
+	config.Source.GPHome = sourceGPHome
 
-	return nil
+	return config.SaveConfig()
 }
 
 func StartHub() (err error) {

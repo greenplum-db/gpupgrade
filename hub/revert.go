@@ -41,6 +41,25 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 Cannot revert and restore the source cluster. Please contact support.`)
 	}
 
+	hasInitializeStarted, err := step.HasCompleted(idl.Step_initialize, idl.Substep_saving_source_cluster_config)
+	if err != nil {
+		return err
+	}
+
+	// If CLI Initialize exited before the InitializeRequest was sent
+	// to the hub, we will only need to do a couple revert substeps.
+	if !hasInitializeStarted {
+		s.Config, err = GetEarlyInitializeConfiguration(s.Port, s.Source.CoordinatorPort(), s.Source.GPHome)
+		if err != nil {
+			return err
+		}
+
+		st.OnlyRun(
+			idl.Substep_archive_log_directories,
+			idl.Substep_delete_segment_statedirs,
+		)
+	}
+
 	st.RunConditionally(idl.Substep_check_active_connections_on_target_cluster, s.Intermediate != nil, func(streams step.OutStreams) error {
 		return s.Intermediate.CheckActiveConnections(streams)
 	})
@@ -50,13 +69,13 @@ Cannot revert and restore the source cluster. Please contact support.`)
 	})
 
 	st.RunConditionally(idl.Substep_delete_target_cluster_datadirs,
-		s.Intermediate.Primaries != nil && s.Intermediate.CoordinatorDataDir() != "",
+		s.Intermediate != nil && s.Intermediate.Primaries != nil && s.Intermediate.CoordinatorDataDir() != "",
 		func(streams step.OutStreams) error {
 			return DeleteCoordinatorAndPrimaryDataDirectories(streams, s.agentConns, s.Intermediate)
 		})
 
 	st.RunConditionally(idl.Substep_delete_tablespaces,
-		s.Intermediate.Primaries != nil && s.Intermediate.CoordinatorDataDir() != "",
+		s.Intermediate != nil && s.Intermediate.Primaries != nil && s.Intermediate.CoordinatorDataDir() != "",
 		func(streams step.OutStreams) error {
 			return DeleteTargetTablespaces(streams, s.agentConns, s.Config.Intermediate, s.Intermediate.CatalogVersion, s.Source.Tablespaces)
 		})

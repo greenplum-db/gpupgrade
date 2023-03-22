@@ -341,7 +341,7 @@ func TestHubSaveConfig(t *testing.T) {
 		defer resetEnv()
 
 		// Write the hub's configuration.
-		if err := h.SaveConfig(); err != nil {
+		if err := h.Config.SaveConfig(); err != nil {
 			t.Errorf("SaveConfig returned error %+v", err)
 		}
 

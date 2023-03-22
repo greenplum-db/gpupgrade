@@ -190,6 +190,14 @@ func initialize() *cobra.Command {
 				return nil
 			})
 
+			st.RunCLISubstep(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
+				return commanders.CreateConfigFile(hubPort, sourcePort, sourceGPHome)
+			})
+
+			st.RunCLISubstep(idl.Substep_start_hub, func(streams step.OutStreams) error {
+				return commanders.StartHub()
+			})
+
 			generatedScriptsOutputDir, err := utils.GetDefaultGeneratedDataMigrationScriptsDir()
 			if err != nil {
 				return nil
@@ -228,14 +236,6 @@ func initialize() *cobra.Command {
 
 				fmt.Println()
 				return commanders.Prompt(bufio.NewReader(os.Stdin), idl.Step_initialize)
-			})
-
-			st.RunInternalSubstep(func() error {
-				return commanders.CreateConfigFile(hubPort)
-			})
-
-			st.RunCLISubstep(idl.Substep_start_hub, func(streams step.OutStreams) error {
-				return commanders.StartHub()
 			})
 
 			var client idl.CliToHubClient

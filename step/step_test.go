@@ -343,6 +343,98 @@ func TestStepRun(t *testing.T) {
 			t.Error("got nil want err")
 		}
 	})
+
+	t.Run("when setting up for specific substeps to run it does not run substeps that does not match", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
+		server.EXPECT().
+			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
+				Step:   idl.Substep_check_active_connections_on_target_cluster,
+				Status: idl.Status_running,
+			}}}).Times(0)
+		server.EXPECT().
+			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
+				Step:   idl.Substep_archive_log_directories,
+				Status: idl.Status_running,
+			}}})
+		server.EXPECT().
+			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
+				Step:   idl.Substep_archive_log_directories,
+				Status: idl.Status_complete,
+			}}})
+		server.EXPECT().
+			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
+				Step:   idl.Substep_shutdown_target_cluster,
+				Status: idl.Status_running,
+			}}}).Times(0)
+		server.EXPECT().
+			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
+				Step:   idl.Substep_delete_backupdir,
+				Status: idl.Status_running,
+			}}})
+		server.EXPECT().
+			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
+				Step:   idl.Substep_delete_backupdir,
+				Status: idl.Status_complete,
+			}}})
+		server.EXPECT().
+			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
+				Step:   idl.Substep_delete_segment_statedirs,
+				Status: idl.Status_running,
+			}}})
+		server.EXPECT().
+			Send(&idl.Message{Contents: &idl.Message_Status{Status: &idl.SubstepStatus{
+				Step:   idl.Substep_delete_segment_statedirs,
+				Status: idl.Status_complete,
+			}}})
+
+		substepStore := &TestSubstepStore{Status: idl.Status_unknown_status}
+		s := step.New(idl.Step_revert, server, substepStore, &testutils.DevNullWithClose{})
+
+		s.OnlyRun(
+			idl.Substep_archive_log_directories,
+			idl.Substep_delete_backupdir,
+			idl.Substep_delete_segment_statedirs)
+
+		s.Run(idl.Substep_check_active_connections_on_target_cluster, func(streams step.OutStreams) error {
+			t.Error("expected substep to not be called")
+			return nil
+		})
+
+		var called int
+		s.Run(idl.Substep_archive_log_directories, func(streams step.OutStreams) error {
+			called++
+			return nil
+		})
+
+		substepStore.Status = idl.Status_unknown_status
+
+		s.Run(idl.Substep_shutdown_target_cluster, func(streams step.OutStreams) error {
+			t.Error("expected substep to not be called")
+			return nil
+		})
+
+		s.Run(idl.Substep_delete_backupdir, func(streams step.OutStreams) error {
+			called++
+			return nil
+		})
+
+		substepStore.Status = idl.Status_unknown_status
+
+		s.Run(idl.Substep_delete_segment_statedirs, func(streams step.OutStreams) error {
+			called++
+			return nil
+		})
+
+		substepStore.Status = idl.Status_unknown_status
+
+		expectedCalls := 3
+		if called != expectedCalls {
+			t.Errorf("called %d substeps, expected %d", called, expectedCalls)
+		}
+	})
 }
 
 func TestHasStarted(t *testing.T) {

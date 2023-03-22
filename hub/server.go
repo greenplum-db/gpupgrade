@@ -387,9 +387,9 @@ func (c *Config) Save(w io.Writer) error {
 }
 
 // SaveConfig persists the hub's configuration to disk.
-func (s *Server) SaveConfig() (err error) {
+func (c *Config) SaveConfig() (err error) {
 	var buffer bytes.Buffer
-	if err = s.Config.Save(&buffer); err != nil {
+	if err = c.Save(&buffer); err != nil {
 		return xerrors.Errorf("save config: %w", err)
 	}
 
@@ -407,7 +407,7 @@ func (s *Server) GetLogArchiveDir() (string, error) {
 	}
 
 	s.LogArchiveDir = filepath.Join(filepath.Dir(logDir), upgrade.GetArchiveDirectoryName(s.UpgradeID, time.Now()))
-	err = s.SaveConfig()
+	err = s.Config.SaveConfig()
 	if err != nil {
 		return "", fmt.Errorf("saving archive directory: %w", err)
 	}

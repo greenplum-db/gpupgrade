@@ -18,27 +18,55 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-// FillConfiguration populates the Config saves it to disk.
-func FillConfiguration(config *Config, request *idl.InitializeRequest, saveConfig func() error) error {
+var InitializeConnectionFunc = initializeConnection
+
+func initializeConnection(gphome string, port int) (*sql.DB, error) {
 	tempSource, err := greenplum.NewCluster([]greenplum.SegConfig{})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Need greenplum version to use correct utility mode parameter when making the database connection URI.
-	sourceVersion, err := greenplum.Version(request.GetSourceGPHome())
+	tempSource.Version, err = greenplum.Version(gphome)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	tempSource.Destination = idl.ClusterDestination_source
-	tempSource.Version = sourceVersion
-	conn := tempSource.Connection([]greenplum.Option{greenplum.Port(int(request.GetSourcePort())), greenplum.UtilityMode()}...)
-
+	conn := tempSource.Connection([]greenplum.Option{greenplum.Port(port), greenplum.UtilityMode()}...)
 	db, err := sql.Open("pgx", conn)
 	if err != nil {
-		return err
+		return nil, err
 	}
+
+	return db, nil
+}
+
+// We only need specific config values to be set for the hub RevertResponse
+// to handle reverting an early Initialize exit.
+func GetEarlyInitializeConfiguration(hubPort int, coordinatorPort int, gphome string) (*Config, error) {
+	db, err := InitializeConnectionFunc(gphome, coordinatorPort)
+	if err != nil {
+		return nil, xerrors.Errorf("create connection: %w", err)
+	}
+	defer db.Close()
+
+	source, err := greenplum.ClusterFromDB(db, gphome, idl.ClusterDestination_source)
+	if err != nil {
+		return nil, xerrors.Errorf("retrieve source configuration: %w", err)
+	}
+
+	conf := &Config{}
+	conf.Source = &source
+	conf.UpgradeID = upgrade.NewID()
+	conf.Port = hubPort
+
+	return conf, nil
+}
+
+// FillConfiguration populates the Config saves it to disk.
+func FillConfiguration(config *Config, request *idl.InitializeRequest, saveConfig func() error) error {
+	db, err := InitializeConnectionFunc(request.GetSourceGPHome(), int(request.GetSourcePort()))
 	defer func() {
 		if cErr := db.Close(); cErr != nil {
 			err = errorlist.Append(err, cErr)

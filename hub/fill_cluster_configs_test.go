@@ -4,14 +4,19 @@
 package hub
 
 import (
+	"database/sql"
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/blang/semver/v4"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 )
 
@@ -350,4 +355,61 @@ func TestEnsureTempPortRangeDoesNotOverlapWithSourceClusterPorts(t *testing.T) {
 			}
 		})
 	}
+}
+
+func PostgresGPVersion_5_29_10() {
+	fmt.Println("postgres (Greenplum Database) 5.29.10 build commit:fca0e6aa84a7d611ce8b7986d6fc73ae93b76f5e")
+}
+
+func init() {
+	exectest.RegisterMains(
+		PostgresGPVersion_5_29_10,
+	)
+}
+
+func TestGetEarlyInitializeConfiguration(t *testing.T) {
+	greenplum.SetVersionCommand(exectest.NewCommand(PostgresGPVersion_5_29_10))
+	defer greenplum.ResetVersionCommand()
+
+	t.Run("sets up Server for early Initialize revert", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		if err != nil {
+			t.Fatalf("couldn't create sqlmock: %v", err)
+		}
+		defer testutils.FinishMock(mock, t)
+
+		backupFunc := InitializeConnectionFunc
+		InitializeConnectionFunc = func(gphome string, port int) (*sql.DB, error) {
+			return db, nil
+		}
+		defer func() {
+			InitializeConnectionFunc = backupFunc
+		}()
+
+		mockDataDir := "/mock_datadir/gpseg-1"
+		mockRows := sqlmock.NewRows([]string{"dbid", "contentid", "port", "hostname", "datadir", "role"})
+		mockRows.AddRow(1, -1, 15432, "mdw", mockDataDir, greenplum.PrimaryRole)
+		mock.ExpectQuery(`SELECT .* FROM gp_segment_configuration`).WillReturnRows(mockRows)
+
+		mockHubPort := 8888
+		mockCoordinatorPort := 9999
+		mockGPHome := "/mock/gphome/path"
+		config, err := GetEarlyInitializeConfiguration(mockHubPort, mockCoordinatorPort, mockGPHome)
+		if err != nil {
+			t.Fatalf("couldn't get early Initialize configuration: %v", err)
+		}
+
+		if config.Source.Primaries[-1].DataDir != mockDataDir {
+			t.Errorf("got datadir %s, want %s", config.Source.Primaries[-1].DataDir, mockDataDir)
+		}
+
+		expectedVersion, _ := semver.Make("5.29.10")
+		if !config.Source.Version.EQ(expectedVersion) {
+			t.Errorf("got %v, want %v", config.Source.Version, expectedVersion)
+		}
+
+		if config.UpgradeID == 0 {
+			t.Errorf("expected non-empty UpgradeID")
+		}
+	})
 }
