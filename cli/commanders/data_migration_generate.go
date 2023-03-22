@@ -209,7 +209,7 @@ Select: `)
 			fmt.Printf("\nContinuing with previously generated data migration scripts in\n%s\n", utils.Bold.Sprint(currentDir))
 			return step.Skip
 		case "q":
-			fmt.Print("\nQuiting...")
+			fmt.Print("\nQuitting...")
 			return step.UserCanceled
 		default:
 			continue

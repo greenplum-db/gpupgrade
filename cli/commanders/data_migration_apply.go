@@ -228,7 +228,7 @@ Select: `, phase)
 			fmt.Printf("\nProceeding with 'none' of the %s data migration scripts.\n", phase)
 			return nil, step.Skip
 		case "q":
-			fmt.Print("\nQuiting...\n")
+			fmt.Print("\nQuitting...\n")
 			return nil, step.UserCanceled
 		default:
 			continue
@@ -258,7 +258,7 @@ func SelectDataMigrationScriptsPrompt(reader *bufio.Reader, currentScriptDir str
 		if err != nil {
 			if errors.Is(err, step.UserCanceled) {
 				fmt.Println()
-				fmt.Print("Quiting...")
+				fmt.Print("Quitting...")
 				return nil, err
 			}
 
@@ -288,7 +288,7 @@ func SelectDataMigrationScriptsPrompt(reader *bufio.Reader, currentScriptDir str
 		case "e":
 			continue
 		case "q":
-			fmt.Print("\nQuiting...")
+			fmt.Print("\nQuitting...")
 			return nil, step.UserCanceled
 		default:
 			continue

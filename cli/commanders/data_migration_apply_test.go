@@ -449,7 +449,7 @@ func TestApplyDataMigrationScriptsPrompt(t *testing.T) {
 		expected += "  [a]ll scripts.  Usually run 'during' the upgrade within the downtime window.\n"
 		expected += "  [q]uit\n"
 		expected += "\nSelect: \n"
-		expected += "Quiting...\n"
+		expected += "Quitting...\n"
 
 		actual := string(stdout)
 		if actual != expected {
@@ -493,7 +493,7 @@ func TestApplyDataMigrationScriptsPrompt(t *testing.T) {
 		expected += "  [a]ll scripts.  Usually run 'during' the upgrade within the downtime window.\n"
 		expected += "  [q]uit\n"
 		expected += "\nSelect: \n"
-		expected += "Quiting...\n"
+		expected += "Quitting...\n"
 
 		actual := string(stdout)
 		if actual != expected {
@@ -541,7 +541,7 @@ func TestApplyDataMigrationScriptsPrompt(t *testing.T) {
 		expected += "  [n]one\n"
 		expected += "  [q]uit\n"
 		expected += "\nSelect: \n"
-		expected += "Quiting...\n"
+		expected += "Quitting...\n"
 
 		actual := string(stdout)
 		if actual != expected {
@@ -630,7 +630,7 @@ func TestSelectDataMigrationScriptsPrompt(t *testing.T) {
 		expected += "Invalid selection. Found \"0.5\" expected a number or numbers separated by commas such as 1, 3.\n\n"
 		expected += "Select scripts to apply separated by commas such as 1, 3. Or [q]uit?\n\n\n"
 		expected += "Select: \n"
-		expected += "Quiting..."
+		expected += "Quitting..."
 
 		actual := string(stdout)
 		if actual != expected {
@@ -733,7 +733,7 @@ func TestSelectDataMigrationScriptsPrompt(t *testing.T) {
 		expected += "  1: unique_primary_foreign_key_constraint\n\n"
 		expected += "[c]ontinue, [e]dit selection, or [q]uit.\n"
 		expected += "Select: \n"
-		expected += "Quiting..."
+		expected += "Quitting..."
 
 		actual := string(stdout)
 		if actual != expected {
@@ -774,7 +774,7 @@ func TestSelectDataMigrationScriptsPrompt(t *testing.T) {
 		expected += "  0: parent_partitions_with_seg_entries\n"
 		expected += "  1: unique_primary_foreign_key_constraint\n\n"
 		expected += "Select: \n"
-		expected += "Quiting..."
+		expected += "Quitting..."
 
 		actual := string(stdout)
 		if actual != expected {
