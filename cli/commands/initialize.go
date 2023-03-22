@@ -209,7 +209,7 @@ func initialize() *cobra.Command {
 
 				currentDir := filepath.Join(generatedScriptsOutputDir, "current")
 				return commanders.ApplyDataMigrationScripts(nonInteractive, sourceGPHome, sourcePort,
-					utils.System.DirFS(currentDir), currentDir, idl.Step_stats)
+					logdir, utils.System.DirFS(currentDir), currentDir, idl.Step_stats)
 			})
 
 			st.RunCLISubstepConditionally(idl.Substep_execute_initialize_data_migration_scripts, !nonInteractive, func(streams step.OutStreams) error {
@@ -218,7 +218,7 @@ func initialize() *cobra.Command {
 
 				currentDir := filepath.Join(filepath.Clean(generatedScriptsOutputDir), "current")
 				return commanders.ApplyDataMigrationScripts(nonInteractive, sourceGPHome, sourcePort,
-					utils.System.DirFS(currentDir), currentDir, idl.Step_initialize)
+					logdir, utils.System.DirFS(currentDir), currentDir, idl.Step_initialize)
 			})
 
 			st.RunInternalSubstep(func() error {

@@ -74,7 +74,7 @@ func finalize() *cobra.Command {
 
 				currentDir := filepath.Join(response.GetLogArchiveDirectory(), "data-migration-scripts", "current")
 				return commanders.ApplyDataMigrationScripts(nonInteractive, response.GetTargetCluster().GPHome, int(response.GetTargetCluster().GetPort()),
-					utils.System.DirFS(currentDir), currentDir, idl.Step_finalize)
+					response.GetLogArchiveDirectory(), utils.System.DirFS(currentDir), currentDir, idl.Step_finalize)
 			})
 
 			st.RunCLISubstep(idl.Substep_delete_master_statedir, func(streams step.OutStreams) error {
