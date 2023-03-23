@@ -45,7 +45,7 @@ type Step struct {
 	err         error
 }
 
-func NewStep(currentStep idl.Step, streams *step.BufferedStreams, verbose bool, interactive bool, confirmationText string) (*Step, error) {
+func NewStep(currentStep idl.Step, streams *step.BufferedStreams, verbose bool, nonInteractive bool, confirmationText string) (*Step, error) {
 	stepStore, err := NewStepStore()
 	if err != nil {
 		context := fmt.Sprintf("Note: If commands were issued in order, ensure gpupgrade can write to %s", utils.GetStateDir())
@@ -58,7 +58,7 @@ func NewStep(currentStep idl.Step, streams *step.BufferedStreams, verbose bool, 
 		return nil, err
 	}
 
-	if !interactive {
+	if !nonInteractive {
 		fmt.Println(confirmationText)
 
 		err := Prompt(bufio.NewReader(os.Stdin), currentStep)
