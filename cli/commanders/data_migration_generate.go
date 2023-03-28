@@ -282,9 +282,9 @@ func GenerateScriptsPerDatabase(database DatabaseName, gphome string, port int, 
 	return nil
 }
 
-// Generate one global script for the postgres database rather than all databases.
-func isGlobalScript(scriptDir string, database string) bool {
-	return database != "postgres" && (scriptDir == "gphdfs_user_roles" || scriptDir == "cluster_stats")
+func isGlobalScript(script string, database string) bool {
+	// Generate one global script for the postgres database rather than all databases.
+	return database != "postgres" && (script == "gen_alter_gphdfs_roles.sql" || script == "generate_cluster_stats.sh")
 }
 
 func GenerateScriptsPerPhase(phase idl.Step, database DatabaseName, gphome string, port int, seedDir string, seedDirFS fs.FS, outputDir string) error {
@@ -301,10 +301,6 @@ func GenerateScriptsPerPhase(phase idl.Step, database DatabaseName, gphome strin
 		progressbar.OptionClearOnFinish(), progressbar.OptionSetPredictTime(true))
 
 	for _, scriptDir := range scriptDirs {
-		if isGlobalScript(scriptDir.Name(), database.Datname) {
-			continue
-		}
-
 		_ = bar.Add(1)
 		bar.Describe(fmt.Sprintf("  %s...", scriptDir.Name()))
 
@@ -314,6 +310,10 @@ func GenerateScriptsPerPhase(phase idl.Step, database DatabaseName, gphome strin
 		}
 
 		for _, script := range scripts {
+			if isGlobalScript(script.Name(), database.Datname) {
+				continue
+			}
+
 			var scriptOutput []byte
 			if strings.HasSuffix(script.Name(), ".sql") {
 				scriptOutput, err = applySQLFile(gphome, port, database.Datname, filepath.Join(seedDir, phase.String(), scriptDir.Name(), script.Name()),
