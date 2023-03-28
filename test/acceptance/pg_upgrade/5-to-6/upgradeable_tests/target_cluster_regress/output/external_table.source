@@ -4,7 +4,7 @@
 --------------------------------------------------------------------------------
 -- Validate that the upgradeable objects are functional post-upgrade
 --------------------------------------------------------------------------------
-!&\retcode gpfdist -d @abs_srcdir@/../source_cluster_regress/data -p 8081 -l /tmp/gpfdist_external_table.log; 
+!&\retcode @bindir@/gpfdist -d @abs_srcdir@/../source_cluster_regress/data -p 8081 -l /tmp/gpfdist_external_table.log; 
 SELECT * FROM readable_external_table;
  a | b 
 ---+---

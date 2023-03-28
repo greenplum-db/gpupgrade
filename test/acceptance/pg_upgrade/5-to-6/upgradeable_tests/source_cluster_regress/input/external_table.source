@@ -10,7 +10,7 @@
 !\retcode > @abs_srcdir@/data/external_table_with_serial_column_type.csv;
 !\retcode > @abs_srcdir@/data/external_table_with_user_type_and_default_value.csv;
 !\retcode > @abs_srcdir@/data/external_table_with_dropped_column.csv;
-!&\retcode gpfdist -d @abs_srcdir@/data -p 8081 -l /tmp/gpfdist_external_table.log;
+!&\retcode @bindir@/gpfdist -d @abs_srcdir@/data -p 8081 -l /tmp/gpfdist_external_table.log;
 
 -- Scenario 1: simple external table
 CREATE READABLE EXTERNAL TABLE readable_external_table (a int, b int)
