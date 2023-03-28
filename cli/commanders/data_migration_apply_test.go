@@ -26,10 +26,8 @@ import (
 )
 
 func TestApplyDataMigrationScripts(t *testing.T) {
-	logDir, err := utils.GetLogDir()
-	if err != nil {
-		t.Fatalf("failed to get log dir: %v", err)
-	}
+	logDir := testutils.GetTempDir(t, "")
+	defer testutils.MustRemoveAll(t, logDir)
 
 	currentScriptDir := "/home/gpupgrade/data-migration/current"
 

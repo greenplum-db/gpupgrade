@@ -8,8 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"os"
-	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
@@ -20,13 +18,13 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 
+	"github.com/greenplum-db/gpupgrade/config"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/mock_agent"
 	"github.com/greenplum-db/gpupgrade/testutils/testlog"
-	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
@@ -45,7 +43,7 @@ func TestHubStart(t *testing.T) {
 		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 	})
 
-	conf := &hub.Config{
+	conf := &config.Config{
 		Source:       source,
 		Target:       target,
 		Intermediate: &greenplum.Cluster{},
@@ -173,7 +171,7 @@ func TestAgentConns(t *testing.T) {
 	agentServer, dialer, agentPort := mock_agent.NewMockAgentServer()
 	defer agentServer.Stop()
 
-	conf := &hub.Config{
+	conf := &config.Config{
 		Source:       source,
 		Target:       target,
 		Intermediate: &greenplum.Cluster{},
@@ -319,50 +317,6 @@ func doesStateEventuallyReach(conn *grpc.ClientConn, state connectivity.State) (
 	}
 }
 
-func TestHubSaveConfig(t *testing.T) {
-	source, target := testutils.CreateMultinodeSampleClusterPair("/tmp")
-	conf := &hub.Config{
-		Source:       source,
-		Target:       target,
-		Intermediate: &greenplum.Cluster{},
-		Port:         12345,
-		AgentPort:    54321,
-		Mode:         idl.Mode_copy,
-		UpgradeID:    0,
-	}
-
-	h := hub.New(conf, nil, "")
-
-	t.Run("saves configuration contents to disk", func(t *testing.T) {
-		stateDir := testutils.GetTempDir(t, "")
-		defer testutils.MustRemoveAll(t, stateDir)
-
-		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
-		defer resetEnv()
-
-		// Write the hub's configuration.
-		if err := h.Config.SaveConfig(); err != nil {
-			t.Errorf("SaveConfig returned error %+v", err)
-		}
-
-		// Reload the configuration and ensure the contents are the same.
-		path := filepath.Join(stateDir, upgrade.ConfigFileName)
-		file, err := os.Open(path)
-		if err != nil {
-			t.Fatalf("error opening config %q: %+v", path, err)
-		}
-
-		actual := new(hub.Config)
-		if err := actual.Load(file); err != nil {
-			t.Errorf("loading config: %+v", err)
-		}
-
-		if !reflect.DeepEqual(actual, h.Config) {
-			t.Errorf("wrote config %#v want %#v", actual, h.Config)
-		}
-	})
-}
-
 func TestGetArchiveDir(t *testing.T) {
 	stateDir := testutils.GetTempDir(t, "")
 	defer testutils.MustRemoveAll(t, stateDir)
@@ -371,7 +325,7 @@ func TestGetArchiveDir(t *testing.T) {
 	defer resetEnv()
 
 	source, target := testutils.CreateMultinodeSampleClusterPair("/data")
-	conf := &hub.Config{
+	conf := &config.Config{
 		Source:       source,
 		Target:       target,
 		Intermediate: &greenplum.Cluster{},
@@ -407,8 +361,8 @@ func TestGetArchiveDir(t *testing.T) {
 		expected := sb.String()
 
 		// assert that it is persisted
-		actualConf := new(hub.Config)
-		err = hub.LoadConfig(actualConf, upgrade.GetConfigFile())
+		actualConf := new(config.Config)
+		err = actualConf.Load()
 		if err != nil {
 			t.Fatalf("reading config: %v", err)
 		}

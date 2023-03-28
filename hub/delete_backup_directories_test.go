@@ -11,6 +11,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/config/backupdir"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -42,7 +43,7 @@ func TestDeleteBackupDirectories(t *testing.T) {
 		coordinatorBackupDir := testutils.GetTempDir(t, "")
 		defer testutils.MustRemoveAll(t, coordinatorBackupDir)
 
-		backupDirs := hub.BackupDirs{}
+		backupDirs := backupdir.BackupDirs{}
 		backupDirs.CoordinatorBackupDir = coordinatorBackupDir
 
 		err := hub.DeleteBackupDirectories(step.DevNullStream, nil, backupDirs)
@@ -60,7 +61,7 @@ func TestDeleteBackupDirectories(t *testing.T) {
 		}
 		defer utils.ResetSystemFunctions()
 
-		err := hub.DeleteBackupDirectories(step.DevNullStream, nil, hub.BackupDirs{})
+		err := hub.DeleteBackupDirectories(step.DevNullStream, nil, backupdir.BackupDirs{})
 		if !errors.Is(err, expected) {
 			t.Errorf("got error %#v want %#v", err, expected)
 		}

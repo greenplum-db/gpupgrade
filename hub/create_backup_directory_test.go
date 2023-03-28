@@ -14,6 +14,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/config/backupdir"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -38,12 +39,12 @@ func TestParseParentBackupDirs(t *testing.T) {
 	cases := []struct {
 		name     string
 		input    string
-		expected hub.BackupDirs
+		expected backupdir.BackupDirs
 	}{
 		{
 			name:  "defaults to the parent directory of the primary data directory on each host",
 			input: "",
-			expected: hub.BackupDirs{
+			expected: backupdir.BackupDirs{
 				CoordinatorBackupDir: "/data/coordinator/.gpupgrade",
 				AgentHostsToBackupDir: map[string]string{
 					"sdw1": "/data1/primaries/.gpupgrade",
@@ -54,7 +55,7 @@ func TestParseParentBackupDirs(t *testing.T) {
 		{
 			name:  "parses multiple hosts and directories",
 			input: "cdw:/data/backup/coordinator,sdw1:/data1/backup/primaries,sdw2:/data2/backup/primaries",
-			expected: hub.BackupDirs{
+			expected: backupdir.BackupDirs{
 				CoordinatorBackupDir: "/data/backup/coordinator/.gpupgrade",
 				AgentHostsToBackupDir: map[string]string{
 					"sdw1": "/data1/backup/primaries/.gpupgrade",
@@ -65,7 +66,7 @@ func TestParseParentBackupDirs(t *testing.T) {
 		{
 			name:  "parses multiple hosts and directories with spaces",
 			input: "   cdw:/data,   sdw1 : /data1 , sdw2 :  /data2   ",
-			expected: hub.BackupDirs{
+			expected: backupdir.BackupDirs{
 				CoordinatorBackupDir: "/data/.gpupgrade",
 				AgentHostsToBackupDir: map[string]string{
 					"sdw1": "/data1/.gpupgrade",
@@ -76,7 +77,7 @@ func TestParseParentBackupDirs(t *testing.T) {
 		{
 			name:  "parses a single directory",
 			input: "/data",
-			expected: hub.BackupDirs{
+			expected: backupdir.BackupDirs{
 				CoordinatorBackupDir: "/data/.gpupgrade",
 				AgentHostsToBackupDir: map[string]string{
 					"sdw1": "/data/.gpupgrade",
@@ -122,7 +123,7 @@ func TestParseParentBackupDirs(t *testing.T) {
 	for _, c := range errorCases {
 		t.Run(c.name, func(t *testing.T) {
 			backupDirs, err := hub.ParseParentBackupDirs(c.input, source)
-			if !reflect.DeepEqual(backupDirs, hub.BackupDirs{}) {
+			if !reflect.DeepEqual(backupDirs, backupdir.BackupDirs{}) {
 				t.Fatalf("expected backupDirs to be empty")
 			}
 

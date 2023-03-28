@@ -14,7 +14,6 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
-	"github.com/greenplum-db/gpupgrade/upgrade"
 )
 
 // Streams the above stdout/err constants to the corresponding standard file
@@ -214,76 +213,6 @@ func TestCreateStateDir(t *testing.T) {
 
 		{ //  creating state directory succeeds on multiple runs
 			err = CreateStateDir()
-			if err != nil {
-				t.Fatalf("unexpected error %#v", err)
-			}
-		}
-	})
-}
-
-func TestCreateInitialClusterConfigs(t *testing.T) {
-	const hubPort = -1
-	const sourcePort = 8888
-	const sourceGPHome = "/mock/gphome"
-
-	home, err := os.MkdirTemp("", t.Name())
-	if err != nil {
-		t.Fatalf("failed creating temp dir %#v", err)
-	}
-
-	oldStateDir, isSet := os.LookupEnv("GPUGRADE_HOME")
-	defer func() {
-		if isSet {
-			os.Setenv("GPUPGRADE_HOME", oldStateDir)
-		}
-	}()
-	stateDir := filepath.Join(home, ".gpupgrade")
-	err = os.Setenv("GPUPGRADE_HOME", stateDir)
-	if err != nil {
-		t.Fatalf("failed to set GPUPGRADE_HOME %#v", err)
-	}
-
-	if _, err := os.Stat(stateDir); err == nil {
-		t.Errorf("stateDir exists")
-	}
-	err = CreateStateDir()
-	if err != nil {
-		t.Fatalf("failed to create state dir %#v", err)
-	}
-
-	var sourceOld os.FileInfo
-
-	t.Run("test idempotence", func(t *testing.T) {
-
-		{ // creates initial cluster config files if none exist or fails"
-			err = CreateConfigFile(hubPort, sourcePort, sourceGPHome)
-			if err != nil {
-				t.Fatalf("unexpected error %#v", err)
-			}
-
-			if sourceOld, err = os.Stat(upgrade.GetConfigFile()); err != nil {
-				t.Errorf("unexpected error %#v", err)
-			}
-		}
-
-		{ // creating cluster config files is idempotent
-			err = CreateConfigFile(hubPort, sourcePort, sourceGPHome)
-			if err != nil {
-				t.Fatalf("unexpected error %#v", err)
-			}
-
-			var sourceNew os.FileInfo
-			if sourceNew, err = os.Stat(upgrade.GetConfigFile()); err != nil {
-				t.Errorf("got unexpected error %#v", err)
-			}
-
-			if sourceOld.ModTime() != sourceNew.ModTime() {
-				t.Errorf("want %#v got %#v", sourceOld.ModTime(), sourceNew.ModTime())
-			}
-		}
-
-		{ // creating cluster config files succeeds on multiple runs
-			err = CreateConfigFile(hubPort, sourcePort, sourceGPHome)
 			if err != nil {
 				t.Fatalf("unexpected error %#v", err)
 			}

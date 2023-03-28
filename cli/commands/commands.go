@@ -48,7 +48,7 @@ import (
 	grpcStatus "google.golang.org/grpc/status"
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
-	"github.com/greenplum-db/gpupgrade/hub"
+	"github.com/greenplum-db/gpupgrade/config"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
@@ -84,7 +84,7 @@ func BuildRootCommand() *cobra.Command {
 	root.Flags().BoolVarP(&shouldPrintVersion, "version", "V", false, "prints version")
 	root.Flags().StringVar(&format, "format", "", `specify the output format as either "multiline", "oneline", or "json". Default is multiline.`)
 
-	root.AddCommand(config)
+	root.AddCommand(configCmd)
 	root.AddCommand(version())
 	root.AddCommand(dataMigrationGenerate())
 	root.AddCommand(dataMigrationApply())
@@ -98,14 +98,14 @@ func BuildRootCommand() *cobra.Command {
 	root.AddCommand(Hub())
 
 	subConfigShow := createConfigShowSubcommand()
-	config.AddCommand(subConfigShow)
+	configCmd.AddCommand(subConfigShow)
 
 	return addHelpToCommand(root, GlobalHelp)
 }
 
 //////////////////////////// Commands //////////////////////////////////////////
 
-var config = &cobra.Command{
+var configCmd = &cobra.Command{
 	Use:   "config",
 	Short: "subcommands to set parameters for subsequent gpupgrade commands",
 	Long:  "subcommands to set parameters for subsequent gpupgrade commands",
@@ -327,8 +327,8 @@ func connTimeout() time.Duration {
 // NOTE: This overloads the hub's persisted configuration with that of the
 // CLI when ideally these would be separate.
 func hubPort() (int, error) {
-	conf := &hub.Config{}
-	err := hub.LoadConfig(conf, upgrade.GetConfigFile())
+	conf := &config.Config{}
+	err := conf.Load()
 
 	var pathError *os.PathError
 	if xerrors.As(err, &pathError) {

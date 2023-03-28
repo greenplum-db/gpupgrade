@@ -14,6 +14,7 @@ import (
 
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/config/backupdir"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
@@ -29,10 +30,10 @@ import (
 // NOTE: We parse in the hub rather than the CLI since we need to know all hosts
 // to fill in the agent hosts backup directories if the user specifies a single
 // directory and no hosts.
-func ParseParentBackupDirs(input string, cluster *greenplum.Cluster) (BackupDirs, error) {
+func ParseParentBackupDirs(input string, cluster *greenplum.Cluster) (backupdir.BackupDirs, error) {
 	input = strings.TrimSpace(input)
-	backupDirs := BackupDirs{}
-	backupDirs.AgentHostsToBackupDir = make(AgentHostsToBackupDir)
+	backupDirs := backupdir.BackupDirs{}
+	backupDirs.AgentHostsToBackupDir = make(backupdir.AgentHostsToBackupDir)
 
 	// set default backup directories
 	if input == "" {
@@ -83,7 +84,7 @@ func ParseParentBackupDirs(input string, cluster *greenplum.Cluster) (BackupDirs
 	}
 
 	if len(missingHosts) > 0 {
-		return BackupDirs{}, newMissingHostInParentBackupDirsError(input, missingHosts)
+		return backupdir.BackupDirs{}, newMissingHostInParentBackupDirsError(input, missingHosts)
 	}
 
 	return backupDirs, nil
@@ -108,7 +109,7 @@ func (m *MissingHostInParentBackupDirsError) Is(err error) bool {
 	return err == ErrMissingHostInParentBackupDirs
 }
 
-func CreateBackupDirectories(streams step.OutStreams, agentConns []*idl.Connection, backupDirs BackupDirs) error {
+func CreateBackupDirectories(streams step.OutStreams, agentConns []*idl.Connection, backupDirs backupdir.BackupDirs) error {
 	_, err := fmt.Fprintf(streams.Stdout(), "creating backup directory on all hosts\n")
 	if err != nil {
 		return err

@@ -6,12 +6,13 @@ package hub
 import (
 	"context"
 
+	"github.com/greenplum-db/gpupgrade/config/backupdir"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 )
 
-func DeleteBackupDirectories(streams step.OutStreams, agentConns []*idl.Connection, backupDirs BackupDirs) error {
+func DeleteBackupDirectories(streams step.OutStreams, agentConns []*idl.Connection, backupDirs backupdir.BackupDirs) error {
 	err := upgrade.DeleteDirectories([]string{backupDirs.CoordinatorBackupDir}, []string{}, streams)
 	if err != nil {
 		return err

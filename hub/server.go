@@ -4,11 +4,8 @@
 package hub
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"os"
@@ -26,6 +23,7 @@ import (
 	"google.golang.org/grpc/reflection"
 	grpcStatus "google.golang.org/grpc/status"
 
+	"github.com/greenplum-db/gpupgrade/config"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/upgrade"
@@ -43,7 +41,7 @@ var ErrHubStopped = errors.New("hub is stopped")
 type Dialer func(ctx context.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error)
 
 type Server struct {
-	*Config
+	*config.Config
 
 	StateDir string
 
@@ -66,7 +64,7 @@ type Server struct {
 	daemon  bool
 }
 
-func New(conf *Config, grpcDialer Dialer, stateDir string) *Server {
+func New(conf *config.Config, grpcDialer Dialer, stateDir string) *Server {
 	h := &Server{
 		Config:     conf,
 		StateDir:   stateDir,
@@ -339,63 +337,6 @@ func (s *Server) closeAgentConns() {
 	}
 }
 
-// Config contains all the information that will be persisted to/loaded from
-// from disk during calls to Save() and Load().
-type Config struct {
-	LogArchiveDir string
-
-	BackupDirs BackupDirs
-
-	// Source is the GPDB cluster that is being upgraded. It is populated during
-	// the generation of the cluster config in the initialize step; before that,
-	// it is nil.
-	Source *greenplum.Cluster
-
-	// Intermediate represents the initialized target cluster that is upgraded
-	// based on the source.
-	Intermediate *greenplum.Cluster
-
-	// Target is the upgraded GPDB cluster. It is populated during the target
-	// gpinitsystem execution in the initialize step; before that, it is nil.
-	Target *greenplum.Cluster
-
-	Port            int
-	AgentPort       int
-	Mode            idl.Mode
-	UseHbaHostnames bool
-	UpgradeID       upgrade.ID
-}
-
-type BackupDirs struct {
-	// Can collapse the CoordinatorBackupDir into AgentHostsToBackupDir once we run an agent on the coordinator
-	// to simplify various logic.
-	CoordinatorBackupDir  string
-	AgentHostsToBackupDir AgentHostsToBackupDir
-}
-
-type AgentHostsToBackupDir map[string]string
-
-func (c *Config) Load(r io.Reader) error {
-	dec := json.NewDecoder(r)
-	return dec.Decode(c)
-}
-
-func (c *Config) Save(w io.Writer) error {
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "  ")
-	return enc.Encode(c)
-}
-
-// SaveConfig persists the hub's configuration to disk.
-func (c *Config) SaveConfig() (err error) {
-	var buffer bytes.Buffer
-	if err = c.Save(&buffer); err != nil {
-		return xerrors.Errorf("save config: %w", err)
-	}
-
-	return utils.AtomicallyWrite(upgrade.GetConfigFile(), buffer.Bytes())
-}
-
 func (s *Server) GetLogArchiveDir() (string, error) {
 	if s.LogArchiveDir != "" {
 		return s.LogArchiveDir, nil
@@ -407,27 +348,12 @@ func (s *Server) GetLogArchiveDir() (string, error) {
 	}
 
 	s.LogArchiveDir = filepath.Join(filepath.Dir(logDir), upgrade.GetArchiveDirectoryName(s.UpgradeID, time.Now()))
-	err = s.Config.SaveConfig()
+	err = s.Config.Save()
 	if err != nil {
 		return "", fmt.Errorf("saving archive directory: %w", err)
 	}
 
 	return s.LogArchiveDir, nil
-}
-
-func LoadConfig(conf *Config, path string) error {
-	file, err := os.Open(path)
-	if err != nil {
-		return xerrors.Errorf("opening configuration file: %w", err)
-	}
-	defer file.Close()
-
-	err = conf.Load(file)
-	if err != nil {
-		return xerrors.Errorf("reading configuration file: %w", err)
-	}
-
-	return nil
 }
 
 func AgentHosts(c *greenplum.Cluster) []string {

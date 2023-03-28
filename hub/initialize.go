@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/greenplum-db/gpupgrade/config"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
@@ -32,7 +33,12 @@ func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_Init
 	}()
 
 	st.Run(idl.Substep_saving_source_cluster_config, func(stream step.OutStreams) error {
-		return FillConfiguration(s.Config, req, s.Config.SaveConfig)
+		s.Config, err = config.GetInitializeConfiguration(s.Config.Port, req, false)
+		if err != nil {
+			return err
+		}
+
+		return s.Config.Save()
 	})
 
 	// Since the agents might not be up if gpupgrade is not properly installed, check it early on using ssh.
@@ -76,7 +82,7 @@ func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_Init
 			return err
 		}
 
-		err = s.Config.SaveConfig()
+		err = s.Config.Save()
 		if err != nil {
 			return fmt.Errorf("save backup directories: %w", err)
 		}
@@ -155,7 +161,7 @@ func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest
 		}
 
 		s.Intermediate.CatalogVersion = catalogVersion
-		return s.Config.SaveConfig()
+		return s.Config.Save()
 	})
 
 	st.RunConditionally(idl.Substep_setting_dynamic_library_path_on_target_cluster, req.GetDynamicLibraryPath() != upgrade.DefaultDynamicLibraryPath, func(stream step.OutStreams) error {

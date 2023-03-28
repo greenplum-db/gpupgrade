@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
+	"path"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/blang/semver/v4"
@@ -420,4 +422,19 @@ func (c *Cluster) WaitForClusterToBeReady() error {
 	}()
 
 	return WaitForSegments(db, 5*time.Minute, c)
+}
+
+func GetCoordinatorSegPrefix(datadir string) (string, error) {
+	const coordinatorContentID = "-1"
+
+	base := path.Base(datadir)
+	if !strings.HasSuffix(base, coordinatorContentID) {
+		return "", fmt.Errorf("path requires a master content identifier: '%s'", datadir)
+	}
+
+	segPrefix := strings.TrimSuffix(base, coordinatorContentID)
+	if segPrefix == "" {
+		return "", fmt.Errorf("path has no segment prefix: '%s'", datadir)
+	}
+	return segPrefix, nil
 }

@@ -16,6 +16,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
+	"github.com/greenplum-db/gpupgrade/config"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 )
@@ -70,7 +71,7 @@ func TestHub(t *testing.T) {
 			}
 
 			// write initial config.json
-			testutils.MustWriteToFile(t, upgrade.GetConfigFile(), c.configContents)
+			testutils.MustWriteToFile(t, config.GetConfigFile(), c.configContents)
 
 			cmd := exec.Command("gpupgrade", c.args...)
 
@@ -117,7 +118,7 @@ func TestHub(t *testing.T) {
 
 		mockSourcePort := 8888
 		mockSourceDataDir := "/mock/data/gpseg-1"
-		err = commanders.CreateConfigFile(upgrade.DefaultHubPort, mockSourcePort, mockSourceDataDir)
+		err = config.Create(upgrade.DefaultHubPort, mockSourcePort, mockSourceDataDir)
 		if err != nil {
 			t.Errorf("unexpected error got %+v", err)
 		}

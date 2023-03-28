@@ -18,16 +18,11 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-const ConfigFileName = "config.json"
 const OldSuffix = ".old"
 const PGVersion = "PG_VERSION"
 
 var PostgresFiles = []string{"postgresql.conf", PGVersion}
 var StateDirectoryFiles = []string{"config.json", step.SubstepsFileName}
-
-func GetConfigFile() string {
-	return filepath.Join(utils.GetStateDir(), ConfigFileName)
-}
 
 // TempDataDir transforms a data directory into a corresponding temporary path
 // suitable for an upgrade target, using the desired cluster segment prefix and

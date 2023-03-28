@@ -6,6 +6,7 @@ package commands
 import (
 	"testing"
 
+	"github.com/greenplum-db/gpupgrade/config"
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/testlog"
@@ -25,8 +26,8 @@ func TestGetHubPort(t *testing.T) {
 
 		// save the expected port value to the conf file
 		expected := 12345
-		server := hub.New(&hub.Config{Port: expected}, nil, stateDir)
-		err := server.Config.SaveConfig()
+		server := hub.New(&config.Config{Port: expected}, nil, stateDir)
+		err := server.Config.Save()
 		if err != nil {
 			t.Errorf("got unexpected error %#v", err)
 		}
@@ -60,7 +61,7 @@ func TestGetHubPort(t *testing.T) {
 		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 		defer resetEnv()
 
-		testutils.PathMustNotExist(t, upgrade.GetConfigFile())
+		testutils.PathMustNotExist(t, config.GetConfigFile())
 
 		port, err := hubPort()
 		if err != nil {

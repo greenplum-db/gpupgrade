@@ -15,6 +15,7 @@ import (
 
 	"github.com/blang/semver/v4"
 
+	"github.com/greenplum-db/gpupgrade/config/backupdir"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -52,8 +53,8 @@ func TestCopy(t *testing.T) {
 	t.Run("copies the directory only once per host", func(t *testing.T) {
 		sourceDirs := []string{"/data/qddir/seg-1/"}
 
-		backupDirs := hub.BackupDirs{}
-		backupDirs.AgentHostsToBackupDir = make(hub.AgentHostsToBackupDir)
+		backupDirs := backupdir.BackupDirs{}
+		backupDirs.AgentHostsToBackupDir = make(backupdir.AgentHostsToBackupDir)
 		backupDirs.AgentHostsToBackupDir["localhost"] = "foobar/path"
 
 		cmd := exectest.NewCommandWithVerifier(hub.Success, func(name string, args ...string) {
@@ -82,8 +83,8 @@ func TestCopy(t *testing.T) {
 	t.Run("copies the data directory to each host", func(t *testing.T) {
 		sourceDirs := []string{"/data/qddir/seg-1"}
 
-		backupDirs := hub.BackupDirs{}
-		backupDirs.AgentHostsToBackupDir = make(hub.AgentHostsToBackupDir)
+		backupDirs := backupdir.BackupDirs{}
+		backupDirs.AgentHostsToBackupDir = make(backupdir.AgentHostsToBackupDir)
 		backupDirs.AgentHostsToBackupDir["host1"] = "foobar1/path"
 		backupDirs.AgentHostsToBackupDir["host2"] = "foobar2/path"
 
@@ -118,8 +119,8 @@ func TestCopy(t *testing.T) {
 	})
 
 	t.Run("returns errors when writing stdout and stderr buffers to the stream", func(t *testing.T) {
-		backupDirs := hub.BackupDirs{}
-		backupDirs.AgentHostsToBackupDir = make(hub.AgentHostsToBackupDir)
+		backupDirs := backupdir.BackupDirs{}
+		backupDirs.AgentHostsToBackupDir = make(backupdir.AgentHostsToBackupDir)
 		backupDirs.AgentHostsToBackupDir["localhost"] = "foobar/path"
 
 		streams := testutils.FailingStreams{Err: errors.New("e")}
@@ -142,8 +143,8 @@ func TestCopy(t *testing.T) {
 	})
 
 	t.Run("serializes rsync failures to the log stream", func(t *testing.T) {
-		backupDirs := hub.BackupDirs{}
-		backupDirs.AgentHostsToBackupDir = make(hub.AgentHostsToBackupDir)
+		backupDirs := backupdir.BackupDirs{}
+		backupDirs.AgentHostsToBackupDir = make(backupdir.AgentHostsToBackupDir)
 		backupDirs.AgentHostsToBackupDir["sdw1"] = "foobar1/path"
 		backupDirs.AgentHostsToBackupDir["sdw2"] = "foobar2/path"
 

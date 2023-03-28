@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/config"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
@@ -49,7 +50,8 @@ Cannot revert and restore the source cluster. Please contact support.`)
 	// If CLI Initialize exited before the InitializeRequest was sent
 	// to the hub, we will only need to do a couple revert substeps.
 	if !hasInitializeStarted {
-		s.Config, err = GetEarlyInitializeConfiguration(s.Port, s.Source.CoordinatorPort(), s.Source.GPHome)
+		request := &idl.InitializeRequest{SourceGPHome: s.Source.GPHome, SourcePort: int32(s.Source.CoordinatorPort())}
+		s.Config, err = config.GetInitializeConfiguration(s.Port, request, true)
 		if err != nil {
 			return err
 		}

@@ -8,7 +8,6 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
-	"path"
 	"reflect"
 	"strings"
 
@@ -127,7 +126,7 @@ func GetCheckpointSegmentsAndEncoding(gpinitsystemConfig []string, version semve
 func CreateInitialInitsystemConfig(targetCoordinatorDataDir string, useHbaHostnames bool) ([]string, error) {
 	gpinitsystemConfig := []string{`ARRAY_NAME="gp_upgrade cluster"`}
 
-	segPrefix, err := GetCoordinatorSegPrefix(targetCoordinatorDataDir)
+	segPrefix, err := greenplum.GetCoordinatorSegPrefix(targetCoordinatorDataDir)
 	if err != nil {
 		return gpinitsystemConfig, xerrors.Errorf("determine master segment prefix: %w", err)
 	}
@@ -185,21 +184,6 @@ func WriteSegmentArray(config []string, intermediate *greenplum.Cluster) ([]stri
 	config = append(config, ")")
 
 	return config, nil
-}
-
-func GetCoordinatorSegPrefix(datadir string) (string, error) {
-	const coordinatorContentID = "-1"
-
-	base := path.Base(datadir)
-	if !strings.HasSuffix(base, coordinatorContentID) {
-		return "", fmt.Errorf("path requires a master content identifier: '%s'", datadir)
-	}
-
-	segPrefix := strings.TrimSuffix(base, coordinatorContentID)
-	if segPrefix == "" {
-		return "", fmt.Errorf("path has no segment prefix: '%s'", datadir)
-	}
-	return segPrefix, nil
 }
 
 func GetCatalogVersion(intermediate *greenplum.Cluster) (string, error) {

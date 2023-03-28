@@ -443,6 +443,51 @@ func TestRunGreenplumCmd(t *testing.T) {
 	})
 }
 
+func TestGetCoordinatorSegPrefix(t *testing.T) {
+	t.Run("returns a valid seg prefix given", func(t *testing.T) {
+		cases := []struct {
+			desc               string
+			CoordinatorDataDir string
+		}{
+			{"an absolute path", "/data/coordinator/gpseg-1"},
+			{"a relative path", "../coordinator/gpseg-1"},
+			{"a implicitly relative path", "gpseg-1"},
+		}
+
+		for _, c := range cases {
+			actual, err := greenplum.GetCoordinatorSegPrefix(c.CoordinatorDataDir)
+			if err != nil {
+				t.Fatalf("got %#v, want nil", err)
+			}
+
+			expected := "gpseg"
+			if actual != expected {
+				t.Errorf("got %q, want %q", actual, expected)
+			}
+		}
+	})
+
+	t.Run("returns errors when given", func(t *testing.T) {
+		cases := []struct {
+			desc               string
+			CoordinatorDataDir string
+		}{
+			{"the empty string", ""},
+			{"a path without a content identifier", "/opt/myseg"},
+			{"a path with a segment content identifier", "/opt/myseg2"},
+			{"a path that is only a content identifier", "-1"},
+			{"a path that ends in only a content identifier", "///-1"},
+		}
+
+		for _, c := range cases {
+			_, err := greenplum.GetCoordinatorSegPrefix(c.CoordinatorDataDir)
+			if err == nil {
+				t.Fatalf("got nil, want err")
+			}
+		}
+	})
+}
+
 func MustCreateCluster(t *testing.T, segments greenplum.SegConfigs) *greenplum.Cluster {
 	t.Helper()
 

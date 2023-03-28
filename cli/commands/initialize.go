@@ -17,6 +17,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
+	"github.com/greenplum-db/gpupgrade/config"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
@@ -191,7 +192,7 @@ func initialize() *cobra.Command {
 			})
 
 			st.RunCLISubstep(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
-				return commanders.CreateConfigFile(hubPort, sourcePort, sourceGPHome)
+				return config.Create(hubPort, sourcePort, sourceGPHome)
 			})
 
 			st.RunCLISubstep(idl.Substep_start_hub, func(streams step.OutStreams) error {

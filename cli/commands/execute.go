@@ -11,10 +11,9 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
-	"github.com/greenplum-db/gpupgrade/hub"
+	"github.com/greenplum-db/gpupgrade/config"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
-	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
@@ -36,8 +35,8 @@ func execute() *cobra.Command {
 				return fmt.Errorf("expected --verbose when using --pg-upgrade-verbose")
 			}
 
-			conf := &hub.Config{}
-			err = hub.LoadConfig(conf, upgrade.GetConfigFile())
+			conf := &config.Config{}
+			err = conf.Load()
 			if err != nil {
 				return err
 			}

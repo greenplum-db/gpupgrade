@@ -12,6 +12,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 
+	"github.com/greenplum-db/gpupgrade/config"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -130,7 +131,7 @@ func TestUpdateDataDirectories(t *testing.T) {
 	// - a valid Intermediate cluster
 	// - agentConns pointing to each host (set up per test)
 
-	conf := new(hub.Config)
+	conf := new(config.Config)
 
 	conf.Source = hub.MustCreateCluster(t, greenplum.SegConfigs{
 		{ContentID: -1, Hostname: "sdw1", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
@@ -167,7 +168,7 @@ func TestUpdateDataDirectories(t *testing.T) {
 	}
 
 	t.Run("renames coordinator data directories", func(t *testing.T) {
-		conf := new(hub.Config)
+		conf := new(config.Config)
 
 		sourceDataDir, targetDataDir, cleanup := testutils.MustCreateDataDirs(t)
 		defer cleanup(t)

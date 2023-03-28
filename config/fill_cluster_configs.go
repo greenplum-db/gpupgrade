@@ -1,11 +1,12 @@
 // Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
-package hub
+package config
 
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
@@ -26,14 +27,13 @@ func initializeConnection(gphome string, port int) (*sql.DB, error) {
 		return nil, err
 	}
 
-	// Need greenplum version to use correct utility mode parameter when making the database connection URI.
 	tempSource.Version, err = greenplum.Version(gphome)
 	if err != nil {
 		return nil, err
 	}
 
 	tempSource.Destination = idl.ClusterDestination_source
-	conn := tempSource.Connection([]greenplum.Option{greenplum.Port(port), greenplum.UtilityMode()}...)
+	conn := tempSource.Connection([]greenplum.Option{greenplum.Port(port)}...)
 	db, err := sql.Open("pgx", conn)
 	if err != nil {
 		return nil, err
@@ -42,30 +42,7 @@ func initializeConnection(gphome string, port int) (*sql.DB, error) {
 	return db, nil
 }
 
-// We only need specific config values to be set for the hub RevertResponse
-// to handle reverting an early Initialize exit.
-func GetEarlyInitializeConfiguration(hubPort int, coordinatorPort int, gphome string) (*Config, error) {
-	db, err := InitializeConnectionFunc(gphome, coordinatorPort)
-	if err != nil {
-		return nil, xerrors.Errorf("create connection: %w", err)
-	}
-	defer db.Close()
-
-	source, err := greenplum.ClusterFromDB(db, gphome, idl.ClusterDestination_source)
-	if err != nil {
-		return nil, xerrors.Errorf("retrieve source configuration: %w", err)
-	}
-
-	conf := &Config{}
-	conf.Source = &source
-	conf.UpgradeID = upgrade.NewID()
-	conf.Port = hubPort
-
-	return conf, nil
-}
-
-// FillConfiguration populates the Config saves it to disk.
-func FillConfiguration(config *Config, request *idl.InitializeRequest, saveConfig func() error) error {
+func GetInitializeConfiguration(hubPort int, request *idl.InitializeRequest, wasEarlyExit bool) (*Config, error) {
 	db, err := InitializeConnectionFunc(request.GetSourceGPHome(), int(request.GetSourcePort()))
 	defer func() {
 		if cErr := db.Close(); cErr != nil {
@@ -73,27 +50,35 @@ func FillConfiguration(config *Config, request *idl.InitializeRequest, saveConfi
 		}
 	}()
 
-	config.AgentPort = int(request.GetAgentPort())
-	config.UseHbaHostnames = request.GetUseHbaHostnames()
-	config.UpgradeID = upgrade.NewID()
-
 	source, err := greenplum.ClusterFromDB(db, request.GetSourceGPHome(), idl.ClusterDestination_source)
 	if err != nil {
-		return xerrors.Errorf("retrieve source configuration: %w", err)
+		return nil, xerrors.Errorf("retrieve source configuration: %w", err)
 	}
 
-	err = source.WaitForClusterToBeReady()
-	if err != nil {
-		return err
+	config := &Config{}
+	config.Source = &source
+	config.UpgradeID = upgrade.NewID()
+	config.Port = hubPort
+
+	// We only need specific config values to be set for the hub RevertResponse
+	// to handle reverting an early Initialize exit.
+	if wasEarlyExit {
+		return config, nil
 	}
 
-	targetVersion, err := greenplum.Version(request.GetTargetGPHome())
+	err = greenplum.WaitForSegments(db, 5*time.Minute, &source)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	target := source // create target cluster based off source cluster
-	config.Source = &source
+	targetVersion, err := greenplum.Version(request.GetTargetGPHome())
+	if err != nil {
+		return nil, err
+	}
+
+	config.AgentPort = int(request.GetAgentPort())
+	config.UseHbaHostnames = request.GetUseHbaHostnames()
 	config.Target = &target
 	config.Target.Destination = idl.ClusterDestination_target
 	config.Target.GPHome = request.GetTargetGPHome()
@@ -107,25 +92,21 @@ func FillConfiguration(config *Config, request *idl.InitializeRequest, saveConfi
 
 	config.Intermediate, err = GenerateIntermediateCluster(config.Source, ports, config.UpgradeID, config.Target.Version, request.GetTargetGPHome())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if err := ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(config.Source, config.Intermediate); err != nil {
-		return err
+	if err := EnsureTempPortRangeDoesNotOverlapWithSourceClusterPorts(config.Source, config.Intermediate); err != nil {
+		return nil, err
 	}
 
 	if config.Source.Version.Major == 5 {
 		config.Source.Tablespaces, err = greenplum.TablespacesFromDB(db, utils.GetStateDirOldTablespacesFile())
 		if err != nil {
-			return xerrors.Errorf("extract tablespace information: %w", err)
+			return nil, xerrors.Errorf("extract tablespace information: %w", err)
 		}
 	}
 
-	if err := saveConfig(); err != nil {
-		return err
-	}
-
-	return nil
+	return config, nil
 }
 
 func GenerateIntermediateCluster(source *greenplum.Cluster, ports []int, upgradeID upgrade.ID, version semver.Version, gphome string) (*greenplum.Cluster, error) {
@@ -149,7 +130,7 @@ func GenerateIntermediateCluster(source *greenplum.Cluster, ports []int, upgrade
 
 		// Save the segment prefix for later.
 		var err error
-		segPrefix, err = GetCoordinatorSegPrefix(coordinator.DataDir)
+		segPrefix, err = greenplum.GetCoordinatorSegPrefix(coordinator.DataDir)
 		if err != nil {
 			return &greenplum.Cluster{}, err
 		}
@@ -241,7 +222,7 @@ func GenerateIntermediateCluster(source *greenplum.Cluster, ports []int, upgrade
 	return &intermediate, nil
 }
 
-func ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(source *greenplum.Cluster, intermediate *greenplum.Cluster) error {
+func EnsureTempPortRangeDoesNotOverlapWithSourceClusterPorts(source *greenplum.Cluster, intermediate *greenplum.Cluster) error {
 	type HostPort struct {
 		Host string
 		Port int
@@ -274,17 +255,17 @@ func ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(source *greenplum.C
 var ErrInvalidTempPortRange = errors.New("invalid temp_port range")
 
 type InvalidTempPortRangeError struct {
-	conflictingHost string
-	conflictingPort int
+	ConflictingHost string
+	ConflictingPort int
 }
 
 func newInvalidTempPortRangeError(conflictingHost string, conflictingPort int) *InvalidTempPortRangeError {
-	return &InvalidTempPortRangeError{conflictingHost: conflictingHost, conflictingPort: conflictingPort}
+	return &InvalidTempPortRangeError{ConflictingHost: conflictingHost, ConflictingPort: conflictingPort}
 }
 
 func (i *InvalidTempPortRangeError) Error() string {
 	return fmt.Sprintf("temp_port_range contains port %d which overlaps with the source cluster ports on host %s. "+
-		"Specify a non-overlapping temp_port_range.", i.conflictingPort, i.conflictingHost)
+		"Specify a non-overlapping temp_port_range.", i.ConflictingPort, i.ConflictingHost)
 }
 
 func (i *InvalidTempPortRangeError) Is(err error) bool {

@@ -11,8 +11,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/greenplum-db/gpupgrade/config"
 	"github.com/greenplum-db/gpupgrade/testutils"
-	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
@@ -116,7 +116,7 @@ func TestAtomicallyWrite(t *testing.T) {
 		dir := testutils.GetTempDir(t, "")
 		defer testutils.MustRemoveAll(t, dir)
 
-		path := filepath.Join(dir, upgrade.ConfigFileName)
+		path := filepath.Join(dir, config.ConfigFileName)
 
 		expected := "testing writing to a file"
 		if err := utils.AtomicallyWrite(path, []byte(expected)); err != nil {

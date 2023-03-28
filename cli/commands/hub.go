@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 
+	"github.com/greenplum-db/gpupgrade/config"
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/upgrade"
@@ -46,13 +47,13 @@ func Hub() *cobra.Command {
 			//
 			// they're not defined in the configuration (as happens
 			// pre-initialize), we still need good defaults.
-			conf := &hub.Config{
+			conf := &config.Config{
 				Port:      port,
 				AgentPort: upgrade.DefaultAgentPort,
 				Mode:      idl.Mode_copy,
 			}
 
-			err = hub.LoadConfig(conf, upgrade.GetConfigFile())
+			err = conf.Load()
 			if err != nil {
 				return err
 			}

@@ -13,6 +13,7 @@ import (
 	"github.com/blang/semver/v4"
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/config/backupdir"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -26,7 +27,7 @@ type Result struct {
 	err    error
 }
 
-func Copy(streams step.OutStreams, sourceDirs []string, agentHostsToBackupDir AgentHostsToBackupDir) error {
+func Copy(streams step.OutStreams, sourceDirs []string, agentHostsToBackupDir backupdir.AgentHostsToBackupDir) error {
 	/*
 	 * Copy the directories once per host.
 	 */
@@ -81,12 +82,12 @@ func Copy(streams step.OutStreams, sourceDirs []string, agentHostsToBackupDir Ag
 	return errs
 }
 
-func CopyCoordinatorDataDir(streams step.OutStreams, coordinatorDataDir string, agentHostsToBackupDir AgentHostsToBackupDir) error {
+func CopyCoordinatorDataDir(streams step.OutStreams, coordinatorDataDir string, agentHostsToBackupDir backupdir.AgentHostsToBackupDir) error {
 	// Make sure sourceDir ends with a trailing slash so that rsync will
 	// transfer the directory contents and not the directory itself.
 	source := []string{filepath.Clean(coordinatorDataDir) + string(filepath.Separator)}
 
-	destinationHostToBackupDir := make(AgentHostsToBackupDir)
+	destinationHostToBackupDir := make(backupdir.AgentHostsToBackupDir)
 	for host, backupDir := range agentHostsToBackupDir {
 		destinationHostToBackupDir[host] = utils.GetCoordinatorPostUpgradeBackupDir(backupDir)
 	}
@@ -94,7 +95,7 @@ func CopyCoordinatorDataDir(streams step.OutStreams, coordinatorDataDir string, 
 	return Copy(streams, source, destinationHostToBackupDir)
 }
 
-func CopyCoordinatorTablespaces(streams step.OutStreams, sourceVersion semver.Version, tablespaces greenplum.Tablespaces, agentHostsToBackupDir AgentHostsToBackupDir) error {
+func CopyCoordinatorTablespaces(streams step.OutStreams, sourceVersion semver.Version, tablespaces greenplum.Tablespaces, agentHostsToBackupDir backupdir.AgentHostsToBackupDir) error {
 	if tablespaces == nil && sourceVersion.Major != 5 {
 		return nil
 	}
@@ -107,7 +108,7 @@ func CopyCoordinatorTablespaces(streams step.OutStreams, sourceVersion semver.Ve
 
 	sourcePaths = append(sourcePaths, tablespaces.GetCoordinatorTablespaces().UserDefinedTablespacesLocations()...)
 
-	destinationHostToBackupDir := make(AgentHostsToBackupDir)
+	destinationHostToBackupDir := make(backupdir.AgentHostsToBackupDir)
 	for host, backupDir := range agentHostsToBackupDir {
 		// ensure the destination backup directory has a trailing slash so rsync
 		// will transfer the directory contents and not the directory itself.

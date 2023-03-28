@@ -57,7 +57,7 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 				return err
 			}
 
-			err = s.Config.SaveConfig()
+			err = s.Config.Save()
 			if err != nil {
 				return fmt.Errorf("save backup directories: %w", err)
 			}

@@ -1,18 +1,18 @@
 // Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
-package hub
+package config_test
 
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/blang/semver/v4"
 
+	"github.com/greenplum-db/gpupgrade/config"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -158,7 +158,7 @@ func TestAssignDataDirsAndPorts(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			actual, err := GenerateIntermediateCluster(c.cluster, c.ports, upgradeID, semver.Version{}, "")
+			actual, err := config.GenerateIntermediateCluster(c.cluster, c.ports, upgradeID, semver.Version{}, "")
 			if err != nil {
 				t.Errorf("returned error %+v", err)
 			}
@@ -236,7 +236,7 @@ func TestAssignDataDirsAndPorts(t *testing.T) {
 
 	for _, c := range errCases {
 		t.Run(c.name, func(t *testing.T) {
-			_, err := GenerateIntermediateCluster(c.cluster, c.ports, 0, semver.Version{}, "")
+			_, err := config.GenerateIntermediateCluster(c.cluster, c.ports, 0, semver.Version{}, "")
 			if err == nil {
 				t.Errorf("GenerateIntermediateCluster(<cluster>, %v) returned nil, want error", c.ports)
 			}
@@ -259,8 +259,8 @@ func TestEnsureTempPortRangeDoesNotOverlapWithSourceClusterPorts(t *testing.T) {
 		{ContentID: 0, DbID: 5, Hostname: "sdw2", DataDir: "/data/dbfast_mirror1/seg0", Role: greenplum.MirrorRole, Port: 6005},
 	})
 
-	t.Run("ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts succeeds", func(t *testing.T) {
-		err := ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(source, intermediate)
+	t.Run("EnsureTempPortRangeDoesNotOverlapWithSourceClusterPorts succeeds", func(t *testing.T) {
+		err := config.EnsureTempPortRangeDoesNotOverlapWithSourceClusterPorts(source, intermediate)
 		if err != nil {
 			t.Errorf("unexpected error %#v", err)
 		}
@@ -269,7 +269,7 @@ func TestEnsureTempPortRangeDoesNotOverlapWithSourceClusterPorts(t *testing.T) {
 	t.Run("allow the same port on different hosts", func(t *testing.T) {
 		intermediate.Mirrors[-1] = greenplum.SegConfig{ContentID: -1, DbID: 8, Hostname: "smdw", DataDir: "/data/qddir/seg-1", Role: greenplum.MirrorRole, Port: source.CoordinatorPort()}
 
-		err := ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(source, intermediate)
+		err := config.EnsureTempPortRangeDoesNotOverlapWithSourceClusterPorts(source, intermediate)
 		if err != nil {
 			t.Errorf("unexpected error %#v", err)
 		}
@@ -344,71 +344,126 @@ func TestEnsureTempPortRangeDoesNotOverlapWithSourceClusterPorts(t *testing.T) {
 
 	for _, c := range errCases {
 		t.Run(c.name, func(t *testing.T) {
-			err := ensureTempPortRangeDoesNotOverlapWithSourceClusterPorts(c.source, c.intermediate)
-			var invalidPortErr *InvalidTempPortRangeError
+			err := config.EnsureTempPortRangeDoesNotOverlapWithSourceClusterPorts(c.source, c.intermediate)
+			var invalidPortErr *config.InvalidTempPortRangeError
 			if !errors.As(err, &invalidPortErr) {
 				t.Fatalf("got %T, want %T", err, invalidPortErr)
 			}
 
-			if invalidPortErr.conflictingPort != c.conflictingPort {
-				t.Errorf("got conflicting port %d, want %d", invalidPortErr.conflictingPort, c.conflictingPort)
+			if invalidPortErr.ConflictingPort != c.conflictingPort {
+				t.Errorf("got conflicting port %d, want %d", invalidPortErr.ConflictingPort, c.conflictingPort)
 			}
 		})
 	}
 }
 
-func PostgresGPVersion_5_29_10() {
-	fmt.Println("postgres (Greenplum Database) 5.29.10 build commit:fca0e6aa84a7d611ce8b7986d6fc73ae93b76f5e")
-}
-
-func init() {
-	exectest.RegisterMains(
-		PostgresGPVersion_5_29_10,
-	)
-}
-
-func TestGetEarlyInitializeConfiguration(t *testing.T) {
+func TestGetInitializeConfiguration(t *testing.T) {
 	greenplum.SetVersionCommand(exectest.NewCommand(PostgresGPVersion_5_29_10))
 	defer greenplum.ResetVersionCommand()
 
-	t.Run("sets up Server for early Initialize revert", func(t *testing.T) {
+	t.Run("get Initialize configuration for early Initialize revert", func(t *testing.T) {
 		db, mock, err := sqlmock.New()
 		if err != nil {
 			t.Fatalf("couldn't create sqlmock: %v", err)
 		}
 		defer testutils.FinishMock(mock, t)
 
-		backupFunc := InitializeConnectionFunc
-		InitializeConnectionFunc = func(gphome string, port int) (*sql.DB, error) {
+		backupFunc := config.InitializeConnectionFunc
+		config.InitializeConnectionFunc = func(gphome string, port int) (*sql.DB, error) {
 			return db, nil
 		}
 		defer func() {
-			InitializeConnectionFunc = backupFunc
+			config.InitializeConnectionFunc = backupFunc
 		}()
 
+		mockHubPort := 8888
+		mockRequest := &idl.InitializeRequest{SourceGPHome: "/mock/gphome/path", SourcePort: int32(9999)}
 		mockDataDir := "/mock_datadir/gpseg-1"
 		mockRows := sqlmock.NewRows([]string{"dbid", "contentid", "port", "hostname", "datadir", "role"})
 		mockRows.AddRow(1, -1, 15432, "mdw", mockDataDir, greenplum.PrimaryRole)
 		mock.ExpectQuery(`SELECT .* FROM gp_segment_configuration`).WillReturnRows(mockRows)
 
-		mockHubPort := 8888
-		mockCoordinatorPort := 9999
-		mockGPHome := "/mock/gphome/path"
-		config, err := GetEarlyInitializeConfiguration(mockHubPort, mockCoordinatorPort, mockGPHome)
+		resultConfig, err := config.GetInitializeConfiguration(mockHubPort, mockRequest, true)
 		if err != nil {
 			t.Fatalf("couldn't get early Initialize configuration: %v", err)
 		}
 
-		if config.Source.Primaries[-1].DataDir != mockDataDir {
-			t.Errorf("got datadir %s, want %s", config.Source.Primaries[-1].DataDir, mockDataDir)
+		if resultConfig.Source.Primaries[-1].DataDir != mockDataDir {
+			t.Errorf("got datadir %s, want %s", resultConfig.Source.Primaries[-1].DataDir, mockDataDir)
 		}
 
 		expectedVersion, _ := semver.Make("5.29.10")
-		if !config.Source.Version.EQ(expectedVersion) {
-			t.Errorf("got %v, want %v", config.Source.Version, expectedVersion)
+		if !resultConfig.Source.Version.EQ(expectedVersion) {
+			t.Errorf("got %v, want %v", resultConfig.Source.Version, expectedVersion)
 		}
 
-		if config.UpgradeID == 0 {
+		if resultConfig.UpgradeID == 0 {
+			t.Errorf("expected non-empty UpgradeID")
+		}
+	})
+
+	t.Run("get Initialize configuration", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		if err != nil {
+			t.Fatalf("couldn't create sqlmock: %v", err)
+		}
+		defer testutils.FinishMock(mock, t)
+
+		backupFunc := config.InitializeConnectionFunc
+		config.InitializeConnectionFunc = func(gphome string, port int) (*sql.DB, error) {
+			return db, nil
+		}
+		defer func() {
+			config.InitializeConnectionFunc = backupFunc
+		}()
+
+		stateDir := testutils.GetTempDir(t, "")
+		defer testutils.MustRemoveAll(t, stateDir)
+
+		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
+		defer resetEnv()
+
+		mockHubPort := 8888
+		mockRequest := &idl.InitializeRequest{
+			SourceGPHome: "/mock/source/gphome/path",
+			SourcePort:   int32(9999),
+			TargetGPHome: "/mock/target/gphome/path",
+			AgentPort:    int32(7777),
+			Mode:         idl.Mode_link,
+			Ports:        []uint32{1, 2, 3},
+		}
+		mockRows1 := sqlmock.NewRows([]string{"dbid", "contentid", "port", "hostname", "datadir", "role"})
+		mockRows1.AddRow(1, -1, 15432, "mdw", "/mock_datadir/gpseg-1", greenplum.PrimaryRole)
+		mockRows1.AddRow(2, 0, 10000, "sdw1", "/mock_datadir/primaries/gpseg0", greenplum.PrimaryRole)
+		mockRows1.AddRow(3, 0, 11000, "sdw1", "/mock_datadir/mirrors/gpseg0", greenplum.MirrorRole)
+		mock.ExpectQuery(`SELECT.*dbid.*FROM gp_segment_configuration`).WillReturnRows(mockRows1)
+
+		mockRows2 := sqlmock.NewRows([]string{"count"})
+		mockRows2.AddRow(2)
+		mock.ExpectQuery(`SELECT COUNT.* FROM gp_segment_configuration`).WillReturnRows(mockRows2)
+
+		mockRows3 := sqlmock.NewRows([]string{"dbid", "oid", "name", "location", "userdefined"})
+		mock.ExpectQuery(`SELECT .* FROM pg_tablespace`).WillReturnRows(mockRows3)
+
+		resultConfig, err := config.GetInitializeConfiguration(mockHubPort, mockRequest, false)
+		if err != nil {
+			t.Fatalf("couldn't get early Initialize configuration: %v", err)
+		}
+
+		if resultConfig.Intermediate == nil {
+			t.Errorf("expected non-empty config.Intermediate")
+		}
+
+		if resultConfig.Target == nil {
+			t.Errorf("expected non-empty config.Target")
+		}
+
+		expectedVersion, _ := semver.Make("5.29.10")
+		if !resultConfig.Source.Version.EQ(expectedVersion) {
+			t.Errorf("got %v, want %v", resultConfig.Source.Version, expectedVersion)
+		}
+
+		if resultConfig.UpgradeID == 0 {
 			t.Errorf("expected non-empty UpgradeID")
 		}
 	})
