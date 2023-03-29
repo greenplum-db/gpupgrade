@@ -50,7 +50,6 @@ func init() {
 	})
 	FinalizeHelp = GenerateHelpString(finalizeHelp, []idl.Substep{
 		idl.Substep_check_active_connections_on_target_cluster,
-		idl.Substep_remove_source_mirrors,
 		idl.Substep_upgrade_mirrors,
 		idl.Substep_upgrade_standby,
 		idl.Substep_wait_for_cluster_to_be_ready_after_adding_mirrors_and_standby,
@@ -64,9 +63,8 @@ func init() {
 		idl.Substep_delete_backupdir,
 		idl.Substep_delete_segment_statedirs,
 		idl.Substep_stop_hub_and_agents,
-		idl.Substep_delete_master_statedir,
-		idl.Substep_stop_target_cluster,
 		idl.Substep_execute_finalize_data_migration_scripts,
+		idl.Substep_delete_master_statedir,
 	})
 	RevertHelp = GenerateHelpString(revertHelp, []idl.Substep{
 		idl.Substep_check_active_connections_on_target_cluster,
@@ -81,8 +79,8 @@ func init() {
 		idl.Substep_delete_backupdir,
 		idl.Substep_delete_segment_statedirs,
 		idl.Substep_stop_hub_and_agents,
-		idl.Substep_delete_master_statedir,
 		idl.Substep_execute_revert_data_migration_scripts,
+		idl.Substep_delete_master_statedir,
 	})
 	Help = map[string]string{
 		"initialize": InitializeHelp,
