@@ -1,7 +1,7 @@
 // Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
-package hub
+package hub_test
 
 import (
 	"errors"
@@ -16,6 +16,7 @@ import (
 	"github.com/blang/semver/v4"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -51,11 +52,11 @@ func TestCopy(t *testing.T) {
 	t.Run("copies the directory only once per host", func(t *testing.T) {
 		sourceDirs := []string{"/data/qddir/seg-1/"}
 
-		backupDirs := BackupDirs{}
-		backupDirs.AgentHostsToBackupDir = make(AgentHostsToBackupDir)
+		backupDirs := hub.BackupDirs{}
+		backupDirs.AgentHostsToBackupDir = make(hub.AgentHostsToBackupDir)
 		backupDirs.AgentHostsToBackupDir["localhost"] = "foobar/path"
 
-		cmd := exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
+		cmd := exectest.NewCommandWithVerifier(hub.Success, func(name string, args ...string) {
 			expected := "rsync"
 			if !strings.HasSuffix(name, expected) {
 				t.Errorf("got %q, want %q", name, expected)
@@ -72,7 +73,7 @@ func TestCopy(t *testing.T) {
 		rsync.SetRsyncCommand(cmd)
 		defer rsync.ResetRsyncCommand()
 
-		err := Copy(step.DevNullStream, sourceDirs, backupDirs.AgentHostsToBackupDir)
+		err := hub.Copy(step.DevNullStream, sourceDirs, backupDirs.AgentHostsToBackupDir)
 		if err != nil {
 			t.Errorf("copying data directory: %+v", err)
 		}
@@ -81,14 +82,14 @@ func TestCopy(t *testing.T) {
 	t.Run("copies the data directory to each host", func(t *testing.T) {
 		sourceDirs := []string{"/data/qddir/seg-1"}
 
-		backupDirs := BackupDirs{}
-		backupDirs.AgentHostsToBackupDir = make(AgentHostsToBackupDir)
+		backupDirs := hub.BackupDirs{}
+		backupDirs.AgentHostsToBackupDir = make(hub.AgentHostsToBackupDir)
 		backupDirs.AgentHostsToBackupDir["host1"] = "foobar1/path"
 		backupDirs.AgentHostsToBackupDir["host2"] = "foobar2/path"
 
 		actualArgsChan := make(chan []string, len(backupDirs.AgentHostsToBackupDir))
 
-		cmd := exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
+		cmd := exectest.NewCommandWithVerifier(hub.Success, func(name string, args ...string) {
 			expected := "rsync"
 			if !strings.HasSuffix(name, expected) {
 				t.Errorf("got %q, want %q", name, expected)
@@ -99,7 +100,7 @@ func TestCopy(t *testing.T) {
 		rsync.SetRsyncCommand(cmd)
 		defer rsync.ResetRsyncCommand()
 
-		err := Copy(step.DevNullStream, sourceDirs, backupDirs.AgentHostsToBackupDir)
+		err := hub.Copy(step.DevNullStream, sourceDirs, backupDirs.AgentHostsToBackupDir)
 		if err != nil {
 			t.Errorf("copying directory: %+v", err)
 		}
@@ -117,16 +118,16 @@ func TestCopy(t *testing.T) {
 	})
 
 	t.Run("returns errors when writing stdout and stderr buffers to the stream", func(t *testing.T) {
-		backupDirs := BackupDirs{}
-		backupDirs.AgentHostsToBackupDir = make(AgentHostsToBackupDir)
+		backupDirs := hub.BackupDirs{}
+		backupDirs.AgentHostsToBackupDir = make(hub.AgentHostsToBackupDir)
 		backupDirs.AgentHostsToBackupDir["localhost"] = "foobar/path"
 
 		streams := testutils.FailingStreams{Err: errors.New("e")}
 
-		rsync.SetRsyncCommand(exectest.NewCommand(StreamingMain))
+		rsync.SetRsyncCommand(exectest.NewCommand(hub.StreamingMain))
 		defer rsync.ResetRsyncCommand()
 
-		err := Copy(streams, []string{""}, backupDirs.AgentHostsToBackupDir)
+		err := hub.Copy(streams, []string{""}, backupDirs.AgentHostsToBackupDir)
 
 		var errs errorlist.Errors
 		if !errors.As(err, &errs) {
@@ -141,8 +142,8 @@ func TestCopy(t *testing.T) {
 	})
 
 	t.Run("serializes rsync failures to the log stream", func(t *testing.T) {
-		backupDirs := BackupDirs{}
-		backupDirs.AgentHostsToBackupDir = make(AgentHostsToBackupDir)
+		backupDirs := hub.BackupDirs{}
+		backupDirs.AgentHostsToBackupDir = make(hub.AgentHostsToBackupDir)
 		backupDirs.AgentHostsToBackupDir["sdw1"] = "foobar1/path"
 		backupDirs.AgentHostsToBackupDir["sdw2"] = "foobar2/path"
 
@@ -151,7 +152,7 @@ func TestCopy(t *testing.T) {
 		rsync.SetRsyncCommand(exectest.NewCommand(RsyncFailure))
 		defer rsync.ResetRsyncCommand()
 
-		err := Copy(buffer, []string{"data/coordinator"}, backupDirs.AgentHostsToBackupDir)
+		err := hub.Copy(buffer, []string{"data/coordinator"}, backupDirs.AgentHostsToBackupDir)
 
 		var errs errorlist.Errors
 		if !errors.As(err, &errs) {
@@ -184,13 +185,13 @@ func TestCopy(t *testing.T) {
 func TestCopyCoordinatorDataDir(t *testing.T) {
 	testlog.SetupTestLogger()
 
-	intermediate := MustCreateCluster(t, greenplum.SegConfigs{
+	intermediate := hub.MustCreateCluster(t, greenplum.SegConfigs{
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
 		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
 		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 	})
 
-	backupDirs, err := ParseParentBackupDirs("", intermediate)
+	backupDirs, err := hub.ParseParentBackupDirs("", intermediate)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -198,7 +199,7 @@ func TestCopyCoordinatorDataDir(t *testing.T) {
 	t.Run("copies the coordinator data directory to each primary host", func(t *testing.T) {
 		actualArgsChan := make(chan []string, len(backupDirs.AgentHostsToBackupDir))
 
-		cmd := exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
+		cmd := exectest.NewCommandWithVerifier(hub.Success, func(name string, args ...string) {
 			expected := "rsync"
 			if !strings.HasSuffix(name, expected) {
 				t.Errorf("got %q, want %q", name, expected)
@@ -209,7 +210,7 @@ func TestCopyCoordinatorDataDir(t *testing.T) {
 		rsync.SetRsyncCommand(cmd)
 		defer rsync.ResetRsyncCommand()
 
-		err := CopyCoordinatorDataDir(step.DevNullStream, intermediate.CoordinatorDataDir(), backupDirs.AgentHostsToBackupDir)
+		err := hub.CopyCoordinatorDataDir(step.DevNullStream, intermediate.CoordinatorDataDir(), backupDirs.AgentHostsToBackupDir)
 		if err != nil {
 			t.Errorf("copying coordinator data directory: %+v", err)
 		}
@@ -237,13 +238,13 @@ func TestCopyCoordinatorTablespaces(t *testing.T) {
 	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 	defer resetEnv()
 
-	intermediate := MustCreateCluster(t, greenplum.SegConfigs{
+	intermediate := hub.MustCreateCluster(t, greenplum.SegConfigs{
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "localhost", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
 		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "host1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
 		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 	})
 
-	backupDirs, err := ParseParentBackupDirs("", intermediate)
+	backupDirs, err := hub.ParseParentBackupDirs("", intermediate)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -278,7 +279,7 @@ func TestCopyCoordinatorTablespaces(t *testing.T) {
 	t.Run("when source version is 5X it copy's the --old-tablespace-file and user defined coordinator tablespace locations to each primary host", func(t *testing.T) {
 		actualArgsChan := make(chan []string, len(backupDirs.AgentHostsToBackupDir))
 
-		cmd := exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
+		cmd := exectest.NewCommandWithVerifier(hub.Success, func(name string, args ...string) {
 			expected := "rsync"
 			if !strings.HasSuffix(name, expected) {
 				t.Errorf("got %q, want %q", name, expected)
@@ -289,7 +290,7 @@ func TestCopyCoordinatorTablespaces(t *testing.T) {
 		rsync.SetRsyncCommand(cmd)
 		defer rsync.ResetRsyncCommand()
 
-		err := CopyCoordinatorTablespaces(step.DevNullStream, semver.MustParse("5.0.0"), Tablespaces, backupDirs.AgentHostsToBackupDir)
+		err := hub.CopyCoordinatorTablespaces(step.DevNullStream, semver.MustParse("5.0.0"), Tablespaces, backupDirs.AgentHostsToBackupDir)
 		if err != nil {
 			t.Errorf("copying coordinator tablespace directories and mapping file: %+v", err)
 		}
@@ -310,7 +311,7 @@ func TestCopyCoordinatorTablespaces(t *testing.T) {
 	t.Run("when source version is 5X it still copy's the --old-tablespace-file even when there are no user defined coordinator tablespaces", func(t *testing.T) {
 		actualArgsChan := make(chan []string, len(backupDirs.AgentHostsToBackupDir))
 
-		cmd := exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
+		cmd := exectest.NewCommandWithVerifier(hub.Success, func(name string, args ...string) {
 			expected := "rsync"
 			if !strings.HasSuffix(name, expected) {
 				t.Errorf("got %q, want %q", name, expected)
@@ -321,7 +322,7 @@ func TestCopyCoordinatorTablespaces(t *testing.T) {
 		rsync.SetRsyncCommand(cmd)
 		defer rsync.ResetRsyncCommand()
 
-		err := CopyCoordinatorTablespaces(step.DevNullStream, semver.MustParse("5.0.0"), nil, backupDirs.AgentHostsToBackupDir)
+		err := hub.CopyCoordinatorTablespaces(step.DevNullStream, semver.MustParse("5.0.0"), nil, backupDirs.AgentHostsToBackupDir)
 		if err != nil {
 			t.Errorf("got %+v, want nil", err)
 		}
@@ -342,7 +343,7 @@ func TestCopyCoordinatorTablespaces(t *testing.T) {
 	t.Run("when source version is 6X and higher it does not copy the --old-tablespace-file", func(t *testing.T) {
 		actualArgsChan := make(chan []string, len(backupDirs.AgentHostsToBackupDir))
 
-		cmd := exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
+		cmd := exectest.NewCommandWithVerifier(hub.Success, func(name string, args ...string) {
 			expected := "rsync"
 			if !strings.HasSuffix(name, expected) {
 				t.Errorf("got %q, want %q", name, expected)
@@ -353,7 +354,7 @@ func TestCopyCoordinatorTablespaces(t *testing.T) {
 		rsync.SetRsyncCommand(cmd)
 		defer rsync.ResetRsyncCommand()
 
-		err := CopyCoordinatorTablespaces(step.DevNullStream, semver.MustParse("6.0.0"), Tablespaces, backupDirs.AgentHostsToBackupDir)
+		err := hub.CopyCoordinatorTablespaces(step.DevNullStream, semver.MustParse("6.0.0"), Tablespaces, backupDirs.AgentHostsToBackupDir)
 		if err != nil {
 			t.Errorf("copying coordinator tablespace directories and mapping file: %+v", err)
 		}
@@ -374,7 +375,7 @@ func TestCopyCoordinatorTablespaces(t *testing.T) {
 	t.Run("when source version is 6X and there are no tablespaces it does not copy", func(t *testing.T) {
 		actualArgsChan := make(chan []string, len(backupDirs.AgentHostsToBackupDir))
 
-		cmd := exectest.NewCommandWithVerifier(Success, func(name string, args ...string) {
+		cmd := exectest.NewCommandWithVerifier(hub.Success, func(name string, args ...string) {
 			expected := "rsync"
 			if !strings.HasSuffix(name, expected) {
 				t.Errorf("got %q, want %q", name, expected)
@@ -385,7 +386,7 @@ func TestCopyCoordinatorTablespaces(t *testing.T) {
 		rsync.SetRsyncCommand(cmd)
 		defer rsync.ResetRsyncCommand()
 
-		err := CopyCoordinatorTablespaces(step.DevNullStream, semver.MustParse("6.0.0"), nil, backupDirs.AgentHostsToBackupDir)
+		err := hub.CopyCoordinatorTablespaces(step.DevNullStream, semver.MustParse("6.0.0"), nil, backupDirs.AgentHostsToBackupDir)
 		if err != nil {
 			t.Errorf("copying coordinator tablespace directories and mapping file: %+v", err)
 		}

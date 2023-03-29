@@ -1,9 +1,13 @@
 // Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
-package filters
+package filters_test
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/greenplum-db/gpupgrade/ci/scripts/filters"
+)
 
 func TestReplacePrecision(t *testing.T) {
 	cases := []struct {
@@ -69,7 +73,7 @@ func TestReplacePrecision(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got := ReplacePrecision(c.line)
+			got := filters.ReplacePrecision(c.line)
 			if got != c.want {
 				t.Errorf("got %v, want %v", got, c.want)
 			}

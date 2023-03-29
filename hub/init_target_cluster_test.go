@@ -1,7 +1,7 @@
 // Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
-package hub
+package hub_test
 
 import (
 	"bufio"
@@ -21,6 +21,7 @@ import (
 	"github.com/blang/semver/v4"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
@@ -59,7 +60,7 @@ func TestCreateInitialInitsystemConfig(t *testing.T) {
 			return "mdw", nil
 		}
 
-		actualConfig, err := CreateInitialInitsystemConfig("/data/qddir/seg.AAAAAAAAAAA.-1", true)
+		actualConfig, err := hub.CreateInitialInitsystemConfig("/data/qddir/seg.AAAAAAAAAAA.-1", true)
 		if err != nil {
 			t.Fatalf("got %#v, want nil", err)
 		}
@@ -146,7 +147,7 @@ func TestGetCheckpointSegmentsAndEncoding(t *testing.T) {
 				expected = append(expected, query.expected)
 			}
 
-			actual, err := GetCheckpointSegmentsAndEncoding([]string{}, c.version, db)
+			actual, err := hub.GetCheckpointSegmentsAndEncoding([]string{}, c.version, db)
 			if err != nil {
 				t.Fatalf("got %#v, want nil", err)
 			}
@@ -162,7 +163,7 @@ func TestWriteSegmentArray(t *testing.T) {
 	test := func(t *testing.T, intermediate *greenplum.Cluster, expected []string) {
 		t.Helper()
 
-		actual, err := WriteSegmentArray([]string{}, intermediate)
+		actual, err := hub.WriteSegmentArray([]string{}, intermediate)
 		if err != nil {
 			t.Errorf("got %#v", err)
 		}
@@ -187,7 +188,7 @@ func TestWriteSegmentArray(t *testing.T) {
 	}
 
 	t.Run("renders the config file as expected", func(t *testing.T) {
-		config := MustCreateCluster(t, greenplum.SegConfigs{
+		config := hub.MustCreateCluster(t, greenplum.SegConfigs{
 			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir_upgrade/seg-1", Role: greenplum.PrimaryRole, Port: 15433},
 			{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1_upgrade/seg1", Role: greenplum.PrimaryRole, Port: 15434},
 			{ContentID: 1, DbID: 3, Hostname: "sdw2", DataDir: "/data/dbfast2_upgrade/seg2", Role: greenplum.PrimaryRole, Port: 15434},
@@ -212,13 +213,13 @@ func TestRunInitsystemForTargetCluster(t *testing.T) {
 	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 	defer resetEnv()
 
-	intermediate := MustCreateCluster(t, greenplum.SegConfigs{
+	intermediate := hub.MustCreateCluster(t, greenplum.SegConfigs{
 		{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir_upgrade/seg-1", Role: greenplum.PrimaryRole, Port: 15433},
 	})
 	intermediate.GPHome = "/usr/local/greenplum-db"
 
 	t.Run("does not use --ignore-warnings when upgrading to GPDB7 or higher", func(t *testing.T) {
-		ExecCommand = exectest.NewCommandWithVerifier(Success, func(path string, args ...string) {
+		hub.ExecCommand = exectest.NewCommandWithVerifier(hub.Success, func(path string, args ...string) {
 			if path != "bash" {
 				t.Errorf("executed %q, want bash", path)
 			}
@@ -230,18 +231,18 @@ func TestRunInitsystemForTargetCluster(t *testing.T) {
 				t.Errorf("args %q, want %q", args, expected)
 			}
 		})
-		greenplum.SetGreenplumCommand(ExecCommand)
+		greenplum.SetGreenplumCommand(hub.ExecCommand)
 		defer greenplum.ResetGreenplumCommand()
 
 		intermediate.Version = semver.MustParse("7.0.0")
-		err := InitTargetCluster(step.DevNullStream, intermediate)
+		err := hub.InitTargetCluster(step.DevNullStream, intermediate)
 		if err != nil {
 			t.Errorf("unexpected error %#v", err)
 		}
 	})
 
 	t.Run("only uses --ignore-warnings when upgrading to GPDB6", func(t *testing.T) {
-		ExecCommand = exectest.NewCommandWithVerifier(Success, func(path string, args ...string) {
+		hub.ExecCommand = exectest.NewCommandWithVerifier(hub.Success, func(path string, args ...string) {
 			if path != "bash" {
 				t.Errorf("executed %q, want bash", path)
 			}
@@ -253,11 +254,11 @@ func TestRunInitsystemForTargetCluster(t *testing.T) {
 				t.Errorf("args %q, want %q", args, expected)
 			}
 		})
-		greenplum.SetGreenplumCommand(ExecCommand)
+		greenplum.SetGreenplumCommand(hub.ExecCommand)
 		defer greenplum.ResetGreenplumCommand()
 
 		intermediate.Version = semver.MustParse("6.0.0")
-		err := InitTargetCluster(step.DevNullStream, intermediate)
+		err := hub.InitTargetCluster(step.DevNullStream, intermediate)
 		if err != nil {
 			t.Errorf("unexpected error %#v", err)
 		}
@@ -268,7 +269,7 @@ func TestRunInitsystemForTargetCluster(t *testing.T) {
 		defer greenplum.ResetGreenplumCommand()
 
 		intermediate.Version = semver.MustParse("6.0.0")
-		err := InitTargetCluster(step.DevNullStream, intermediate)
+		err := hub.InitTargetCluster(step.DevNullStream, intermediate)
 		var actual *exec.ExitError
 		if !errors.As(err, &actual) {
 			t.Fatalf("got %#v, want ExitError", err)
@@ -284,7 +285,7 @@ func TestRunInitsystemForTargetCluster(t *testing.T) {
 		defer greenplum.ResetGreenplumCommand()
 
 		intermediate.Version = semver.MustParse("7.0.0")
-		err := InitTargetCluster(step.DevNullStream, intermediate)
+		err := hub.InitTargetCluster(step.DevNullStream, intermediate)
 		var actual *exec.ExitError
 		if !errors.As(err, &actual) {
 			t.Fatalf("got %#v, want ExitError", err)
@@ -322,11 +323,11 @@ func TestRunInitsystemForTargetCluster(t *testing.T) {
 		}
 
 		// Capture the actual environment received by the gpinitsystem process.
-		greenplum.SetGreenplumCommand(exectest.NewCommand(EnvironmentMain))
+		greenplum.SetGreenplumCommand(exectest.NewCommand(hub.EnvironmentMain))
 		defer greenplum.ResetGreenplumCommand()
 
 		out := &stdoutBuffer{}
-		err := InitTargetCluster(step.DevNullStream, intermediate)
+		err := hub.InitTargetCluster(step.DevNullStream, intermediate)
 		if err != nil {
 			t.Fatalf("got error: %+v", err)
 		}
@@ -376,7 +377,7 @@ func TestGetCoordinatorSegPrefix(t *testing.T) {
 		}
 
 		for _, c := range cases {
-			actual, err := GetCoordinatorSegPrefix(c.CoordinatorDataDir)
+			actual, err := hub.GetCoordinatorSegPrefix(c.CoordinatorDataDir)
 			if err != nil {
 				t.Fatalf("got %#v, want nil", err)
 			}
@@ -401,7 +402,7 @@ func TestGetCoordinatorSegPrefix(t *testing.T) {
 		}
 
 		for _, c := range cases {
-			_, err := GetCoordinatorSegPrefix(c.CoordinatorDataDir)
+			_, err := hub.GetCoordinatorSegPrefix(c.CoordinatorDataDir)
 			if err == nil {
 				t.Fatalf("got nil, want err")
 			}
@@ -412,7 +413,7 @@ func TestGetCoordinatorSegPrefix(t *testing.T) {
 func TestGetCatalogVersion(t *testing.T) {
 	testlog.SetupTestLogger()
 
-	intermediate := MustCreateCluster(t, greenplum.SegConfigs{
+	intermediate := hub.MustCreateCluster(t, greenplum.SegConfigs{
 		{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir_upgrade/seg-1", Role: greenplum.PrimaryRole, Port: 15433},
 	})
 
@@ -420,7 +421,7 @@ func TestGetCatalogVersion(t *testing.T) {
 		greenplum.SetGreenplumCommand(exectest.NewCommand(pg_controldata))
 		defer greenplum.ResetGreenplumCommand()
 
-		version, err := GetCatalogVersion(intermediate)
+		version, err := hub.GetCatalogVersion(intermediate)
 		if err != nil {
 			t.Errorf("GetCatalogVersion returned error %+v", err)
 		}
@@ -432,10 +433,10 @@ func TestGetCatalogVersion(t *testing.T) {
 	})
 
 	t.Run("errors when pg_controldata fails", func(t *testing.T) {
-		greenplum.SetGreenplumCommand(exectest.NewCommand(Failure))
+		greenplum.SetGreenplumCommand(exectest.NewCommand(hub.Failure))
 		defer greenplum.ResetGreenplumCommand()
 
-		version, err := GetCatalogVersion(intermediate)
+		version, err := hub.GetCatalogVersion(intermediate)
 		var exitErr *exec.ExitError
 		if !errors.As(err, &exitErr) {
 			t.Fatalf("got error %#v want %T", err, exitErr)
@@ -451,12 +452,12 @@ func TestGetCatalogVersion(t *testing.T) {
 	})
 
 	t.Run("errors when catalog version is not found", func(t *testing.T) {
-		greenplum.SetGreenplumCommand(exectest.NewCommand(Success))
+		greenplum.SetGreenplumCommand(exectest.NewCommand(hub.Success))
 		defer greenplum.ResetGreenplumCommand()
 
-		version, err := GetCatalogVersion(intermediate)
-		if !errors.Is(err, ErrUnknownCatalogVersion) {
-			t.Errorf("got error %#v want %#v", err, ErrUnknownCatalogVersion)
+		version, err := hub.GetCatalogVersion(intermediate)
+		if !errors.Is(err, hub.ErrUnknownCatalogVersion) {
+			t.Errorf("got error %#v want %#v", err, hub.ErrUnknownCatalogVersion)
 		}
 
 		if version != "" {

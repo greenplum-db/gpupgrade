@@ -1,10 +1,12 @@
 // Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
-package filters
+package filters_test
 
 import (
 	"testing"
+
+	"github.com/greenplum-db/gpupgrade/ci/scripts/filters"
 )
 
 func TestFormatTriggerDdl(t *testing.T) {
@@ -31,7 +33,7 @@ func TestFormatTriggerDdl(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual, err := FormatTriggerDdl(tt.tokens)
+			actual, err := filters.FormatTriggerDdl(tt.tokens)
 
 			if err == nil && tt.expectedErr {
 				t.Errorf("expect an error")
@@ -66,7 +68,7 @@ func TestIsTriggerDdl(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if actual := IsTriggerDdl(tt.buf, tt.line); actual != tt.expected {
+			if actual := filters.IsTriggerDdl(tt.buf, tt.line); actual != tt.expected {
 				t.Errorf("got %t, want %t", actual, tt.expected)
 			}
 		})

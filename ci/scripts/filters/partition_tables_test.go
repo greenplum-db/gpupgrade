@@ -1,10 +1,12 @@
 // Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
-package filters
+package filters_test
 
 import (
 	"testing"
+
+	"github.com/greenplum-db/gpupgrade/ci/scripts/filters"
 )
 
 func Test_FormatWithClause(t *testing.T) {
@@ -27,7 +29,7 @@ func Test_FormatWithClause(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := FormatWithClause(tt.input)
+			got := filters.FormatWithClause(tt.input)
 
 			if got != tt.result {
 				t.Errorf("got %v, want %v", got, tt.result)

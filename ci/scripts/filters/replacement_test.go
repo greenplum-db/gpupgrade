@@ -1,10 +1,12 @@
 // Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
-package filters
+package filters_test
 
 import (
 	"testing"
+
+	"github.com/greenplum-db/gpupgrade/ci/scripts/filters"
 )
 
 func TestReplacements5X_RemoveOperatorRecheck(t *testing.T) {
@@ -37,7 +39,7 @@ func TestReplacements5X_RemoveOperatorRecheck(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got := Replacements5X(c.line)
+			got := filters.Replacements5X(c.line)
 			if got != c.expected {
 				t.Errorf("got %v want %v", got, c.expected)
 				t.Logf("actual:   %s", got)
@@ -77,7 +79,7 @@ func TestReplacements5X_CastingParenthesis(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			got := Replacements5X(c.line)
+			got := filters.Replacements5X(c.line)
 			if got != c.expected {
 				t.Errorf("got %v want %v", got, c.expected)
 				t.Logf("actual:   %s", got)
@@ -111,7 +113,7 @@ func TestReplacements6X(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual := Replacements6X(tt.line)
+			actual := filters.Replacements6X(tt.line)
 			if actual != tt.expected {
 				t.Errorf("got %v, expected %v", actual, tt.expected)
 			}

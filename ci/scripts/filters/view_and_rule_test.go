@@ -1,10 +1,12 @@
 // Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
-package filters
+package filters_test
 
 import (
 	"testing"
+
+	"github.com/greenplum-db/gpupgrade/ci/scripts/filters"
 )
 
 func TestFormatViewOrRuleDdl(t *testing.T) {
@@ -35,7 +37,7 @@ func TestFormatViewOrRuleDdl(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := FormatViewOrRuleDdl(tt.tokens)
+			got, err := filters.FormatViewOrRuleDdl(tt.tokens)
 
 			if err == nil && tt.wantErr {
 				t.Errorf("expect an error")
@@ -76,7 +78,7 @@ func TestIsViewOrRuleDdl(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if actual := IsViewOrRuleDdl(tt.buf, tt.line); actual != tt.expected {
+			if actual := filters.IsViewOrRuleDdl(tt.buf, tt.line); actual != tt.expected {
 				t.Errorf("got %t, want %t", actual, tt.expected)
 			}
 		})
