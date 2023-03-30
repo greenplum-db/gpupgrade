@@ -99,20 +99,18 @@ enum Substep {
     restore_pgcontrol = 29;
     recoverseg_source_cluster = 30;
     step_status = 31;
-    remove_source_mirrors = 32;
-    wait_for_cluster_to_be_ready_after_adding_mirrors_and_standby = 33;
-    wait_for_cluster_to_be_ready_after_updating_catalog = 34;
-    stop_target_cluster = 35;
-    setting_dynamic_library_path_on_target_cluster = 36;
-    check_active_connections_on_source_cluster = 37;
-    check_active_connections_on_target_cluster = 38;
-    generate_data_migration_scripts = 39;
-    execute_stats_data_migration_scripts = 40;
-    execute_initialize_data_migration_scripts = 41;
-    execute_finalize_data_migration_scripts = 42;
-    execute_revert_data_migration_scripts = 43;
-    create_backupdirs = 44;
-    delete_backupdir = 45;
+    wait_for_cluster_to_be_ready_after_adding_mirrors_and_standby = 32;
+    wait_for_cluster_to_be_ready_after_updating_catalog = 33;
+    setting_dynamic_library_path_on_target_cluster = 34;
+    check_active_connections_on_source_cluster = 35;
+    check_active_connections_on_target_cluster = 36;
+    generate_data_migration_scripts = 37;
+    execute_stats_data_migration_scripts = 38;
+    execute_initialize_data_migration_scripts = 39;
+    execute_finalize_data_migration_scripts = 40;
+    execute_revert_data_migration_scripts = 41;
+    create_backupdirs = 42;
+    delete_backupdir = 43;
 }
 
 enum Status {
