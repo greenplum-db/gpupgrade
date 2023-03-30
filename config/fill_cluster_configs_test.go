@@ -396,10 +396,6 @@ func TestGetInitializeConfiguration(t *testing.T) {
 		if !resultConfig.Source.Version.EQ(expectedVersion) {
 			t.Errorf("got %v, want %v", resultConfig.Source.Version, expectedVersion)
 		}
-
-		if resultConfig.UpgradeID == 0 {
-			t.Errorf("expected non-empty UpgradeID")
-		}
 	})
 
 	t.Run("get Initialize configuration", func(t *testing.T) {

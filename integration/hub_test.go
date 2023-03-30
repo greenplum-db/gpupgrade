@@ -17,6 +17,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/config"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 )
@@ -116,11 +117,14 @@ func TestHub(t *testing.T) {
 			t.Errorf("unexpected error got %+v", err)
 		}
 
-		mockSourcePort := 8888
-		mockSourceDataDir := "/mock/data/gpseg-1"
-		err = config.Create(upgrade.DefaultHubPort, mockSourcePort, mockSourceDataDir)
+		conf, err := config.Create(upgrade.DefaultHubPort, upgrade.DefaultAgentPort, "/mock/source-gphome", 1234, "/mock/target-gphome", idl.Mode_link, false)
 		if err != nil {
 			t.Errorf("unexpected error got %+v", err)
+		}
+
+		err = conf.Save()
+		if err != nil {
+			t.Fatal(err)
 		}
 
 		cmd := exec.Command("gpupgrade", "hub")

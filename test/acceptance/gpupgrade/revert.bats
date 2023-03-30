@@ -115,6 +115,40 @@ query_host_datadirs() {
     fi
 }
 
+@test "reverting after initialize exits early" {
+    local target_hosts_dirs upgradeID
+
+    printf "y\nq\n" | run gpupgrade initialize \
+        --source-gphome="$GPHOME_SOURCE" \
+        --target-gphome="$GPHOME_TARGET" \
+        --source-master-port="${PGPORT}" \
+        --temp-port-range 6020-6040 \
+        --disk-free-ratio 0 \
+        --seed-dir=$BATS_TEST_DIRNAME/../../../data-migration-scripts \
+        --verbose 3>&-
+
+    upgradeID=$(gpupgrade config show --id)
+
+    run gpupgrade revert --non-interactive --verbose
+    [ "$status" -eq 0 ] || fail "$output"
+
+    # gpupgrade processes are stopped
+    ! process_is_running "[g]pupgrade hub" || fail 'expected hub to have been stopped'
+    for host in "${HOSTS[@]}"; do
+        ! host_process_is_running "$host" "[g]pupgrade agent" || fail "expected agent to have been stopped on host ${host}"
+    done
+
+    # the GPUPGRADE_HOME directory is deleted
+    for host in "${HOSTS[@]}"; do
+        ssh "$host" "[ ! -d '$GPUPGRADE_HOME' ]" || fail "expected GPUPGRADE_HOME directory ${host}:${GPUPGRADE_HOME} to have been deleted"
+    done
+
+    # check that the archived log directory corresponds to this tests upgradeID
+    if [[ -z $(find "${HOME}/gpAdminLogs/gpupgrade-${upgradeID}-"* -type d) ]]; then
+        fail "expected the log directory to be archived and match ${HOME}/gpAdminLogs/gpupgrade-*"
+    fi
+}
+
 test_revert_after_execute() {
     local mode="$1"
     local target_coordinator_port=6020

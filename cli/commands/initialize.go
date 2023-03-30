@@ -196,7 +196,17 @@ func initialize() *cobra.Command {
 			})
 
 			st.RunCLISubstep(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
-				return config.Create(hubPort, sourcePort, sourceGPHome)
+				config, err := config.Create(
+					hubPort, agentPort,
+					filepath.Clean(sourceGPHome), sourcePort,
+					filepath.Clean(targetGPHome),
+					mode, useHbaHostnames,
+				)
+				if err != nil {
+					return err
+				}
+
+				return config.Save()
 			})
 
 			st.RunCLISubstep(idl.Substep_start_hub, func(streams step.OutStreams) error {

@@ -80,30 +80,37 @@ func GetConfigFile() string {
 	return filepath.Join(utils.GetStateDir(), ConfigFileName)
 }
 
-func Create(hubPort int, sourcePort int, sourceGPHome string) error {
+func Create(hubPort int, agentPort int, sourceGPHome string, sourcePort int, targetGPHome string, mode idl.Mode, useHbaHostnames bool) (Config, error) {
 	path := GetConfigFile()
 	exist, err := upgrade.PathExist(path)
 	if err != nil {
-		return xerrors.Errorf("checking configuration path %q: %w", path, err)
+		return Config{}, xerrors.Errorf("checking configuration path %q: %w", path, err)
 	}
 
 	if exist {
 		log.Printf("Configuration file %s already present. Skipping.", path)
-		return nil
+		return Config{}, err
 	}
 
-	// Bootstrap with the port to enable the CLI helper function connectToHub to
-	// work with both initialize and all other CLI commands. This overloads the
-	// hub's persisted configuration with that of the CLI when ideally these
-	// would be separate. Also bootstrap with the source $GPHOME and coordinator
-	// port to handle the initialize scenario where the user quits before the
-	// InitializeRequest is sent to the hub and wants to revert.
+	// Bootstrap with known values early on so helper functions can be used.
+	// For example, bootstrap with the hub port such that connecting to the hub
+	// succeeds. Bootstrap with the source and target cluster GPHOME's, and
+	// source cluster port such that when initialize exits early, revert has
+	// enough information to succeed.
 	config := Config{}
 	config.HubPort = hubPort
+	config.AgentPort = agentPort
+	config.Mode = mode
+	config.UseHbaHostnames = useHbaHostnames
+	config.UpgradeID = upgrade.NewID()
+
 	config.Source = &greenplum.Cluster{}
 	config.Source.Primaries = make(greenplum.ContentToSegConfig)
 	config.Source.Primaries[-1] = greenplum.SegConfig{Port: sourcePort}
 	config.Source.GPHome = sourceGPHome
 
-	return config.Save()
+	config.Target = &greenplum.Cluster{}
+	config.Target.GPHome = targetGPHome
+
+	return config, nil
 }

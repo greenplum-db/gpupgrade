@@ -50,33 +50,43 @@ func TestConfig(t *testing.T) {
 	})
 }
 
-func TestConfigFileCreation(t *testing.T) {
-	const hubPort = -1
-	const sourcePort = 8888
-	const sourceGPHome = "/mock/gphome"
-	var sourceOld os.FileInfo
-
-	stateDir := testutils.GetTempDir(t, "")
-	defer testutils.MustRemoveAll(t, stateDir)
-
-	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
-	defer resetEnv()
+func TestCreate(t *testing.T) {
+	const hubPort = 9999
+	const agentPort = 8888
+	const sourceGPHome = "/mock/source-gphome"
+	const sourcePort = 1234
+	const targetGPHome = "/mock/target-gphome"
+	const mode = idl.Mode_link
+	const useHbaHostnames = false
 
 	t.Run("test idempotence", func(t *testing.T) {
+		stateDir := testutils.GetTempDir(t, "")
+		defer testutils.MustRemoveAll(t, stateDir)
+
+		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
+		defer resetEnv()
+
+		var sourceOld os.FileInfo
 
 		{ // creates initial cluster config files if none exist or fails"
-			err := config.Create(hubPort, sourcePort, sourceGPHome)
+			conf, err := config.Create(hubPort, agentPort, sourceGPHome, sourcePort, targetGPHome, mode, useHbaHostnames)
 			if err != nil {
 				t.Fatalf("unexpected error %#v", err)
 			}
 
-			if sourceOld, err = os.Stat(config.GetConfigFile()); err != nil {
+			err = conf.Save()
+			if err != nil {
+				t.Errorf("unexpected error %#v", err)
+			}
+
+			sourceOld, err = os.Stat(config.GetConfigFile())
+			if err != nil {
 				t.Errorf("unexpected error %#v", err)
 			}
 		}
 
 		{ // creating cluster config files is idempotent
-			err := config.Create(hubPort, sourcePort, sourceGPHome)
+			_, err := config.Create(hubPort, agentPort, sourceGPHome, sourcePort, targetGPHome, mode, useHbaHostnames)
 			if err != nil {
 				t.Fatalf("unexpected error %#v", err)
 			}
@@ -92,10 +102,78 @@ func TestConfigFileCreation(t *testing.T) {
 		}
 
 		{ // creating cluster config files succeeds on multiple runs
-			err := config.Create(hubPort, sourcePort, sourceGPHome)
+			_, err := config.Create(hubPort, agentPort, sourceGPHome, sourcePort, targetGPHome, mode, useHbaHostnames)
 			if err != nil {
 				t.Fatalf("unexpected error %#v", err)
 			}
+		}
+	})
+
+	t.Run("create adds known parameters", func(t *testing.T) {
+		stateDir := testutils.GetTempDir(t, "")
+		defer testutils.MustRemoveAll(t, stateDir)
+
+		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
+		defer resetEnv()
+
+		conf, err := config.Create(hubPort, agentPort, sourceGPHome, sourcePort, targetGPHome, mode, useHbaHostnames)
+		if err != nil {
+			t.Fatalf("unexpected error %#v", err)
+		}
+
+		err = conf.Save()
+		if err != nil {
+			t.Fatalf("unexpected error %#v", err)
+		}
+
+		if conf.HubPort != hubPort {
+			t.Fatalf("got %d want %d", conf.HubPort, hubPort)
+		}
+
+		if conf.AgentPort != agentPort {
+			t.Fatalf("got %d want %d", conf.AgentPort, agentPort)
+		}
+
+		if conf.Source.GPHome != sourceGPHome {
+			t.Fatalf("got %s want %s", conf.Source.GPHome, sourceGPHome)
+		}
+
+		if conf.Source.CoordinatorPort() != sourcePort {
+			t.Fatalf("got %d want %d", conf.Source.CoordinatorPort(), sourcePort)
+		}
+
+		if conf.Target.GPHome != targetGPHome {
+			t.Fatalf("got %s want %s", conf.Target.GPHome, targetGPHome)
+		}
+
+		if conf.Mode != mode {
+			t.Fatalf("got %s want %s", conf.Mode, mode)
+		}
+
+		if conf.UseHbaHostnames != useHbaHostnames {
+			t.Fatalf("got %t want %t", conf.UseHbaHostnames, useHbaHostnames)
+		}
+	})
+
+	t.Run("create adds upgradeID", func(t *testing.T) {
+		stateDir := testutils.GetTempDir(t, "")
+		defer testutils.MustRemoveAll(t, stateDir)
+
+		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
+		defer resetEnv()
+		
+		conf, err := config.Create(hubPort, agentPort, sourceGPHome, sourcePort, targetGPHome, mode, useHbaHostnames)
+		if err != nil {
+			t.Fatalf("unexpected error %#v", err)
+		}
+
+		err = conf.Save()
+		if err != nil {
+			t.Fatalf("unexpected error %#v", err)
+		}
+
+		if conf.UpgradeID == 0 {
+			t.Fatalf("expected non-empty UpgradeID")
 		}
 	})
 }

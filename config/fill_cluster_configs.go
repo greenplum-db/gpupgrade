@@ -57,8 +57,6 @@ func GetInitializeConfiguration(hubPort int, request *idl.InitializeRequest, was
 
 	config := &Config{}
 	config.Source = &source
-	config.UpgradeID = upgrade.NewID()
-	config.HubPort = hubPort
 
 	// We only need specific config values to be set for the hub RevertResponse
 	// to handle reverting an early Initialize exit.
@@ -77,13 +75,10 @@ func GetInitializeConfiguration(hubPort int, request *idl.InitializeRequest, was
 		return nil, err
 	}
 
-	config.AgentPort = int(request.GetAgentPort())
-	config.UseHbaHostnames = request.GetUseHbaHostnames()
 	config.Target = &target
 	config.Target.Destination = idl.ClusterDestination_target
 	config.Target.GPHome = request.GetTargetGPHome()
 	config.Target.Version = targetVersion
-	config.Mode = request.GetMode()
 
 	var ports []int
 	for _, p := range request.GetPorts() {
