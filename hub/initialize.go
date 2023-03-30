@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/greenplum-db/gpupgrade/config"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
@@ -33,7 +32,7 @@ func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_Init
 	}()
 
 	st.Run(idl.Substep_saving_source_cluster_config, func(stream step.OutStreams) error {
-		s.Config, err = config.GetInitializeConfiguration(s.Config.HubPort, req, false)
+		err = s.Config.GetInitializeConfiguration(req, false)
 		if err != nil {
 			return err
 		}

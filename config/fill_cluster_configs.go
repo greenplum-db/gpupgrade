@@ -42,66 +42,66 @@ func initializeConnection(gphome string, port int) (*sql.DB, error) {
 	return db, nil
 }
 
-func GetInitializeConfiguration(hubPort int, request *idl.InitializeRequest, wasEarlyExit bool) (*Config, error) {
-	db, err := InitializeConnectionFunc(request.GetSourceGPHome(), int(request.GetSourcePort()))
+func (conf *Config) GetInitializeConfiguration(request *idl.InitializeRequest, wasEarlyExit bool) error {
+	db, err := InitializeConnectionFunc(conf.Source.GPHome, conf.Source.CoordinatorPort())
 	defer func() {
 		if cErr := db.Close(); cErr != nil {
 			err = errorlist.Append(err, cErr)
 		}
 	}()
 
-	source, err := greenplum.ClusterFromDB(db, request.GetSourceGPHome(), idl.ClusterDestination_source)
+	source, err := greenplum.ClusterFromDB(db, conf.Source.GPHome, idl.ClusterDestination_source)
 	if err != nil {
-		return nil, xerrors.Errorf("retrieve source configuration: %w", err)
+		return xerrors.Errorf("retrieve source configuration: %w", err)
 	}
 
-	config := &Config{}
-	config.Source = &source
+	conf.Source = &source
 
 	// We only need specific config values to be set for the hub RevertResponse
 	// to handle reverting an early Initialize exit.
 	if wasEarlyExit {
-		return config, nil
+		return nil
 	}
 
 	err = greenplum.WaitForSegments(db, 5*time.Minute, &source)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	target := source // create target cluster based off source cluster
-	targetVersion, err := greenplum.Version(request.GetTargetGPHome())
+	targetGPHome := conf.Target.GPHome
+	targetVersion, err := greenplum.Version(conf.Target.GPHome)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	config.Target = &target
-	config.Target.Destination = idl.ClusterDestination_target
-	config.Target.GPHome = request.GetTargetGPHome()
-	config.Target.Version = targetVersion
+	conf.Target = &target
+	conf.Target.Destination = idl.ClusterDestination_target
+	conf.Target.GPHome = targetGPHome
+	conf.Target.Version = targetVersion
 
 	var ports []int
 	for _, p := range request.GetPorts() {
 		ports = append(ports, int(p))
 	}
 
-	config.Intermediate, err = GenerateIntermediateCluster(config.Source, ports, config.UpgradeID, config.Target.Version, request.GetTargetGPHome())
+	conf.Intermediate, err = GenerateIntermediateCluster(conf.Source, ports, conf.UpgradeID, conf.Target.Version, conf.Target.GPHome)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	if err := EnsureTempPortRangeDoesNotOverlapWithSourceClusterPorts(config.Source, config.Intermediate); err != nil {
-		return nil, err
+	if err := EnsureTempPortRangeDoesNotOverlapWithSourceClusterPorts(conf.Source, conf.Intermediate); err != nil {
+		return err
 	}
 
-	if config.Source.Version.Major == 5 {
-		config.Source.Tablespaces, err = greenplum.TablespacesFromDB(db, utils.GetStateDirOldTablespacesFile())
+	if conf.Source.Version.Major == 5 {
+		conf.Source.Tablespaces, err = greenplum.TablespacesFromDB(db, utils.GetStateDirOldTablespacesFile())
 		if err != nil {
-			return nil, xerrors.Errorf("extract tablespace information: %w", err)
+			return xerrors.Errorf("extract tablespace information: %w", err)
 		}
 	}
 
-	return config, nil
+	return nil
 }
 
 func GenerateIntermediateCluster(source *greenplum.Cluster, ports []int, upgradeID upgrade.ID, version semver.Version, gphome string) (*greenplum.Cluster, error) {

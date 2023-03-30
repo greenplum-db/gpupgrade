@@ -361,6 +361,22 @@ func TestGetInitializeConfiguration(t *testing.T) {
 	greenplum.SetVersionCommand(exectest.NewCommand(PostgresGPVersion_5_29_10))
 	defer greenplum.ResetVersionCommand()
 
+	stateDir := testutils.GetTempDir(t, "")
+	defer testutils.MustRemoveAll(t, stateDir)
+
+	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
+	defer resetEnv()
+
+	conf, err := config.Create(9999, 8888, "/mock/source-gphome", 1234, "/mock/target-gphome", idl.Mode_link, false)
+	if err != nil {
+		t.Fatalf("unexpected error %#v", err)
+	}
+
+	err = conf.Save()
+	if err != nil {
+		t.Fatalf("unexpected error %#v", err)
+	}
+
 	t.Run("get Initialize configuration for early Initialize revert", func(t *testing.T) {
 		db, mock, err := sqlmock.New()
 		if err != nil {
@@ -376,25 +392,23 @@ func TestGetInitializeConfiguration(t *testing.T) {
 			config.InitializeConnectionFunc = backupFunc
 		}()
 
-		mockHubPort := 8888
-		mockRequest := &idl.InitializeRequest{SourceGPHome: "/mock/gphome/path", SourcePort: int32(9999)}
 		mockDataDir := "/mock_datadir/gpseg-1"
 		mockRows := sqlmock.NewRows([]string{"dbid", "contentid", "port", "hostname", "datadir", "role"})
 		mockRows.AddRow(1, -1, 15432, "mdw", mockDataDir, greenplum.PrimaryRole)
 		mock.ExpectQuery(`SELECT .* FROM gp_segment_configuration`).WillReturnRows(mockRows)
 
-		resultConfig, err := config.GetInitializeConfiguration(mockHubPort, mockRequest, true)
+		err = conf.GetInitializeConfiguration(&idl.InitializeRequest{}, true)
 		if err != nil {
 			t.Fatalf("couldn't get early Initialize configuration: %v", err)
 		}
 
-		if resultConfig.Source.Primaries[-1].DataDir != mockDataDir {
-			t.Errorf("got datadir %s, want %s", resultConfig.Source.Primaries[-1].DataDir, mockDataDir)
+		if conf.Source.Primaries[-1].DataDir != mockDataDir {
+			t.Errorf("got datadir %s, want %s", conf.Source.Primaries[-1].DataDir, mockDataDir)
 		}
 
 		expectedVersion, _ := semver.Make("5.29.10")
-		if !resultConfig.Source.Version.EQ(expectedVersion) {
-			t.Errorf("got %v, want %v", resultConfig.Source.Version, expectedVersion)
+		if !conf.Source.Version.EQ(expectedVersion) {
+			t.Errorf("got %v, want %v", conf.Source.Version, expectedVersion)
 		}
 	})
 
@@ -419,15 +433,6 @@ func TestGetInitializeConfiguration(t *testing.T) {
 		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 		defer resetEnv()
 
-		mockHubPort := 8888
-		mockRequest := &idl.InitializeRequest{
-			SourceGPHome: "/mock/source/gphome/path",
-			SourcePort:   int32(9999),
-			TargetGPHome: "/mock/target/gphome/path",
-			AgentPort:    int32(7777),
-			Mode:         idl.Mode_link,
-			Ports:        []uint32{1, 2, 3},
-		}
 		mockRows1 := sqlmock.NewRows([]string{"dbid", "contentid", "port", "hostname", "datadir", "role"})
 		mockRows1.AddRow(1, -1, 15432, "mdw", "/mock_datadir/gpseg-1", greenplum.PrimaryRole)
 		mockRows1.AddRow(2, 0, 10000, "sdw1", "/mock_datadir/primaries/gpseg0", greenplum.PrimaryRole)
@@ -441,25 +446,26 @@ func TestGetInitializeConfiguration(t *testing.T) {
 		mockRows3 := sqlmock.NewRows([]string{"dbid", "oid", "name", "location", "userdefined"})
 		mock.ExpectQuery(`SELECT .* FROM pg_tablespace`).WillReturnRows(mockRows3)
 
-		resultConfig, err := config.GetInitializeConfiguration(mockHubPort, mockRequest, false)
+		request := &idl.InitializeRequest{Ports: []uint32{1, 2, 3}}
+		err = conf.GetInitializeConfiguration(request, false)
 		if err != nil {
 			t.Fatalf("couldn't get early Initialize configuration: %v", err)
 		}
 
-		if resultConfig.Intermediate == nil {
+		if conf.Intermediate == nil {
 			t.Errorf("expected non-empty config.Intermediate")
 		}
 
-		if resultConfig.Target == nil {
+		if conf.Target == nil {
 			t.Errorf("expected non-empty config.Target")
 		}
 
 		expectedVersion, _ := semver.Make("5.29.10")
-		if !resultConfig.Source.Version.EQ(expectedVersion) {
-			t.Errorf("got %v, want %v", resultConfig.Source.Version, expectedVersion)
+		if !conf.Source.Version.EQ(expectedVersion) {
+			t.Errorf("got %v, want %v", conf.Source.Version, expectedVersion)
 		}
 
-		if resultConfig.UpgradeID == 0 {
+		if conf.UpgradeID == 0 {
 			t.Errorf("expected non-empty UpgradeID")
 		}
 	})
