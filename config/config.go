@@ -41,7 +41,7 @@ type Config struct {
 	// gpinitsystem execution in the initialize step; before that, it is nil.
 	Target *greenplum.Cluster
 
-	Port            int
+	HubPort         int
 	AgentPort       int
 	Mode            idl.Mode
 	UseHbaHostnames bool
@@ -99,7 +99,7 @@ func Create(hubPort int, sourcePort int, sourceGPHome string) error {
 	// port to handle the initialize scenario where the user quits before the
 	// InitializeRequest is sent to the hub and wants to revert.
 	config := Config{}
-	config.Port = hubPort
+	config.HubPort = hubPort
 	config.Source = &greenplum.Cluster{}
 	config.Source.Primaries = make(greenplum.ContentToSegConfig)
 	config.Source.Primaries[-1] = greenplum.SegConfig{Port: sourcePort}

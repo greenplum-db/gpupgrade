@@ -47,13 +47,13 @@ func TestHub(t *testing.T) {
 			name:           "starts on flag value when flag is set and config file contains a value",
 			expected:       port,
 			args:           []string{"hub", "--daemonize", "--port", strconv.Itoa(port)},
-			configContents: `{"Port": 80}`,
+			configContents: `{"HubPort": 80}`,
 		},
 		{
 			name:           "starts on config value when flag is not set and config file contains a value",
 			expected:       port,
 			args:           []string{"hub", "--daemonize"},
-			configContents: fmt.Sprintf(`{"Port": %d}`, port),
+			configContents: fmt.Sprintf(`{"HubPort": %d}`, port),
 		},
 	}
 

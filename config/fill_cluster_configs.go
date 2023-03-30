@@ -58,7 +58,7 @@ func GetInitializeConfiguration(hubPort int, request *idl.InitializeRequest, was
 	config := &Config{}
 	config.Source = &source
 	config.UpgradeID = upgrade.NewID()
-	config.Port = hubPort
+	config.HubPort = hubPort
 
 	// We only need specific config values to be set for the hub RevertResponse
 	// to handle reverting an early Initialize exit.

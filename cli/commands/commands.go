@@ -339,5 +339,5 @@ func hubPort() (int, error) {
 		return -1, xerrors.Errorf("load config: %w", err)
 	}
 
-	return conf.Port, nil
+	return conf.HubPort, nil
 }

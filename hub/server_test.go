@@ -47,7 +47,7 @@ func TestHubStart(t *testing.T) {
 		Source:       source,
 		Target:       target,
 		Intermediate: &greenplum.Cluster{},
-		Port:         testutils.MustGetPort(t),
+		HubPort:      testutils.MustGetPort(t),
 		AgentPort:    testutils.MustGetPort(t),
 		Mode:         idl.Mode_copy,
 		UpgradeID:    0,
@@ -76,7 +76,7 @@ func TestHubStart(t *testing.T) {
 		portInUse, closeListener := mustListen(t)
 		defer closeListener()
 
-		conf.Port = portInUse
+		conf.HubPort = portInUse
 		h := hub.New(conf, grpc.DialContext, "")
 
 		errChan := make(chan error, 1)
@@ -148,10 +148,10 @@ func mustListen(t *testing.T) (int, func()) {
 	return port, closeListener
 }
 
-// TODO: These tests would be faster and more testable if we pass in a gRPC
-//  dialer to AgentConns similar to how we test RestartAgents. Thus, we would be
-//  able to use bufconn.Listen when creating a gRPC dialer. But since there
-//  are many callers to AgentConns that is not an easy change.
+//	 TODO: These tests would be faster and more testable if we pass in a gRPC
+//		dialer to AgentConns similar to how we test RestartAgents. Thus, we would be
+//		able to use bufconn.Listen when creating a gRPC dialer. But since there
+//		are many callers to AgentConns that is not an easy change.
 func TestAgentConns(t *testing.T) {
 	source := hub.MustCreateCluster(t, greenplum.SegConfigs{
 		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
@@ -175,7 +175,7 @@ func TestAgentConns(t *testing.T) {
 		Source:       source,
 		Target:       target,
 		Intermediate: &greenplum.Cluster{},
-		Port:         testutils.MustGetPort(t),
+		HubPort:      testutils.MustGetPort(t),
 		AgentPort:    agentPort,
 		Mode:         idl.Mode_copy,
 		UpgradeID:    0,
@@ -329,7 +329,7 @@ func TestGetArchiveDir(t *testing.T) {
 		Source:       source,
 		Target:       target,
 		Intermediate: &greenplum.Cluster{},
-		Port:         12345,
+		HubPort:      12345,
 		AgentPort:    54321,
 		Mode:         idl.Mode_copy,
 		UpgradeID:    0,

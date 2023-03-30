@@ -48,7 +48,7 @@ func Hub() *cobra.Command {
 			// they're not defined in the configuration (as happens
 			// pre-initialize), we still need good defaults.
 			conf := &config.Config{
-				Port:      port,
+				HubPort:   port,
 				AgentPort: upgrade.DefaultAgentPort,
 				Mode:      idl.Mode_copy,
 			}
@@ -60,7 +60,7 @@ func Hub() *cobra.Command {
 
 			// allow command line args precedence over config file values
 			if cmd.Flag("port").Changed {
-				conf.Port = port
+				conf.HubPort = port
 			}
 
 			h := hub.New(conf, grpc.DialContext, stateDir)

@@ -82,9 +82,9 @@ func (s *Server) MakeDaemon() {
 }
 
 func (s *Server) Start() error {
-	lis, err := net.Listen("tcp", ":"+strconv.Itoa(s.Port))
+	lis, err := net.Listen("tcp", ":"+strconv.Itoa(s.HubPort))
 	if err != nil {
-		return xerrors.Errorf("listen on port %d: %w", s.Port, err)
+		return xerrors.Errorf("listen on port %d: %w", s.HubPort, err)
 	}
 
 	// Set up an interceptor function to log any panics we get from request
@@ -109,7 +109,7 @@ func (s *Server) Start() error {
 	reflection.Register(server)
 
 	if s.daemon {
-		fmt.Printf("Hub started on port %d with pid %d\n", s.Port, os.Getpid())
+		fmt.Printf("Hub started on port %d with pid %d\n", s.HubPort, os.Getpid())
 		daemon.Daemonize()
 	}
 
@@ -322,9 +322,10 @@ func EnsureConnsAreReady(agentConns []*idl.Connection) error {
 }
 
 // Closes all h.agentConns. Callers must hold the Server's mutex.
-// TODO: this function assumes that all h.agentConns are _not_ in a terminal
-//   state(e.g. already closed).  If so, conn.Conn.WaitForStateChange() can block
-//   indefinitely.
+//
+//	 TODO: this function assumes that all h.agentConns are _not_ in a terminal
+//		state(e.g. already closed).  If so, conn.Conn.WaitForStateChange() can block
+//		indefinitely.
 func (s *Server) closeAgentConns() {
 	for _, conn := range s.agentConns {
 		defer conn.CancelContext()

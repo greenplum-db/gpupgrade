@@ -51,7 +51,7 @@ Cannot revert and restore the source cluster. Please contact support.`)
 	// to the hub, we will only need to do a couple revert substeps.
 	if !hasInitializeStarted {
 		request := &idl.InitializeRequest{SourceGPHome: s.Source.GPHome, SourcePort: int32(s.Source.CoordinatorPort())}
-		s.Config, err = config.GetInitializeConfiguration(s.Port, request, true)
+		s.Config, err = config.GetInitializeConfiguration(s.HubPort, request, true)
 		if err != nil {
 			return err
 		}

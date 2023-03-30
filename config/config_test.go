@@ -20,7 +20,7 @@ func TestConfig(t *testing.T) {
 		Source:       source,
 		Target:       target,
 		Intermediate: &greenplum.Cluster{},
-		Port:         12345,
+		HubPort:      12345,
 		AgentPort:    54321,
 		Mode:         idl.Mode_copy,
 		UpgradeID:    0,
