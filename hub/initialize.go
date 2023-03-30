@@ -32,7 +32,7 @@ func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_Init
 	}()
 
 	st.Run(idl.Substep_saving_source_cluster_config, func(stream step.OutStreams) error {
-		err = s.Config.GetInitializeConfiguration(req, false)
+		err = s.Config.AddClusters(req.GetPorts())
 		if err != nil {
 			return err
 		}

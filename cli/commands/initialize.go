@@ -261,12 +261,6 @@ func initialize() *cobra.Command {
 				}
 
 				request := &idl.InitializeRequest{
-					AgentPort:        int32(agentPort),
-					SourceGPHome:     filepath.Clean(sourceGPHome),
-					TargetGPHome:     filepath.Clean(targetGPHome),
-					SourcePort:       int32(sourcePort),
-					Mode:             mode,
-					UseHbaHostnames:  useHbaHostnames,
 					Ports:            parsedPorts,
 					DiskFreeRatio:    diskFreeRatio,
 					ParentBackupDirs: parentBackupDirs,

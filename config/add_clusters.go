@@ -42,7 +42,7 @@ func initializeConnection(gphome string, port int) (*sql.DB, error) {
 	return db, nil
 }
 
-func (conf *Config) GetInitializeConfiguration(request *idl.InitializeRequest, wasEarlyExit bool) error {
+func (conf *Config) AddClusters(requestedPorts []uint32) error {
 	db, err := InitializeConnectionFunc(conf.Source.GPHome, conf.Source.CoordinatorPort())
 	defer func() {
 		if cErr := db.Close(); cErr != nil {
@@ -55,33 +55,26 @@ func (conf *Config) GetInitializeConfiguration(request *idl.InitializeRequest, w
 		return xerrors.Errorf("retrieve source configuration: %w", err)
 	}
 
-	conf.Source = &source
-
-	// We only need specific config values to be set for the hub RevertResponse
-	// to handle reverting an early Initialize exit.
-	if wasEarlyExit {
-		return nil
-	}
-
 	err = greenplum.WaitForSegments(db, 5*time.Minute, &source)
 	if err != nil {
 		return err
 	}
 
-	target := source // create target cluster based off source cluster
 	targetGPHome := conf.Target.GPHome
 	targetVersion, err := greenplum.Version(conf.Target.GPHome)
 	if err != nil {
 		return err
 	}
 
+	target := source // create target cluster based off source cluster
+	conf.Source = &source
 	conf.Target = &target
 	conf.Target.Destination = idl.ClusterDestination_target
 	conf.Target.GPHome = targetGPHome
 	conf.Target.Version = targetVersion
 
 	var ports []int
-	for _, p := range request.GetPorts() {
+	for _, p := range requestedPorts {
 		ports = append(ports, int(p))
 	}
 

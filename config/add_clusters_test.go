@@ -357,7 +357,7 @@ func TestEnsureTempPortRangeDoesNotOverlapWithSourceClusterPorts(t *testing.T) {
 	}
 }
 
-func TestGetInitializeConfiguration(t *testing.T) {
+func TestAddClusters(t *testing.T) {
 	greenplum.SetVersionCommand(exectest.NewCommand(PostgresGPVersion_5_29_10))
 	defer greenplum.ResetVersionCommand()
 
@@ -376,41 +376,6 @@ func TestGetInitializeConfiguration(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error %#v", err)
 	}
-
-	t.Run("get Initialize configuration for early Initialize revert", func(t *testing.T) {
-		db, mock, err := sqlmock.New()
-		if err != nil {
-			t.Fatalf("couldn't create sqlmock: %v", err)
-		}
-		defer testutils.FinishMock(mock, t)
-
-		backupFunc := config.InitializeConnectionFunc
-		config.InitializeConnectionFunc = func(gphome string, port int) (*sql.DB, error) {
-			return db, nil
-		}
-		defer func() {
-			config.InitializeConnectionFunc = backupFunc
-		}()
-
-		mockDataDir := "/mock_datadir/gpseg-1"
-		mockRows := sqlmock.NewRows([]string{"dbid", "contentid", "port", "hostname", "datadir", "role"})
-		mockRows.AddRow(1, -1, 15432, "mdw", mockDataDir, greenplum.PrimaryRole)
-		mock.ExpectQuery(`SELECT .* FROM gp_segment_configuration`).WillReturnRows(mockRows)
-
-		err = conf.GetInitializeConfiguration(&idl.InitializeRequest{}, true)
-		if err != nil {
-			t.Fatalf("couldn't get early Initialize configuration: %v", err)
-		}
-
-		if conf.Source.Primaries[-1].DataDir != mockDataDir {
-			t.Errorf("got datadir %s, want %s", conf.Source.Primaries[-1].DataDir, mockDataDir)
-		}
-
-		expectedVersion, _ := semver.Make("5.29.10")
-		if !conf.Source.Version.EQ(expectedVersion) {
-			t.Errorf("got %v, want %v", conf.Source.Version, expectedVersion)
-		}
-	})
 
 	t.Run("get Initialize configuration", func(t *testing.T) {
 		db, mock, err := sqlmock.New()
@@ -446,8 +411,7 @@ func TestGetInitializeConfiguration(t *testing.T) {
 		mockRows3 := sqlmock.NewRows([]string{"dbid", "oid", "name", "location", "userdefined"})
 		mock.ExpectQuery(`SELECT .* FROM pg_tablespace`).WillReturnRows(mockRows3)
 
-		request := &idl.InitializeRequest{Ports: []uint32{1, 2, 3}}
-		err = conf.GetInitializeConfiguration(request, false)
+		err = conf.AddClusters([]uint32{1, 2, 3})
 		if err != nil {
 			t.Fatalf("couldn't get early Initialize configuration: %v", err)
 		}
