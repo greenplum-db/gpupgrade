@@ -116,7 +116,7 @@ func TestHub(t *testing.T) {
 			t.Errorf("unexpected error got %+v", err)
 		}
 
-		err = conf.Save()
+		err = conf.Write()
 		if err != nil {
 			t.Fatal(err)
 		}

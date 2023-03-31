@@ -34,7 +34,7 @@ func TestConfig(t *testing.T) {
 		defer resetEnv()
 
 		// Write the configuration file.
-		if err := conf.Save(); err != nil {
+		if err := conf.Write(); err != nil {
 			t.Errorf("saving config: %+v", err)
 		}
 
@@ -74,7 +74,7 @@ func TestCreate(t *testing.T) {
 				t.Fatalf("unexpected error %#v", err)
 			}
 
-			err = conf.Save()
+			err = conf.Write()
 			if err != nil {
 				t.Errorf("unexpected error %#v", err)
 			}
@@ -121,7 +121,7 @@ func TestCreate(t *testing.T) {
 			t.Fatalf("unexpected error %#v", err)
 		}
 
-		err = conf.Save()
+		err = conf.Write()
 		if err != nil {
 			t.Fatalf("unexpected error %#v", err)
 		}
@@ -167,7 +167,7 @@ func TestCreate(t *testing.T) {
 			t.Fatalf("unexpected error %#v", err)
 		}
 
-		err = conf.Save()
+		err = conf.Write()
 		if err != nil {
 			t.Fatalf("unexpected error %#v", err)
 		}

@@ -37,7 +37,7 @@ func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_Init
 			return err
 		}
 
-		return s.Config.Save()
+		return s.Config.Write()
 	})
 
 	// Since the agents might not be up if gpupgrade is not properly installed, check it early on using ssh.
@@ -76,12 +76,12 @@ func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_Init
 		// no dependencies. Whereas the default backup directory is based on the
 		// data directories. Having a state directory with no dependencies is
 		// much easier to create and remove during the gpupgrade lifecycle.
-		s.BackupDirs, err = ParseParentBackupDirs(req.GetParentBackupDirs(), s.Source)
+		s.Config.BackupDirs, err = ParseParentBackupDirs(req.GetParentBackupDirs(), s.Source)
 		if err != nil {
 			return err
 		}
 
-		err = s.Config.Save()
+		err = s.Config.Write()
 		if err != nil {
 			return fmt.Errorf("save backup directories: %w", err)
 		}
@@ -159,8 +159,8 @@ func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest
 			return err
 		}
 
-		s.Intermediate.CatalogVersion = catalogVersion
-		return s.Config.Save()
+		s.Config.Intermediate.CatalogVersion = catalogVersion
+		return s.Config.Write()
 	})
 
 	st.RunConditionally(idl.Substep_setting_dynamic_library_path_on_target_cluster, req.GetDynamicLibraryPath() != upgrade.DefaultDynamicLibraryPath, func(stream step.OutStreams) error {

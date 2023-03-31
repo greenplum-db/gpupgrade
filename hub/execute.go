@@ -52,12 +52,12 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 				return err
 			}
 
-			s.BackupDirs, err = ParseParentBackupDirs(req.GetParentBackupDirs(), s.Source)
+			s.Config.BackupDirs, err = ParseParentBackupDirs(req.GetParentBackupDirs(), s.Source)
 			if err != nil {
 				return err
 			}
 
-			err = s.Config.Save()
+			err = s.Config.Write()
 			if err != nil {
 				return fmt.Errorf("save backup directories: %w", err)
 			}

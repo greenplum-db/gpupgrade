@@ -372,7 +372,7 @@ func TestAddClusters(t *testing.T) {
 		t.Fatalf("unexpected error %#v", err)
 	}
 
-	err = conf.Save()
+	err = conf.Write()
 	if err != nil {
 		t.Fatalf("unexpected error %#v", err)
 	}

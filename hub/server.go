@@ -348,8 +348,8 @@ func (s *Server) GetLogArchiveDir() (string, error) {
 		return "", err
 	}
 
-	s.LogArchiveDir = filepath.Join(filepath.Dir(logDir), upgrade.GetArchiveDirectoryName(s.UpgradeID, time.Now()))
-	err = s.Config.Save()
+	s.Config.LogArchiveDir = filepath.Join(filepath.Dir(logDir), upgrade.GetArchiveDirectoryName(s.UpgradeID, time.Now()))
+	err = s.Config.Write()
 	if err != nil {
 		return "", fmt.Errorf("saving archive directory: %w", err)
 	}

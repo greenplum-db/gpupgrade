@@ -206,7 +206,7 @@ func initialize() *cobra.Command {
 					return err
 				}
 
-				return config.Save()
+				return config.Write()
 			})
 
 			st.RunCLISubstep(idl.Substep_start_hub, func(streams step.OutStreams) error {

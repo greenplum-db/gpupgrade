@@ -45,6 +45,17 @@ type Config struct {
 	UpgradeID       upgrade.ID
 }
 
+func (conf *Config) Write() error {
+	var buffer bytes.Buffer
+	enc := json.NewEncoder(&buffer)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(conf); err != nil {
+		return xerrors.Errorf("save configuration file: %w", err)
+	}
+
+	return utils.AtomicallyWrite(GetConfigFile(), buffer.Bytes())
+}
+
 func Read() (*Config, error) {
 	contents, err := os.ReadFile(GetConfigFile())
 	if err != nil {
@@ -58,17 +69,6 @@ func Read() (*Config, error) {
 	}
 
 	return conf, nil
-}
-
-func (c *Config) Save() error {
-	var buffer bytes.Buffer
-	enc := json.NewEncoder(&buffer)
-	enc.SetIndent("", "  ")
-	if err := enc.Encode(c); err != nil {
-		return xerrors.Errorf("save configuration file: %w", err)
-	}
-
-	return utils.AtomicallyWrite(GetConfigFile(), buffer.Bytes())
 }
 
 func GetConfigFile() string {
