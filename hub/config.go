@@ -13,10 +13,10 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (s *Server) GetConfig(ctx context.Context, in *idl.GetConfigRequest) (*idl.GetConfigReply, error) {
+func (s *Server) GetConfig(ctx context.Context, req *idl.GetConfigRequest) (*idl.GetConfigReply, error) {
 	resp := &idl.GetConfigReply{}
 
-	switch in.Name {
+	switch req.Name {
 	case "id":
 		resp.Value = s.UpgradeID.String()
 	case "source-gphome":
@@ -24,9 +24,11 @@ func (s *Server) GetConfig(ctx context.Context, in *idl.GetConfigRequest) (*idl.
 			resp.Value = s.Source.GPHome
 		}
 	case "target-gphome":
-		resp.Value = s.Intermediate.GPHome
+		if s.Intermediate != nil {
+			resp.Value = s.Intermediate.GPHome
+		}
 	case "target-datadir":
-		if s.Target != nil {
+		if s.Intermediate != nil {
 			resp.Value = s.Intermediate.CoordinatorDataDir()
 		}
 	case "target-port":
@@ -34,7 +36,7 @@ func (s *Server) GetConfig(ctx context.Context, in *idl.GetConfigRequest) (*idl.
 			resp.Value = strconv.Itoa(s.Intermediate.CoordinatorPort())
 		}
 	default:
-		return nil, status.Errorf(codes.NotFound, "%q is not a valid configuration key", in.Name)
+		return nil, status.Errorf(codes.NotFound, "%q is not a valid configuration key", req.Name)
 	}
 
 	return resp, nil
