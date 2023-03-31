@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -33,7 +35,9 @@ func finalize() *cobra.Command {
 				return err
 			}
 
-			confirmationText := fmt.Sprintf(finalizeConfirmationText, logdir)
+			confirmationText := fmt.Sprintf(finalizeConfirmationText,
+				cases.Title(language.English).String(idl.Step_finalize.String()),
+				finalizeSubsteps, logdir)
 
 			st, err := commanders.NewStep(idl.Step_finalize,
 				&step.BufferedStreams{},

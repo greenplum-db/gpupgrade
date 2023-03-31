@@ -8,11 +8,8 @@ import "github.com/fatih/color"
 const initializeConfirmationText = `
 You are about to initialize a major-version upgrade of Greenplum.
 
-gpupgrade initialize will perform a series of steps, including:
- - Check disk space
- - Create the target cluster
- - Run pg_upgrade consistency checks
-
+%s will carry out the following steps:
+%s
 gpupgrade log files can be found on all hosts in %s
 
 gpupgrade initialize will use these values from %s
@@ -43,10 +40,8 @@ const executeConfirmationText = `
 You are about to run the "execute" command for a major-version upgrade of Greenplum.
 This should be done only during a downtime window.
 %s
-gpupgrade execute will perform a series of steps, including:
-- Upgrade master
-- Upgrade primary segments
-
+%s will carry out the following steps:
+%s
 gpupgrade log files can be found on all hosts in %s
 
 You will still have the opportunity to revert the cluster to its original state
@@ -60,13 +55,8 @@ const finalizeConfirmationText = `
 You are about to finalize a major-version upgrade of Greenplum.
 This should be done only during a downtime window.
 
-gpupgrade finalize will perform a series of steps, including:
- - Update target master catalog
- - Update data directories
- - Update target master configuration files
- - Upgrade standby master
- - Upgrade mirror segments
-
+%s will carry out the following steps:
+%s
 gpupgrade log files can be found on all hosts in %s
 
 WARNING: You will not be able to revert the cluster to its original state after this step.
@@ -79,14 +69,8 @@ const revertConfirmationText = `
 You are about to revert this upgrade.
 This should be done only during a downtime window.
 
-gpupgrade revert will perform a series of steps, including:
- - Delete target cluster data directories
- - Delete state directories on the segments
- - Delete master state directory
- - Archive log directories
- - Restore source cluster
- - Start source cluster
-
+%s will carry out the following steps:
+%s
 gpupgrade log files can be found on all hosts in %s
 
 WARNING: You cannot revert if you do not have mirrors & standby configured, and execute has started.

@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/hub"
@@ -52,7 +54,9 @@ func execute() *cobra.Command {
 				return err
 			}
 
-			confirmationText := fmt.Sprintf(executeConfirmationText, revertWarning, logdir)
+			confirmationText := fmt.Sprintf(executeConfirmationText, revertWarning,
+				cases.Title(language.English).String(idl.Step_execute.String()),
+				executeSubsteps, logdir)
 
 			st, err := commanders.NewStep(idl.Step_execute,
 				&step.BufferedStreams{},

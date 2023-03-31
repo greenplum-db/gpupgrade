@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -33,7 +35,9 @@ func revert() *cobra.Command {
 				return err
 			}
 
-			confirmationText := fmt.Sprintf(revertConfirmationText, logdir)
+			confirmationText := fmt.Sprintf(revertConfirmationText,
+				cases.Title(language.English).String(idl.Step_revert.String()),
+				revertSubsteps, logdir)
 
 			st, err := commanders.NewStep(idl.Step_revert,
 				&step.BufferedStreams{},

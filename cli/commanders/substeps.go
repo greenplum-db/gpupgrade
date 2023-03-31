@@ -4,8 +4,21 @@
 package commanders
 
 import (
+	"fmt"
+
 	"github.com/greenplum-db/gpupgrade/idl"
 )
+
+type Substeps []idl.Substep
+
+func (s Substeps) String() string {
+	var output string
+	for _, substep := range s {
+		output += fmt.Sprintf(" - %s\n", SubstepDescriptions[substep].HelpText)
+	}
+
+	return output
+}
 
 type substepText struct {
 	OutputText string

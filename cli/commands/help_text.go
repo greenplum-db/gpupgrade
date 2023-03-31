@@ -8,6 +8,8 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -15,15 +17,24 @@ import (
 )
 
 var (
-	Help           map[string]string
-	InitializeHelp string
-	ExecuteHelp    string
-	FinalizeHelp   string
-	RevertHelp     string
+	Help               map[idl.Step]string
+	initializeSubsteps commanders.Substeps
+	executeSubsteps    commanders.Substeps
+	finalizeSubsteps   commanders.Substeps
+	revertSubsteps     commanders.Substeps
+	InitializeHelp     string
+	ExecuteHelp        string
+	FinalizeHelp       string
+	RevertHelp         string
 )
 
 func init() {
-	InitializeHelp = GenerateHelpString(initializeHelp, []idl.Substep{
+	logDir, err := utils.GetLogDir()
+	if err != nil {
+		panic(fmt.Sprintf("failed to get log directory: %v", err))
+	}
+
+	initializeSubsteps = commanders.Substeps{
 		idl.Substep_generate_data_migration_scripts,
 		idl.Substep_execute_stats_data_migration_scripts,
 		idl.Substep_execute_initialize_data_migration_scripts,
@@ -39,16 +50,18 @@ func init() {
 		idl.Substep_shutdown_target_cluster,
 		idl.Substep_backup_target_master,
 		idl.Substep_check_upgrade,
-	})
-	ExecuteHelp = GenerateHelpString(executeHelp, []idl.Substep{
+	}
+
+	executeSubsteps = commanders.Substeps{
 		idl.Substep_check_active_connections_on_source_cluster,
 		idl.Substep_shutdown_source_cluster,
 		idl.Substep_upgrade_master,
 		idl.Substep_copy_master,
 		idl.Substep_upgrade_primaries,
 		idl.Substep_start_target_cluster,
-	})
-	FinalizeHelp = GenerateHelpString(finalizeHelp, []idl.Substep{
+	}
+
+	finalizeSubsteps = commanders.Substeps{
 		idl.Substep_check_active_connections_on_target_cluster,
 		idl.Substep_upgrade_mirrors,
 		idl.Substep_upgrade_standby,
@@ -64,9 +77,9 @@ func init() {
 		idl.Substep_delete_segment_statedirs,
 		idl.Substep_stop_hub_and_agents,
 		idl.Substep_execute_finalize_data_migration_scripts,
-		idl.Substep_delete_master_statedir,
-	})
-	RevertHelp = GenerateHelpString(revertHelp, []idl.Substep{
+	}
+
+	revertSubsteps = commanders.Substeps{
 		idl.Substep_check_active_connections_on_target_cluster,
 		idl.Substep_shutdown_target_cluster,
 		idl.Substep_delete_target_cluster_datadirs,
@@ -80,20 +93,25 @@ func init() {
 		idl.Substep_delete_segment_statedirs,
 		idl.Substep_stop_hub_and_agents,
 		idl.Substep_execute_revert_data_migration_scripts,
-		idl.Substep_delete_master_statedir,
-	})
-	Help = map[string]string{
-		"initialize": InitializeHelp,
-		"execute":    ExecuteHelp,
-		"finalize":   FinalizeHelp,
-		"revert":     RevertHelp,
+	}
+
+	InitializeHelp = fmt.Sprintf(initializeHelpText, cases.Title(language.English).String(idl.Step_initialize.String()), initializeSubsteps, logDir)
+	ExecuteHelp = fmt.Sprintf(executeHelpText, cases.Title(language.English).String(idl.Step_execute.String()), executeSubsteps, logDir)
+	FinalizeHelp = fmt.Sprintf(finalizeHelpText, cases.Title(language.English).String(idl.Step_finalize.String()), finalizeSubsteps, logDir)
+	RevertHelp = fmt.Sprintf(revertHelpText, cases.Title(language.English).String(idl.Step_revert.String()), revertSubsteps, logDir)
+
+	Help = map[idl.Step]string{
+		idl.Step_initialize: InitializeHelp,
+		idl.Step_execute:    ExecuteHelp,
+		idl.Step_finalize:   FinalizeHelp,
+		idl.Step_revert:     RevertHelp,
 	}
 }
 
-const initializeHelp = `
+const initializeHelpText = `
 Runs pre-upgrade checks and prepares the cluster for upgrade.
 
-Initialize will carry out the following steps:
+%s will carry out the following steps:
 %s
 During or after gpupgrade initialize, you may revert the cluster to its
 original state by running gpupgrade revert.
@@ -113,11 +131,11 @@ Optional Flags:
 
 gpupgrade log files can be found on all hosts in %s
 `
-const executeHelp = `
+const executeHelpText = `
 Upgrades the master and primary segments to the target Greenplum version.
 This command should be run only during a downtime window.
 
-Execute will carry out the following steps:
+%s will carry out the following steps:
 %s
 During or after gpupgrade execute, you may revert the cluster to its
 original state by running gpupgrade revert.
@@ -136,11 +154,11 @@ Optional Flags:
 
 gpupgrade log files can be found on all hosts in %s
 `
-const finalizeHelp = `
+const finalizeHelpText = `
 Upgrades the standby master and mirror segments to the target Greenplum version.
 This command should be run only during a downtime window.
 
-Finalize will carry out the following steps:
+%s will carry out the following steps:
 %s
 Once you run gpupgrade finalize, you may NOT revert the cluster to its
 original state.
@@ -157,12 +175,12 @@ Refer to documentation for instructions.
 
 gpupgrade log files can be found on all hosts in %s
 `
-const revertHelp = `
+const revertHelpText = `
 Returns the cluster to its original state.
 This command cannot be run after gpupgrade finalize has begun.
 This command should be run only during a downtime window.
 
-Revert will carry out some or all of the following steps:
+%s will carry out the following steps:
 %s
 Usage: gpupgrade revert
 
@@ -291,20 +309,6 @@ gpupgrade log files can be found on all hosts in %s
 
 Use "gpupgrade [command] --help" for more information about a command.
 `
-
-func GenerateHelpString(baseString string, commandList []idl.Substep) string {
-	var formattedList string
-	for _, substep := range commandList {
-		formattedList += fmt.Sprintf(" - %s\n", commanders.SubstepDescriptions[substep].HelpText)
-	}
-
-	logdir, err := utils.GetLogDir()
-	if err != nil {
-		panic(fmt.Sprintf("failed to get log directory: %v", err))
-	}
-
-	return fmt.Sprintf(baseString, formattedList, logdir)
-}
 
 // Cobra has multiple ways to handle help text, so we want to force all of them to use the same help text
 func addHelpToCommand(cmd *cobra.Command, help string) *cobra.Command {

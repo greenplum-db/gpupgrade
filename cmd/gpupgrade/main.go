@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/greenplum-db/gpupgrade/cli/commands"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/daemon"
 	"github.com/greenplum-db/gpupgrade/utils/logger"
@@ -31,8 +32,9 @@ func main() {
 	err := root.Execute()
 	if err != nil && err != daemon.ErrSuccessfullyDaemonized {
 		if strings.HasPrefix(err.Error(), "unknown flag") {
-			cmd := os.Args[1]
-			fmt.Println(commands.Help[cmd])
+			cmd := strings.TrimSpace(os.Args[1])
+			step := idl.Step(idl.Step_value[cmd])
+			fmt.Println(commands.Help[step])
 		}
 
 		// We use gplog.Debug instead of Error so the error is not displayed

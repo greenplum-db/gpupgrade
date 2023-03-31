@@ -14,6 +14,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
@@ -59,7 +61,7 @@ func initialize() *cobra.Command {
 
 			// If no required flags are set then return help.
 			if !cmd.Flag("file").Changed && !isAnyDevModeFlagSet {
-				fmt.Println(Help["initialize"])
+				fmt.Println(InitializeHelp)
 				cmd.SilenceErrors = true // silence UserCanceled error message below
 				return step.UserCanceled // exit early and don't call RunE
 			}
@@ -164,7 +166,9 @@ func initialize() *cobra.Command {
 				return err
 			}
 
-			confirmationText := fmt.Sprintf(initializeConfirmationText, logdir, configPath,
+			confirmationText := fmt.Sprintf(initializeConfirmationText,
+				cases.Title(language.English).String(idl.Step_initialize.String()),
+				initializeSubsteps, logdir, configPath,
 				sourcePort, sourceGPHome, targetGPHome, mode, diskFreeRatio, useHbaHostnames, dynamicLibraryPath, ports, hubPort, agentPort)
 
 			st, err := commanders.NewStep(idl.Step_initialize,
