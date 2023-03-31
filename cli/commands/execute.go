@@ -37,8 +37,7 @@ func execute() *cobra.Command {
 				return fmt.Errorf("expected --verbose when using --pg-upgrade-verbose")
 			}
 
-			conf := &config.Config{}
-			err = conf.Load()
+			conf, err := config.Read()
 			if err != nil {
 				return err
 			}

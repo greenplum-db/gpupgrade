@@ -39,8 +39,8 @@ func TestConfig(t *testing.T) {
 		}
 
 		// Reload the configuration and ensure the contents are the same.
-		actual := new(config.Config)
-		if err := actual.Load(); err != nil {
+		actual, err := config.Read()
+		if err != nil {
 			t.Errorf("loading config: %+v", err)
 		}
 
@@ -161,7 +161,7 @@ func TestCreate(t *testing.T) {
 
 		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 		defer resetEnv()
-		
+
 		conf, err := config.Create(hubPort, agentPort, sourceGPHome, sourcePort, targetGPHome, mode, useHbaHostnames)
 		if err != nil {
 			t.Fatalf("unexpected error %#v", err)

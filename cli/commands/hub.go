@@ -12,7 +12,6 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/config"
 	"github.com/greenplum-db/gpupgrade/hub"
-	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/daemon"
@@ -43,17 +42,7 @@ func Hub() *cobra.Command {
 				return fmt.Errorf("gpupgrade state dir (%s) does not exist as a directory.", stateDir)
 			}
 
-			// Load the hub persistent configuration.
-			//
-			// they're not defined in the configuration (as happens
-			// pre-initialize), we still need good defaults.
-			conf := &config.Config{
-				HubPort:   port,
-				AgentPort: upgrade.DefaultAgentPort,
-				Mode:      idl.Mode_copy,
-			}
-
-			err = conf.Load()
+			conf, err := config.Read()
 			if err != nil {
 				return err
 			}

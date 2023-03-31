@@ -32,12 +32,6 @@ func TestHub(t *testing.T) {
 		configContents string
 	}{
 		{
-			name:           "starts on default port when flag is not set and config file is empty",
-			expected:       upgrade.DefaultHubPort,
-			args:           []string{"hub", "--daemonize"},
-			configContents: `{}`,
-		},
-		{
 			name:           "starts on flag value when flag is set and config file is empty",
 			expected:       port,
 			args:           []string{"hub", "--daemonize", "--port", strconv.Itoa(port)},

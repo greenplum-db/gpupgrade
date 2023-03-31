@@ -327,16 +327,14 @@ func connTimeout() time.Duration {
 // NOTE: This overloads the hub's persisted configuration with that of the
 // CLI when ideally these would be separate.
 func hubPort() (int, error) {
-	conf := &config.Config{}
-	err := conf.Load()
-
+	conf, err := config.Read()
 	var pathError *os.PathError
 	if xerrors.As(err, &pathError) {
 		return upgrade.DefaultHubPort, nil
 	}
 
 	if err != nil {
-		return -1, xerrors.Errorf("load config: %w", err)
+		return -1, xerrors.Errorf("read config: %w", err)
 	}
 
 	return conf.HubPort, nil

@@ -20,8 +20,6 @@ import (
 
 const ConfigFileName = "config.json"
 
-// Config contains all the information that will be persisted to/loaded from
-// from disk during calls to Save() and Load().
 type Config struct {
 	LogArchiveDir string
 
@@ -47,23 +45,21 @@ type Config struct {
 	UpgradeID       upgrade.ID
 }
 
-func (c *Config) Load() error {
-	path := GetConfigFile()
-	file, err := os.Open(path)
+func Read() (*Config, error) {
+	contents, err := os.ReadFile(GetConfigFile())
 	if err != nil {
-		return xerrors.Errorf("opening configuration file: %w", err)
-	}
-	defer file.Close()
-
-	dec := json.NewDecoder(file)
-	if err := dec.Decode(c); err != nil {
-		return xerrors.Errorf("load configuration file: %w", err)
+		return nil, err
 	}
 
-	return nil
+	conf := &Config{}
+	decoder := json.NewDecoder(bytes.NewReader(contents))
+	if err := decoder.Decode(conf); err != nil {
+		return &Config{}, xerrors.Errorf("decode configuration file: %w", err)
+	}
+
+	return conf, nil
 }
 
-// SaveConfig persists the hub's configuration to disk.
 func (c *Config) Save() error {
 	var buffer bytes.Buffer
 	enc := json.NewEncoder(&buffer)

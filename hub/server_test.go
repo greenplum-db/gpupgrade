@@ -361,13 +361,12 @@ func TestGetArchiveDir(t *testing.T) {
 		expected := sb.String()
 
 		// assert that it is persisted
-		actualConf := new(config.Config)
-		err = actualConf.Load()
+		conf, err := config.Read()
 		if err != nil {
 			t.Fatalf("reading config: %v", err)
 		}
 
-		if actualConf.LogArchiveDir != expected {
+		if conf.LogArchiveDir != expected {
 			t.Errorf("got %v want %v", actual, expectedPrefix)
 		}
 
