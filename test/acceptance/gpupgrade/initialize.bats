@@ -23,16 +23,7 @@ setup() {
 
     TARGET_PGPORT=6020
 
-    gpupgrade kill-services
-    gpupgrade initialize \
-        --non-interactive \
-        --source-gphome="${GPHOME_SOURCE}" \
-        --target-gphome="${GPHOME_TARGET}" \
-        --source-master-port="${PGPORT}" \
-        --temp-port-range "$TARGET_PGPORT"-6040 \
-        --stop-before-cluster-creation \
-        --disk-free-ratio 0 3>&-
-    register_teardown gpupgrade kill-services
+    run gpupgrade kill-services
 
     PSQL="$GPHOME_SOURCE"/bin/psql
 }
@@ -43,11 +34,8 @@ teardown() {
         return
     fi
 
+    run gpupgrade kill-services
     run_teardowns
-}
-
-delete_target_on_teardown() {
-    register_teardown delete_target_datadirs "$(gpupgrade config show --target-datadir)"
 }
 
 setup_check_upgrade_to_fail() {
@@ -70,7 +58,16 @@ release_held_port() {
 }
 
 @test "hub daemonizes and prints the PID when passed the --daemonize option" {
-    gpupgrade kill-services
+    run gpupgrade initialize \
+        --non-interactive \
+        --source-gphome="${GPHOME_SOURCE}" \
+        --target-gphome="${GPHOME_TARGET}" \
+        --source-master-port="${PGPORT}" \
+        --temp-port-range "$TARGET_PGPORT"-6040 \
+        --stop-before-cluster-creation \
+        --disk-free-ratio 0 3>&-
+
+    run gpupgrade kill-services
 
     run gpupgrade hub --daemonize 3>&-
     [ "$status" -eq 0 ] || fail "$output"
@@ -84,7 +81,16 @@ release_held_port() {
 }
 
 @test "hub fails if the configuration hasn't been initialized" {
-    gpupgrade kill-services
+    run gpupgrade initialize \
+        --non-interactive \
+        --source-gphome="${GPHOME_SOURCE}" \
+        --target-gphome="${GPHOME_TARGET}" \
+        --source-master-port="${PGPORT}" \
+        --temp-port-range "$TARGET_PGPORT"-6040 \
+        --stop-before-cluster-creation \
+        --disk-free-ratio 0 3>&-
+
+    run gpupgrade kill-services
 
     rm $GPUPGRADE_HOME/config.json
     run gpupgrade hub --daemonize
@@ -94,8 +100,6 @@ release_held_port() {
 }
 
 @test "hub does not return an error if an unrelated process has gpupgrade hub in its name" {
-    gpupgrade kill-services
-
     # Create a long-running process with gpupgrade hub in the name.
     exec -a "gpupgrade hub test log" sleep 5 3>&- &
     bgproc=$! # save the PID to kill later
@@ -110,7 +114,14 @@ release_held_port() {
     done
 
     # Start the hub; there should be no errors.
-    gpupgrade hub --daemonize 3>&-
+    run gpupgrade initialize \
+        --non-interactive \
+        --source-gphome="${GPHOME_SOURCE}" \
+        --target-gphome="${GPHOME_TARGET}" \
+        --source-master-port="${PGPORT}" \
+        --temp-port-range "$TARGET_PGPORT"-6040 \
+        --stop-before-cluster-creation \
+        --disk-free-ratio 0 3>&-
 
     # Clean up. Use SIGINT rather than SIGTERM to avoid a nasty-gram from BATS.
     kill -INT $bgproc
@@ -126,7 +137,16 @@ outputContains() {
 }
 
 @test "subcommands return an error if the hub is not started" {
-    gpupgrade kill-services
+    run gpupgrade initialize \
+        --non-interactive \
+        --source-gphome="${GPHOME_SOURCE}" \
+        --target-gphome="${GPHOME_TARGET}" \
+        --source-master-port="${PGPORT}" \
+        --temp-port-range "$TARGET_PGPORT"-6040 \
+        --stop-before-cluster-creation \
+        --disk-free-ratio 0 3>&-
+
+    run gpupgrade kill-services
 
     commands=(
         'config show'
@@ -152,8 +172,6 @@ outputContains() {
 }
 
 @test "initialize fails when passed invalid --disk-free-ratio values" {
-    gpupgrade kill-services
-
     option_list=(
         '--disk-free-ratio=1.5'
         '--disk-free-ratio=-0.5'
@@ -180,8 +198,6 @@ outputContains() {
 }
 
 @test "initialize skips disk space check when --disk-free-ratio is 0" {
-    gpupgrade kill-services
-
     run gpupgrade initialize \
         --disk-free-ratio=0 \
         --source-gphome="$GPHOME_SOURCE" \
@@ -195,9 +211,6 @@ outputContains() {
 }
 
 @test "fails when temp-port-range overlaps with source cluster ports" {
-    gpupgrade kill-services
-    rm -r "$GPUPGRADE_HOME"
-
     run gpupgrade initialize \
         --disk-free-ratio 0 \
         --source-gphome "$GPHOME_SOURCE" \
@@ -230,10 +243,6 @@ wait_for_port_change() {
 }
 
 @test "start agents fails if a process is connected on the same TCP port" {
-    # Ensure the agent is down, so that we can test port in use.
-    gpupgrade kill-services
-    rm -r "$GPUPGRADE_HOME"
-
     # squat gpupgrade agent port
     AGENT_PORT=6416
     go run ./testutils/port_listener/main.go $AGENT_PORT 3>&- &
@@ -252,8 +261,10 @@ wait_for_port_change() {
         --non-interactive \
         --verbose 3>&-
     [ "$status" -ne 0 ] || fail "expected start_agent substep to fail with port already in use: $output"
+    [[ $output = *'"start_agents": exit status 2'* ]] || fail "expected start_agent substep to fail with port already in use: $output"
 
     release_held_port
+    run gpupgrade revert --non-interactive --verbose
 
     run gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
@@ -267,7 +278,7 @@ wait_for_port_change() {
 }
 
 @test "the check_upgrade substep always runs" {
-    gpupgrade initialize \
+    run gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
         --target-gphome="$GPHOME_TARGET" \
         --source-master-port="${PGPORT}" \
@@ -276,7 +287,6 @@ wait_for_port_change() {
         --non-interactive \
         --verbose 3>&-
 
-    delete_target_on_teardown
     setup_check_upgrade_to_fail
 
     run gpupgrade initialize \
@@ -291,18 +301,27 @@ wait_for_port_change() {
     # Other substeps are skipped when marked completed in the state dir,
     # for check_upgrade, we always run it.
     [ "$status" -eq 1 ] || fail "$output"
+
+    run gpupgrade revert --non-interactive --verbose
 }
 
 @test "the source cluster is running at the end of initialize" {
-    delete_target_on_teardown
+    run gpupgrade initialize \
+        --source-gphome="$GPHOME_SOURCE" \
+        --target-gphome="$GPHOME_TARGET" \
+        --source-master-port="${PGPORT}" \
+        --temp-port-range 6020-6040 \
+        --disk-free-ratio 0 \
+        --non-interactive \
+        --verbose 3>&-
 
     isready || fail "expected source cluster to be available"
+
+    run gpupgrade revert --non-interactive --verbose
 }
 
 @test "init target cluster is idempotent" {
-    # Force a target cluster to be created (setup's initialize stops before that
-    # happens).
-    gpupgrade initialize \
+    run gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
         --target-gphome="$GPHOME_TARGET" \
         --source-master-port="${PGPORT}"\
@@ -311,8 +330,6 @@ wait_for_port_change() {
         --non-interactive \
         --verbose 3>&-
 
-    delete_target_on_teardown
-
     # To simulate an init cluster failure, stop a segment and remove a datadir
     local new_coordinator_dir
     new_coordinator_dir="$(gpupgrade config show --target-datadir)"
@@ -320,8 +337,8 @@ wait_for_port_change() {
     (unset LD_LIBRARY_PATH; PGPORT=$TARGET_PGPORT source "$GPHOME_TARGET"/greenplum_path.sh && gpstart -a -d "$new_coordinator_dir")
 
     local datadir=$(query_datadirs "$GPHOME_TARGET" $TARGET_PGPORT "content=1")
-    pg_ctl -D "$datadir" stop
-    rm -r "$datadir"
+    run pg_ctl -D "$datadir" stop
+    run rm -r "$datadir"
 
     # Ensure gpupgrade starts from initializing the target cluster.
     cat <<- EOF > "$GPUPGRADE_HOME/substeps.json"
@@ -334,7 +351,7 @@ wait_for_port_change() {
         }
 	EOF
 
-    gpupgrade initialize \
+    run gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
         --target-gphome="$GPHOME_TARGET" \
         --source-master-port="${PGPORT}"\
@@ -342,15 +359,15 @@ wait_for_port_change() {
         --disk-free-ratio 0 \
         --non-interactive \
         --verbose 3>&-
+
+    run gpupgrade revert --non-interactive --verbose
 }
 
 # This is a very simple way to flush out the most obvious idempotence bugs. It
 # replicates what would happen if every substep failed/crashed right after
 # completing its work but before completion was signalled back to the hub.
 @test "all substeps can be re-run after completion" {
-    # Force a target cluster to be created (setup's initialize stops before that
-    # happens).
-    gpupgrade initialize \
+    run gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
         --target-gphome="$GPHOME_TARGET" \
         --source-master-port="${PGPORT}"\
@@ -358,13 +375,11 @@ wait_for_port_change() {
         --disk-free-ratio 0 \
         --non-interactive \
         --verbose 3>&-
-
-    delete_target_on_teardown
 
     # Mark every substep in the status file as failed. Then re-initialize.
     sed -i.bak -e 's/"complete"/"failed"/g' "$GPUPGRADE_HOME/substeps.json"
 
-    gpupgrade initialize \
+    run gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
         --target-gphome="$GPHOME_TARGET" \
         --source-master-port="${PGPORT}"\
@@ -372,6 +387,8 @@ wait_for_port_change() {
         --disk-free-ratio 0 \
         --non-interactive \
         --verbose 3>&-
+
+    run gpupgrade revert --non-interactive --verbose
 }
 
 # Regression test for 6X target clusters cross-linking against a 5X
@@ -389,9 +406,10 @@ wait_for_port_change() {
         --disk-free-ratio 0 \
         --non-interactive \
         --verbose 3>&-
-    register_teardown gpupgrade revert --non-interactive
 
     echo "$output"
     [[ $output != *"libxml2.so.2: no version information available"* ]] || \
         fail "target cluster appears to be cross-linked against the source installation"
+
+    run gpupgrade revert --non-interactive --verbose
 }

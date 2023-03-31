@@ -6,7 +6,6 @@ package config
 import (
 	"bytes"
 	"encoding/json"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -81,17 +80,6 @@ func GetConfigFile() string {
 }
 
 func Create(hubPort int, agentPort int, sourceGPHome string, sourcePort int, targetGPHome string, mode idl.Mode, useHbaHostnames bool) (Config, error) {
-	path := GetConfigFile()
-	exist, err := upgrade.PathExist(path)
-	if err != nil {
-		return Config{}, xerrors.Errorf("checking configuration path %q: %w", path, err)
-	}
-
-	if exist {
-		log.Printf("Configuration file %s already present. Skipping.", path)
-		return Config{}, err
-	}
-
 	// Bootstrap with known values early on so helper functions can be used.
 	// For example, bootstrap with the hub port such that connecting to the hub
 	// succeeds. Bootstrap with the source and target cluster GPHOME's, and
