@@ -41,46 +41,39 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 Cannot revert and restore the source cluster. Please contact support.`)
 	}
 
-	hasInitializeStarted, err := step.HasCompleted(idl.Step_initialize, idl.Substep_saving_source_cluster_config)
+	// If initialize exits early then only archiving the log directory and
+	// deleting state directories need to be run.
+	configCreated, err := step.HasCompleted(idl.Step_initialize, idl.Substep_saving_source_cluster_config)
 	if err != nil {
 		return err
 	}
 
-	// If CLI Initialize exited before the InitializeRequest was sent
-	// to the hub, we will only need to do a couple revert substeps.
-	if !hasInitializeStarted {
-		st.OnlyRun(
-			idl.Substep_archive_log_directories,
-			idl.Substep_delete_segment_statedirs,
-		)
-	}
-
-	st.RunConditionally(idl.Substep_check_active_connections_on_target_cluster, s.Intermediate != nil, func(streams step.OutStreams) error {
+	st.RunConditionally(idl.Substep_check_active_connections_on_target_cluster, configCreated && s.Intermediate != nil, func(streams step.OutStreams) error {
 		return s.Intermediate.CheckActiveConnections(streams)
 	})
 
-	st.RunConditionally(idl.Substep_shutdown_target_cluster, s.Intermediate != nil, func(streams step.OutStreams) error {
+	st.RunConditionally(idl.Substep_shutdown_target_cluster, configCreated && s.Intermediate != nil, func(streams step.OutStreams) error {
 		return s.Intermediate.Stop(streams)
 	})
 
 	st.RunConditionally(idl.Substep_delete_target_cluster_datadirs,
-		s.Intermediate != nil && s.Intermediate.Primaries != nil && s.Intermediate.CoordinatorDataDir() != "",
+		configCreated && s.Intermediate != nil && s.Intermediate.Primaries != nil && s.Intermediate.CoordinatorDataDir() != "",
 		func(streams step.OutStreams) error {
 			return DeleteCoordinatorAndPrimaryDataDirectories(streams, s.agentConns, s.Intermediate)
 		})
 
 	st.RunConditionally(idl.Substep_delete_tablespaces,
-		s.Intermediate != nil && s.Intermediate.Primaries != nil && s.Intermediate.CoordinatorDataDir() != "",
+		configCreated && s.Intermediate != nil && s.Intermediate.Primaries != nil && s.Intermediate.CoordinatorDataDir() != "",
 		func(streams step.OutStreams) error {
 			return DeleteTargetTablespaces(streams, s.agentConns, s.Config.Intermediate, s.Intermediate.CatalogVersion, s.Source.Tablespaces)
 		})
 
 	// See "Reverting to old cluster" from https://www.postgresql.org/docs/9.4/pgupgrade.html
-	st.RunConditionally(idl.Substep_restore_pgcontrol, s.Mode == idl.Mode_link, func(streams step.OutStreams) error {
+	st.RunConditionally(idl.Substep_restore_pgcontrol, configCreated && s.Mode == idl.Mode_link, func(streams step.OutStreams) error {
 		return RestoreCoordinatorAndPrimariesPgControl(streams, s.agentConns, s.Source)
 	})
 
-	st.RunConditionally(idl.Substep_restore_source_cluster, s.Mode == idl.Mode_link && s.Source.HasAllMirrorsAndStandby(), func(stream step.OutStreams) error {
+	st.RunConditionally(idl.Substep_restore_source_cluster, configCreated && s.Mode == idl.Mode_link && s.Source.HasAllMirrorsAndStandby(), func(stream step.OutStreams) error {
 		if err := RsyncCoordinatorAndPrimaries(stream, s.agentConns, s.Source); err != nil {
 			return err
 		}
@@ -102,7 +95,7 @@ Cannot revert and restore the source cluster. Please contact support.`)
 	// Running gprecoverseg is expected to not take long.
 	shouldHandle5XMirrorFailure := s.Source.Version.Major == 5 && s.Mode != idl.Mode_link && primariesUpgraded
 
-	st.Run(idl.Substep_start_source_cluster, func(streams step.OutStreams) error {
+	st.RunConditionally(idl.Substep_start_source_cluster, configCreated, func(streams step.OutStreams) error {
 		err = s.Source.Start(streams)
 		var exitErr *exec.ExitError
 		if xerrors.As(err, &exitErr) {
@@ -118,12 +111,12 @@ Cannot revert and restore the source cluster. Please contact support.`)
 		return nil
 	})
 
-	st.RunConditionally(idl.Substep_recoverseg_source_cluster, shouldHandle5XMirrorFailure, func(streams step.OutStreams) error {
+	st.RunConditionally(idl.Substep_recoverseg_source_cluster, configCreated && shouldHandle5XMirrorFailure, func(streams step.OutStreams) error {
 		return Recoverseg(streams, s.Source, s.UseHbaHostnames)
 	})
 
 	var logArchiveDir string
-	st.Run(idl.Substep_archive_log_directories, func(_ step.OutStreams) error {
+	st.AlwaysRun(idl.Substep_archive_log_directories, func(_ step.OutStreams) error {
 		logArchiveDir, err = s.GetLogArchiveDir()
 		if err != nil {
 			return xerrors.Errorf("get log archive directory: %w", err)
@@ -132,11 +125,11 @@ Cannot revert and restore the source cluster. Please contact support.`)
 		return ArchiveLogDirectories(logArchiveDir, s.agentConns, s.Config.Source.CoordinatorHostname())
 	})
 
-	st.Run(idl.Substep_delete_backupdir, func(streams step.OutStreams) error {
+	st.RunConditionally(idl.Substep_delete_backupdir, configCreated, func(streams step.OutStreams) error {
 		return DeleteBackupDirectories(streams, s.agentConns, s.BackupDirs)
 	})
 
-	st.Run(idl.Substep_delete_segment_statedirs, func(_ step.OutStreams) error {
+	st.AlwaysRun(idl.Substep_delete_segment_statedirs, func(_ step.OutStreams) error {
 		return DeleteStateDirectories(s.agentConns, s.Source.CoordinatorHostname())
 	})
 
