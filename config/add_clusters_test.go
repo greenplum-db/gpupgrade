@@ -4,19 +4,15 @@
 package config_test
 
 import (
-	"database/sql"
 	"errors"
 	"reflect"
 	"testing"
 
-	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/blang/semver/v4"
 
 	"github.com/greenplum-db/gpupgrade/config"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/testutils"
-	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 )
 
@@ -355,82 +351,4 @@ func TestEnsureTempPortRangeDoesNotOverlapWithSourceClusterPorts(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestAddClusters(t *testing.T) {
-	greenplum.SetVersionCommand(exectest.NewCommand(PostgresGPVersion_5_29_10))
-	defer greenplum.ResetVersionCommand()
-
-	stateDir := testutils.GetTempDir(t, "")
-	defer testutils.MustRemoveAll(t, stateDir)
-
-	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
-	defer resetEnv()
-
-	conf, err := config.Create(9999, 8888, "/mock/source-gphome", 1234, "/mock/target-gphome", idl.Mode_link, false)
-	if err != nil {
-		t.Fatalf("unexpected error %#v", err)
-	}
-
-	err = conf.Write()
-	if err != nil {
-		t.Fatalf("unexpected error %#v", err)
-	}
-
-	t.Run("get Initialize configuration", func(t *testing.T) {
-		db, mock, err := sqlmock.New()
-		if err != nil {
-			t.Fatalf("couldn't create sqlmock: %v", err)
-		}
-		defer testutils.FinishMock(mock, t)
-
-		backupFunc := config.InitializeConnectionFunc
-		config.InitializeConnectionFunc = func(gphome string, port int) (*sql.DB, error) {
-			return db, nil
-		}
-		defer func() {
-			config.InitializeConnectionFunc = backupFunc
-		}()
-
-		stateDir := testutils.GetTempDir(t, "")
-		defer testutils.MustRemoveAll(t, stateDir)
-
-		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
-		defer resetEnv()
-
-		mockRows1 := sqlmock.NewRows([]string{"dbid", "contentid", "port", "hostname", "datadir", "role"})
-		mockRows1.AddRow(1, -1, 15432, "mdw", "/mock_datadir/gpseg-1", greenplum.PrimaryRole)
-		mockRows1.AddRow(2, 0, 10000, "sdw1", "/mock_datadir/primaries/gpseg0", greenplum.PrimaryRole)
-		mockRows1.AddRow(3, 0, 11000, "sdw1", "/mock_datadir/mirrors/gpseg0", greenplum.MirrorRole)
-		mock.ExpectQuery(`SELECT.*dbid.*FROM gp_segment_configuration`).WillReturnRows(mockRows1)
-
-		mockRows2 := sqlmock.NewRows([]string{"count"})
-		mockRows2.AddRow(2)
-		mock.ExpectQuery(`SELECT COUNT.* FROM gp_segment_configuration`).WillReturnRows(mockRows2)
-
-		mockRows3 := sqlmock.NewRows([]string{"dbid", "oid", "name", "location", "userdefined"})
-		mock.ExpectQuery(`SELECT .* FROM pg_tablespace`).WillReturnRows(mockRows3)
-
-		err = conf.AddClusters([]uint32{1, 2, 3})
-		if err != nil {
-			t.Fatalf("couldn't get early Initialize configuration: %v", err)
-		}
-
-		if conf.Intermediate == nil {
-			t.Errorf("expected non-empty config.Intermediate")
-		}
-
-		if conf.Target == nil {
-			t.Errorf("expected non-empty config.Target")
-		}
-
-		expectedVersion, _ := semver.Make("5.29.10")
-		if !conf.Source.Version.EQ(expectedVersion) {
-			t.Errorf("got %v, want %v", conf.Source.Version, expectedVersion)
-		}
-
-		if conf.UpgradeID == 0 {
-			t.Errorf("expected non-empty UpgradeID")
-		}
-	})
 }

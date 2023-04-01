@@ -26,7 +26,6 @@ type substepText struct {
 }
 
 var SubstepDescriptions = map[idl.Substep]substepText{
-	idl.Substep_initialize_saving_source_cluster_config:                       substepText{"Saving source cluster configuration...", "Save source cluster configuration"},
 	idl.Substep_saving_source_cluster_config:                                  substepText{"Saving source cluster configuration...", "Save source cluster configuration"},
 	idl.Substep_start_hub:                                                     substepText{"Starting gpupgrade hub process...", "Start gpupgrade hub process"},
 	idl.Substep_start_agents:                                                  substepText{"Starting gpupgrade agent processes...", "Start gpupgrade agent processes"},

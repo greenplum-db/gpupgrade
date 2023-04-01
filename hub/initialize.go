@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/greenplum-db/gpupgrade/greenplum/connection"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
@@ -31,25 +30,6 @@ func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_Init
 			log.Printf("%s: %s", idl.Step_initialize, err)
 		}
 	}()
-
-	st.Run(idl.Substep_saving_source_cluster_config, func(stream step.OutStreams) error {
-		db, err := connection.Bootstrap(idl.ClusterDestination_source, s.Source.GPHome, s.Source.CoordinatorPort())
-		if err != nil {
-			return err
-		}
-		defer func() {
-			if cErr := db.Close(); cErr != nil {
-				err = errorlist.Append(err, cErr)
-			}
-		}()
-
-		err = s.Config.AddClusters(db, req.GetPorts())
-		if err != nil {
-			return err
-		}
-
-		return s.Config.Write()
-	})
 
 	// Since the agents might not be up if gpupgrade is not properly installed, check it early on using ssh.
 	st.RunInternalSubstep(func() error {

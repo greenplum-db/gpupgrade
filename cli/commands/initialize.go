@@ -21,6 +21,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/config"
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/greenplum/connection"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
@@ -140,11 +141,6 @@ func initialize() *cobra.Command {
 				)
 			}
 
-			parsedPorts, err := parsePorts(ports)
-			if err != nil {
-				return err
-			}
-
 			logdir, err := utils.GetLogDir()
 			if err != nil {
 				return err
@@ -195,12 +191,26 @@ func initialize() *cobra.Command {
 				return nil
 			})
 
-			st.RunCLISubstep(idl.Substep_initialize_saving_source_cluster_config, func(streams step.OutStreams) error {
+			st.RunCLISubstep(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
+				parsedPorts, err := ParsePorts(ports)
+				if err != nil {
+					return err
+				}
+
+				db, err := connection.Bootstrap(idl.ClusterDestination_source, sourceGPHome, sourcePort)
+				if err != nil {
+					return err
+				}
+				defer func() {
+					if cErr := db.Close(); cErr != nil {
+						err = errorlist.Append(err, cErr)
+					}
+				}()
 				config, err := config.Create(
-					hubPort, agentPort,
-					filepath.Clean(sourceGPHome), sourcePort,
+					db, hubPort, agentPort,
+					filepath.Clean(sourceGPHome),
 					filepath.Clean(targetGPHome),
-					mode, useHbaHostnames,
+					mode, useHbaHostnames, parsedPorts,
 				)
 				if err != nil {
 					return err
@@ -261,7 +271,6 @@ func initialize() *cobra.Command {
 				}
 
 				request := &idl.InitializeRequest{
-					Ports:            parsedPorts,
 					DiskFreeRatio:    diskFreeRatio,
 					ParentBackupDirs: parentBackupDirs,
 				}
@@ -339,8 +348,8 @@ To return the cluster to its original state, run "gpupgrade revert".`,
 	return addHelpToCommand(subInit, InitializeHelp)
 }
 
-func parsePorts(val string) ([]uint32, error) {
-	var ports []uint32
+func ParsePorts(val string) ([]int, error) {
+	var ports []int
 
 	if val == "" {
 		return ports, nil
@@ -365,7 +374,7 @@ func parsePorts(val string) ([]uint32, error) {
 			}
 
 			for i := low; i <= high; i++ {
-				ports = append(ports, uint32(i))
+				ports = append(ports, int(i))
 			}
 
 		default: // single port
@@ -374,7 +383,7 @@ func parsePorts(val string) ([]uint32, error) {
 				return nil, xerrors.Errorf("failed to parse port %s", p)
 			}
 
-			ports = append(ports, uint32(port))
+			ports = append(ports, int(port))
 		}
 	}
 

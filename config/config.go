@@ -5,9 +5,11 @@ package config
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"time"
 
 	"golang.org/x/xerrors"
 
@@ -75,12 +77,23 @@ func GetConfigFile() string {
 	return filepath.Join(utils.GetStateDir(), ConfigFileName)
 }
 
-func Create(hubPort int, agentPort int, sourceGPHome string, sourcePort int, targetGPHome string, mode idl.Mode, useHbaHostnames bool) (Config, error) {
-	// Bootstrap with known values early on so helper functions can be used.
-	// For example, bootstrap with the hub port such that connecting to the hub
-	// succeeds. Bootstrap with the source and target cluster GPHOME's, and
-	// source cluster port such that when initialize exits early, revert has
-	// enough information to succeed.
+func Create(db *sql.DB, hubPort int, agentPort int, sourceGPHome string, targetGPHome string, mode idl.Mode, useHbaHostnames bool, ports []int) (Config, error) {
+	source, err := greenplum.ClusterFromDB(db, sourceGPHome, idl.ClusterDestination_source)
+	if err != nil {
+		return Config{}, xerrors.Errorf("retrieve source configuration: %w", err)
+	}
+
+	// Ensure segments are up, synchronized, and in their preferred role before proceeding.
+	err = greenplum.WaitForSegments(db, 5*time.Minute, &source)
+	if err != nil {
+		return Config{}, err
+	}
+
+	targetVersion, err := greenplum.Version(targetGPHome)
+	if err != nil {
+		return Config{}, err
+	}
+
 	config := Config{}
 	config.HubPort = hubPort
 	config.AgentPort = agentPort
@@ -88,13 +101,29 @@ func Create(hubPort int, agentPort int, sourceGPHome string, sourcePort int, tar
 	config.UseHbaHostnames = useHbaHostnames
 	config.UpgradeID = upgrade.NewID()
 
-	config.Source = &greenplum.Cluster{}
-	config.Source.Primaries = make(greenplum.ContentToSegConfig)
-	config.Source.Primaries[-1] = greenplum.SegConfig{Port: sourcePort}
-	config.Source.GPHome = sourceGPHome
+	target := source // create target cluster based off source cluster
+	config.Source = &source
 
-	config.Target = &greenplum.Cluster{}
+	config.Target = &target
+	config.Target.Destination = idl.ClusterDestination_target
 	config.Target.GPHome = targetGPHome
+	config.Target.Version = targetVersion
+
+	config.Intermediate, err = GenerateIntermediateCluster(config.Source, ports, config.UpgradeID, config.Target.Version, config.Target.GPHome)
+	if err != nil {
+		return Config{}, err
+	}
+
+	if err := EnsureTempPortRangeDoesNotOverlapWithSourceClusterPorts(config.Source, config.Intermediate); err != nil {
+		return Config{}, err
+	}
+
+	if config.Source.Version.Major == 5 {
+		config.Source.Tablespaces, err = greenplum.TablespacesFromDB(db, utils.GetStateDirOldTablespacesFile())
+		if err != nil {
+			return Config{}, xerrors.Errorf("extract tablespace information: %w", err)
+		}
+	}
 
 	return config, nil
 }
