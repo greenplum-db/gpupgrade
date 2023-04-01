@@ -22,14 +22,13 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/greenplum/connection"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
-
-var CreateConnectionFunc = CreateConnection
 
 func GenerateDataMigrationScripts(nonInteractive bool, gphome string, port int, seedDir string, outputDir string, outputDirFS fs.FS) error {
 	version, err := greenplum.Version(gphome)
@@ -48,7 +47,7 @@ func GenerateDataMigrationScripts(nonInteractive bool, gphome string, port int, 
 		return fmt.Errorf("failed to find seed scripts for Greenplum version %s under %q", version, seedDir)
 	}
 
-	db, err := CreateConnectionFunc(port)
+	db, err := bootstrapConnectionFunc(idl.ClusterDestination_source, gphome, port)
 	if err != nil {
 		return err
 	}
@@ -120,6 +119,18 @@ Logs:
 `, utils.Bold.Sprint(filepath.Join(outputDir, "current")), utils.Bold.Sprint(logDir))
 
 	return nil
+}
+
+var bootstrapConnectionFunc = connection.Bootstrap
+
+// XXX: for internal testing only
+func SetBootstrapConnectionFunction(connectionFunc func(destination idl.ClusterDestination, gphome string, port int) (*sql.DB, error)) {
+	bootstrapConnectionFunc = connectionFunc
+}
+
+// XXX: for internal testing only
+func ResetBootstrapConnectionFunction() {
+	bootstrapConnectionFunc = connection.Bootstrap
 }
 
 func ArchiveDataMigrationScriptsPrompt(nonInteractive bool, reader *bufio.Reader, outputDirFS fs.FS, outputDir string) error {
@@ -365,23 +376,6 @@ func GenerateScriptsPerPhase(phase idl.Step, database DatabaseName, gphome strin
 	}
 
 	return nil
-}
-
-func CreateConnection(port int) (*sql.DB, error) {
-	source, err := greenplum.NewCluster([]greenplum.SegConfig{})
-	if err != nil {
-		return nil, err
-	}
-
-	source.Destination = idl.ClusterDestination_source
-	conn := source.Connection([]greenplum.Option{greenplum.Port(port)}...)
-
-	db, err := sql.Open("pgx", conn)
-	if err != nil {
-		return nil, err
-	}
-
-	return db, nil
 }
 
 type DatabaseName struct {

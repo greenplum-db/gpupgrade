@@ -16,40 +16,9 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
-	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-var InitializeConnectionFunc = initializeConnection
-
-func initializeConnection(gphome string, port int) (*sql.DB, error) {
-	tempSource, err := greenplum.NewCluster([]greenplum.SegConfig{})
-	if err != nil {
-		return nil, err
-	}
-
-	tempSource.Version, err = greenplum.Version(gphome)
-	if err != nil {
-		return nil, err
-	}
-
-	tempSource.Destination = idl.ClusterDestination_source
-	conn := tempSource.Connection([]greenplum.Option{greenplum.Port(port)}...)
-	db, err := sql.Open("pgx", conn)
-	if err != nil {
-		return nil, err
-	}
-
-	return db, nil
-}
-
-func (conf *Config) AddClusters(requestedPorts []uint32) error {
-	db, err := InitializeConnectionFunc(conf.Source.GPHome, conf.Source.CoordinatorPort())
-	defer func() {
-		if cErr := db.Close(); cErr != nil {
-			err = errorlist.Append(err, cErr)
-		}
-	}()
-
+func (conf *Config) AddClusters(db *sql.DB, requestedPorts []uint32) error {
 	source, err := greenplum.ClusterFromDB(db, conf.Source.GPHome, idl.ClusterDestination_source)
 	if err != nil {
 		return xerrors.Errorf("retrieve source configuration: %w", err)

@@ -244,12 +244,10 @@ func TestGenerateScriptsPerDatabase(t *testing.T) {
 		}
 		defer testutils.FinishMock(mock, t)
 
-		commanders.CreateConnectionFunc = func(port int) (*sql.DB, error) {
+		commanders.SetBootstrapConnectionFunction(func(destination idl.ClusterDestination, gphome string, port int) (*sql.DB, error) {
 			return db, nil
-		}
-		defer func() {
-			commanders.CreateConnectionFunc = commanders.CreateConnection
-		}()
+		})
+		defer commanders.ResetBootstrapConnectionFunction()
 
 		outputDir := testutils.GetTempDir(t, "")
 		defer testutils.MustRemoveAll(t, outputDir)
@@ -321,12 +319,10 @@ func TestGenerateScriptsPerDatabase(t *testing.T) {
 		}
 		defer testutils.FinishMock(mock, t)
 
-		commanders.CreateConnectionFunc = func(port int) (*sql.DB, error) {
+		commanders.SetBootstrapConnectionFunction(func(destination idl.ClusterDestination, gphome string, port int) (*sql.DB, error) {
 			return db, nil
-		}
-		defer func() {
-			commanders.CreateConnectionFunc = commanders.CreateConnection
-		}()
+		})
+		defer commanders.ResetBootstrapConnectionFunction()
 
 		expectPgDatabaseToReturn(mock).WillReturnRows(sqlmock.NewRows([]string{"datname", "quoted_datname"}).AddRow("postgres", "postgres"))
 
@@ -352,12 +348,10 @@ func TestGenerateScriptsPerDatabase(t *testing.T) {
 		}
 		defer testutils.FinishMock(mock, t)
 
-		commanders.CreateConnectionFunc = func(port int) (*sql.DB, error) {
+		commanders.SetBootstrapConnectionFunction(func(destination idl.ClusterDestination, gphome string, port int) (*sql.DB, error) {
 			return db, nil
-		}
-		defer func() {
-			commanders.CreateConnectionFunc = commanders.CreateConnection
-		}()
+		})
+		defer commanders.ResetBootstrapConnectionFunction()
 
 		expectPgDatabaseToReturn(mock).WillReturnRows(sqlmock.NewRows([]string{"datname", "quoted_datname"}).AddRow("postgres", "postgres"))
 
@@ -386,12 +380,10 @@ func TestGenerateScriptsPerDatabase(t *testing.T) {
 		}
 		defer testutils.FinishMock(mock, t)
 
-		commanders.CreateConnectionFunc = func(port int) (*sql.DB, error) {
+		commanders.SetBootstrapConnectionFunction(func(destination idl.ClusterDestination, gphome string, port int) (*sql.DB, error) {
 			return db, nil
-		}
-		defer func() {
-			commanders.CreateConnectionFunc = commanders.CreateConnection
-		}()
+		})
+		defer commanders.ResetBootstrapConnectionFunction()
 
 		expectPgDatabaseToReturn(mock).WillReturnRows(sqlmock.NewRows([]string{"datname", "quoted_datname"}).AddRow("postgres", "postgres"))
 
