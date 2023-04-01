@@ -6,7 +6,6 @@ package hub_test
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"reflect"
 	"sort"
@@ -25,7 +24,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/mock_agent"
 	"github.com/greenplum-db/gpupgrade/testutils/testlog"
-	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 const timeout = 1 * time.Second
@@ -315,71 +313,6 @@ func doesStateEventuallyReach(conn *grpc.ClientConn, state connectivity.State) (
 
 		time.Sleep(10 * time.Millisecond)
 	}
-}
-
-func TestGetArchiveDir(t *testing.T) {
-	stateDir := testutils.GetTempDir(t, "")
-	defer testutils.MustRemoveAll(t, stateDir)
-
-	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
-	defer resetEnv()
-
-	source, target := testutils.CreateMultinodeSampleClusterPair("/data")
-	conf := &config.Config{
-		Source:       source,
-		Target:       target,
-		Intermediate: &greenplum.Cluster{},
-		HubPort:      12345,
-		AgentPort:    54321,
-		Mode:         idl.Mode_copy,
-		UpgradeID:    0,
-	}
-
-	server := hub.New(conf, nil, "")
-
-	t.Run("returns log archive directory and persists it", func(t *testing.T) {
-		actual, err := server.GetLogArchiveDir()
-		if err != nil {
-			t.Fatalf("unexpected error: %#v", err)
-		}
-
-		logDir, err := utils.GetLogDir()
-		if err != nil {
-			t.Fatalf("failed to get log dir: %v", err)
-		}
-
-		id := "AAAAAAAAAAA" // all zeroes in base64. 8 bytes decoded -> 11 bytes encoded
-		expectedPrefix := fmt.Sprintf("%s-%s-", logDir, id)
-
-		if !strings.HasPrefix(actual, expectedPrefix) {
-			t.Errorf("got %v want prefix %v", actual, expectedPrefix)
-		}
-
-		// copy actual output of GetLogArchiveDir() to expected
-		var sb strings.Builder
-		sb.WriteString(actual)
-		expected := sb.String()
-
-		// assert that it is persisted
-		conf, err := config.Read()
-		if err != nil {
-			t.Fatalf("reading config: %v", err)
-		}
-
-		if conf.LogArchiveDir != expected {
-			t.Errorf("got %v want %v", actual, expectedPrefix)
-		}
-
-		// returns the same persisted archive directory if it is already set
-		actual, err = server.GetLogArchiveDir()
-		if err != nil {
-			t.Errorf("unexpected error: %#v", err)
-		}
-
-		if actual != expected {
-			t.Errorf("got %v want prefix %v", actual, expectedPrefix)
-		}
-	})
 }
 
 func TestAgentHosts(t *testing.T) {

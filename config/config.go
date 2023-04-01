@@ -94,12 +94,18 @@ func Create(db *sql.DB, hubPort int, agentPort int, sourceGPHome string, targetG
 		return Config{}, err
 	}
 
+	logDir, err := utils.GetLogDir()
+	if err != nil {
+		return Config{}, err
+	}
+
 	config := Config{}
 	config.HubPort = hubPort
 	config.AgentPort = agentPort
 	config.Mode = mode
 	config.UseHbaHostnames = useHbaHostnames
 	config.UpgradeID = upgrade.NewID()
+	config.LogArchiveDir = filepath.Join(filepath.Dir(logDir), upgrade.GetArchiveDirectoryName(config.UpgradeID, time.Now()))
 
 	target := source // create target cluster based off source cluster
 	config.Source = &source

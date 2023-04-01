@@ -115,14 +115,8 @@ Cannot revert and restore the source cluster. Please contact support.`)
 		return Recoverseg(streams, s.Source, s.UseHbaHostnames)
 	})
 
-	var logArchiveDir string
 	st.AlwaysRun(idl.Substep_archive_log_directories, func(_ step.OutStreams) error {
-		logArchiveDir, err = s.GetLogArchiveDir()
-		if err != nil {
-			return xerrors.Errorf("get log archive directory: %w", err)
-		}
-
-		return ArchiveLogDirectories(logArchiveDir, s.agentConns, s.Config.Source.CoordinatorHostname())
+		return ArchiveLogDirectories(s.LogArchiveDir, s.agentConns, s.Config.Source.CoordinatorHostname())
 	})
 
 	st.RunConditionally(idl.Substep_delete_backupdir, configCreated, func(streams step.OutStreams) error {
@@ -136,7 +130,7 @@ Cannot revert and restore the source cluster. Please contact support.`)
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_RevertResponse{
 		RevertResponse: &idl.RevertResponse{
 			SourceVersion:       s.Source.Version.String(),
-			LogArchiveDirectory: logArchiveDir,
+			LogArchiveDirectory: s.LogArchiveDir,
 			Source: &idl.Cluster{
 				GPHome:                   s.Source.GPHome,
 				CoordinatorDataDirectory: s.Source.CoordinatorDataDir(),

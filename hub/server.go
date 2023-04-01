@@ -9,7 +9,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -26,7 +25,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/config"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/daemon"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
@@ -336,25 +334,6 @@ func (s *Server) closeAgentConns() {
 		}
 		conn.Conn.WaitForStateChange(context.Background(), currState)
 	}
-}
-
-func (s *Server) GetLogArchiveDir() (string, error) {
-	if s.LogArchiveDir != "" {
-		return s.LogArchiveDir, nil
-	}
-
-	logDir, err := utils.GetLogDir()
-	if err != nil {
-		return "", err
-	}
-
-	s.Config.LogArchiveDir = filepath.Join(filepath.Dir(logDir), upgrade.GetArchiveDirectoryName(s.UpgradeID, time.Now()))
-	err = s.Config.Write()
-	if err != nil {
-		return "", fmt.Errorf("saving archive directory: %w", err)
-	}
-
-	return s.LogArchiveDir, nil
 }
 
 func AgentHosts(c *greenplum.Cluster) []string {

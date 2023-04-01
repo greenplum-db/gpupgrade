@@ -6,6 +6,7 @@ package config_test
 import (
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -17,6 +18,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 func TestConfig(t *testing.T) {
@@ -206,6 +208,30 @@ func TestCreate(t *testing.T) {
 
 		if conf.UpgradeID == 0 {
 			t.Errorf("expected non-empty UpgradeID")
+		}
+	})
+
+	t.Run("create returns config with log archive directory correctly formatted", func(t *testing.T) {
+		expectGpSegmentConfigurationToReturnCluster(mock, source)
+		expectGpSegmentConfigurationCount(mock, source)
+		expectPgTablespace(mock)
+
+		logDir, err := utils.GetLogDir()
+		if err != nil {
+			t.Fatalf("failed to get log dir: %v", err)
+		}
+
+		conf, err := config.Create(db, hubPort, agentPort, source.GPHome, targetGPHome, mode, useHbaHostnames, ports)
+		if err != nil {
+			t.Fatalf("unexpected error %#v", err)
+		}
+
+		// The log archive directory contains a random upgradeID and timestamp.
+		// Thus, for simplicity assert that it was set by checking for an
+		// ending dash such as $HOME/gpAdminLogs/gpupgrade-.
+		prefix := logDir + "-"
+		if !strings.HasPrefix(conf.LogArchiveDir, prefix) {
+			t.Errorf("got %v want prefix %v", conf.LogArchiveDir, prefix)
 		}
 	})
 }

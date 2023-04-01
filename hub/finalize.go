@@ -6,8 +6,6 @@ package hub
 import (
 	"log"
 
-	"golang.org/x/xerrors"
-
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
@@ -86,14 +84,8 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 		return s.Target.WaitForClusterToBeReady()
 	})
 
-	var logArchiveDir string
 	st.Run(idl.Substep_archive_log_directories, func(_ step.OutStreams) error {
-		logArchiveDir, err = s.GetLogArchiveDir()
-		if err != nil {
-			return xerrors.Errorf("get log archive directory: %w", err)
-		}
-
-		return ArchiveLogDirectories(logArchiveDir, s.agentConns, s.Config.Target.CoordinatorHostname())
+		return ArchiveLogDirectories(s.LogArchiveDir, s.agentConns, s.Config.Target.CoordinatorHostname())
 	})
 
 	st.Run(idl.Substep_delete_backupdir, func(streams step.OutStreams) error {
@@ -107,7 +99,7 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_FinalizeResponse{
 		FinalizeResponse: &idl.FinalizeResponse{
 			TargetVersion:                          s.Target.Version.String(),
-			LogArchiveDirectory:                    logArchiveDir,
+			LogArchiveDirectory:                    s.LogArchiveDir,
 			ArchivedSourceCoordinatorDataDirectory: s.Config.Intermediate.CoordinatorDataDir() + upgrade.OldSuffix,
 			UpgradeID:                              s.Config.UpgradeID.String(),
 			TargetCluster: &idl.Cluster{
