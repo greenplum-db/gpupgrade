@@ -80,6 +80,7 @@ func TestCreate(t *testing.T) {
 	const agentPort = 8888
 	const mode = idl.Mode_link
 	const useHbaHostnames = false
+	const parentBackupDirs = ""
 	ports, err := commands.ParsePorts("50432-65535")
 	if err != nil {
 		t.Fatal(err)
@@ -99,7 +100,7 @@ func TestCreate(t *testing.T) {
 			expectGpSegmentConfigurationCount(mock, source)
 			expectPgTablespace(mock)
 
-			conf, err := config.Create(db, hubPort, agentPort, source.GPHome, targetGPHome, mode, useHbaHostnames, ports)
+			conf, err := config.Create(db, hubPort, agentPort, source.GPHome, targetGPHome, mode, useHbaHostnames, ports, parentBackupDirs)
 			if err != nil {
 				t.Fatalf("unexpected error %#v", err)
 			}
@@ -124,7 +125,7 @@ func TestCreate(t *testing.T) {
 			expectGpSegmentConfigurationCount(mock, source)
 			expectPgTablespace(mock)
 
-			conf, err := config.Create(db, hubPort, agentPort, source.GPHome, targetGPHome, mode, useHbaHostnames, ports)
+			conf, err := config.Create(db, hubPort, agentPort, source.GPHome, targetGPHome, mode, useHbaHostnames, ports, parentBackupDirs)
 			if err != nil {
 				t.Fatalf("unexpected error %#v", err)
 			}
@@ -148,7 +149,7 @@ func TestCreate(t *testing.T) {
 			expectGpSegmentConfigurationCount(mock, source)
 			expectPgTablespace(mock)
 
-			conf, err := config.Create(db, hubPort, agentPort, source.GPHome, targetGPHome, mode, useHbaHostnames, ports)
+			conf, err := config.Create(db, hubPort, agentPort, source.GPHome, targetGPHome, mode, useHbaHostnames, ports, parentBackupDirs)
 			if err != nil {
 				t.Fatalf("unexpected error %#v", err)
 			}
@@ -164,7 +165,7 @@ func TestCreate(t *testing.T) {
 		expectGpSegmentConfigurationCount(mock, source)
 		expectPgTablespace(mock)
 
-		conf, err := config.Create(db, hubPort, agentPort, source.GPHome, targetGPHome, mode, useHbaHostnames, ports)
+		conf, err := config.Create(db, hubPort, agentPort, source.GPHome, targetGPHome, mode, useHbaHostnames, ports, parentBackupDirs)
 		if err != nil {
 			t.Fatalf("unexpected error %#v", err)
 		}
@@ -221,7 +222,7 @@ func TestCreate(t *testing.T) {
 			t.Fatalf("failed to get log dir: %v", err)
 		}
 
-		conf, err := config.Create(db, hubPort, agentPort, source.GPHome, targetGPHome, mode, useHbaHostnames, ports)
+		conf, err := config.Create(db, hubPort, agentPort, source.GPHome, targetGPHome, mode, useHbaHostnames, ports, parentBackupDirs)
 		if err != nil {
 			t.Fatalf("unexpected error %#v", err)
 		}

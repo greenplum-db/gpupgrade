@@ -192,7 +192,7 @@ func TestCopyCoordinatorDataDir(t *testing.T) {
 		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 	})
 
-	backupDirs, err := hub.ParseParentBackupDirs("", intermediate)
+	backupDirs, err := backupdir.ParseParentBackupDirs("", *intermediate)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -245,7 +245,7 @@ func TestCopyCoordinatorTablespaces(t *testing.T) {
 		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "host2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
 	})
 
-	backupDirs, err := hub.ParseParentBackupDirs("", intermediate)
+	backupDirs, err := backupdir.ParseParentBackupDirs("", *intermediate)
 	if err != nil {
 		t.Fatal(err)
 	}

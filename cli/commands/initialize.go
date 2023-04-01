@@ -210,7 +210,7 @@ func initialize() *cobra.Command {
 					db, hubPort, agentPort,
 					filepath.Clean(sourceGPHome),
 					filepath.Clean(targetGPHome),
-					mode, useHbaHostnames, parsedPorts,
+					mode, useHbaHostnames, parsedPorts, parentBackupDirs,
 				)
 				if err != nil {
 					return err

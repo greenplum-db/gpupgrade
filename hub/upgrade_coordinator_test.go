@@ -17,6 +17,7 @@ import (
 
 	"github.com/blang/semver/v4"
 
+	"github.com/greenplum-db/gpupgrade/config/backupdir"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -106,7 +107,7 @@ func TestUpgradeCoordinator(t *testing.T) {
 	intermediate.GPHome = "/usr/local/target"
 	intermediate.Version = semver.MustParse("6.15.0")
 
-	backupDirs, err := hub.ParseParentBackupDirs("", source)
+	backupDirs, err := backupdir.ParseParentBackupDirs("", *source)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -5,7 +5,6 @@ package hub
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -55,28 +54,6 @@ func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_Init
 	})
 
 	st.Run(idl.Substep_create_backupdirs, func(streams step.OutStreams) error {
-		// We do not combine the state directory and backup directory for
-		// several reasons:
-		// - The backup directory needs to be configurable since there
-		// may not be enough space in the default location. If the state and
-		// backup directories are combined and the backup directory needs to be
-		// changed, then we have to preserve gpupgrade state by copying
-		// substeps.json and config.json to the new location. This is awkward,
-		// hard to manage, and error prone.
-		// - The default state directory $HOME/.gpupgrade is known upfront with
-		// no dependencies. Whereas the default backup directory is based on the
-		// data directories. Having a state directory with no dependencies is
-		// much easier to create and remove during the gpupgrade lifecycle.
-		s.Config.BackupDirs, err = ParseParentBackupDirs(req.GetParentBackupDirs(), s.Source)
-		if err != nil {
-			return err
-		}
-
-		err = s.Config.Write()
-		if err != nil {
-			return fmt.Errorf("save backup directories: %w", err)
-		}
-
 		err = CreateBackupDirectories(streams, s.agentConns, s.BackupDirs)
 		if err != nil {
 			nextAction := `1. Run "gpupgrade revert"

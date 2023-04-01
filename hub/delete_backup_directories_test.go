@@ -34,7 +34,7 @@ func TestDeleteBackupDirectories(t *testing.T) {
 		{DbID: 8, ContentID: 2, Hostname: "sdw3", DataDir: "/data3/primaries/seg3", Port: 25438, Role: greenplum.PrimaryRole},
 	})
 
-	backupDirs, err := hub.ParseParentBackupDirs("", source)
+	backupDirs, err := backupdir.ParseParentBackupDirs("", *source)
 	if err != nil {
 		t.Fatal(err)
 	}

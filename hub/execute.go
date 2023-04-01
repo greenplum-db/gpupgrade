@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/greenplum-db/gpupgrade/config/backupdir"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -52,7 +53,7 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 				return err
 			}
 
-			s.Config.BackupDirs, err = ParseParentBackupDirs(req.GetParentBackupDirs(), s.Source)
+			s.Config.BackupDirs, err = backupdir.ParseParentBackupDirs(req.GetParentBackupDirs(), *s.Source)
 			if err != nil {
 				return err
 			}

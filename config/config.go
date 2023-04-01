@@ -25,6 +25,18 @@ const ConfigFileName = "config.json"
 type Config struct {
 	LogArchiveDir string
 
+	// We do not combine the state directory and backup directory for
+	// several reasons:
+	// - The backup directory needs to be configurable since there
+	// may not be enough space in the default location. If the state and
+	// backup directories are combined and the backup directory needs to be
+	// changed, then we have to preserve gpupgrade state by copying
+	// substeps.json and config.json to the new location. This is awkward,
+	// hard to manage, and error prone.
+	// - The default state directory $HOME/.gpupgrade is known upfront with
+	// no dependencies. Whereas the default backup directory is based on the
+	// data directories. Having a state directory with no dependencies is
+	// much easier to create and remove during the gpupgrade lifecycle.
 	BackupDirs backupdir.BackupDirs
 
 	// Source is the GPDB cluster that is being upgraded. It is populated during
@@ -77,7 +89,7 @@ func GetConfigFile() string {
 	return filepath.Join(utils.GetStateDir(), ConfigFileName)
 }
 
-func Create(db *sql.DB, hubPort int, agentPort int, sourceGPHome string, targetGPHome string, mode idl.Mode, useHbaHostnames bool, ports []int) (Config, error) {
+func Create(db *sql.DB, hubPort int, agentPort int, sourceGPHome string, targetGPHome string, mode idl.Mode, useHbaHostnames bool, ports []int, parentBackupDirs string) (Config, error) {
 	source, err := greenplum.ClusterFromDB(db, sourceGPHome, idl.ClusterDestination_source)
 	if err != nil {
 		return Config{}, xerrors.Errorf("retrieve source configuration: %w", err)
@@ -106,6 +118,10 @@ func Create(db *sql.DB, hubPort int, agentPort int, sourceGPHome string, targetG
 	config.UseHbaHostnames = useHbaHostnames
 	config.UpgradeID = upgrade.NewID()
 	config.LogArchiveDir = filepath.Join(filepath.Dir(logDir), upgrade.GetArchiveDirectoryName(config.UpgradeID, time.Now()))
+	config.BackupDirs, err = backupdir.ParseParentBackupDirs(parentBackupDirs, source)
+	if err != nil {
+		return Config{}, err
+	}
 
 	target := source // create target cluster based off source cluster
 	config.Source = &source

@@ -15,6 +15,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/config/backupdir"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -57,7 +58,7 @@ func TestUpgradePrimaries(t *testing.T) {
 	intermediate.GPHome = "/usr/local/gpdb6"
 	intermediate.Version = semver.MustParse("6.0.0")
 
-	backupDirs, err := hub.ParseParentBackupDirs("", source)
+	backupDirs, err := backupdir.ParseParentBackupDirs("", *source)
 	if err != nil {
 		t.Fatal(err)
 	}
