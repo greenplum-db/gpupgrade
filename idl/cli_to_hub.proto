@@ -105,6 +105,7 @@ enum Substep {
     execute_revert_data_migration_scripts = 41;
     create_backupdirs = 42;
     delete_backupdir = 43;
+    initialize_saving_source_cluster_config = 44;
 }
 
 enum Status {
