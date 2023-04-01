@@ -116,7 +116,7 @@ query_host_datadirs() {
 }
 
 @test "reverting after initialize exits early" {
-    local target_hosts_dirs upgradeID
+    local target_hosts_dirs upgradeID expected_output
 
     printf "y\nq\n" | run gpupgrade initialize \
         --source-gphome="$GPHOME_SOURCE" \
@@ -130,7 +130,18 @@ query_host_datadirs() {
     upgradeID=$(gpupgrade config show --id)
 
     run gpupgrade revert --non-interactive --verbose
-    [ "$status" -eq 0 ] || fail "$output"
+
+    expected_output="
+    source ${GPHOME_SOURCE}/greenplum_path.sh
+    export MASTER_DATA_DIRECTORY=${MASTER_DATA_DIRECTORY}
+    export PGPORT=${PGPORT}
+
+    The gpupgrade logs can be found on the master and segment hosts in
+    ${HOME}/gpAdminLogs/gpupgrade-${upgradeID}-"
+
+    expected_output="The source cluster is now running version ${version}"
+
+    [[ $output = *"$expected_output"* ]] || fail "$expected_output not in $output"
 
     # gpupgrade processes are stopped
     ! process_is_running "[g]pupgrade hub" || fail 'expected hub to have been stopped'

@@ -48,25 +48,21 @@ Cannot revert and restore the source cluster. Please contact support.`)
 		return err
 	}
 
-	st.RunConditionally(idl.Substep_check_active_connections_on_target_cluster, configCreated && s.Intermediate != nil, func(streams step.OutStreams) error {
+	st.RunConditionally(idl.Substep_check_active_connections_on_target_cluster, configCreated, func(streams step.OutStreams) error {
 		return s.Intermediate.CheckActiveConnections(streams)
 	})
 
-	st.RunConditionally(idl.Substep_shutdown_target_cluster, configCreated && s.Intermediate != nil, func(streams step.OutStreams) error {
+	st.RunConditionally(idl.Substep_shutdown_target_cluster, configCreated, func(streams step.OutStreams) error {
 		return s.Intermediate.Stop(streams)
 	})
 
-	st.RunConditionally(idl.Substep_delete_target_cluster_datadirs,
-		configCreated && s.Intermediate != nil && s.Intermediate.Primaries != nil && s.Intermediate.CoordinatorDataDir() != "",
-		func(streams step.OutStreams) error {
-			return DeleteCoordinatorAndPrimaryDataDirectories(streams, s.agentConns, s.Intermediate)
-		})
+	st.RunConditionally(idl.Substep_delete_target_cluster_datadirs, configCreated, func(streams step.OutStreams) error {
+		return DeleteCoordinatorAndPrimaryDataDirectories(streams, s.agentConns, s.Intermediate)
+	})
 
-	st.RunConditionally(idl.Substep_delete_tablespaces,
-		configCreated && s.Intermediate != nil && s.Intermediate.Primaries != nil && s.Intermediate.CoordinatorDataDir() != "",
-		func(streams step.OutStreams) error {
-			return DeleteTargetTablespaces(streams, s.agentConns, s.Config.Intermediate, s.Intermediate.CatalogVersion, s.Source.Tablespaces)
-		})
+	st.RunConditionally(idl.Substep_delete_tablespaces, configCreated, func(streams step.OutStreams) error {
+		return DeleteTargetTablespaces(streams, s.agentConns, s.Config.Intermediate, s.Intermediate.CatalogVersion, s.Source.Tablespaces)
+	})
 
 	// See "Reverting to old cluster" from https://www.postgresql.org/docs/9.4/pgupgrade.html
 	st.RunConditionally(idl.Substep_restore_pgcontrol, configCreated && s.Mode == idl.Mode_link, func(streams step.OutStreams) error {
