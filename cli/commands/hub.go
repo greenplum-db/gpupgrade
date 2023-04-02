@@ -5,13 +5,13 @@ package commands
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 
 	"github.com/greenplum-db/gpupgrade/config"
 	"github.com/greenplum-db/gpupgrade/hub"
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/daemon"
@@ -24,22 +24,23 @@ func Hub() *cobra.Command {
 
 	var cmd = &cobra.Command{
 		Use:    "hub",
-		Short:  "Start the gpupgrade hub (blocks)",
-		Long:   `Start the gpupgrade hub (blocks)`,
+		Short:  "start the gpupgrade hub",
+		Long:   `start the gpupgrade hub`,
 		Hidden: true,
 		Args:   cobra.MaximumNArgs(0), //no positional args allowed
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.Initialize("hub")
 			defer logger.WritePanics()
 
-			stateDir := utils.GetStateDir()
-			finfo, err := os.Stat(stateDir)
-			if os.IsNotExist(err) {
-				return fmt.Errorf("gpupgrade state dir (%s) does not exist. Did you run gpupgrade initialize?", stateDir)
-			} else if err != nil {
+			exist, err := upgrade.PathExist(utils.GetStateDir())
+			if err != nil {
 				return err
-			} else if !finfo.IsDir() {
-				return fmt.Errorf("gpupgrade state dir (%s) does not exist as a directory.", stateDir)
+			}
+
+			if !exist {
+				nextAction := fmt.Sprintf(`Run "gpupgrade %s" to start the hub.`, idl.Step_initialize)
+				err = fmt.Errorf("gpupgrade state directory %q does not exist", utils.GetStateDir())
+				return utils.NewNextActionErr(err, nextAction)
 			}
 
 			conf, err := config.Read()
@@ -52,7 +53,7 @@ func Hub() *cobra.Command {
 				conf.HubPort = port
 			}
 
-			h := hub.New(conf, grpc.DialContext, stateDir)
+			h := hub.New(conf, grpc.DialContext, utils.GetStateDir())
 
 			if shouldDaemonize {
 				h.MakeDaemon()
