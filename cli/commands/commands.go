@@ -67,16 +67,7 @@ func BuildRootCommand() *cobra.Command {
 				return nil
 			}
 
-			logdir, err := utils.GetLogDir()
-			if err != nil {
-				return xerrors.Errorf("getting log directory: %w", err)
-			}
-
-			_, err = fmt.Printf(GlobalHelp, logdir)
-			if err != nil {
-				return err
-			}
-
+			fmt.Print(GlobalHelp)
 			return nil
 		},
 	}

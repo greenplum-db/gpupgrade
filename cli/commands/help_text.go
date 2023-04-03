@@ -16,17 +16,16 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
-var (
-	Help               map[idl.Step]string
-	initializeSubsteps commanders.Substeps
-	executeSubsteps    commanders.Substeps
-	finalizeSubsteps   commanders.Substeps
-	revertSubsteps     commanders.Substeps
-	InitializeHelp     string
-	ExecuteHelp        string
-	FinalizeHelp       string
-	RevertHelp         string
-)
+var initializeSubsteps commanders.Substeps
+var executeSubsteps commanders.Substeps
+var finalizeSubsteps commanders.Substeps
+var revertSubsteps commanders.Substeps
+var InitializeHelp string
+var ExecuteHelp string
+var FinalizeHelp string
+var RevertHelp string
+var GlobalHelp string
+var Help map[idl.Step]string
 
 func init() {
 	logDir, err := utils.GetLogDir()
@@ -99,6 +98,7 @@ func init() {
 	ExecuteHelp = fmt.Sprintf(executeHelpText, cases.Title(language.English).String(idl.Step_execute.String()), executeSubsteps, logDir)
 	FinalizeHelp = fmt.Sprintf(finalizeHelpText, cases.Title(language.English).String(idl.Step_finalize.String()), finalizeSubsteps, logDir)
 	RevertHelp = fmt.Sprintf(revertHelpText, cases.Title(language.English).String(idl.Step_revert.String()), revertSubsteps, logDir)
+	GlobalHelp = fmt.Sprintf(globalHelpText, logDir)
 
 	Help = map[idl.Step]string{
 		idl.Step_initialize: InitializeHelp,
@@ -257,25 +257,14 @@ Example:
   gpupgrade config show --target-datadir
 `
 
-const GlobalHelp = `
+const globalHelpText = `
 gpupgrade performs an in-place cluster upgrade to the next major version.
-
-NOTE: Before running gpupgrade, you must prepare the cluster. This includes
-generating and executing data migration scripts. Refer to documentation 
-for instructions.
 
 Usage: gpupgrade [command] <flags> 
 
-Required Commands: Run the three commands in this order
+Required Commands:
 
   1. initialize   runs pre-upgrade checks and prepares the cluster for upgrade
-
-                  Usage: gpupgrade initialize --file </path/to/config_file>
-
-                  Required Flags:
-                    -f, --file   config file containing upgrade parameters
-                                 (e.g. gpupgrade_config)
-
 
   2. execute      upgrades the master and primary segments to the target
                   Greenplum version
@@ -294,10 +283,9 @@ Optional Commands:
 
   config show     shows configuration parameters. 
                   One can only view the configuration parameters only 
-after initialize has started. The config subcommand i
-s useful for getting the target cluster data directory 
-and port in order to start or connect to the target cluster.
-
+                  after initialize has started. The config subcommand is
+                  useful for getting the target cluster data directory
+                  and port in order to start or connect to the target cluster.
 
 Optional Flags:
 
