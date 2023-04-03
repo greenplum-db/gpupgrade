@@ -166,10 +166,10 @@ func ApplyDataMigrationScriptsPrompt(nonInteractive bool, reader *bufio.Reader, 
 	for {
 		var input = "a"
 		if !nonInteractive {
-			prompt := fmt.Sprintf(`Which %q data migration SQL scripts to apply? 
-  [a]ll
-  [s]ome
+			prompt := fmt.Sprintf(`Which %q data migration SQL scripts to apply?
   [n]one
+  [s]ome
+  [a]ll
   [q]uit
 
 Select: `, phase)
