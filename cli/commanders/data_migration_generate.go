@@ -18,7 +18,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/schollz/progressbar/v3"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
@@ -308,13 +307,7 @@ func GenerateScriptsPerPhase(phase idl.Step, database DatabaseName, gphome strin
 		return xerrors.Errorf("Failed to generate data migration script. No seed files found in %q.", seedDir)
 	}
 
-	bar := progressbar.NewOptions(len(scriptDirs), progressbar.OptionFullWidth(), progressbar.OptionShowCount(),
-		progressbar.OptionClearOnFinish(), progressbar.OptionSetPredictTime(true))
-
 	for _, scriptDir := range scriptDirs {
-		_ = bar.Add(1)
-		bar.Describe(fmt.Sprintf("  %s...", scriptDir.Name()))
-
 		scripts, err := utils.System.ReadDirFS(seedDirFS, filepath.Join(phase.String(), scriptDir.Name()))
 		if err != nil {
 			return err
@@ -367,11 +360,6 @@ func GenerateScriptsPerPhase(phase idl.Step, database DatabaseName, gphome strin
 			if err != nil {
 				return err
 			}
-		}
-
-		err = bar.Clear()
-		if err != nil {
-			return err
 		}
 	}
 

@@ -16,7 +16,6 @@ import (
 	"sync"
 
 	"github.com/fatih/color"
-	"github.com/schollz/progressbar/v3"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -62,13 +61,9 @@ func ApplyDataMigrationScripts(nonInteractive bool, gphome string, port int, log
 	var wg sync.WaitGroup
 	errChan := make(chan error, len(scriptDirsToRun))
 	outputChan := make(chan []byte, len(scriptDirsToRun))
-	bar := progressbar.NewOptions(len(scriptDirsToRun), progressbar.OptionFullWidth(), progressbar.OptionShowCount(),
-		progressbar.OptionClearOnFinish(), progressbar.OptionSetPredictTime(true))
 
 	for _, scriptDir := range scriptDirsToRun {
 		wg.Add(1)
-		_ = bar.Add(1)
-		bar.Describe(fmt.Sprintf("  %s...", filepath.Base(scriptDir)))
 
 		go func(gphome string, port int, scriptDir string) {
 			defer wg.Done()
@@ -81,11 +76,6 @@ func ApplyDataMigrationScripts(nonInteractive bool, gphome string, port int, log
 
 			outputChan <- output
 		}(gphome, port, scriptDir)
-
-		err = bar.Clear()
-		if err != nil {
-			return err
-		}
 	}
 
 	wg.Wait()
