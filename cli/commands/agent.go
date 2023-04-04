@@ -14,38 +14,29 @@ import (
 )
 
 func Agent() *cobra.Command {
-	var port int
-	var statedir string
+	var agentPort int
+	var stateDir string
 	var shouldDaemonize bool
 
 	var cmd = &cobra.Command{
 		Use:    "agent",
-		Short:  "Start the Command Listener (blocks)",
-		Long:   `Start the Command Listener (blocks)`,
+		Short:  "start the agent",
+		Long:   "start the agent",
 		Hidden: true,
-		Args:   cobra.MaximumNArgs(0), //no positional args allowed
+		Args:   cobra.MaximumNArgs(0), // no positional args allowed
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.Initialize("agent")
 			defer logger.WritePanics()
 
-			conf := agent.Config{
-				Port:     port,
-				StateDir: statedir,
-			}
-
-			agentServer := agent.NewServer(conf)
-			if shouldDaemonize {
-				agentServer.MakeDaemon()
-			}
+			agentServer := agent.New()
 
 			// blocking call
-			agentServer.Start()
-
-			return nil
+			return agentServer.Start(agentPort, stateDir, shouldDaemonize)
 		},
 	}
-	cmd.Flags().IntVar(&port, "port", upgrade.DefaultAgentPort, "the port to listen for commands on")
-	cmd.Flags().StringVar(&statedir, "state-directory", utils.GetStateDir(), "Agent state directory")
+
+	cmd.Flags().IntVar(&agentPort, "port", upgrade.DefaultAgentPort, "the port to listen for commands on")
+	cmd.Flags().StringVar(&stateDir, "state-directory", utils.GetStateDir(), "Agent state directory")
 
 	daemon.MakeDaemonizable(cmd, &shouldDaemonize)
 

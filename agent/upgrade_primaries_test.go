@@ -30,7 +30,7 @@ import (
 
 func TestUpgradePrimaries(t *testing.T) {
 	testlog.SetupTestLogger()
-	server := agent.NewServer(agent.Config{})
+	agentServer := agent.New()
 
 	t.Run("succeeds", func(t *testing.T) {
 		rsync.SetRsyncCommand(exectest.NewCommand(agent.Success))
@@ -45,7 +45,7 @@ func TestUpgradePrimaries(t *testing.T) {
 			TargetVersion: "6.0.0",
 		}}
 
-		_, err := server.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{Opts: opts})
+		_, err := agentServer.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{Opts: opts})
 		if err != nil {
 			t.Fatalf("unexpected error %+v", err)
 		}
@@ -85,7 +85,7 @@ func TestUpgradePrimaries(t *testing.T) {
 			},
 		}
 
-		_, err := server.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{Opts: opts})
+		_, err := agentServer.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{Opts: opts})
 		if err != nil {
 			t.Fatalf("unexpected error %+v", err)
 		}
@@ -127,7 +127,7 @@ func TestUpgradePrimaries(t *testing.T) {
 			TargetVersion: "6.0.0",
 		}}
 
-		_, err := server.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{Opts: opts})
+		_, err := agentServer.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{Opts: opts})
 		if err != nil {
 			t.Fatalf("unexpected error %+v", err)
 		}
@@ -158,7 +158,7 @@ func TestUpgradePrimaries(t *testing.T) {
 			},
 		}
 
-		_, err := server.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{Opts: opts})
+		_, err := agentServer.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{Opts: opts})
 		var exitErr *exec.ExitError
 		if !errors.As(err, &exitErr) {
 			t.Fatalf("got error %T, want type %T", err, exitErr)
@@ -190,7 +190,7 @@ func TestUpgradePrimaries(t *testing.T) {
 			},
 		}
 
-		_, err := server.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{Opts: opts})
+		_, err := agentServer.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{Opts: opts})
 		var linkErr *os.LinkError
 		if !errors.As(err, &linkErr) {
 			t.Errorf("got error %T, want type %T", err, linkErr)
@@ -213,7 +213,7 @@ func TestUpgradePrimaries(t *testing.T) {
 			{Role: greenplum.PrimaryRole, Action: idl.PgOptions_upgrade, TargetVersion: "6.0.0", ContentID: 2, OldDBID: "2"},
 		}
 
-		_, err := server.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{Opts: opts})
+		_, err := agentServer.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{Opts: opts})
 		var errs errorlist.Errors
 		if !xerrors.As(err, &errs) {
 			t.Errorf("error %T does not contain type %T", err, errs)

@@ -30,7 +30,7 @@ import (
 
 func TestRsync(t *testing.T) {
 	testlog.SetupTestLogger()
-	server := agent.NewServer(agent.Config{})
+	agentServer := agent.New()
 
 	source := testutils.GetTempDir(t, "")
 	defer testutils.MustRemoveAll(t, source)
@@ -90,7 +90,7 @@ func TestRsync(t *testing.T) {
 			}},
 		}
 
-		_, err := server.RsyncDataDirectories(context.Background(), request)
+		_, err := agentServer.RsyncDataDirectories(context.Background(), request)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -107,7 +107,7 @@ func TestRsync(t *testing.T) {
 			{Sources: []string{source}, Destination: destination},
 		}}
 
-		_, err := server.RsyncDataDirectories(context.Background(), request)
+		_, err := agentServer.RsyncDataDirectories(context.Background(), request)
 		if err == nil {
 			t.Errorf("expected an error")
 		}
@@ -143,7 +143,7 @@ func TestRsync(t *testing.T) {
 			{Sources: []string{dir}, Destination: destination},
 		}}
 
-		_, err = server.RsyncDataDirectories(context.Background(), request)
+		_, err = agentServer.RsyncDataDirectories(context.Background(), request)
 		if err == nil {
 			t.Errorf("expected an error")
 		}
@@ -170,7 +170,7 @@ func TestRsync(t *testing.T) {
 			{Sources: []string{source}, Destination: destination},
 		}}
 
-		_, err := server.RsyncDataDirectories(context.Background(), request)
+		_, err := agentServer.RsyncDataDirectories(context.Background(), request)
 		if err == nil {
 			t.Error("expected error, returned nil")
 		}
@@ -195,7 +195,7 @@ func TestRsync(t *testing.T) {
 
 func TestRsyncTablespaceDirectories(t *testing.T) {
 	testlog.SetupTestLogger()
-	server := agent.NewServer(agent.Config{})
+	agentServer := agent.New()
 
 	sourceTsLocationDir := "/filespace/demoDataDir0/16386"
 	utils.System.DirFS = func(dir string) fs.FS {
@@ -255,7 +255,7 @@ func TestRsyncTablespaceDirectories(t *testing.T) {
 			}},
 		}
 
-		_, err := server.RsyncTablespaceDirectories(context.Background(), request)
+		_, err := agentServer.RsyncTablespaceDirectories(context.Background(), request)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -283,7 +283,7 @@ func TestRsyncTablespaceDirectories(t *testing.T) {
 			{Sources: []string{invalidTablespaceDir}, Destination: destination},
 		}}
 
-		_, err := server.RsyncTablespaceDirectories(context.Background(), request)
+		_, err := agentServer.RsyncTablespaceDirectories(context.Background(), request)
 		expected := fmt.Sprintf("invalid tablespace directory %q", filepath.Join(invalidTablespaceDir, "12094"))
 		if err.Error() != expected {
 			t.Errorf("got error %#v want %#v", err, expected)

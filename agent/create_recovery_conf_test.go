@@ -19,7 +19,7 @@ import (
 
 func TestCreateRecoveryConf(t *testing.T) {
 	testlog.SetupTestLogger()
-	server := agent.NewServer(agent.Config{})
+	agentServer := agent.New()
 
 	t.Run("creates recovery.conf", func(t *testing.T) {
 		mirrorDataDir := testutils.GetTempDir(t, "")
@@ -31,7 +31,7 @@ func TestCreateRecoveryConf(t *testing.T) {
 			PrimaryPort:   int32(123),
 		}}
 
-		_, err := server.CreateRecoveryConf(context.Background(), &idl.CreateRecoveryConfRequest{Connections: connReqs})
+		_, err := agentServer.CreateRecoveryConf(context.Background(), &idl.CreateRecoveryConfRequest{Connections: connReqs})
 		if err != nil {
 			t.Errorf("unexpected error %#v", err)
 		}
@@ -61,7 +61,7 @@ primary_slot_name = 'internal_wal_replication_slot'`
 				PrimaryPort:   int32(456),
 			}}
 
-		_, err := server.CreateRecoveryConf(context.Background(), &idl.CreateRecoveryConfRequest{Connections: connReqs})
+		_, err := agentServer.CreateRecoveryConf(context.Background(), &idl.CreateRecoveryConfRequest{Connections: connReqs})
 		if err == nil {
 			t.Error("expected error, returned nil")
 		}

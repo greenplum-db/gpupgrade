@@ -22,11 +22,11 @@ import (
 
 func TestServer_RestorePrimariesPgControl(t *testing.T) {
 	testlog.SetupTestLogger()
-	server := agent.NewServer(agent.Config{})
+	agentServer := agent.New()
 
 	t.Run("bubbles up errors when no pg_control files exist", func(t *testing.T) {
 		dirs := []string{"/tmp/test1", "/tmp/test2"}
-		_, err := server.RestorePrimariesPgControl(context.Background(), &idl.RestorePgControlRequest{Datadirs: dirs})
+		_, err := agentServer.RestorePrimariesPgControl(context.Background(), &idl.RestorePgControlRequest{Datadirs: dirs})
 
 		var errs errorlist.Errors
 		if !xerrors.As(err, &errs) {
@@ -60,7 +60,7 @@ func TestServer_RestorePrimariesPgControl(t *testing.T) {
 		src := filepath.Join(sourceDir, "global", "pg_control")
 		testutils.MustWriteToFile(t, src, "")
 
-		_, err = server.RestorePrimariesPgControl(context.Background(), &idl.RestorePgControlRequest{Datadirs: []string{sourceDir}})
+		_, err = agentServer.RestorePrimariesPgControl(context.Background(), &idl.RestorePgControlRequest{Datadirs: []string{sourceDir}})
 		if err != nil {
 			t.Errorf("unexpected error %#v", err)
 		}

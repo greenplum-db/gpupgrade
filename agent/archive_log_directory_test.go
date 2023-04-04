@@ -21,12 +21,12 @@ import (
 
 func TestArchiveLogDirectories(t *testing.T) {
 	testlog.SetupTestLogger()
-	server := agent.NewServer(agent.Config{})
+	agentServer := agent.New()
 
 	t.Run("bubbles up errors", func(t *testing.T) {
 		// empty target directory string to force an error
 		newDir := ""
-		_, err := server.ArchiveLogDirectory(context.Background(), &idl.ArchiveLogDirectoryRequest{NewDir: newDir})
+		_, err := agentServer.ArchiveLogDirectory(context.Background(), &idl.ArchiveLogDirectoryRequest{NewDir: newDir})
 		if err == nil {
 			t.Errorf("expected error")
 		}
@@ -51,7 +51,7 @@ func TestArchiveLogDirectories(t *testing.T) {
 		defer os.RemoveAll(homeDir)
 
 		newLogDir := oldLogDir + "xxxxxx"
-		_, err = server.ArchiveLogDirectory(context.Background(), &idl.ArchiveLogDirectoryRequest{NewDir: newLogDir})
+		_, err = agentServer.ArchiveLogDirectory(context.Background(), &idl.ArchiveLogDirectoryRequest{NewDir: newLogDir})
 		if err != nil {
 			t.Errorf("unexpected error %#v", err)
 		}

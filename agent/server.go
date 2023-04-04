@@ -5,6 +5,7 @@ package agent
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -21,75 +22,55 @@ import (
 )
 
 type Server struct {
-	conf Config
-
-	mu      sync.Mutex
-	server  *grpc.Server
-	lis     net.Listener
-	stopped chan struct{}
-	daemon  bool
+	mutex       sync.Mutex
+	gRPCserver  *grpc.Server
+	listener    net.Listener
+	stoppedChan chan struct{}
 }
 
-type Config struct {
-	Port     int
-	StateDir string
-}
-
-func NewServer(conf Config) *Server {
+func New() *Server {
 	return &Server{
-		conf:    conf,
-		stopped: make(chan struct{}, 1),
+		stoppedChan: make(chan struct{}, 1),
 	}
 }
 
-// MakeDaemon tells the Server to disconnect its stdout/stderr streams after
-// successfully starting up.
-func (s *Server) MakeDaemon() {
-	s.daemon = true
-}
-
-func (s *Server) Start() {
-	err := createStateDirectory(s.conf.StateDir)
+func (s *Server) Start(port int, stateDir string, daemonize bool) error {
+	err := createStateDirectory(stateDir)
 	if err != nil {
-		log.Fatalf("failed to create state directory: %v", err)
+		return err
 	}
 
-	lis, err := net.Listen("tcp", ":"+strconv.Itoa(s.conf.Port))
+	listener, err := net.Listen("tcp", ":"+strconv.Itoa(port))
 	if err != nil {
-		// FIXME: This should be log.Fatal which returns exit code 1. However,
-		//   with the --daemonize flag it returns exit code 0 indicating no
-		//   error to the caller. Thus, use log.Panic to return exit code 2 to
-		//   indicate an error.
-		log.Panicf("failed to listen: %v", err)
+		return fmt.Errorf("listen on port %d: %w", port, err)
 	}
 
-	// Set up an interceptor function to log any panics we get from request
-	// handlers.
 	interceptor := func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		defer logger.WritePanics()
 		return handler(ctx, req)
 	}
-	server := grpc.NewServer(grpc.UnaryInterceptor(interceptor))
+	gRPCserver := grpc.NewServer(grpc.UnaryInterceptor(interceptor))
 
-	s.mu.Lock()
-	s.server = server
-	s.lis = lis
-	s.mu.Unlock()
+	s.mutex.Lock()
+	s.gRPCserver = gRPCserver
+	s.listener = listener
+	s.mutex.Unlock()
 
-	idl.RegisterAgentServer(server, s)
-	reflection.Register(server)
+	idl.RegisterAgentServer(gRPCserver, s)
+	reflection.Register(gRPCserver)
 
-	if s.daemon {
-		log.Printf("Agent started on port %d with pid %d", s.conf.Port, os.Getpid())
+	if daemonize {
+		log.Printf("Agent started on port %d with pid %d", port, os.Getpid())
 		daemon.Daemonize()
 	}
 
-	err = server.Serve(lis)
+	err = gRPCserver.Serve(listener)
 	if err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		return fmt.Errorf("agent gRPC Serve: %w", err)
 	}
 
-	s.stopped <- struct{}{}
+	s.stoppedChan <- struct{}{}
+	return nil
 }
 
 func (s *Server) StopAgent(ctx context.Context, in *idl.StopAgentRequest) (*idl.StopAgentReply, error) {
@@ -98,12 +79,12 @@ func (s *Server) StopAgent(ctx context.Context, in *idl.StopAgentRequest) (*idl.
 }
 
 func (s *Server) Stop() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 
-	if s.server != nil {
-		s.server.Stop()
-		<-s.stopped
+	if s.gRPCserver != nil {
+		s.gRPCserver.Stop()
+		<-s.stoppedChan
 	}
 }
 

@@ -19,7 +19,7 @@ import (
 
 func TestRenameTablespaces(t *testing.T) {
 	testlog.SetupTestLogger()
-	server := agent.NewServer(agent.Config{})
+	agentServer := agent.New()
 
 	t.Run("succeeds", func(t *testing.T) {
 		_, _, tsLocation := testutils.MustMakeTablespaceDir(t, 16386)
@@ -32,7 +32,7 @@ func TestRenameTablespaces(t *testing.T) {
 			Destination: dst,
 		}}
 
-		_, err := server.RenameTablespaces(context.Background(), &idl.RenameTablespacesRequest{RenamePairs: pairs})
+		_, err := agentServer.RenameTablespaces(context.Background(), &idl.RenameTablespacesRequest{RenamePairs: pairs})
 		if err != nil {
 			t.Errorf("unexpected error %#v", err)
 		}
@@ -56,7 +56,7 @@ func TestRenameTablespaces(t *testing.T) {
 				Destination: "/also/does/not/exist/1",
 			}}
 
-		_, err := server.RenameTablespaces(context.Background(), &idl.RenameTablespacesRequest{RenamePairs: pairs})
+		_, err := agentServer.RenameTablespaces(context.Background(), &idl.RenameTablespacesRequest{RenamePairs: pairs})
 		if err == nil {
 			t.Error("expected error, returned nil")
 		}

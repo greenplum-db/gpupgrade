@@ -4,8 +4,10 @@
 package agent_test
 
 import (
-	"os"
+	"fmt"
+	"net"
 	"path"
+	"strings"
 	"testing"
 	"time"
 
@@ -17,48 +19,96 @@ import (
 	"github.com/greenplum-db/gpupgrade/upgrade"
 )
 
+const timeout = 1 * time.Second
+
 func TestServerStart(t *testing.T) {
 	testlog.SetupTestLogger()
 
 	t.Run("successfully starts and creates state directory if it does not exist", func(t *testing.T) {
 		tempDir := testutils.GetTempDir(t, "")
-		defer os.RemoveAll(tempDir)
+		defer testutils.MustRemoveAll(t, tempDir)
 		stateDir := path.Join(tempDir, ".gpupgrade")
 
-		server := agent.NewServer(agent.Config{
-			Port:     testutils.MustGetPort(t),
-			StateDir: stateDir,
-		})
+		agentServer := agent.New()
 
 		testutils.PathMustNotExist(t, stateDir)
 
-		go server.Start()
-		defer server.Stop()
+		errChan := make(chan error, 1)
+		go func() {
+			errChan <- agentServer.Start(testutils.MustGetPort(t), stateDir, false)
+		}()
 
 		exists, err := doesPathEventuallyExist(t, stateDir)
 		if err != nil {
 			t.Fatalf("unexpected error: %#v", err)
 		}
+
 		if !exists {
 			t.Error("expected stateDir to be created")
+		}
+
+		select {
+		case err := <-errChan:
+			if err != nil {
+				t.Fatalf("unexpected error: %#v", err)
+			}
+		case <-time.After(timeout):
+			t.Error("timeout exceeded")
+		default:
+			agentServer.Stop()
 		}
 	})
 
 	t.Run("successfully starts if state directory already exists", func(t *testing.T) {
 		stateDir := testutils.GetTempDir(t, ".gpupgrade")
-		defer os.RemoveAll(stateDir)
+		defer testutils.MustRemoveAll(t, stateDir)
 
-		server := agent.NewServer(agent.Config{
-			Port:     testutils.MustGetPort(t),
-			StateDir: stateDir,
-		})
+		agentServer := agent.New()
 
 		testutils.PathMustExist(t, stateDir)
 
-		go server.Start()
-		defer server.Stop()
+		errChan := make(chan error, 1)
+		go func() {
+			errChan <- agentServer.Start(testutils.MustGetPort(t), stateDir, false)
+		}()
 
 		testutils.PathMustExist(t, stateDir)
+
+		select {
+		case err := <-errChan:
+			if err != nil {
+				t.Fatalf("unexpected error: %#v", err)
+			}
+		case <-time.After(timeout):
+			t.Error("timeout exceeded")
+		default:
+			agentServer.Stop()
+		}
+	})
+
+	t.Run("start returns an error when port is in use", func(t *testing.T) {
+		stateDir := testutils.GetTempDir(t, ".gpupgrade")
+		defer testutils.MustRemoveAll(t, stateDir)
+
+		portInUse, closeListener := mustListen(t)
+		defer closeListener()
+
+		agentServer := agent.New()
+
+		errChan := make(chan error, 1)
+		go func() {
+			errChan <- agentServer.Start(portInUse, stateDir, false)
+		}()
+
+		select {
+		case err := <-errChan:
+			expected := fmt.Sprintf("listen on port %d: listen tcp :%d: bind: address already in use", portInUse, portInUse)
+			if err != nil && !strings.Contains(err.Error(), expected) {
+				t.Errorf("got error %#v want %#v", err, expected)
+			}
+		case <-time.After(timeout): // use timeout to prevent test from hanging
+			t.Error("timeout exceeded")
+		}
 	})
 }
 
@@ -82,4 +132,33 @@ func doesPathEventuallyExist(t *testing.T, path string) (bool, error) {
 
 		time.Sleep(10 * time.Millisecond)
 	}
+}
+
+func mustListen(t *testing.T) (int, func()) {
+	t.Helper()
+
+	listener, closeListener := getTcpListener(t)
+	port := listener.Addr().(*net.TCPAddr).Port
+
+	return port, closeListener
+}
+
+// getTcpListener returns a net.Listener and a function to close the listener
+// for use in a defer.
+func getTcpListener(t *testing.T) (net.Listener, func()) {
+	t.Helper()
+
+	listener, err := net.Listen("tcp", ":0")
+	if err != nil {
+		t.Errorf("unexpected error: %#v", err)
+	}
+
+	closeListener := func() {
+		err := listener.Close()
+		if err != nil {
+			t.Fatalf("closing listener %#v", err)
+		}
+	}
+
+	return listener, closeListener
 }

@@ -65,7 +65,7 @@ func TestHubStart(t *testing.T) {
 			if !errors.Is(err, hub.ErrHubStopped) {
 				t.Errorf("got error %#v want %#v", err, hub.ErrHubStopped)
 			}
-		case <-time.After(timeout): // use timeout to prevent test from hanging
+		case <-time.After(timeout):
 			t.Error("timeout exceeded")
 		}
 	})
@@ -88,7 +88,7 @@ func TestHubStart(t *testing.T) {
 			if err != nil && !strings.Contains(err.Error(), expected) {
 				t.Errorf("got error %#v want %#v", err, expected)
 			}
-		case <-time.After(timeout): // use timeout to prevent test from hanging
+		case <-time.After(timeout):
 			t.Error("timeout exceeded")
 		}
 	})

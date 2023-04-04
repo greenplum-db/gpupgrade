@@ -261,7 +261,7 @@ wait_for_port_change() {
         --non-interactive \
         --verbose 3>&-
     [ "$status" -ne 0 ] || fail "expected start_agent substep to fail with port already in use: $output"
-    [[ $output = *'"start_agents": exit status 2'* ]] || fail "expected start_agent substep to fail with port already in use: $output"
+    [[ $output = *'"start_agents": exit status 1'* ]] || fail "expected start_agent substep to fail with port already in use: $output"
 
     release_held_port
     run gpupgrade revert --non-interactive --verbose

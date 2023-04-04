@@ -15,7 +15,7 @@ import (
 
 func TestRenameDirectories(t *testing.T) {
 	testlog.SetupTestLogger()
-	server := agent.NewServer(agent.Config{})
+	agentServer := agent.New()
 
 	t.Run("bubbles up errors", func(t *testing.T) {
 		expected := errors.New("permission denied")
@@ -23,7 +23,7 @@ func TestRenameDirectories(t *testing.T) {
 			return expected
 		}
 
-		_, err := server.RenameDirectories(context.Background(), &idl.RenameDirectoriesRequest{Dirs: []*idl.RenameDirectories{{}}})
+		_, err := agentServer.RenameDirectories(context.Background(), &idl.RenameDirectoriesRequest{Dirs: []*idl.RenameDirectories{{}}})
 
 		if !errors.Is(err, expected) {
 			t.Errorf("returned error %#v, want %#v", err, expected)

@@ -12,6 +12,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/agent"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -42,9 +43,9 @@ func TestDeleteDataDirectories(t *testing.T) {
 			return nil
 		}
 
-		server := agent.NewServer(agent.Config{})
+		agentServer := agent.New()
 		req := &idl.DeleteDataDirectoriesRequest{Datadirs: dirs}
-		_, err := server.DeleteDataDirectories(context.Background(), req)
+		_, err := agentServer.DeleteDataDirectories(context.Background(), req)
 		if err != nil {
 			t.Errorf("DeleteDataDirectories returned error %+v", err)
 		}
@@ -56,9 +57,9 @@ func TestDeleteDataDirectories(t *testing.T) {
 			return expected
 		}
 
-		server := agent.NewServer(agent.Config{})
+		agentServer := agent.New()
 		req := &idl.DeleteDataDirectoriesRequest{}
-		_, err := server.DeleteDataDirectories(context.Background(), req)
+		_, err := agentServer.DeleteDataDirectories(context.Background(), req)
 		if !errors.Is(err, expected) {
 			t.Errorf("got error %#v, want %#v", expected, err)
 		}
@@ -68,15 +69,20 @@ func TestDeleteDataDirectories(t *testing.T) {
 func TestDeleteStateDirectory(t *testing.T) {
 	testlog.SetupTestLogger()
 
+	stateDir := testutils.GetTempDir(t, "")
+	defer testutils.MustRemoveAll(t, stateDir)
+
+	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
+	defer resetEnv()
+
 	t.Run("deletes the state directory", func(t *testing.T) {
 		utils.System.Hostname = func() (string, error) {
 			return "localhost.remote", nil
 		}
 
-		dir := []string{"/my/state/dir"}
 		agent.DeleteDirectoriesFunc = func(directories []string, requiredPaths []string, streams step.OutStreams) error {
-			if !reflect.DeepEqual(directories, dir) {
-				t.Errorf("got directories %q want %q", directories, dir)
+			if !reflect.DeepEqual(directories, []string{stateDir}) {
+				t.Errorf("got directories %q want %q", directories, stateDir)
 			}
 
 			if len(requiredPaths) != 0 {
@@ -90,9 +96,9 @@ func TestDeleteStateDirectory(t *testing.T) {
 			return nil
 		}
 
-		server := agent.NewServer(agent.Config{StateDir: dir[0]})
+		agentServer := agent.New()
 		req := &idl.DeleteStateDirectoryRequest{}
-		_, err := server.DeleteStateDirectory(context.Background(), req)
+		_, err := agentServer.DeleteStateDirectory(context.Background(), req)
 		if err != nil {
 			t.Errorf("DeleteStateDirectory returned error %+v", err)
 		}
@@ -104,9 +110,9 @@ func TestDeleteStateDirectory(t *testing.T) {
 			return expected
 		}
 
-		server := agent.NewServer(agent.Config{})
+		agentServer := agent.New()
 		req := &idl.DeleteStateDirectoryRequest{}
-		_, err := server.DeleteStateDirectory(context.Background(), req)
+		_, err := agentServer.DeleteStateDirectory(context.Background(), req)
 		if !errors.Is(err, expected) {
 			t.Errorf("got error %#v, want %#v", expected, err)
 		}

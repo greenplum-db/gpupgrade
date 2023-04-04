@@ -10,6 +10,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 var DeleteDirectoriesFunc = upgrade.DeleteDirectories
@@ -19,7 +20,7 @@ func (s *Server) DeleteStateDirectory(ctx context.Context, in *idl.DeleteStateDi
 
 	// pass an empty []string to avoid check for any pre-existing files,
 	// this call might come in before any stateDir files are created
-	err := DeleteDirectoriesFunc([]string{s.conf.StateDir}, []string{}, step.DevNullStream)
+	err := DeleteDirectoriesFunc([]string{utils.GetStateDir()}, []string{}, step.DevNullStream)
 	return &idl.DeleteStateDirectoryReply{}, err
 }
 
