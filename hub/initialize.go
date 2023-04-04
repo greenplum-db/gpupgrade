@@ -36,7 +36,7 @@ func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_Init
 	})
 
 	st.Run(idl.Substep_start_agents, func(_ step.OutStreams) error {
-		_, err := RestartAgents(context.Background(), nil, AgentHosts(s.Source), s.AgentPort, s.StateDir)
+		_, err := RestartAgents(context.Background(), nil, AgentHosts(s.Source), s.AgentPort, utils.GetStateDir())
 		if err != nil {
 			return err
 		}

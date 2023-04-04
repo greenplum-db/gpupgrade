@@ -6,6 +6,7 @@ package hub_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"reflect"
 	"sort"
@@ -52,12 +53,12 @@ func TestHubStart(t *testing.T) {
 	}
 
 	t.Run("start correctly errors if stop is called first", func(t *testing.T) {
-		h := hub.New(conf, grpc.DialContext, "")
-		h.Stop(true)
+		hubServer := hub.New(conf)
+		hubServer.Stop(true)
 
 		errChan := make(chan error, 1)
 		go func() {
-			errChan <- h.Start()
+			errChan <- hubServer.Start(0, false)
 		}()
 
 		select {
@@ -75,36 +76,38 @@ func TestHubStart(t *testing.T) {
 		defer closeListener()
 
 		conf.HubPort = portInUse
-		h := hub.New(conf, grpc.DialContext, "")
+		hubServer := hub.New(conf)
 
 		errChan := make(chan error, 1)
 		go func() {
-			errChan <- h.Start()
+			errChan <- hubServer.Start(0, false)
 		}()
 
 		select {
 		case err := <-errChan:
-			expected := "listen"
+			expected := fmt.Sprintf("listen on port %d: listen tcp :%d: bind: address already in use", portInUse, portInUse)
 			if err != nil && !strings.Contains(err.Error(), expected) {
 				t.Errorf("got error %#v want %#v", err, expected)
 			}
 		case <-time.After(timeout):
 			t.Error("timeout exceeded")
+		default:
+			hubServer.Stop(false)
 		}
 	})
 
 	// This is inherently testing a race. It will give false successes instead
 	// of false failures, so DO NOT ignore transient failures in this test!
 	t.Run("will return from Start() if Stop is called concurrently", func(t *testing.T) {
-		h := hub.New(conf, grpc.DialContext, "")
+		hubServer := hub.New(conf)
 
 		readyChan := make(chan bool, 1)
 		go func() {
-			_ = h.Start()
+			_ = hubServer.Start(0, false)
 			readyChan <- true
 		}()
 
-		h.Stop(true)
+		hubServer.Stop(true)
 
 		select {
 		case isReady := <-readyChan:
@@ -169,6 +172,9 @@ func TestAgentConns(t *testing.T) {
 	agentServer, dialer, agentPort := mock_agent.NewMockAgentServer()
 	defer agentServer.Stop()
 
+	hub.SetgRPCDialer(dialer)
+	defer hub.ResetgRPCDialer()
+
 	conf := &config.Config{
 		Source:       source,
 		Target:       target,
@@ -182,14 +188,14 @@ func TestAgentConns(t *testing.T) {
 	testlog.SetupTestLogger()
 
 	t.Run("closes open connections when shutting down", func(t *testing.T) {
-		h := hub.New(conf, dialer, "")
+		hubServer := hub.New(conf)
 
 		go func() {
-			_ = h.Start()
+			_ = hubServer.Start(conf.HubPort, false)
 		}()
 
 		// creating connections
-		agentConns, err := h.AgentConns()
+		agentConns, err := hubServer.AgentConns()
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -197,7 +203,7 @@ func TestAgentConns(t *testing.T) {
 		ensureAgentConnsReachState(t, agentConns, connectivity.Ready)
 
 		// closing connections
-		h.Stop(true)
+		hubServer.Stop(true)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -206,13 +212,13 @@ func TestAgentConns(t *testing.T) {
 	})
 
 	t.Run("retrieves the agent connections for the source cluster hosts excluding the coordinator", func(t *testing.T) {
-		h := hub.New(conf, dialer, "")
+		hubServer := hub.New(conf)
 
 		go func() {
-			_ = h.Start()
+			_ = hubServer.Start(conf.HubPort, false)
 		}()
 
-		agentConns, err := h.AgentConns()
+		agentConns, err := hubServer.AgentConns()
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -232,14 +238,14 @@ func TestAgentConns(t *testing.T) {
 	})
 
 	t.Run("saves grpc connections for future calls", func(t *testing.T) {
-		h := hub.New(conf, dialer, "")
+		hubServer := hub.New(conf)
 
-		newConns, err := h.AgentConns()
+		newConns, err := hubServer.AgentConns()
 		if err != nil {
 			t.Fatalf("unexpected error: %#v", err)
 		}
 
-		savedConns, err := h.AgentConns()
+		savedConns, err := hubServer.AgentConns()
 		if err != nil {
 			t.Fatalf("unexpected error: %#v", err)
 		}
@@ -251,9 +257,9 @@ func TestAgentConns(t *testing.T) {
 
 	// XXX This test takes 1.5 seconds because of EnsureConnsAreReady(...)
 	t.Run("returns an error if any connections have non-ready states", func(t *testing.T) {
-		h := hub.New(conf, dialer, "")
+		hubServer := hub.New(conf)
 
-		agentConns, err := h.AgentConns()
+		agentConns, err := hubServer.AgentConns()
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -262,7 +268,7 @@ func TestAgentConns(t *testing.T) {
 
 		ensureAgentConnsReachState(t, agentConns, connectivity.TransientFailure)
 
-		_, err = h.AgentConns()
+		_, err = hubServer.AgentConns()
 		expected := "the connections to the following hosts were not ready"
 		if err != nil && !strings.Contains(err.Error(), expected) {
 			t.Errorf("got error %#v want %#v", err, expected)
@@ -271,13 +277,14 @@ func TestAgentConns(t *testing.T) {
 
 	t.Run("returns an error if any connections have non-ready states when first dialing", func(t *testing.T) {
 		expected := errors.New("ahh!")
-		errDialer := func(ctx context.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+		hub.SetgRPCDialer(func(ctx context.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 			return nil, expected
-		}
+		})
+		defer hub.ResetgRPCDialer()
 
-		h := hub.New(conf, errDialer, "")
+		hubServer := hub.New(conf)
 
-		_, err := h.AgentConns()
+		_, err := hubServer.AgentConns()
 		if !errors.Is(err, expected) {
 			t.Errorf("returned error %#v want %#v", err, expected)
 		}

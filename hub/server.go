@@ -36,19 +36,13 @@ var DialTimeout = 3 * time.Second
 // Returned from Server.Start() if Server.Stop() has already been called.
 var ErrHubStopped = errors.New("hub is stopped")
 
-type Dialer func(ctx context.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error)
-
 type Server struct {
 	*config.Config
 
-	StateDir string
-
 	agentConns []*idl.Connection
-	grpcDialer Dialer
-
-	mu     sync.Mutex
-	server *grpc.Server
-	lis    net.Listener
+	mutex      sync.Mutex
+	gRPCserver *grpc.Server
+	listener   net.Listener
 
 	// This is used both as a channel to communicate from Start() to
 	// Stop() to indicate to Stop() that it can finally terminate
@@ -57,69 +51,54 @@ type Server struct {
 	// in Start().
 	// Note that when used as a flag, nil value means that Stop() has
 	// been called.
-
 	stopped chan struct{}
-	daemon  bool
 }
 
-func New(conf *config.Config, grpcDialer Dialer, stateDir string) *Server {
-	h := &Server{
-		Config:     conf,
-		StateDir:   stateDir,
-		stopped:    make(chan struct{}, 1),
-		grpcDialer: grpcDialer,
+func New(conf *config.Config) *Server {
+	return &Server{
+		Config:  conf,
+		stopped: make(chan struct{}, 1),
 	}
-
-	return h
 }
 
-// MakeDaemon tells the Server to disconnect its stdout/stderr streams after
-// successfully starting up.
-func (s *Server) MakeDaemon() {
-	s.daemon = true
-}
-
-func (s *Server) Start() error {
-	lis, err := net.Listen("tcp", ":"+strconv.Itoa(s.HubPort))
+func (s *Server) Start(port int, daemonize bool) error {
+	listener, err := net.Listen("tcp", ":"+strconv.Itoa(port))
 	if err != nil {
-		return xerrors.Errorf("listen on port %d: %w", s.HubPort, err)
+		return fmt.Errorf("listen on port %d: %w", port, err)
 	}
 
-	// Set up an interceptor function to log any panics we get from request
-	// handlers.
 	interceptor := func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		defer logger.WritePanics()
 		return handler(ctx, req)
 	}
-	server := grpc.NewServer(grpc.UnaryInterceptor(interceptor))
+	gRPCserver := grpc.NewServer(grpc.UnaryInterceptor(interceptor))
 
-	s.mu.Lock()
+	s.mutex.Lock()
 	if s.stopped == nil {
 		// Stop() has already been called; return without serving.
-		s.mu.Unlock()
+		s.mutex.Unlock()
 		return ErrHubStopped
 	}
-	s.server = server
-	s.lis = lis
-	s.mu.Unlock()
+	s.gRPCserver = gRPCserver
+	s.listener = listener
+	s.mutex.Unlock()
 
-	idl.RegisterCliToHubServer(server, s)
-	reflection.Register(server)
+	idl.RegisterCliToHubServer(gRPCserver, s)
+	reflection.Register(gRPCserver)
 
-	if s.daemon {
-		fmt.Printf("Hub started on port %d with pid %d\n", s.HubPort, os.Getpid())
+	if daemonize {
+		fmt.Printf("Hub started on port %d with pid %d\n", port, os.Getpid())
 		daemon.Daemonize()
 	}
 
-	err = server.Serve(lis)
+	err = gRPCserver.Serve(listener)
 	if err != nil {
-		err = xerrors.Errorf("serve: %w", err)
+		return fmt.Errorf("hub gRPC Serve: %w", err)
 	}
 
 	// inform Stop() that is it is OK to stop now
 	s.stopped <- struct{}{}
-
-	return err
+	return nil
 }
 
 func (s *Server) StopServices(ctx context.Context, in *idl.StopServicesRequest) (*idl.StopServicesReply, error) {
@@ -160,16 +139,16 @@ func (s *Server) StopAgents() error {
 }
 
 func (s *Server) Stop(closeAgentConns bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 
 	// StopServices calls Stop(false) because it has already closed the agentConns
 	if closeAgentConns {
 		s.closeAgentConns()
 	}
 
-	if s.server != nil {
-		s.server.Stop()
+	if s.gRPCserver != nil {
+		s.gRPCserver.Stop()
 		<-s.stopped // block until it is OK to stop
 	}
 
@@ -179,7 +158,7 @@ func (s *Server) Stop(closeAgentConns bool) {
 }
 
 func (s *Server) RestartAgents(ctx context.Context, in *idl.RestartAgentsRequest) (*idl.RestartAgentsReply, error) {
-	restartedHosts, err := RestartAgents(ctx, nil, AgentHosts(s.Source), s.AgentPort, s.StateDir)
+	restartedHosts, err := RestartAgents(ctx, nil, AgentHosts(s.Source), s.AgentPort, utils.GetStateDir())
 	if err != nil {
 		return &idl.RestartAgentsReply{}, err
 	}
@@ -265,14 +244,24 @@ func RestartAgents(ctx context.Context,
 	return hosts, err
 }
 
+var gRPCDialer = grpc.DialContext
+
+func SetgRPCDialer(dialer func(ctx context.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error)) {
+	gRPCDialer = dialer
+}
+
+func ResetgRPCDialer() {
+	gRPCDialer = grpc.DialContext
+}
+
 func (s *Server) AgentConns() ([]*idl.Connection, error) {
 	// Lock the mutex to protect against races with Server.Stop().
 	// XXX This is a *ridiculously* broad lock. Have fun waiting for the dial
 	// timeout when calling Stop() and AgentConns() at the same time, for
 	// instance. We should not lock around a network operation, but it seems
 	// like the AgentConns concept is not long for this world anyway.
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 
 	if s.agentConns != nil {
 		err := EnsureConnsAreReady(s.agentConns)
@@ -286,7 +275,7 @@ func (s *Server) AgentConns() ([]*idl.Connection, error) {
 	hostnames := AgentHosts(s.Source)
 	for _, host := range hostnames {
 		ctx, cancelFunc := context.WithTimeout(context.Background(), DialTimeout)
-		conn, err := s.grpcDialer(ctx,
+		conn, err := gRPCDialer(ctx,
 			host+":"+strconv.Itoa(s.AgentPort),
 			grpc.WithInsecure(), grpc.WithBlock())
 		if err != nil {

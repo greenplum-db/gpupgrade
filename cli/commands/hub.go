@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
 
 	"github.com/greenplum-db/gpupgrade/config"
 	"github.com/greenplum-db/gpupgrade/hub"
@@ -19,13 +18,13 @@ import (
 )
 
 func Hub() *cobra.Command {
-	var port int
+	var hubPort int
 	var shouldDaemonize bool
 
 	var cmd = &cobra.Command{
 		Use:    "hub",
-		Short:  "start the gpupgrade hub",
-		Long:   `start the gpupgrade hub`,
+		Short:  "start the hub",
+		Long:   "start the hub",
 		Hidden: true,
 		Args:   cobra.MaximumNArgs(0), //no positional args allowed
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -50,25 +49,15 @@ func Hub() *cobra.Command {
 
 			// allow command line args precedence over config file values
 			if cmd.Flag("port").Changed {
-				conf.HubPort = port
+				conf.HubPort = hubPort
 			}
 
-			h := hub.New(conf, grpc.DialContext, utils.GetStateDir())
-
-			if shouldDaemonize {
-				h.MakeDaemon()
-			}
-
-			err = h.Start()
-			if err != nil {
-				return err
-			}
-
-			return nil
+			hubServer := hub.New(conf)
+			return hubServer.Start(conf.HubPort, shouldDaemonize)
 		},
 	}
 
-	cmd.Flags().IntVar(&port, "port", upgrade.DefaultHubPort, "the port to listen for commands on")
+	cmd.Flags().IntVar(&hubPort, "port", upgrade.DefaultHubPort, "the port to listen for commands on")
 
 	daemon.MakeDaemonizable(cmd, &shouldDaemonize)
 

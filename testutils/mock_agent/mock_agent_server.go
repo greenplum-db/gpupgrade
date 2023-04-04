@@ -9,7 +9,6 @@ import (
 	"net"
 	"sync"
 
-	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
 
 	"google.golang.org/grpc"
@@ -34,7 +33,7 @@ type MockAgentServer struct {
 //
 // XXX Why is the Dialer type that we need for this agent defined in the hub
 // package?
-func NewMockAgentServer() (*MockAgentServer, hub.Dialer, int) {
+func NewMockAgentServer() (*MockAgentServer, func(ctx context.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error), int) {
 	lis, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		panic(err)
