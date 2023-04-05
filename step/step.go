@@ -210,7 +210,7 @@ func (s *Step) run(substep idl.Substep, f func(OutStreams) error, alwaysRun bool
 	if s.err != nil {
 		return
 	}
-	
+
 	status, err := s.substepStore.Read(s.name, substep)
 	if err != nil {
 		return
@@ -307,10 +307,9 @@ type skipErr struct{}
 
 func (s skipErr) Error() string { return "skipped" }
 
-// UserCanceled can be returned from creating a step to indicate that the user
-// has canceled the upgrade and does not want to proceed.
-var UserCanceled = userCanceledErr{}
+// Quit indicates that the user has canceled and does not want to proceed.
+var Quit = userQuitErr{}
 
-type userCanceledErr struct{}
+type userQuitErr struct{}
 
-func (s userCanceledErr) Error() string { return "user canceled" }
+func (s userQuitErr) Error() string { return "user quit" }

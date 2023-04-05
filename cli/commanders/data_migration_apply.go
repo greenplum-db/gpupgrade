@@ -218,7 +218,7 @@ Select: `, phase)
 			return nil, step.Skip
 		case "q":
 			fmt.Print("\nQuitting...\n")
-			return nil, step.UserCanceled
+			return nil, step.Quit
 		default:
 			continue
 		}
@@ -245,7 +245,7 @@ func SelectDataMigrationScriptsPrompt(reader *bufio.Reader, currentScriptDir str
 
 		selectedScriptDirs, err := ParseSelection(input, allScripts)
 		if err != nil {
-			if errors.Is(err, step.UserCanceled) {
+			if errors.Is(err, step.Quit) {
 				fmt.Println()
 				fmt.Print("Quitting...")
 				return nil, err
@@ -278,7 +278,7 @@ func SelectDataMigrationScriptsPrompt(reader *bufio.Reader, currentScriptDir str
 			continue
 		case "q":
 			fmt.Print("\nQuitting...")
-			return nil, step.UserCanceled
+			return nil, step.Quit
 		default:
 			continue
 		}
@@ -292,7 +292,7 @@ func ParseSelection(input string, allScripts Scripts) (Scripts, error) {
 	}
 
 	if input == "q" {
-		return nil, step.UserCanceled
+		return nil, step.Quit
 	}
 
 	selections := strings.Split(input, ",")

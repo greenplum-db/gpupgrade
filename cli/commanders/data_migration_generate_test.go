@@ -197,7 +197,7 @@ func TestArchiveDataMigrationScriptsPrompt(t *testing.T) {
 	t.Run("returns canceled error when user selects 'q'uit", func(t *testing.T) {
 		reader := bufio.NewReader(strings.NewReader("q\n"))
 		err := commanders.ArchiveDataMigrationScriptsPrompt(false, reader, fsys, "")
-		expected := step.UserCanceled
+		expected := step.Quit
 		if !errors.Is(err, expected) {
 			t.Errorf("got error %#v, want %#v", err, expected)
 		}
@@ -208,8 +208,8 @@ func TestArchiveDataMigrationScriptsPrompt(t *testing.T) {
 
 		reader := bufio.NewReader(strings.NewReader("b\nq\n"))
 		err := commanders.ArchiveDataMigrationScriptsPrompt(false, reader, fsys, "")
-		if !errors.Is(err, step.UserCanceled) {
-			t.Errorf("got error %#v, want %#v", err, step.UserCanceled)
+		if !errors.Is(err, step.Quit) {
+			t.Errorf("got error %#v, want %#v", err, step.Quit)
 		}
 
 		stdout, stderr := d.Collect()

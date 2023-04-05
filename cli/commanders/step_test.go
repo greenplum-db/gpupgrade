@@ -698,11 +698,11 @@ func TestPrompt(t *testing.T) {
 		}
 	})
 
-	t.Run("returns step.UserCanceled when user cancels", func(t *testing.T) {
+	t.Run("returns step.Quit when user cancels", func(t *testing.T) {
 		for _, input := range []string{"n\n", "N\n"} {
 			reader := bufio.NewReader(strings.NewReader(input))
 			err := commanders.Prompt(reader, idl.Step_execute)
-			if !errors.Is(err, step.UserCanceled) {
+			if !errors.Is(err, step.Quit) {
 				t.Errorf("unexpected error %#v", err)
 			}
 		}

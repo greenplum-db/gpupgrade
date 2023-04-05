@@ -222,7 +222,7 @@ Select: `)
 			return step.Skip
 		case "q":
 			fmt.Print("\nQuitting...")
-			return step.UserCanceled
+			return step.Quit
 		default:
 			continue
 		}

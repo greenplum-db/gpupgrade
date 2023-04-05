@@ -46,7 +46,7 @@ func finalize() *cobra.Command {
 				confirmationText,
 			)
 			if err != nil {
-				if errors.Is(err, step.UserCanceled) {
+				if errors.Is(err, step.Quit) {
 					// If user cancels don't return an error to main to avoid
 					// printing "Error:".
 					return nil

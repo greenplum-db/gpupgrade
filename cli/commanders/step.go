@@ -308,7 +308,7 @@ func Prompt(reader *bufio.Reader, currentStep idl.Step) error {
 		case "n":
 			fmt.Println()
 			fmt.Print("Canceling...")
-			return step.UserCanceled
+			return step.Quit
 		}
 	}
 }

@@ -368,7 +368,7 @@ func TestApplyDataMigrationScriptsPrompt(t *testing.T) {
 	t.Run("returns canceled error when user selects 'q'uit", func(t *testing.T) {
 		reader := bufio.NewReader(strings.NewReader("q\n"))
 		actualScriptDirs, err := commanders.ApplyDataMigrationScriptsPrompt(false, reader, currentScriptDir, fsys, phase)
-		expected := step.UserCanceled
+		expected := step.Quit
 		if !errors.Is(err, expected) {
 			t.Errorf("got error %#v, want %#v", err, expected)
 		}
@@ -383,8 +383,8 @@ func TestApplyDataMigrationScriptsPrompt(t *testing.T) {
 
 		reader := bufio.NewReader(strings.NewReader("b\nq\n"))
 		actualScriptDirs, err := commanders.ApplyDataMigrationScriptsPrompt(false, reader, currentScriptDir, fsys, phase)
-		if !errors.Is(err, step.UserCanceled) {
-			t.Errorf("got error %#v, want %#v", err, step.UserCanceled)
+		if !errors.Is(err, step.Quit) {
+			t.Errorf("got error %#v, want %#v", err, step.Quit)
 		}
 
 		if actualScriptDirs != nil {
@@ -437,8 +437,8 @@ func TestApplyDataMigrationScriptsPrompt(t *testing.T) {
 
 		reader := bufio.NewReader(strings.NewReader("q\n"))
 		actualScriptDirs, err := commanders.ApplyDataMigrationScriptsPrompt(false, reader, currentScriptDir, fsys, phase)
-		if !errors.Is(err, step.UserCanceled) {
-			t.Errorf("got error %#v, want %#v", err, step.UserCanceled)
+		if !errors.Is(err, step.Quit) {
+			t.Errorf("got error %#v, want %#v", err, step.Quit)
 		}
 
 		if actualScriptDirs != nil {
@@ -491,8 +491,8 @@ func TestApplyDataMigrationScriptsPrompt(t *testing.T) {
 
 		reader := bufio.NewReader(strings.NewReader("q\n"))
 		actualScriptDirs, err := commanders.ApplyDataMigrationScriptsPrompt(false, reader, currentScriptDir, fsys, phase)
-		if !errors.Is(err, step.UserCanceled) {
-			t.Errorf("got error %#v, want %#v", err, step.UserCanceled)
+		if !errors.Is(err, step.Quit) {
+			t.Errorf("got error %#v, want %#v", err, step.Quit)
 		}
 
 		if actualScriptDirs != nil {
@@ -568,7 +568,7 @@ func TestSelectDataMigrationScriptsPrompt(t *testing.T) {
 	t.Run("returns canceled when user selects quit", func(t *testing.T) {
 		reader := bufio.NewReader(strings.NewReader("q\n"))
 		scriptDirs, err := commanders.SelectDataMigrationScriptsPrompt(reader, currentScriptDir, fsys, phase)
-		expected := step.UserCanceled
+		expected := step.Quit
 		if !errors.Is(err, expected) {
 			t.Errorf("got error %#v, want %#v", err, expected)
 		}
@@ -584,8 +584,8 @@ func TestSelectDataMigrationScriptsPrompt(t *testing.T) {
 		fsys := fstest.MapFS{idl.Step_initialize.String(): {Mode: os.ModeDir}}
 		reader := bufio.NewReader(strings.NewReader("0.5\nq\n"))
 		scriptDirs, err := commanders.SelectDataMigrationScriptsPrompt(reader, currentScriptDir, fsys, phase)
-		if !errors.Is(err, step.UserCanceled) {
-			t.Errorf("got error %#v, want %#v", err, step.UserCanceled)
+		if !errors.Is(err, step.Quit) {
+			t.Errorf("got error %#v, want %#v", err, step.Quit)
 		}
 
 		if scriptDirs != nil {
@@ -677,8 +677,8 @@ func TestSelectDataMigrationScriptsPrompt(t *testing.T) {
 
 		reader := bufio.NewReader(strings.NewReader("0\ne\n1\nq\n"))
 		scriptDirs, err := commanders.SelectDataMigrationScriptsPrompt(reader, currentScriptDir, fsys, phase)
-		if !errors.Is(err, step.UserCanceled) {
-			t.Errorf("got error %#v, want %#v", err, step.UserCanceled)
+		if !errors.Is(err, step.Quit) {
+			t.Errorf("got error %#v, want %#v", err, step.Quit)
 		}
 
 		if scriptDirs != nil {
@@ -721,8 +721,8 @@ func TestSelectDataMigrationScriptsPrompt(t *testing.T) {
 
 		reader := bufio.NewReader(strings.NewReader("0\nbad\nq\n"))
 		scriptDirs, err := commanders.SelectDataMigrationScriptsPrompt(reader, currentScriptDir, fsys, phase)
-		if !errors.Is(err, step.UserCanceled) {
-			t.Errorf("got error %#v, want %#v", err, step.UserCanceled)
+		if !errors.Is(err, step.Quit) {
+			t.Errorf("got error %#v, want %#v", err, step.Quit)
 		}
 
 		if scriptDirs != nil {
@@ -760,7 +760,7 @@ func TestSelectDataMigrationScriptsPrompt(t *testing.T) {
 	t.Run("returns canceled when user selects quit from 'continue, edit, or quit' prompt", func(t *testing.T) {
 		reader := bufio.NewReader(strings.NewReader("1\nq\n"))
 		scriptDirs, err := commanders.SelectDataMigrationScriptsPrompt(reader, currentScriptDir, fsys, phase)
-		expected := step.UserCanceled
+		expected := step.Quit
 		if !errors.Is(err, expected) {
 			t.Errorf("got error %#v, want %#v", err, expected)
 		}
@@ -791,7 +791,7 @@ func TestParseSelection(t *testing.T) {
 		{
 			name:     "cancels when input is 'q'",
 			input:    "q\n",
-			expected: step.UserCanceled,
+			expected: step.Quit,
 		},
 		{
 			name:     "errors when selection is not a number",

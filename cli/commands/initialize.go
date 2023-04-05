@@ -64,8 +64,8 @@ func initialize() *cobra.Command {
 			// If no required flags are set then return help.
 			if !cmd.Flag("file").Changed && !isAnyDevModeFlagSet {
 				fmt.Println(InitializeHelp)
-				cmd.SilenceErrors = true // silence UserCanceled error message below
-				return step.UserCanceled // exit early and don't call RunE
+				cmd.SilenceErrors = true // silence Quit error message below
+				return step.Quit         // exit early and don't call RunE
 			}
 
 			// If the file flag is set ensure no other flags are set except
