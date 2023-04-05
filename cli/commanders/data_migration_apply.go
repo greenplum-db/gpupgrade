@@ -62,6 +62,7 @@ func ApplyDataMigrationScripts(nonInteractive bool, gphome string, port int, log
 	errChan := make(chan error, len(scriptDirsToRun))
 	outputChan := make(chan []byte, len(scriptDirsToRun))
 
+	fmt.Printf("\nApplying data migration scripts...\n")
 	for _, scriptDir := range scriptDirsToRun {
 		wg.Add(1)
 
@@ -127,6 +128,7 @@ func ApplyDataMigrationScriptSubDir(gphome string, port int, scriptDirFS fs.FS, 
 			continue
 		}
 
+		fmt.Printf("  Applying script %s...\n", entry.Name())
 		output, err := applySQLFile(gphome, port, "postgres", filepath.Join(scriptDir, entry.Name()), "-v", "ON_ERROR_STOP=1", "--echo-queries")
 		if err != nil {
 			return nil, err
