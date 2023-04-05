@@ -11,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -52,12 +51,6 @@ func TempDataDir(datadir, segPrefix string, id ID) string {
 	}
 
 	return filepath.Join(dir, newBase)
-}
-
-// GetArchiveDirectoryName returns the name of the file to be used to store logs
-// from this run of gpupgrade during a revert.
-func GetArchiveDirectoryName(id ID, t time.Time) string {
-	return fmt.Sprintf("gpupgrade-%s-%s", id.String(), t.Format("2006-01-02T15:04"))
 }
 
 // RenameDirectories archives the source directory, and renames

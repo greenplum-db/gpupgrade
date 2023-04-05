@@ -6,12 +6,14 @@ package hub
 import (
 	"log"
 	"os/exec"
+	"time"
 
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
@@ -111,8 +113,15 @@ Cannot revert and restore the source cluster. Please contact support.`)
 		return Recoverseg(streams, s.Source, s.UseHbaHostnames)
 	})
 
+	var logArchiveDir string
 	st.AlwaysRun(idl.Substep_archive_log_directories, func(_ step.OutStreams) error {
-		return ArchiveLogDirectories(s.LogArchiveDir, s.agentConns, s.Config.Source.CoordinatorHostname())
+		logDir, err := utils.GetLogDir()
+		if err != nil {
+			return err
+		}
+
+		logArchiveDir = GetLogArchiveDir(logDir, s.UpgradeID, time.Now())
+		return ArchiveLogDirectories(logDir, logArchiveDir, s.agentConns, s.Config.Source.CoordinatorHostname())
 	})
 
 	st.RunConditionally(idl.Substep_delete_backupdir, configCreated, func(streams step.OutStreams) error {
@@ -126,7 +135,7 @@ Cannot revert and restore the source cluster. Please contact support.`)
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_RevertResponse{
 		RevertResponse: &idl.RevertResponse{
 			SourceVersion:       s.Source.Version.String(),
-			LogArchiveDirectory: s.LogArchiveDir,
+			LogArchiveDirectory: logArchiveDir,
 			Source: &idl.Cluster{
 				GPHome:                   s.Source.GPHome,
 				CoordinatorDataDirectory: s.Source.CoordinatorDataDir(),

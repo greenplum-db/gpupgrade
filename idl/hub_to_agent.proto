@@ -96,7 +96,7 @@ message DeleteTablespaceRequest {
 message DeleteTablespaceReply {}
 
 message ArchiveLogDirectoryRequest {
-    string NewDir = 1;
+    string logArchiveDir = 1;
 }
 message ArchiveLogDirectoryReply {}
 

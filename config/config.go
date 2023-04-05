@@ -23,8 +23,6 @@ import (
 const ConfigFileName = "config.json"
 
 type Config struct {
-	LogArchiveDir string
-
 	// We do not combine the state directory and backup directory for
 	// several reasons:
 	// - The backup directory needs to be configurable since there
@@ -106,18 +104,12 @@ func Create(db *sql.DB, hubPort int, agentPort int, sourceGPHome string, targetG
 		return Config{}, err
 	}
 
-	logDir, err := utils.GetLogDir()
-	if err != nil {
-		return Config{}, err
-	}
-
 	config := Config{}
 	config.HubPort = hubPort
 	config.AgentPort = agentPort
 	config.Mode = mode
 	config.UseHbaHostnames = useHbaHostnames
 	config.UpgradeID = upgrade.NewID()
-	config.LogArchiveDir = filepath.Join(filepath.Dir(logDir), upgrade.GetArchiveDirectoryName(config.UpgradeID, time.Now()))
 	config.BackupDirs, err = backupdir.ParseParentBackupDirs(parentBackupDirs, source)
 	if err != nil {
 		return Config{}, err

@@ -5,21 +5,21 @@ package hub
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"path/filepath"
+	"time"
 
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
-func ArchiveLogDirectories(logArchiveDir string, agentConns []*idl.Connection, targetCoordinatorHost string) error {
+func ArchiveLogDirectories(logDir string, logArchiveDir string, agentConns []*idl.Connection, targetCoordinatorHost string) error {
 	// Archive log directory on coordinator
-	logDir, err := utils.GetLogDir()
-	if err != nil {
-		return err
-	}
-
 	log.Printf("archiving log directory %q to %q", logDir, logArchiveDir)
-	if err = utils.Move(logDir, logArchiveDir); err != nil {
+	err := utils.Move(logDir, logArchiveDir)
+	if err != nil {
 		return err
 	}
 
@@ -28,17 +28,23 @@ func ArchiveLogDirectories(logArchiveDir string, agentConns []*idl.Connection, t
 
 }
 
-func ArchiveSegmentLogDirectories(agentConns []*idl.Connection, excludeHostname, newDir string) error {
+func ArchiveSegmentLogDirectories(agentConns []*idl.Connection, excludeHostname, logArchiveDir string) error {
 	request := func(conn *idl.Connection) error {
 		if conn.Hostname == excludeHostname {
 			return nil
 		}
 
-		_, err := conn.AgentClient.ArchiveLogDirectory(context.Background(), &idl.ArchiveLogDirectoryRequest{
-			NewDir: newDir,
-		})
+		req := &idl.ArchiveLogDirectoryRequest{LogArchiveDir: logArchiveDir}
+		_, err := conn.AgentClient.ArchiveLogDirectory(context.Background(), req)
 		return err
 	}
 
 	return ExecuteRPC(agentConns, request)
+}
+
+// GetLogArchiveDir returns the name of the file to be used to store logs
+// from this run of gpupgrade during a revert.
+func GetLogArchiveDir(logDir string, upgradeID upgrade.ID, t time.Time) string {
+	archiveName := fmt.Sprintf("gpupgrade-%s-%s", upgradeID.String(), t.Format("20060102T150409"))
+	return filepath.Join(filepath.Dir(logDir), archiveName)
 }

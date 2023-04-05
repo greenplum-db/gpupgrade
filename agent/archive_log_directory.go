@@ -11,15 +11,15 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
-func (s *Server) ArchiveLogDirectory(ctx context.Context, in *idl.ArchiveLogDirectoryRequest) (*idl.ArchiveLogDirectoryReply, error) {
+func (s *Server) ArchiveLogDirectory(ctx context.Context, req *idl.ArchiveLogDirectoryRequest) (*idl.ArchiveLogDirectoryReply, error) {
 	log.Printf("starting %s", idl.Substep_archive_log_directories)
 
-	logdir, err := utils.GetLogDir()
+	logDir, err := utils.GetLogDir()
 	if err != nil {
 		return &idl.ArchiveLogDirectoryReply{}, err
 	}
 
-	log.Printf("moving directory %q to %q", logdir, in.GetNewDir())
-	err = utils.Move(logdir, in.GetNewDir())
+	log.Printf("moving directory %q to %q", logDir, req.GetLogArchiveDir())
+	err = utils.Move(logDir, req.GetLogArchiveDir())
 	return &idl.ArchiveLogDirectoryReply{}, err
 }

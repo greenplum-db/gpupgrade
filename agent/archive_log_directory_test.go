@@ -6,16 +6,18 @@ package agent_test
 import (
 	"context"
 	"errors"
-	"os"
 	"os/exec"
 	"os/user"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/greenplum-db/gpupgrade/agent"
+	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/testlog"
+	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
@@ -23,48 +25,41 @@ func TestArchiveLogDirectories(t *testing.T) {
 	testlog.SetupTestLogger()
 	agentServer := agent.New()
 
-	t.Run("bubbles up errors", func(t *testing.T) {
-		// empty target directory string to force an error
-		newDir := ""
-		_, err := agentServer.ArchiveLogDirectory(context.Background(), &idl.ArchiveLogDirectoryRequest{NewDir: newDir})
+	t.Run("archives log directory on segment hosts", func(t *testing.T) {
+		homeDir := testutils.GetTempDir(t, "")
+		defer testutils.MustRemoveAll(t, homeDir)
+
+		utils.System.Current = func() (*user.User, error) {
+			return &user.User{HomeDir: homeDir}, nil
+		}
+
+		logDir := filepath.Join(homeDir, "gpAdminLogs", "gpupgrade")
+		testutils.MustCreateDir(t, logDir)
+		defer testutils.MustRemoveAll(t, logDir)
+
+		var upgradeID upgrade.ID
+		logArchiveDir := hub.GetLogArchiveDir(logDir, upgradeID, time.Now())
+		defer testutils.MustRemoveAll(t, logArchiveDir)
+
+		_, err := agentServer.ArchiveLogDirectory(context.Background(), &idl.ArchiveLogDirectoryRequest{LogArchiveDir: logArchiveDir})
+		if err != nil {
+			t.Errorf("unexpected error %#v", err)
+		}
+
+		testutils.PathMustNotExist(t, logDir)
+		testutils.PathMustExist(t, logArchiveDir)
+	})
+
+	t.Run("errors when failing to archive log directory on segment host", func(t *testing.T) {
+		logArchiveDir := "" // use an empty target directory string to force an error
+		_, err := agentServer.ArchiveLogDirectory(context.Background(), &idl.ArchiveLogDirectoryRequest{LogArchiveDir: logArchiveDir})
 		if err == nil {
 			t.Errorf("expected error")
 		}
+
 		var exitError *exec.ExitError
 		if !errors.As(err, &exitError) {
-			t.Errorf("got %T, want %T", err, exitError)
-		}
-	})
-
-	t.Run("archives log directories", func(t *testing.T) {
-		homeDir := testutils.GetTempDir(t, "")
-
-		mockUser := user.User{HomeDir: homeDir}
-		utils.System.Current = func() (*user.User, error) {
-			return &mockUser, nil
-		}
-		oldLogDir := filepath.Join(mockUser.HomeDir, "gpAdminLogs", "gpupgrade")
-		err := utils.System.MkdirAll(oldLogDir, 0700)
-		if err != nil {
-			t.Errorf("unexpected error %#v", err)
-		}
-		defer os.RemoveAll(homeDir)
-
-		newLogDir := oldLogDir + "xxxxxx"
-		_, err = agentServer.ArchiveLogDirectory(context.Background(), &idl.ArchiveLogDirectoryRequest{NewDir: newLogDir})
-		if err != nil {
-			t.Errorf("unexpected error %#v", err)
-		}
-		defer os.RemoveAll(newLogDir)
-
-		_, err = os.Stat(oldLogDir)
-		if !os.IsNotExist(err) {
-			t.Errorf("old log dir %q must be removed", oldLogDir)
-		}
-
-		_, err = os.Stat(newLogDir)
-		if err != nil {
-			t.Errorf("got %#v, want nil", err)
+			t.Errorf("got %T want %T", err, exitError)
 		}
 	})
 }
