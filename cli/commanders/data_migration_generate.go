@@ -110,11 +110,13 @@ func GenerateDataMigrationScripts(nonInteractive bool, gphome string, port int, 
 		return err
 	}
 
-	fmt.Printf(`Generated scripts:
+	fmt.Printf(`
+Generated scripts:
 %s
 
 Logs:
 %s
+
 `, utils.Bold.Sprint(filepath.Join(outputDir, "current")), utils.Bold.Sprint(logDir))
 
 	return nil
@@ -288,7 +290,6 @@ func GenerateScriptsPerDatabase(database DatabaseName, gphome string, port int, 
 	}
 
 	log.Println(string(output))
-	fmt.Println()
 	return nil
 }
 

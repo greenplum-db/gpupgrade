@@ -102,11 +102,13 @@ func ApplyDataMigrationScripts(nonInteractive bool, gphome string, port int, log
 	}
 
 	if phase == idl.Step_stats {
-		fmt.Print(color.YellowString("To receive an upgrade time estimate send the stats output:\n%s\n\n", utils.Bold.Sprint(filepath.Join(logDir, "apply_"+phase.String()+".log"))))
+		fmt.Print(color.YellowString("\nTo receive an upgrade time estimate send the stats output:\n%s\n", utils.Bold.Sprint(filepath.Join(logDir, "apply_"+phase.String()+".log"))))
 	}
 
-	fmt.Printf(`Logs:
+	fmt.Printf(`
+Logs:
 %s
+
 `, utils.Bold.Sprint(logDir))
 
 	return nil
