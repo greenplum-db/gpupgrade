@@ -112,6 +112,7 @@ enum Status {
     complete = 2;
     failed = 3;
     skipped = 4;
+    quit = 5;
 }
 
 message PrepareInitClusterRequest {}

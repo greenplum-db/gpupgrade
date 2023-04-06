@@ -26,6 +26,7 @@ var indicators = map[idl.Status]string{
 	idl.Status_complete: "[COMPLETE]",
 	idl.Status_failed:   "[FAILED]",
 	idl.Status_skipped:  "[SKIPPED]",
+	idl.Status_quit:     "[QUIT]",
 }
 
 func Initialize(client idl.CliToHubClient, request *idl.InitializeRequest, verbose bool) (err error) {

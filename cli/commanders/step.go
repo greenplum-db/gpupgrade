@@ -197,6 +197,10 @@ func (s *Step) RunCLISubstep(substep idl.Substep, f func(streams step.OutStreams
 			err = nil
 		}
 
+		if errors.Is(err, step.Quit) {
+			status = idl.Status_quit
+		}
+
 		if pErr := s.printStatus(substep, status); pErr != nil {
 			err = errorlist.Append(err, pErr)
 			return
@@ -232,6 +236,10 @@ func (s *Step) Complete(completedText string) error {
 
 	if s.Err() != nil {
 		fmt.Println() // Separate the step status from the error text
+
+		if errors.Is(s.Err(), step.Quit) {
+			return s.Err()
+		}
 
 		genericNextAction := fmt.Sprintf("Please address the above issue and run \"gpupgrade %s\" again.\n"+additionalNextActions[s.step], strings.ToLower(s.stepName))
 

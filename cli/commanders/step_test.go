@@ -141,6 +141,47 @@ func TestSubstep(t *testing.T) {
 		}
 	})
 
+	t.Run("when a CLI substep is quit by the user its status is printed without the generic next action error", func(t *testing.T) {
+		d := commanders.BufferStandardDescriptors(t)
+
+		st, err := commanders.NewStep(idl.Step_initialize, &step.BufferedStreams{}, false, true, "")
+		if err != nil {
+			d.Close()
+			t.Errorf("unexpected err %#v", err)
+		}
+
+		quitErr := step.Quit
+		st.RunCLISubstep(idl.Substep_generate_data_migration_scripts, func(streams step.OutStreams) error {
+			return quitErr
+		})
+
+		err = st.Complete("")
+		if !errors.Is(err, step.Quit) {
+			t.Errorf("unexpected err %#v", err)
+		}
+
+		if !errors.Is(st.Err(), step.Quit) {
+			t.Errorf("expected err to be quit, got %#v", quitErr)
+		}
+
+		stdout, stderr := d.Collect()
+		d.Close()
+		if len(stderr) != 0 {
+			t.Errorf("unexpected stderr %#v", string(stderr))
+		}
+
+		expected := "\nInitialize in progress.\n\n"
+		expected += commanders.Format(commanders.SubstepDescriptions[idl.Substep_generate_data_migration_scripts].OutputText, idl.Status_running) + "\r"
+		expected += commanders.Format(commanders.SubstepDescriptions[idl.Substep_generate_data_migration_scripts].OutputText, idl.Status_quit) + "\n\n"
+
+		actual := string(stdout)
+		if actual != expected {
+			t.Errorf("output %#v want %#v", actual, expected)
+			t.Logf("actual: %s", actual)
+			t.Logf("expected: %s", expected)
+		}
+	})
+
 	t.Run("there is no error when an internal substep is skipped", func(t *testing.T) {
 		st, err := commanders.NewStep(idl.Step_initialize, &step.BufferedStreams{}, false, true, "")
 		if err != nil {
