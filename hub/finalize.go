@@ -87,7 +87,7 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 	})
 
 	var logArchiveDir string
-	st.Run(idl.Substep_archive_log_directories, func(_ step.OutStreams) error {
+	st.AlwaysRun(idl.Substep_archive_log_directories, func(_ step.OutStreams) error {
 		logDir, err := utils.GetLogDir()
 		if err != nil {
 			return err
@@ -101,7 +101,7 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 		return DeleteBackupDirectories(streams, s.agentConns, s.BackupDirs)
 	})
 
-	st.Run(idl.Substep_delete_segment_statedirs, func(_ step.OutStreams) error {
+	st.AlwaysRun(idl.Substep_delete_segment_statedirs, func(_ step.OutStreams) error {
 		return DeleteStateDirectories(s.agentConns, s.Source.CoordinatorHostname())
 	})
 
