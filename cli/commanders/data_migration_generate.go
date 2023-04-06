@@ -259,7 +259,7 @@ func GenerateScriptsPerDatabase(database DatabaseName, gphome string, port int, 
 
 	for _, phase := range MigrationScriptPhases {
 		wg.Add(1)
-		fmt.Printf("  Generating %q scripts for %s...\n", phase, database.Datname)
+		fmt.Printf("  Generating %q scripts for %s\n", phase, database.Datname)
 
 		go func(phase idl.Step, database DatabaseName, gphome string, port int, seedDir string, outputDir string) {
 			defer wg.Done()

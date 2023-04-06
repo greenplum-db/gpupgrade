@@ -130,7 +130,7 @@ func ApplyDataMigrationScriptSubDir(gphome string, port int, scriptDirFS fs.FS, 
 			continue
 		}
 
-		fmt.Printf("  Applying script %s...\n", entry.Name())
+		fmt.Printf("  %s\n", entry.Name())
 		output, err := applySQLFile(gphome, port, "postgres", filepath.Join(scriptDir, entry.Name()), "-v", "ON_ERROR_STOP=1", "--echo-queries")
 		if err != nil {
 			return nil, err
