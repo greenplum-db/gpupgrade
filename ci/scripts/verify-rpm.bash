@@ -28,7 +28,7 @@ verify_rpm_info() {
   fi
 
   [[ $info == *"License     : VMware Software EULA"* ]]
-  [[ $info == *"Summary     : VMware Tanzu Greenplum Upgrade"* ]]
+  [[ $info == *"Summary     : VMware Greenplum Upgrade"* ]]
 }
 
 verify_license_files() {
@@ -36,7 +36,7 @@ verify_license_files() {
   [ -s "$license_file" ]
 
   [[ $(head -1 "$license_file") =~ open_source_licenses.txt ]]
-  [[ $(head -3 "$license_file" | tail -1) == *"VMware Tanzu Greenplum Upgrade ${VERSION}"* ]]
+  [[ $(head -3 "$license_file" | tail -1) == *"VMware Greenplum Upgrade ${VERSION}"* ]]
   [[ $(tail -1 "$license_file") =~ "GREENPLUMUPGRADE" ]]
 }
 
