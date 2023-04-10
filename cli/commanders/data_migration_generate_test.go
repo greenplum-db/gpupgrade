@@ -20,6 +20,7 @@ import (
 	"testing/fstest"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/vbauerster/mpb/v8"
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/greenplum"
@@ -326,6 +327,11 @@ func TestGenerateScriptsPerDatabase(t *testing.T) {
 
 		expectPgDatabaseToReturn(mock).WillReturnRows(sqlmock.NewRows([]string{"datname", "quoted_datname"}).AddRow("postgres", "postgres"))
 
+		utils.System.DirFS = func(dir string) fs.FS {
+			return fstest.MapFS{}
+		}
+		defer utils.ResetSystemFunctions()
+
 		utils.System.MkdirAll = func(path string, perm os.FileMode) error {
 			return nil
 		}
@@ -354,6 +360,11 @@ func TestGenerateScriptsPerDatabase(t *testing.T) {
 		defer commanders.ResetBootstrapConnectionFunction()
 
 		expectPgDatabaseToReturn(mock).WillReturnRows(sqlmock.NewRows([]string{"datname", "quoted_datname"}).AddRow("postgres", "postgres"))
+
+		utils.System.DirFS = func(dir string) fs.FS {
+			return fstest.MapFS{}
+		}
+		defer utils.ResetSystemFunctions()
 
 		utils.System.MkdirAll = func(path string, perm os.FileMode) error {
 			return nil
@@ -386,6 +397,11 @@ func TestGenerateScriptsPerDatabase(t *testing.T) {
 		defer commanders.ResetBootstrapConnectionFunction()
 
 		expectPgDatabaseToReturn(mock).WillReturnRows(sqlmock.NewRows([]string{"datname", "quoted_datname"}).AddRow("postgres", "postgres"))
+
+		utils.System.DirFS = func(dir string) fs.FS {
+			return fstest.MapFS{}
+		}
+		defer utils.ResetSystemFunctions()
 
 		utils.System.MkdirAll = func(path string, perm os.FileMode) error {
 			return nil
@@ -421,7 +437,7 @@ func TestGenerateScriptsPerPhase(t *testing.T) {
 	phase := idl.Step_initialize
 	gphome := "/usr/local/gpdb5"
 	port := 123
-	database := commanders.DatabaseName{Datname: "postgres", QuotedDatname: "postgres"}
+	database := commanders.DatabaseInfo{Datname: "postgres", QuotedDatname: "postgres"}
 	seedDir := "/usr/local/bin/greenplum/gpupgrade/data-migration-scripts/5-to-6-seed-scripts"
 	outputDir := "/home/gpupgrade/data-migration"
 
@@ -432,8 +448,11 @@ func TestGenerateScriptsPerPhase(t *testing.T) {
 		filepath.Join(idl.Step_initialize.String(), "gphdfs_user_roles", "gen_alter_gphdfs_roles.sql"):    {},
 	}
 
+	progressBar := mpb.New()
+	bar := progressBar.AddBar(int64(100))
+
 	t.Run("errors when failing to read seed directory", func(t *testing.T) {
-		err := commanders.GenerateScriptsPerPhase(phase, database, gphome, port, seedDir, fstest.MapFS{}, outputDir)
+		err := commanders.GenerateScriptsPerPhase(phase, database, gphome, port, seedDir, fstest.MapFS{}, outputDir, bar)
 		var expected *os.PathError
 		if !errors.As(err, &expected) {
 			t.Errorf("got error %#v, want %#v", err, expected)
@@ -445,7 +464,7 @@ func TestGenerateScriptsPerPhase(t *testing.T) {
 			phase.String(): {Mode: os.ModeDir},
 		}
 
-		err := commanders.GenerateScriptsPerPhase(phase, database, gphome, port, seedDir, fsys, outputDir)
+		err := commanders.GenerateScriptsPerPhase(phase, database, gphome, port, seedDir, fsys, outputDir, bar)
 		expected := "No seed files found"
 		if !strings.Contains(err.Error(), expected) {
 			t.Errorf("got error %#v, want %#v", err, expected)
@@ -479,7 +498,7 @@ func TestGenerateScriptsPerPhase(t *testing.T) {
 		}
 		defer utils.ResetSystemFunctions()
 
-		err := commanders.GenerateScriptsPerPhase(phase, database, gphome, port, seedDir, fsys, outputDir)
+		err := commanders.GenerateScriptsPerPhase(phase, database, gphome, port, seedDir, fsys, outputDir, bar)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -493,7 +512,7 @@ func TestGenerateScriptsPerPhase(t *testing.T) {
 		commanders.SetPsqlFileCommand(exectest.NewCommand(commanders.FailedMain))
 		defer commanders.ResetPsqlFileCommand()
 
-		err := commanders.GenerateScriptsPerPhase(phase, database, gphome, port, seedDir, fsys, outputDir)
+		err := commanders.GenerateScriptsPerPhase(phase, database, gphome, port, seedDir, fsys, outputDir, bar)
 		var exitError *exec.ExitError
 		if !errors.As(err, &exitError) {
 			t.Errorf("got %T, want %T", err, exitError)
@@ -510,7 +529,7 @@ func TestGenerateScriptsPerPhase(t *testing.T) {
 			filepath.Join(phase.String(), "gphdfs_user_roles", "some_bash_script.sh"): {},
 		}
 
-		err := commanders.GenerateScriptsPerPhase(phase, database, gphome, port, seedDir, fsys, outputDir)
+		err := commanders.GenerateScriptsPerPhase(phase, database, gphome, port, seedDir, fsys, outputDir, bar)
 		var exitError *exec.ExitError
 		if !errors.As(err, &exitError) {
 			t.Errorf("got %T, want %T", err, exitError)
@@ -527,7 +546,7 @@ func TestGenerateScriptsPerPhase(t *testing.T) {
 			filepath.Join(phase.String(), "gphdfs_user_roles", "some_bash_script.bash"): {},
 		}
 
-		err := commanders.GenerateScriptsPerPhase(phase, database, gphome, port, seedDir, fsys, outputDir)
+		err := commanders.GenerateScriptsPerPhase(phase, database, gphome, port, seedDir, fsys, outputDir, bar)
 		var exitError *exec.ExitError
 		if !errors.As(err, &exitError) {
 			t.Errorf("got %T, want %T", err, exitError)
@@ -541,7 +560,7 @@ func TestGenerateScriptsPerPhase(t *testing.T) {
 		}
 		defer utils.ResetSystemFunctions()
 
-		err := commanders.GenerateScriptsPerPhase(phase, database, gphome, port, seedDir, fsys, outputDir)
+		err := commanders.GenerateScriptsPerPhase(phase, database, gphome, port, seedDir, fsys, outputDir, bar)
 		if !errors.Is(err, expected) {
 			t.Errorf("got %v want %v", err, expected)
 		}
@@ -611,7 +630,7 @@ func TestGenerateScriptsPerPhase(t *testing.T) {
 			filepath.Join(phase.String(), "unique_primary_foreign_key_constraint", "migration_postgres_gen_drop_constraint_2_primary_unique.sql"): {},
 		}
 
-		err := commanders.GenerateScriptsPerPhase(phase, database, gphome, port, seedDir, fsys, outputDir)
+		err := commanders.GenerateScriptsPerPhase(phase, database, gphome, port, seedDir, fsys, outputDir, bar)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -666,7 +685,7 @@ func TestGenerateScriptsPerPhase(t *testing.T) {
 			filepath.Join(idl.Step_stats.String(), "cluster_and_database_stats", "generate_database_stats.sh"): {},
 		}
 
-		err := commanders.GenerateScriptsPerPhase(idl.Step_stats, database, gphome, port, seedDir, fsys, outputDir)
+		err := commanders.GenerateScriptsPerPhase(idl.Step_stats, database, gphome, port, seedDir, fsys, outputDir, bar)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -704,7 +723,7 @@ func TestGenerateScriptsPerPhase(t *testing.T) {
 		}
 		defer utils.ResetSystemFunctions()
 
-		err := commanders.GenerateScriptsPerPhase(phase, database, gphome, port, seedDir, fsys, outputDir)
+		err := commanders.GenerateScriptsPerPhase(phase, database, gphome, port, seedDir, fsys, outputDir, bar)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -724,7 +743,7 @@ func TestGenerateScriptsPerPhase(t *testing.T) {
 		}
 		defer utils.ResetSystemFunctions()
 
-		err := commanders.GenerateScriptsPerPhase(phase, database, gphome, port, seedDir, fsys, outputDir)
+		err := commanders.GenerateScriptsPerPhase(phase, database, gphome, port, seedDir, fsys, outputDir, bar)
 		if !errors.Is(err, os.ErrPermission) {
 			t.Errorf("got error %#v want %#v", err, os.ErrPermission)
 		}
@@ -745,7 +764,7 @@ func TestGenerateScriptsPerPhase(t *testing.T) {
 		}
 		defer utils.ResetSystemFunctions()
 
-		err := commanders.GenerateScriptsPerPhase(phase, database, gphome, port, seedDir, fsys, outputDir)
+		err := commanders.GenerateScriptsPerPhase(phase, database, gphome, port, seedDir, fsys, outputDir, bar)
 		if !errors.Is(err, os.ErrPermission) {
 			t.Errorf("got error %#v want %#v", err, os.ErrPermission)
 		}
@@ -766,7 +785,7 @@ func TestGenerateScriptsPerPhase(t *testing.T) {
 		}
 		defer utils.ResetSystemFunctions()
 
-		err := commanders.GenerateScriptsPerPhase(phase, database, gphome, port, seedDir, fsys, outputDir)
+		err := commanders.GenerateScriptsPerPhase(phase, database, gphome, port, seedDir, fsys, outputDir, bar)
 		if !errors.Is(err, os.ErrPermission) {
 			t.Errorf("got error %#v want %#v", err, os.ErrPermission)
 		}
@@ -780,19 +799,26 @@ func TestGetDatabases(t *testing.T) {
 	}
 	defer testutils.FinishMock(mock, t)
 
+	seedDirFS := fstest.MapFS{
+		idl.Step_initialize.String():                                                                      {Mode: os.ModeDir},
+		filepath.Join(idl.Step_initialize.String(), "gphdfs_user_roles"):                                  {Mode: os.ModeDir},
+		filepath.Join(idl.Step_initialize.String(), "gphdfs_user_roles", "gen_alter_gphdfs_roles.header"): {Data: []byte("gphdfs roles header\n")},
+		filepath.Join(idl.Step_initialize.String(), "gphdfs_user_roles", "gen_alter_gphdfs_roles.sql"):    {},
+	}
+
 	t.Run("succeeds", func(t *testing.T) {
 		expectPgDatabaseToReturn(mock).WillReturnRows(sqlmock.NewRows([]string{"datname", "quoted_datname"}).
 			AddRow("template1", "template1").
 			AddRow("postgres", "postgres"))
 
-		databases, err := commanders.GetDatabases(db)
+		databases, err := commanders.GetDatabases(db, seedDirFS)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
 
-		expected := []commanders.DatabaseName{
-			{QuotedDatname: "template1", Datname: "template1"},
-			{QuotedDatname: "postgres", Datname: "postgres"}}
+		expected := []commanders.DatabaseInfo{
+			{QuotedDatname: "template1", Datname: "template1", NumSeedScripts: 1},
+			{QuotedDatname: "postgres", Datname: "postgres", NumSeedScripts: 2}}
 		if !reflect.DeepEqual(databases, expected) {
 			t.Errorf("got %v, want %v", databases, expected)
 		}
@@ -802,7 +828,7 @@ func TestGetDatabases(t *testing.T) {
 		expected := os.ErrPermission
 		expectPgDatabaseToReturn(mock).WillReturnError(expected)
 
-		databases, err := commanders.GetDatabases(db)
+		databases, err := commanders.GetDatabases(db, seedDirFS)
 		if !errors.Is(err, expected) {
 			t.Errorf("got %v want %v", err, expected)
 		}
@@ -816,7 +842,7 @@ func TestGetDatabases(t *testing.T) {
 		expectPgDatabaseToReturn(mock).WillReturnRows(sqlmock.NewRows([]string{}).
 			AddRow()) // return less fields than scan expects
 
-		databases, err := commanders.GetDatabases(db)
+		databases, err := commanders.GetDatabases(db, seedDirFS)
 		if !strings.Contains(err.Error(), "Scan") {
 			t.Errorf(`expected %v to contain "Scan"`, err)
 		}
@@ -832,7 +858,7 @@ func TestGetDatabases(t *testing.T) {
 			AddRow("postgres").
 			RowError(0, expected))
 
-		databases, err := commanders.GetDatabases(db)
+		databases, err := commanders.GetDatabases(db, seedDirFS)
 		if !errors.Is(err, expected) {
 			t.Errorf("got %v want %v", err, expected)
 		}

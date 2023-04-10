@@ -18,6 +18,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/vbauerster/mpb/v8"
+	"github.com/vbauerster/mpb/v8/decor"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
@@ -70,30 +72,33 @@ func GenerateDataMigrationScripts(nonInteractive bool, gphome string, port int, 
 		return err
 	}
 
-	databases, err := GetDatabases(db)
+	databases, err := GetDatabases(db, utils.System.DirFS(seedDir))
 	if err != nil {
 		return err
 	}
 
-	var wg sync.WaitGroup
-	errChan := make(chan error, len(databases))
 	fmt.Printf("\nGenerating data migration scripts for %d databases...\n", len(databases))
+	progressBar := mpb.New()
+	errChan := make(chan error, len(databases))
 
 	for _, database := range databases {
-		wg.Add(1)
+		bar := progressBar.New(int64(database.NumSeedScripts),
+			mpb.NopStyle(),
+			mpb.PrependDecorators(decor.Name("  "+database.Datname, decor.WCSyncSpaceR)),
+			mpb.AppendDecorators(decor.NewPercentage("%d")))
 
-		go func(database DatabaseName, gphome string, port int, seedDir string, outputDir string) {
-			defer wg.Done()
-
-			err = GenerateScriptsPerDatabase(database, gphome, port, seedDir, outputDir)
+		go func(database DatabaseInfo, gphome string, port int, seedDir string, outputDir string, bar *mpb.Bar) {
+			err = GenerateScriptsPerDatabase(database, gphome, port, seedDir, outputDir, bar)
 			if err != nil {
 				errChan <- err
+				bar.Abort(false)
 				return
 			}
-		}(database, gphome, port, seedDir, outputDir)
+
+		}(database, gphome, port, seedDir, outputDir, bar)
 	}
 
-	wg.Wait()
+	progressBar.Wait()
 	close(errChan)
 
 	var errs error
@@ -229,7 +234,7 @@ Select: `)
 	}
 }
 
-func GenerateScriptsPerDatabase(database DatabaseName, gphome string, port int, seedDir string, outputDir string) error {
+func GenerateScriptsPerDatabase(database DatabaseInfo, gphome string, port int, seedDir string, outputDir string, bar *mpb.Bar) error {
 	output, err := executeSQLCommand(gphome, port, database.Datname, `CREATE LANGUAGE plpythonu;`)
 	if err != nil && !strings.Contains(err.Error(), "already exists") {
 		return err
@@ -259,17 +264,17 @@ func GenerateScriptsPerDatabase(database DatabaseName, gphome string, port int, 
 
 	for _, phase := range MigrationScriptPhases {
 		wg.Add(1)
-		fmt.Printf("  Generating %q scripts for %s\n", phase, database.Datname)
+		log.Printf("  Generating %q scripts for %s\n", phase, database.Datname)
 
-		go func(phase idl.Step, database DatabaseName, gphome string, port int, seedDir string, outputDir string) {
+		go func(phase idl.Step, database DatabaseInfo, gphome string, port int, seedDir string, outputDir string, bar *mpb.Bar) {
 			defer wg.Done()
 
-			err = GenerateScriptsPerPhase(phase, database, gphome, port, seedDir, utils.System.DirFS(seedDir), outputDir)
+			err = GenerateScriptsPerPhase(phase, database, gphome, port, seedDir, utils.System.DirFS(seedDir), outputDir, bar)
 			if err != nil {
 				errChan <- err
 				return
 			}
-		}(phase, database, gphome, port, seedDir, outputDir)
+		}(phase, database, gphome, port, seedDir, outputDir, bar)
 	}
 
 	wg.Wait()
@@ -298,7 +303,7 @@ func isGlobalScript(script string, database string) bool {
 	return database != "postgres" && (script == "gen_alter_gphdfs_roles.sql" || script == "generate_cluster_stats.sh")
 }
 
-func GenerateScriptsPerPhase(phase idl.Step, database DatabaseName, gphome string, port int, seedDir string, seedDirFS fs.FS, outputDir string) error {
+func GenerateScriptsPerPhase(phase idl.Step, database DatabaseInfo, gphome string, port int, seedDir string, seedDirFS fs.FS, outputDir string, bar *mpb.Bar) error {
 	scriptDirs, err := fs.ReadDir(seedDirFS, phase.String())
 	if err != nil {
 		return err
@@ -335,6 +340,8 @@ func GenerateScriptsPerPhase(phase idl.Step, database DatabaseName, gphome strin
 				}
 			}
 
+			bar.Increment() // Increment for seed scripts run rather than actual scripts generated
+
 			if len(scriptOutput) == 0 {
 				continue
 			}
@@ -367,25 +374,33 @@ func GenerateScriptsPerPhase(phase idl.Step, database DatabaseName, gphome strin
 	return nil
 }
 
-type DatabaseName struct {
-	Datname       string
-	QuotedDatname string
+type DatabaseInfo struct {
+	Datname        string
+	QuotedDatname  string
+	NumSeedScripts int
 }
 
-func GetDatabases(db *sql.DB) ([]DatabaseName, error) {
+func GetDatabases(db *sql.DB, seedDirFS fs.FS) ([]DatabaseInfo, error) {
 	rows, err := db.Query(`SELECT datname, quote_ident(datname) AS quoted_datname FROM pg_database WHERE datname != 'template0';`)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var databases []DatabaseName
+	var databases []DatabaseInfo
 	for rows.Next() {
-		var database DatabaseName
-		err := rows.Scan(&database.Datname, &database.QuotedDatname)
+		var database DatabaseInfo
+		err = rows.Scan(&database.Datname, &database.QuotedDatname)
 		if err != nil {
 			return nil, xerrors.Errorf("pg_database: %w", err)
 		}
+
+		numSeedScripts, err := countSeedScripts(database.Datname, seedDirFS)
+		if err != nil {
+			return nil, err
+		}
+
+		database.NumSeedScripts = numSeedScripts
 
 		databases = append(databases, database)
 	}
@@ -396,4 +411,51 @@ func GetDatabases(db *sql.DB) ([]DatabaseName, error) {
 	}
 
 	return databases, nil
+}
+
+func countSeedScripts(database string, seedDirFS fs.FS) (int, error) {
+	var numSeedScripts int
+
+	phasesEntries, err := utils.System.ReadDirFS(seedDirFS, ".")
+	if err != nil {
+		return 0, err
+	}
+
+	for _, phaseEntry := range phasesEntries {
+		if !phaseEntry.IsDir() || !isPhase(phaseEntry.Name()) {
+			continue
+		}
+
+		seedScriptDirs, err := fs.ReadDir(seedDirFS, phaseEntry.Name())
+		if err != nil {
+			return 0, err
+		}
+
+		for _, seedScriptDir := range seedScriptDirs {
+			seedScripts, err := utils.System.ReadDirFS(seedDirFS, filepath.Join(phaseEntry.Name(), seedScriptDir.Name()))
+			if err != nil {
+				return 0, err
+			}
+
+			for _, seedScript := range seedScripts {
+				if isGlobalScript(seedScript.Name(), database) {
+					continue
+				}
+
+				numSeedScripts += 1
+			}
+		}
+	}
+
+	return numSeedScripts, nil
+}
+
+func isPhase(input string) bool {
+	for _, phase := range MigrationScriptPhases {
+		if input == phase.String() {
+			return true
+		}
+	}
+
+	return false
 }

@@ -13,9 +13,10 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/fatih/color"
+	"github.com/vbauerster/mpb/v8"
+	"github.com/vbauerster/mpb/v8/decor"
 	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -58,28 +59,36 @@ func ApplyDataMigrationScripts(nonInteractive bool, gphome string, port int, log
 		}
 	}()
 
-	var wg sync.WaitGroup
+	progressBar := mpb.New()
 	errChan := make(chan error, len(scriptDirsToRun))
 	outputChan := make(chan []byte, len(scriptDirsToRun))
 
 	fmt.Printf("\nApplying data migration scripts...\n")
 	for _, scriptDir := range scriptDirsToRun {
-		wg.Add(1)
+		scriptDirEntries, err := utils.System.ReadDirFS(utils.System.DirFS(scriptDir), ".")
+		if err != nil {
+			return err
+		}
 
-		go func(gphome string, port int, scriptDir string) {
-			defer wg.Done()
+		bar := progressBar.New(int64(countScripts(scriptDirEntries)),
+			mpb.NopStyle(),
+			mpb.PrependDecorators(
+				decor.Name("  "+filepath.Base(scriptDir), decor.WCSyncSpaceR),
+				decor.CountersNoUnit("  %d/%d scripts applied")))
 
-			output, err := ApplyDataMigrationScriptSubDir(gphome, port, utils.System.DirFS(scriptDir), scriptDir)
+		go func(gphome string, port int, scriptDir string, bar *mpb.Bar) {
+			output, err := ApplyDataMigrationScriptSubDir(gphome, port, utils.System.DirFS(scriptDir), scriptDir, bar)
 			if err != nil {
 				errChan <- err
+				bar.Abort(false)
 				return
 			}
 
 			outputChan <- output
-		}(gphome, port, scriptDir)
+		}(gphome, port, scriptDir, bar)
 	}
 
-	wg.Wait()
+	progressBar.Wait()
 	close(errChan)
 	close(outputChan)
 
@@ -114,7 +123,20 @@ Logs:
 	return nil
 }
 
-func ApplyDataMigrationScriptSubDir(gphome string, port int, scriptDirFS fs.FS, scriptDir string) ([]byte, error) {
+func countScripts(entries []fs.DirEntry) int {
+	var numScripts int
+	for _, entry := range entries {
+		if filepath.Ext(entry.Name()) != ".sql" {
+			continue
+		}
+
+		numScripts += 1
+	}
+
+	return numScripts
+}
+
+func ApplyDataMigrationScriptSubDir(gphome string, port int, scriptDirFS fs.FS, scriptDir string, bar *mpb.Bar) ([]byte, error) {
 	entries, err := utils.System.ReadDirFS(scriptDirFS, ".")
 	if err != nil {
 		return nil, err
@@ -130,13 +152,15 @@ func ApplyDataMigrationScriptSubDir(gphome string, port int, scriptDirFS fs.FS, 
 			continue
 		}
 
-		fmt.Printf("  %s\n", entry.Name())
+		log.Printf("  %s\n", entry.Name())
 		output, err := applySQLFile(gphome, port, "postgres", filepath.Join(scriptDir, entry.Name()), "-v", "ON_ERROR_STOP=1", "--echo-queries")
 		if err != nil {
 			return nil, err
 		}
 
 		outputs = append(outputs, output...)
+
+		bar.Increment()
 	}
 
 	return outputs, nil

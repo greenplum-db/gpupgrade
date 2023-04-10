@@ -17,6 +17,8 @@ import (
 	"testing"
 	"testing/fstest"
 
+	"github.com/vbauerster/mpb/v8"
+
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
@@ -48,16 +50,21 @@ func TestApplyDataMigrationScripts(t *testing.T) {
 	t.Run("prints stats specific message for stats phase", func(t *testing.T) {
 		d := commanders.BufferStandardDescriptors(t)
 
-		currentScriptDir := testutils.GetTempDir(t, "")
-		defer testutils.MustRemoveAll(t, currentScriptDir)
+		resetStdin := testutils.SetStdin(t, "a\n")
+		defer resetStdin()
+
+		scriptDirFS := fstest.MapFS{
+			"migration_postgres_generate_stats.sql":  {},
+			"migration_template1_generate_stats.sql": {},
+		}
 
 		utils.System.DirFS = func(dir string) fs.FS {
-			return currentDirFS
+			return scriptDirFS
 		}
 		defer utils.ResetSystemFunctions()
 
-		resetStdin := testutils.SetStdin(t, "a\n")
-		defer resetStdin()
+		commanders.SetPsqlFileCommand(exectest.NewCommand(commanders.SuccessScript))
+		defer commanders.ResetPsqlFileCommand()
 
 		err := commanders.ApplyDataMigrationScripts(false, "", 0, logDir, currentDirFS, currentScriptDir, idl.Step_stats)
 		if err != nil {
@@ -155,6 +162,8 @@ func TestApplyDataMigrationScripts(t *testing.T) {
 
 func TestApplyDataMigrationScriptSubDir(t *testing.T) {
 	scriptSubDir := "/home/gpupgrade/data-migration/current/initialize/unique_primary_foreign_key_constraint"
+	progressBar := mpb.New()
+	bar := progressBar.AddBar(int64(100))
 
 	t.Run("errors when failing to read current script directory", func(t *testing.T) {
 		utils.System.ReadDirFS = func(fsys fs.FS, name string) ([]fs.DirEntry, error) {
@@ -162,7 +171,7 @@ func TestApplyDataMigrationScriptSubDir(t *testing.T) {
 		}
 		defer utils.ResetSystemFunctions()
 
-		output, err := commanders.ApplyDataMigrationScriptSubDir("", 0, fstest.MapFS{}, scriptSubDir)
+		output, err := commanders.ApplyDataMigrationScriptSubDir("", 0, fstest.MapFS{}, scriptSubDir, bar)
 		if !errors.Is(err, os.ErrPermission) {
 			t.Errorf("got error %#v want %#v", err, os.ErrPermission)
 		}
@@ -173,7 +182,7 @@ func TestApplyDataMigrationScriptSubDir(t *testing.T) {
 	})
 
 	t.Run("errors when no directories are in the current script directory", func(t *testing.T) {
-		output, err := commanders.ApplyDataMigrationScriptSubDir("", 0, fstest.MapFS{}, scriptSubDir)
+		output, err := commanders.ApplyDataMigrationScriptSubDir("", 0, fstest.MapFS{}, scriptSubDir, bar)
 		expected := fmt.Sprintf("No SQL files found in %q.", scriptSubDir)
 		if !strings.Contains(err.Error(), expected) {
 			t.Errorf("got error %#v, want %#v", err, expected)
@@ -194,7 +203,7 @@ func TestApplyDataMigrationScriptSubDir(t *testing.T) {
 			"drop_postgres_indexes.bash":                                  {},
 		}
 
-		output, err := commanders.ApplyDataMigrationScriptSubDir("", 0, fsys, scriptSubDir)
+		output, err := commanders.ApplyDataMigrationScriptSubDir("", 0, fsys, scriptSubDir, bar)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -212,7 +221,7 @@ func TestApplyDataMigrationScriptSubDir(t *testing.T) {
 			"migration_postgres_gen_drop_constraint_2_primary_unique.sql": {},
 		}
 
-		output, err := commanders.ApplyDataMigrationScriptSubDir("", 0, fsys, scriptSubDir)
+		output, err := commanders.ApplyDataMigrationScriptSubDir("", 0, fsys, scriptSubDir, bar)
 		var exitError *exec.ExitError
 		if !errors.As(err, &exitError) {
 			t.Errorf("got %T, want %T", err, exitError)
