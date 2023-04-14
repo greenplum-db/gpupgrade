@@ -18,6 +18,7 @@ type SegConfig struct {
 	ContentID int
 	Port      int
 	Hostname  string
+	Address   string
 	DataDir   string
 	Role      string
 }
@@ -67,6 +68,7 @@ SELECT
 	content as contentid,
 	port,
 	hostname,
+	address,
 	datadir,
 	role
 FROM gp_segment_configuration
@@ -79,6 +81,7 @@ SELECT
 	s.content as contentid,
 	s.port,
 	s.hostname,
+	s.address,
 	e.fselocation as datadir,
 	s.role
 FROM gp_segment_configuration s
@@ -97,7 +100,7 @@ ORDER BY s.content, s.role;`
 	results := make(SegConfigs, 0)
 	for rows.Next() {
 		var seg SegConfig
-		if err := rows.Scan(&seg.DbID, &seg.ContentID, &seg.Port, &seg.Hostname, &seg.DataDir, &seg.Role); err != nil {
+		if err := rows.Scan(&seg.DbID, &seg.ContentID, &seg.Port, &seg.Hostname, &seg.Address, &seg.DataDir, &seg.Role); err != nil {
 			return nil, xerrors.Errorf("scanning gp_segment_configuration: %w", err)
 
 		}

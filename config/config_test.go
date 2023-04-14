@@ -212,13 +212,13 @@ func TestCreate(t *testing.T) {
 }
 
 func expectGpSegmentConfigurationToReturnCluster(mock sqlmock.Sqlmock, cluster *greenplum.Cluster) {
-	rows := sqlmock.NewRows([]string{"dbid", "contentid", "port", "hostname", "datadir", "role"})
+	rows := sqlmock.NewRows([]string{"dbid", "contentid", "port", "hostname", "address", "datadir", "role"})
 	for _, seg := range cluster.Primaries {
-		rows.AddRow(seg.DbID, seg.ContentID, seg.Port, seg.Hostname, seg.DataDir, seg.Role)
+		rows.AddRow(seg.DbID, seg.ContentID, seg.Port, seg.Hostname, seg.Address, seg.DataDir, seg.Role)
 	}
 
 	for _, seg := range cluster.Mirrors {
-		rows.AddRow(seg.DbID, seg.ContentID, seg.Port, seg.Hostname, seg.DataDir, seg.Role)
+		rows.AddRow(seg.DbID, seg.ContentID, seg.Port, seg.Hostname, seg.Address, seg.DataDir, seg.Role)
 	}
 
 	mock.ExpectQuery(`SELECT.*dbid.*FROM gp_segment_configuration`).

@@ -189,16 +189,16 @@ func TestWriteSegmentArray(t *testing.T) {
 
 	t.Run("renders the config file as expected", func(t *testing.T) {
 		config := hub.MustCreateCluster(t, greenplum.SegConfigs{
-			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir_upgrade/seg-1", Role: greenplum.PrimaryRole, Port: 15433},
-			{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1_upgrade/seg1", Role: greenplum.PrimaryRole, Port: 15434},
-			{ContentID: 1, DbID: 3, Hostname: "sdw2", DataDir: "/data/dbfast2_upgrade/seg2", Role: greenplum.PrimaryRole, Port: 15434},
+			{ContentID: -1, DbID: 1, Hostname: "mdw", Address: "mdw-1", DataDir: "/data/qddir_upgrade/seg-1", Role: greenplum.PrimaryRole, Port: 15433},
+			{ContentID: 0, DbID: 2, Hostname: "sdw1", Address: "sdw1-1", DataDir: "/data/dbfast1_upgrade/seg1", Role: greenplum.PrimaryRole, Port: 15434},
+			{ContentID: 1, DbID: 3, Hostname: "sdw2", Address: "sdw2-2", DataDir: "/data/dbfast2_upgrade/seg2", Role: greenplum.PrimaryRole, Port: 15434},
 		})
 
 		test(t, config, []string{
-			"QD_PRIMARY_ARRAY=mdw~mdw~15433~/data/qddir_upgrade/seg-1~1~-1",
+			"QD_PRIMARY_ARRAY=mdw~mdw-1~15433~/data/qddir_upgrade/seg-1~1~-1",
 			"declare -a PRIMARY_ARRAY=(",
-			"\tsdw1~sdw1~15434~/data/dbfast1_upgrade/seg1~2~0",
-			"\tsdw2~sdw2~15434~/data/dbfast2_upgrade/seg2~3~1",
+			"\tsdw1~sdw1-1~15434~/data/dbfast1_upgrade/seg1~2~0",
+			"\tsdw2~sdw2-2~15434~/data/dbfast2_upgrade/seg2~3~1",
 			")",
 		})
 	})

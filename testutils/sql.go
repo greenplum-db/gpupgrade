@@ -33,9 +33,9 @@ func FinishMock(mock sqlmock.Sqlmock, t *testing.T) {
 // When changing this implementation, make sure you change MockCluster() to
 // match!
 func MockSegmentConfiguration() *sqlmock.Rows {
-	rows := sqlmock.NewRows([]string{"dbid", "contentid", "port", "hostname", "datadir", "role"})
-	rows.AddRow(1, -1, 15432, "mdw", "/data/coordinator/gpseg-1", "p")
-	rows.AddRow(2, 0, 25432, "sdw1", "/data/primary/gpseg0", "p")
+	rows := sqlmock.NewRows([]string{"dbid", "contentid", "port", "hostname", "address", "datadir", "role"})
+	rows.AddRow(1, -1, 15432, "mdw", "mdw-1", "/data/coordinator/gpseg-1", "p")
+	rows.AddRow(2, 0, 25432, "sdw1", "sdw1-1", "/data/primary/gpseg0", "p")
 
 	return rows
 }
@@ -46,8 +46,8 @@ func MockSegmentConfiguration() *sqlmock.Rows {
 // MockSegmentConfiguration() to match!
 func MockCluster() *greenplum.Cluster {
 	segments := greenplum.SegConfigs{
-		{DbID: 1, ContentID: -1, Port: 15432, Hostname: "mdw", DataDir: "/data/coordinator/gpseg-1", Role: greenplum.PrimaryRole},
-		{DbID: 2, ContentID: 0, Port: 25432, Hostname: "sdw1", DataDir: "/data/primary/gpseg0", Role: greenplum.PrimaryRole},
+		{DbID: 1, ContentID: -1, Port: 15432, Hostname: "mdw", Address: "mdw-1", DataDir: "/data/coordinator/gpseg-1", Role: greenplum.PrimaryRole},
+		{DbID: 2, ContentID: 0, Port: 25432, Hostname: "sdw1", Address: "sdw1-1", DataDir: "/data/primary/gpseg0", Role: greenplum.PrimaryRole},
 	}
 
 	cluster, err := greenplum.NewCluster(segments)

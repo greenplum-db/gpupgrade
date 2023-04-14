@@ -75,13 +75,13 @@ func TestGetSegmentConfiguration(t *testing.T) {
 		defer testutils.FinishMock(mock, t)
 		defer db.Close()
 
-		rows := sqlmock.NewRows([]string{"dbid", "contentid", "port", "hostname", "datadir", "role"})
-		rows.AddRow(1, -1, 15432, "mdw", "/data/qddir/seg-1", greenplum.PrimaryRole)
-		rows.AddRow(2, -1, 16432, "smdw", "/data/standby", greenplum.MirrorRole)
-		rows.AddRow(3, 0, 25433, "sdw1", "/data/dbfast1/seg1", greenplum.PrimaryRole)
-		rows.AddRow(4, 0, 25434, "sdw2", "/data/dbfast_mirror1/seg1", greenplum.MirrorRole)
-		rows.AddRow(5, 1, 25435, "sdw2", "/data/dbfast2/seg2", greenplum.PrimaryRole)
-		rows.AddRow(6, 1, 25436, "sdw1", "/data/dbfast_mirror2/seg2", greenplum.MirrorRole)
+		rows := sqlmock.NewRows([]string{"dbid", "contentid", "port", "hostname", "address", "datadir", "role"})
+		rows.AddRow(1, -1, 15432, "mdw", "mdw-1", "/data/qddir/seg-1", greenplum.PrimaryRole)
+		rows.AddRow(2, -1, 16432, "smdw", "smdw-1", "/data/standby", greenplum.MirrorRole)
+		rows.AddRow(3, 0, 25433, "sdw1", "sdw1-1", "/data/dbfast1/seg1", greenplum.PrimaryRole)
+		rows.AddRow(4, 0, 25434, "sdw2", "sdw2-2", "/data/dbfast_mirror1/seg1", greenplum.MirrorRole)
+		rows.AddRow(5, 1, 25435, "sdw2", "sdw2-2", "/data/dbfast2/seg2", greenplum.PrimaryRole)
+		rows.AddRow(6, 1, 25436, "sdw1", "sdw1-1", "/data/dbfast_mirror2/seg2", greenplum.MirrorRole)
 
 		mock.ExpectQuery("SELECT").WillReturnRows(rows)
 
@@ -91,12 +91,12 @@ func TestGetSegmentConfiguration(t *testing.T) {
 		}
 
 		expected := greenplum.SegConfigs{
-			{DbID: 1, ContentID: -1, Port: 15432, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
-			{DbID: 2, ContentID: -1, Port: 16432, Hostname: "smdw", DataDir: "/data/standby", Role: greenplum.MirrorRole},
-			{DbID: 3, ContentID: 0, Port: 25433, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
-			{DbID: 4, ContentID: 0, Port: 25434, Hostname: "sdw2", DataDir: "/data/dbfast_mirror1/seg1", Role: greenplum.MirrorRole},
-			{DbID: 5, ContentID: 1, Port: 25435, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
-			{DbID: 6, ContentID: 1, Port: 25436, Hostname: "sdw1", DataDir: "/data/dbfast_mirror2/seg2", Role: greenplum.MirrorRole},
+			{DbID: 1, ContentID: -1, Port: 15432, Hostname: "mdw", Address: "mdw-1", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
+			{DbID: 2, ContentID: -1, Port: 16432, Hostname: "smdw", Address: "smdw-1", DataDir: "/data/standby", Role: greenplum.MirrorRole},
+			{DbID: 3, ContentID: 0, Port: 25433, Hostname: "sdw1", Address: "sdw1-1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
+			{DbID: 4, ContentID: 0, Port: 25434, Hostname: "sdw2", Address: "sdw2-2", DataDir: "/data/dbfast_mirror1/seg1", Role: greenplum.MirrorRole},
+			{DbID: 5, ContentID: 1, Port: 25435, Hostname: "sdw2", Address: "sdw2-2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
+			{DbID: 6, ContentID: 1, Port: 25436, Hostname: "sdw1", Address: "sdw1-1", DataDir: "/data/dbfast_mirror2/seg2", Role: greenplum.MirrorRole},
 		}
 
 		if !reflect.DeepEqual(actual, expected) {
@@ -112,13 +112,13 @@ func TestGetSegmentConfiguration(t *testing.T) {
 		defer testutils.FinishMock(mock, t)
 		defer db.Close()
 
-		rows := sqlmock.NewRows([]string{"dbid", "contentid", "port", "hostname", "datadir", "role"})
-		rows.AddRow(1, -1, 15432, "mdw", "/data/qddir/seg-1", greenplum.PrimaryRole)
-		rows.AddRow(2, -1, 16432, "mdw", "/data/standby", greenplum.MirrorRole)
-		rows.AddRow(3, 0, 25433, "mdw", "/data/dbfast1/seg1", greenplum.PrimaryRole)
-		rows.AddRow(4, 0, 25434, "mdw", "/data/dbfast_mirror1/seg1", greenplum.MirrorRole)
-		rows.AddRow(5, 1, 25435, "mdw", "/data/dbfast2/seg2", greenplum.PrimaryRole)
-		rows.AddRow(6, 1, 25436, "mdw", "/data/dbfast_mirror2/seg2", greenplum.MirrorRole)
+		rows := sqlmock.NewRows([]string{"dbid", "contentid", "port", "hostname", "address", "datadir", "role"})
+		rows.AddRow(1, -1, 15432, "mdw", "mdw-1", "/data/qddir/seg-1", greenplum.PrimaryRole)
+		rows.AddRow(2, -1, 16432, "mdw", "mdw-1", "/data/standby", greenplum.MirrorRole)
+		rows.AddRow(3, 0, 25433, "mdw", "mdw-1", "/data/dbfast1/seg1", greenplum.PrimaryRole)
+		rows.AddRow(4, 0, 25434, "mdw", "mdw-1", "/data/dbfast_mirror1/seg1", greenplum.MirrorRole)
+		rows.AddRow(5, 1, 25435, "mdw", "mdw-1", "/data/dbfast2/seg2", greenplum.PrimaryRole)
+		rows.AddRow(6, 1, 25436, "mdw", "mdw-1", "/data/dbfast_mirror2/seg2", greenplum.MirrorRole)
 
 		mock.ExpectQuery("SELECT").WillReturnRows(rows)
 
@@ -128,12 +128,12 @@ func TestGetSegmentConfiguration(t *testing.T) {
 		}
 
 		expected := greenplum.SegConfigs{
-			{DbID: 1, ContentID: -1, Port: 15432, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
-			{DbID: 2, ContentID: -1, Port: 16432, Hostname: "mdw", DataDir: "/data/standby", Role: greenplum.MirrorRole},
-			{DbID: 3, ContentID: 0, Port: 25433, Hostname: "mdw", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
-			{DbID: 4, ContentID: 0, Port: 25434, Hostname: "mdw", DataDir: "/data/dbfast_mirror1/seg1", Role: greenplum.MirrorRole},
-			{DbID: 5, ContentID: 1, Port: 25435, Hostname: "mdw", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
-			{DbID: 6, ContentID: 1, Port: 25436, Hostname: "mdw", DataDir: "/data/dbfast_mirror2/seg2", Role: greenplum.MirrorRole},
+			{DbID: 1, ContentID: -1, Port: 15432, Hostname: "mdw", Address: "mdw-1", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
+			{DbID: 2, ContentID: -1, Port: 16432, Hostname: "mdw", Address: "mdw-1", DataDir: "/data/standby", Role: greenplum.MirrorRole},
+			{DbID: 3, ContentID: 0, Port: 25433, Hostname: "mdw", Address: "mdw-1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
+			{DbID: 4, ContentID: 0, Port: 25434, Hostname: "mdw", Address: "mdw-1", DataDir: "/data/dbfast_mirror1/seg1", Role: greenplum.MirrorRole},
+			{DbID: 5, ContentID: 1, Port: 25435, Hostname: "mdw", Address: "mdw-1", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
+			{DbID: 6, ContentID: 1, Port: 25436, Hostname: "mdw", Address: "mdw-1", DataDir: "/data/dbfast_mirror2/seg2", Role: greenplum.MirrorRole},
 		}
 
 		if !reflect.DeepEqual(actual, expected) {
