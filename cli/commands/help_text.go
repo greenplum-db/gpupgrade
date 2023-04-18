@@ -71,6 +71,7 @@ func init() {
 		idl.Substep_update_target_conf_files,
 		idl.Substep_start_target_cluster,
 		idl.Substep_wait_for_cluster_to_be_ready_after_updating_catalog,
+		idl.Substep_analyze_target_cluster,
 		idl.Substep_archive_log_directories,
 		idl.Substep_delete_backupdir,
 		idl.Substep_delete_segment_statedirs,

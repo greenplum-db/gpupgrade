@@ -383,6 +383,19 @@ func (c *Cluster) runGreenplumCommand(streams step.OutStreams, utility string, a
 	return cmd.Run()
 }
 
+func (c *Cluster) RunCmd(streams step.OutStreams, command string, args ...string) error {
+	cmd := greenplumCommand(command, shellquote.Join(args...))
+
+	cmd.Env = append(cmd.Env, fmt.Sprintf("%v=%v", "MASTER_DATA_DIRECTORY", c.CoordinatorDataDir()))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("%v=%v", "PGPORT", c.CoordinatorPort()))
+
+	cmd.Stdout = streams.Stdout()
+	cmd.Stderr = streams.Stderr()
+
+	log.Printf("Executing: %q", cmd.String())
+	return cmd.Run()
+}
+
 func (c *Cluster) CheckActiveConnections(streams step.OutStreams) error {
 	running, err := c.IsCoordinatorRunning(streams)
 	if err != nil {

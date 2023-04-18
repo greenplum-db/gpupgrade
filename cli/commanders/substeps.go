@@ -68,4 +68,5 @@ var SubstepDescriptions = map[idl.Substep]substepText{
 	idl.Substep_execute_initialize_data_migration_scripts:                     substepText{"Executing initialize data migration SQL scripts...", "Executed initialize data migration SQL scripts"},
 	idl.Substep_execute_finalize_data_migration_scripts:                       substepText{"Executing finalize data migration SQL scripts...", "Executed finalize data migration SQL scripts"},
 	idl.Substep_execute_revert_data_migration_scripts:                         substepText{"Executing revert data migration SQL scripts...", "Executed revert data migration SQL scripts"},
+	idl.Substep_analyze_target_cluster:                                        substepText{"Analyzing target cluster...", "Analyze target cluster"},
 }
