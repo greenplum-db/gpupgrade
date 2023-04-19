@@ -10,23 +10,24 @@
 SET client_min_messages TO WARNING;
 
 CREATE OR REPLACE FUNCTION  __gpupgrade_tmp_generator.find_view_dependencies()
-RETURNS VOID AS
+RETURNS void AS
 $$
 import plpy
 
-
-# First find views that do not depend on other views (and directly on the table)
-
-leaf_view = plpy.execute("""
+# Deprecated views are views whose tables contain a deprecated object.
+# The sql joins on pg_rewrite to get view names because the pg_depend entries for
+# views are against their internal definitions in pg_rewrite rather than their
+# relational definition in pg_class.
+deprecated_views_result = plpy.execute("""
 SELECT
-    schema,
-    view,
-    owner
+    view_schema,
+    view_name,
+    view_owner
 FROM (
     SELECT DISTINCT
-        nv.nspname AS schema,
-        v.relname AS view,
-        pg_catalog.pg_get_userbyid(v.relowner) AS owner
+        nv.nspname AS view_schema,
+        v.relname AS view_name,
+        pg_catalog.pg_get_userbyid(v.relowner) AS view_owner
     FROM
         pg_depend d
         JOIN pg_rewrite r ON r.oid = d.objid
@@ -52,30 +53,26 @@ FROM (
     ) subq;
 """)
 
-checklist = {}
-view_order = 1
-for row in leaf_view:
-    checklist[(row['schema'], row['view'], row['owner'])] = view_order
-
-rows = plpy.execute("""
+# Get views that depend on other views
+dependent_views_result = plpy.execute("""
 SELECT
-    nsp1.nspname AS depender_schema,
-    depender,
-    depender_owner,
-    nsp2.nspname AS dependee_schema,
-    dependee,
-    dependee_owner
+    nsp1.nspname AS view_schema,
+    view_name,
+    view_owner,
+    nsp2.nspname AS dependent_view_schema,
+    dependent_view_name,
+    dependent_view_owner
 FROM
     pg_namespace AS nsp1,
     pg_namespace AS nsp2,
     (
         SELECT
-            c.relname depender,
-            c.relnamespace AS depender_nsp,
-            pg_catalog.pg_get_userbyid(c.relowner) as depender_owner,
-            c1.relname AS dependee,
-            c1.relnamespace AS dependee_nsp,
-            pg_catalog.pg_get_userbyid(c1.relowner) as dependee_owner
+            c.relname view_name,
+            c.relnamespace AS view_nsp,
+            pg_catalog.pg_get_userbyid(c.relowner) AS view_owner,
+            c1.relname AS dependent_view_name,
+            c1.relnamespace AS dependent_view_nsp,
+            pg_catalog.pg_get_userbyid(c1.relowner) AS dependent_view_owner
         FROM
             pg_rewrite AS rw,
             pg_depend AS d,
@@ -90,11 +87,11 @@ FROM
             AND c1.relkind = 'v'
             AND c.relname <> c1.relname
         GROUP BY
-            depender, depender_nsp, depender_owner, dependee, dependee_nsp, dependee_owner
+            view_name, view_nsp, view_owner, dependent_view_name, dependent_view_nsp, dependent_view_owner
     ) t1
 WHERE
-    t1.depender_nsp = nsp1.oid
-    AND t1.dependee_nsp = nsp2.oid
+    t1.view_nsp = nsp1.oid
+    AND t1.dependent_view_nsp = nsp2.oid
     AND nsp1.nspname NOT LIKE 'pg_temp_%'
     AND nsp1.nspname NOT LIKE 'pg_toast_temp_%'
     AND nsp1.nspname NOT IN ('pg_catalog', 'information_schema', 'gp_toolkit')
@@ -103,27 +100,89 @@ WHERE
     AND nsp2.nspname NOT IN ('pg_catalog', 'information_schema', 'gp_toolkit')
 """)
 
-view2view = {}
-for row in rows:
-    key = (row['depender_schema'], row['depender'], row['depender_owner'])
-    val = (row['dependee_schema'], row['dependee'], row['dependee_owner'])
-    view2view[key]=val
+class View:
+    def __init__(self, schema, name, owner):
+        self.schema = schema
+        self.name = name
+        self.owner = owner
+        self.visited = False
 
-while True:
-    view_order += 1
-    new_checklist = {}
-    for depender, dependee in view2view.iteritems():
-        if dependee in checklist and depender not in checklist:
-            new_checklist[depender] = view_order
-    if len(new_checklist) == 0:
-        break
-    else:
-        checklist.update(new_checklist)
+    def __eq__(self, other):
+        if isinstance(other, View):
+            return self.schema == other.schema and self.name == other.name and self.owner == other.owner
+        return False
+
+    def __hash__(self):
+        return hash((self.schema, self.name, self.owner))
+
+deprecated_views = []
+dependent_view_to_views = {}  # a dependent view is one that references one or more view
+deprecated_view_to_dependent_views = {}
+for row in deprecated_views_result:
+    deprecated_view = View(row['view_schema'], row['view_name'], row['view_owner'])
+    deprecated_views.append(deprecated_view)
+    dependent_view_to_views[deprecated_view] = []
+    deprecated_view_to_dependent_views[deprecated_view] = []
+
+# Build reversed dependency map. This is done because it will be easier to
+# discover deprecated views starting from known deprecated views.
+for row in dependent_views_result:
+    view = View(row['view_schema'], row['view_name'], row['view_owner'])
+    dependent_view = View(row['dependent_view_schema'], row['dependent_view_name'], row['dependent_view_owner'])
+    dependent_view_to_views.setdefault(view, []) # Add view to the dependency map, but no value is needed since there are no other views that depend on it.
+    dependent_view_to_views.setdefault(dependent_view, []).append(view)
+
+def create_dependency_graph(graph, node, dependency_graph):
+    if node.visited:
+        return
+
+    node.visited = True
+    for neighbor in graph[node]:
+        dependency_graph.setdefault(neighbor, []).append(node)
+        create_dependency_graph(graph, neighbor, dependency_graph)
+
+deprecated_view_to_dependencies = {}
+for view in deprecated_views:
+    create_dependency_graph(dependent_view_to_views, view, deprecated_view_to_dependencies)
+
+# Add deprecated views and their dependencies to deprecated_view_to_dependent_views
+for deprecated_view, dependencies in deprecated_view_to_dependencies.items():
+    deprecated_view_to_dependent_views.setdefault(deprecated_view, []).extend(dependencies)
+
+def sort_nodes(graph, node):
+    if node.visited:
+        return []
+
+    node.visited = True
+    undiscovered_neighbors = []
+    for neighbor in graph[node]:
+        undiscovered_neighbors += sort_nodes(graph, neighbor)
+
+    undiscovered_neighbors.append(node)
+    return undiscovered_neighbors
+
+def topological_sort(graph):
+    # reset graph
+    for node, nodes in graph.items():
+        node.visited = False
+        for neighbor in nodes:
+            neighbor.visited = False
+
+    sorted_nodes = []
+    for node in graph:
+        sorted_nodes += sort_nodes(graph, node)
+
+    sorted_nodes.reverse()
+    return sorted_nodes
+
+# Sort deprecated views such that DROP VIEW statements will be generated in the
+# correct order since some views dependent on others.
+sorted_deprecated_views = topological_sort(deprecated_view_to_dependent_views)
 
 plpy.execute("DROP TABLE IF EXISTS  __gpupgrade_tmp_generator.__temp_views_list")
 plpy.execute("CREATE TABLE  __gpupgrade_tmp_generator.__temp_views_list (full_view_name TEXT, view_owner TEXT, view_order INTEGER)")
-for v, view_order in checklist.items():
-    sql = "INSERT INTO  __gpupgrade_tmp_generator.__temp_views_list VALUES('{0}.{1}', '{2}', {3})".format(v[0],v[1],v[2],view_order)
+for index, view in enumerate(sorted_deprecated_views):
+    sql = "INSERT INTO  __gpupgrade_tmp_generator.__temp_views_list VALUES('{0}.{1}', '{2}', {3})".format(view.schema, view.name, view.owner, index)
     plpy.execute(sql)
 $$ LANGUAGE plpythonu;
 

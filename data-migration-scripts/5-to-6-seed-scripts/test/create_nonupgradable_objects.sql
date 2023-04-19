@@ -147,13 +147,38 @@ CREATE TABLE table_with_tsquery (
 );
 CREATE INDEX table_with_tsquery_tsquery_idx on table_with_tsquery(altitude);
 
--- view on tsquery from the same table
+CREATE TABLE table2_with_tsquery (
+    b   tsquery
+);
+
+-- View dependency tests on depricated tsquery
+-- view on tsquery from a table
 DROP VIEW IF EXISTS view_on_tsquery;
 CREATE VIEW view_on_tsquery AS SELECT * FROM table_with_tsquery;
 
 -- view on tsquery from multiple tables
 DROP VIEW IF EXISTS view_on_tsquery_mult_tables;
-CREATE VIEW view_on_tsquery_mult_tables AS SELECT t1.name, t2.altitude FROM table_with_tsquery t1, table_with_tsquery t2;
+CREATE VIEW view_on_tsquery_mult_tables AS SELECT t1.name, t2.b FROM table_with_tsquery t1, table2_with_tsquery t2;
+
+-- view on tsquery from a table and a view
+DROP VIEW IF EXISTS view_on_tsquery_table_view;
+CREATE VIEW view_on_tsquery_table_view AS SELECT t1.name, v1.altitude FROM table_with_tsquery t1, view_on_tsquery v1;
+
+-- view on tsquery from multiple views
+DROP VIEW IF EXISTS view_on_tsquery_mult_views;
+CREATE VIEW view_on_tsquery_mult_views AS SELECT v1.name, v2.altitude FROM view_on_tsquery v1, view_on_tsquery_table_view v2;
+
+-- view on tsquery from a table and multiple views
+DROP VIEW IF EXISTS view_on_tsquery_table_mult_views;
+CREATE VIEW view_on_tsquery_table_mult_views AS SELECT t2.b, v1.name, v2.altitude FROM table2_with_tsquery t2, view_on_tsquery v1, view_on_tsquery_table_view v2;
+
+-- view on tsquery from a table to make sure that the creation order of the views does not affect drop order
+DROP VIEW IF EXISTS view_on_tsquery_creation_order;
+CREATE VIEW view_on_tsquery_creation_order AS SELECT * FROM table_with_tsquery;
+
+-- view on tsquery from multiple tables and multiple views
+DROP VIEW IF EXISTS view_on_tsquery_mult_tables_mult_views;
+CREATE VIEW view_on_tsquery_mult_tables_mult_views AS SELECT t1.name, t2.b, v1.altitude FROM table_with_tsquery t1, table2_with_tsquery t2, view_on_tsquery v1, view_on_tsquery_mult_tables v2;
 
 CREATE TABLE sales_tsquery (trans_id int, office_tsquery tsquery, region text)
     DISTRIBUTED BY (trans_id)
