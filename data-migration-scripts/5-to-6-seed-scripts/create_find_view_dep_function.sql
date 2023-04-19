@@ -40,7 +40,7 @@ FROM (
         AND d.classid = 'pg_rewrite'::regclass
         AND d.refclassid = 'pg_class'::regclass
         AND d.deptype = 'n'
-        AND (a.atttypid = 'pg_catalog.tsquery'::pg_catalog.regtype OR a.atttypid = 'pg_catalog.name'::pg_catalog.regtype)
+        AND a.atttypid = 'pg_catalog.tsquery'::pg_catalog.regtype
         AND c.relkind = 'r'
         AND NOT a.attisdropped
         AND nv.nspname NOT LIKE 'pg_temp_%'
