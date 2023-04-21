@@ -108,10 +108,19 @@ the master.`
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_ExecuteResponse{
 		ExecuteResponse: &idl.ExecuteResponse{
 			Target: &idl.Cluster{
-				GPHome:                   s.Intermediate.GPHome,
-				CoordinatorDataDirectory: s.Intermediate.CoordinatorDataDir(),
-				Port:                     int32(s.Intermediate.CoordinatorPort()),
-			}},
+				Destination: idl.ClusterDestination_target,
+				GpHome:      s.Intermediate.GPHome,
+				Version:     s.Intermediate.Version.String(),
+				Coordinator: &idl.Segment{
+					DbID:      int32(s.Intermediate.Coordinator().DbID),
+					ContentID: int32(s.Intermediate.Coordinator().ContentID),
+					Role:      idl.Segment_Role(idl.Segment_Role_value[s.Intermediate.Coordinator().Role]),
+					Port:      int32(s.Intermediate.CoordinatorPort()),
+					Hostname:  s.Intermediate.CoordinatorHostname(),
+					DataDir:   s.Intermediate.CoordinatorDataDir(),
+				},
+			},
+		},
 	}}}}
 
 	if err = stream.Send(message); err != nil {

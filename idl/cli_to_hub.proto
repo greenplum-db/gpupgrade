@@ -149,28 +149,20 @@ message InitializeResponse {
   bool HasAllMirrorsAndStandby = 1;
 }
 
-message Cluster {
-  string GPHome = 1;
-  string CoordinatorDataDirectory = 2;
-  int32 Port = 3;
-}
-
 message ExecuteResponse {
   Cluster target = 1;
 }
 
 message FinalizeResponse {
-  Cluster TargetCluster = 1;
-  string TargetVersion = 2;
-  string LogArchiveDirectory = 3;
-  string ArchivedSourceCoordinatorDataDirectory = 4;
-  string UpgradeID = 5;
+  Cluster target = 1;
+  string LogArchiveDirectory = 2;
+  string ArchivedSourceCoordinatorDataDirectory = 3;
+  string UpgradeID = 4;
 }
 
 message RevertResponse {
   Cluster source = 1;
-  string SourceVersion = 2;
-  string LogArchiveDirectory = 3;
+  string LogArchiveDirectory = 2;
 }
 
 message GetConfigRequest {

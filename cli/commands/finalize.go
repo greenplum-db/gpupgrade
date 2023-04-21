@@ -77,7 +77,7 @@ func finalize() *cobra.Command {
 				fmt.Println()
 
 				currentDir := filepath.Join(response.GetLogArchiveDirectory(), "data-migration-scripts", "current")
-				return commanders.ApplyDataMigrationScripts(nonInteractive, response.GetTargetCluster().GPHome, int(response.GetTargetCluster().GetPort()),
+				return commanders.ApplyDataMigrationScripts(nonInteractive, response.GetTarget().GetGpHome(), int(response.GetTarget().GetCoordinator().GetPort()),
 					response.GetLogArchiveDirectory(), utils.System.DirFS(currentDir), currentDir, idl.Step_finalize)
 			})
 
@@ -120,17 +120,17 @@ To use the upgraded cluster:
 
 If you have not already, execute the “%s” data migration scripts with
 "gpupgrade apply --gphome %s --port %d --input-dir %s --phase %s"`,
-				response.GetTargetVersion(),
+				response.GetTarget().GetVersion(),
 				fmt.Sprintf("%s.<contentID>%s", response.GetUpgradeID(), upgrade.OldSuffix),
 				response.GetArchivedSourceCoordinatorDataDirectory(),
 				response.GetLogArchiveDirectory(),
-				filepath.Join(response.GetTargetCluster().GetGPHome(), "greenplum_path.sh"),
-				filepath.Join(filepath.Dir(response.GetTargetCluster().GetGPHome()), "greenplum-db"), response.GetTargetCluster().GetGPHome(),
-				filepath.Join(response.GetTargetCluster().GetGPHome(), "greenplum_path.sh"),
-				response.GetTargetCluster().GetCoordinatorDataDirectory(),
-				response.GetTargetCluster().GetPort(),
+				filepath.Join(response.GetTarget().GetGpHome(), "greenplum_path.sh"),
+				filepath.Join(filepath.Dir(response.GetTarget().GetGpHome()), "greenplum-db"), response.GetTarget().GetGpHome(),
+				filepath.Join(response.GetTarget().GetGpHome(), "greenplum_path.sh"),
+				response.GetTarget().GetCoordinator().GetDataDir(),
+				response.GetTarget().GetCoordinator().GetPort(),
 				idl.Step_finalize,
-				response.GetTargetCluster().GetGPHome(), response.GetTargetCluster().GetPort(), filepath.Join(response.GetLogArchiveDirectory(), "data-migration-scripts"), idl.Step_finalize,
+				response.GetTarget().GetGpHome(), response.GetTarget().GetCoordinator().GetPort(), filepath.Join(response.GetLogArchiveDirectory(), "data-migration-scripts"), idl.Step_finalize,
 			))
 		},
 	}

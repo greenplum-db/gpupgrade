@@ -77,7 +77,7 @@ func revert() *cobra.Command {
 				fmt.Println()
 
 				currentDir := filepath.Join(response.GetLogArchiveDirectory(), "data-migration-scripts", "current")
-				return commanders.ApplyDataMigrationScripts(nonInteractive, response.GetSource().GPHome, int(response.GetSource().GetPort()),
+				return commanders.ApplyDataMigrationScripts(nonInteractive, response.GetSource().GetGpHome(), int(response.GetSource().GetCoordinator().GetPort()),
 					response.GetLogArchiveDirectory(), utils.System.DirFS(currentDir), currentDir, idl.Step_revert)
 			})
 
@@ -106,11 +106,11 @@ If you have not already, execute the “%s” data migration scripts with
 "gpupgrade apply --gphome %s --port %d --input-dir %s --phase %s"
 
 To restart the upgrade, run "gpupgrade initialize" again.`,
-				response.GetSourceVersion(),
-				filepath.Join(response.GetSource().GetGPHome(), "greenplum_path.sh"), response.GetSource().GetCoordinatorDataDirectory(), response.GetSource().GetPort(),
+				response.GetSource().GetVersion(),
+				filepath.Join(response.GetSource().GetGpHome(), "greenplum_path.sh"), response.GetSource().GetCoordinator().GetDataDir(), response.GetSource().GetCoordinator().GetPort(),
 				response.GetLogArchiveDirectory(),
 				idl.Step_revert,
-				response.GetSource().GetGPHome(), response.GetSource().GetPort(), filepath.Join(response.GetLogArchiveDirectory(), "data-migration-scripts"), idl.Step_revert))
+				response.GetSource().GetGpHome(), response.GetSource().GetCoordinator().GetPort(), filepath.Join(response.GetLogArchiveDirectory(), "data-migration-scripts"), idl.Step_revert))
 		},
 	}
 

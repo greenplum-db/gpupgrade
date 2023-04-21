@@ -107,9 +107,9 @@ If you are satisfied with the state of the cluster, run "gpupgrade finalize"
 to proceed with the upgrade.
 
 To return the cluster to its original state, run "gpupgrade revert".`,
-				filepath.Join(response.GetTarget().GetGPHome(), "greenplum_path.sh"),
-				response.GetTarget().GetCoordinatorDataDirectory(),
-				response.GetTarget().GetPort()))
+				filepath.Join(response.GetTarget().GetGpHome(), "greenplum_path.sh"),
+				response.GetTarget().GetCoordinator().GetDataDir(),
+				response.GetTarget().GetCoordinator().GetPort()))
 		},
 	}
 
