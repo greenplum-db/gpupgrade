@@ -2,7 +2,7 @@ test: alter_statistic_on_column ao_table_without_base_relfilenode seg_entries ch
 
 # New set of parallel tests because of "FATAL:  sorry, too many clients already" error
 test: gp_fastsequence user_defined_types_encoding distribution_key_and_data partitioned_polymorphic_table partitions_with_different_schemas ao_indexes name_data_type ao_table_multi_segfile aoco_table_multi_segfile
-test: aoco_dropped_col_and_encoding
+test: aoco_dropped_col_and_encoding special_characters
 
 test: clog_preservation
 test: vacuum_freeze_tables

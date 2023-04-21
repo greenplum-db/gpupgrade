@@ -1,0 +1,180 @@
+-- Copyright (c) 2017-2023 VMware, Inc. or its affiliates
+-- SPDX-License-Identifier: Apache-2.0
+
+-- Test to ensure that tables with special characters can be upgraded.
+
+--------------------------------------------------------------------------------
+-- Create and setup upgradeable objects
+--------------------------------------------------------------------------------
+
+SELECT * FROM "foo$";
+ i 
+---
+ 1 
+(1 row)
+SELECT * FROM "$$foo$";
+ i 
+---
+ 2 
+(1 row)
+SELECT * FROM "my_table_@pple";
+ i 
+---
+ 3 
+(1 row)
+SELECT * FROM "users!@#$%^&*()_+`-={}|[];':\""<>,.?/";
+ i 
+---
+ 4 
+(1 row)
+SELECT * FROM "Café_Latté";
+ i 
+---
+ 5 
+(1 row)
+SELECT * FROM "data_2021-09-25";
+ i 
+---
+ 6 
+(1 row)
+SELECT * FROM "Sales@2023";
+ i 
+---
+ 7 
+(1 row)
+SELECT * FROM "table_(parenthesis)";
+ i 
+---
+ 8 
+(1 row)
+SELECT * FROM "Ελληνικά_τραπέζια";
+ i 
+---
+ 9 
+(1 row)
+SELECT * FROM "table_with_underscores and spaces";
+ i  
+----
+ 10 
+(1 row)
+SELECT * FROM "table_with_ö_umlaut";
+ i  
+----
+ 11 
+(1 row)
+SELECT * FROM "table_with_की_hindi_characters";
+ i  
+----
+ 12 
+(1 row)
+SELECT * FROM "学生表";
+ i      
+--------
+ 张三 
+(1 row)
+
+INSERT INTO "foo$" (i) VALUES (1);
+INSERT 1
+INSERT INTO "$$foo$" (i) VALUES (2);
+INSERT 1
+INSERT INTO "my_table_@pple" (i) VALUES (3);
+INSERT 1
+INSERT INTO "users!@#$%^&*()_+`-={}|[];':\""<>,.?/" (i) VALUES (4);
+INSERT 1
+INSERT INTO "Café_Latté" (i) VALUES (5);
+INSERT 1
+INSERT INTO "data_2021-09-25" (i) VALUES (6);
+INSERT 1
+INSERT INTO "Sales@2023" (i) VALUES (7);
+INSERT 1
+INSERT INTO "table_(parenthesis)" (i) VALUES (8);
+INSERT 1
+INSERT INTO "Ελληνικά_τραπέζια" (i) VALUES (9);
+INSERT 1
+INSERT INTO "table_with_underscores and spaces" (i) VALUES (10);
+INSERT 1
+INSERT INTO "table_with_ö_umlaut" (i) VALUES (11);
+INSERT 1
+INSERT INTO "table_with_की_hindi_characters" (i) VALUES (12);
+INSERT 1
+INSERT INTO "学生表" (i) VALUES ('张三');
+INSERT 1
+
+SELECT * FROM "foo$";
+ i 
+---
+ 1 
+ 1 
+(2 row)
+SELECT * FROM "$$foo$";
+ i 
+---
+ 2 
+ 2 
+(2 row)
+SELECT * FROM "my_table_@pple";
+ i 
+---
+ 3 
+ 3 
+(2 row)
+SELECT * FROM "users!@#$%^&*()_+`-={}|[];':\""<>,.?/";
+ i 
+---
+ 4 
+ 4 
+(2 row)
+SELECT * FROM "Café_Latté";
+ i 
+---
+ 5 
+ 5 
+(2 row)
+SELECT * FROM "data_2021-09-25";
+ i 
+---
+ 6 
+ 6 
+(2 row)
+SELECT * FROM "Sales@2023";
+ i 
+---
+ 7 
+ 7 
+(2 row)
+SELECT * FROM "table_(parenthesis)";
+ i 
+---
+ 8 
+ 8 
+(2 row)
+SELECT * FROM "Ελληνικά_τραπέζια";
+ i 
+---
+ 9 
+ 9 
+(2 row)
+SELECT * FROM "table_with_underscores and spaces";
+ i  
+----
+ 10 
+ 10 
+(2 row)
+SELECT * FROM "table_with_ö_umlaut";
+ i  
+----
+ 11 
+ 11 
+(2 row)
+SELECT * FROM "table_with_की_hindi_characters";
+ i  
+----
+ 12 
+ 12 
+(2 row)
+SELECT * FROM "学生表";
+ i      
+--------
+ 张三 
+ 张三 
+(2 row)
