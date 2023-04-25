@@ -12,3 +12,4 @@ test: views_referencing_deprecated_tables
 test: views_with_lag_lead_functions
 test: views_referencing_deprecated_columns
 test: parent_partitions_with_seg_entries
+test: distribution_on_duplicated_columns
