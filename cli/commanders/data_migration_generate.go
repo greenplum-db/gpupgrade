@@ -199,7 +199,7 @@ Select: `)
 
 		switch input {
 		case "a":
-			archiveDir := filepath.Join(outputDir, "archive", currentDirModTime.Format("2006-01-02T15:04"))
+			archiveDir := filepath.Join(outputDir, "archive", currentDirModTime.Format("20060102T1504"))
 			exist, err := upgrade.PathExist(archiveDir)
 			if err != nil {
 				return err
