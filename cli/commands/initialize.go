@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -167,6 +168,8 @@ func initialize() *cobra.Command {
 				cases.Title(language.English).String(idl.Step_initialize.String()),
 				initializeSubsteps, logdir, configPath,
 				sourcePort, sourceGPHome, targetGPHome, mode, diskFreeRatio, useHbaHostnames, dynamicLibraryPath, ports, hubPort, agentPort)
+
+			log.Print(confirmationText)
 
 			st, err := commanders.NewStep(idl.Step_initialize,
 				&step.BufferedStreams{},
