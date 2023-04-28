@@ -4,7 +4,6 @@
 package config
 
 import (
-	"bytes"
 	"database/sql"
 	"encoding/json"
 	"os"
@@ -58,14 +57,12 @@ type Config struct {
 }
 
 func (conf *Config) Write() error {
-	var buffer bytes.Buffer
-	enc := json.NewEncoder(&buffer)
-	enc.SetIndent("", "  ")
-	if err := enc.Encode(conf); err != nil {
-		return xerrors.Errorf("save configuration file: %w", err)
+	contents, err := json.MarshalIndent(conf, "", "  ")
+	if err != nil {
+		return xerrors.Errorf("marshal configuration file: %w", err)
 	}
 
-	return utils.AtomicallyWrite(GetConfigFile(), buffer.Bytes())
+	return utils.AtomicallyWrite(GetConfigFile(), contents)
 }
 
 func Read() (*Config, error) {
@@ -75,9 +72,9 @@ func Read() (*Config, error) {
 	}
 
 	conf := &Config{}
-	decoder := json.NewDecoder(bytes.NewReader(contents))
-	if err := decoder.Decode(conf); err != nil {
-		return &Config{}, xerrors.Errorf("decode configuration file: %w", err)
+	err = json.Unmarshal(contents, &conf)
+	if err != nil {
+		return nil, xerrors.Errorf("unmarshal configuration file: %w", err)
 	}
 
 	return conf, nil
