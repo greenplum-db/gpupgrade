@@ -255,26 +255,6 @@ func TestAgentConns(t *testing.T) {
 		}
 	})
 
-	// XXX This test takes 1.5 seconds because of EnsureConnsAreReady(...)
-	t.Run("returns an error if any connections have non-ready states", func(t *testing.T) {
-		hubServer := hub.New(conf)
-
-		agentConns, err := hubServer.AgentConns()
-		if err != nil {
-			t.Errorf("unexpected error: %#v", err)
-		}
-
-		agentServer.Stop()
-
-		ensureAgentConnsReachState(t, agentConns, connectivity.TransientFailure)
-
-		_, err = hubServer.AgentConns()
-		expected := "the connections to the following hosts were not ready"
-		if err != nil && !strings.Contains(err.Error(), expected) {
-			t.Errorf("got error %#v want %#v", err, expected)
-		}
-	})
-
 	t.Run("returns an error if any connections have non-ready states when first dialing", func(t *testing.T) {
 		expected := errors.New("ahh!")
 		hub.SetgRPCDialer(func(ctx context.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
@@ -287,6 +267,109 @@ func TestAgentConns(t *testing.T) {
 		_, err := hubServer.AgentConns()
 		if !errors.Is(err, expected) {
 			t.Errorf("returned error %#v want %#v", err, expected)
+		}
+	})
+}
+
+func TestEnsureConnsAreReady(t *testing.T) {
+	source := hub.MustCreateCluster(t, greenplum.SegConfigs{
+		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
+		{ContentID: -1, DbID: 2, Port: 15432, Hostname: "standby", DataDir: "/data/qddir/seg-1", Role: greenplum.MirrorRole},
+		{ContentID: 0, DbID: 3, Port: 25432, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
+		{ContentID: 0, DbID: 4, Port: 25432, Hostname: "sdw1-mirror", DataDir: "/data/dbfast_mirror1/seg1", Role: greenplum.MirrorRole},
+		{ContentID: 1, DbID: 5, Port: 25433, Hostname: "sdw2", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
+		{ContentID: 1, DbID: 6, Port: 25433, Hostname: "sdw2-mirror", DataDir: "/data/dbfast_mirror2/seg2", Role: greenplum.MirrorRole},
+	})
+
+	target := hub.MustCreateCluster(t, greenplum.SegConfigs{
+		{ContentID: -1, DbID: 1, Port: 15432, Hostname: "standby", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole},
+		{ContentID: 0, DbID: 2, Port: 25432, Hostname: "sdw1-mirror", DataDir: "/data/dbfast1/seg1", Role: greenplum.PrimaryRole},
+		{ContentID: 1, DbID: 3, Port: 25433, Hostname: "sdw2-mirror", DataDir: "/data/dbfast2/seg2", Role: greenplum.PrimaryRole},
+	})
+
+	agentServer, dialer, agentPort := mock_agent.NewMockAgentServer()
+	defer agentServer.Stop()
+
+	hub.SetgRPCDialer(dialer)
+	defer hub.ResetgRPCDialer()
+
+	conf := &config.Config{
+		Source:       source,
+		Target:       target,
+		Intermediate: &greenplum.Cluster{},
+		HubPort:      testutils.MustGetPort(t),
+		AgentPort:    agentPort,
+		Mode:         idl.Mode_copy,
+		UpgradeID:    0,
+	}
+
+	testlog.SetupTestLogger()
+
+	t.Run("succeeds when all agents are ready", func(t *testing.T) {
+		hubServer := hub.New(conf)
+
+		errChan := make(chan error, 1)
+		go func() {
+			errChan <- hubServer.Start(0, false)
+		}()
+
+		select {
+		case err := <-errChan:
+			t.Fatalf("unexpected error: %#v", err)
+		case <-time.After(timeout):
+			t.Error("timeout exceeded")
+		default:
+
+		}
+
+		agentConns, err := hubServer.AgentConns()
+		if err != nil {
+			t.Errorf("unexpected error: %#v", err)
+		}
+
+		err = hub.EnsureConnsAreReady(agentConns, 0*time.Second)
+		if err != nil {
+			t.Errorf("unexpected error: %#v", err)
+		}
+	})
+
+	t.Run("errors with all non-ready agent status when timeout is exceeded", func(t *testing.T) {
+		hubServer := hub.New(conf)
+
+		errChan := make(chan error, 1)
+		go func() {
+			errChan <- hubServer.Start(0, false)
+		}()
+
+		select {
+		case err := <-errChan:
+			t.Fatalf("unexpected error: %#v", err)
+		case <-time.After(timeout):
+			t.Error("timeout exceeded")
+		default:
+
+		}
+
+		agentConns, err := hubServer.AgentConns()
+		if err != nil {
+			t.Errorf("unexpected error: %#v", err)
+		}
+
+		expected := hub.AgentsGrpcStatus{}
+		for _, agentConn := range agentConns {
+			if agentConn.Hostname == "sdw1" || agentConn.Hostname == "sdw2-mirror" {
+				err := agentConn.Conn.Close()
+				if err != nil {
+					t.Fatalf("close mdw connection: %v", err)
+				}
+
+				expected[agentConn.Hostname] = agentConn.Conn.GetState()
+			}
+		}
+
+		err = hub.EnsureConnsAreReady(agentConns, 0*time.Second)
+		if !strings.HasSuffix(err.Error(), expected.String()) {
+			t.Errorf("got error %#v, want %#v", err, expected)
 		}
 	})
 }

@@ -4,6 +4,7 @@
 package hub
 
 import (
+	"context"
 	"log"
 	"path/filepath"
 	"time"
@@ -16,7 +17,7 @@ import (
 )
 
 func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_FinalizeServer) (err error) {
-	st, err := step.Begin(idl.Step_finalize, stream, s.AgentConns)
+	st, err := step.Begin(idl.Step_finalize, stream)
 	if err != nil {
 		return err
 	}
@@ -30,6 +31,20 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 			log.Printf("%s: %s", idl.Step_finalize, err)
 		}
 	}()
+
+	st.AlwaysRun(idl.Substep_ensure_gpupgrade_agents_are_running, func(_ step.OutStreams) error {
+		_, err := RestartAgents(context.Background(), nil, AgentHosts(s.Source), s.AgentPort, utils.GetStateDir())
+		if err != nil {
+			return err
+		}
+
+		_, err = s.AgentConns()
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 
 	st.Run(idl.Substep_check_active_connections_on_target_cluster, func(streams step.OutStreams) error {
 		return s.Intermediate.CheckActiveConnections(streams)

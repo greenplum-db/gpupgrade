@@ -15,7 +15,7 @@ import (
 )
 
 func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_InitializeServer) (err error) {
-	st, err := step.Begin(idl.Step_initialize, stream, s.AgentConns)
+	st, err := step.Begin(idl.Step_initialize, stream)
 	if err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ the master.
 }
 
 func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest, stream idl.CliToHub_InitializeCreateClusterServer) (err error) {
-	st, err := step.Begin(idl.Step_initialize, stream, s.AgentConns)
+	st, err := step.Begin(idl.Step_initialize, stream)
 	if err != nil {
 		return err
 	}

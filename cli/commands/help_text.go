@@ -52,6 +52,7 @@ func init() {
 	}
 
 	executeSubsteps = commanders.Substeps{
+		idl.Substep_ensure_gpupgrade_agents_are_running,
 		idl.Substep_check_active_connections_on_source_cluster,
 		idl.Substep_shutdown_source_cluster,
 		idl.Substep_upgrade_master,
@@ -61,6 +62,7 @@ func init() {
 	}
 
 	finalizeSubsteps = commanders.Substeps{
+		idl.Substep_ensure_gpupgrade_agents_are_running,
 		idl.Substep_check_active_connections_on_target_cluster,
 		idl.Substep_upgrade_mirrors,
 		idl.Substep_upgrade_standby,

@@ -264,7 +264,7 @@ func (s *Server) AgentConns() ([]*idl.Connection, error) {
 	defer s.mutex.Unlock()
 
 	if s.agentConns != nil {
-		err := EnsureConnsAreReady(s.agentConns)
+		err := EnsureConnsAreReady(s.agentConns, 15*time.Second)
 		if err != nil {
 			return nil, xerrors.Errorf("ensuring agent connections are ready: %w", err)
 		}
@@ -293,19 +293,39 @@ func (s *Server) AgentConns() ([]*idl.Connection, error) {
 	return s.agentConns, nil
 }
 
-func EnsureConnsAreReady(agentConns []*idl.Connection) error {
-	hostnames := []string{}
-	for _, conn := range agentConns {
-		if conn.Conn.GetState() != connectivity.Ready {
-			hostnames = append(hostnames, conn.Hostname)
+type AgentsGrpcStatus map[string]connectivity.State
+
+func (a AgentsGrpcStatus) String() string {
+	var text string
+	for host, state := range a {
+		text += fmt.Sprintf("%s: %s\n", host, strings.ToLower(state.String()))
+	}
+
+	return text
+}
+
+func EnsureConnsAreReady(agentConns []*idl.Connection, timeout time.Duration) error {
+	startTime := time.Now()
+	for {
+		agentsNotReady := AgentsGrpcStatus{}
+		for _, conn := range agentConns {
+			if conn.Conn.GetState() != connectivity.Ready {
+				agentsNotReady[conn.Hostname] = conn.Conn.GetState()
+			}
 		}
-	}
 
-	if len(hostnames) > 0 {
-		return fmt.Errorf("the connections to the following hosts were not ready: %s", strings.Join(hostnames, ","))
-	}
+		if len(agentsNotReady) == 0 {
+			return nil
+		}
 
-	return nil
+		if time.Since(startTime) > timeout {
+			err := fmt.Errorf("%s timeout exceeded ensuring gpupgrade agent processes are ready. Hosts with gpupgrade agents processes having non-ready gRPC status:\n%s", timeout, agentsNotReady)
+			nextAction := `Check the network between the master and segment hosts. And try restarting the hub and agents with "gpupgrade kill-services && gpupgrade restart-services".`
+			return utils.NewNextActionErr(err, nextAction)
+		}
+
+		time.Sleep(time.Second)
+	}
 }
 
 // Closes all h.agentConns. Callers must hold the Server's mutex.

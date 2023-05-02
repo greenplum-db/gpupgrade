@@ -105,6 +105,7 @@ enum Substep {
     create_backupdirs = 42;
     delete_backupdir = 43;
     analyze_target_cluster = 44;
+    ensure_gpupgrade_agents_are_running = 45;
 }
 
 enum Status {

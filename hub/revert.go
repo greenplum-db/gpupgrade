@@ -4,6 +4,7 @@
 package hub
 
 import (
+	"context"
 	"log"
 	"os/exec"
 	"time"
@@ -18,7 +19,7 @@ import (
 )
 
 func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) (err error) {
-	st, err := step.Begin(idl.Step_revert, stream, s.AgentConns)
+	st, err := step.Begin(idl.Step_revert, stream)
 	if err != nil {
 		return err
 	}
@@ -49,6 +50,25 @@ Cannot revert and restore the source cluster. Please contact support.`)
 	if err != nil {
 		return err
 	}
+
+	agentsStarted, err := step.HasCompleted(idl.Step_initialize, idl.Substep_start_agents)
+	if err != nil {
+		return err
+	}
+
+	st.RunConditionally(idl.Substep_ensure_gpupgrade_agents_are_running, configCreated && agentsStarted, func(_ step.OutStreams) error {
+		_, err := RestartAgents(context.Background(), nil, AgentHosts(s.Source), s.AgentPort, utils.GetStateDir())
+		if err != nil {
+			return err
+		}
+
+		_, err = s.AgentConns()
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 
 	st.RunConditionally(idl.Substep_check_active_connections_on_target_cluster, configCreated, func(streams step.OutStreams) error {
 		return s.Intermediate.CheckActiveConnections(streams)

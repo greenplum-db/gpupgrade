@@ -4,6 +4,7 @@
 package hub
 
 import (
+	"context"
 	"fmt"
 	"log"
 
@@ -15,7 +16,7 @@ import (
 )
 
 func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteServer) (err error) {
-	st, err := step.Begin(idl.Step_execute, stream, s.AgentConns)
+	st, err := step.Begin(idl.Step_execute, stream)
 	if err != nil {
 		return err
 	}
@@ -29,6 +30,20 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 			log.Printf("%s: %s", idl.Step_execute, err)
 		}
 	}()
+
+	st.AlwaysRun(idl.Substep_ensure_gpupgrade_agents_are_running, func(_ step.OutStreams) error {
+		_, err := RestartAgents(context.Background(), nil, AgentHosts(s.Source), s.AgentPort, utils.GetStateDir())
+		if err != nil {
+			return err
+		}
+
+		_, err = s.AgentConns()
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 
 	st.Run(idl.Substep_check_active_connections_on_source_cluster, func(streams step.OutStreams) error {
 		return s.Source.CheckActiveConnections(streams)

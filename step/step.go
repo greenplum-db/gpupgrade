@@ -42,23 +42,7 @@ func New(name idl.Step, sender idl.MessageSender, substepStore SubstepStore, str
 	}
 }
 
-func Begin(step idl.Step, sender idl.MessageSender, agentConns func() ([]*idl.Connection, error)) (*Step, error) {
-	// FIXME: Having s.agentConns() in the step framework is a heavy indication of
-	//  tech debt that needs to be addressed. However, for the time being ensure
-	//  agentConns are properly populated at the start of each step, otherwise
-	//  the agentConns member variable can be nil.
-	agentsStarted, err := HasCompleted(idl.Step_initialize, idl.Substep_start_agents)
-	if err != nil {
-		return nil, err
-	}
-
-	if agentsStarted {
-		_, err := agentConns()
-		if err != nil {
-			return nil, xerrors.Errorf("ensuring agent connections are ready: %w", err)
-		}
-	}
-
+func Begin(step idl.Step, sender idl.MessageSender) (*Step, error) {
 	logFile, err := logger.OpenFile("hub")
 	if err != nil {
 		return nil, xerrors.Errorf(`getting log file for step "%s": %w`, step, err)
