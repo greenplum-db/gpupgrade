@@ -46,7 +46,7 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 		return nil
 	})
 
-	st.Run(idl.Substep_check_active_connections_on_target_cluster, func(streams step.OutStreams) error {
+	st.AlwaysRun(idl.Substep_check_active_connections_on_target_cluster, func(streams step.OutStreams) error {
 		return s.Intermediate.CheckActiveConnections(streams)
 	})
 
@@ -66,7 +66,7 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 		return s.Intermediate.WaitForClusterToBeReady()
 	})
 
-	st.Run(idl.Substep_shutdown_target_cluster, func(streams step.OutStreams) error {
+	st.AlwaysRun(idl.Substep_shutdown_target_cluster, func(streams step.OutStreams) error {
 		return s.Intermediate.Stop(streams)
 	})
 
@@ -94,11 +94,11 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 		)
 	})
 
-	st.Run(idl.Substep_start_target_cluster, func(streams step.OutStreams) error {
+	st.AlwaysRun(idl.Substep_start_target_cluster, func(streams step.OutStreams) error {
 		return s.Target.Start(streams)
 	})
 
-	st.Run(idl.Substep_wait_for_cluster_to_be_ready_after_updating_catalog, func(streams step.OutStreams) error {
+	st.AlwaysRun(idl.Substep_wait_for_cluster_to_be_ready_after_updating_catalog, func(streams step.OutStreams) error {
 		return s.Target.WaitForClusterToBeReady()
 	})
 

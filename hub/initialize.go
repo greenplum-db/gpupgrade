@@ -35,7 +35,7 @@ func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_Init
 		return upgrade.EnsureGpupgradeVersionsMatch(AgentHosts(s.Source))
 	})
 
-	st.Run(idl.Substep_start_agents, func(_ step.OutStreams) error {
+	st.AlwaysRun(idl.Substep_start_agents, func(_ step.OutStreams) error {
 		_, err := RestartAgents(context.Background(), nil, AgentHosts(s.Source), s.AgentPort, utils.GetStateDir())
 		if err != nil {
 			return err
@@ -49,7 +49,7 @@ func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_Init
 		return nil
 	})
 
-	st.Run(idl.Substep_check_environment, func(streams step.OutStreams) error {
+	st.AlwaysRun(idl.Substep_check_environment, func(streams step.OutStreams) error {
 		return CheckEnvironment(append(AgentHosts(s.Source), s.Source.CoordinatorHostname()), s.Source.GPHome, s.Intermediate.GPHome)
 	})
 
@@ -135,7 +135,7 @@ func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest
 		return AppendDynamicLibraryPath(s.Intermediate, req.GetDynamicLibraryPath())
 	})
 
-	st.Run(idl.Substep_shutdown_target_cluster, func(stream step.OutStreams) error {
+	st.AlwaysRun(idl.Substep_shutdown_target_cluster, func(stream step.OutStreams) error {
 		return s.Intermediate.Stop(stream)
 	})
 

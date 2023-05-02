@@ -45,11 +45,11 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 		return nil
 	})
 
-	st.Run(idl.Substep_check_active_connections_on_source_cluster, func(streams step.OutStreams) error {
+	st.AlwaysRun(idl.Substep_check_active_connections_on_source_cluster, func(streams step.OutStreams) error {
 		return s.Source.CheckActiveConnections(streams)
 	})
 
-	st.Run(idl.Substep_shutdown_source_cluster, func(streams step.OutStreams) error {
+	st.AlwaysRun(idl.Substep_shutdown_source_cluster, func(streams step.OutStreams) error {
 		return s.Source.Stop(streams)
 	})
 
@@ -116,7 +116,7 @@ the master.`
 		return UpgradePrimaries(s.agentConns, s.BackupDirs.AgentHostsToBackupDir, req.PgUpgradeVerbose, s.Source, s.Intermediate, idl.PgOptions_upgrade, s.Mode)
 	})
 
-	st.Run(idl.Substep_start_target_cluster, func(streams step.OutStreams) error {
+	st.AlwaysRun(idl.Substep_start_target_cluster, func(streams step.OutStreams) error {
 		return s.Intermediate.Start(streams)
 	})
 
