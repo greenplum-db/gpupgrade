@@ -18,20 +18,29 @@ import (
 // required and for convenience StepStore uses the same data structure and
 // file store as substeps.json. An internal substep enum STEP_STATUS is used to
 // track the overall step status and should not be used as a normal substep.
-type StepStore struct {
+type StepStore interface {
+	Read(idl.Step) (idl.Status, error)
+	Write(idl.Step, idl.Status) error
+	HasStepStarted(idl.Step) (bool, error)
+	HasStepNotStarted(idl.Step) (bool, error)
+	HasStepCompleted(idl.Step) (bool, error)
+	HasStatus(idl.Step, func(status idl.Status) bool) (bool, error)
+}
+
+type StepStoreFileStore struct {
 	store *step.SubstepFileStore
 }
 
-func NewStepStore() (*StepStore, error) {
+func NewStepFileStore() (*StepStoreFileStore, error) {
 	path, err := utils.GetJSONFile(utils.GetStateDir(), StepsFileName)
 	if err != nil {
-		return &StepStore{}, xerrors.Errorf("getting %q file: %w", StepsFileName, err)
+		return &StepStoreFileStore{}, xerrors.Errorf("getting %q file: %w", StepsFileName, err)
 	}
 
-	return &StepStore{store: step.NewSubstepStoreUsingFile(path)}, nil
+	return &StepStoreFileStore{store: step.NewSubstepStoreUsingFile(path)}, nil
 }
 
-func (s *StepStore) Write(stepName idl.Step, status idl.Status) error {
+func (s *StepStoreFileStore) Write(stepName idl.Step, status idl.Status) error {
 	err := s.store.Write(stepName, idl.Substep_step_status, status)
 	if err != nil {
 		return err
@@ -40,7 +49,7 @@ func (s *StepStore) Write(stepName idl.Step, status idl.Status) error {
 	return nil
 }
 
-func (s *StepStore) Read(stepName idl.Step) (idl.Status, error) {
+func (s *StepStoreFileStore) Read(stepName idl.Step) (idl.Status, error) {
 	status, err := s.store.Read(stepName, idl.Substep_step_status)
 	if err != nil {
 		return idl.Status_unknown_status, err
@@ -49,25 +58,25 @@ func (s *StepStore) Read(stepName idl.Step) (idl.Status, error) {
 	return status, nil
 }
 
-func (s *StepStore) HasStepStarted(step idl.Step) (bool, error) {
+func (s *StepStoreFileStore) HasStepStarted(step idl.Step) (bool, error) {
 	return s.HasStatus(step, func(status idl.Status) bool {
 		return status != idl.Status_unknown_status
 	})
 }
 
-func (s *StepStore) HasStepNotStarted(step idl.Step) (bool, error) {
+func (s *StepStoreFileStore) HasStepNotStarted(step idl.Step) (bool, error) {
 	return s.HasStatus(step, func(status idl.Status) bool {
 		return status == idl.Status_unknown_status
 	})
 }
 
-func (s *StepStore) HasStepCompleted(step idl.Step) (bool, error) {
+func (s *StepStoreFileStore) HasStepCompleted(step idl.Step) (bool, error) {
 	return s.HasStatus(step, func(status idl.Status) bool {
 		return status == idl.Status_complete
 	})
 }
 
-func (s *StepStore) HasStatus(step idl.Step, check func(status idl.Status) bool) (bool, error) {
+func (s *StepStoreFileStore) HasStatus(step idl.Step, check func(status idl.Status) bool) (bool, error) {
 	status, err := s.Read(step)
 	if err != nil {
 		return false, err
@@ -78,7 +87,7 @@ func (s *StepStore) HasStatus(step idl.Step, check func(status idl.Status) bool)
 
 type stepCondition struct {
 	idl.Step
-	condition  func(s *StepStore, step idl.Step) (bool, error)
+	condition  func(s *StepStoreFileStore, step idl.Step) (bool, error)
 	nextAction string
 }
 
@@ -105,27 +114,27 @@ const RunRevert = `Revert is in progress. Please continue by running "gpupgrade 
 // message is printed if the condition is not met.
 var validate = map[idl.Step][]stepCondition{
 	idl.Step_initialize: {
-		{idl.Step_revert, (*StepStore).HasStepNotStarted, RunRevert},
-		{idl.Step_finalize, (*StepStore).HasStepNotStarted, RunFinalize},
-		{idl.Step_execute, (*StepStore).HasStepNotStarted, RunExecute},
+		{idl.Step_revert, (*StepStoreFileStore).HasStepNotStarted, RunRevert},
+		{idl.Step_finalize, (*StepStoreFileStore).HasStepNotStarted, RunFinalize},
+		{idl.Step_execute, (*StepStoreFileStore).HasStepNotStarted, RunExecute},
 	},
 	idl.Step_execute: {
-		{idl.Step_revert, (*StepStore).HasStepNotStarted, RunRevert},
-		{idl.Step_initialize, (*StepStore).HasStepCompleted, RunInitialize},
-		{idl.Step_finalize, (*StepStore).HasStepNotStarted, RunFinalize},
+		{idl.Step_revert, (*StepStoreFileStore).HasStepNotStarted, RunRevert},
+		{idl.Step_initialize, (*StepStoreFileStore).HasStepCompleted, RunInitialize},
+		{idl.Step_finalize, (*StepStoreFileStore).HasStepNotStarted, RunFinalize},
 	},
 	idl.Step_finalize: {
-		{idl.Step_revert, (*StepStore).HasStepNotStarted, RunRevert},
-		{idl.Step_initialize, (*StepStore).HasStepCompleted, RunInitialize},
-		{idl.Step_execute, (*StepStore).HasStepCompleted, RunExecute},
+		{idl.Step_revert, (*StepStoreFileStore).HasStepNotStarted, RunRevert},
+		{idl.Step_initialize, (*StepStoreFileStore).HasStepCompleted, RunInitialize},
+		{idl.Step_execute, (*StepStoreFileStore).HasStepCompleted, RunExecute},
 	},
 	idl.Step_revert: {
-		{idl.Step_initialize, (*StepStore).HasStepStarted, RunInitialize},
-		{idl.Step_finalize, (*StepStore).HasStepNotStarted, RunFinalize},
+		{idl.Step_initialize, (*StepStoreFileStore).HasStepStarted, RunInitialize},
+		{idl.Step_finalize, (*StepStoreFileStore).HasStepNotStarted, RunFinalize},
 	},
 }
 
-func (s *StepStore) ValidateStep(currentStep idl.Step) (err error) {
+func (s *StepStoreFileStore) ValidateStep(currentStep idl.Step) (err error) {
 	conditions := validate[currentStep]
 	for _, c := range conditions {
 		status, err := c.condition(s, c.Step)

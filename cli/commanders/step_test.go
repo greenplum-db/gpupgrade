@@ -432,7 +432,7 @@ func TestStepStatus(t *testing.T) {
 	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 	defer resetEnv()
 
-	stepStore, err := commanders.NewStepStore()
+	stepStore, err := commanders.NewStepFileStore()
 	if err != nil {
 		t.Fatalf("NewStepStore failed: %v", err)
 	}
@@ -650,4 +650,59 @@ func TestPrompt(t *testing.T) {
 			}
 		}
 	})
+}
+
+type MockStepStore struct {
+	Status   idl.Status
+	WriteErr error
+}
+
+func (t *MockStepStore) Read(_ idl.Step) (idl.Status, error) {
+	return t.Status, nil
+}
+
+func (t *MockStepStore) Write(_ idl.Step, status idl.Status) error {
+	t.Status = status
+	return t.WriteErr
+}
+
+func (s *MockStepStore) HasStepStarted(step idl.Step) (bool, error) {
+	return s.HasStatus(step, func(status idl.Status) bool {
+		return status != idl.Status_unknown_status
+	})
+}
+
+func (s *MockStepStore) HasStepNotStarted(step idl.Step) (bool, error) {
+	return s.HasStatus(step, func(status idl.Status) bool {
+		return status == idl.Status_unknown_status
+	})
+}
+
+func (s *MockStepStore) HasStepCompleted(step idl.Step) (bool, error) {
+	return s.HasStatus(step, func(status idl.Status) bool {
+		return status == idl.Status_complete
+	})
+}
+
+func (s *MockStepStore) HasStatus(step idl.Step, check func(status idl.Status) bool) (bool, error) {
+	status, err := s.Read(step)
+	if err != nil {
+		return false, err
+	}
+
+	return check(status), nil
+}
+
+type MockSubstepStore struct {
+	Status   idl.Status
+	WriteErr error
+}
+
+func (t *MockSubstepStore) Read(_ idl.Step, substep idl.Substep) (idl.Status, error) {
+	return t.Status, nil
+}
+
+func (t *MockSubstepStore) Write(_ idl.Step, substep idl.Substep, status idl.Status) error {
+	t.Status = status
+	return t.WriteErr
 }

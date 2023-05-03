@@ -30,7 +30,7 @@ func TestStepStore(t *testing.T) {
 	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 	defer resetEnv()
 
-	stepStore, err := commanders.NewStepStore()
+	stepStore, err := commanders.NewStepFileStore()
 	if err != nil {
 		t.Fatalf("NewStepStore failed: %v", err)
 	}
@@ -56,13 +56,13 @@ func TestStepStore(t *testing.T) {
 		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", "/does/not/exist")
 		defer resetEnv()
 
-		stepStore, err := commanders.NewStepStore()
+		stepStore, err := commanders.NewStepFileStore()
 		var pathErr *os.PathError
 		if !errors.As(err, &pathErr) {
 			t.Errorf("got %T, want %T", err, pathErr)
 		}
 
-		expected := &commanders.StepStore{}
+		expected := &commanders.StepStoreFileStore{}
 		if !reflect.DeepEqual(stepStore, expected) {
 			t.Errorf("got %v want %v", stepStore, expected)
 		}
@@ -82,7 +82,7 @@ func TestStepStore(t *testing.T) {
 		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 		defer resetEnv()
 
-		stepStore, err := commanders.NewStepStore()
+		stepStore, err := commanders.NewStepFileStore()
 		if err != nil {
 			t.Fatalf("NewStepStore failed: %v", err)
 		}
@@ -123,7 +123,7 @@ func TestStepStore(t *testing.T) {
 		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 		defer resetEnv()
 
-		stepStore, err := commanders.NewStepStore()
+		stepStore, err := commanders.NewStepFileStore()
 		if err != nil {
 			t.Fatalf("NewStepStore failed: %v", err)
 		}
@@ -234,7 +234,7 @@ func TestValidateStep(t *testing.T) {
 	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 	defer resetEnv()
 
-	stepStore, err := commanders.NewStepStore()
+	stepStore, err := commanders.NewStepFileStore()
 	if err != nil {
 		t.Fatalf("NewStepStore failed: %v", err)
 	}
@@ -458,7 +458,7 @@ func clearStepStore(t *testing.T) {
 	testutils.MustWriteToFile(t, path, "{}")
 }
 
-func mustWriteStatus(t *testing.T, stepStore *commanders.StepStore, step idl.Step, status idl.Status) {
+func mustWriteStatus(t *testing.T, stepStore *commanders.StepStoreFileStore, step idl.Step, status idl.Status) {
 	t.Helper()
 
 	err := stepStore.Write(step, status)

@@ -37,7 +37,7 @@ var additionalNextActions = map[idl.Step]string{
 type Step struct {
 	stepName     string
 	step         idl.Step
-	stepStore    *StepStore
+	stepStore    StepStore
 	substepStore step.SubstepStore
 	streams      *step.BufferedStreams
 	verbose      bool
@@ -46,7 +46,7 @@ type Step struct {
 	err          error
 }
 
-func NewStep(currentStep idl.Step, stepName string, stepStore *StepStore, substepStore step.SubstepStore, streams *step.BufferedStreams, verbose bool) (*Step, error) {
+func NewStep(currentStep idl.Step, stepName string, stepStore StepStore, substepStore step.SubstepStore, streams *step.BufferedStreams, verbose bool) (*Step, error) {
 	return &Step{
 		stepName:     stepName,
 		step:         currentStep,
@@ -59,7 +59,7 @@ func NewStep(currentStep idl.Step, stepName string, stepStore *StepStore, subste
 }
 
 func Begin(currentStep idl.Step, verbose bool, nonInteractive bool, confirmationText string) (*Step, error) {
-	stepStore, err := NewStepStore()
+	stepStore, err := NewStepFileStore()
 	if err != nil {
 		context := fmt.Sprintf("Note: If commands were issued in order, ensure gpupgrade can write to %s", utils.GetStateDir())
 		wrappedErr := xerrors.Errorf("%v\n\n%v", StepErr, context)
