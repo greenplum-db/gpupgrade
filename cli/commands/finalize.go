@@ -39,12 +39,7 @@ func finalize() *cobra.Command {
 				cases.Title(language.English).String(idl.Step_finalize.String()),
 				finalizeSubsteps, logdir)
 
-			st, err := commanders.NewStep(idl.Step_finalize,
-				&step.BufferedStreams{},
-				verbose,
-				nonInteractive,
-				confirmationText,
-			)
+			st, err := commanders.Begin(idl.Step_finalize, verbose, nonInteractive, confirmationText)
 			if err != nil {
 				if errors.Is(err, step.Quit) {
 					// If user cancels don't return an error to main to avoid

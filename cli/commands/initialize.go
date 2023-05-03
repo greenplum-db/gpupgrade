@@ -171,12 +171,7 @@ func initialize() *cobra.Command {
 
 			log.Print(confirmationText)
 
-			st, err := commanders.NewStep(idl.Step_initialize,
-				&step.BufferedStreams{},
-				verbose,
-				nonInteractive,
-				confirmationText,
-			)
+			st, err := commanders.Begin(idl.Step_initialize, verbose, nonInteractive, confirmationText)
 			if err != nil {
 				return err
 			}

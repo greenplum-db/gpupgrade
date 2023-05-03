@@ -46,7 +46,19 @@ type Step struct {
 	err          error
 }
 
-func NewStep(currentStep idl.Step, streams *step.BufferedStreams, verbose bool, nonInteractive bool, confirmationText string) (*Step, error) {
+func NewStep(currentStep idl.Step, stepName string, stepStore *StepStore, substepStore step.SubstepStore, streams *step.BufferedStreams, verbose bool) (*Step, error) {
+	return &Step{
+		stepName:     stepName,
+		step:         currentStep,
+		stepStore:    stepStore,
+		substepStore: substepStore,
+		streams:      streams,
+		verbose:      verbose,
+		timer:        stopwatch.Start(),
+	}, nil
+}
+
+func Begin(currentStep idl.Step, verbose bool, nonInteractive bool, confirmationText string) (*Step, error) {
 	stepStore, err := NewStepStore()
 	if err != nil {
 		context := fmt.Sprintf("Note: If commands were issued in order, ensure gpupgrade can write to %s", utils.GetStateDir())
@@ -84,15 +96,7 @@ func NewStep(currentStep idl.Step, streams *step.BufferedStreams, verbose bool, 
 	fmt.Println(stepName + " in progress.")
 	fmt.Println()
 
-	return &Step{
-		stepName:     stepName,
-		step:         currentStep,
-		stepStore:    stepStore,
-		substepStore: substepStore,
-		streams:      streams,
-		verbose:      verbose,
-		timer:        stopwatch.Start(),
-	}, nil
+	return NewStep(currentStep, stepName, stepStore, substepStore, &step.BufferedStreams{}, verbose)
 }
 
 func (s *Step) Err() error {
