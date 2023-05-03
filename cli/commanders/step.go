@@ -129,7 +129,7 @@ func (s *Step) RunInternalSubstep(f func() error) {
 	}
 }
 
-func (s *Step) RunCLISubstepConditionally(substep idl.Substep, shouldRun bool, f func(streams step.OutStreams) error) {
+func (s *Step) RunConditionally(substep idl.Substep, shouldRun bool, f func(streams step.OutStreams) error) {
 	if !shouldRun {
 		log.Printf("skipping %s", substep)
 		return

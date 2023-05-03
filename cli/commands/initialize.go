@@ -231,7 +231,7 @@ func initialize() *cobra.Command {
 				return nil
 			}
 
-			st.RunCLISubstepConditionally(idl.Substep_generate_data_migration_scripts, !nonInteractive, func(streams step.OutStreams) error {
+			st.RunConditionally(idl.Substep_generate_data_migration_scripts, !nonInteractive, func(streams step.OutStreams) error {
 				fmt.Println()
 				fmt.Println()
 
@@ -239,7 +239,7 @@ func initialize() *cobra.Command {
 					filepath.Clean(dataMigrationSeedDir), generatedScriptsOutputDir, utils.System.DirFS(generatedScriptsOutputDir))
 			})
 
-			st.RunCLISubstepConditionally(idl.Substep_execute_stats_data_migration_scripts, !nonInteractive, func(streams step.OutStreams) error {
+			st.RunConditionally(idl.Substep_execute_stats_data_migration_scripts, !nonInteractive, func(streams step.OutStreams) error {
 				fmt.Println()
 				fmt.Println()
 
@@ -248,7 +248,7 @@ func initialize() *cobra.Command {
 					logdir, utils.System.DirFS(currentDir), currentDir, idl.Step_stats)
 			})
 
-			st.RunCLISubstepConditionally(idl.Substep_execute_initialize_data_migration_scripts, !nonInteractive, func(streams step.OutStreams) error {
+			st.RunConditionally(idl.Substep_execute_initialize_data_migration_scripts, !nonInteractive, func(streams step.OutStreams) error {
 				fmt.Println()
 				fmt.Println()
 
