@@ -106,6 +106,8 @@ enum Substep {
     delete_backupdir = 43;
     analyze_target_cluster = 44;
     ensure_gpupgrade_agents_are_running = 45;
+    verify_gpdb_versions = 46;
+    verify_gpupgrade_is_installed_across_all_hosts = 47;
 }
 
 enum Status {

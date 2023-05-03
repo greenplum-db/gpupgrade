@@ -114,21 +114,6 @@ func (s *Step) RunHubSubstep(f func(streams step.OutStreams) error) {
 	}
 }
 
-func (s *Step) RunInternalSubstep(f func() error) {
-	if s.err != nil {
-		return
-	}
-
-	err := f()
-	if err != nil {
-		if errors.Is(err, step.Skip) {
-			return
-		}
-
-		s.err = err
-	}
-}
-
 func (s *Step) RunConditionally(substep idl.Substep, shouldRun bool, f func(streams step.OutStreams) error) {
 	if !shouldRun {
 		log.Printf("skipping %s", substep)

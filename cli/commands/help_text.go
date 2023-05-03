@@ -34,11 +34,13 @@ func init() {
 	}
 
 	initializeSubsteps = commanders.Substeps{
+		idl.Substep_verify_gpdb_versions,
 		idl.Substep_generate_data_migration_scripts,
 		idl.Substep_execute_stats_data_migration_scripts,
 		idl.Substep_execute_initialize_data_migration_scripts,
 		idl.Substep_start_hub,
 		idl.Substep_saving_source_cluster_config,
+		idl.Substep_verify_gpupgrade_is_installed_across_all_hosts,
 		idl.Substep_start_agents,
 		idl.Substep_check_environment,
 		idl.Substep_create_backupdirs,

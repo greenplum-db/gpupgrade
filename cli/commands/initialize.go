@@ -181,17 +181,8 @@ func initialize() *cobra.Command {
 				return err
 			}
 
-			st.RunInternalSubstep(func() error {
-				if skipVersionCheck {
-					return nil
-				}
-
-				err := greenplum.VerifyCompatibleGPDBVersions(sourceGPHome, targetGPHome)
-				if err != nil {
-					return err
-				}
-
-				return nil
+			st.RunConditionally(idl.Substep_verify_gpdb_versions, !skipVersionCheck, func(streams step.OutStreams) error {
+				return greenplum.VerifyCompatibleGPDBVersions(sourceGPHome, targetGPHome)
 			})
 
 			st.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
@@ -253,13 +244,10 @@ func initialize() *cobra.Command {
 				fmt.Println()
 
 				currentDir := filepath.Join(filepath.Clean(generatedScriptsOutputDir), "current")
-				return commanders.ApplyDataMigrationScripts(nonInteractive, sourceGPHome, sourcePort,
+				err = commanders.ApplyDataMigrationScripts(nonInteractive, sourceGPHome, sourcePort,
 					logdir, utils.System.DirFS(currentDir), currentDir, idl.Step_initialize)
-			})
-
-			st.RunInternalSubstep(func() error {
-				if nonInteractive {
-					return nil
+				if err != nil {
+					return err
 				}
 
 				fmt.Println()

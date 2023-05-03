@@ -182,35 +182,14 @@ func TestSubstep(t *testing.T) {
 		}
 	})
 
-	t.Run("there is no error when an internal substep is skipped", func(t *testing.T) {
-		st, err := commanders.NewStep(idl.Step_initialize, &step.BufferedStreams{}, false, true, "")
-		if err != nil {
-			t.Errorf("unexpected err %#v", err)
-		}
-
-		skipErr := step.Skip
-		st.RunInternalSubstep(func() error {
-			return skipErr
-		})
-
-		err = st.Complete("")
-		if err != nil {
-			t.Errorf("unexpected err %#v", err)
-		}
-
-		if st.Err() != nil {
-			t.Errorf("want err to be set to nil, got %#v", skipErr)
-		}
-	})
-
-	t.Run("both cli and hub substeps are not run when an internal substep errors", func(t *testing.T) {
+	t.Run("substeps are not run when a hub substep errors", func(t *testing.T) {
 		st, err := commanders.NewStep(idl.Step_initialize, &step.BufferedStreams{}, false, true, "")
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
 
 		err = errors.New("error")
-		st.RunInternalSubstep(func() error {
+		st.RunHubSubstep(func(streams step.OutStreams) error {
 			return err
 		})
 
@@ -236,56 +215,6 @@ func TestSubstep(t *testing.T) {
 
 		if st.Err() == nil {
 			t.Error("expected error")
-		}
-	})
-
-	t.Run("nothing is printed for internal substeps", func(t *testing.T) {
-		d := commanders.BufferStandardDescriptors(t)
-
-		st, err := commanders.NewStep(idl.Step_initialize, &step.BufferedStreams{}, true, true, "")
-		if err != nil {
-			d.Close()
-			t.Errorf("unexpected err %#v", err)
-		}
-
-		ran := false
-		st.RunInternalSubstep(func() error {
-			ran = true
-			return nil
-		})
-
-		err = st.Complete("")
-		if err != nil {
-			d.Close()
-			t.Errorf("unexpected err %#v", err)
-		}
-
-		if !ran {
-			d.Close()
-			t.Error("expected hub substep to be run")
-		}
-
-		if st.Err() != nil {
-			d.Close()
-			t.Errorf("unexpected err %#v", err)
-		}
-
-		expectedStdout := "\nInitialize in progress.\n\n"
-		expectedStdout += "Initialize took 0s\n\n-----------------------------------------------------------------------------\n\n\n"
-
-		stdout, stderr := d.Collect()
-		d.Close()
-		actualStdout := string(stdout)
-		if actualStdout != expectedStdout {
-			t.Errorf("stdout %#v want %#v", actualStdout, expectedStdout)
-			t.Logf("actualStdout: %s", actualStdout)
-			t.Logf("expectedStdout: %s", expectedStdout)
-		}
-
-		actualStderr := string(stderr)
-		expectedStderr := ""
-		if actualStderr != expectedStderr {
-			t.Errorf("stderr %#v want %#v", actualStdout, expectedStderr)
 		}
 	})
 
@@ -556,33 +485,6 @@ func TestStepStatus(t *testing.T) {
 		}
 
 		st.RunHubSubstep(func(streams step.OutStreams) error {
-			return errors.New("oops")
-		})
-
-		err = st.Complete("")
-		var nextActionsErr utils.NextActionErr
-		if !errors.As(err, &nextActionsErr) {
-			t.Errorf("got %T, want %T", err, nextActionsErr)
-		}
-
-		status, err := stepStore.Read(idl.Step_initialize)
-		if err != nil {
-			t.Errorf("Read failed %#v", err)
-		}
-
-		expected := idl.Status_failed
-		if status != expected {
-			t.Errorf("got stauts %q want %q", status, expected)
-		}
-	})
-
-	t.Run("when an internal substep fails it sets the step status to failed", func(t *testing.T) {
-		st, err := commanders.NewStep(idl.Step_initialize, &step.BufferedStreams{}, false, true, "")
-		if err != nil {
-			t.Errorf("unexpected err %#v", err)
-		}
-
-		st.RunInternalSubstep(func() error {
 			return errors.New("oops")
 		})
 

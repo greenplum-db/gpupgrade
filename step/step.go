@@ -155,17 +155,6 @@ func (s *Step) Err() error {
 	return statusErr.Err()
 }
 
-func (s *Step) RunInternalSubstep(f func() error) {
-	if s.err != nil {
-		return
-	}
-
-	err := f()
-	if err != nil {
-		s.err = err
-	}
-}
-
 func (s *Step) AlwaysRun(substep idl.Substep, f func(OutStreams) error) {
 	s.run(substep, f, true)
 }

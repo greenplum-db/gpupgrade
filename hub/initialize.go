@@ -31,7 +31,7 @@ func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_Init
 	}()
 
 	// Since the agents might not be up if gpupgrade is not properly installed, check it early on using ssh.
-	st.RunInternalSubstep(func() error {
+	st.Run(idl.Substep_verify_gpupgrade_is_installed_across_all_hosts, func(streams step.OutStreams) error {
 		return upgrade.EnsureGpupgradeVersionsMatch(AgentHosts(s.Source))
 	})
 
