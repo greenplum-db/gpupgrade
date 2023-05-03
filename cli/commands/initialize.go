@@ -194,7 +194,7 @@ func initialize() *cobra.Command {
 				return nil
 			})
 
-			st.RunCLISubstep(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
+			st.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
 				parsedPorts, err := ParsePorts(ports)
 				if err != nil {
 					return err
@@ -222,7 +222,7 @@ func initialize() *cobra.Command {
 				return config.Write()
 			})
 
-			st.RunCLISubstep(idl.Substep_start_hub, func(streams step.OutStreams) error {
+			st.Run(idl.Substep_start_hub, func(streams step.OutStreams) error {
 				return commanders.StartHub()
 			})
 

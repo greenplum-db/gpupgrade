@@ -68,7 +68,7 @@ func revert() *cobra.Command {
 				return nil
 			})
 
-			st.RunCLISubstep(idl.Substep_stop_hub_and_agents, func(streams step.OutStreams) error {
+			st.Run(idl.Substep_stop_hub_and_agents, func(streams step.OutStreams) error {
 				return stopHubAndAgents()
 			})
 
@@ -81,7 +81,7 @@ func revert() *cobra.Command {
 					response.GetLogArchiveDirectory(), utils.System.DirFS(currentDir), currentDir, idl.Step_revert)
 			})
 
-			st.RunCLISubstep(idl.Substep_delete_master_statedir, func(streams step.OutStreams) error {
+			st.Run(idl.Substep_delete_master_statedir, func(streams step.OutStreams) error {
 				// Removing the state directory removes the step status file.
 				// Disable the store so the step framework does not try to write
 				// to a non-existent status file.

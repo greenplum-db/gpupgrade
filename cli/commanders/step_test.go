@@ -43,12 +43,12 @@ func TestSubstep(t *testing.T) {
 			t.Errorf("unexpected err %#v", err)
 		}
 
-		st.RunCLISubstep(idl.Substep_check_disk_space, func(streams step.OutStreams) error {
+		st.Run(idl.Substep_check_disk_space, func(streams step.OutStreams) error {
 			return nil
 		})
 
 		err = errors.New("error")
-		st.RunCLISubstep(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
+		st.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
 			return err
 		})
 
@@ -110,7 +110,7 @@ func TestSubstep(t *testing.T) {
 		}
 
 		skipErr := step.Skip
-		st.RunCLISubstep(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
+		st.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
 			return skipErr
 		})
 
@@ -151,7 +151,7 @@ func TestSubstep(t *testing.T) {
 		}
 
 		quitErr := step.Quit
-		st.RunCLISubstep(idl.Substep_generate_data_migration_scripts, func(streams step.OutStreams) error {
+		st.Run(idl.Substep_generate_data_migration_scripts, func(streams step.OutStreams) error {
 			return quitErr
 		})
 
@@ -215,7 +215,7 @@ func TestSubstep(t *testing.T) {
 		})
 
 		ran := false
-		st.RunCLISubstep(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
+		st.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
 			ran = true
 			return nil
 		})
@@ -300,7 +300,7 @@ func TestSubstep(t *testing.T) {
 
 		substepStdout := "some substep output text."
 		substepStderr := "oops!"
-		st.RunCLISubstep(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
+		st.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
 			os.Stdout.WriteString(substepStdout)
 			os.Stderr.WriteString(substepStderr)
 			return nil
@@ -341,12 +341,12 @@ func TestSubstep(t *testing.T) {
 		}
 
 		err = errors.New("error")
-		st.RunCLISubstep(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
+		st.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
 			return err
 		})
 
 		ran := false
-		st.RunCLISubstep(idl.Substep_start_hub, func(streams step.OutStreams) error {
+		st.Run(idl.Substep_start_hub, func(streams step.OutStreams) error {
 			ran = true
 			return nil
 		})
@@ -372,7 +372,7 @@ func TestSubstep(t *testing.T) {
 		}
 
 		err = errors.New("error")
-		st.RunCLISubstep(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
+		st.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
 			return err
 		})
 
@@ -444,7 +444,7 @@ func TestSubstep(t *testing.T) {
 			t.Errorf("unexpected err %#v", err)
 		}
 
-		st.RunCLISubstep(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
+		st.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
 			return nil
 		})
 
@@ -477,7 +477,7 @@ func TestSubstep(t *testing.T) {
 		}
 
 		expected := errors.New("oops")
-		st.RunCLISubstep(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
+		st.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
 			return expected
 		})
 
@@ -609,7 +609,7 @@ func TestStepStatus(t *testing.T) {
 			t.Errorf("unexpected err %#v", err)
 		}
 
-		st.RunCLISubstep(idl.Substep_check_disk_space, func(streams step.OutStreams) error {
+		st.Run(idl.Substep_check_disk_space, func(streams step.OutStreams) error {
 			return errors.New("oops")
 		})
 

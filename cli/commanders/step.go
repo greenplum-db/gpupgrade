@@ -135,10 +135,14 @@ func (s *Step) RunCLISubstepConditionally(substep idl.Substep, shouldRun bool, f
 		return
 	}
 
-	s.RunCLISubstep(substep, f)
+	s.run(substep, f)
 }
 
-func (s *Step) RunCLISubstep(substep idl.Substep, f func(streams step.OutStreams) error) {
+func (s *Step) Run(substep idl.Substep, f func(streams step.OutStreams) error) {
+	s.run(substep, f)
+}
+
+func (s *Step) run(substep idl.Substep, f func(streams step.OutStreams) error) {
 	var err error
 	defer func() {
 		if err != nil {
