@@ -1,7 +1,7 @@
 // Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
-package commanders
+package clistep
 
 import (
 	"bufio"
@@ -16,6 +16,7 @@ import (
 
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -283,8 +284,8 @@ func (s *Step) printStatus(substep idl.Substep, status idl.Status) error {
 		}
 	}
 
-	text := SubstepDescriptions[substep]
-	fmt.Print(Format(text.OutputText, status))
+	text := commanders.SubstepDescriptions[substep]
+	fmt.Print(commanders.Format(text.OutputText, status))
 
 	// Reset the cursor if the final status has been written. This prevents the
 	// status from a hub step from being on the same line as a CLI step.

@@ -1,7 +1,7 @@
 // Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
-package commanders_test
+package clistep_test
 
 import (
 	"errors"
@@ -10,7 +10,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/greenplum-db/gpupgrade/cli/commanders"
+	"github.com/greenplum-db/gpupgrade/cli/clistep"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -30,7 +30,7 @@ func TestStepStore(t *testing.T) {
 	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 	defer resetEnv()
 
-	stepStore, err := commanders.NewStepFileStore()
+	stepStore, err := clistep.NewStepFileStore()
 	if err != nil {
 		t.Fatalf("NewStepStore failed: %v", err)
 	}
@@ -56,13 +56,13 @@ func TestStepStore(t *testing.T) {
 		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", "/does/not/exist")
 		defer resetEnv()
 
-		stepStore, err := commanders.NewStepFileStore()
+		stepStore, err := clistep.NewStepFileStore()
 		var pathErr *os.PathError
 		if !errors.As(err, &pathErr) {
 			t.Errorf("got %T, want %T", err, pathErr)
 		}
 
-		expected := &commanders.StepStoreFileStore{}
+		expected := &clistep.StepStoreFileStore{}
 		if !reflect.DeepEqual(stepStore, expected) {
 			t.Errorf("got %v want %v", stepStore, expected)
 		}
@@ -82,7 +82,7 @@ func TestStepStore(t *testing.T) {
 		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 		defer resetEnv()
 
-		stepStore, err := commanders.NewStepFileStore()
+		stepStore, err := clistep.NewStepFileStore()
 		if err != nil {
 			t.Fatalf("NewStepStore failed: %v", err)
 		}
@@ -123,7 +123,7 @@ func TestStepStore(t *testing.T) {
 		resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 		defer resetEnv()
 
-		stepStore, err := commanders.NewStepFileStore()
+		stepStore, err := clistep.NewStepFileStore()
 		if err != nil {
 			t.Fatalf("NewStepStore failed: %v", err)
 		}
@@ -234,7 +234,7 @@ func TestValidateStep(t *testing.T) {
 	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 	defer resetEnv()
 
-	stepStore, err := commanders.NewStepFileStore()
+	stepStore, err := clistep.NewStepFileStore()
 	if err != nil {
 		t.Fatalf("NewStepStore failed: %v", err)
 	}
@@ -255,7 +255,7 @@ func TestValidateStep(t *testing.T) {
 			"fails when initialize is run but execute has already started",
 			idl.Step_initialize,
 			[]stepStatus{{step: idl.Step_execute, status: idl.Status_running}},
-			commanders.RunExecute,
+			clistep.RunExecute,
 		},
 		{
 			"fails when initialize is run but finalize has started",
@@ -264,20 +264,20 @@ func TestValidateStep(t *testing.T) {
 				{step: idl.Step_initialize, status: idl.Status_complete},
 				{step: idl.Step_execute, status: idl.Status_complete},
 				{step: idl.Step_finalize, status: idl.Status_running}},
-			commanders.RunFinalize,
+			clistep.RunFinalize,
 		},
 		{
 			"fails when initialize is run but revert has started",
 			idl.Step_initialize,
 			[]stepStatus{{step: idl.Step_revert, status: idl.Status_running}},
-			commanders.RunRevert,
+			clistep.RunRevert,
 		},
 		// error cases when current step is execute
 		{
 			"fails when execute is run before initialize has completed",
 			idl.Step_execute,
 			[]stepStatus{},
-			commanders.RunInitialize,
+			clistep.RunInitialize,
 		},
 		{
 			"fails when execute is run but finalize has started",
@@ -285,7 +285,7 @@ func TestValidateStep(t *testing.T) {
 			[]stepStatus{
 				{step: idl.Step_initialize, status: idl.Status_complete},
 				{step: idl.Step_finalize, status: idl.Status_running}},
-			commanders.RunFinalize,
+			clistep.RunFinalize,
 		},
 		{
 			"fails when execute is run but revert has started",
@@ -293,20 +293,20 @@ func TestValidateStep(t *testing.T) {
 			[]stepStatus{
 				{step: idl.Step_initialize, status: idl.Status_complete},
 				{step: idl.Step_revert, status: idl.Status_running}},
-			commanders.RunRevert,
+			clistep.RunRevert,
 		},
 		// error cases when current step is finalize
 		{
 			"fails when finalize is run before initialize has completed",
 			idl.Step_finalize,
 			[]stepStatus{},
-			commanders.RunInitialize,
+			clistep.RunInitialize,
 		},
 		{
 			"fails when finalize is run and execute has not started",
 			idl.Step_finalize,
 			[]stepStatus{{step: idl.Step_initialize, status: idl.Status_complete}},
-			commanders.RunExecute,
+			clistep.RunExecute,
 		},
 		{
 			"fails when finalize is run but revert has started",
@@ -315,14 +315,14 @@ func TestValidateStep(t *testing.T) {
 				{step: idl.Step_initialize, status: idl.Status_complete},
 				{step: idl.Step_execute, status: idl.Status_failed},
 				{step: idl.Step_revert, status: idl.Status_failed}},
-			commanders.RunRevert,
+			clistep.RunRevert,
 		},
 		// error cases when current step is revert
 		{
 			"fails when revert is run before initialize has completed",
 			idl.Step_revert,
 			[]stepStatus{},
-			commanders.RunInitialize,
+			clistep.RunInitialize,
 		},
 		{
 			"fails when revert is run but finalize has already been started",
@@ -332,7 +332,7 @@ func TestValidateStep(t *testing.T) {
 				{step: idl.Step_execute, status: idl.Status_complete},
 				{step: idl.Step_finalize, status: idl.Status_running},
 			},
-			commanders.RunFinalize,
+			clistep.RunFinalize,
 		},
 	}
 
@@ -454,11 +454,11 @@ func TestValidateStep(t *testing.T) {
 func clearStepStore(t *testing.T) {
 	t.Helper()
 
-	path := filepath.Join(utils.GetStateDir(), commanders.StepsFileName)
+	path := filepath.Join(utils.GetStateDir(), clistep.StepsFileName)
 	testutils.MustWriteToFile(t, path, "{}")
 }
 
-func mustWriteStatus(t *testing.T, stepStore *commanders.StepStoreFileStore, step idl.Step, status idl.Status) {
+func mustWriteStatus(t *testing.T, stepStore *clistep.StepStoreFileStore, step idl.Step, status idl.Status) {
 	t.Helper()
 
 	err := stepStore.Write(step, status)

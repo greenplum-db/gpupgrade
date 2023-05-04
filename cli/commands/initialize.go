@@ -19,6 +19,7 @@ import (
 	"golang.org/x/text/language"
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/cli/clistep"
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/config"
 	"github.com/greenplum-db/gpupgrade/greenplum"
@@ -171,7 +172,7 @@ func initialize() *cobra.Command {
 
 			log.Print(confirmationText)
 
-			st, err := commanders.Begin(idl.Step_initialize, verbose, nonInteractive, confirmationText)
+			st, err := clistep.Begin(idl.Step_initialize, verbose, nonInteractive, confirmationText)
 			if err != nil {
 				return err
 			}
@@ -246,7 +247,7 @@ func initialize() *cobra.Command {
 				}
 
 				fmt.Println()
-				return commanders.Prompt(bufio.NewReader(os.Stdin), idl.Step_initialize)
+				return clistep.Prompt(bufio.NewReader(os.Stdin), idl.Step_initialize)
 			})
 
 			var client idl.CliToHubClient

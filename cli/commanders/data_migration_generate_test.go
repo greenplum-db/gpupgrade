@@ -205,7 +205,7 @@ func TestArchiveDataMigrationScriptsPrompt(t *testing.T) {
 	})
 
 	t.Run("re-prompts when user enters 'b'ad input", func(t *testing.T) {
-		d := commanders.BufferStandardDescriptors(t)
+		d := BufferStandardDescriptors(t)
 
 		reader := bufio.NewReader(strings.NewReader("b\nq\n"))
 		err := commanders.ArchiveDataMigrationScriptsPrompt(false, reader, fsys, "")
@@ -258,7 +258,7 @@ func TestGenerateScriptsPerDatabase(t *testing.T) {
 		expectPgDatabaseToReturn(mock).WillReturnRows(sqlmock.NewRows([]string{"datname", "quoted_datname"}).AddRow("postgres", "postgres"))
 
 		numCalls := 0
-		commanders.SetPsqlCommand(exectest.NewCommandWithVerifier(commanders.Success, func(utility string, args ...string) {
+		commanders.SetPsqlCommand(exectest.NewCommandWithVerifier(Success, func(utility string, args ...string) {
 			numCalls++
 
 			expectedUtility := "/usr/local/gpdb5/bin/psql"
@@ -283,7 +283,7 @@ func TestGenerateScriptsPerDatabase(t *testing.T) {
 		}))
 		defer commanders.ResetPsqlCommand()
 
-		commanders.SetPsqlFileCommand(exectest.NewCommand(commanders.Success))
+		commanders.SetPsqlFileCommand(exectest.NewCommand(Success))
 		defer commanders.ResetPsqlFileCommand()
 
 		utils.System.DirFS = func(dir string) fs.FS {
@@ -337,7 +337,7 @@ func TestGenerateScriptsPerDatabase(t *testing.T) {
 		}
 		defer utils.ResetSystemFunctions()
 
-		commanders.SetPsqlCommand(exectest.NewCommand(commanders.FailedMain))
+		commanders.SetPsqlCommand(exectest.NewCommand(FailedMain))
 		defer commanders.ResetPsqlCommand()
 
 		err = commanders.GenerateDataMigrationScripts(false, "", 0, "", "", fstest.MapFS{})
@@ -371,10 +371,10 @@ func TestGenerateScriptsPerDatabase(t *testing.T) {
 		}
 		defer utils.ResetSystemFunctions()
 
-		commanders.SetPsqlCommand(exectest.NewCommand(commanders.Success))
+		commanders.SetPsqlCommand(exectest.NewCommand(Success))
 		defer commanders.ResetPsqlCommand()
 
-		commanders.SetPsqlFileCommand(exectest.NewCommand(commanders.FailedMain))
+		commanders.SetPsqlFileCommand(exectest.NewCommand(FailedMain))
 		defer commanders.ResetPsqlFileCommand()
 
 		err = commanders.GenerateDataMigrationScripts(false, "", 0, "", "", fstest.MapFS{})
@@ -408,10 +408,10 @@ func TestGenerateScriptsPerDatabase(t *testing.T) {
 		}
 		defer utils.ResetSystemFunctions()
 
-		commanders.SetPsqlCommand(exectest.NewCommand(commanders.Success))
+		commanders.SetPsqlCommand(exectest.NewCommand(Success))
 		defer commanders.ResetPsqlCommand()
 
-		commanders.SetPsqlFileCommand(exectest.NewCommand(commanders.Success))
+		commanders.SetPsqlFileCommand(exectest.NewCommand(Success))
 		defer commanders.ResetPsqlFileCommand()
 
 		err = commanders.GenerateDataMigrationScripts(false, "", 0, "", "", fstest.MapFS{})
@@ -472,7 +472,7 @@ func TestGenerateScriptsPerPhase(t *testing.T) {
 	})
 
 	t.Run("only generates one global script rather than multiple scripts per database", func(t *testing.T) {
-		commanders.SetPsqlFileCommand(exectest.NewCommand(commanders.SuccessScript))
+		commanders.SetPsqlFileCommand(exectest.NewCommand(SuccessScript))
 		defer commanders.ResetPsqlFileCommand()
 
 		utils.System.MkdirAll = func(path string, perm os.FileMode) error {
@@ -509,7 +509,7 @@ func TestGenerateScriptsPerPhase(t *testing.T) {
 	})
 
 	t.Run("errors when failing to execute SQL script", func(t *testing.T) {
-		commanders.SetPsqlFileCommand(exectest.NewCommand(commanders.FailedMain))
+		commanders.SetPsqlFileCommand(exectest.NewCommand(FailedMain))
 		defer commanders.ResetPsqlFileCommand()
 
 		err := commanders.GenerateScriptsPerPhase(phase, database, gphome, port, seedDir, fsys, outputDir, bar)
@@ -520,7 +520,7 @@ func TestGenerateScriptsPerPhase(t *testing.T) {
 	})
 
 	t.Run("errors when failing to execute .sh bash script", func(t *testing.T) {
-		commanders.SetBashCommand(exectest.NewCommand(commanders.FailedMain))
+		commanders.SetBashCommand(exectest.NewCommand(FailedMain))
 		defer commanders.ResetBashCommand()
 
 		fsys := fstest.MapFS{
@@ -537,7 +537,7 @@ func TestGenerateScriptsPerPhase(t *testing.T) {
 	})
 
 	t.Run("errors when failing to execute .bash bash script", func(t *testing.T) {
-		commanders.SetBashCommand(exectest.NewCommand(commanders.FailedMain))
+		commanders.SetBashCommand(exectest.NewCommand(FailedMain))
 		defer commanders.ResetBashCommand()
 
 		fsys := fstest.MapFS{
@@ -567,7 +567,7 @@ func TestGenerateScriptsPerPhase(t *testing.T) {
 	})
 
 	t.Run("executes sql scripts with correct arguments for the correct database", func(t *testing.T) {
-		commanders.SetPsqlFileCommand(exectest.NewCommandWithVerifier(commanders.SuccessScript, func(utility string, args ...string) {
+		commanders.SetPsqlFileCommand(exectest.NewCommandWithVerifier(SuccessScript, func(utility string, args ...string) {
 			expectedUtility := "/usr/local/gpdb5/bin/psql"
 			if utility != expectedUtility {
 				t.Errorf("got %q want %q", utility, expectedUtility)
@@ -641,7 +641,7 @@ func TestGenerateScriptsPerPhase(t *testing.T) {
 	})
 
 	t.Run("executes bash scripts for the correct database", func(t *testing.T) {
-		commanders.SetBashCommand(exectest.NewCommandWithVerifier(commanders.SuccessScript, func(utility string, args ...string) {
+		commanders.SetBashCommand(exectest.NewCommandWithVerifier(SuccessScript, func(utility string, args ...string) {
 			expectedUtility := filepath.Join(seedDir, idl.Step_stats.String(), "cluster_and_database_stats", "generate_database_stats.sh")
 			if utility != expectedUtility {
 				t.Errorf("got %q want %q", utility, expectedUtility)
@@ -696,7 +696,7 @@ func TestGenerateScriptsPerPhase(t *testing.T) {
 	})
 
 	t.Run("correctly adds the header file", func(t *testing.T) {
-		commanders.SetPsqlFileCommand(exectest.NewCommand(commanders.SuccessScript))
+		commanders.SetPsqlFileCommand(exectest.NewCommand(SuccessScript))
 		defer commanders.ResetPsqlFileCommand()
 
 		utils.System.MkdirAll = func(path string, perm os.FileMode) error {
@@ -734,7 +734,7 @@ func TestGenerateScriptsPerPhase(t *testing.T) {
 	})
 
 	t.Run("errors when failing to read header", func(t *testing.T) {
-		commanders.SetPsqlFileCommand(exectest.NewCommand(commanders.SuccessScript))
+		commanders.SetPsqlFileCommand(exectest.NewCommand(SuccessScript))
 		defer commanders.ResetPsqlFileCommand()
 
 		expected := os.ErrPermission
@@ -750,7 +750,7 @@ func TestGenerateScriptsPerPhase(t *testing.T) {
 	})
 
 	t.Run("errors when failing to make script directory", func(t *testing.T) {
-		commanders.SetPsqlFileCommand(exectest.NewCommand(commanders.SuccessScript))
+		commanders.SetPsqlFileCommand(exectest.NewCommand(SuccessScript))
 		defer commanders.ResetPsqlFileCommand()
 
 		expected := os.ErrPermission
@@ -771,7 +771,7 @@ func TestGenerateScriptsPerPhase(t *testing.T) {
 	})
 
 	t.Run("errors when failing to write generated sql script", func(t *testing.T) {
-		commanders.SetPsqlFileCommand(exectest.NewCommand(commanders.SuccessScript))
+		commanders.SetPsqlFileCommand(exectest.NewCommand(SuccessScript))
 		defer commanders.ResetPsqlFileCommand()
 
 		utils.System.MkdirAll = func(path string, perm os.FileMode) error {

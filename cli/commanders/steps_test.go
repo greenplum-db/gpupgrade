@@ -56,7 +56,7 @@ func TestUILoop(t *testing.T) {
 			}}},
 		}
 
-		d := commanders.BufferStandardDescriptors(t)
+		d := BufferStandardDescriptors(t)
 		defer d.Close()
 
 		_, err := commanders.UILoop(&msgs, true)
@@ -154,7 +154,7 @@ func TestUILoop(t *testing.T) {
 		expected += commanders.FormatStatus(msgs[3].GetStatus()) + "\n"
 		expected += commanders.FormatStatus(msgs[4].GetStatus()) + "\n"
 
-		d := commanders.BufferStandardDescriptors(t)
+		d := BufferStandardDescriptors(t)
 		defer d.Close()
 
 		_, err := commanders.UILoop(&msgs, true)
@@ -203,7 +203,7 @@ func TestUILoop(t *testing.T) {
 		expected += commanders.FormatStatus(msgs[2].GetStatus()) + "\n"
 		expected += commanders.FormatStatus(msgs[4].GetStatus()) + "\n"
 
-		d := commanders.BufferStandardDescriptors(t)
+		d := BufferStandardDescriptors(t)
 		defer d.Close()
 
 		_, err := commanders.UILoop(&msgs, false)

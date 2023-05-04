@@ -12,6 +12,7 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
+	"github.com/greenplum-db/gpupgrade/cli/clistep"
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/config"
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -56,7 +57,7 @@ func execute() *cobra.Command {
 				cases.Title(language.English).String(idl.Step_execute.String()),
 				executeSubsteps, logdir)
 
-			st, err := commanders.Begin(idl.Step_execute, verbose, nonInteractive, confirmationText)
+			st, err := clistep.Begin(idl.Step_execute, verbose, nonInteractive, confirmationText)
 			if err != nil {
 				if errors.Is(err, step.Quit) {
 					// If user cancels don't return an error to main to avoid

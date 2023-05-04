@@ -1,7 +1,7 @@
 // Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
-package commanders_test
+package clistep_test
 
 import (
 	"io"
@@ -21,24 +21,10 @@ func FailedMain() {
 	os.Exit(1)
 }
 
-const SuccessScriptOutput = "successfully executed data migration SQL script"
-
-func SuccessScript() {
-	os.Stdout.WriteString(SuccessScriptOutput)
-	os.Exit(0)
-}
-
-func FailedSqlAlreadyExists() {
-	os.Stdout.WriteString("ERROR:  language \"plpythonu\" already exists\n")
-	os.Exit(1)
-}
-
 func init() {
 	exectest.RegisterMains(
 		Success,
 		FailedMain,
-		SuccessScript,
-		FailedSqlAlreadyExists,
 	)
 }
 
