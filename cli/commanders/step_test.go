@@ -158,6 +158,24 @@ func TestSubstep(t *testing.T) {
 		}
 	})
 
+	t.Run("AlwaysRun re-runs a completed substep", func(t *testing.T) {
+		substepStore := &MockSubstepStore{Status: idl.Status_complete}
+		st, err := commanders.NewStep(idl.Step_initialize, "initialize", &MockStepStore{}, substepStore, &step.BufferedStreams{}, false)
+		if err != nil {
+			t.Errorf("unexpected err %#v", err)
+		}
+
+		var called bool
+		st.AlwaysRun(idl.Substep_check_disk_space, func(streams step.OutStreams) error {
+			called = true
+			return nil
+		})
+
+		if !called {
+			t.Error("expected substep to be called")
+		}
+	})
+
 	t.Run("when a CLI substep is quit by the user its status is printed without the generic next action error", func(t *testing.T) {
 		d := commanders.BufferStandardDescriptors(t)
 

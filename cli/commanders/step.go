@@ -118,20 +118,24 @@ func (s *Step) RunHubSubstep(f func(streams step.OutStreams) error) {
 	}
 }
 
+func (s *Step) AlwaysRun(substep idl.Substep, f func(streams step.OutStreams) error) {
+	s.run(substep, f, true)
+}
+
 func (s *Step) RunConditionally(substep idl.Substep, shouldRun bool, f func(streams step.OutStreams) error) {
 	if !shouldRun {
 		log.Printf("skipping %s", substep)
 		return
 	}
 
-	s.run(substep, f)
+	s.run(substep, f, false)
 }
 
 func (s *Step) Run(substep idl.Substep, f func(streams step.OutStreams) error) {
-	s.run(substep, f)
+	s.run(substep, f, false)
 }
 
-func (s *Step) run(substep idl.Substep, f func(streams step.OutStreams) error) {
+func (s *Step) run(substep idl.Substep, f func(streams step.OutStreams) error, alwaysRun bool) {
 	var err error
 	defer func() {
 		if err != nil {
@@ -157,8 +161,8 @@ func (s *Step) run(substep idl.Substep, f func(streams step.OutStreams) error) {
 		}
 	}
 
-	// Only re-run substeps that are failed or pending.
-	if status == idl.Status_complete {
+	// Only re-run substeps that are failed or pending. Do not skip substeps that must always be run.
+	if status == idl.Status_complete && !alwaysRun {
 		if pErr := s.printStatus(substep, idl.Status_skipped); pErr != nil {
 			err = errorlist.Append(err, pErr)
 			return
