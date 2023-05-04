@@ -159,6 +159,8 @@ func (s *Step) run(substep idl.Substep, f func(streams step.OutStreams) error, a
 			err = errorlist.Append(err, pErr)
 			return
 		}
+
+		return
 	}
 
 	// Only re-run substeps that are failed or pending. Do not skip substeps that must always be run.

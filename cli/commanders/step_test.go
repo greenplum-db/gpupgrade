@@ -176,6 +176,24 @@ func TestSubstep(t *testing.T) {
 		}
 	})
 
+	t.Run("errors when a substep was previously running", func(t *testing.T) {
+		substepStore := &MockSubstepStore{Status: idl.Status_running}
+		st, err := commanders.NewStep(idl.Step_initialize, "initialize", &MockStepStore{}, substepStore, &step.BufferedStreams{}, false)
+		if err != nil {
+			t.Errorf("unexpected err %#v", err)
+		}
+
+		st.Run(idl.Substep_check_disk_space, func(streams step.OutStreams) error {
+			return nil
+		})
+
+		err = st.Complete("")
+		expected := fmt.Sprintf("Found previous substep %s was running. Manual intervention needed to cleanup.", idl.Substep_check_disk_space)
+		if !strings.Contains(err.Error(), expected) {
+			t.Errorf("expected err %#v to contain %q", err, expected)
+		}
+	})
+
 	t.Run("when a CLI substep is quit by the user its status is printed without the generic next action error", func(t *testing.T) {
 		d := commanders.BufferStandardDescriptors(t)
 
