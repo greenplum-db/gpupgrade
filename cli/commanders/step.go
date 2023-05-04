@@ -157,6 +157,16 @@ func (s *Step) run(substep idl.Substep, f func(streams step.OutStreams) error) {
 		}
 	}
 
+	// Only re-run substeps that are failed or pending.
+	if status == idl.Status_complete {
+		if pErr := s.printStatus(substep, idl.Status_skipped); pErr != nil {
+			err = errorlist.Append(err, pErr)
+			return
+		}
+
+		return
+	}
+
 	substepTimer := stopwatch.Start()
 	defer func() {
 		logDuration(substep.String(), s.verbose, substepTimer.Stop())
