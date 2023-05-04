@@ -42,7 +42,7 @@ type Step struct {
 	substepStore step.SubstepStore
 	streams      *step.BufferedStreams
 	verbose      bool
-	timer        *stopwatch.Stopwatch
+	stepTimer    *stopwatch.Stopwatch
 	lastSubstep  idl.Substep
 	err          error
 }
@@ -55,7 +55,7 @@ func NewStep(currentStep idl.Step, stepName string, stepStore StepStore, substep
 		substepStore: substepStore,
 		streams:      streams,
 		verbose:      verbose,
-		timer:        stopwatch.Start(),
+		stepTimer:    stopwatch.Start(),
 	}, nil
 }
 
@@ -231,7 +231,7 @@ func (s *Step) DisableStore() {
 }
 
 func (s *Step) Complete(completedText string) error {
-	logDuration(s.stepName, s.verbose, s.timer.Stop())
+	logDuration(s.stepName, s.verbose, s.stepTimer.Stop())
 
 	status := idl.Status_complete
 	if s.Err() != nil {
