@@ -68,7 +68,11 @@ func finalize() *cobra.Command {
 				return stopHubAndAgents()
 			})
 
-			st.RunConditionally(idl.Substep_execute_finalize_data_migration_scripts, !nonInteractive, func(streams step.OutStreams) error {
+			st.AlwaysRun(idl.Substep_execute_finalize_data_migration_scripts, func(streams step.OutStreams) error {
+				if nonInteractive {
+					return nil
+				}
+
 				fmt.Println()
 				fmt.Println()
 
