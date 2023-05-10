@@ -1,0 +1,43 @@
+{{range .UpgradeJobs}}
+  {{- if .FunctionalTest}}
+  - name: teardown-cluster
+    plan:
+      - in_parallel:
+          - get: dummy_resource
+            passed: [ validate ]
+            trigger: true
+          - get: saved_cluster_env_files
+          - get: ccp_src
+          - get: terraform
+            passed: [ generate-cluster ]
+          - get: terraform.d
+            params:
+              unpack: true
+    ensure:
+      do:
+        - <<: *ccp_destroy
+    on_failure:
+      do:
+        - <<: *slack_alert
+  {{- end }}
+{{end -}}
+
+{{range .UpgradeJobs}}
+  {{- if .FunctionalTest}}
+  - name: manually-destroy-cluster
+    plan:
+      - in_parallel:
+          - get: ccp_src
+          - get: terraform
+            passed: [ generate-cluster ]
+          - get: terraform.d
+            params:
+              unpack: true
+    ensure:
+      do:
+        - <<: *ccp_destroy
+    on_failure:
+      do:
+        - <<: *slack_alert
+  {{- end }}
+{{end -}}

@@ -39,6 +39,7 @@ type UpgradeJob struct {
 	Mode           Mode
 	RetailDemo     bool
 	TestExtensions bool
+	FunctionalTest bool
 	OSVersion      string
 }
 
@@ -58,6 +59,8 @@ func (j *UpgradeJob) Suffix() string {
 		suffix = "-retail-demo"
 	case j.TestExtensions:
 		suffix = "-extension"
+	case j.FunctionalTest:
+		suffix = "-functional-test"
 	}
 
 	return suffix

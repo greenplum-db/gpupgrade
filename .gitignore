@@ -6,3 +6,4 @@
 gpupgrade-*.tar.gz
 CHECKSUM
 /ci/main/generated/
+/ci/functional/generated/

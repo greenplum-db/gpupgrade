@@ -1,0 +1,108 @@
+{{range .UpgradeJobs}}
+  {{- if .FunctionalTest}}
+  - name: load-schema
+    plan:
+      - in_parallel:
+          - get: dummy_resource
+            passed: [ generate-cluster ]
+            trigger: true
+          - get: gpupgrade_src
+          - get: saved_cluster_env_files
+          - get: schema_dump
+      - task: load_schema
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+              tag: latest
+          inputs:
+            - name: gpupgrade_src
+            - name: saved_cluster_env_files
+            - name: schema_dump
+          run:
+            path: bash
+            args:
+              - -c
+              - |
+                set -eux -o pipefail
+
+                source gpupgrade_src/ci/main/scripts/environment.bash
+
+                echo "Dropping unsupported objects and Adding necessary objects..."
+                ssh -n cdw "
+                    set -eux -o pipefail
+
+                    source /usr/local/greenplum-db-source/greenplum_path.sh
+
+                    psql -v ON_ERROR_STOP=1 -d postgres <<SQL_EOF
+                        DROP VIEW IF EXISTS problematic_view_or_table;
+                        -- CREATE ROLE necessary_user_role;
+                SQL_EOF
+                "
+
+                scp schema_dump/*.sql.xz gpadmin@cdw:/tmp/dump.sql.xz
+
+                echo "Loading the SQL dump into the source cluster..."
+                time ssh -n gpadmin@cdw "
+                    set -eux -o pipefail
+
+                    source /usr/local/greenplum-db-source/greenplum_path.sh
+                    export PGOPTIONS='--client-min-messages=warning'
+                    # This is failing due to a number of errors. Disabling ON_ERROR_STOP until this is fixed.
+                    unxz --threads $(nproc) /tmp/dump.sql.xz
+                    PGOPTIONS='--client-min-messages=warning' psql -v ON_ERROR_STOP=0 --quiet --dbname postgres -f /tmp/dump.sql
+                "
+    on_failure:
+      do:
+        - <<: *slack_alert
+  {{- end }}
+{{end -}}
+
+{{range .UpgradeJobs}}
+  {{- if .FunctionalTest}}
+  - name: data-migration-scripts
+    plan:
+      - in_parallel:
+          - get: dummy_resource
+            passed: [ load-schema ]
+            trigger: true
+          - get: gpupgrade_src
+          - get: saved_cluster_env_files
+      - task: generate_and_apply_data_migration_scripts
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+              tag: latest
+          inputs:
+            - name: gpupgrade_src
+            - name: saved_cluster_env_files
+          run:
+            path: bash
+            args:
+              - -c
+              - |
+                set -eux -o pipefail
+
+                source gpupgrade_src/ci/main/scripts/environment.bash
+
+                echo "Running the data migration scripts on the source cluster..."
+                time ssh -n cdw "
+                    set -eux -o pipefail
+
+                    gpupgrade generate --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --output-dir /home/gpadmin/gpupgrade
+                    gpupgrade apply    --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --input-dir /home/gpadmin/gpupgrade --phase stats
+                    gpupgrade apply    --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --input-dir /home/gpadmin/gpupgrade --phase initialize
+
+                    echo 'Outputting stats...'
+                    cat /home/gpadmin/gpAdminLogs/gpupgrade/apply_stats.log
+                "
+    on_failure:
+      do:
+        - <<: *slack_alert
+  {{- end }}
+{{end -}}

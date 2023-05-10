@@ -146,6 +146,7 @@ func init() {
 		{NoStandby: true},
 		{RetailDemo: true},
 		{TestExtensions: true},
+		{FunctionalTest: true},
 	}
 
 	// SpecialJobs cases for 5->6. (These are special-cased to avoid exploding the

@@ -1,0 +1,189 @@
+{{range .UpgradeJobs}}
+  {{- if .FunctionalTest}}
+  - name: initialize
+    plan:
+      - in_parallel:
+          - get: dummy_resource
+            passed: [ data-migration-scripts ]
+            trigger: true
+          - get: gpupgrade_src
+          - get: saved_cluster_env_files
+      - task: run_initialize
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+              tag: latest
+          inputs:
+            - name: gpupgrade_src
+            - name: saved_cluster_env_files
+          run:
+            path: bash
+            args:
+              - -c
+              - |
+                set -eux -o pipefail
+
+                source gpupgrade_src/ci/main/scripts/environment.bash
+                source gpupgrade_src/ci/main/scripts/ci-helpers.bash
+
+                MODE=${MODE:-"copy"}
+
+                echo "Dropping unsupported objects and Adding necessary objects..."
+                ssh -n cdw "
+                    set -eux -o pipefail
+
+                    source /usr/local/greenplum-db-source/greenplum_path.sh
+
+                    psql -v ON_ERROR_STOP=1 -d postgres <<SQL_EOF
+                        DROP VIEW IF EXISTS problematic_view_or_table;
+                        -- CREATE ROLE necessary_user_role;
+                SQL_EOF
+                "
+
+                echo "Running gpupgrade initialize..."
+                time ssh -n cdw "
+                    set -eux -o pipefail
+
+                    gpupgrade initialize \
+                              --non-interactive \
+                              --verbose \
+                              --target-gphome $GPHOME_TARGET \
+                              --source-gphome $GPHOME_SOURCE \
+                              --source-master-port $PGPORT \
+                              --mode $MODE \
+                              --temp-port-range 6020-6040 \
+                              --disk-free-ratio 0
+                "
+    on_failure:
+      do:
+        - <<: *slack_alert
+  {{- end }}
+{{end -}}
+
+{{range .UpgradeJobs}}
+  {{- if .FunctionalTest}}
+  - name: upgrade
+    plan:
+      - in_parallel:
+          - get: dummy_resource
+            passed: [ initialize ]
+            trigger: true
+          - get: gpupgrade_src
+          - get: saved_cluster_env_files
+      - task: upgrade_cluster
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+              tag: latest
+          inputs:
+            - name: gpupgrade_src
+            - name: saved_cluster_env_files
+          run:
+            path: bash
+            args:
+              - -c
+              - |
+                set -eux -o pipefail
+
+                source gpupgrade_src/ci/main/scripts/environment.bash
+                source gpupgrade_src/ci/main/scripts/ci-helpers.bash
+
+                MODE=${MODE:-"copy"}
+
+                echo "Performing gpupgrade execute and finalize..."
+                time ssh -n cdw "
+                    set -eux -o pipefail
+
+                    gpupgrade execute  --non-interactive --verbose
+                    gpupgrade finalize --non-interactive --verbose
+
+                    gpupgrade apply --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --input-dir /home/gpadmin/gpupgrade --phase finalize
+                "
+                echo "Upgrade successful..."
+        params:
+          FILTER_DIFF: 0
+          MODE: {{ .Mode }}
+    on_failure:
+      do:
+        - <<: *slack_alert
+  {{- end }}
+{{end -}}
+
+{{range .UpgradeJobs}}
+  {{- if .FunctionalTest}}
+  - name: validate
+    plan:
+      - in_parallel:
+          - get: dummy_resource
+            passed: [ upgrade ]
+            trigger: true
+          - get: gpupgrade_src
+          - get: saved_cluster_env_files
+      - task: run_gpcheckcat
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+              tag: latest
+          inputs:
+            - name: gpupgrade_src
+            - name: saved_cluster_env_files
+          run:
+            path: bash
+            args:
+              - -c
+              - |
+                set -eux -o pipefail
+
+                source gpupgrade_src/ci/main/scripts/environment.bash
+
+                echo "Running gpcheckcat..."
+                time ssh -n cdw "
+                    set -eux -o pipefail
+
+                    source /usr/local/greenplum-db-target/greenplum_path.sh
+                    export MASTER_DATA_DIRECTORY=$MASTER_DATA_DIRECTORY
+                    export PGPORT=$PGPORT
+
+                    gpcheckcat -A
+                "
+      {{- if not .NoStandby -}}
+      {{- if not .PrimariesOnly }}
+      - task: validate_mirrors_and_standby
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+              tag: latest
+          inputs:
+            - name: gpupgrade_src
+            - name: saved_cluster_env_files
+          run:
+            path: bash
+            args:
+              - -c
+              - |
+                set -eux -o pipefail
+
+                source gpupgrade_src/ci/main/scripts/environment.bash
+
+                echo 'Doing failover tests of mirrors and standby...'
+                source gpupgrade_src/test/acceptance/helpers/finalize_checks.bash
+                validate_mirrors_and_standby /usr/local/greenplum-db-target cdw 5432
+      {{- end -}}
+      {{- end }}
+    on_failure:
+      do:
+        - <<: *slack_alert
+  {{- end }}
+{{end -}}

@@ -1,0 +1,135 @@
+jobs:
+{{range .UpgradeJobs}}
+  {{- if .FunctionalTest}}
+  - name: generate-cluster
+    plan:
+      - in_parallel:
+          - get: gpupgrade_src
+          - get: enterprise_rpm
+            resource: gpupgrade_rpm
+          - get: rpm_gpdb_source
+            resource: gpdb{{.Source}}_{{.OSVersion}}_rpm
+          {{- if ne .Source .Target }}
+          - get: rpm_gpdb_target
+            resource: gpdb{{.Target}}_{{.OSVersion}}_rpm
+          {{- end }}
+          - get: ccp_src
+          - get: terraform.d
+            params:
+              unpack: true
+      - put: terraform
+        params:
+          <<: *ccp_default_params
+          vars:
+            {{- if .PrimariesOnly}}
+            mirrors: false
+            {{- else if not .NoStandby}}
+            standby_coordinator: true
+            {{- end}}
+            # Increase the instance type, disk_size from the defaults.
+            instance_type: n1-standard-16
+            disk_type: pd-ssd
+            disk_size: 200
+            number_of_nodes: 4
+            PLATFORM: {{.OSVersion}}
+            # Increase reap time to 7 days to prevent the cluster from being
+            # removed during very long-running tests. See code snippet where
+            # creation_timestamp will be used plus reap_mins to destroy cluster.
+            # https://github.com/pivotal/gp-concourse-cluster-provisioner/blob/6fd2935bcfbe529854b83ecccad3cdba3c56ae66/utilities/ClusterReaper/ccp-reaper.rb#L150-L152
+            ccp_reap_minutes: 10080
+      - task: gen_source_cluster
+        file: ccp_src/ci/tasks/gen_cluster.yml
+        params:
+          <<: *ccp_gen_cluster_default_params
+          PLATFORM: {{.OSVersion}}
+          GPDB_RPM: true
+        input_mapping:
+          gpdb_rpm: rpm_gpdb_source
+      - task: gpinitsystem_source_cluster
+        file: ccp_src/ci/tasks/gpinitsystem.yml
+      - task: prepare_installation
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: registry.access.redhat.com/ubi8/ubi
+              tag: latest
+          inputs:
+            - name: gpupgrade_src
+            - name: cluster_env_files
+            - name: enterprise_rpm
+            {{- if ne .Source .Target }}
+            - name: rpm_gpdb_target
+            {{- end }}
+          run:
+            path: gpupgrade_src/ci/main/scripts/prepare-installation.bash
+            args:
+              - greenplum-db-{{majorVersion .Source}}
+              - greenplum-db-{{majorVersion .Target}}
+      - task: save_cluster_env_files
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+              tag: latest
+          inputs:
+            - name: gpupgrade_src
+            - name: ccp_src
+            - name: cluster_env_files
+          outputs:
+            - name: tared_cluster_env_files
+          run:
+            path: bash
+            args:
+              - -c
+              - |
+                set -eux -o pipefail
+
+                # Make cluster_env_files.tar.gz filename unique with git branch
+                # name to avoid collisions when multiple pipelines are run.
+                # Since branch may be detached from HEAD use this method to
+                # easily find the actual branch name.
+                BRANCH=$(cat gpupgrade_src/.git/config |  grep branch | sed -e 's@.*"\(.*\)".*@\1@')
+                tar -czvf cluster_env_files_${BRANCH}.tar.gz cluster_env_files/
+                mv cluster_env_files*.tar.gz tared_cluster_env_files/
+      - put: saved_cluster_env_files
+        params:
+          file: tared_cluster_env_files/*.tar.gz
+      - task: create_dummy_resource
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+              tag: latest
+          inputs:
+            - name: gpupgrade_src
+          outputs:
+            - name: dummy_resource_file
+          run:
+            path: bash
+            args:
+              - -c
+              - |
+                set -eux -o pipefail
+
+                # Make the dummy resource filename unique with git branch
+                # name to avoid collisions when multiple pipelines are run.
+                # Since branch may be detached from HEAD use this method to
+                # easily find the actual branch name.
+                BRANCH=$(cat gpupgrade_src/.git/config |  grep branch | sed -e 's@.*"\(.*\)".*@\1@')
+                touch dummy_resource_file/dummy_resource_${BRANCH}.txt
+      - put: dummy_resource
+        params:
+          file: dummy_resource_file/dummy_resource*.txt
+    # Purposely leave the CCP cluster up and running...
+    on_failure:
+      do:
+        - <<: *ccp_destroy
+        - <<: *slack_alert
+  {{- end }}
+{{end -}}

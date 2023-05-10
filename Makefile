@@ -189,18 +189,18 @@ FLY_TARGET ?= cm
 # environment variable JOB_TYPE is used to determine whether a dev or prod
 # pipeline is generated. It is used when go generate runs our yaml parser.
 ifeq ($(FLY_TARGET),prod)
-pipeline: export JOB_TYPE=prod
+pipeline functional-pipeline: export JOB_TYPE=prod
 else
-pipeline: export JOB_TYPE=dev
+pipeline functional-pipeline: export JOB_TYPE=dev
 endif
 
-.PHONY: pipeline expose-pipeline
-pipeline: export 5X_GIT_USER=${5X_GIT_USER:-}
-pipeline: export 5X_GIT_BRANCH=${5X_GIT_BRANCH:-}
-pipeline: export 6X_GIT_USER=${6X_GIT_USER:-}
-pipeline: export 6X_GIT_BRANCH=${6X_GIT_BRANCH:-}
-pipeline: export 7X_GIT_USER=${7X_GIT_USER:-}
-pipeline: export 7X_GIT_BRANCH=${7X_GIT_BRANCH:-}
+.PHONY: pipeline functional-pipeline expose-pipeline
+pipeline functional-pipeline: export 5X_GIT_USER=${5X_GIT_USER:-}
+pipeline functional-pipeline: export 5X_GIT_BRANCH=${5X_GIT_BRANCH:-}
+pipeline functional-pipeline: export 6X_GIT_USER=${6X_GIT_USER:-}
+pipeline functional-pipeline: export 6X_GIT_BRANCH=${6X_GIT_BRANCH:-}
+pipeline functional-pipeline: export 7X_GIT_USER=${7X_GIT_USER:-}
+pipeline functional-pipeline: export 7X_GIT_BRANCH=${7X_GIT_BRANCH:-}
 pipeline:
 	mkdir -p ci/main/generated
 	cat ci/main/pipeline/1_resources_anchors_groups.yml \
@@ -215,6 +215,21 @@ pipeline:
 	#NOTE-- such as https://github.com/greenplum-db/gpupgrade.git"
 	fly -t $(FLY_TARGET) set-pipeline -p $(PIPELINE_NAME) \
 		-c ci/main/generated/pipeline.yml \
+		-v gpupgrade-git-remote=$(GIT_URI) \
+		-v gpupgrade-git-branch=$(BRANCH)
+
+functional-pipeline:
+	mkdir -p ci/functional/generated
+	cat ci/functional/pipeline/1_resources_anchors_groups.yml \
+		ci/functional/pipeline/2_generate_cluster.yml \
+		ci/functional/pipeline/3_load_schema_data_migration_scripts.yml \
+		ci/functional/pipeline/4_initialize_upgrade_cluster_validate.yml \
+		ci/functional/pipeline/5_teardown_cluster.yml > ci/functional/generated/template.yml
+	go generate ./ci/functional
+	#NOTE-- make sure your gpupgrade-git-remote uses an https style git"
+	#NOTE-- such as https://github.com/greenplum-db/gpupgrade.git"
+	fly -t $(FLY_TARGET) set-pipeline -p $(PIPELINE_NAME) \
+		-c ci/functional/generated/pipeline.yml \
 		-v gpupgrade-git-remote=$(GIT_URI) \
 		-v gpupgrade-git-branch=$(BRANCH)
 

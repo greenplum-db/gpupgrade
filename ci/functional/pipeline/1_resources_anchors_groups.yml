@@ -1,0 +1,181 @@
+---
+# Copyright (c) 2017-2023 VMware, Inc. or its affiliates
+# SPDX-License-Identifier: Apache-2.0
+
+resource_types:
+  - name: gcs
+    type: registry-image
+    source:
+      repository: frodenas/gcs-resource
+
+  - name: slack-notification
+    type: registry-image
+    source:
+      repository: cfcommunity/slack-notification-resource
+      tag: latest
+
+  - name: terraform
+    type: registry-image
+    source:
+      repository: ljfranklin/terraform-resource
+      tag: 0.11.14
+
+resources:
+  - name: gpupgrade_src
+    type: git
+    source:
+      uri: ((gpupgrade-git-remote))
+      branch: ((gpupgrade-git-branch))
+      fetch_tags: true
+
+  - name: schema_dump
+    type: gcs
+    source:
+      json_key: ((upgrade/cm-gcs-service-account-key))
+      bucket: gpupgrade-intermediates
+      regexp: dump/5X/(.*).sql.xz
+    # versioned_file: dump/5X/dump.sql.xz # Use versioned_file when specifying the full name otherwise Concourse won't pick it up.
+
+{{range .GPDBVersions}}
+  {{- if not (eq .OSVersion "centos6") }}
+  - name: gpdb{{.GPDBVersion}}_{{.OSVersion}}_rpm
+    type: gcs
+    source:
+      bucket: pivotal-gpdb-concourse-resources-prod
+      json_key: ((concourse-gcs-resources-service-account-key))
+      regexp: server/published/gpdb{{ majorVersion .GPDBVersion }}/greenplum-db-{{.TestRCIdentifier}}({{escapeVersion .GPDBVersion}}.*)-rhel{{.OSVersionNumber}}-x86_64.debug.rpm
+  {{- end }}
+{{end}}
+
+  - name: saved_cluster_env_files
+    type: gcs
+    source:
+      json_key: ((upgrade/cm-gcs-service-account-key))
+      bucket: gpupgrade-intermediates
+      regexp: functional-testing/cluster_env_files(.*).tar.gz
+
+  # Since we don't place a passed constraint on `gpupgrade_src` or `saved_cluster_env_files`
+  # use a `dummy_resource` to automatically trigger subsequent jobs during the
+  # upgrade workflow.
+  - name: dummy_resource
+    type: gcs
+    source:
+      json_key: ((upgrade/cm-gcs-service-account-key))
+      bucket: gpupgrade-intermediates
+      regexp: functional-testing/dummy_resource(.*).txt
+
+  - name: gpupgrade_rpm
+    type: gcs
+    source:
+      bucket: gpupgrade-artifacts-prod
+      json_key: ((upgrade/cm-gcs-service-account-key))
+      regexp: release-candidates/enterprise/gpupgrade-(.*).rpm
+
+  - name: slack-alert
+    type: slack-notification
+    source:
+      url: ((upgrade/{{.JobType}}/cm-slack-webhook-url))
+
+  - name: ccp_src
+    type: git
+    source:
+      branch: main
+      private_key: ((gp-concourse-cluster-provisioner-git-key))
+      uri: git@github.com:pivotal/gp-concourse-cluster-provisioner.git
+
+  - name: terraform
+    type: terraform
+    source:
+      env:
+        AWS_ACCESS_KEY_ID: ((tf-machine-access-key-id))
+        AWS_SECRET_ACCESS_KEY: ((tf-machine-secret-access-key))
+        GOOGLE_CREDENTIALS: ((upgrade/{{.JobType}}/google-service-account-key))
+      vars:
+        project_id: ((upgrade/{{.JobType}}/google-project-id))
+      storage:
+        access_key_id: ((tf-machine-access-key-id))
+        secret_access_key: ((tf-machine-secret-access-key))
+        region_name: us-west-2
+        # This is not parameterized, on purpose. All tfstates will go to this spot,
+        # and different teams will place there clusters' tfstate files under different paths
+        bucket: gpdb5-pipeline-dynamic-terraform
+        bucket_path: clusters-google/
+
+  - name: terraform.d
+    source:
+      access_key_id: ((aws-bucket-access-key-id))
+      secret_access_key: ((aws-bucket-secret-access-key))
+      region_name: us-west-2
+      bucket: ccp-terraform-provider-plugins
+      versioned_file: plugin-cache.tgz
+    type: s3
+
+anchors:
+  - &ccp_default_params
+    action: create
+    delete_on_failure: true
+    generate_random_name: true
+    plugin_dir: ../../terraform.d/plugin-cache/linux_amd64
+    terraform_source: ccp_src/google/
+
+  - &ccp_gen_cluster_default_params
+    AWS_ACCESS_KEY_ID: ((tf-machine-access-key-id))
+    AWS_SECRET_ACCESS_KEY: ((tf-machine-secret-access-key))
+    AWS_DEFAULT_REGION: us-west-2
+    BUCKET_PATH: clusters-google/
+    BUCKET_NAME: gpdb5-pipeline-dynamic-terraform
+    CLOUD_PROVIDER: google
+
+  - &ccp_destroy
+    put: terraform
+    params:
+      action: destroy
+      plugin_dir: ../../terraform.d/plugin-cache/linux_amd64
+      env_name_file: terraform/name
+      terraform_source: ccp_src/google/
+      vars:
+        aws_instance-node-instance_type: t2.micro #t2.micro is ignored in destroy, but aws_instance-node-instance_type is required.
+        aws_ebs_volume_type: standard
+    get_params:
+      action: destroy
+
+  - &set_failed
+    task: on_failure_set_failed
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source:
+          repository: gcr.io/data-gpdb-public-images/ccp
+      inputs:
+        - name: ccp_src
+        - name: terraform
+      run:
+        path: ccp_src/google/ccp_failed_test.sh
+      params:
+        GOOGLE_CREDENTIALS: ((upgrade/{{.JobType}}/google-service-account-key))
+        GOOGLE_PROJECT_ID: ((upgrade/{{.JobType}}/google-project-id))
+        GOOGLE_ZONE: us-central1-a
+        AWS_ACCESS_KEY_ID: ((tf-machine-access-key-id))
+        AWS_SECRET_ACCESS_KEY: ((tf-machine-secret-access-key))
+        AWS_DEFAULT_REGION: us-west-2
+        BUCKET_PATH: clusters-google/
+        BUCKET_NAME: gpdb5-pipeline-dynamic-terraform
+
+  - &slack_alert
+    put: slack-alert
+    params:
+      text: |
+        Hey team, <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|gpupgrade/$BUILD_JOB_NAME> failed.
+
+groups:
+  - name: all
+    jobs:
+      - generate-cluster
+      - load-schema
+      - initialize
+      - data-migration-scripts
+      - upgrade
+      - validate
+      - teardown-cluster
+      - manually-destroy-cluster

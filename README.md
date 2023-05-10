@@ -250,6 +250,13 @@ functional tests. These cannot be run locally.
 make pipeline
 ```
 
+#### Functional tests
+Creates a Concourse pipeline for testing metadata and _any_ other SQL dump file.
+See [ci/functional/README.md](https://github.com/greenplum-db/gpupgrade/blob/main/ci/functional/README.md) 
+for specifics. These cannot be run locally.
+```
+make functional-pipeline
+```
 
 ## Concourse Pipeline
 
