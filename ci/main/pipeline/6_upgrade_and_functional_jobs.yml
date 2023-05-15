@@ -253,9 +253,12 @@
     {{- end -}}
     {{- end }}
   ensure:
-    <<: *set_failed
+    do:
+      - <<: *set_failed
   on_success:
-    <<: *ccp_destroy
+    do:
+      - <<: *ccp_destroy
   on_failure:
-    <<: *slack_alert
+    do:
+      - <<: *slack_alert
 {{end -}}

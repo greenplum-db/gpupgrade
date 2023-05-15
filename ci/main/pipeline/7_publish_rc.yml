@@ -58,4 +58,5 @@
           params:
             file: renamed_enterprise_rpm/gpupgrade-*.rpm
   on_failure:
-    <<: *slack_alert
+    do:
+      - <<: *slack_alert

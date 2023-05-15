@@ -26,7 +26,8 @@ jobs:
           params:
             file: built_enterprise/gpupgrade-*.rpm
   on_failure:
-    <<: *slack_alert
+    do:
+      - <<: *slack_alert
 
 - name: lint
   plan:
@@ -51,4 +52,5 @@ jobs:
               cd gpupgrade_src
               make lint
   on_failure:
-    <<: *slack_alert
+    do:
+      - <<: *slack_alert

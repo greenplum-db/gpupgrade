@@ -79,9 +79,12 @@
           path: gpupgrade_src/ci/main/scripts/acceptance-multihost-tests.bash
       params:
   ensure:
-    <<: *set_failed
+    do:
+      - <<: *set_failed
   on_success:
-    <<: *ccp_destroy
+    do:
+      - <<: *ccp_destroy
   on_failure:
-    <<: *slack_alert
+    do:
+      - <<: *slack_alert
 {{end -}}

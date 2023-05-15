@@ -21,7 +21,8 @@
         run:
           path: gpupgrade_src/ci/main/scripts/unit-and-integration-tests.bash
   on_failure:
-    <<: *slack_alert
+    do:
+      - <<: *slack_alert
 
 {{range .AcceptanceJobs}}
 - name: {{.Name}}
@@ -58,5 +59,6 @@
         SOURCE_PACKAGE: greenplum-db-{{.Source}}
         TARGET_PACKAGE: greenplum-db-{{.Target}}
   on_failure:
-    <<: *slack_alert
+    do:
+      - <<: *slack_alert
 {{end -}}

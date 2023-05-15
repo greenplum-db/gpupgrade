@@ -44,5 +44,6 @@
         SOURCE_PACKAGE: greenplum-db-{{.Source}}
         TARGET_PACKAGE: greenplum-db-{{.Target}}
   on_failure:
-    <<: *slack_alert
+    do:
+      - <<: *slack_alert
 {{end -}}

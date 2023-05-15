@@ -273,35 +273,33 @@ anchors:
       action: destroy
 
   - &set_failed
-    do:
-      - task: on_failure_set_failed
-        config:
-          platform: linux
-          image_resource:
-            type: registry-image
-            source:
-              repository: gcr.io/data-gpdb-public-images/ccp
-          inputs:
-            - name: ccp_src
-            - name: terraform
-          run:
-            path: ccp_src/google/ccp_failed_test.sh
-          params:
-            GOOGLE_CREDENTIALS: ((upgrade/{{.JobType}}/google-service-account-key))
-            GOOGLE_PROJECT_ID: ((upgrade/{{.JobType}}/google-project-id))
-            GOOGLE_ZONE: us-central1-a
-            AWS_ACCESS_KEY_ID: ((tf-machine-access-key-id))
-            AWS_SECRET_ACCESS_KEY: ((tf-machine-secret-access-key))
-            AWS_DEFAULT_REGION: us-west-2
-            BUCKET_PATH: clusters-google/
-            BUCKET_NAME: gpdb5-pipeline-dynamic-terraform
+    task: on_failure_set_failed
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source:
+          repository: gcr.io/data-gpdb-public-images/ccp
+      inputs:
+        - name: ccp_src
+        - name: terraform
+      run:
+        path: ccp_src/google/ccp_failed_test.sh
+      params:
+        GOOGLE_CREDENTIALS: ((upgrade/{{.JobType}}/google-service-account-key))
+        GOOGLE_PROJECT_ID: ((upgrade/{{.JobType}}/google-project-id))
+        GOOGLE_ZONE: us-central1-a
+        AWS_ACCESS_KEY_ID: ((tf-machine-access-key-id))
+        AWS_SECRET_ACCESS_KEY: ((tf-machine-secret-access-key))
+        AWS_DEFAULT_REGION: us-west-2
+        BUCKET_PATH: clusters-google/
+        BUCKET_NAME: gpdb5-pipeline-dynamic-terraform
 
   - &slack_alert
-    do:
-      - put: slack-alert
-        params:
-          text: |
-            Hey team, <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|gpupgrade/$BUILD_JOB_NAME> failed.
+    put: slack-alert
+    params:
+      text: |
+        Hey team, <$ATC_EXTERNAL_URL/teams/$BUILD_TEAM_NAME/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME|gpupgrade/$BUILD_JOB_NAME> failed.
 
 groups:
   - name: all
