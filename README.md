@@ -180,9 +180,11 @@ Checkout [vim-go](https://github.com/fatih/vim-go) and [go-delve](https://github
 ### Build and Test
 
 ```
-make         # builds gpupgrade binary locally
-make install # installs gpupgrade into $GOBIN
-make test    # runs all local tests
+make             # builds gpupgrade binary locally
+make depend-dev  # initial one-time directive to install developer dependencies
+make install     # installs gpupgrade into $GOBIN
+make lint        # runs linter
+make unit        # runs unit test
 ```
 
 Cross-compile with:
@@ -194,7 +196,7 @@ Cross-compile with:
 ```
 gpupgrade initialize --file ./gpupgrade_config
 OR
-gpupgrade initialize --source-gphome "$GPHOME" --target-gphome "$GPHOME" --source-master-port 6000 --mode link --disk-free-ratio 0 --parent-backup-dir /tmp/gpupgrade
+gpupgrade initialize --source-gphome "$GPHOME" --target-gphome "$GPHOME" --source-master-port 6000 --mode link --disk-free-ratio 0 --seed-dir ~/workspace/gpupgrade/data-migration-scripts
 gpupgrade execute
 gpupgrade finalize
 ```
