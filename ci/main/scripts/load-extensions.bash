@@ -83,7 +83,7 @@ SQL_EOF
     # Some of the syntax in this postgis_dump.sql file is not valid for a 5X
     # cluster due to deprication on 6X. Disabling ON_ERROR_STOP until this is
     # fixed.
-    psql -v ON_ERROR_STOP=0 postgres -f /tmp/postgis_dump.sql
+    PGOPTIONS='--client-min-messages=warning' psql -v ON_ERROR_STOP=0 --quiet postgres -f /tmp/postgis_dump.sql
 
     echo 'Installing MADlib...'
     gppkg -i /tmp/madlib_source.gppkg
@@ -213,7 +213,7 @@ SQL_EOF
 SQL_EOF
 
     echo 'Installing Fuzzy String Match...'
-    psql -v ON_ERROR_STOP=1 -d postgres -f /usr/local/greenplum-db-source/share/postgresql/contrib/fuzzystrmatch.sql
+    PGOPTIONS='--client-min-messages=warning' psql -v ON_ERROR_STOP=1 --quiet -d postgres -f /usr/local/greenplum-db-source/share/postgresql/contrib/fuzzystrmatch.sql
     psql -v ON_ERROR_STOP=1 -d postgres <<SQL_EOF
         CREATE VIEW fuzzystrmatch_test_view AS SELECT soundex('a'::text);
 SQL_EOF
@@ -221,7 +221,7 @@ SQL_EOF
     echo 'Installing citext...'
     echo 'Create a new db to avoid potential function overlaps with postgis to simplify the diff when comparing before and after upgrade.'
     createdb citext_db
-    psql -v ON_ERROR_STOP=1 -d citext_db -f /usr/local/greenplum-db-source/share/postgresql/contrib/citext.sql
+    PGOPTIONS='--client-min-messages=warning' psql -v ON_ERROR_STOP=1 --quiet -d citext_db -f /usr/local/greenplum-db-source/share/postgresql/contrib/citext.sql
     psql -v ON_ERROR_STOP=1 -d citext_db <<SQL_EOF
         CREATE TABLE citext_test_type (
             id bigint PRIMARY KEY,
