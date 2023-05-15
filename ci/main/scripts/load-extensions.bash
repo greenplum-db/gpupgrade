@@ -4,13 +4,8 @@
 
 set -eux -o pipefail
 
+source gpupgrade_src/ci/main/scripts/environment.bash
 source gpupgrade_src/ci/main/scripts/ci-helpers.bash
-
-export GPHOME_SOURCE=/usr/local/greenplum-db-source
-export GPHOME_TARGET=/usr/local/greenplum-db-target
-export MASTER_DATA_DIRECTORY=/data/gpdata/coordinator/gpseg-1
-export PGPORT=5432
-
 ./ccp_src/scripts/setup_ssh_to_cluster.sh
 
 echo "Copying extensions to the source cluster..."

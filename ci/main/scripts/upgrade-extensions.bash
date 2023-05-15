@@ -4,18 +4,13 @@
 
 set -eux -o pipefail
 
+source gpupgrade_src/ci/main/scripts/environment.bash
 source gpupgrade_src/ci/main/scripts/ci-helpers.bash
+./ccp_src/scripts/setup_ssh_to_cluster.sh
 
 MODE=${MODE:-"copy"}
 FILTER_DIFF=${FILTER_DIFF:-0}
 DIFF_FILE=${DIFF_FILE:-"icw.diff"}
-
-export GPHOME_SOURCE=/usr/local/greenplum-db-source
-export GPHOME_TARGET=/usr/local/greenplum-db-target
-export MASTER_DATA_DIRECTORY=/data/gpdata/coordinator/gpseg-1
-export PGPORT=5432
-
-./ccp_src/scripts/setup_ssh_to_cluster.sh
 
 echo "Copying extensions to the target cluster..."
 scp postgis_gppkg_target/postgis*.gppkg gpadmin@cdw:/tmp/postgis_target.gppkg

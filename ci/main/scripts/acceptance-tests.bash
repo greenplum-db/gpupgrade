@@ -8,9 +8,7 @@ set -eux -o pipefail
 # in its own isolated container with no shared state. Thus, installing the RPM
 # needs to be done in the same task/container as running the tests.
 
-export GPHOME_SOURCE=/usr/local/greenplum-db-source
-export GPHOME_TARGET=/usr/local/greenplum-db-target
-
+source gpupgrade_src/ci/main/scripts/environment.bash
 source gpupgrade_src/ci/main/scripts/ci-helpers.bash
 
 function run_migration_scripts_and_tests() {

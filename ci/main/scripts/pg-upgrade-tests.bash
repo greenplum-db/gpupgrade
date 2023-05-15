@@ -8,9 +8,7 @@ set -eux -o pipefail
 # in its own isolated container with no shared state. Thus, installing the RPM,
 # and making isolation2 needs to be done in the same task/container.
 
-export GPHOME_SOURCE=/usr/local/greenplum-db-source
-export GPHOME_TARGET=/usr/local/greenplum-db-target
-
+source gpupgrade_src/ci/main/scripts/environment.bash
 source gpupgrade_src/ci/main/scripts/ci-helpers.bash
 
 make_pg_isolation2_regress_for_the_target_GPDB_version() {

@@ -4,10 +4,7 @@
 
 set -eux -o pipefail
 
-export GPHOME_SOURCE=/usr/local/greenplum-db-source
-export GPHOME_TARGET=/usr/local/greenplum-db-target
-export PGPORT=5432
-
+source gpupgrade_src/ci/main/scripts/environment.bash
 ./ccp_src/scripts/setup_ssh_to_cluster.sh
 
 # Cache our list of hosts to loop over below.
