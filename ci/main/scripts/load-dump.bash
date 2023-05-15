@@ -19,9 +19,9 @@ time ssh -n gpadmin@cdw "
 
     source /usr/local/greenplum-db-source/greenplum_path.sh
     export PGOPTIONS='--client-min-messages=warning'
-    # This is failing due to a number of errors.
-    # Disabling ON_ERROR_STOP until this is fixed.
-    unxz < /tmp/dump.sql.xz | psql -v ON_ERROR_STOP=0 -f - postgres
+    # This is failing due to a number of errors. Disabling ON_ERROR_STOP until this is fixed.
+    unxz --threads $(nproc) /tmp/dump.sql.xz
+    PGOPTIONS='--client-min-messages=warning' psql -v ON_ERROR_STOP=0 --quiet --dbname postgres -f /tmp/dump.sql
 "
 
 echo "Running the data migration scripts and workarounds on the source cluster..."
