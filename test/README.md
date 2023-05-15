@@ -45,7 +45,7 @@ Example gen_pipeline commands:
 
 3. Create a gpupgrade test branch and push it. Next, generate a gpupgrade test pipeline that uses the GPDB RC RPMs using 
 the appropriate environment variables:
-`make 5X_GIT_USER=alice 5X_GIT_BRANCH=5X_rc 6X_GIT_USER=bob 6X_GIT_BRANCH=6X_rc set-pipeline`
+`make 5X_GIT_USER=alice 5X_GIT_BRANCH=5X_rc 6X_GIT_USER=bob 6X_GIT_BRANCH=6X_rc pipeline`
 
 *Note:* This will use the test RC RPM's for the rpm resources such as `gpdb6_centos7_rpm`. This will not use the GPDB RC 
 test branch for the src resources such as `gpdb6_src` which will continue to use 6X_STABLE. This is expected since only 

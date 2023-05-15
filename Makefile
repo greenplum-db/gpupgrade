@@ -189,19 +189,19 @@ FLY_TARGET ?= cm
 # environment variable JOB_TYPE is used to determine whether a dev or prod
 # pipeline is generated. It is used when go generate runs our yaml parser.
 ifeq ($(FLY_TARGET),prod)
-set-pipeline: export JOB_TYPE=prod
+pipeline: export JOB_TYPE=prod
 else
-set-pipeline: export JOB_TYPE=dev
+pipeline: export JOB_TYPE=dev
 endif
 
-.PHONY: set-pipeline expose-pipeline
-set-pipeline: export 5X_GIT_USER=${5X_GIT_USER:-}
-set-pipeline: export 5X_GIT_BRANCH=${5X_GIT_BRANCH:-}
-set-pipeline: export 6X_GIT_USER=${6X_GIT_USER:-}
-set-pipeline: export 6X_GIT_BRANCH=${6X_GIT_BRANCH:-}
-set-pipeline: export 7X_GIT_USER=${7X_GIT_USER:-}
-set-pipeline: export 7X_GIT_BRANCH=${7X_GIT_BRANCH:-}
-set-pipeline:
+.PHONY: pipeline expose-pipeline
+pipeline: export 5X_GIT_USER=${5X_GIT_USER:-}
+pipeline: export 5X_GIT_BRANCH=${5X_GIT_BRANCH:-}
+pipeline: export 6X_GIT_USER=${6X_GIT_USER:-}
+pipeline: export 6X_GIT_BRANCH=${6X_GIT_BRANCH:-}
+pipeline: export 7X_GIT_USER=${7X_GIT_USER:-}
+pipeline: export 7X_GIT_BRANCH=${7X_GIT_BRANCH:-}
+pipeline:
 	mkdir -p ci/main/generated
 	cat ci/main/pipeline/1_resources_anchors_groups.yml \
 		ci/main/pipeline/2_build_lint.yml \

@@ -247,14 +247,14 @@ make test --keep-going
 Creates a Concourse pipeline that includes various multi-host X-to-Y upgrade and 
 functional tests. These cannot be run locally.
 ```
-make set-pipeline
+make pipeline
 ```
 
 
 ## Concourse Pipeline
 
 To update the pipeline edit the yaml files in the `ci` directory and run 
-`make set-pipeline`. 
+`make pipeline`. 
 
 The yaml files in the `ci` directory are concatenated to 
 create `ci/generated/template.yml`. Next, `go generate ./ci` is executed which 
@@ -263,7 +263,7 @@ to create `ci/generated/pipeline.yml`. None of the generated files `template.yml
 or `pipeline.yml` are checked in.
 
 To update the production pipeline locally checkout main and be sure to pull 
-the latest code and fly with `PIPELINE_NAME=gpupgrade FLY_TARGET=prod make set-pipeline`
+the latest code and fly with `PIPELINE_NAME=gpupgrade FLY_TARGET=prod make pipeline`
 
 To make the pipeline publicly visible run `make expose-pipeline`. This will 
 allow anyone to see the pipeline and its status. However, the task details will 
