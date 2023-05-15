@@ -49,7 +49,7 @@
           - name: renamed_oss_rpm
           - name: renamed_enterprise_rpm
         run:
-          path: gpupgrade_src/ci/scripts/add-semver.bash
+          path: gpupgrade_src/ci/main/scripts/add-semver.bash
     - in_parallel:
         - put: oss_rc_rpm
           params:

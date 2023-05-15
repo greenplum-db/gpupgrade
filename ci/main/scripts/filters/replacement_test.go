@@ -6,7 +6,7 @@ package filters_test
 import (
 	"testing"
 
-	"github.com/greenplum-db/gpupgrade/ci/scripts/filters"
+	"github.com/greenplum-db/gpupgrade/ci/main/scripts/filters"
 )
 
 func TestReplacements5X_RemoveOperatorRecheck(t *testing.T) {

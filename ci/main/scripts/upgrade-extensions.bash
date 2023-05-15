@@ -4,7 +4,7 @@
 
 set -eux -o pipefail
 
-source gpupgrade_src/ci/scripts/ci-helpers.bash
+source gpupgrade_src/ci/main/scripts/ci-helpers.bash
 
 MODE=${MODE:-"copy"}
 FILTER_DIFF=${FILTER_DIFF:-0}

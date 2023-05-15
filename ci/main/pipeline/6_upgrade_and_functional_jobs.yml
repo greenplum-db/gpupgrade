@@ -106,7 +106,7 @@
           - name: rpm_gpdb_target
           {{- end }}
         run:
-          path: gpupgrade_src/ci/scripts/prepare-installation.bash
+          path: gpupgrade_src/ci/main/scripts/prepare-installation.bash
           args:
             - greenplum-db-{{majorVersion .Source}}
             - greenplum-db-{{majorVersion .Target}}
@@ -125,7 +125,7 @@
           - name: ccp_src
           - name: cluster_env_files
         run:
-          path: gpupgrade_src/ci/scripts/load-retail-data.bash
+          path: gpupgrade_src/ci/main/scripts/load-retail-data.bash
     {{- else if .TestExtensions }}
     - task: load_extensions
       config:
@@ -152,7 +152,7 @@
           - name: plcontainer_gppkg_source
           {{- end }}
         run:
-          path: gpupgrade_src/ci/scripts/load-extensions.bash
+          path: gpupgrade_src/ci/main/scripts/load-extensions.bash
     {{- else }}
     - task: load_dump
       config:
@@ -168,7 +168,7 @@
           - name: gpupgrade_src
           - name: sqldump
         run:
-          path: gpupgrade_src/ci/scripts/load-dump.bash
+          path: gpupgrade_src/ci/main/scripts/load-dump.bash
     {{- end }}
     {{- if .TestExtensions }}
     - task: upgrade_extensions
@@ -193,7 +193,7 @@
           - name: plcontainer_gppkg_target
           {{- end }}
         run:
-          path: gpupgrade_src/ci/scripts/upgrade-extensions.bash
+          path: gpupgrade_src/ci/main/scripts/upgrade-extensions.bash
       params:
         MODE: link
         FILTER_DIFF: 1
@@ -212,7 +212,7 @@
           - name: cluster_env_files
           - name: gpupgrade_src
         run:
-          path: gpupgrade_src/ci/scripts/upgrade-cluster.bash
+          path: gpupgrade_src/ci/main/scripts/upgrade-cluster.bash
       params:
         {{- if ne .Source .Target }}
         FILTER_DIFF: 1

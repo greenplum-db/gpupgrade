@@ -57,7 +57,7 @@
           - name: rpm_gpdb_target
           {{- end }}
         run:
-          path: gpupgrade_src/ci/scripts/prepare-installation.bash
+          path: gpupgrade_src/ci/main/scripts/prepare-installation.bash
           args:
             - greenplum-db-{{majorVersion .Source}}
             - greenplum-db-{{majorVersion .Target}}
@@ -76,7 +76,7 @@
           - name: enterprise_rpm
           - name: bats
         run:
-          path: gpupgrade_src/ci/scripts/acceptance-multihost-tests.bash
+          path: gpupgrade_src/ci/main/scripts/acceptance-multihost-tests.bash
       params:
   ensure:
     <<: *set_failed

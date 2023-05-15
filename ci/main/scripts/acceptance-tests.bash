@@ -11,7 +11,7 @@ set -eux -o pipefail
 export GPHOME_SOURCE=/usr/local/greenplum-db-source
 export GPHOME_TARGET=/usr/local/greenplum-db-target
 
-source gpupgrade_src/ci/scripts/ci-helpers.bash
+source gpupgrade_src/ci/main/scripts/ci-helpers.bash
 
 function run_migration_scripts_and_tests() {
     chown -R gpadmin:gpadmin gpupgrade_src

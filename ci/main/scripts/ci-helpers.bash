@@ -59,8 +59,8 @@ compare_dumps() {
     pushd gpupgrade_src
         # 5 to 6 requires some massaging of the diff due to expected changes.
         if (( $FILTER_DIFF )); then
-            go build ./ci/scripts/filters/filter
-            scp ./filter ./ci/scripts/filters/"${DIFF_FILE}" cdw:/tmp
+            go build ./ci/main/scripts/filters/filter
+            scp ./filter ./ci/main/scripts/filters/"${DIFF_FILE}" cdw:/tmp
 
             # First filter out any algorithmically-fixable differences, then
             # patch out the remaining expected diffs explicitly. We patch with

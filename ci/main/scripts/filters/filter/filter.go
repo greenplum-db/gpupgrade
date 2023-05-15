@@ -32,7 +32,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/greenplum-db/gpupgrade/ci/scripts/filters"
+	"github.com/greenplum-db/gpupgrade/ci/main/scripts/filters"
 )
 
 var (

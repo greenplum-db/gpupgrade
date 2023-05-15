@@ -11,7 +11,7 @@ set -eux -o pipefail
 export GPHOME_SOURCE=/usr/local/greenplum-db-source
 export GPHOME_TARGET=/usr/local/greenplum-db-target
 
-source gpupgrade_src/ci/scripts/ci-helpers.bash
+source gpupgrade_src/ci/main/scripts/ci-helpers.bash
 
 make_pg_isolation2_regress_for_the_target_GPDB_version() {
     # setup_configure_vars and configure expect GPHOME=/usr/local/greenplum-db-devel

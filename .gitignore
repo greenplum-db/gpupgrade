@@ -5,4 +5,4 @@
 /.vagrant
 gpupgrade-*.tar.gz
 CHECKSUM
-/ci/generated/
+/ci/main/generated/

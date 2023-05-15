@@ -17,7 +17,7 @@ jobs:
           - name: built_oss
           - name: built_enterprise
         run:
-          path: gpupgrade_src/ci/scripts/build.bash
+          path: gpupgrade_src/ci/main/scripts/build.bash
     - in_parallel:
         - put: oss_rpm
           params:
