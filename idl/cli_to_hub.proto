@@ -26,11 +26,13 @@ message InitializeRequest {
 message InitializeCreateClusterRequest {
   string dynamicLibraryPath = 1;
   bool pgUpgradeVerbose = 2;
+  bool skipPgUpgradeChecks = 3;
 }
 
 message ExecuteRequest {
   bool pgUpgradeVerbose = 1;
-  string parentBackupDirs = 2;
+  bool skipPgUpgradeChecks = 2;
+  string parentBackupDirs = 3;
 }
 
 message FinalizeRequest {}

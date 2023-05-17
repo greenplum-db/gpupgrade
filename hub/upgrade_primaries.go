@@ -15,7 +15,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 )
 
-func UpgradePrimaries(agentConns []*idl.Connection, agentHostToBackupDir backupdir.AgentHostsToBackupDir, pgUpgradeVerbose bool, source *greenplum.Cluster, intermediate *greenplum.Cluster, action idl.PgOptions_Action, mode idl.Mode) error {
+func UpgradePrimaries(agentConns []*idl.Connection, agentHostToBackupDir backupdir.AgentHostsToBackupDir, pgUpgradeVerbose bool, skipPgUpgradeChecks bool, source *greenplum.Cluster, intermediate *greenplum.Cluster, action idl.PgOptions_Action, mode idl.Mode) error {
 	request := func(conn *idl.Connection) error {
 		intermediatePrimaries := intermediate.SelectSegments(func(seg *greenplum.SegConfig) bool {
 			return seg.IsOnHost(conn.Hostname) && seg.IsPrimary() && !seg.IsCoordinator()
@@ -26,23 +26,24 @@ func UpgradePrimaries(agentConns []*idl.Connection, agentHostToBackupDir backupd
 			sourcePrimary := source.Primaries[intermediatePrimary.ContentID]
 
 			opt := &idl.PgOptions{
-				BackupDir:        agentHostToBackupDir[conn.Hostname],
-				PgUpgradeVerbose: pgUpgradeVerbose,
-				Action:           action,
-				Role:             intermediatePrimary.Role,
-				ContentID:        int32(intermediatePrimary.ContentID),
-				PgUpgradeMode:    idl.PgOptions_segment,
-				Mode:             mode,
-				TargetVersion:    intermediate.Version.String(),
-				OldBinDir:        filepath.Join(source.GPHome, "bin"),
-				OldDataDir:       sourcePrimary.DataDir,
-				OldPort:          strconv.Itoa(sourcePrimary.Port),
-				OldDBID:          strconv.Itoa(sourcePrimary.DbID),
-				NewBinDir:        filepath.Join(intermediate.GPHome, "bin"),
-				NewDataDir:       intermediatePrimary.DataDir,
-				NewPort:          strconv.Itoa(intermediatePrimary.Port),
-				NewDBID:          strconv.Itoa(intermediatePrimary.DbID),
-				Tablespaces:      source.Tablespaces[int32(intermediatePrimary.DbID)],
+				BackupDir:           agentHostToBackupDir[conn.Hostname],
+				PgUpgradeVerbose:    pgUpgradeVerbose,
+				SkipPgUpgradeChecks: skipPgUpgradeChecks,
+				Action:              action,
+				Role:                intermediatePrimary.Role,
+				ContentID:           int32(intermediatePrimary.ContentID),
+				PgUpgradeMode:       idl.PgOptions_segment,
+				Mode:                mode,
+				TargetVersion:       intermediate.Version.String(),
+				OldBinDir:           filepath.Join(source.GPHome, "bin"),
+				OldDataDir:          sourcePrimary.DataDir,
+				OldPort:             strconv.Itoa(sourcePrimary.Port),
+				OldDBID:             strconv.Itoa(sourcePrimary.DbID),
+				NewBinDir:           filepath.Join(intermediate.GPHome, "bin"),
+				NewDataDir:          intermediatePrimary.DataDir,
+				NewPort:             strconv.Itoa(intermediatePrimary.Port),
+				NewDBID:             strconv.Itoa(intermediatePrimary.DbID),
+				Tablespaces:         source.Tablespaces[int32(intermediatePrimary.DbID)],
 			}
 
 			opts = append(opts, opt)

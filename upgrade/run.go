@@ -49,6 +49,10 @@ func Run(stdout, stderr io.Writer, opts *idl.PgOptions) error {
 		args = append(args, "--verbose")
 	}
 
+	if opts.GetSkipPgUpgradeChecks() {
+		args = append(args, "--skip-checks")
+	}
+
 	if opts.GetAction() == idl.PgOptions_check {
 		args = append(args, "--check")
 		args = append(args, "--continue-check-on-fatal")

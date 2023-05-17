@@ -54,7 +54,7 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 	})
 
 	st.Run(idl.Substep_upgrade_master, func(streams step.OutStreams) error {
-		return UpgradeCoordinator(streams, s.BackupDirs.CoordinatorBackupDir, req.PgUpgradeVerbose, s.Source, s.Intermediate, idl.PgOptions_upgrade, s.Mode)
+		return UpgradeCoordinator(streams, s.BackupDirs.CoordinatorBackupDir, req.GetPgUpgradeVerbose(), req.GetSkipPgUpgradeChecks(), s.Source, s.Intermediate, idl.PgOptions_upgrade, s.Mode)
 	})
 
 	st.Run(idl.Substep_copy_master, func(streams step.OutStreams) error {
@@ -113,7 +113,7 @@ the master.`
 	})
 
 	st.Run(idl.Substep_upgrade_primaries, func(streams step.OutStreams) error {
-		return UpgradePrimaries(s.agentConns, s.BackupDirs.AgentHostsToBackupDir, req.PgUpgradeVerbose, s.Source, s.Intermediate, idl.PgOptions_upgrade, s.Mode)
+		return UpgradePrimaries(s.agentConns, s.BackupDirs.AgentHostsToBackupDir, req.GetPgUpgradeVerbose(), req.GetSkipPgUpgradeChecks(), s.Source, s.Intermediate, idl.PgOptions_upgrade, s.Mode)
 	})
 
 	st.AlwaysRun(idl.Substep_start_target_cluster, func(streams step.OutStreams) error {

@@ -44,6 +44,7 @@ func initialize() *cobra.Command {
 	var verbose bool
 	var pgUpgradeVerbose bool
 	var skipVersionCheck bool
+	var skipPgUpgradeChecks bool
 	var ports string
 	var mode string
 	var useHbaHostnames bool
@@ -288,8 +289,9 @@ func initialize() *cobra.Command {
 				}
 
 				request := &idl.InitializeCreateClusterRequest{
-					DynamicLibraryPath: dynamicLibraryPath,
-					PgUpgradeVerbose:   pgUpgradeVerbose,
+					DynamicLibraryPath:  dynamicLibraryPath,
+					PgUpgradeVerbose:    pgUpgradeVerbose,
+					SkipPgUpgradeChecks: skipPgUpgradeChecks,
 				}
 				response, err = commanders.InitializeCreateCluster(client, request, verbose)
 				if err != nil {
@@ -319,6 +321,8 @@ To return the cluster to its original state, run "gpupgrade revert".`,
 
 	subInit.Flags().BoolVarP(&verbose, "verbose", "v", false, "print the output stream from all substeps")
 	subInit.Flags().BoolVar(&pgUpgradeVerbose, "pg-upgrade-verbose", false, "execute pg_upgrade with --verbose")
+	subInit.Flags().BoolVar(&skipPgUpgradeChecks, "skip-pg-upgrade-checks", false, "skips pg_upgrade checks")
+	subInit.Flags().MarkHidden("skip-pg-upgrade-checks") //nolint
 	subInit.Flags().StringVarP(&file, "file", "f", "", "the configuration file to use")
 	subInit.Flags().BoolVar(&nonInteractive, "non-interactive", false, "do not prompt for confirmation to proceed")
 	subInit.Flags().MarkHidden("non-interactive") //nolint

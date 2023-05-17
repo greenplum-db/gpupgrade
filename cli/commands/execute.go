@@ -23,6 +23,7 @@ import (
 func execute() *cobra.Command {
 	var verbose bool
 	var pgUpgradeVerbose bool
+	var skipPgUpgradeChecks bool
 	var nonInteractive bool
 	var parentBackupDirs string
 
@@ -74,8 +75,9 @@ func execute() *cobra.Command {
 				}
 
 				request := &idl.ExecuteRequest{
-					PgUpgradeVerbose: pgUpgradeVerbose,
-					ParentBackupDirs: parentBackupDirs,
+					PgUpgradeVerbose:    pgUpgradeVerbose,
+					SkipPgUpgradeChecks: skipPgUpgradeChecks,
+					ParentBackupDirs:    parentBackupDirs,
 				}
 				response, err = commanders.Execute(client, request, verbose)
 				if err != nil {
@@ -111,6 +113,8 @@ To return the cluster to its original state, run "gpupgrade revert".`,
 
 	cmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "print the output stream from all substeps")
 	cmd.Flags().BoolVar(&pgUpgradeVerbose, "pg-upgrade-verbose", false, "execute pg_upgrade with --verbose")
+	cmd.Flags().BoolVar(&skipPgUpgradeChecks, "skip-pg-upgrade-checks", false, "skips pg_upgrade checks")
+	cmd.Flags().MarkHidden("skip-pg-upgrade-checks") //nolint
 	cmd.Flags().BoolVar(&nonInteractive, "non-interactive", false, "do not prompt for confirmation to proceed")
 	cmd.Flags().MarkHidden("non-interactive") //nolint
 	cmd.Flags().StringVar(&parentBackupDirs, "parent-backup-dirs", "", "parent directories on each host to internally store the backup of the coordinator data directory and user defined coordinator tablespaces."+
