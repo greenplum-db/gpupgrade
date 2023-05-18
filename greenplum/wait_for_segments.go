@@ -45,7 +45,7 @@ func WaitForSegments(db *sql.DB, timeout time.Duration, cluster *Cluster) error 
 func areSegmentsReady(db *sql.DB, cluster *Cluster) (bool, error) {
 	var segments int
 
-	// check gp_segment_configuration on segments
+	// check gp_segment_configuration for the segments
 	whereClause := "AND mode = 's'"
 	if !cluster.HasMirrors() {
 		whereClause = ""
@@ -67,8 +67,8 @@ WHERE content > -1 AND status = 'u' AND (role = preferred_role) ` + whereClause)
 		return false, nil
 	}
 
-	// check gp_stat_replication for the standby. Note, gp_stat_replication does not exist in GPDB 5.
-	if cluster.Version.Major == 5 || !cluster.HasStandby() {
+	// check pg_stat_replication for the standby
+	if !cluster.HasStandby() {
 		return true, nil
 	}
 
@@ -77,14 +77,14 @@ WHERE content > -1 AND status = 'u' AND (role = preferred_role) ` + whereClause)
 		whereClause = "sent_lsn = flush_lsn;"
 	}
 
-	row = db.QueryRow("SELECT COUNT(*) FROM gp_stat_replication WHERE gp_segment_id = -1 AND state = 'streaming' AND " + whereClause)
+	row = db.QueryRow("SELECT COUNT(*) FROM pg_stat_replication WHERE state = 'streaming' AND " + whereClause)
 	if err := row.Scan(&segments); err != nil {
 		if err == sql.ErrNoRows {
-			log.Printf("no rows found when querying gp_stat_replication")
+			log.Printf("no rows found when querying pg_stat_replication")
 			return false, nil
 		}
 
-		return false, xerrors.Errorf("querying gp_stat_replication: %w", err)
+		return false, xerrors.Errorf("querying pg_stat_replication: %w", err)
 	}
 
 	if segments != 1 {

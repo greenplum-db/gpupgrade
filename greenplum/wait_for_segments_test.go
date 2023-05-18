@@ -37,7 +37,7 @@ func TestWaitForSegments(t *testing.T) {
 
 		expectFtsProbe(mock)
 		expectGpSegmentConfigurationToReturn(mock, 4)
-		expectGpStatReplicationToReturn(mock, 1, target.Version)
+		expectPgStatReplicationToReturn(mock, 1, target.Version)
 
 		err = greenplum.WaitForSegments(db, timeout, target)
 		if err != nil {
@@ -45,10 +45,11 @@ func TestWaitForSegments(t *testing.T) {
 		}
 	})
 
-	t.Run("skips fts and gp_stat_replication if GPDB version is 5", func(t *testing.T) {
+	t.Run("skips fts if GPDB version is 5", func(t *testing.T) {
 		target.Version = semver.MustParse("5.0.0")
 
 		expectGpSegmentConfigurationToReturn(mock, 4)
+		expectPgStatReplicationToReturn(mock, 1, target.Version)
 
 		err = greenplum.WaitForSegments(db, timeout, target)
 		if err != nil {
@@ -56,7 +57,7 @@ func TestWaitForSegments(t *testing.T) {
 		}
 	})
 
-	t.Run("skips gp_stat_replication if there is no standby", func(t *testing.T) {
+	t.Run("skips pg_stat_replication if there is no standby", func(t *testing.T) {
 		target := MustCreateCluster(t, greenplum.SegConfigs{
 			{DbID: 1, ContentID: -1, Hostname: "coordinator", DataDir: "/data/qddir/seg-1", Port: 15432, Role: greenplum.PrimaryRole},
 			{DbID: 3, ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Port: 25433, Role: greenplum.PrimaryRole},
@@ -86,7 +87,7 @@ func TestWaitForSegments(t *testing.T) {
 
 		expectFtsProbe(mock)
 		expectGpSegmentConfigurationWithoutMirrorsToReturn(mock, 2)
-		expectGpStatReplicationToReturn(mock, 1, target.Version)
+		expectPgStatReplicationToReturn(mock, 1, target.Version)
 
 		err = greenplum.WaitForSegments(db, timeout, target)
 		if err != nil {
@@ -94,7 +95,7 @@ func TestWaitForSegments(t *testing.T) {
 		}
 	})
 
-	t.Run("skips mode=s and gp_stat_replication checks if there are no mirrors and no standby", func(t *testing.T) {
+	t.Run("skips mode=s and pg_stat_replication checks if there are no mirrors and no standby", func(t *testing.T) {
 		target := MustCreateCluster(t, greenplum.SegConfigs{
 			{DbID: 1, ContentID: -1, Hostname: "coordinator", DataDir: "/data/qddir/seg-1", Port: 15432, Role: greenplum.PrimaryRole},
 			{DbID: 3, ContentID: 0, Hostname: "sdw1", DataDir: "/data/dbfast1/seg1", Port: 25433, Role: greenplum.PrimaryRole},
@@ -118,10 +119,10 @@ func TestWaitForSegments(t *testing.T) {
 		expectGpSegmentConfigurationToReturn(mock, 0)
 		expectFtsProbe(mock)
 		expectGpSegmentConfigurationToReturn(mock, 4)
-		expectGpStatReplicationToReturn(mock, 0, target.Version)
+		expectPgStatReplicationToReturn(mock, 0, target.Version)
 		expectFtsProbe(mock)
 		expectGpSegmentConfigurationToReturn(mock, 4)
-		expectGpStatReplicationToReturn(mock, 1, target.Version)
+		expectPgStatReplicationToReturn(mock, 1, target.Version)
 
 		err = greenplum.WaitForSegments(db, timeout, target)
 		if err != nil {
@@ -129,17 +130,17 @@ func TestWaitForSegments(t *testing.T) {
 		}
 	})
 
-	t.Run("uses correct gp_stat_replication fields if GPDB version is 7", func(t *testing.T) {
+	t.Run("uses correct pg_stat_replication fields if GPDB version is 7", func(t *testing.T) {
 		target.Version = semver.MustParse("7.0.0")
 
 		expectFtsProbe(mock)
 		expectGpSegmentConfigurationToReturn(mock, 0)
 		expectFtsProbe(mock)
 		expectGpSegmentConfigurationToReturn(mock, 4)
-		expectGpStatReplicationToReturn(mock, 0, target.Version)
+		expectPgStatReplicationToReturn(mock, 0, target.Version)
 		expectFtsProbe(mock)
 		expectGpSegmentConfigurationToReturn(mock, 4)
-		expectGpStatReplicationToReturn(mock, 1, target.Version)
+		expectPgStatReplicationToReturn(mock, 1, target.Version)
 
 		err = greenplum.WaitForSegments(db, timeout, target)
 		if err != nil {
@@ -178,13 +179,13 @@ WHERE content > -1 AND status = 'u' AND \(role = preferred_role\)`).
 		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(count))
 }
 
-func expectGpStatReplicationToReturn(mock sqlmock.Sqlmock, count int, version semver.Version) {
+func expectPgStatReplicationToReturn(mock sqlmock.Sqlmock, count int, version semver.Version) {
 	whereClause := "sent_location = flush_location;"
 	if version.Major > 6 {
 		whereClause = "sent_lsn = flush_lsn;"
 	}
 
-	mock.ExpectQuery(`SELECT COUNT\(\*\) FROM gp_stat_replication
-WHERE gp_segment_id = -1 AND state = 'streaming' AND ` + whereClause).
+	mock.ExpectQuery(`SELECT COUNT\(\*\) FROM pg_stat_replication
+WHERE state = 'streaming' AND ` + whereClause).
 		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(count))
 }

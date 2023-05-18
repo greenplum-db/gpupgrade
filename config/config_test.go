@@ -96,6 +96,7 @@ func TestCreate(t *testing.T) {
 		{ // creates initial cluster config files if none exist or fails"
 			expectGpSegmentConfigurationToReturnCluster(mock, source)
 			expectGpSegmentConfigurationCount(mock, source)
+			expectPgStatReplicationToReturn(mock)
 			expectPgTablespace(mock)
 
 			conf, err := config.Create(db, hubPort, agentPort, source.GPHome, targetGPHome, mode, useHbaHostnames, ports, parentBackupDirs)
@@ -121,6 +122,7 @@ func TestCreate(t *testing.T) {
 		{ // creating cluster config files is idempotent
 			expectGpSegmentConfigurationToReturnCluster(mock, source)
 			expectGpSegmentConfigurationCount(mock, source)
+			expectPgStatReplicationToReturn(mock)
 			expectPgTablespace(mock)
 
 			conf, err := config.Create(db, hubPort, agentPort, source.GPHome, targetGPHome, mode, useHbaHostnames, ports, parentBackupDirs)
@@ -145,6 +147,7 @@ func TestCreate(t *testing.T) {
 		{ // creating cluster config files succeeds on multiple runs
 			expectGpSegmentConfigurationToReturnCluster(mock, source)
 			expectGpSegmentConfigurationCount(mock, source)
+			expectPgStatReplicationToReturn(mock)
 			expectPgTablespace(mock)
 
 			conf, err := config.Create(db, hubPort, agentPort, source.GPHome, targetGPHome, mode, useHbaHostnames, ports, parentBackupDirs)
@@ -161,6 +164,7 @@ func TestCreate(t *testing.T) {
 	t.Run("create adds known parameters including upgradeID", func(t *testing.T) {
 		expectGpSegmentConfigurationToReturnCluster(mock, source)
 		expectGpSegmentConfigurationCount(mock, source)
+		expectPgStatReplicationToReturn(mock)
 		expectPgTablespace(mock)
 
 		conf, err := config.Create(db, hubPort, agentPort, source.GPHome, targetGPHome, mode, useHbaHostnames, ports, parentBackupDirs)
@@ -233,4 +237,10 @@ WHERE content > -1 AND status = 'u' AND \(role = preferred_role\) AND mode = 's'
 func expectPgTablespace(mock sqlmock.Sqlmock) {
 	mock.ExpectQuery(`SELECT .* FROM pg_tablespace`).
 		WillReturnRows(sqlmock.NewRows([]string{"dbid", "oid", "name", "location", "userdefined"}))
+}
+
+func expectPgStatReplicationToReturn(mock sqlmock.Sqlmock) {
+	mock.ExpectQuery(`SELECT COUNT\(\*\) FROM pg_stat_replication
+WHERE state = 'streaming' AND sent_location = flush_location;`).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
 }
