@@ -49,6 +49,18 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 		return s.Source.CheckActiveConnections(streams)
 	})
 
+	// We do not always run this cluster synchronization check
+	// because checking requires the source cluster to be available
+	// and Substep_upgrade_master makes the source cluster
+	// unavailable.
+	st.Run(idl.Substep_wait_for_cluster_to_be_ready_before_upgrade_master, func(streams step.OutStreams) error {
+		if err := s.Source.Start(streams); err != nil {
+			return err
+		}
+
+		return s.Source.WaitForClusterToBeReady()
+	})
+
 	st.AlwaysRun(idl.Substep_shutdown_source_cluster, func(streams step.OutStreams) error {
 		return s.Source.Stop(streams)
 	})

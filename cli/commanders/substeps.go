@@ -72,4 +72,6 @@ var SubstepDescriptions = map[idl.Substep]substepText{
 	idl.Substep_ensure_gpupgrade_agents_are_running:                           substepText{"Ensuring gpupgrade agent processes are running...", "Ensure gpupgrade agent processes are running"},
 	idl.Substep_verify_gpdb_versions:                                          substepText{"Verifying source and target cluster versions...", "Verify source and target cluster versions"},
 	idl.Substep_verify_gpupgrade_is_installed_across_all_hosts:                substepText{"Verifying gpupgrade is installed across all hosts...", "Verify gpupgrade is installed across all hosts"},
+	idl.Substep_initialize_wait_for_cluster_to_be_ready:                       substepText{"Waiting for cluster to be ready...", "Wait for cluster to be ready"},
+	idl.Substep_wait_for_cluster_to_be_ready_before_upgrade_master:            substepText{"Waiting for cluster to be ready...", "Wait for cluster to be ready"},
 }

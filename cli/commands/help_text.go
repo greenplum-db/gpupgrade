@@ -50,12 +50,14 @@ func init() {
 		idl.Substep_setting_dynamic_library_path_on_target_cluster,
 		idl.Substep_shutdown_target_cluster,
 		idl.Substep_backup_target_master,
+		idl.Substep_initialize_wait_for_cluster_to_be_ready,
 		idl.Substep_check_upgrade,
 	}
 
 	executeSubsteps = commanders.Substeps{
 		idl.Substep_ensure_gpupgrade_agents_are_running,
 		idl.Substep_check_active_connections_on_source_cluster,
+		idl.Substep_wait_for_cluster_to_be_ready_before_upgrade_master,
 		idl.Substep_shutdown_source_cluster,
 		idl.Substep_upgrade_master,
 		idl.Substep_copy_master,

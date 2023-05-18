@@ -110,6 +110,8 @@ enum Substep {
     ensure_gpupgrade_agents_are_running = 45;
     verify_gpdb_versions = 46;
     verify_gpupgrade_is_installed_across_all_hosts = 47;
+    initialize_wait_for_cluster_to_be_ready = 48;
+    wait_for_cluster_to_be_ready_before_upgrade_master = 49;
 }
 
 enum Status {

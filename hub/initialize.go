@@ -146,6 +146,10 @@ func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest
 		return RsyncCoordinatorDataDir(stream, sourceDir, targetDir)
 	})
 
+	st.AlwaysRun(idl.Substep_initialize_wait_for_cluster_to_be_ready, func(streams step.OutStreams) error {
+		return s.Source.WaitForClusterToBeReady()
+	})
+
 	st.AlwaysRun(idl.Substep_check_upgrade, func(stream step.OutStreams) error {
 		if req.GetSkipPgUpgradeChecks() {
 			log.Print("skipping pg_upgrade checks")
