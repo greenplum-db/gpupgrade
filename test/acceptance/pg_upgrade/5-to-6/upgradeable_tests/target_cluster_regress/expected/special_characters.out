@@ -105,76 +105,76 @@ SELECT * FROM "foo$";
 ---
  1 
  1 
-(2 row)
+(2 rows)
 SELECT * FROM "$$foo$";
  i 
 ---
  2 
  2 
-(2 row)
+(2 rows)
 SELECT * FROM "my_table_@pple";
  i 
 ---
  3 
  3 
-(2 row)
+(2 rows)
 SELECT * FROM "users!@#$%^&*()_+`-={}|[];':\""<>,.?/";
  i 
 ---
  4 
  4 
-(2 row)
+(2 rows)
 SELECT * FROM "Café_Latté";
  i 
 ---
  5 
  5 
-(2 row)
+(2 rows)
 SELECT * FROM "data_2021-09-25";
  i 
 ---
  6 
  6 
-(2 row)
+(2 rows)
 SELECT * FROM "Sales@2023";
  i 
 ---
  7 
  7 
-(2 row)
+(2 rows)
 SELECT * FROM "table_(parenthesis)";
  i 
 ---
  8 
  8 
-(2 row)
+(2 rows)
 SELECT * FROM "Ελληνικά_τραπέζια";
  i 
 ---
  9 
  9 
-(2 row)
+(2 rows)
 SELECT * FROM "table_with_underscores and spaces";
  i  
 ----
  10 
  10 
-(2 row)
+(2 rows)
 SELECT * FROM "table_with_ö_umlaut";
  i  
 ----
  11 
  11 
-(2 row)
+(2 rows)
 SELECT * FROM "table_with_की_hindi_characters";
  i  
 ----
  12 
  12 
-(2 row)
+(2 rows)
 SELECT * FROM "学生表";
  i      
 --------
  张三 
  张三 
-(2 row)
+(2 rows)
