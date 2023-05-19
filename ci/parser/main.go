@@ -112,41 +112,41 @@ func init() {
 		// major versions (ie: SpecialJobs), and only one for same major
 		// versions (ie: 6-to-6 or 7-to-7).
 		if version.SpecialJobs || (version.sourceVersion == version.targetVersion) {
-			acceptanceJobs = append(acceptanceJobs, AcceptanceJob{
+			acceptanceJobs = append(acceptanceJobs, AcceptanceJob{Job{
 				Source:    version.sourceVersion,
 				Target:    version.targetVersion,
 				OSVersion: version.osVersion,
-			})
+			}})
 
-			multihostAcceptanceJobs = append(multihostAcceptanceJobs, MultihostAcceptanceJob{
+			multihostAcceptanceJobs = append(multihostAcceptanceJobs, MultihostAcceptanceJob{Job{
 				Source:    version.sourceVersion,
 				Target:    version.targetVersion,
 				OSVersion: version.osVersion,
-			})
+			}})
 		}
 
-		upgradeJobs = append(upgradeJobs, UpgradeJob{
+		upgradeJobs = append(upgradeJobs, UpgradeJob{Job: Job{
 			Source:    version.sourceVersion,
 			Target:    version.targetVersion,
 			OSVersion: version.osVersion,
 			Mode:      copy,
-		})
+		}})
 
 		if version.SpecialJobs {
-			pgupgradeJobs = append(pgupgradeJobs, PgUpgradeJob{
+			pgupgradeJobs = append(pgupgradeJobs, PgUpgradeJob{Job{
 				Source:    version.sourceVersion,
 				Target:    version.targetVersion,
 				OSVersion: version.osVersion,
-			})
+			}})
 		}
 	}
 
 	specialUpgradeJobs := UpgradeJobs{
-		{PrimariesOnly: true},
-		{NoStandby: true},
-		{RetailDemo: true},
-		{TestExtensions: true},
-		{FunctionalTest: true},
+		UpgradeJob{Job: Job{PrimariesOnly: true}},
+		UpgradeJob{Job: Job{NoStandby: true}},
+		UpgradeJob{RetailDemo: true},
+		UpgradeJob{TestExtensions: true},
+		UpgradeJob{FunctionalTest: true},
 	}
 
 	// SpecialJobs cases for 5->6. (These are special-cased to avoid exploding the

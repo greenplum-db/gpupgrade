@@ -8,20 +8,13 @@ import (
 	"strings"
 )
 
-// gpupgrade cluster jobs
-
-type AcceptanceJob struct {
+type Job struct {
 	Source, Target string
 	OSVersion      string
+	Mode           Mode
+	PrimariesOnly  bool
+	NoStandby      bool
 }
-
-type AcceptanceJobs []AcceptanceJob
-
-func (c *AcceptanceJob) Name() string {
-	return fmt.Sprintf("%s-to-%s-%s-acceptance-tests", c.Source, c.Target, c.OSVersion)
-}
-
-// Mode
 
 type Mode string
 
@@ -30,17 +23,23 @@ const (
 	link Mode = "link"
 )
 
+type AcceptanceJob struct {
+	Job
+}
+
+type AcceptanceJobs []AcceptanceJob
+
+func (c *AcceptanceJob) Name() string {
+	return fmt.Sprintf("%s-to-%s-%s-acceptance-tests", c.Source, c.Target, c.OSVersion)
+}
+
 // upgrade jobs
 
 type UpgradeJob struct {
-	Source, Target string
-	PrimariesOnly  bool
-	NoStandby      bool
-	Mode           Mode
+	Job
 	RetailDemo     bool
 	TestExtensions bool
 	FunctionalTest bool
-	OSVersion      string
 }
 
 func (j *UpgradeJob) Name() string {
@@ -73,11 +72,8 @@ func (j *UpgradeJob) SerialGroup() string {
 
 type UpgradeJobs []UpgradeJob
 
-// pgupgrade jobs
-
 type PgUpgradeJob struct {
-	Source, Target string
-	OSVersion      string
+	Job
 }
 
 func (p *PgUpgradeJob) Name() string {
@@ -86,11 +82,8 @@ func (p *PgUpgradeJob) Name() string {
 
 type PgUpgradeJobs []PgUpgradeJob
 
-// multihost-gpupgrade jobs
-
 type MultihostAcceptanceJob struct {
-	Source, Target string
-	OSVersion      string
+	Job
 }
 
 func (j *MultihostAcceptanceJob) Name() string {
