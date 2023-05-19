@@ -41,7 +41,13 @@ resources:
   - name: gpdb{{.GPDBVersion}}_{{.OSVersion}}_rpm
     type: gcs
     source:
+      {{- if .TestRCIdentifier }}
+      # Test release candidate rpms built with --build-test-rc are published to the -dev bucket.
+      bucket: pivotal-gpdb-concourse-resources-dev
+      {{- else }}
+      # Test release candidate rpms built from production pipelines are published to the -prod bucket.
       bucket: pivotal-gpdb-concourse-resources-prod
+      {{- end }}
       json_key: ((concourse-gcs-resources-service-account-key))
       regexp: server/published/gpdb{{ majorVersion .GPDBVersion }}/greenplum-db-{{.TestRCIdentifier}}({{escapeVersion .GPDBVersion}}.*)-rhel{{.OSVersionNumber}}-x86_64.debug.rpm
   {{- end }}
