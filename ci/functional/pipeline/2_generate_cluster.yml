@@ -1,6 +1,5 @@
 jobs:
-{{range .UpgradeJobs}}
-  {{- if .FunctionalTest}}
+{{range .FunctionalJobs}}
   - name: generate-cluster
     plan:
       - in_parallel:
@@ -131,5 +130,4 @@ jobs:
       do:
         - <<: *ccp_destroy
         - <<: *slack_alert
-  {{- end }}
 {{end -}}

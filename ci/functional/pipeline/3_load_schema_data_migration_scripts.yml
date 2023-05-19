@@ -1,5 +1,4 @@
-{{range .UpgradeJobs}}
-  {{- if .FunctionalTest}}
+{{range .FunctionalJobs}}
   - name: load-schema
     plan:
       - in_parallel:
@@ -57,11 +56,9 @@
     on_failure:
       do:
         - <<: *slack_alert
-  {{- end }}
 {{end -}}
 
-{{range .UpgradeJobs}}
-  {{- if .FunctionalTest}}
+{{range .FunctionalJobs}}
   - name: data-migration-scripts
     plan:
       - in_parallel:
@@ -104,5 +101,4 @@
     on_failure:
       do:
         - <<: *slack_alert
-  {{- end }}
 {{end -}}

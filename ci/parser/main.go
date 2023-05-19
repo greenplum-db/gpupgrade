@@ -69,6 +69,7 @@ type Data struct {
 	MultihostAcceptanceJobs MultihostAcceptanceJobs
 	UpgradeJobs             UpgradeJobs
 	PgupgradeJobs           PgUpgradeJobs
+	FunctionalJobs          FunctionalJobs
 }
 
 var data Data
@@ -80,6 +81,7 @@ func init() {
 	var multihostAcceptanceJobs MultihostAcceptanceJobs
 	var upgradeJobs UpgradeJobs
 	var pgupgradeJobs PgUpgradeJobs
+	var functionalJobs FunctionalJobs
 
 	for _, version := range versions {
 		if !majorVersions.contains(version.sourceVersion) {
@@ -146,7 +148,6 @@ func init() {
 		UpgradeJob{Job: Job{NoStandby: true}},
 		UpgradeJob{RetailDemo: true},
 		UpgradeJob{TestExtensions: true},
-		UpgradeJob{FunctionalTest: true},
 	}
 
 	// SpecialJobs cases for 5->6. (These are special-cased to avoid exploding the
@@ -166,6 +167,27 @@ func init() {
 		}
 	}
 
+	specialFunctionalJobs := FunctionalJobs{
+		FunctionalJob{Job{Mode: link}},
+	}
+
+	// SpecialJobs cases for 5->6. (These are special-cased to avoid exploding the
+	// test matrix too much.)
+	for _, job := range specialFunctionalJobs {
+		for _, version := range versions {
+			if !version.SpecialJobs {
+				continue
+			}
+
+			job.Source = version.sourceVersion
+			job.Target = version.targetVersion
+			job.OSVersion = version.osVersion
+			job.Mode = link
+
+			functionalJobs = append(functionalJobs, job)
+		}
+	}
+
 	data = Data{
 		JobType:                 os.Getenv("JOB_TYPE"),
 		MajorVersions:           majorVersions,
@@ -174,6 +196,7 @@ func init() {
 		MultihostAcceptanceJobs: multihostAcceptanceJobs,
 		UpgradeJobs:             upgradeJobs,
 		PgupgradeJobs:           pgupgradeJobs,
+		FunctionalJobs:          functionalJobs,
 	}
 }
 

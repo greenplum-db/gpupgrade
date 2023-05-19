@@ -1,5 +1,4 @@
-{{range .UpgradeJobs}}
-  {{- if .FunctionalTest}}
+{{range .FunctionalJobs}}
   - name: initialize
     plan:
       - in_parallel:
@@ -60,11 +59,9 @@
     on_failure:
       do:
         - <<: *slack_alert
-  {{- end }}
 {{end -}}
 
-{{range .UpgradeJobs}}
-  {{- if .FunctionalTest}}
+{{range .FunctionalJobs}}
   - name: upgrade
     plan:
       - in_parallel:
@@ -112,11 +109,9 @@
     on_failure:
       do:
         - <<: *slack_alert
-  {{- end }}
 {{end -}}
 
-{{range .UpgradeJobs}}
-  {{- if .FunctionalTest}}
+{{range .FunctionalJobs}}
   - name: validate
     plan:
       - in_parallel:
@@ -185,5 +180,4 @@
     on_failure:
       do:
         - <<: *slack_alert
-  {{- end }}
 {{end -}}

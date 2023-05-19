@@ -39,7 +39,6 @@ type UpgradeJob struct {
 	Job
 	RetailDemo     bool
 	TestExtensions bool
-	FunctionalTest bool
 }
 
 func (j *UpgradeJob) Name() string {
@@ -58,8 +57,6 @@ func (j *UpgradeJob) Suffix() string {
 		suffix = "-retail-demo"
 	case j.TestExtensions:
 		suffix = "-extension"
-	case j.FunctionalTest:
-		suffix = "-functional-test"
 	}
 
 	return suffix
@@ -91,3 +88,31 @@ func (j *MultihostAcceptanceJob) Name() string {
 }
 
 type MultihostAcceptanceJobs []MultihostAcceptanceJob
+
+type FunctionalJob struct {
+	Job
+}
+
+func (j *FunctionalJob) Name() string {
+	return fmt.Sprintf("%s-to-%s-%s-functional-test-%s-mode%s", j.Source, j.Target, j.OSVersion, j.Mode, j.Suffix())
+}
+
+func (j *FunctionalJob) Suffix() string {
+	var suffix string
+
+	switch {
+	case j.PrimariesOnly:
+		suffix = "-primaries-only"
+	case j.NoStandby:
+		suffix = "-no-standby"
+	}
+
+	return suffix
+}
+
+// SerialGroup is used to prevent Concourse from becoming overloaded.
+func (j *FunctionalJob) SerialGroup() string {
+	return strings.TrimPrefix(j.Suffix(), "-")
+}
+
+type FunctionalJobs []FunctionalJob

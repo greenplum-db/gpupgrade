@@ -1,5 +1,4 @@
-{{range .UpgradeJobs}}
-  {{- if .FunctionalTest}}
+{{range .FunctionalJobs}}
   - name: teardown-cluster
     plan:
       - in_parallel:
@@ -19,11 +18,9 @@
     on_failure:
       do:
         - <<: *slack_alert
-  {{- end }}
 {{end -}}
 
-{{range .UpgradeJobs}}
-  {{- if .FunctionalTest}}
+{{range .FunctionalJobs}}
   - name: manually-destroy-cluster
     plan:
       - in_parallel:
@@ -39,5 +36,4 @@
     on_failure:
       do:
         - <<: *slack_alert
-  {{- end }}
 {{end -}}
