@@ -19,16 +19,7 @@ func TestID(t *testing.T) {
 		two := upgrade.NewID()
 
 		if one == two {
-			t.Errorf("second generated ID was equal to first ID (%d)", one)
-		}
-	})
-
-	t.Run("String gives a base64 representation of the ID", func(t *testing.T) {
-		var id upgrade.ID
-
-		expected := "AAAAAAAAAAA" // all zeroes in base64. 8 bytes decoded -> 11 bytes encoded
-		if id.String() != expected {
-			t.Errorf("String() returned %q, want %q", id.String(), expected)
+			t.Errorf("second generated ID was equal to first ID (%q)", one)
 		}
 	})
 }
@@ -69,7 +60,7 @@ func TestIDCommand(_ *testing.T) {
 		return
 	}
 
-	fmt.Printf("%d", upgrade.NewID())
+	fmt.Printf("%q", upgrade.NewID())
 	os.Exit(0)
 }
 
@@ -79,7 +70,7 @@ func TestIDCommand(_ *testing.T) {
 func TestNoDoubleDash(t *testing.T) {
 	for i := 0; i < 10000; i++ {
 		id := upgrade.NewID()
-		if strings.Contains(id.String(), "--") {
+		if strings.Contains(id, "--") {
 			t.Fatalf("id %s contains --", id)
 		}
 	}

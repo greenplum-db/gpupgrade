@@ -17,7 +17,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/testlog"
-	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
@@ -37,7 +36,7 @@ func TestArchiveLogDirectories(t *testing.T) {
 		testutils.MustCreateDir(t, logDir)
 		defer testutils.MustRemoveAll(t, logDir)
 
-		var upgradeID upgrade.ID
+		var upgradeID string
 		logArchiveDir := hub.GetLogArchiveDir(logDir, upgradeID, time.Now())
 		defer testutils.MustRemoveAll(t, logArchiveDir)
 

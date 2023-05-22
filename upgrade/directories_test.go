@@ -21,12 +21,12 @@ import (
 )
 
 func TestTempDataDir(t *testing.T) {
-	var id upgrade.ID
+	upgradeID := "ABC123"
 
 	cases := []struct {
 		datadir        string
 		segPrefix      string
-		expectedFormat string // %s will be replaced with id.String()
+		expectedFormat string // %s will be replaced with upgradeID
 	}{
 		{"/data/seg-1", "seg", "/data/seg.%s.-1"},
 		{"/data/coordinator/gpseg-1", "gpseg", "/data/coordinator/gpseg.%s.-1"},
@@ -36,30 +36,14 @@ func TestTempDataDir(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		actual := upgrade.TempDataDir(c.datadir, c.segPrefix, id)
-		expected := fmt.Sprintf(c.expectedFormat, id)
+		actual := upgrade.TempDataDir(c.datadir, c.segPrefix, upgradeID)
+		expected := fmt.Sprintf(c.expectedFormat, upgradeID)
 
 		if actual != expected {
-			t.Errorf("TempDataDir(%q, %q, id) = %q, want %q",
+			t.Errorf("TempDataDir(%q, %q, upgradeID) = %q, want %q",
 				c.datadir, c.segPrefix, actual, expected)
 		}
 	}
-}
-
-func ExampleTempDataDir() {
-	var id upgrade.ID
-
-	coordinator := upgrade.TempDataDir("/data/coordinator/seg-1", "seg", id)
-	standby := upgrade.TempDataDir("/data/standby", "seg", id)
-	segment := upgrade.TempDataDir("/data/primary/seg3", "seg", id)
-
-	fmt.Println(coordinator)
-	fmt.Println(standby)
-	fmt.Println(segment)
-	// Output:
-	// /data/coordinator/seg.AAAAAAAAAAA.-1
-	// /data/standby.AAAAAAAAAAA
-	// /data/primary/seg.AAAAAAAAAAA.3
 }
 
 func TestArchiveSource(t *testing.T) {

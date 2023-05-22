@@ -6,17 +6,12 @@ package upgrade
 import (
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/binary"
 	"fmt"
 	"strings"
 )
 
-// ID is a unique identifier for a cluster upgrade.
-type ID uint64
-
-// NewID creates a new unique ID. It should be reasonably unique across
-// executions of the process.
-func NewID() ID {
+// NewID creates a new unique upgrade ID that is reasonably unique across executions of the process.
+func NewID() string {
 	var bytes [8]byte // 64 bits
 
 	for {
@@ -29,25 +24,16 @@ func NewID() ID {
 			panic(fmt.Sprintf("unable to get random data: %+v", err))
 		}
 
-		num := binary.LittleEndian.Uint64(bytes[:])
+		// RawURLEncoding omits padding (which we don't need) and uses a
+		// filesystem-safe character set.
+		id := base64.RawURLEncoding.EncodeToString(bytes[:])
 
 		// gpstart has a bug that doesn't handle "--" in directory names.
 		// Until that is resolved, we need to generate IDs without "--".
-		if strings.Contains(ID(num).String(), "--") {
+		if strings.Contains(id, "--") {
 			continue
 		}
 
-		return ID(num)
+		return id
 	}
-}
-
-// String returns an unpadded, filesystem-safe base64 encoding of the
-// identifier.
-func (id ID) String() string {
-	var bytes [8]byte // 64 bits
-	binary.LittleEndian.PutUint64(bytes[:], uint64(id))
-
-	// RawURLEncoding omits padding (which we don't need) and uses a
-	// filesystem-safe character set.
-	return base64.RawURLEncoding.EncodeToString(bytes[:])
 }

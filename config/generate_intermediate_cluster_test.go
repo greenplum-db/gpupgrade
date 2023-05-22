@@ -17,7 +17,7 @@ import (
 )
 
 func TestAssignDataDirsAndPorts(t *testing.T) {
-	var upgradeID upgrade.ID
+	var upgradeID string
 
 	expectedDataDir := func(sourceDir string) string {
 		return upgrade.TempDataDir(sourceDir, "seg", upgradeID)
@@ -232,7 +232,7 @@ func TestAssignDataDirsAndPorts(t *testing.T) {
 
 	for _, c := range errCases {
 		t.Run(c.name, func(t *testing.T) {
-			_, err := config.GenerateIntermediateCluster(c.cluster, c.ports, 0, semver.Version{}, "")
+			_, err := config.GenerateIntermediateCluster(c.cluster, c.ports, "0", semver.Version{}, "")
 			if err == nil {
 				t.Errorf("GenerateIntermediateCluster(<cluster>, %v) returned nil, want error", c.ports)
 			}

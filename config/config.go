@@ -53,7 +53,7 @@ type Config struct {
 	AgentPort       int
 	Mode            idl.Mode
 	UseHbaHostnames bool
-	UpgradeID       upgrade.ID
+	UpgradeID       string
 }
 
 func (conf *Config) Write() error {

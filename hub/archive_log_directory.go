@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/greenplum-db/gpupgrade/idl"
-	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
@@ -44,7 +43,7 @@ func ArchiveSegmentLogDirectories(agentConns []*idl.Connection, excludeHostname,
 
 // GetLogArchiveDir returns the name of the file to be used to store logs
 // from this run of gpupgrade during a revert.
-func GetLogArchiveDir(logDir string, upgradeID upgrade.ID, t time.Time) string {
-	archiveName := fmt.Sprintf("gpupgrade-%s-%s", upgradeID.String(), t.Format("20060102T150409"))
+func GetLogArchiveDir(logDir string, upgradeID string, t time.Time) string {
+	archiveName := fmt.Sprintf("gpupgrade-%s-%s", upgradeID, t.Format("20060102T150409"))
 	return filepath.Join(filepath.Dir(logDir), archiveName)
 }

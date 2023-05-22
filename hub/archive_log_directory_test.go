@@ -16,13 +16,12 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/testlog"
-	"github.com/greenplum-db/gpupgrade/upgrade"
 )
 
 func TestArchiveLogDirectories(t *testing.T) {
 	testlog.SetupTestLogger()
 
-	var upgradeID upgrade.ID
+	var upgradeID string
 	const targetCoordinatorHost = "cdw"
 
 	t.Run("archive log directory succeeds", func(t *testing.T) {
@@ -131,7 +130,7 @@ func TestArchiveLogDirectories(t *testing.T) {
 }
 
 func TestArchiveSegmentLogDirectories(t *testing.T) {
-	var upgradeID upgrade.ID
+	var upgradeID string
 	const targetCoordinatorHost = "cdw"
 
 	t.Run("archive segment log directories", func(t *testing.T) {
@@ -192,10 +191,10 @@ func TestGetLogArchiveDir(t *testing.T) {
 	// Make sure every part of the date is distinct, to catch mistakes in formatting (e.g. using seconds rather than minutes).
 	timeStamp := time.Date(2000, 03, 14, 12, 15, 45, 1, time.Local)
 
-	var upgradeID upgrade.ID
+	var upgradeID string
 	actual := hub.GetLogArchiveDir("/tmp/log/dir", upgradeID, timeStamp)
 
-	expected := fmt.Sprintf("/tmp/log/gpupgrade-%s-20000314T121509", upgradeID.String())
+	expected := fmt.Sprintf("/tmp/log/gpupgrade-%s-20000314T121509", upgradeID)
 	if actual != expected {
 		t.Errorf("got %q want %q", actual, expected)
 	}

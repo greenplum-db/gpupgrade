@@ -15,7 +15,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
-func GenerateIntermediateCluster(source *greenplum.Cluster, ports []int, upgradeID upgrade.ID, version semver.Version, gphome string) (*greenplum.Cluster, error) {
+func GenerateIntermediateCluster(source *greenplum.Cluster, ports []int, upgradeID string, version semver.Version, gphome string) (*greenplum.Cluster, error) {
 	ports = utils.Sanitize(ports)
 
 	intermediate, err := greenplum.NewCluster([]greenplum.SegConfig{})

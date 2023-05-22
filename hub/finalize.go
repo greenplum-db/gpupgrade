@@ -134,7 +134,7 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 		FinalizeResponse: &idl.FinalizeResponse{
 			LogArchiveDirectory:                    logArchiveDir,
 			ArchivedSourceCoordinatorDataDirectory: s.Config.Intermediate.CoordinatorDataDir() + upgrade.OldSuffix,
-			UpgradeID:                              s.Config.UpgradeID.String(),
+			UpgradeID:                              s.Config.UpgradeID,
 			Target: &idl.Cluster{
 				Destination: idl.ClusterDestination_target,
 				GpHome:      s.Target.GPHome,

@@ -38,16 +38,16 @@ var StateDirectoryFiles = []string{"config.json", step.SubstepsFileName}
 // - If the datadir basename does not start with the segment prefix (as can
 // happen with e.g. standby data directories), the temporary datadir will
 // start with the original basename.
-func TempDataDir(datadir, segPrefix string, id ID) string {
+func TempDataDir(datadir, segPrefix string, upgradeID string) string {
 	datadir = filepath.Clean(datadir) // sanitize trailing slashes for Split
 	dir, base := filepath.Split(datadir)
 
 	var newBase string
 	if strings.HasPrefix(base, segPrefix) {
 		suffix := strings.TrimPrefix(base, segPrefix)
-		newBase = fmt.Sprintf("%s.%s.%s", segPrefix, id, suffix)
+		newBase = fmt.Sprintf("%s.%s.%s", segPrefix, upgradeID, suffix)
 	} else {
-		newBase = fmt.Sprintf("%s.%s", base, id)
+		newBase = fmt.Sprintf("%s.%s", base, upgradeID)
 	}
 
 	return filepath.Join(dir, newBase)

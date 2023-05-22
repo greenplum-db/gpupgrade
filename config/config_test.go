@@ -28,7 +28,7 @@ func TestConfig(t *testing.T) {
 		HubPort:      12345,
 		AgentPort:    54321,
 		Mode:         idl.Mode_copy,
-		UpgradeID:    0,
+		UpgradeID:    "ABC123",
 	}
 
 	t.Run("save configuration contents to disk and load it back", func(t *testing.T) {
@@ -209,7 +209,7 @@ func TestCreate(t *testing.T) {
 			t.Errorf("got %t want %t", conf.UseHbaHostnames, useHbaHostnames)
 		}
 
-		if conf.UpgradeID == 0 {
+		if conf.UpgradeID == "" {
 			t.Errorf("expected non-empty UpgradeID")
 		}
 	})

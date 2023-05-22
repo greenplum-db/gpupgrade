@@ -49,7 +49,6 @@ func TestHubStart(t *testing.T) {
 		HubPort:      testutils.MustGetPort(t),
 		AgentPort:    testutils.MustGetPort(t),
 		Mode:         idl.Mode_copy,
-		UpgradeID:    0,
 	}
 
 	t.Run("start correctly errors if stop is called first", func(t *testing.T) {
@@ -182,7 +181,6 @@ func TestAgentConns(t *testing.T) {
 		HubPort:      testutils.MustGetPort(t),
 		AgentPort:    agentPort,
 		Mode:         idl.Mode_copy,
-		UpgradeID:    0,
 	}
 
 	testlog.SetupTestLogger()
@@ -300,7 +298,6 @@ func TestEnsureConnsAreReady(t *testing.T) {
 		HubPort:      testutils.MustGetPort(t),
 		AgentPort:    agentPort,
 		Mode:         idl.Mode_copy,
-		UpgradeID:    0,
 	}
 
 	testlog.SetupTestLogger()
