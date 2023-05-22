@@ -205,7 +205,7 @@ func (s *Step) run(substep idl.Substep, f func(OutStreams) error, alwaysRun bool
 
 	timer := stopwatch.Start()
 	defer func() {
-		if pErr := s.printDuration(substep, timer.Stop()); pErr != nil {
+		if pErr := s.printDuration(substep, timer.Stop().String()); pErr != nil {
 			err = errorlist.Append(err, pErr)
 		}
 	}()
@@ -266,9 +266,9 @@ func (s *Step) sendStatus(substep idl.Substep, status idl.Status) {
 	})
 }
 
-func (s *Step) printDuration(substep idl.Substep, timer *stopwatch.Stopwatch) error {
+func (s *Step) printDuration(substep idl.Substep, duration string) error {
 	divider := "-----------------------------------------------------------------------------"
-	_, err := fmt.Fprintf(s.streams.Stdout(), "\n%s took %s\n\n%s\n", substep, timer.String(), divider)
+	_, err := fmt.Fprintf(s.streams.Stdout(), "\n%s took %s\n\n%s\n", substep, duration, divider)
 	return err
 }
 

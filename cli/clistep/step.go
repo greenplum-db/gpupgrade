@@ -176,7 +176,7 @@ func (s *Step) run(substep idl.Substep, f func(streams step.OutStreams) error, a
 
 	substepTimer := stopwatch.Start()
 	defer func() {
-		logDuration(substep.String(), s.verbose, substepTimer.Stop())
+		logDuration(substep.String(), s.verbose, substepTimer.Stop().String())
 	}()
 
 	if pErr := s.printStatus(substep, idl.Status_running); pErr != nil {
@@ -231,7 +231,7 @@ func (s *Step) DisableStore() {
 }
 
 func (s *Step) Complete(completedText string) error {
-	logDuration(s.stepName, s.verbose, s.stepTimer.Stop())
+	logDuration(s.stepName, s.verbose, s.stepTimer.Stop().String())
 
 	status := idl.Status_complete
 	if s.Err() != nil {
@@ -297,8 +297,8 @@ func (s *Step) printStatus(substep idl.Substep, status idl.Status) error {
 	return nil
 }
 
-func logDuration(operation string, verbose bool, timer *stopwatch.Stopwatch) {
-	msg := operation + " took " + timer.String()
+func logDuration(operation string, verbose bool, duration string) {
+	msg := operation + " took " + duration
 	if verbose {
 		fmt.Println(msg)
 		fmt.Println()
