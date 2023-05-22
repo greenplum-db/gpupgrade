@@ -8,6 +8,7 @@
   - [CCP Cluster Settings](#ccp-cluster-settings)
   - [Flying the Pipeline](#flying-the-pipeline)
   - [Fixing Failures](#fixing-failures)
+  - [Saving Logs](#saving-logs)
   - [Tearing Down the Cluster](#tearing-down-the-cluster)
 - [Purpose](#purpose)
 - [Design and Implementation](#design-and-implementation)
@@ -40,6 +41,16 @@ Run `make functional-pipeline` to fly the pipeline
 #### Fixing Failures
 - Fix the change in the pipeline yaml and re-fly the pipeline.
 - Log into the box and fix the issue and re-trigger the job.
+
+#### Saving Logs
+- SSH to the cluster
+- `gcloud auth login`
+  - Click the browser link and follow the directions.
+  - Copy the verification code (bottom box) into the gcloud CLI prompt.
+- Upload the files from the CCP cluster to GCS
+  - `gsutil cp logs.tar.gz gs://gpupgrade-intermediates/functional-testing/logs/`
+- Download the files from GCS to your local machine
+  - `gsutil cp gs://gpupgrade-intermediates/functional-testing/logs/logs.tar.gz .` 
 
 #### Tearing Down the Cluster
 - The end of the pipeline will run the `teardown-cluster` job to destroy the cluster.
