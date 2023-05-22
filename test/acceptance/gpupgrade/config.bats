@@ -46,9 +46,9 @@ teardown() {
 @test "configuration can be dumped as a whole" {
     run gpupgrade config show
     [ "$status" -eq 0 ]
-    [[ "${lines[0]}" = "id - "* ]] # this is randomly generated; we could replace * with a base64 regex matcher
-    [ "${lines[1]}" = "source-gphome - $GPHOME_SOURCE" ]
-    [[ "${lines[2]}" = "target-datadir - "* ]]
-    [ "${lines[3]}" = "target-gphome - $GPHOME_TARGET" ]
-    [ "${lines[4]}" = "target-port - $TARGET_PGPORT" ]
+    [ "${lines[0]}" = "source-gphome - $GPHOME_SOURCE" ]
+    [[ "${lines[1]}" = "target-datadir - "* ]]
+    [ "${lines[2]}" = "target-gphome - $GPHOME_TARGET" ]
+    [ "${lines[3]}" = "target-port - $TARGET_PGPORT" ]
+    [[ "${lines[4]}" = "upgrade-id - "* ]] # this is randomly generated; we could replace * with a base64 regex matcher
 }

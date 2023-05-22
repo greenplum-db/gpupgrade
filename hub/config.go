@@ -17,7 +17,7 @@ func (s *Server) GetConfig(ctx context.Context, req *idl.GetConfigRequest) (*idl
 	resp := &idl.GetConfigReply{}
 
 	switch req.Name {
-	case "id":
+	case "upgrade-id":
 		resp.Value = s.UpgradeID.String()
 	case "source-gphome":
 		if s.Source != nil {

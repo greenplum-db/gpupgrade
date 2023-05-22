@@ -252,7 +252,7 @@ Usage: gpupgrade config show <flag>
 
 Optional Flags:
 
---id               differentiates the intermediate target cluster directories. 
+--upgrade-id       differentiates the intermediate target cluster directories. 
                    The upgrade IO is also used when archiving the log directories
                    and source cluster data directories after finalize.
 --source-gphome

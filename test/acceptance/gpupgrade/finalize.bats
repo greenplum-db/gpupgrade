@@ -71,7 +71,7 @@ upgrade_cluster() {
 
         # do before gpupgrade finalize shuts down the hub
         local upgradeID
-        upgradeID=$(gpupgrade config show --id)
+        upgradeID=$(gpupgrade config show --upgrade-id)
 
         gpupgrade finalize --non-interactive --verbose
 

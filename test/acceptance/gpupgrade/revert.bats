@@ -89,7 +89,7 @@ query_host_datadirs() {
 
     # grab cluster data before revert destroys it
     target_hosts_dirs=$(jq -r '.Intermediate.Primaries[] | .Hostname + " " + .DataDir' "${GPUPGRADE_HOME}/config.json")
-    upgradeID=$(gpupgrade config show --id)
+    upgradeID=$(gpupgrade config show --upgrade-id)
 
     gpupgrade revert --non-interactive --verbose
 
@@ -127,7 +127,7 @@ query_host_datadirs() {
         --seed-dir=$BATS_TEST_DIRNAME/../../../data-migration-scripts \
         --verbose 3>&-
 
-    upgradeID=$(gpupgrade config show --id)
+    upgradeID=$(gpupgrade config show --upgrade-id)
 
     run gpupgrade revert --non-interactive --verbose
 

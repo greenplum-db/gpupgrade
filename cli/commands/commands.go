@@ -149,7 +149,7 @@ func createConfigShowSubcommand() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().Bool("id", false, "show upgrade identifier")
+	cmd.Flags().Bool("upgrade-id", false, "show upgrade identifier")
 	cmd.Flags().Bool("source-gphome", false, "show path for the source Greenplum installation")
 	cmd.Flags().Bool("target-gphome", false, "show path for the target Greenplum installation")
 	cmd.Flags().Bool("target-datadir", false, "show temporary data directory for target gpdb cluster")

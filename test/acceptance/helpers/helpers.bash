@@ -153,7 +153,7 @@ process_is_running() {
 #
 expected_target_datadir() {
     local dir=$1
-    local upgradeID=${2:-$(gpupgrade config show --id)}
+    local upgradeID=${2:-$(gpupgrade config show --upgrade-id)}
     local parentDir=$(dirname "${dir}")
     local baseDir=$(basename "${dir}")
     local suffix="${baseDir#demoDataDir}"
