@@ -4,67 +4,16 @@
 package config
 
 import (
-	"database/sql"
 	"fmt"
-	"time"
 
 	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
-
-func (conf *Config) AddClusters(db *sql.DB, requestedPorts []uint32) error {
-	source, err := greenplum.ClusterFromDB(db, conf.Source.GPHome, idl.ClusterDestination_source)
-	if err != nil {
-		return xerrors.Errorf("retrieve source configuration: %w", err)
-	}
-
-	err = greenplum.WaitForSegments(db, 5*time.Minute, &source)
-	if err != nil {
-		return err
-	}
-
-	targetGPHome := conf.Target.GPHome
-	targetVersion, err := greenplum.Version(conf.Target.GPHome)
-	if err != nil {
-		return err
-	}
-
-	target := source // create target cluster based off source cluster
-	conf.Source = &source
-	conf.Target = &target
-	conf.Target.Destination = idl.ClusterDestination_target
-	conf.Target.GPHome = targetGPHome
-	conf.Target.Version = targetVersion
-
-	var ports []int
-	for _, p := range requestedPorts {
-		ports = append(ports, int(p))
-	}
-
-	conf.Intermediate, err = GenerateIntermediateCluster(conf.Source, ports, conf.UpgradeID, conf.Target.Version, conf.Target.GPHome)
-	if err != nil {
-		return err
-	}
-
-	if err := EnsureTempPortRangeDoesNotOverlapWithSourceClusterPorts(conf.Source, conf.Intermediate); err != nil {
-		return err
-	}
-
-	if conf.Source.Version.Major == 5 {
-		conf.Source.Tablespaces, err = greenplum.TablespacesFromDB(db, utils.GetStateDirOldTablespacesFile())
-		if err != nil {
-			return xerrors.Errorf("extract tablespace information: %w", err)
-		}
-	}
-
-	return nil
-}
 
 func GenerateIntermediateCluster(source *greenplum.Cluster, ports []int, upgradeID upgrade.ID, version semver.Version, gphome string) (*greenplum.Cluster, error) {
 	ports = utils.Sanitize(ports)
