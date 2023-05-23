@@ -23,7 +23,7 @@
 
 #### Generating a Dump
 - On a production cluster use `gpbackup --metadata-only --dbname <db>` for all databases to generate a schema only metadata dump.
-- XZ the dump with `xz --threads $(nproc) customer_5X_metadata_05_2023.sql` to create a `customer_5X_metadata_05_2023.sql.xz` file.
+- XZ the dump with `xz --threads $(nproc) customer_5X_metadata_20230501.sql`.
 - Place the xz'd dump in the `user-schemas` bucket under the `data-gpdb-server` GCP project.
 
 #### Using a Dump
