@@ -37,11 +37,11 @@ unit integration acceptance test: export PATH := $(CURDIR):$(PATH)
 
 .PHONY: unit
 unit:
-	go test -count=1 $(shell go list ./... | grep -v integration$$ )
+	go test --cover -count=1 $(shell go list ./... | grep -v integration$$ )
 
 .PHONY: integration
 integration:
-	go test -count=1 ./integration
+	go test --cover -count=1 ./integration
 
 .PHONY: acceptance
 acceptance:
