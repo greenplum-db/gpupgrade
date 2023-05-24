@@ -79,6 +79,7 @@ func TestCreate(t *testing.T) {
 	const mode = idl.Mode_link
 	const useHbaHostnames = false
 	const parentBackupDirs = ""
+	const pgUpgradeJobs = 1
 	ports, err := commands.ParsePorts("50432-65535")
 	if err != nil {
 		t.Fatal(err)
@@ -99,7 +100,7 @@ func TestCreate(t *testing.T) {
 			expectPgStatReplicationToReturn(mock)
 			expectPgTablespace(mock)
 
-			conf, err := config.Create(db, hubPort, agentPort, source.GPHome, targetGPHome, mode, useHbaHostnames, ports, parentBackupDirs)
+			conf, err := config.Create(db, hubPort, agentPort, source.GPHome, targetGPHome, mode, useHbaHostnames, ports, pgUpgradeJobs, parentBackupDirs)
 			if err != nil {
 				t.Fatalf("unexpected error %#v", err)
 			}
@@ -125,7 +126,7 @@ func TestCreate(t *testing.T) {
 			expectPgStatReplicationToReturn(mock)
 			expectPgTablespace(mock)
 
-			conf, err := config.Create(db, hubPort, agentPort, source.GPHome, targetGPHome, mode, useHbaHostnames, ports, parentBackupDirs)
+			conf, err := config.Create(db, hubPort, agentPort, source.GPHome, targetGPHome, mode, useHbaHostnames, ports, pgUpgradeJobs, parentBackupDirs)
 			if err != nil {
 				t.Fatalf("unexpected error %#v", err)
 			}
@@ -150,7 +151,7 @@ func TestCreate(t *testing.T) {
 			expectPgStatReplicationToReturn(mock)
 			expectPgTablespace(mock)
 
-			conf, err := config.Create(db, hubPort, agentPort, source.GPHome, targetGPHome, mode, useHbaHostnames, ports, parentBackupDirs)
+			conf, err := config.Create(db, hubPort, agentPort, source.GPHome, targetGPHome, mode, useHbaHostnames, ports, pgUpgradeJobs, parentBackupDirs)
 			if err != nil {
 				t.Fatalf("unexpected error %#v", err)
 			}
@@ -167,7 +168,7 @@ func TestCreate(t *testing.T) {
 		expectPgStatReplicationToReturn(mock)
 		expectPgTablespace(mock)
 
-		conf, err := config.Create(db, hubPort, agentPort, source.GPHome, targetGPHome, mode, useHbaHostnames, ports, parentBackupDirs)
+		conf, err := config.Create(db, hubPort, agentPort, source.GPHome, targetGPHome, mode, useHbaHostnames, ports, pgUpgradeJobs, parentBackupDirs)
 		if err != nil {
 			t.Fatalf("unexpected error %#v", err)
 		}
@@ -207,6 +208,10 @@ func TestCreate(t *testing.T) {
 
 		if conf.UseHbaHostnames != useHbaHostnames {
 			t.Errorf("got %t want %t", conf.UseHbaHostnames, useHbaHostnames)
+		}
+
+		if conf.PgUpgradeJobs != pgUpgradeJobs {
+			t.Errorf("got %d want %d", conf.PgUpgradeJobs, pgUpgradeJobs)
 		}
 
 		if conf.UpgradeID == "" {

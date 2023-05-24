@@ -45,6 +45,7 @@ func initialize() *cobra.Command {
 	var pgUpgradeVerbose bool
 	var skipVersionCheck bool
 	var skipPgUpgradeChecks bool
+	var pgUpgradeJobs uint
 	var ports string
 	var mode string
 	var useHbaHostnames bool
@@ -169,7 +170,7 @@ func initialize() *cobra.Command {
 			confirmationText := fmt.Sprintf(initializeConfirmationText,
 				cases.Title(language.English).String(idl.Step_initialize.String()),
 				initializeSubsteps, logdir, configPath,
-				sourcePort, sourceGPHome, targetGPHome, mode, diskFreeRatio, useHbaHostnames, dynamicLibraryPath, ports, hubPort, agentPort)
+				sourcePort, sourceGPHome, targetGPHome, mode, diskFreeRatio, pgUpgradeJobs, useHbaHostnames, dynamicLibraryPath, ports, hubPort, agentPort)
 
 			log.Print(confirmationText)
 
@@ -201,7 +202,8 @@ func initialize() *cobra.Command {
 					db, hubPort, agentPort,
 					filepath.Clean(sourceGPHome),
 					filepath.Clean(targetGPHome),
-					mode, useHbaHostnames, parsedPorts, parentBackupDirs,
+					mode, useHbaHostnames, parsedPorts, pgUpgradeJobs,
+					parentBackupDirs,
 				)
 				if err != nil {
 					return err
@@ -323,6 +325,7 @@ To return the cluster to its original state, run "gpupgrade revert".`,
 	subInit.Flags().BoolVar(&pgUpgradeVerbose, "pg-upgrade-verbose", false, "execute pg_upgrade with --verbose")
 	subInit.Flags().BoolVar(&skipPgUpgradeChecks, "skip-pg-upgrade-checks", false, "skips pg_upgrade checks")
 	subInit.Flags().MarkHidden("skip-pg-upgrade-checks") //nolint
+	subInit.Flags().UintVar(&pgUpgradeJobs, "pg-upgrade-jobs", 4, "databases to upgrade in parallel based on the number of specified threads. Defaults to 4.")
 	subInit.Flags().StringVarP(&file, "file", "f", "", "the configuration file to use")
 	subInit.Flags().BoolVar(&nonInteractive, "non-interactive", false, "do not prompt for confirmation to proceed")
 	subInit.Flags().MarkHidden("non-interactive") //nolint

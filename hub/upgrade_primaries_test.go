@@ -77,6 +77,7 @@ func TestUpgradePrimaries(t *testing.T) {
 						BackupDir:           backupDirs.AgentHostsToBackupDir["sdw1"],
 						PgUpgradeVerbose:    true,
 						SkipPgUpgradeChecks: true,
+						PgUpgradeJobs:       "1",
 						Action:              idl.PgOptions_check,
 						Role:                greenplum.PrimaryRole,
 						ContentID:           0,
@@ -97,6 +98,7 @@ func TestUpgradePrimaries(t *testing.T) {
 						BackupDir:           backupDirs.AgentHostsToBackupDir["sdw1"],
 						PgUpgradeVerbose:    true,
 						SkipPgUpgradeChecks: true,
+						PgUpgradeJobs:       "1",
 						Action:              idl.PgOptions_check,
 						Role:                greenplum.PrimaryRole,
 						ContentID:           2,
@@ -127,6 +129,7 @@ func TestUpgradePrimaries(t *testing.T) {
 						BackupDir:           backupDirs.AgentHostsToBackupDir["sdw2"],
 						PgUpgradeVerbose:    true,
 						SkipPgUpgradeChecks: true,
+						PgUpgradeJobs:       "1",
 						Action:              idl.PgOptions_check,
 						Role:                greenplum.PrimaryRole,
 						ContentID:           1,
@@ -147,6 +150,7 @@ func TestUpgradePrimaries(t *testing.T) {
 						BackupDir:           backupDirs.AgentHostsToBackupDir["sdw2"],
 						PgUpgradeVerbose:    true,
 						SkipPgUpgradeChecks: true,
+						PgUpgradeJobs:       "1",
 						Action:              idl.PgOptions_check,
 						Role:                greenplum.PrimaryRole,
 						ContentID:           3,
@@ -172,7 +176,7 @@ func TestUpgradePrimaries(t *testing.T) {
 			{AgentClient: sdw2, Hostname: "sdw2"},
 		}
 
-		err := hub.UpgradePrimaries(agentConns, backupDirs.AgentHostsToBackupDir, true, true, source, intermediate, idl.PgOptions_check, idl.Mode_copy)
+		err := hub.UpgradePrimaries(agentConns, backupDirs.AgentHostsToBackupDir, true, true, 1, source, intermediate, idl.PgOptions_check, idl.Mode_copy)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -218,7 +222,7 @@ func TestUpgradePrimaries(t *testing.T) {
 				{AgentClient: sdw2, Hostname: "sdw2"},
 			}
 
-			err := hub.UpgradePrimaries(agentConns, backupDirs.AgentHostsToBackupDir, false, false, source, intermediate, c.Action, idl.Mode_link)
+			err := hub.UpgradePrimaries(agentConns, backupDirs.AgentHostsToBackupDir, false, false, 1, source, intermediate, c.Action, idl.Mode_link)
 			var errs errorlist.Errors
 			if !xerrors.As(err, &errs) {
 				t.Fatalf("error %#v does not contain type %T", err, errs)

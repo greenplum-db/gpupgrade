@@ -29,6 +29,9 @@ target_gphome =
 # link mode.
 # disk_free_ratio = 0.6
 
+# Databases to upgrade in parallel based on the number of specified threads.
+# pg_upgrade_jobs = 4
+
 # Whether to populate pg_hba.conf with hostnames or IP addresses during
 # gpinitsystem and other utilities.
 # Choose "true" to use host names, or "false" to use IP addresses.

@@ -156,11 +156,11 @@ func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest
 			return nil
 		}
 
-		if err := UpgradeCoordinator(stream, s.BackupDirs.CoordinatorBackupDir, req.GetPgUpgradeVerbose(), req.GetSkipPgUpgradeChecks(), s.Source, s.Intermediate, idl.PgOptions_check, s.Mode); err != nil {
+		if err := UpgradeCoordinator(stream, s.BackupDirs.CoordinatorBackupDir, req.GetPgUpgradeVerbose(), req.GetSkipPgUpgradeChecks(), s.PgUpgradeJobs, s.Source, s.Intermediate, idl.PgOptions_check, s.Mode); err != nil {
 			return err
 		}
 
-		return UpgradePrimaries(s.agentConns, s.BackupDirs.AgentHostsToBackupDir, req.GetPgUpgradeVerbose(), req.GetSkipPgUpgradeChecks(), s.Source, s.Intermediate, idl.PgOptions_check, s.Mode)
+		return UpgradePrimaries(s.agentConns, s.BackupDirs.AgentHostsToBackupDir, req.GetPgUpgradeVerbose(), req.GetSkipPgUpgradeChecks(), s.PgUpgradeJobs, s.Source, s.Intermediate, idl.PgOptions_check, s.Mode)
 	})
 
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_InitializeResponse{

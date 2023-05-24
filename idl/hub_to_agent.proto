@@ -43,22 +43,23 @@ message PgOptions {
   string backupDir = 1;
   bool pgUpgradeVerbose = 2;
   bool skipPgUpgradeChecks = 3;
-  Action action = 4;
-  string role = 5;
-  int32 contentID = 6;
-  PgUpgradeMode pgUpgradeMode = 7;
-  string oldOptions = 8;
-  Mode mode = 9;
-  string targetVersion = 10;
-  string oldBinDir = 11;
-  string oldDataDir = 12;
-  string oldPort = 13;
-  string oldDBID = 14;
-  string newBinDir = 15;
-  string newDataDir = 16;
-  string newPort = 17;
-  string newDBID = 18;
-  map<int32, TablespaceInfo> Tablespaces = 19;
+  string pgUpgradeJobs = 4;
+  Action action = 5;
+  string role = 6;
+  int32 contentID = 7;
+  PgUpgradeMode pgUpgradeMode = 8;
+  string oldOptions = 9;
+  Mode mode = 10;
+  string targetVersion = 11;
+  string oldBinDir = 12;
+  string oldDataDir = 13;
+  string oldPort = 14;
+  string oldDBID = 15;
+  string newBinDir = 16;
+  string newDataDir = 17;
+  string newPort = 18;
+  string newDBID = 19;
+  map<int32, TablespaceInfo> Tablespaces = 20;
 }
 
 message TablespaceInfo {

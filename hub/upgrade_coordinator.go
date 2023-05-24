@@ -20,7 +20,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
 
-func UpgradeCoordinator(streams step.OutStreams, backupDir string, pgUpgradeVerbose bool, skipPgUpgradeChecks bool, source *greenplum.Cluster, intermediate *greenplum.Cluster, action idl.PgOptions_Action, mode idl.Mode) error {
+func UpgradeCoordinator(streams step.OutStreams, backupDir string, pgUpgradeVerbose bool, skipPgUpgradeChecks bool, pgUpgradeJobs uint, source *greenplum.Cluster, intermediate *greenplum.Cluster, action idl.PgOptions_Action, mode idl.Mode) error {
 	oldOptions := ""
 	// When upgrading from 5 the coordinator must be provided with its standby's dbid to allow WAL to sync.
 	if source.Version.Major == 5 && source.HasStandby() {
@@ -31,6 +31,7 @@ func UpgradeCoordinator(streams step.OutStreams, backupDir string, pgUpgradeVerb
 		BackupDir:           backupDir,
 		PgUpgradeVerbose:    pgUpgradeVerbose,
 		SkipPgUpgradeChecks: skipPgUpgradeChecks,
+		PgUpgradeJobs:       strconv.FormatUint(uint64(pgUpgradeJobs), 10),
 		Action:              action,
 		Role:                intermediate.Coordinator().Role,
 		ContentID:           int32(intermediate.Coordinator().ContentID),
