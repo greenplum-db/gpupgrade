@@ -27,9 +27,8 @@
 - Place the xz'd dump in the `user-schemas` bucket under the `data-gpdb-server` GCP project.
 
 #### Using a Dump
-- Place _any_ xz'd SQL file in `gpupgrade-intermediates/dump/5X` bucket under the `data-gpdb-cm` GCP project.
-- If multiple `.sql.xz` files are present in the bucket update the `schema_dump` resource to either use a more precise 
-  regex or switch to using a `versioned_file` resource.
+- Place an xz'd SQL file in `gpupgrade-intermediates/dump/5X` bucket under the `data-gpdb-cm` GCP project.
+- Pass the `DUMP_PATH` environment variable when making the functional pipeline such as `make DUMP_PATH=dump/5X/dump.sql.xz functional-pipeline`
 
 #### CCP Cluster Settings
 The defaults should be fine. One can change the `instance_type`, `disk_type`, `disk_size`, and `ccp_reap_minutes` in the 

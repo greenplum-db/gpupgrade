@@ -33,8 +33,13 @@ resources:
     source:
       json_key: ((upgrade/cm-gcs-service-account-key))
       bucket: gpupgrade-intermediates
-      regexp: dump/5X/(.*).sql.xz
-    # versioned_file: dump/5X/dump.sql.xz # Use versioned_file when specifying the full name otherwise Concourse won't pick it up.
+    {{- range .FunctionalJobs }}
+      {{- if .DumpPath }}
+      versioned_file: {{ .DumpPath }}
+      {{- else }}
+      Set DUMP_PATH with `make DUMP_PATH=dump/5X/dump.sql.xz functional-pipeline` See ci/functional/README.md
+      {{ end }}
+    {{- end -}}
 
 {{range .GPDBVersions}}
   {{- if not (eq .OSVersion "centos6") }}

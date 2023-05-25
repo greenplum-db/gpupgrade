@@ -91,6 +91,7 @@ type MultihostAcceptanceJobs []MultihostAcceptanceJob
 
 type FunctionalJob struct {
 	Job
+	DumpPath string
 }
 
 func (j *FunctionalJob) Name() string {

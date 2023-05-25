@@ -195,6 +195,7 @@ pipeline functional-pipeline: export JOB_TYPE=dev
 endif
 
 .PHONY: pipeline functional-pipeline expose-pipeline
+pipeline functional-pipeline: export DUMP_PATH=${DUMP_PATH:-}
 pipeline functional-pipeline: export 5X_GIT_USER=${5X_GIT_USER:-}
 pipeline functional-pipeline: export 5X_GIT_BRANCH=${5X_GIT_BRANCH:-}
 pipeline functional-pipeline: export 6X_GIT_USER=${6X_GIT_USER:-}

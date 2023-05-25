@@ -168,7 +168,7 @@ func init() {
 	}
 
 	specialFunctionalJobs := FunctionalJobs{
-		FunctionalJob{Job{Mode: link}},
+		FunctionalJob{Job: Job{Mode: link}, DumpPath: os.Getenv("DUMP_PATH")},
 	}
 
 	// SpecialJobs cases for 5->6. (These are special-cased to avoid exploding the
