@@ -87,6 +87,25 @@
 
                 source gpupgrade_src/ci/main/scripts/environment.bash
 
+                echo "Setting source cluster GUCs..."
+                time ssh -n cdw "
+                    set -eux -o pipefail
+
+                    source /usr/local/greenplum-db-source/greenplum_path.sh
+                    export MASTER_DATA_DIRECTORY=$MASTER_DATA_DIRECTORY
+                    export PGPORT=$PGPORT
+
+                    TOTAL_MEM=\$(grep MemTotal /proc/meminfo | awk '{print \$2}')
+                    MAX_STATEMENT_MEM=\$((\${TOTAL_MEM}/2))
+                    STATEMENT_MEM=\$((\${MAX_STATEMENT_MEM}/16))
+
+                    gpconfig -c max_statement_mem -v \${MAX_STATEMENT_MEM}kB
+                    gpconfig -c statement_mem -v \${STATEMENT_MEM}kB
+                    gpconfig -c max_locks_per_transaction -v 512
+
+                    gpstop -ar
+                "
+
                 echo "Running the data migration scripts on the source cluster..."
                 time ssh -n cdw "
                     set -eux -o pipefail
