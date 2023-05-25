@@ -53,4 +53,7 @@ SELECT COUNT(*) AS Indexes FROM pg_catalog.pg_index;
 -- No. of User Defined Functions
 SELECT COUNT(*) FROM pg_proc p, pg_namespace n WHERE p.pronamespace = n.oid AND n.nspname NOT IN ('pg_catalog', 'information_schema', 'gp_toolkit');
 
+-- No. of User Defined Types
+SELECT COUNT(*) FROM pg_type t, pg_namespace n WHERE t.typnamespace = n.oid AND n.nspname NOT IN ('pg_catalog', 'pg_toast', 'information_schema', 'gp_toolkit');
+
 EOF
