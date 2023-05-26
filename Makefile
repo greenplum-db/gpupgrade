@@ -182,7 +182,9 @@ endif
 
 # Concourse does not allow "/" in pipeline names
 WORKSPACE ?= ~/workspace
-PIPELINE_NAME ?= gpupgrade:$(shell git rev-parse --abbrev-ref HEAD | tr '/' ':')
+BRANCH_NAME ?= $(shell git rev-parse --abbrev-ref HEAD | tr '/' ':')
+export BRANCH_NAME
+PIPELINE_NAME ?= gpupgrade:${BRANCH_NAME}
 FLY_TARGET ?= cm
 
 # YAML templating is used to switch between prod and dev pipelines. The

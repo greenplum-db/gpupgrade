@@ -66,6 +66,7 @@ jobs:
             args:
               - greenplum-db-{{majorVersion .Source}}
               - greenplum-db-{{majorVersion .Target}}
+{{- end}}
       - task: save_cluster_env_files
         config:
           platform: linux
@@ -87,12 +88,7 @@ jobs:
               - |
                 set -eux -o pipefail
 
-                # Make cluster_env_files.tar.gz filename unique with git branch
-                # name to avoid collisions when multiple pipelines are run.
-                # Since branch may be detached from HEAD use this method to
-                # easily find the actual branch name.
-                BRANCH=$(cat gpupgrade_src/.git/config |  grep branch | sed -e 's@.*"\(.*\)".*@\1@')
-                tar -czvf cluster_env_files_${BRANCH}.tar.gz cluster_env_files/
+                tar -czvf cluster_env_files_{{ .BranchName }}.tar.gz cluster_env_files/
                 mv cluster_env_files*.tar.gz tared_cluster_env_files/
       - put: saved_cluster_env_files
         params:
@@ -116,12 +112,7 @@ jobs:
               - |
                 set -eux -o pipefail
 
-                # Make the dummy resource filename unique with git branch
-                # name to avoid collisions when multiple pipelines are run.
-                # Since branch may be detached from HEAD use this method to
-                # easily find the actual branch name.
-                BRANCH=$(cat gpupgrade_src/.git/config |  grep branch | sed -e 's@.*"\(.*\)".*@\1@')
-                touch dummy_resource_file/dummy_resource_${BRANCH}.txt
+                touch dummy_resource_file/dummy_resource_{{ .BranchName }}.txt
       - put: dummy_resource
         params:
           file: dummy_resource_file/dummy_resource*.txt
@@ -130,4 +121,3 @@ jobs:
       do:
         - <<: *ccp_destroy
         - <<: *slack_alert
-{{end -}}

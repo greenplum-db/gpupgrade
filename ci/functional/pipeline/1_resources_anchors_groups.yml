@@ -59,22 +59,26 @@ resources:
   {{- end }}
 {{end}}
 
+  # Make the saved_cluster_env_files resource unique with git branch name to
+  # avoid collisions when multiple pipelines are run.
   - name: saved_cluster_env_files
     type: gcs
     source:
       json_key: ((upgrade/cm-gcs-service-account-key))
       bucket: gpupgrade-intermediates
-      regexp: functional-testing/cluster_env_files(.*).tar.gz
+      versioned_file: functional-testing/cluster_env_files_{{ .BranchName }}.tar.gz
 
-  # Since we don't place a passed constraint on `gpupgrade_src` or `saved_cluster_env_files`
-  # use a `dummy_resource` to automatically trigger subsequent jobs during the
-  # upgrade workflow.
+  # Since we don't place a passed constraint on `gpupgrade_src` or
+  # `saved_cluster_env_files` use a `dummy_resource` to automatically trigger
+  # subsequent jobs in the pipeline.
+  # Make the dummy_resource resource unique with git branch name to avoid
+  # collisions when multiple pipelines are run.
   - name: dummy_resource
     type: gcs
     source:
       json_key: ((upgrade/cm-gcs-service-account-key))
       bucket: gpupgrade-intermediates
-      regexp: functional-testing/dummy_resource(.*).txt
+      versioned_file: functional-testing/dummy_resource_{{ .BranchName }}.txt
 
   - name: gpupgrade_rpm
     type: gcs

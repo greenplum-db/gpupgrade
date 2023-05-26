@@ -63,6 +63,7 @@ var versions = []Version{
 
 type Data struct {
 	JobType                 string
+	BranchName              string
 	MajorVersions           []string
 	GPDBVersions            GPDBVersions
 	AcceptanceJobs          AcceptanceJobs
@@ -190,6 +191,7 @@ func init() {
 
 	data = Data{
 		JobType:                 os.Getenv("JOB_TYPE"),
+		BranchName:              os.Getenv("BRANCH_NAME"),
 		MajorVersions:           majorVersions,
 		GPDBVersions:            gpdbVersions,
 		AcceptanceJobs:          acceptanceJobs,
