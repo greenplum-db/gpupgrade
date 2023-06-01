@@ -117,7 +117,60 @@ teardown() {
     diff -U3 <(echo "$view_owners_before") <(echo "$view_owners_after")
 }
 
-@test "after reverting recreate scripts must restore non-upgradeable objects" {
+@test "recreate scripts restore both unfixable and non-upgradeable objects when reverting after initialize" {
+    # This syntax in create_nonupgradable_objects.sql is not completely
+    # compatible with 6X. ON_ERROR_STOP is disabled until this incompatibility
+    # is resolved.
+    $PSQL -v ON_ERROR_STOP=0 -d testdb -f "${SEED_DIR}"/"${VERSION_SEED_DIR}"/test/create_nonupgradable_objects.sql
+
+    root_child_indexes_before=$(get_indexes "$GPHOME_SOURCE")
+    tsquery_datatype_objects_before=$(get_tsquery_datatypes "$GPHOME_SOURCE")
+    name_datatype_objects_before=$(get_name_datatypes "$GPHOME_SOURCE")
+    fk_constraints_before=$(get_fk_constraints "$GPHOME_SOURCE")
+    primary_unique_constraints_before=$(get_primary_unique_constraints "$GPHOME_SOURCE")
+    view_owners_before=$(get_view_owners "$GPHOME_SOURCE")
+
+    # Ignore the test tables that break the diff for now.
+    EXCLUSIONS+="-T testschema.heterogeneous_ml_partition_table "
+
+    MIGRATION_DIR=`mktemp -d /tmp/migration.XXXXXX`
+    register_teardown rm -r "$MIGRATION_DIR"
+
+    gpupgrade generate --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --seed-dir "$SEED_DIR" --output-dir "$MIGRATION_DIR"
+    gpupgrade apply    --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --input-dir "$MIGRATION_DIR" --phase initialize
+
+    run gpupgrade initialize \
+        --source-gphome="$GPHOME_SOURCE" \
+        --target-gphome="$GPHOME_TARGET" \
+        --source-master-port="${PGPORT}" \
+        --temp-port-range 6020-6040 \
+        --disk-free-ratio 0 \
+        --non-interactive \
+        --verbose
+    [ "$status" -ne 0 ] || fail "expected initialize to fail due to unfixable"
+
+    gpupgrade revert --non-interactive --verbose
+
+    gpupgrade apply --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --input-dir "$MIGRATION_DIR" --phase revert
+
+    # migration scripts should recreate indexes on the source cluster on revert
+    root_child_indexes_after=$(get_indexes "$GPHOME_SOURCE")
+    tsquery_datatype_objects_after=$(get_tsquery_datatypes "$GPHOME_SOURCE")
+    name_datatype_objects_after=$(get_name_datatypes "$GPHOME_SOURCE")
+    fk_constraints_after=$(get_fk_constraints "$GPHOME_SOURCE")
+    primary_unique_constraints_after=$(get_primary_unique_constraints "$GPHOME_SOURCE")
+    view_owners_after=$(get_view_owners "$GPHOME_SOURCE")
+
+    # expect the index and tsquery datatype information to be same after the upgrade
+    diff -U3 <(echo "$root_child_indexes_before") <(echo "$root_child_indexes_after")
+    diff -U3 <(echo "$tsquery_datatype_objects_before") <(echo "$tsquery_datatype_objects_after")
+    diff -U3 <(echo "$name_datatype_objects_before") <(echo "$name_datatype_objects_after")
+    diff -U3 <(echo "$fk_constraints_before") <(echo "$fk_constraints_after")
+    diff -U3 <(echo "$primary_unique_constraints_before") <(echo "$primary_unique_constraints_after")
+    diff -U3 <(echo "$view_owners_before") <(echo "$view_owners_after")
+}
+
+@test "recreate scripts restore non-upgradeable objects when reverting after execute" {
     # This syntax in create_nonupgradable_objects.sql is not completely
     # compatible with 6X. ON_ERROR_STOP is disabled until this incompatibility
     # is resolved.
