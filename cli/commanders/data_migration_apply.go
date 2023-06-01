@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/fatih/color"
 	"github.com/vbauerster/mpb/v8"
@@ -60,11 +61,14 @@ func ApplyDataMigrationScripts(nonInteractive bool, gphome string, port int, log
 	}()
 
 	progressBar := mpb.New()
+	var wg sync.WaitGroup
 	errChan := make(chan error, len(scriptDirsToRun))
 	outputChan := make(chan []byte, len(scriptDirsToRun))
 
 	fmt.Printf("\nApplying data migration scripts...\n")
 	for _, scriptDir := range scriptDirsToRun {
+		wg.Add(1)
+
 		scriptDirEntries, err := utils.System.ReadDirFS(utils.System.DirFS(scriptDir), ".")
 		if err != nil {
 			return err
@@ -77,6 +81,8 @@ func ApplyDataMigrationScripts(nonInteractive bool, gphome string, port int, log
 				decor.CountersNoUnit("  %d/%d scripts applied")))
 
 		go func(gphome string, port int, scriptDir string, bar *mpb.Bar) {
+			defer wg.Done()
+
 			output, err := ApplyDataMigrationScriptSubDir(gphome, port, utils.System.DirFS(scriptDir), scriptDir, bar)
 			if err != nil {
 				errChan <- err
@@ -89,6 +95,7 @@ func ApplyDataMigrationScripts(nonInteractive bool, gphome string, port int, log
 	}
 
 	progressBar.Wait()
+	wg.Wait()
 	close(errChan)
 	close(outputChan)
 

@@ -79,15 +79,19 @@ func GenerateDataMigrationScripts(nonInteractive bool, gphome string, port int, 
 
 	fmt.Printf("\nGenerating data migration scripts for %d databases...\n", len(databases))
 	progressBar := mpb.New()
+	var wg sync.WaitGroup
 	errChan := make(chan error, len(databases))
 
 	for _, database := range databases {
+		wg.Add(1)
 		bar := progressBar.New(int64(database.NumSeedScripts),
 			mpb.NopStyle(),
 			mpb.PrependDecorators(decor.Name("  "+database.Datname, decor.WCSyncSpaceR)),
 			mpb.AppendDecorators(decor.NewPercentage("%d")))
 
 		go func(database DatabaseInfo, gphome string, port int, seedDir string, outputDir string, bar *mpb.Bar) {
+			defer wg.Done()
+
 			err = GenerateScriptsPerDatabase(database, gphome, port, seedDir, outputDir, bar)
 			if err != nil {
 				errChan <- err
@@ -99,6 +103,7 @@ func GenerateDataMigrationScripts(nonInteractive bool, gphome string, port int, 
 	}
 
 	progressBar.Wait()
+	wg.Wait()
 	close(errChan)
 
 	var errs error
@@ -340,9 +345,9 @@ func GenerateScriptsPerPhase(phase idl.Step, database DatabaseInfo, gphome strin
 				}
 			}
 
-			bar.Increment() // Increment for seed scripts run rather than actual scripts generated
-
 			if len(scriptOutput) == 0 {
+				// Increment bar even when there is no generated script written since the bar is tied to seed scripts executed rather than written.
+				bar.Increment()
 				continue
 			}
 
@@ -368,6 +373,8 @@ func GenerateScriptsPerPhase(phase idl.Step, database DatabaseInfo, gphome strin
 			if err != nil {
 				return err
 			}
+
+			bar.Increment()
 		}
 	}
 
