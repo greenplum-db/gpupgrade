@@ -30,18 +30,18 @@ depend-dev:
 # NOTE: goimports subsumes the standard formatting rules of gofmt, but gofmt is
 #       more flexible(custom rules) so we leave it in for this reason.
 format:
-		goimports -l -w agent/ cli/ db/ hub/ integration/ testutils/ utils/
-		gofmt -l -w agent/ cli/ db/ hub/ integration/ testutils/ utils/
+		goimports -l -w agent/ cli/ hub/ test/integration/ testutils/ utils/
+		gofmt -l -w agent/ cli/ hub/ test/integration/ testutils/ utils/
 
 unit integration acceptance test: export PATH := $(CURDIR):$(PATH)
 
 .PHONY: unit
 unit:
-	go test --cover -count=1 $(shell go list ./... | grep -v integration$$ )
+	go test --cover -count=1 $(shell go list ./... | grep -v test/integration$$ )
 
 .PHONY: integration
 integration:
-	go test --cover -count=1 ./integration
+	go test --cover -count=1 ./test/integration
 
 .PHONY: acceptance
 acceptance:
