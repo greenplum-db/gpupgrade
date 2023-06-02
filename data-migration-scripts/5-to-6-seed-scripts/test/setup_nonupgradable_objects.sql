@@ -5,4 +5,3 @@
 CREATE DATABASE testdb;
 CREATE ROLE gphdfs_user CREATEEXTTABLE(protocol='gphdfs', type='writable') CREATEEXTTABLE(protocol='gphdfs', type='readable');
 CREATE ROLE test_role1;
-CREATE ROLE test_role2;
