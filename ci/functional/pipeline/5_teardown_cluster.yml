@@ -5,13 +5,35 @@
           - get: dummy_resource
             passed: [ validate ]
             trigger: true
+          - get: gpupgrade_src
           - get: saved_cluster_env_files
           - get: ccp_src
-          - get: terraform
-            passed: [ generate-cluster ]
           - get: terraform.d
             params:
               unpack: true
+      - task: copy_terraform_files
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+              tag: latest
+          inputs:
+            - name: gpupgrade_src
+            - name: saved_cluster_env_files
+          outputs:
+            - name: terraform
+          run:
+            path: bash
+            args:
+              - -c
+              - |
+                set -eux -o pipefail
+
+                source gpupgrade_src/ci/main/scripts/environment.bash
+
+                cp -R cluster_env_files/terraform/* terraform
     ensure:
       do:
         - <<: *ccp_destroy
@@ -24,12 +46,35 @@
   - name: manually-destroy-cluster
     plan:
       - in_parallel:
+          - get: gpupgrade_src
+          - get: saved_cluster_env_files
           - get: ccp_src
-          - get: terraform
-            passed: [ generate-cluster ]
           - get: terraform.d
             params:
               unpack: true
+      - task: copy_terraform_files
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+              tag: latest
+          inputs:
+            - name: gpupgrade_src
+            - name: saved_cluster_env_files
+          outputs:
+            - name: terraform
+          run:
+            path: bash
+            args:
+              - -c
+              - |
+                set -eux -o pipefail
+
+                source gpupgrade_src/ci/main/scripts/environment.bash
+
+                cp -R cluster_env_files/terraform/* terraform
     ensure:
       do:
         - <<: *ccp_destroy
