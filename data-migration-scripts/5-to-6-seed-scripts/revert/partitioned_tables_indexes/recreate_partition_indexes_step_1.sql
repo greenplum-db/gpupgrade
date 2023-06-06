@@ -5,12 +5,23 @@
 -- that don't correspond to unique or primary key constraints
 
 -- cte to get all the unique and primary key constraints
-WITH root_partitions (relid) AS
+WITH root_partitions_using_tsquery AS
+(
+   SELECT DISTINCT p.parrelid oid
+   FROM pg_partition p
+   JOIN pg_class pt ON p.parrelid = pt.oid
+   JOIN pg_attribute a ON a.attrelid = pt.oid
+   WHERE a.atttypid = 'pg_catalog.tsquery'::pg_catalog.regtype
+)
+,
+root_partitions (relid) AS
 (
    SELECT DISTINCT
       parrelid
    FROM
       pg_partition
+   WHERE
+      parrelid NOT IN (SELECT oid FROM root_partitions_using_tsquery)
 )
 ,
 root_constraints AS

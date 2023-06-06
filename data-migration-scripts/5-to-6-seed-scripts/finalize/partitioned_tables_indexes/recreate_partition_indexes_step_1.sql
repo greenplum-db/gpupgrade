@@ -4,12 +4,23 @@
 -- generates SQL statement to create indexes on child partition tables that do
 -- not correspond to primary or unique constraints.
 
-WITH child_partitions (relid) AS
+WITH child_partitions_using_tsquery AS
+(
+   SELECT DISTINCT pr.parchildrelid oid
+   FROM pg_partition_rule pr
+   JOIN pg_class pc ON pr.parchildrelid = pc.oid
+   JOIN pg_attribute a ON a.attrelid = pc.oid
+   WHERE a.atttypid = 'pg_catalog.tsquery'::pg_catalog.regtype
+)
+,
+child_partitions (relid) AS
 (
    SELECT DISTINCT
       parchildrelid
    FROM
       pg_partition_rule
+   WHERE
+      parchildrelid NOT IN (SELECT oid FROM child_partitions_using_tsquery)
 )
 ,
 part_constraints AS
