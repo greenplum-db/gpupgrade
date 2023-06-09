@@ -37,7 +37,7 @@ unit integration acceptance test: export PATH := $(CURDIR):$(PATH)
 
 .PHONY: unit
 unit:
-	go test --cover -count=1 $(shell go list ./... | grep -v test/integration$$ )
+	go test --cover -count=1 $(shell go list ./... | grep -v test/integration$$ | grep -v test/acceptance/gpupgrade$$ )
 
 .PHONY: integration
 integration:
@@ -45,6 +45,7 @@ integration:
 
 .PHONY: acceptance
 acceptance:
+	go test --cover -count=1 ./test/acceptance/gpupgrade
 	bats -r ./test/acceptance/gpupgrade
 
 # test runs all tests against the locally built gpupgrade binaries. Use -k to
