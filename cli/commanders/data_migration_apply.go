@@ -200,10 +200,12 @@ func ApplyDataMigrationScriptsPrompt(nonInteractive bool, reader *bufio.Reader, 
 Select: `, phase)
 
 			if phase == idl.Step_initialize {
+				warning := color.RedString(utils.Bold.Sprint(`WARNING: Data migration scripts can leave the source cluster in a non-optimal state 
+         and can take time to fully revert.`))
+
 				prompt = fmt.Sprintf(`Which %q data migration SQL scripts to apply?
 
-WARNING: Data migration scripts can leave the source cluster in a non-optimal state 
-         and can take time to fully revert.
+%s
 
   [n]o scripts.   When running 'before' the upgrade to uncover pg_upgrade --check errors 
                   there is no need to run the data migration SQL scripts.
@@ -212,7 +214,7 @@ WARNING: Data migration scripts can leave the source cluster in a non-optimal st
   [a]ll scripts.  Usually run 'during' the upgrade within the downtime window.
   [q]uit
 
-Select: `, phase)
+Select: `, phase, warning)
 			}
 
 			fmt.Print(prompt)
