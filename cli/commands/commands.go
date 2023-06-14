@@ -141,7 +141,7 @@ func createConfigShowSubcommand() *cobra.Command {
 					// Don't prefix with the setting name if the user only asked for one.
 					fmt.Println(resp.Value)
 				} else {
-					fmt.Printf("%s - %s\n", request.Name, resp.Value)
+					fmt.Printf("%s: %s\n", request.Name, resp.Value)
 				}
 			}
 

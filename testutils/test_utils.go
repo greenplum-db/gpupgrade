@@ -4,6 +4,7 @@
 package testutils
 
 import (
+	"log"
 	"net"
 	"os"
 	"path/filepath"
@@ -250,6 +251,15 @@ func checkPath(t *testing.T, path string, shouldExist bool) {
 	if !shouldExist && exist {
 		t.Fatalf("expected path %q to not exist", path)
 	}
+}
+
+func MustGetEnv(key string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		log.Fatalf("Expected $%s to be set", key)
+	}
+
+	return value
 }
 
 func SetEnv(t *testing.T, envar, value string) func() {
