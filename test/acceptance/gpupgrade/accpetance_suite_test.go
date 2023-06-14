@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"testing"
 
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -38,6 +39,16 @@ func init() {
 	GPHOME_SOURCE = testutils.MustGetEnv("GPHOME_SOURCE")
 	GPHOME_TARGET = testutils.MustGetEnv("GPHOME_TARGET")
 	PGPORT = testutils.MustGetEnv("PGPORT")
+}
+func MustGetRepoRoot(t *testing.T) string {
+	t.Helper()
+
+	currentDir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get current directory: %v", err)
+	}
+
+	return filepath.Dir(filepath.Dir(filepath.Dir(currentDir)))
 }
 
 func initialize(t *testing.T) string {

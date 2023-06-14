@@ -371,14 +371,3 @@ func SetStdin(t *testing.T, input string) func() {
 		os.Stdin = origStdin
 	}
 }
-
-func MustGetRepoRoot(t *testing.T) string {
-	t.Helper()
-
-	currentDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("failed to get current directory: %#v", err)
-	}
-
-	return filepath.Dir(filepath.Dir(filepath.Dir(currentDir)))
-}
