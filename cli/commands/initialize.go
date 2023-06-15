@@ -260,7 +260,8 @@ func initialize() *cobra.Command {
 				}
 
 				fmt.Println()
-				return clistep.Prompt(bufio.NewReader(os.Stdin), idl.Step_initialize)
+				prompt := fmt.Sprintf("Continue with gpupgrade %s?  Yy|Nn: ", idl.Step_initialize)
+				return clistep.Prompt(bufio.NewReader(os.Stdin), prompt)
 			})
 
 			var client idl.CliToHubClient

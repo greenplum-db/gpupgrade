@@ -75,7 +75,8 @@ func Begin(currentStep idl.Step, verbose bool, nonInteractive bool, confirmation
 	if !nonInteractive {
 		fmt.Println(confirmationText)
 
-		err := Prompt(bufio.NewReader(os.Stdin), currentStep)
+		prompt := fmt.Sprintf("Continue with gpupgrade %s?  Yy|Nn: ", currentStep)
+		err := Prompt(bufio.NewReader(os.Stdin), prompt)
 		if err != nil {
 			return &Step{}, err
 		}
@@ -308,9 +309,9 @@ func logDuration(operation string, verbose bool, duration string) {
 	log.Print(msg)
 }
 
-func Prompt(reader *bufio.Reader, currentStep idl.Step) error {
+func Prompt(reader *bufio.Reader, prompt string) error {
 	for {
-		fmt.Printf("Continue with gpupgrade %s?  Yy|Nn: ", currentStep)
+		fmt.Print(prompt)
 		input, err := reader.ReadString('\n')
 		if err != nil {
 			return err
