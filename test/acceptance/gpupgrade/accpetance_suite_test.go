@@ -76,7 +76,19 @@ func killServices(t *testing.T) string {
 	cmd := exec.Command("gpupgrade", "kill-services")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("unexpected err: %#v stderr %q", err, output)
+		t.Fatalf("unexpected err: %v stderr: %q", err, output)
+	}
+
+	return string(output)
+}
+
+func restartServices(t *testing.T) string {
+	t.Helper()
+
+	cmd := exec.Command("gpupgrade", "restart-services")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("unexpected err: %v stderr: %q", err, output)
 	}
 
 	return string(output)
