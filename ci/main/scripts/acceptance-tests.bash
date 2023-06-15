@@ -17,9 +17,11 @@ function run_migration_scripts_and_tests() {
         set -eux -o pipefail
 
         export TERM=linux
-        export PATH=$PATH:$HOME/go/bin
+        export GOPATH=$HOME/go
+        export PATH=$PATH:$GOPATH/bin
         export GOFLAGS="-mod=readonly" # do not update dependencies during build
 
+        mkdir -p $GOPATH/bin
         cd gpupgrade_src
         make && make install
 

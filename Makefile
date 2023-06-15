@@ -137,7 +137,8 @@ rpm:
 	rm -r rpm
 
 install:
-	go install $(BUILD_FLAGS) github.com/greenplum-db/gpupgrade/cmd/gpupgrade
+	@test $${GOPATH?Error GOPATH not set}
+	cp gpupgrade $(GOPATH)/bin/
 
 # To lint, you must install golangci-lint via one of the supported methods
 # listed at
