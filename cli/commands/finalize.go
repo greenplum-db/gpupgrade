@@ -4,8 +4,10 @@
 package commands
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
@@ -88,6 +90,28 @@ func finalize() *cobra.Command {
 					response.GetLogArchiveDirectory(), utils.System.DirFS(currentDir), currentDir, idl.Step_finalize)
 			})
 
+			st.Run(idl.Substep_analyze_target_cluster, func(streams step.OutStreams) error {
+				if !nonInteractive {
+					fmt.Println()
+					fmt.Println(`
+It is strongly recommended to create optimizer statistics to ensure performant operations. 
+However, this could take quite awhile and you may need your cluster now.
+If you postpone creating statistics then after the upgrade run "vacuumdb --all --analyze-in-stages".`)
+					fmt.Println()
+
+					prompt := "Create optimizer statistics now?  Yy|Nn: "
+					err = clistep.Prompt(bufio.NewReader(os.Stdin), prompt)
+					if err != nil {
+						if errors.Is(err, step.Quit) {
+							return nil // Continue with upgrade even if user skips creating statistics
+						}
+						return err
+					}
+				}
+
+				return target.RunGreenplumCmd(streams, "vacuumdb", "--all", "--analyze-only")
+			})
+
 			st.Run(idl.Substep_delete_master_statedir, func(streams step.OutStreams) error {
 				// Removing the state directory removes the step status file.
 				// Disable the store so the step framework does not try to write
@@ -126,7 +150,10 @@ To use the upgraded cluster:
    And connect to the database
 
 If you have not already, execute the “%s” data migration scripts with
-"gpupgrade apply --gphome %s --port %d --input-dir %s --phase %s"`,
+"gpupgrade apply --gphome %s --port %d --input-dir %s --phase %s"
+
+If you postponed creating optimizer statistics run
+"vacuumdb --all --analyze-in-stages"`,
 				target.Version,
 				fmt.Sprintf("%s.<contentID>%s", response.GetUpgradeID(), upgrade.OldSuffix),
 				response.GetArchivedSourceCoordinatorDataDirectory(),

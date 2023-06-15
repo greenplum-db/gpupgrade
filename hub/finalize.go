@@ -6,7 +6,6 @@ package hub
 import (
 	"context"
 	"log"
-	"path/filepath"
 	"time"
 
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -100,15 +99,6 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 
 	st.AlwaysRun(idl.Substep_wait_for_cluster_to_be_ready_after_updating_catalog, func(streams step.OutStreams) error {
 		return s.Target.WaitForClusterToBeReady()
-	})
-
-	st.Run(idl.Substep_analyze_target_cluster, func(streams step.OutStreams) error {
-		upgradeDir, err := utils.GetPgUpgradeDir(s.Target.Coordinator().Role, int32(s.Target.Coordinator().ContentID))
-		if err != nil {
-			return err
-		}
-
-		return s.Target.RunCmd(streams, filepath.Join(upgradeDir, "analyze_new_cluster.sh"))
 	})
 
 	var logArchiveDir string
