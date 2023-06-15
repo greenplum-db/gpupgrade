@@ -677,7 +677,8 @@ func TestPrompt(t *testing.T) {
 	t.Run("returns error when failing to read input", func(t *testing.T) {
 		input := ""
 		reader := bufio.NewReader(strings.NewReader(input))
-		err := clistep.Prompt(reader, idl.Step_execute)
+		prompt := fmt.Sprintf("Continue with gpupgrade %s?  Yy|Nn: ", idl.Step_execute)
+		err := clistep.Prompt(reader, prompt)
 		if err != io.EOF {
 			t.Errorf("Prompt(%q) returned error: %+v ", input, io.EOF)
 		}
@@ -686,7 +687,8 @@ func TestPrompt(t *testing.T) {
 	t.Run("returns true when user proceeds", func(t *testing.T) {
 		for _, input := range []string{"y\n", "Y\n"} {
 			reader := bufio.NewReader(strings.NewReader(input))
-			err := clistep.Prompt(reader, idl.Step_execute)
+			prompt := fmt.Sprintf("Continue with gpupgrade %s?  Yy|Nn: ", idl.Step_execute)
+			err := clistep.Prompt(reader, prompt)
 			if err != nil {
 				t.Errorf("Prompt(%q) returned error: %+v ", input, err)
 			}
@@ -696,7 +698,8 @@ func TestPrompt(t *testing.T) {
 	t.Run("returns step.Quit when user cancels", func(t *testing.T) {
 		for _, input := range []string{"n\n", "N\n"} {
 			reader := bufio.NewReader(strings.NewReader(input))
-			err := clistep.Prompt(reader, idl.Step_execute)
+			prompt := fmt.Sprintf("Continue with gpupgrade %s?  Yy|Nn: ", idl.Step_execute)
+			err := clistep.Prompt(reader, prompt)
 			if !errors.Is(err, step.Quit) {
 				t.Errorf("unexpected error %#v", err)
 			}
