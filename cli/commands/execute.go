@@ -33,7 +33,6 @@ func execute() *cobra.Command {
 		Long:  ExecuteHelp,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			cmd.SilenceUsage = true
-			var response idl.ExecuteResponse
 
 			if cmd.Flag("pg-upgrade-verbose").Changed && !cmd.Flag("verbose").Changed {
 				return fmt.Errorf("expected --verbose when using --pg-upgrade-verbose")
@@ -79,7 +78,7 @@ func execute() *cobra.Command {
 					SkipPgUpgradeChecks: skipPgUpgradeChecks,
 					ParentBackupDirs:    parentBackupDirs,
 				}
-				response, err = commanders.Execute(client, request, verbose)
+				_, err = commanders.Execute(client, request, verbose)
 				if err != nil {
 					return err
 				}
@@ -105,9 +104,9 @@ If you are satisfied with the state of the cluster, run "gpupgrade finalize"
 to proceed with the upgrade.
 
 To return the cluster to its original state, run "gpupgrade revert".`,
-				filepath.Join(response.GetTarget().GetGpHome(), "greenplum_path.sh"),
-				response.GetTarget().GetCoordinator().GetDataDir(),
-				response.GetTarget().GetCoordinator().GetPort()))
+				filepath.Join(conf.Target.GPHome, "greenplum_path.sh"),
+				conf.Target.CoordinatorDataDir(),
+				conf.Target.CoordinatorPort()))
 		},
 	}
 

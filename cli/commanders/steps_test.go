@@ -6,6 +6,7 @@ package commanders_test
 import (
 	"errors"
 	"io"
+	"reflect"
 	"testing"
 
 	"google.golang.org/grpc/codes"
@@ -232,61 +233,37 @@ func TestUILoop(t *testing.T) {
 			{
 				name: "processes initialize response successfully",
 				msgs: msgStream{&idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{
-					Contents: &idl.Response_InitializeResponse{InitializeResponse: &idl.InitializeResponse{
-						HasAllMirrorsAndStandby: true,
-					}}}}}},
+					Contents: &idl.Response_InitializeResponse{InitializeResponse: &idl.InitializeResponse{}}}}}},
 				expected: func(response *idl.Response) bool {
-					return response.GetInitializeResponse().GetHasAllMirrorsAndStandby() == true
+					return reflect.DeepEqual(response.GetInitializeResponse(), &idl.InitializeResponse{})
 				},
 			},
 			{
 				name: "processes execute response successfully",
 				msgs: msgStream{&idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{
-					Contents: &idl.Response_ExecuteResponse{ExecuteResponse: &idl.ExecuteResponse{
-						Target: &idl.Cluster{
-							Coordinator: &idl.Segment{
-								Port:    15423,
-								DataDir: "/data/gpseg-1",
-							},
-						}}}}}}},
+					Contents: &idl.Response_ExecuteResponse{ExecuteResponse: &idl.ExecuteResponse{}}}}}},
 				expected: func(response *idl.Response) bool {
-					return response.GetExecuteResponse().GetTarget().GetCoordinator().GetPort() == 15423 &&
-						response.GetExecuteResponse().GetTarget().GetCoordinator().GetDataDir() == "/data/gpseg-1"
+					return reflect.DeepEqual(response.GetExecuteResponse(), &idl.ExecuteResponse{})
 				},
 			},
 			{
 				name: "processes finalize response successfully",
 				msgs: msgStream{&idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{
 					Contents: &idl.Response_FinalizeResponse{FinalizeResponse: &idl.FinalizeResponse{
-						Target: &idl.Cluster{
-							Coordinator: &idl.Segment{
-								Port:    15433,
-								DataDir: "/data/gpseg-10",
-							},
-						}}}}}}},
+						LogArchiveDirectory: "/log/archive/dir",
+					}}}}}},
 				expected: func(response *idl.Response) bool {
-					return response.GetFinalizeResponse().GetTarget().GetCoordinator().GetPort() == 15433 &&
-						response.GetFinalizeResponse().GetTarget().GetCoordinator().GetDataDir() == "/data/gpseg-10"
+					return reflect.DeepEqual(response.GetFinalizeResponse(), &idl.FinalizeResponse{LogArchiveDirectory: "/log/archive/dir"})
 				},
 			},
 			{
 				name: "processes revert response successfully",
 				msgs: msgStream{&idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{
 					Contents: &idl.Response_RevertResponse{RevertResponse: &idl.RevertResponse{
-						LogArchiveDirectory: "/gpAdminLogs/1112",
-						Source: &idl.Cluster{
-							Version: "5.0",
-							Coordinator: &idl.Segment{
-								Port:    1111,
-								DataDir: "/data/gpseg-2",
-							},
-						},
+						LogArchiveDirectory: "/log/archive/dir",
 					}}}}}},
 				expected: func(response *idl.Response) bool {
-					return response.GetRevertResponse().GetSource().GetCoordinator().GetPort() == 1111 &&
-						response.GetRevertResponse().GetSource().GetCoordinator().GetDataDir() == "/data/gpseg-2" &&
-						response.GetRevertResponse().GetSource().GetVersion() == "5.0" &&
-						response.GetRevertResponse().GetLogArchiveDirectory() == "/gpAdminLogs/1112"
+					return reflect.DeepEqual(response.GetRevertResponse(), &idl.RevertResponse{LogArchiveDirectory: "/log/archive/dir"})
 				},
 			},
 		}

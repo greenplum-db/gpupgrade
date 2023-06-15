@@ -153,29 +153,22 @@ message Response {
   }
 }
 
-message InitializeResponse {
-  bool HasAllMirrorsAndStandby = 1;
-}
+message InitializeResponse {}
 
-message ExecuteResponse {
-  Cluster target = 1;
-}
+message ExecuteResponse {}
 
 message FinalizeResponse {
-  Cluster target = 1;
-  string LogArchiveDirectory = 2;
-  string ArchivedSourceCoordinatorDataDirectory = 3;
-  string UpgradeID = 4;
+    string LogArchiveDirectory = 1;
 }
 
 message RevertResponse {
-  Cluster source = 1;
-  string LogArchiveDirectory = 2;
+    string LogArchiveDirectory = 1;
 }
 
 message GetConfigRequest {
     string name = 1;
 }
+
 message GetConfigReply {
     string value = 1;
 }

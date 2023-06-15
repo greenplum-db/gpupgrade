@@ -283,7 +283,6 @@ func initialize() *cobra.Command {
 				return nil
 			})
 
-			var response idl.InitializeResponse
 			st.RunHubSubstep(func(streams step.OutStreams) error {
 				if stopBeforeClusterCreation {
 					return step.Skip
@@ -294,7 +293,7 @@ func initialize() *cobra.Command {
 					PgUpgradeVerbose:    pgUpgradeVerbose,
 					SkipPgUpgradeChecks: skipPgUpgradeChecks,
 				}
-				response, err = commanders.InitializeCreateCluster(client, request, verbose)
+				_, err = commanders.InitializeCreateCluster(client, request, verbose)
 				if err != nil {
 					return err
 				}
@@ -302,8 +301,13 @@ func initialize() *cobra.Command {
 				return nil
 			})
 
+			conf, err := config.Read()
+			if err != nil {
+				return err
+			}
+
 			revertWarning := ""
-			if !response.GetHasAllMirrorsAndStandby() && mode == idl.Mode_link {
+			if !conf.Source.HasAllMirrorsAndStandby() && mode == idl.Mode_link {
 				revertWarning = revertWarningText
 			}
 

@@ -11,7 +11,6 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
-	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
@@ -132,22 +131,7 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_FinalizeResponse{
 		FinalizeResponse: &idl.FinalizeResponse{
-			LogArchiveDirectory:                    logArchiveDir,
-			ArchivedSourceCoordinatorDataDirectory: s.Config.Intermediate.CoordinatorDataDir() + upgrade.OldSuffix,
-			UpgradeID:                              s.Config.UpgradeID,
-			Target: &idl.Cluster{
-				Destination: idl.ClusterDestination_target,
-				GpHome:      s.Target.GPHome,
-				Version:     s.Target.Version.String(),
-				Coordinator: &idl.Segment{
-					DbID:      int32(s.Target.Coordinator().DbID),
-					ContentID: int32(s.Target.Coordinator().ContentID),
-					Role:      idl.Segment_Role(idl.Segment_Role_value[s.Target.Coordinator().Role]),
-					Port:      int32(s.Target.CoordinatorPort()),
-					Hostname:  s.Target.CoordinatorHostname(),
-					DataDir:   s.Target.CoordinatorDataDir(),
-				},
-			},
+			LogArchiveDirectory: logArchiveDir,
 		},
 	}}}}
 

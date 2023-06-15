@@ -14,6 +14,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/cli/clistep"
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
+	"github.com/greenplum-db/gpupgrade/config"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
@@ -30,6 +31,11 @@ func revert() *cobra.Command {
 		Long:  RevertHelp,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			var response idl.RevertResponse
+
+			conf, err := config.Read()
+			if err != nil {
+				return err
+			}
 
 			logdir, err := utils.GetLogDir()
 			if err != nil {
@@ -77,7 +83,7 @@ func revert() *cobra.Command {
 				fmt.Println()
 
 				currentDir := filepath.Join(response.GetLogArchiveDirectory(), "data-migration-scripts", "current")
-				return commanders.ApplyDataMigrationScripts(nonInteractive, response.GetSource().GetGpHome(), int(response.GetSource().GetCoordinator().GetPort()),
+				return commanders.ApplyDataMigrationScripts(nonInteractive, conf.Source.GPHome, conf.Source.CoordinatorPort(),
 					response.GetLogArchiveDirectory(), utils.System.DirFS(currentDir), currentDir, idl.Step_revert)
 			})
 
@@ -106,11 +112,11 @@ If you have not already, execute the “%s” data migration scripts with
 "gpupgrade apply --gphome %s --port %d --input-dir %s --phase %s"
 
 To restart the upgrade, run "gpupgrade initialize" again.`,
-				response.GetSource().GetVersion(),
-				filepath.Join(response.GetSource().GetGpHome(), "greenplum_path.sh"), response.GetSource().GetCoordinator().GetDataDir(), response.GetSource().GetCoordinator().GetPort(),
+				conf.Source.Version,
+				filepath.Join(conf.Source.GPHome, "greenplum_path.sh"), conf.Source.CoordinatorDataDir(), conf.Source.CoordinatorPort(),
 				response.GetLogArchiveDirectory(),
 				idl.Step_revert,
-				response.GetSource().GetGpHome(), response.GetSource().GetCoordinator().GetPort(), filepath.Join(response.GetLogArchiveDirectory(), "data-migration-scripts"), idl.Step_revert))
+				conf.Source.GPHome, conf.Source.CoordinatorPort(), filepath.Join(response.GetLogArchiveDirectory(), "data-migration-scripts"), idl.Step_revert))
 		},
 	}
 

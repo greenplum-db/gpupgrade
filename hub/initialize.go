@@ -164,9 +164,7 @@ func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest
 	})
 
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_InitializeResponse{
-		InitializeResponse: &idl.InitializeResponse{
-			HasAllMirrorsAndStandby: s.Config.Source.HasAllMirrorsAndStandby(),
-		},
+		InitializeResponse: &idl.InitializeResponse{},
 	}}}}
 
 	if err = stream.Send(message); err != nil {
