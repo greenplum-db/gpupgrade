@@ -4,7 +4,9 @@
 package greenplum
 
 import (
+	"bytes"
 	"database/sql"
+	"encoding/gob"
 	"fmt"
 	"log"
 	"os/exec"
@@ -110,6 +112,30 @@ func NewCluster(segments SegConfigs) (Cluster, error) {
 		}
 
 		return Cluster{}, errors.New("Expected role to be primary or mirror, but found none when creating cluster.")
+	}
+
+	return cluster, nil
+}
+
+func (c *Cluster) Encode() ([]byte, error) {
+	var buffer bytes.Buffer
+	encoder := gob.NewEncoder(&buffer)
+
+	err := encoder.Encode(c)
+	if err != nil {
+		return nil, err
+	}
+
+	return buffer.Bytes(), nil
+}
+
+func DecodeCluster(input []byte) (*Cluster, error) {
+	decoder := gob.NewDecoder(bytes.NewBuffer(input))
+
+	cluster := &Cluster{}
+	err := decoder.Decode(cluster)
+	if err != nil {
+		return &Cluster{}, err
 	}
 
 	return cluster, nil

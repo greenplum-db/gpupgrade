@@ -152,22 +152,15 @@ Cannot revert and restore the source cluster. Please contact support.`)
 		return DeleteStateDirectories(s.agentConns, s.Source.CoordinatorHostname())
 	})
 
+	encodedSource, err := s.Source.Encode()
+	if err != nil {
+		return err
+	}
+
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_RevertResponse{
 		RevertResponse: &idl.RevertResponse{
+			Source:              encodedSource,
 			LogArchiveDirectory: logArchiveDir,
-			Source: &idl.Cluster{
-				Destination: idl.ClusterDestination_source,
-				GpHome:      s.Source.GPHome,
-				Version:     s.Source.Version.String(),
-				Coordinator: &idl.Segment{
-					DbID:      int32(s.Source.Coordinator().DbID),
-					ContentID: int32(s.Source.Coordinator().ContentID),
-					Role:      idl.Segment_Role(idl.Segment_Role_value[s.Source.Coordinator().Role]),
-					Port:      int32(s.Source.CoordinatorPort()),
-					Hostname:  s.Source.CoordinatorHostname(),
-					DataDir:   s.Source.CoordinatorDataDir(),
-				},
-			},
 		},
 	}}}}
 

@@ -3,8 +3,6 @@
 
 syntax = "proto3";
 
-import "common.proto";
-
 package idl;
 
 service CliToHub {
@@ -158,18 +156,18 @@ message InitializeResponse {
 }
 
 message ExecuteResponse {
-  Cluster target = 1;
+  bytes intermediate = 1;
 }
 
 message FinalizeResponse {
-  Cluster target = 1;
+  bytes target = 1;
   string LogArchiveDirectory = 2;
   string ArchivedSourceCoordinatorDataDirectory = 3;
   string UpgradeID = 4;
 }
 
 message RevertResponse {
-  Cluster source = 1;
+  bytes source = 1;
   string LogArchiveDirectory = 2;
 }
 

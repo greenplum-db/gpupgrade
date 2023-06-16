@@ -6,12 +6,15 @@ package commanders_test
 import (
 	"errors"
 	"io"
+	"reflect"
 	"testing"
 
+	"github.com/blang/semver/v4"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
+	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
@@ -224,10 +227,30 @@ func TestUILoop(t *testing.T) {
 	})
 
 	t.Run("processes responses successfully", func(t *testing.T) {
+		source := MustCreateCluster(t, greenplum.SegConfigs{
+			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole, Port: 15432},
+			{ContentID: -1, DbID: 8, Hostname: "smdw", DataDir: "/data/qddir/seg-1", Role: greenplum.MirrorRole, Port: 16432},
+			{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg0", Role: greenplum.PrimaryRole, Port: 25432},
+			{ContentID: 0, DbID: 5, Hostname: "sdw2", DataDir: "/data/dbfast_mirror1/seg0", Role: greenplum.MirrorRole, Port: 25435},
+		})
+		source.GPHome = "/usr/local/greenplum-db-source"
+		source.Destination = idl.ClusterDestination_source
+		source.Version = semver.MustParse("5.0.0")
+
+		target := MustCreateCluster(t, greenplum.SegConfigs{
+			{ContentID: -1, DbID: 1, Hostname: "mdw", DataDir: "/data/qddir/seg-1", Role: greenplum.PrimaryRole, Port: 6000},
+			{ContentID: -1, DbID: 8, Hostname: "smdw", DataDir: "/data/qddir/seg-1", Role: greenplum.MirrorRole, Port: 6001},
+			{ContentID: 0, DbID: 2, Hostname: "sdw1", DataDir: "/data/dbfast1/seg0", Role: greenplum.PrimaryRole, Port: 6002},
+			{ContentID: 0, DbID: 5, Hostname: "sdw2", DataDir: "/data/dbfast_mirror1/seg0", Role: greenplum.MirrorRole, Port: 6005},
+		})
+		target.GPHome = "/usr/local/greenplum-db-target"
+		target.Destination = idl.ClusterDestination_target
+		target.Version = semver.MustParse("6.0.0")
+
 		cases := []struct {
-			name     string
-			msgs     msgStream
-			expected func(response *idl.Response) bool
+			name          string
+			msgs          msgStream
+			asertResponse func(response *idl.Response)
 		}{
 			{
 				name: "processes initialize response successfully",
@@ -235,71 +258,88 @@ func TestUILoop(t *testing.T) {
 					Contents: &idl.Response_InitializeResponse{InitializeResponse: &idl.InitializeResponse{
 						HasAllMirrorsAndStandby: true,
 					}}}}}},
-				expected: func(response *idl.Response) bool {
-					return response.GetInitializeResponse().GetHasAllMirrorsAndStandby() == true
+				asertResponse: func(response *idl.Response) {
+					actual := response.GetInitializeResponse().GetHasAllMirrorsAndStandby()
+					if actual != true {
+						t.Errorf("got %+v want %v", actual, true)
+					}
 				},
 			},
 			{
 				name: "processes execute response successfully",
 				msgs: msgStream{&idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{
 					Contents: &idl.Response_ExecuteResponse{ExecuteResponse: &idl.ExecuteResponse{
-						Target: &idl.Cluster{
-							Coordinator: &idl.Segment{
-								Port:    15423,
-								DataDir: "/data/gpseg-1",
-							},
-						}}}}}}},
-				expected: func(response *idl.Response) bool {
-					return response.GetExecuteResponse().GetTarget().GetCoordinator().GetPort() == 15423 &&
-						response.GetExecuteResponse().GetTarget().GetCoordinator().GetDataDir() == "/data/gpseg-1"
+						Intermediate: MustEncodeCluster(t, target),
+					}}}}}},
+				asertResponse: func(response *idl.Response) {
+					decodedTarget := MustDecodeCluster(t, response.GetExecuteResponse().GetIntermediate())
+					if !reflect.DeepEqual(target, decodedTarget) {
+						t.Errorf("got %+v want %v", decodedTarget, target)
+					}
 				},
 			},
 			{
 				name: "processes finalize response successfully",
 				msgs: msgStream{&idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{
 					Contents: &idl.Response_FinalizeResponse{FinalizeResponse: &idl.FinalizeResponse{
-						Target: &idl.Cluster{
-							Coordinator: &idl.Segment{
-								Port:    15433,
-								DataDir: "/data/gpseg-10",
-							},
-						}}}}}}},
-				expected: func(response *idl.Response) bool {
-					return response.GetFinalizeResponse().GetTarget().GetCoordinator().GetPort() == 15433 &&
-						response.GetFinalizeResponse().GetTarget().GetCoordinator().GetDataDir() == "/data/gpseg-10"
+						Target:                                 MustEncodeCluster(t, target),
+						LogArchiveDirectory:                    "/log/archive/dir",
+						ArchivedSourceCoordinatorDataDirectory: "/archive/source/dir",
+						UpgradeID:                              "ABC123",
+					}}}}}},
+				asertResponse: func(response *idl.Response) {
+					decodedTarget := MustDecodeCluster(t, response.GetFinalizeResponse().GetTarget())
+					if !reflect.DeepEqual(target, decodedTarget) {
+						t.Errorf("got %+v want %v", decodedTarget, target)
+					}
+
+					expected := "/log/archive/dir"
+					actual := response.GetFinalizeResponse().GetLogArchiveDirectory()
+					if actual != expected {
+						t.Errorf("got %+v want %v", actual, expected)
+					}
+
+					expected = "/archive/source/dir"
+					actual = response.GetFinalizeResponse().GetArchivedSourceCoordinatorDataDirectory()
+					if actual != expected {
+						t.Errorf("got %+v want %v", actual, expected)
+					}
+
+					expected = "ABC123"
+					actual = response.GetFinalizeResponse().GetUpgradeID()
+					if actual != expected {
+						t.Errorf("got %+v want %v", actual, expected)
+					}
 				},
 			},
 			{
 				name: "processes revert response successfully",
 				msgs: msgStream{&idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{
 					Contents: &idl.Response_RevertResponse{RevertResponse: &idl.RevertResponse{
-						LogArchiveDirectory: "/gpAdminLogs/1112",
-						Source: &idl.Cluster{
-							Version: "5.0",
-							Coordinator: &idl.Segment{
-								Port:    1111,
-								DataDir: "/data/gpseg-2",
-							},
-						},
+						Source:              MustEncodeCluster(t, source),
+						LogArchiveDirectory: "/log/archive/dir",
 					}}}}}},
-				expected: func(response *idl.Response) bool {
-					return response.GetRevertResponse().GetSource().GetCoordinator().GetPort() == 1111 &&
-						response.GetRevertResponse().GetSource().GetCoordinator().GetDataDir() == "/data/gpseg-2" &&
-						response.GetRevertResponse().GetSource().GetVersion() == "5.0" &&
-						response.GetRevertResponse().GetLogArchiveDirectory() == "/gpAdminLogs/1112"
+				asertResponse: func(response *idl.Response) {
+					decodedSource := MustDecodeCluster(t, response.GetRevertResponse().GetSource())
+					if !reflect.DeepEqual(source, decodedSource) {
+						t.Errorf("got %+v want %v", decodedSource, target)
+					}
+
+					expected := "/log/archive/dir"
+					if response.GetRevertResponse().GetLogArchiveDirectory() != expected {
+						t.Errorf("got %+v want %v", response.GetRevertResponse().GetLogArchiveDirectory(), expected)
+					}
 				},
 			},
 		}
 
 		for _, c := range cases {
-			actual, err := commanders.UILoop(&c.msgs, false)
+			response, err := commanders.UILoop(&c.msgs, false)
 			if err != nil {
 				t.Errorf("got unexpected err %+v", err)
 			}
 
-			if !c.expected(actual) {
-				t.Errorf("got unexpected response %s", actual)
-			}
+			c.asertResponse(response)
 		}
 	})
 

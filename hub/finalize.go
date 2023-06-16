@@ -130,24 +130,17 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 		return DeleteStateDirectories(s.agentConns, s.Source.CoordinatorHostname())
 	})
 
+	encodedTarget, err := s.Target.Encode()
+	if err != nil {
+		return err
+	}
+
 	message := &idl.Message{Contents: &idl.Message_Response{Response: &idl.Response{Contents: &idl.Response_FinalizeResponse{
 		FinalizeResponse: &idl.FinalizeResponse{
+			Target:                                 encodedTarget,
 			LogArchiveDirectory:                    logArchiveDir,
 			ArchivedSourceCoordinatorDataDirectory: s.Config.Intermediate.CoordinatorDataDir() + upgrade.OldSuffix,
 			UpgradeID:                              s.Config.UpgradeID,
-			Target: &idl.Cluster{
-				Destination: idl.ClusterDestination_target,
-				GpHome:      s.Target.GPHome,
-				Version:     s.Target.Version.String(),
-				Coordinator: &idl.Segment{
-					DbID:      int32(s.Target.Coordinator().DbID),
-					ContentID: int32(s.Target.Coordinator().ContentID),
-					Role:      idl.Segment_Role(idl.Segment_Role_value[s.Target.Coordinator().Role]),
-					Port:      int32(s.Target.CoordinatorPort()),
-					Hostname:  s.Target.CoordinatorHostname(),
-					DataDir:   s.Target.CoordinatorDataDir(),
-				},
-			},
 		},
 	}}}}
 

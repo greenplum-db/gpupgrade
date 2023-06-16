@@ -17,26 +17,3 @@ enum ClusterDestination {
   intermediate = 2;
   target = 3;
 }
-
-message Segment {
-  enum Role {
-    unknown_role = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
-    primary = 1;
-    mirror = 2;
-  }
-
-  int32 dbID = 1;
-  int32 contentID = 2;
-  Role role = 3;
-  int32 port = 4;
-  string hostname = 5;
-  string dataDir = 6;
-}
-
-message Cluster {
-  ClusterDestination destination = 1;
-  string gpHome = 2;
-  string version = 3;
-
-  Segment coordinator = 4;
-}

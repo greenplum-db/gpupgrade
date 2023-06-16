@@ -198,7 +198,7 @@ func initialize() *cobra.Command {
 						err = errorlist.Append(err, cErr)
 					}
 				}()
-				config, err := config.Create(
+				conf, err := config.Create(
 					db, hubPort, agentPort,
 					filepath.Clean(sourceGPHome),
 					filepath.Clean(targetGPHome),
@@ -209,7 +209,7 @@ func initialize() *cobra.Command {
 					return err
 				}
 
-				return config.Write()
+				return conf.Write()
 			})
 
 			st.Run(idl.Substep_start_hub, func(streams step.OutStreams) error {

@@ -11,6 +11,7 @@ import (
 
 	"golang.org/x/xerrors"
 
+	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 )
 
@@ -40,6 +41,35 @@ func init() {
 		SuccessScript,
 		FailedSqlAlreadyExists,
 	)
+}
+
+func MustCreateCluster(t *testing.T, segments greenplum.SegConfigs) *greenplum.Cluster {
+	t.Helper()
+
+	cluster, err := greenplum.NewCluster(segments)
+	if err != nil {
+		t.Fatalf("%+v", err)
+	}
+
+	return &cluster
+}
+
+func MustEncodeCluster(t *testing.T, cluster *greenplum.Cluster) []byte {
+	encodedCluster, err := cluster.Encode()
+	if err != nil {
+		t.Fatalf("encoding cluster: %+v", err)
+	}
+
+	return encodedCluster
+}
+
+func MustDecodeCluster(t *testing.T, input []byte) *greenplum.Cluster {
+	decodedCluster, err := greenplum.DecodeCluster(input)
+	if err != nil {
+		t.Fatalf("decoding cluster: %+v", err)
+	}
+
+	return decodedCluster
 }
 
 // descriptors is a helper to redirect os.Stdout and os.Stderr and buffer the

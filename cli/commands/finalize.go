@@ -14,6 +14,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/cli/clistep"
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
+	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
@@ -50,6 +51,7 @@ func finalize() *cobra.Command {
 				return err
 			}
 
+			target := &greenplum.Cluster{}
 			st.RunHubSubstep(func(streams step.OutStreams) error {
 				client, err := connectToHub()
 				if err != nil {
@@ -57,6 +59,11 @@ func finalize() *cobra.Command {
 				}
 
 				response, err = commanders.Finalize(client, verbose)
+				if err != nil {
+					return err
+				}
+
+				target, err = greenplum.DecodeCluster(response.GetTarget())
 				if err != nil {
 					return err
 				}
@@ -77,7 +84,7 @@ func finalize() *cobra.Command {
 				fmt.Println()
 
 				currentDir := filepath.Join(response.GetLogArchiveDirectory(), "data-migration-scripts", "current")
-				return commanders.ApplyDataMigrationScripts(nonInteractive, response.GetTarget().GetGpHome(), int(response.GetTarget().GetCoordinator().GetPort()),
+				return commanders.ApplyDataMigrationScripts(nonInteractive, target.GPHome, target.CoordinatorPort(),
 					response.GetLogArchiveDirectory(), utils.System.DirFS(currentDir), currentDir, idl.Step_finalize)
 			})
 
@@ -120,17 +127,17 @@ To use the upgraded cluster:
 
 If you have not already, execute the “%s” data migration scripts with
 "gpupgrade apply --gphome %s --port %d --input-dir %s --phase %s"`,
-				response.GetTarget().GetVersion(),
+				target.Version,
 				fmt.Sprintf("%s.<contentID>%s", response.GetUpgradeID(), upgrade.OldSuffix),
 				response.GetArchivedSourceCoordinatorDataDirectory(),
 				response.GetLogArchiveDirectory(),
-				filepath.Join(response.GetTarget().GetGpHome(), "greenplum_path.sh"),
-				filepath.Join(filepath.Dir(response.GetTarget().GetGpHome()), "greenplum-db"), response.GetTarget().GetGpHome(),
-				filepath.Join(response.GetTarget().GetGpHome(), "greenplum_path.sh"),
-				response.GetTarget().GetCoordinator().GetDataDir(),
-				response.GetTarget().GetCoordinator().GetPort(),
+				filepath.Join(target.GPHome, "greenplum_path.sh"),
+				filepath.Join(filepath.Dir(target.GPHome), "greenplum-db"), target.GPHome,
+				filepath.Join(target.GPHome, "greenplum_path.sh"),
+				target.CoordinatorDataDir(),
+				target.CoordinatorPort(),
 				idl.Step_finalize,
-				response.GetTarget().GetGpHome(), response.GetTarget().GetCoordinator().GetPort(), filepath.Join(response.GetLogArchiveDirectory(), "data-migration-scripts"), idl.Step_finalize,
+				target.GPHome, target.CoordinatorPort(), filepath.Join(response.GetLogArchiveDirectory(), "data-migration-scripts"), idl.Step_finalize,
 			))
 		},
 	}

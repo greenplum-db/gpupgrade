@@ -15,6 +15,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/cli/clistep"
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/config"
+	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -68,6 +69,7 @@ func execute() *cobra.Command {
 				return err
 			}
 
+			intermediate := &greenplum.Cluster{}
 			st.RunHubSubstep(func(streams step.OutStreams) error {
 				client, err := connectToHub()
 				if err != nil {
@@ -80,6 +82,11 @@ func execute() *cobra.Command {
 					ParentBackupDirs:    parentBackupDirs,
 				}
 				response, err = commanders.Execute(client, request, verbose)
+				if err != nil {
+					return err
+				}
+
+				intermediate, err = greenplum.DecodeCluster(response.GetIntermediate())
 				if err != nil {
 					return err
 				}
@@ -105,9 +112,9 @@ If you are satisfied with the state of the cluster, run "gpupgrade finalize"
 to proceed with the upgrade.
 
 To return the cluster to its original state, run "gpupgrade revert".`,
-				filepath.Join(response.GetTarget().GetGpHome(), "greenplum_path.sh"),
-				response.GetTarget().GetCoordinator().GetDataDir(),
-				response.GetTarget().GetCoordinator().GetPort()))
+				filepath.Join(intermediate.GPHome, "greenplum_path.sh"),
+				intermediate.CoordinatorDataDir(),
+				intermediate.CoordinatorPort()))
 		},
 	}
 
