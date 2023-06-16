@@ -182,7 +182,10 @@ func initialize() *cobra.Command {
 				return greenplum.VerifyCompatibleGPDBVersions(sourceGPHome, targetGPHome)
 			})
 
+			var conf config.Config
 			st.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
+				var err error
+
 				parsedPorts, err := ParsePorts(ports)
 				if err != nil {
 					return err
@@ -197,17 +200,23 @@ func initialize() *cobra.Command {
 						err = errorlist.Append(err, cErr)
 					}
 				}()
-				config, err := config.Create(
+				conf, err = config.Create(
 					db, hubPort, agentPort,
 					filepath.Clean(sourceGPHome),
 					filepath.Clean(targetGPHome),
 					mode, useHbaHostnames, parsedPorts, parentBackupDirs,
 				)
+				defer func() {
+					if wErr := conf.Write(); wErr != nil {
+						err = errorlist.Append(err, wErr)
+					}
+				}()
+
 				if err != nil {
 					return err
 				}
 
-				return config.Write()
+				return nil
 			})
 
 			st.Run(idl.Substep_start_hub, func(streams step.OutStreams) error {
@@ -300,11 +309,6 @@ func initialize() *cobra.Command {
 
 				return nil
 			})
-
-			conf, err := config.Read()
-			if err != nil {
-				return err
-			}
 
 			revertWarning := ""
 			if !conf.Source.HasAllMirrorsAndStandby() && mode == idl.Mode_link {

@@ -109,7 +109,7 @@ func Create(db *sql.DB, hubPort int, agentPort int, sourceGPHome string, targetG
 	config.UpgradeID = upgrade.NewID()
 	config.BackupDirs, err = backupdir.ParseParentBackupDirs(parentBackupDirs, source)
 	if err != nil {
-		return Config{}, err
+		return config, err
 	}
 
 	target := source // create target cluster based off source cluster
@@ -122,17 +122,17 @@ func Create(db *sql.DB, hubPort int, agentPort int, sourceGPHome string, targetG
 
 	config.Intermediate, err = GenerateIntermediateCluster(config.Source, ports, config.UpgradeID, config.Target.Version, config.Target.GPHome)
 	if err != nil {
-		return Config{}, err
+		return config, err
 	}
 
 	if err := EnsureTempPortRangeDoesNotOverlapWithSourceClusterPorts(config.Source, config.Intermediate); err != nil {
-		return Config{}, err
+		return config, err
 	}
 
 	if config.Source.Version.Major == 5 {
 		config.Source.Tablespaces, err = greenplum.TablespacesFromDB(db, utils.GetStateDirOldTablespacesFile())
 		if err != nil {
-			return Config{}, xerrors.Errorf("extract tablespace information: %w", err)
+			return config, xerrors.Errorf("extract tablespace information: %w", err)
 		}
 	}
 
