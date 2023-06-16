@@ -112,7 +112,7 @@ NEXT ACTIONS
 If you have not already, execute the “%s” data migration scripts with
 "gpupgrade apply --gphome %s --port %d --input-dir %s --phase %s"
 
-To restart the upgrade, run "gpupgrade initialize" again.`,
+To restart the upgrade, run "gpupgrade initialize --verbose" again.`,
 				source.Version,
 				filepath.Join(source.GPHome, "greenplum_path.sh"), source.CoordinatorDataDir(), source.CoordinatorPort(),
 				response.GetLogArchiveDirectory(),

@@ -108,10 +108,10 @@ it will be inconsistent with the source database.
 
 NEXT ACTIONS
 ------------
-If you are satisfied with the state of the cluster, run "gpupgrade finalize" 
+If you are satisfied with the state of the cluster, run "gpupgrade finalize --verbose" 
 to proceed with the upgrade.
 
-To return the cluster to its original state, run "gpupgrade revert".`,
+To return the cluster to its original state, run "gpupgrade revert --verbose".`,
 				filepath.Join(intermediate.GPHome, "greenplum_path.sh"),
 				intermediate.CoordinatorDataDir(),
 				intermediate.CoordinatorPort()))

@@ -314,10 +314,10 @@ Initialize completed successfully.
 %s
 NEXT ACTIONS
 ------------
-To proceed with the upgrade, run "gpupgrade execute"
-followed by "gpupgrade finalize".
+To proceed with the upgrade, run "gpupgrade execute --verbose"
+followed by "gpupgrade finalize --verbose".
 
-To return the cluster to its original state, run "gpupgrade revert".`,
+To return the cluster to its original state, run "gpupgrade revert --verbose".`,
 				revertWarning))
 		},
 	}
