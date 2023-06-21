@@ -33,7 +33,7 @@ time ssh -n cdw "
               --temp-port-range 6020-6040 \
               --disk-free-ratio 0
 
-    gpupgrade execute --non-interactive
+    gpupgrade execute --non-interactive --skip-pg-upgrade-checks
     gpupgrade finalize --non-interactive
 "
 

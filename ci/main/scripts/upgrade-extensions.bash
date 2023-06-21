@@ -106,7 +106,7 @@ time ssh -n cdw "
               --temp-port-range 6020-6040 \
               --dynamic-library-path ${GPHOME_TARGET}/madlib/Current/ports/greenplum/6/lib:/usr/local/greenplum-db-text/lib/gpdb6:/usr/local/pxf-gp6/gpextable
 
-    gpupgrade execute --non-interactive
+    gpupgrade execute --non-interactive --skip-pg-upgrade-checks
     gpupgrade finalize --non-interactive
 "
 
