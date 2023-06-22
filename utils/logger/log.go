@@ -40,8 +40,11 @@ func OpenFile(process string) (*os.File, error) {
 		os.Exit(1)
 	}
 
-	path := filepath.Join(logDir, fmt.Sprintf("%s_%s.log", process, time.Now().Format("20060102")))
-	return os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	return os.OpenFile(LogPath(logDir, process), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+}
+
+func LogPath(logDir, process string) string {
+	return filepath.Join(logDir, fmt.Sprintf("%s_%s.log", process, time.Now().Format("20060102")))
 }
 
 // prefix has the form PROGRAMNAME:USERNAME:HOSTNAME:PID [LOGLEVEL]:

@@ -15,6 +15,8 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/upgrade"
+	"github.com/greenplum-db/gpupgrade/utils"
+	"github.com/greenplum-db/gpupgrade/utils/logger"
 )
 
 // FailingWriter is an io.Writer for which all calls to Write() return an error.
@@ -370,4 +372,15 @@ func SetStdin(t *testing.T, input string) func() {
 	return func() {
 		os.Stdin = origStdin
 	}
+}
+
+func MustGetLog(t *testing.T, process string) string {
+	t.Helper()
+
+	logDir, err := utils.GetLogDir()
+	if err != nil {
+		t.Fatalf("get log dir: %v", err)
+	}
+
+	return logger.LogPath(logDir, process)
 }
