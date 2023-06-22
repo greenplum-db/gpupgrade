@@ -138,7 +138,7 @@ rpm:
 
 install:
 	@test $${GOPATH?Error GOPATH not set}
-	cp gpupgrade $(GOPATH)/bin/
+	cp -f gpupgrade $(GOPATH)/bin/
 
 # To lint, you must install golangci-lint via one of the supported methods
 # listed at
