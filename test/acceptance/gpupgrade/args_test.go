@@ -134,7 +134,7 @@ stop-before-cluster-creation = true
 	})
 
 	t.Run("gpupgrade execute fails when --pg-upgrade-verbose is used without --verbose", func(t *testing.T) {
-		initialize(t)
+		initialize_stopBeforeClusterCreation(t)
 
 		cmd := exec.Command("gpupgrade", "execute",
 			"--non-interactive",

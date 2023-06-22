@@ -51,7 +51,7 @@ func MustGetRepoRoot(t *testing.T) string {
 	return filepath.Dir(filepath.Dir(filepath.Dir(currentDir)))
 }
 
-func initialize(t *testing.T) string {
+func initialize_stopBeforeClusterCreation(t *testing.T) string {
 	t.Helper()
 
 	cmd := exec.Command("gpupgrade", "initialize",
