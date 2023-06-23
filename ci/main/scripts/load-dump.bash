@@ -5,6 +5,7 @@
 set -eux -o pipefail
 
 source gpupgrade_src/ci/main/scripts/environment.bash
+source gpupgrade_src/ci/main/scripts/ci-helpers.bash
 ./ccp_src/scripts/setup_ssh_to_cluster.sh
 
 scp sqldump/dump.sql.xz gpadmin@cdw:/tmp/
@@ -120,3 +121,29 @@ ssh -n cdw "
     psql -v ON_ERROR_STOP=1 -d regression -c 'DROP FUNCTION public.myfunc(integer);
     DROP AGGREGATE public.newavg(integer);'
 " || echo "Dropping unsupported functions failed. Continuing..."
+
+# FIXME: Running analyze post-upgrade fails for materialized views. For now drop all materialized views
+if ! is_GPDB5 ${GPHOME_SOURCE}; then
+    echo "Dropping materialized views before upgrading from 6X..."
+    views=$(ssh -n cdw "
+        set -eux -o pipefail
+
+        source /usr/local/greenplum-db-source/greenplum_path.sh
+
+        psql -v ON_ERROR_STOP=0 -d regression --tuples-only --no-align --field-separator ' ' <<SQL_EOF
+                SELECT relname FROM pg_class WHERE relkind = 'm';
+        SQL_EOF
+    ")
+
+    echo "${views}" | while read -r view; do
+        if [[ -n "${view}" ]]; then
+            ssh -n cdw "
+                set -eux -o pipefail
+
+                source /usr/local/greenplum-db-source/greenplum_path.sh
+
+                psql -v ON_ERROR_STOP=1 -d regression -c 'DROP MATERIALIZED VIEW IF EXISTS ${view}';
+            " || echo "Dropping materialized views failed. Continuing..."
+        fi
+    done
+fi
