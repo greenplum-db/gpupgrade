@@ -40,14 +40,14 @@ type Step struct {
 	step         idl.Step
 	stepStore    StepStore
 	substepStore step.SubstepStore
-	streams      *step.BufferedStreams
+	streams      step.OutStreams
 	verbose      bool
 	stepTimer    *stopwatch.Stopwatch
 	lastSubstep  idl.Substep
 	err          error
 }
 
-func NewStep(currentStep idl.Step, stepName string, stepStore StepStore, substepStore step.SubstepStore, streams *step.BufferedStreams, verbose bool) (*Step, error) {
+func NewStep(currentStep idl.Step, stepName string, stepStore StepStore, substepStore step.SubstepStore, streams step.OutStreams, verbose bool) (*Step, error) {
 	return &Step{
 		stepName:     stepName,
 		step:         currentStep,
@@ -98,7 +98,7 @@ func Begin(currentStep idl.Step, verbose bool, nonInteractive bool, confirmation
 	fmt.Println(stepName + " in progress.")
 	fmt.Println()
 
-	return NewStep(currentStep, stepName, stepStore, substepStore, &step.BufferedStreams{}, verbose)
+	return NewStep(currentStep, stepName, stepStore, substepStore, step.StdStreams, verbose)
 }
 
 func (s *Step) Err() error {
@@ -186,20 +186,6 @@ func (s *Step) run(substep idl.Substep, f func(streams step.OutStreams) error, a
 	}
 
 	err = f(s.streams)
-	if s.verbose {
-		fmt.Println() // Reset the cursor so verbose output does not run into the status.
-
-		_, wErr := s.streams.StdoutBuf.WriteTo(os.Stdout)
-		if wErr != nil {
-			err = errorlist.Append(err, xerrors.Errorf("writing stdout: %w", wErr))
-		}
-
-		_, wErr = s.streams.StderrBuf.WriteTo(os.Stderr)
-		if wErr != nil {
-			err = errorlist.Append(err, xerrors.Errorf("writing stderr: %w", wErr))
-		}
-	}
-
 	if err != nil {
 		status := idl.Status_failed
 
@@ -287,10 +273,11 @@ func (s *Step) printStatus(substep idl.Substep, status idl.Status) error {
 
 	text := commanders.SubstepDescriptions[substep]
 	fmt.Print(commanders.Format(text.OutputText, status))
+	log.Println(commanders.Format(text.OutputText, status))
 
 	// Reset the cursor if the final status has been written. This prevents the
 	// status from a hub step from being on the same line as a CLI step.
-	if status != idl.Status_running {
+	if status != idl.Status_running || s.verbose {
 		fmt.Println()
 	}
 

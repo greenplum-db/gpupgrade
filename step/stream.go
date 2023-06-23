@@ -53,13 +53,15 @@ func (s *BufferedStreams) Stderr() io.Writer {
 }
 
 // StdStreams implements OutStreams that writes directly to stdout and stderr
-type StdStreams struct{}
+var StdStreams = &stdStreams{}
 
-func (m *StdStreams) Stdout() io.Writer {
+type stdStreams struct{}
+
+func (m *stdStreams) Stdout() io.Writer {
 	return os.Stdout
 }
 
-func (m *StdStreams) Stderr() io.Writer {
+func (m *stdStreams) Stderr() io.Writer {
 	return os.Stderr
 }
 

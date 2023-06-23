@@ -274,7 +274,8 @@ func TestSubstep(t *testing.T) {
 	t.Run("cli substeps are printed to stdout and stderr in verbose mode", func(t *testing.T) {
 		d := BufferStandardDescriptors(t)
 
-		st, err := clistep.NewStep(idl.Step_initialize, idl.Step_initialize.String(), &MockStepStore{}, &MockSubstepStore{}, &step.BufferedStreams{}, true)
+		verbose := true
+		st, err := clistep.NewStep(idl.Step_initialize, idl.Step_initialize.String(), &MockStepStore{}, &MockSubstepStore{}, &step.BufferedStreams{}, verbose)
 		if err != nil {
 			d.Close()
 			t.Errorf("unexpected err %#v", err)
@@ -283,8 +284,11 @@ func TestSubstep(t *testing.T) {
 		substepStdout := "some substep output text."
 		substepStderr := "oops!"
 		st.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
-			os.Stdout.WriteString(substepStdout)
-			os.Stderr.WriteString(substepStderr)
+			if verbose {
+				os.Stdout.WriteString(substepStdout)
+				os.Stderr.WriteString(substepStderr)
+			}
+
 			return nil
 		})
 
@@ -294,10 +298,13 @@ func TestSubstep(t *testing.T) {
 			t.Errorf("unexpected err %#v", err)
 		}
 
-		expectedStdout := commanders.Format(commanders.SubstepDescriptions[idl.Substep_saving_source_cluster_config].OutputText, idl.Status_running)
-		expectedStdout += substepStdout + "\n\r"
+		expectedStdout := commanders.Format(commanders.SubstepDescriptions[idl.Substep_saving_source_cluster_config].OutputText, idl.Status_running) + "\n"
+		expectedStdout += substepStdout + "\r"
 		expectedStdout += commanders.Format(commanders.SubstepDescriptions[idl.Substep_saving_source_cluster_config].OutputText, idl.Status_complete) + "\n"
-		expectedStdout += fmt.Sprintf("%s took", idl.Substep_saving_source_cluster_config)
+		expectedStdout += fmt.Sprintf("%s took 0s\n", idl.Substep_saving_source_cluster_config)
+		expectedStdout += "\n-----------------------------------------------------------------------------\n"
+		expectedStdout += fmt.Sprintf("\n%s took 0s\n", idl.Step_initialize)
+		expectedStdout += "\n-----------------------------------------------------------------------------"
 
 		stdout, stderr := d.Collect()
 		d.Close()
@@ -305,13 +312,60 @@ func TestSubstep(t *testing.T) {
 		// Use HasPrefix since we don't know the actualStdout step duration.
 		if !strings.HasPrefix(actualStdout, expectedStdout) {
 			t.Errorf("stdout %#v want %#v", actualStdout, expectedStdout)
-			t.Logf("actualStdout: %s", actualStdout)
+			t.Logf("actualStdout:   %s", actualStdout)
 			t.Logf("expectedStdout: %s", expectedStdout)
 		}
 
 		actualStderr := string(stderr)
 		if actualStderr != substepStderr {
 			t.Errorf("stderr %#v want %#v", actualStdout, expectedStdout)
+		}
+	})
+
+	t.Run("cli substeps are not printed to stdout and stderr when not in verbose mode", func(t *testing.T) {
+		d := BufferStandardDescriptors(t)
+
+		verbose := false
+		st, err := clistep.NewStep(idl.Step_initialize, idl.Step_initialize.String(), &MockStepStore{}, &MockSubstepStore{}, &step.BufferedStreams{}, verbose)
+		if err != nil {
+			d.Close()
+			t.Errorf("unexpected err %#v", err)
+		}
+
+		substepStdout := "some substep output text."
+		substepStderr := "oops!"
+		st.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
+			if verbose {
+				os.Stdout.WriteString(substepStdout)
+				os.Stderr.WriteString(substepStderr)
+			}
+
+			return nil
+		})
+
+		err = st.Complete("")
+		if err != nil {
+			d.Close()
+			t.Errorf("unexpected err %#v", err)
+		}
+
+		expectedStdout := commanders.Format(commanders.SubstepDescriptions[idl.Substep_saving_source_cluster_config].OutputText, idl.Status_running) + "\r"
+		expectedStdout += commanders.Format(commanders.SubstepDescriptions[idl.Substep_saving_source_cluster_config].OutputText, idl.Status_complete) + "\n\n"
+
+		stdout, stderr := d.Collect()
+		d.Close()
+		actualStdout := string(stdout)
+		// Use HasPrefix since we don't know the actualStdout step duration.
+		if !strings.HasPrefix(actualStdout, expectedStdout) {
+			t.Errorf("stdout %#v want %#v", actualStdout, expectedStdout)
+			t.Logf("actualStdout:   %s", actualStdout)
+			t.Logf("expectedStdout: %s", expectedStdout)
+		}
+
+		expectedStderr := "" // since verbose is false nothing is written to stderr
+		actualStderr := string(stderr)
+		if actualStderr != expectedStderr {
+			t.Errorf("stderr %#v want %#v", actualStdout, expectedStderr)
 		}
 	})
 
