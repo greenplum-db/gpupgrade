@@ -85,6 +85,16 @@ SQL_EOF
     # fixed.
     PGOPTIONS='--client-min-messages=warning' psql -v ON_ERROR_STOP=0 --quiet postgres -f /tmp/postgis_dump.sql
 
+    echo 'Applying PostGIS workarounds...'
+    psql -v ON_ERROR_STOP=1 -d postgres <<SQL_EOF
+        -- During finalize vacuumdb --analyze-only fails with 'ERROR:  function raster_hash(public.raster) does not exist'.
+        -- This is because vacuumdb unsets the search_path. To workaround the issue schema qualify the function name.
+        CREATE OR REPLACE FUNCTION raster_eq(raster, raster)
+                RETURNS bool
+                AS \\\$\\\$ SELECT public.raster_hash(\\\$1) = public.raster_hash(\\\$2) \\\$\\\$
+                LANGUAGE 'sql' IMMUTABLE STRICT;
+SQL_EOF
+
     echo 'Installing MADlib...'
     gppkg -i /tmp/madlib_source.gppkg
     /usr/local/greenplum-db-source/madlib/bin/madpack -p greenplum -c /postgres install
