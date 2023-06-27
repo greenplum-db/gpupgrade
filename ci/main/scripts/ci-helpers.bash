@@ -10,6 +10,12 @@ is_GPDB5() {
     [[ $version =~ ^"postgres (Greenplum Database) 5." ]]
 }
 
+is_GPDB6() {
+    local gphome=$1
+    version=$(ssh cdw "$gphome"/bin/postgres --gp-version)
+    [[ $version =~ ^"postgres (Greenplum Database) 6." ]]
+}
+
 # set the database gucs
 # 1. bytea_output: by default for bytea the output format is hex on GPDB 6,
 #    so change it to escape to match GPDB 5 representation
