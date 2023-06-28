@@ -11,7 +11,7 @@ import (
 
 // Change these values to bump the minimum supported versions and associated tests.
 const min5xVersion = "5.29.10"
-const min6xVersion = "6.24.0"
+const min6xVersion = "6.25.0"
 const min7xVersion = "7.0.0"
 
 var GetSourceVersion = Version
