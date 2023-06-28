@@ -15,15 +15,12 @@ exists) with the parsed output.
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path"
 	"path/filepath"
 	"regexp"
 	"text/template"
-
-	"github.com/blang/semver/v4"
 )
 
 var versions = []Version{
@@ -211,17 +208,6 @@ func main() {
 		// if we didn't do this, 60100 would match version 6.1.0
 		"escapeVersion": func(version string) string {
 			return regexp.QuoteMeta(version)
-		},
-
-		// majorVersion parses its string as a semver and returns the major
-		// component. E.g. "4.15.3" -> "4"
-		"majorVersion": func(version string) string {
-			v, err := semver.ParseTolerant(version)
-			if err != nil {
-				panic(err) // the template engine deals with panics nicely
-			}
-
-			return fmt.Sprintf("%d", v.Major)
 		},
 	}
 

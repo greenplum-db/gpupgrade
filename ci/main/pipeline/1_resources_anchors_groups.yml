@@ -54,14 +54,27 @@ resources:
   type: gcs
   source:
     {{- if .TestRCIdentifier }}
-    # Test release candidate rpms built with --build-test-rc are published to the -dev bucket.
-    bucket: pivotal-gpdb-concourse-resources-dev
-    {{- else }}
-    # Test release candidate rpms built from production pipelines are published to the -prod bucket.
-    bucket: pivotal-gpdb-concourse-resources-prod
+      # Test release candidate rpms built with --build-test-rc are published to the -dev bucket.
+      bucket: pivotal-gpdb-concourse-resources-dev
+      json_key: ((concourse-gcs-resources-service-account-key))
+      regexp: server/published/gpdb{{.GPDBVersion}}/greenplum-db-{{.TestRCIdentifier}}({{escapeVersion .GPDBVersion}}.*)-rhel{{.OSVersionNumber}}-x86_64.debug.rpm
+    {{ continue }}
     {{- end }}
-    json_key: ((concourse-gcs-resources-service-account-key))
-    regexp: server/published/gpdb{{ majorVersion .GPDBVersion }}/greenplum-db-{{.TestRCIdentifier}}({{escapeVersion .GPDBVersion}}.*)-rhel{{.OSVersionNumber}}-x86_64.debug.rpm
+    {{- if eq .GPDBVersion "5" }}
+      bucket: pivotal-gpdb-concourse-resources-prod
+      json_key: ((concourse-gcs-resources-service-account-key))
+      regexp: server/published/gpdb{{.GPDBVersion}}/greenplum-db-{{.TestRCIdentifier}}({{escapeVersion .GPDBVersion}}.*)-rhel{{.OSVersionNumber}}-x86_64.debug.rpm
+    {{ continue }}
+    {{- end }}
+      # Releng cannot produce a release candidate RPM that once tagged produces a corresponding RPM with the correct
+      # version. Rather another commit is needed to correctly increment the version. This causes lots of headaches for
+      # gpupgrade since we compile in a minimum GPDB version causing gpupgrade release to wait for the correct version of
+      # GPDB to flow through the pipelines. For now, use a release candidate that has the future minor version rather than
+      # the current minor version. This is problematic since the commit sha and this future version do not correctly
+      # match reality.
+      bucket: pivotal-gpdb-concourse-resources-prod
+      json_key: ((concourse-gcs-resources-service-account-key))
+      regexp: minor/release-candidates/gpdb{{.GPDBVersion}}/greenplum-db-server-({{escapeVersion .GPDBVersion}}.*)-rhel{{.OSVersionNumber}}-x86_64.rpm
 {{end}}
 
 - name: oss_rpm

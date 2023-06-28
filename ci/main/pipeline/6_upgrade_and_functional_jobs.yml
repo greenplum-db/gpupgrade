@@ -31,7 +31,7 @@
         - get: sqldump
           {{- if .TestExtensions }}
           resource: postgis_2.1.5_dump
-          {{- else if eq (majorVersion .Source) "5" }}
+          {{- else if eq (.Source) "5" }}
           resource: icw_planner_gpdb5_centos6_dump
           {{- else }}
           resource: icw_gporca_gpdb6_centos6_dump
@@ -108,8 +108,8 @@
         run:
           path: gpupgrade_src/ci/main/scripts/prepare-installation.bash
           args:
-            - greenplum-db-{{majorVersion .Source}}
-            - greenplum-db-{{majorVersion .Target}}
+            - greenplum-db-{{.Source}}
+            - greenplum-db-{{.Target}}
     {{- if .RetailDemo }}
     - task: load_retail_data
       config:

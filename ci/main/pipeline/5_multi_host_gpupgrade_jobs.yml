@@ -59,8 +59,8 @@
         run:
           path: gpupgrade_src/ci/main/scripts/prepare-installation.bash
           args:
-            - greenplum-db-{{majorVersion .Source}}
-            - greenplum-db-{{majorVersion .Target}}
+            - greenplum-db-{{.Source}}
+            - greenplum-db-{{.Target}}
     - task: multihost_gpupgrade_tests
       config:
         platform: linux
