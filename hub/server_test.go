@@ -25,6 +25,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/mock_agent"
 	"github.com/greenplum-db/gpupgrade/testutils/testlog"
+	"github.com/greenplum-db/gpupgrade/utils"
 )
 
 const timeout = 1 * time.Second
@@ -357,7 +358,7 @@ func TestEnsureConnsAreReady(t *testing.T) {
 			if agentConn.Hostname == "sdw1" || agentConn.Hostname == "sdw2-mirror" {
 				err := agentConn.Conn.Close()
 				if err != nil {
-					t.Fatalf("close mdw connection: %v", err)
+					t.Fatalf("close connection: %v", err)
 				}
 
 				expected[agentConn.Hostname] = agentConn.Conn.GetState()
@@ -365,8 +366,18 @@ func TestEnsureConnsAreReady(t *testing.T) {
 		}
 
 		err = hub.EnsureConnsAreReady(agentConns, 0*time.Second)
-		if !strings.HasSuffix(err.Error(), expected.String()) {
-			t.Errorf("got error %#v, want %#v", err, expected)
+		var nextActions utils.NextActionErr
+		if !errors.As(err, &nextActions) {
+			t.Fatalf("got type %T want %T", err, nextActions)
+		}
+
+		var agentsNotReadyError *hub.AgentsNotReadyError
+		if !errors.As(nextActions.Err, &agentsNotReadyError) {
+			t.Fatalf("got type %T want %T", err, agentsNotReadyError)
+		}
+
+		if !reflect.DeepEqual(agentsNotReadyError.Agents, expected) {
+			t.Errorf("got %v want %v", agentsNotReadyError.Agents, expected)
 		}
 	})
 }

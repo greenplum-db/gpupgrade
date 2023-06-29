@@ -304,6 +304,24 @@ func (a AgentsGrpcStatus) String() string {
 	return text
 }
 
+var ErrAgentsNotReady = errors.New("gRPC agents not ready")
+
+type AgentsNotReadyError struct {
+	Agents AgentsGrpcStatus
+}
+
+func newAgentsNotReadyError(agentsGrpcStatus map[string]connectivity.State) *AgentsNotReadyError {
+	return &AgentsNotReadyError{Agents: agentsGrpcStatus}
+}
+
+func (a *AgentsNotReadyError) Error() string {
+	return fmt.Sprintf("Timeout exceeded ensuring gpupgrade agent processes are ready. Hosts with gpupgrade agents processes having non-ready gRPC status:\n%s", a.Agents)
+}
+
+func (a *AgentsNotReadyError) Is(err error) bool {
+	return err == ErrAgentsNotReady
+}
+
 func EnsureConnsAreReady(agentConns []*idl.Connection, timeout time.Duration) error {
 	startTime := time.Now()
 	for {
@@ -319,9 +337,8 @@ func EnsureConnsAreReady(agentConns []*idl.Connection, timeout time.Duration) er
 		}
 
 		if time.Since(startTime) > timeout {
-			err := fmt.Errorf("%s timeout exceeded ensuring gpupgrade agent processes are ready. Hosts with gpupgrade agents processes having non-ready gRPC status:\n%s", timeout, agentsNotReady)
 			nextAction := `Check the network between the master and segment hosts. And try restarting the hub and agents with "gpupgrade kill-services && gpupgrade restart-services".`
-			return utils.NewNextActionErr(err, nextAction)
+			return utils.NewNextActionErr(newAgentsNotReadyError(agentsNotReady), nextAction)
 		}
 
 		time.Sleep(time.Second)
