@@ -89,9 +89,8 @@ EXPLAIN (COSTS off) SELECT * FROM aoco_with_gist WHERE a @@ to_tsquery('footext1
  Optimizer: Postgres query optimizer                      
 (6 rows)
 SELECT * FROM ao_with_btree WHERE a > 8;
- a 
----
-(0 rows)
+ERROR:  Unexpected internal error
+DETAIL:  FailedAssertion
 SELECT * FROM ao_with_bitmap WHERE a = 1;
  a 
 ---
@@ -101,13 +100,11 @@ SELECT * FROM ao_with_bitmap WHERE a = 1;
  1 
 (4 rows)
 SELECT * FROM ao_with_gist WHERE a @@ to_tsquery('footext1');
- a 
----
-(0 rows)
+ERROR:  Unexpected internal error
+DETAIL:  FailedAssertion
 SELECT * FROM aoco_with_btree WHERE a > 8;
- a 
----
-(0 rows)
+ERROR:  Unexpected internal error
+DETAIL:  FailedAssertion
 SELECT * FROM aoco_with_bitmap WHERE a = 1;
  a 
 ---
@@ -117,9 +114,8 @@ SELECT * FROM aoco_with_bitmap WHERE a = 1;
  1 
 (4 rows)
 SELECT * FROM aoco_with_gist WHERE a @@ to_tsquery('footext1');
- a 
----
-(0 rows)
+ERROR:  Unexpected internal error
+DETAIL:  FailedAssertion
 
 -- Provided REINDEX workaround should fix all the AO indexes
 REINDEX INDEX ao_with_btree_idx;

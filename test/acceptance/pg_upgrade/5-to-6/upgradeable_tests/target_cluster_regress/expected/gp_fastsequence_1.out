@@ -6,25 +6,95 @@
 --------------------------------------------------------------------------------
 
 -- Verify table's gp_fastsequence value is preserved
-SELECT fs.gp_segment_id, fs.objmod, fs.last_sequence
-FROM pg_class c
-JOIN pg_appendonly ao ON c.oid=ao.relid
-JOIN gp_dist_random('gp_fastsequence') fs ON ao.segrelid=fs.objid
-WHERE c.relname='aotable_fastsequence'
-ORDER BY 1, 2, 3;
+SELECT fs.gp_segment_id, fs.objmod, fs.last_sequence FROM pg_class c JOIN pg_appendonly ao ON c.oid=ao.relid JOIN gp_dist_random('gp_fastsequence') fs ON ao.segrelid=fs.objid WHERE c.relname='aotable_fastsequence' ORDER BY 1, 2, 3;
+ gp_segment_id | objmod | last_sequence 
+---------------+--------+---------------
+ 0             | 0      | 0             
+ 0             | 1      | 301           
+ 0             | 2      | 101           
+ 1             | 0      | 0             
+ 1             | 1      | 301           
+ 1             | 2      | 101           
+ 2             | 0      | 0             
+ 2             | 1      | 301           
+ 2             | 2      | 101           
+(9 rows)
 
 -- Verify table data is not corrupt using seqscan
 SET enable_indexscan = false;
+SET
 SET enable_bitmapscan = false;
+SET
 SET enable_seqscan = true;
+SET
 SELECT * FROM aotable_fastsequence ORDER BY i;
+ i   
+-----
+ 1   
+ 2   
+ 3   
+ 4   
+ 5   
+ 6   
+ 7   
+ 8   
+ 9   
+ 10  
+ 11  
+ 12  
+ 13  
+ 14  
+ 15  
+ 16  
+ 17  
+ 18  
+ 19  
+ 20  
+ 21  
+ 22  
+ 23  
+ 24  
+ 25  
+ 26  
+ 27  
+ 28  
+ 29  
+ 30  
+ 102 
+ 103 
+ 104 
+ 105 
+ 106 
+ 107 
+ 108 
+ 109 
+ 110 
+ 111 
+ 112 
+ 113 
+ 114 
+ 115 
+ 116 
+ 117 
+ 118 
+ 119 
+ 120 
+ 121 
+(50 rows)
 
 -- Verify INSERTs produce no duplicate ctids
 1: BEGIN;
+BEGIN
 1: INSERT INTO aotable_fastsequence SELECT generate_series(1001, 1010);
+INSERT 10
 2: INSERT INTO aotable_fastsequence SELECT generate_series(1011, 1020);
+INSERT 10
 1: COMMIT;
+COMMIT
 SELECT gp_segment_id, ctid, count(ctid) FROM aotable_fastsequence GROUP BY gp_segment_id, ctid HAVING count(ctid) > 1;
+ gp_segment_id | ctid | count 
+---------------+------+-------
+(0 rows)
 
 -- The following gpdb commits changed aotids format which means indexes are not
 -- safe to upgrade.
@@ -34,39 +104,128 @@ SELECT gp_segment_id, ctid, count(ctid) FROM aotable_fastsequence GROUP BY gp_se
 -- This select will cause an expected FATAL that will trigger a crash recovery
 -- on debug builds.
 SET enable_indexscan = true;
+SET
 SET enable_bitmapscan = true;
+SET
 SET enable_seqscan = false;
+SET
 SET gp_debug_linger = 0;
+SET
 SELECT * FROM aotable_fastsequence WHERE i < 10 ORDER BY i;
+ERROR:  Unexpected internal error (appendonlytid.h:66)  (seg0 slice1 127.0.1.1:50434 pid=1297920) (appendonlytid.h:66)
+DETAIL:  FailedAssertion("!(h->bytes_4_5 <= 0x8000)", File: "../../../../src/include/access/appendonlytid.h", Line: 66)
 
 -- Verify indexes are functional after REINDEX
 REINDEX TABLE aotable_fastsequence;
+REINDEX
 SELECT * FROM aotable_fastsequence WHERE i < 10 ORDER BY i;
+ i 
+---
+ 1 
+ 2 
+ 3 
+ 4 
+ 5 
+ 6 
+ 7 
+ 8 
+ 9 
+(9 rows)
 
 
 
 -- Verify table's gp_fastsequence value is preserved
-SELECT fs.gp_segment_id, fs.objmod, fs.last_sequence
-FROM pg_class c
-JOIN pg_appendonly ao ON c.oid=ao.relid
-JOIN gp_dist_random('gp_fastsequence') fs ON ao.segrelid=fs.objid
-WHERE c.relname='aocotable_fastsequence'
-ORDER BY 1, 2, 3;
+SELECT fs.gp_segment_id, fs.objmod, fs.last_sequence FROM pg_class c JOIN pg_appendonly ao ON c.oid=ao.relid JOIN gp_dist_random('gp_fastsequence') fs ON ao.segrelid=fs.objid WHERE c.relname='aocotable_fastsequence' ORDER BY 1, 2, 3;
+ gp_segment_id | objmod | last_sequence 
+---------------+--------+---------------
+ 0             | 0      | 0             
+ 0             | 1      | 301           
+ 0             | 2      | 101           
+ 1             | 0      | 0             
+ 1             | 1      | 301           
+ 1             | 2      | 101           
+ 2             | 0      | 0             
+ 2             | 1      | 301           
+ 2             | 2      | 101           
+(9 rows)
 
 -- Verify table data is not corrupt using seqscan
 SET enable_indexscan = false;
+SET
 SET enable_bitmapscan = false;
+SET
 SET enable_seqscan = true;
+SET
 SELECT * FROM aocotable_fastsequence ORDER BY i;
+ i   
+-----
+ 1   
+ 2   
+ 3   
+ 4   
+ 5   
+ 6   
+ 7   
+ 8   
+ 9   
+ 10  
+ 11  
+ 12  
+ 13  
+ 14  
+ 15  
+ 16  
+ 17  
+ 18  
+ 19  
+ 20  
+ 21  
+ 22  
+ 23  
+ 24  
+ 25  
+ 26  
+ 27  
+ 28  
+ 29  
+ 30  
+ 102 
+ 103 
+ 104 
+ 105 
+ 106 
+ 107 
+ 108 
+ 109 
+ 110 
+ 111 
+ 112 
+ 113 
+ 114 
+ 115 
+ 116 
+ 117 
+ 118 
+ 119 
+ 120 
+ 121 
+(50 rows)
 
 -- Verify INSERTs produce no duplicate ctids
 -- Verify using additional sessions since sessions 1 and 2 become disconnected
 -- due to the expected failed index query in session 1 causing a crash recovery.
 3: BEGIN;
+BEGIN
 3: INSERT INTO aocotable_fastsequence SELECT generate_series(1001, 1010);
+INSERT 10
 4: INSERT INTO aocotable_fastsequence SELECT generate_series(1011, 1020);
+INSERT 10
 3: COMMIT;
+COMMIT
 SELECT gp_segment_id, ctid, count(ctid) FROM aocotable_fastsequence GROUP BY gp_segment_id, ctid HAVING count(ctid) > 1;
+ gp_segment_id | ctid | count 
+---------------+------+-------
+(0 rows)
 
 -- The following gpdb commits changed aotids format which means indexes are not
 -- safe to upgrade.
@@ -76,11 +235,30 @@ SELECT gp_segment_id, ctid, count(ctid) FROM aocotable_fastsequence GROUP BY gp_
 -- This select will cause an expected FATAL that will trigger a crash recovery
 -- on debug builds.
 SET enable_indexscan = true;
+SET
 SET enable_bitmapscan = true;
+SET
 SET enable_seqscan = false;
+SET
 SET gp_debug_linger = 0;
+SET
 SELECT * FROM aocotable_fastsequence WHERE i < 10 ORDER BY i;
+ERROR:  Unexpected internal error (appendonlytid.h:66)  (seg0 slice1 127.0.1.1:50434 pid=1297920) (appendonlytid.h:66)
+DETAIL:  FailedAssertion("!(h->bytes_4_5 <= 0x8000)", File: "../../../../src/include/access/appendonlytid.h", Line: 66)
 
 -- Verify indexes are functional after REINDEX
 REINDEX TABLE aocotable_fastsequence;
+REINDEX
 SELECT * FROM aocotable_fastsequence WHERE i < 10 ORDER BY i;
+ i 
+---
+ 1 
+ 2 
+ 3 
+ 4 
+ 5 
+ 6 
+ 7 
+ 8 
+ 9 
+(9 rows)

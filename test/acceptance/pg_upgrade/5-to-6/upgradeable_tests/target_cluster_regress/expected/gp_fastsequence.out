@@ -101,7 +101,8 @@ SELECT gp_segment_id, ctid, count(ctid) FROM aotable_fastsequence GROUP BY gp_se
 -- https://github.com/greenplum-db/gpdb/commit/c249ac7a36d9da3d25b6c419fbd07e2c9cfe954f
 -- https://github.com/greenplum-db/gpdb/commit/fa1e76c3d72316bdcb34dd3d3b34736cd03e840f
 -- Indexes are invalid and should not work after upgrade
--- This select will cause an expected FATAL that will trigger a crash recovery.
+-- This select will cause an expected FATAL that will trigger a crash recovery
+-- on debug builds.
 SET enable_indexscan = true;
 SET
 SET enable_bitmapscan = true;
@@ -111,8 +112,9 @@ SET
 SET gp_debug_linger = 0;
 SET
 SELECT * FROM aotable_fastsequence WHERE i < 10 ORDER BY i;
-ERROR:  Unexpected internal error (appendonlytid.h:66)  (seg0 slice1 127.0.1.1:50434 pid=1297871) (appendonlytid.h:66)
-DETAIL:  FailedAssertion("!(h->bytes_4_5 <= 0x8000)", File: "../../../../src/include/access/appendonlytid.h", Line: 66)
+ i 
+---
+(0 rows)
 
 -- Verify indexes are functional after REINDEX
 REINDEX TABLE aotable_fastsequence;
@@ -231,7 +233,8 @@ SELECT gp_segment_id, ctid, count(ctid) FROM aocotable_fastsequence GROUP BY gp_
 -- https://github.com/greenplum-db/gpdb/commit/c249ac7a36d9da3d25b6c419fbd07e2c9cfe954f
 -- https://github.com/greenplum-db/gpdb/commit/fa1e76c3d72316bdcb34dd3d3b34736cd03e840f
 -- Indexes are invalid and should not work after upgrade
--- This select will cause an expected FATAL that will trigger a crash recovery.
+-- This select will cause an expected FATAL that will trigger a crash recovery
+-- on debug builds.
 SET enable_indexscan = true;
 SET
 SET enable_bitmapscan = true;
@@ -241,8 +244,9 @@ SET
 SET gp_debug_linger = 0;
 SET
 SELECT * FROM aocotable_fastsequence WHERE i < 10 ORDER BY i;
-ERROR:  Unexpected internal error (appendonlytid.h:66)  (seg0 slice1 127.0.1.1:50434 pid=1297920) (appendonlytid.h:66)
-DETAIL:  FailedAssertion("!(h->bytes_4_5 <= 0x8000)", File: "../../../../src/include/access/appendonlytid.h", Line: 66)
+ i 
+---
+(0 rows)
 
 -- Verify indexes are functional after REINDEX
 REINDEX TABLE aocotable_fastsequence;
