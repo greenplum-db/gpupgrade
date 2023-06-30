@@ -27,33 +27,33 @@ var versions = []Version{
 	{
 		Source:          "5",
 		Target:          "6",
-		OSVersion:       "centos6",
+		Platform:        "centos6",
 		OSVersionNumber: "6",
 	},
 	{
 		Source:          "5",
 		Target:          "6",
-		OSVersion:       "centos7",
+		Platform:        "centos7",
 		OSVersionNumber: "7",
 		SpecialJobs:     true, // To avoid exploding the test matrix set specialJobs for 5->6 for only a single OS.
 	},
 	{
 		Source:          "6",
 		Target:          "6",
-		OSVersion:       "centos7", // To avoid exploding the test matrix have 6->6 for only a single OS.
+		Platform:        "centos7", // To avoid exploding the test matrix have 6->6 for only a single OS.
 		OSVersionNumber: "7",
 	},
 	//{
 	//	Source:   "6",
 	//	Target:   "7",
-	//	OSVersion:       "rocky8",
+	//	Platform:       "rocky8",
 	//	OSVersionNumber: "8",
 	//	SpecialJobs:     true,
 	//},
 	//{
 	//	Source:   "7",
 	//	Target:   "7",
-	//	OSVersion:       "rocky8",
+	//	Platform:       "rocky8",
 	//	OSVersionNumber: "8",
 	//},
 }

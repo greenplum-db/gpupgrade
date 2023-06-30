@@ -29,7 +29,7 @@ type AcceptanceJob struct {
 type AcceptanceJobs []AcceptanceJob
 
 func (c *AcceptanceJob) Name() string {
-	return fmt.Sprintf("%s-to-%s-%s-acceptance-tests", c.Source, c.Target, c.OSVersion)
+	return fmt.Sprintf("%s-to-%s-%s-acceptance-tests", c.Source, c.Target, c.Platform)
 }
 
 // upgrade jobs
@@ -41,7 +41,7 @@ type UpgradeJob struct {
 }
 
 func (j *UpgradeJob) Name() string {
-	return fmt.Sprintf("%s-to-%s-%s-e2e-%s-mode%s", j.Source, j.Target, j.OSVersion, j.Mode, j.Suffix())
+	return fmt.Sprintf("%s-to-%s-%s-e2e-%s-mode%s", j.Source, j.Target, j.Platform, j.Mode, j.Suffix())
 }
 
 func (j *UpgradeJob) Suffix() string {
@@ -73,7 +73,7 @@ type PgUpgradeJob struct {
 }
 
 func (p *PgUpgradeJob) Name() string {
-	return fmt.Sprintf("%s-to-%s-%s-pg-upgrade-tests", p.Source, p.Target, p.OSVersion)
+	return fmt.Sprintf("%s-to-%s-%s-pg-upgrade-tests", p.Source, p.Target, p.Platform)
 }
 
 type PgUpgradeJobs []PgUpgradeJob
@@ -83,7 +83,7 @@ type MultihostAcceptanceJob struct {
 }
 
 func (j *MultihostAcceptanceJob) Name() string {
-	return fmt.Sprintf("%s-to-%s-%s-multihost-acceptance-tests", j.Source, j.Target, j.OSVersion)
+	return fmt.Sprintf("%s-to-%s-%s-multihost-acceptance-tests", j.Source, j.Target, j.Platform)
 }
 
 type MultihostAcceptanceJobs []MultihostAcceptanceJob
@@ -94,7 +94,7 @@ type FunctionalJob struct {
 }
 
 func (j *FunctionalJob) Name() string {
-	return fmt.Sprintf("%s-to-%s-%s-functional-test-%s-mode%s", j.Source, j.Target, j.OSVersion, j.Mode, j.Suffix())
+	return fmt.Sprintf("%s-to-%s-%s-functional-test-%s-mode%s", j.Source, j.Target, j.Platform, j.Mode, j.Suffix())
 }
 
 func (j *FunctionalJob) Suffix() string {

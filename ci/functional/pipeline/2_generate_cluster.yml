@@ -7,10 +7,10 @@ jobs:
           - get: enterprise_rpm
             resource: gpupgrade_rpm
           - get: rpm_gpdb_source
-            resource: gpdb{{.Source}}_{{.OSVersion}}_rpm
+            resource: gpdb{{.Source}}_{{.Platform}}_rpm
           {{- if ne .Source .Target }}
           - get: rpm_gpdb_target
-            resource: gpdb{{.Target}}_{{.OSVersion}}_rpm
+            resource: gpdb{{.Target}}_{{.Platform}}_rpm
           {{- end }}
           - get: ccp_src
           - get: terraform.d
@@ -30,7 +30,7 @@ jobs:
             disk_type: pd-ssd
             disk_size: 500
             number_of_nodes: 4
-            PLATFORM: {{.OSVersion}}
+            PLATFORM: {{.Platform}}
             # Increase reap time to 7 days to prevent the cluster from being
             # removed during very long-running tests. See code snippet where
             # creation_timestamp will be used plus reap_mins to destroy cluster.
@@ -40,7 +40,7 @@ jobs:
         file: ccp_src/ci/tasks/gen_cluster.yml
         params:
           <<: *ccp_gen_cluster_default_params
-          PLATFORM: {{.OSVersion}}
+          PLATFORM: {{.Platform}}
           GPDB_RPM: true
         input_mapping:
           gpdb_rpm: rpm_gpdb_source

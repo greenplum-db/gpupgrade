@@ -34,10 +34,10 @@
           resource: gpdb{{.Source}}_src
         - get: bats
         - get: rpm_gpdb_source
-          resource: gpdb{{.Source}}_{{.OSVersion}}_rpm
+          resource: gpdb{{.Source}}_{{.Platform}}_rpm
           trigger: true
         - get: rpm_gpdb_target
-          resource: gpdb{{.Target}}_{{.OSVersion}}_rpm
+          resource: gpdb{{.Target}}_{{.Platform}}_rpm
           trigger: true
     - task: cluster-tests
       config:
@@ -45,7 +45,7 @@
         image_resource:
           type: registry-image
           source:
-            repository: gcr.io/data-gpdb-public-images/gpdb{{.Target}}-{{.OSVersion}}-test-golang
+            repository: gcr.io/data-gpdb-public-images/gpdb{{.Target}}-{{.Platform}}-test-golang
             tag: latest
         inputs:
           - name: gpupgrade_src

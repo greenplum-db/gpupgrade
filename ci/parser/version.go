@@ -11,7 +11,7 @@ import (
 type Version struct {
 	Source          string
 	Target          string
-	OSVersion       string
+	Platform        string
 	OSVersionNumber string
 	SpecialJobs     bool
 }

@@ -42,8 +42,8 @@ resources:
     {{- end -}}
 
 {{range .GPDBVersions}}
-  {{- if not (eq .OSVersion "centos6") }}
-  - name: gpdb{{.GPDBVersion}}_{{.OSVersion}}_rpm
+  {{- if and (.SpecialJobs) (eq .Platform "centos7") }}
+  - name: gpdb{{.GPDBVersion}}_{{.Platform}}_rpm
     type: gcs
     source:
       {{- if .TestRCIdentifier }}

@@ -50,7 +50,7 @@ resources:
 # source and target clusters. In order to test this scenario release candidate
 # builds are needed.
 {{range .GPDBVersions}}
-- name: gpdb{{.GPDBVersion}}_{{.OSVersion}}_rpm
+- name: gpdb{{.GPDBVersion}}_{{.Platform}}_rpm
   type: gcs
   source:
     {{- if .TestRCIdentifier }}
@@ -188,27 +188,27 @@ resources:
 {{range .GPDBVersions}}
 # To avoid too many jobs we only run extensions on when SpecialJobs is true for
 # select operating systems.
-{{- if or (eq .OSVersion "centos7") (eq .OSVersion "rocky8") }}
-- name: postgis_2.x_gpdb{{.GPDBVersion}}_{{.OSVersion}}_gppkg
+{{- if or (eq .Platform "centos7") (eq .Platform "rocky8") }}
+- name: postgis_2.x_gpdb{{.GPDBVersion}}_{{.Platform}}_gppkg
   type: gcs
   source:
     json_key: ((concourse-gcs-resources-service-account-key))
     bucket: pivotal-gpdb-concourse-resources-prod
     regexp: postgis/released/gpdb{{.GPDBVersion}}/postgis-2.1.5\+(.*)-gp{{.GPDBVersion}}-rhel{{.OSVersionNumber}}-x86_64.gppkg
 
-- name: madlib_1.x_gpdb{{.GPDBVersion}}_{{.OSVersion}}_gppkg
+- name: madlib_1.x_gpdb{{.GPDBVersion}}_{{.Platform}}_gppkg
   type: s3
   source:
     access_key_id: ((madlib-s3-access_key_id))
     secret_access_key: ((madlib-s3-secret_access_key))
     region_name: us-west-2
     bucket: madlib-artifacts
-    versioned_file: bin_madlib_artifacts_{{.OSVersion}}/madlib-master-gp{{.GPDBVersion}}-rhel{{.OSVersionNumber}}-x86_64.gppkg
+    versioned_file: bin_madlib_artifacts_{{.Platform}}/madlib-master-gp{{.GPDBVersion}}-rhel{{.OSVersionNumber}}-x86_64.gppkg
 
 # NOTE: The same gptext artifact is used for both gpdb5 and gpdb6. Also, the same
 # rhel6 artifact is used for both centos6 and centos7, since the rhel7 artifact
 # does not support gpdb5.
-- name: gptext_3.x_gpdb{{.GPDBVersion}}_{{.OSVersion}}_targz
+- name: gptext_3.x_gpdb{{.GPDBVersion}}_{{.Platform}}_targz
   type: gcs
   source:
     json_key: ((concourse-gcs-resources-service-account-key))
@@ -219,14 +219,14 @@ resources:
 # supported for centos6. Thus, we can only test pxf upgrades on centos7.
 # NOTE: The resource name is _rpm even though the artifact is a tar.gz since
 # pxf SNAPSHOT builds are only available as an rpm inside a tar.gz.
-- name: pxf_6_gpdb{{.GPDBVersion}}_{{.OSVersion}}_rpm
+- name: pxf_6_gpdb{{.GPDBVersion}}_{{.Platform}}_rpm
   type: gcs
   source:
     json_key: ((ud/pxf/secrets/pxf-storage-service-account-key))
     bucket: data-gpdb-ud-pxf-build
     versioned_file: prod/snapshots/pxf6/pxf-gp{{.GPDBVersion}}.el{{.OSVersionNumber}}.tar.gz
 
-- name: plr_gpdb{{.GPDBVersion}}_{{.OSVersion}}_gppkg
+- name: plr_gpdb{{.GPDBVersion}}_{{.Platform}}_gppkg
   type: gcs
   source:
     json_key: ((concourse-gcs-resources-service-account-key))
@@ -235,7 +235,7 @@ resources:
 
 # NOTE: plcontainer is only supported for centos7. And plcontainer 1.x is only for GPDB 5X.
 {{- if eq .GPDBVersion "5" }}
-- name: plcontainer_1.x_gpdb{{.GPDBVersion}}_{{.OSVersion}}_gppkg
+- name: plcontainer_1.x_gpdb{{.GPDBVersion}}_{{.Platform}}_gppkg
   type: gcs
   source:
     json_key: ((concourse-gcs-resources-service-account-key))
@@ -245,7 +245,7 @@ resources:
 
 # NOTE: plcontainer is only supported for centos7. And plcontainer 2.x is only for GPDB 6X.
 {{- if eq .GPDBVersion "6" }}
-- name: plcontainer_2.x_gpdb{{.GPDBVersion}}_{{.OSVersion}}_gppkg
+- name: plcontainer_2.x_gpdb{{.GPDBVersion}}_{{.Platform}}_gppkg
   type: gcs
   source:
     json_key: ((concourse-gcs-resources-service-account-key))
