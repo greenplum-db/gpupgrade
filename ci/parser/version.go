@@ -29,8 +29,7 @@ func (a MajorVersions) contains(needle string) bool {
 }
 
 type GPDBVersion struct {
-	OSVersion        string
-	OSVersionNumber  string
+	Version
 	GPDBVersion      string
 	TestRCIdentifier string
 }

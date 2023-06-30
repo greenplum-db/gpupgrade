@@ -87,8 +87,7 @@ func init() {
 		}
 
 		gpdbVersion := GPDBVersion{
-			OSVersion:        version.OSVersion,
-			OSVersionNumber:  version.OSVersionNumber,
+			Version:          version,
 			GPDBVersion:      version.Source,
 			TestRCIdentifier: testRCIdentifier(version.Source),
 		}
@@ -98,8 +97,7 @@ func init() {
 		}
 
 		gpdbVersion = GPDBVersion{
-			OSVersion:        version.OSVersion,
-			OSVersionNumber:  version.OSVersionNumber,
+			Version:          version,
 			GPDBVersion:      version.Target, // need to add all combinations of version
 			TestRCIdentifier: testRCIdentifier(version.Target),
 		}
