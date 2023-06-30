@@ -20,41 +20,43 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"text/template"
+	"unicode"
 )
 
 var versions = []Version{
 	{
-		Source:          "5",
-		Target:          "6",
-		Platform:        "centos6",
-		OSVersionNumber: "6",
+		Source:     "5",
+		Target:     "6",
+		Platform:   "centos6",
+		RpmVersion: "rhel6",
 	},
 	{
-		Source:          "5",
-		Target:          "6",
-		Platform:        "centos7",
-		OSVersionNumber: "7",
-		SpecialJobs:     true, // To avoid exploding the test matrix set specialJobs for 5->6 for only a single OS.
+		Source:      "5",
+		Target:      "6",
+		Platform:    "centos7",
+		RpmVersion:  "rhel7",
+		SpecialJobs: true, // To avoid exploding the test matrix set specialJobs for 5->6 for only a single OS.
 	},
 	{
-		Source:          "6",
-		Target:          "6",
-		Platform:        "centos7", // To avoid exploding the test matrix have 6->6 for only a single OS.
-		OSVersionNumber: "7",
+		Source:     "6",
+		Target:     "6",
+		Platform:   "centos7", // To avoid exploding the test matrix have 6->6 for only a single OS.
+		RpmVersion: "rhel7",
 	},
 	//{
-	//	Source:   "6",
-	//	Target:   "7",
-	//	Platform:       "rocky8",
-	//	OSVersionNumber: "8",
-	//	SpecialJobs:     true,
+	//	Source:      "6",
+	//	Target:      "7",
+	//	Platform:    "rocky8",
+	//	RpmVersion:  "rhel8",
+	//	SpecialJobs: true,
 	//},
 	//{
-	//	Source:   "7",
-	//	Target:   "7",
-	//	Platform:       "rocky8",
-	//	OSVersionNumber: "8",
+	//	Source:     "7",
+	//	Target:     "7",
+	//	Platform:   "rocky8",
+	//	RpmVersion: "rhel8",
 	//},
 }
 
@@ -185,6 +187,19 @@ func main() {
 		// if we didn't do this, 60100 would match version 6.1.0
 		"escapeVersion": func(version string) string {
 			return regexp.QuoteMeta(version)
+		},
+
+		// RpmVersionNumber returns the version number for a given rpmVersion
+		// string. For example, rhel6 -> 6 and rocky8 -> 8.
+		"RpmVersionNumber": func(rpmVersion string) string {
+			var version strings.Builder
+			for _, char := range rpmVersion {
+				if unicode.IsDigit(char) {
+					version.WriteRune(char)
+				}
+			}
+
+			return version.String()
 		},
 	}
 
