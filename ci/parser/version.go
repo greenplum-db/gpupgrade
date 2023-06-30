@@ -9,10 +9,10 @@ import (
 )
 
 type Version struct {
-	sourceVersion   string
-	targetVersion   string
-	osVersion       string
-	osVersionNumber string
+	Source          string
+	Target          string
+	OSVersion       string
+	OSVersionNumber string
 	SpecialJobs     bool
 }
 

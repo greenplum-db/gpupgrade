@@ -9,11 +9,10 @@ import (
 )
 
 type Job struct {
-	Source, Target string
-	OSVersion      string
-	Mode           Mode
-	PrimariesOnly  bool
-	NoStandby      bool
+	Version
+	Mode          Mode
+	PrimariesOnly bool
+	NoStandby     bool
 }
 
 type Mode string

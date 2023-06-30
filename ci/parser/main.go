@@ -25,36 +25,36 @@ import (
 
 var versions = []Version{
 	{
-		sourceVersion:   "5",
-		targetVersion:   "6",
-		osVersion:       "centos6",
-		osVersionNumber: "6",
+		Source:          "5",
+		Target:          "6",
+		OSVersion:       "centos6",
+		OSVersionNumber: "6",
 	},
 	{
-		sourceVersion:   "5",
-		targetVersion:   "6",
-		osVersion:       "centos7",
-		osVersionNumber: "7",
+		Source:          "5",
+		Target:          "6",
+		OSVersion:       "centos7",
+		OSVersionNumber: "7",
 		SpecialJobs:     true, // To avoid exploding the test matrix set specialJobs for 5->6 for only a single OS.
 	},
 	{
-		sourceVersion:   "6",
-		targetVersion:   "6",
-		osVersion:       "centos7", // To avoid exploding the test matrix have 6->6 for only a single OS.
-		osVersionNumber: "7",
+		Source:          "6",
+		Target:          "6",
+		OSVersion:       "centos7", // To avoid exploding the test matrix have 6->6 for only a single OS.
+		OSVersionNumber: "7",
 	},
 	//{
-	//	sourceVersion:   "6",
-	//	targetVersion:   "7",
-	//	osVersion:       "rocky8",
-	//	osVersionNumber: "8",
+	//	Source:   "6",
+	//	Target:   "7",
+	//	OSVersion:       "rocky8",
+	//	OSVersionNumber: "8",
 	//	SpecialJobs:     true,
 	//},
 	//{
-	//	sourceVersion:   "7",
-	//	targetVersion:   "7",
-	//	osVersion:       "rocky8",
-	//	osVersionNumber: "8",
+	//	Source:   "7",
+	//	Target:   "7",
+	//	OSVersion:       "rocky8",
+	//	OSVersionNumber: "8",
 	//},
 }
 
@@ -82,15 +82,15 @@ func init() {
 	var functionalJobs FunctionalJobs
 
 	for _, version := range versions {
-		if !majorVersions.contains(version.sourceVersion) {
-			majorVersions = append(majorVersions, version.sourceVersion)
+		if !majorVersions.contains(version.Source) {
+			majorVersions = append(majorVersions, version.Source)
 		}
 
 		gpdbVersion := GPDBVersion{
-			OSVersion:        version.osVersion,
-			OSVersionNumber:  version.osVersionNumber,
-			GPDBVersion:      version.sourceVersion,
-			TestRCIdentifier: testRCIdentifier(version.sourceVersion),
+			OSVersion:        version.OSVersion,
+			OSVersionNumber:  version.OSVersionNumber,
+			GPDBVersion:      version.Source,
+			TestRCIdentifier: testRCIdentifier(version.Source),
 		}
 
 		if !gpdbVersions.contains(gpdbVersion) {
@@ -98,10 +98,10 @@ func init() {
 		}
 
 		gpdbVersion = GPDBVersion{
-			OSVersion:        version.osVersion,
-			OSVersionNumber:  version.osVersionNumber,
-			GPDBVersion:      version.targetVersion, // need to add all combinations of version
-			TestRCIdentifier: testRCIdentifier(version.targetVersion),
+			OSVersion:        version.OSVersion,
+			OSVersionNumber:  version.OSVersionNumber,
+			GPDBVersion:      version.Target, // need to add all combinations of version
+			TestRCIdentifier: testRCIdentifier(version.Target),
 		}
 
 		if !gpdbVersions.contains(gpdbVersion) {
@@ -111,33 +111,18 @@ func init() {
 		// To avoid too many duplicate acceptanceJobs have only one for different
 		// major versions (ie: SpecialJobs), and only one for same major
 		// versions (ie: 6-to-6 or 7-to-7).
-		if version.SpecialJobs || (version.sourceVersion == version.targetVersion) {
-			acceptanceJobs = append(acceptanceJobs, AcceptanceJob{Job{
-				Source:    version.sourceVersion,
-				Target:    version.targetVersion,
-				OSVersion: version.osVersion,
-			}})
-
-			multihostAcceptanceJobs = append(multihostAcceptanceJobs, MultihostAcceptanceJob{Job{
-				Source:    version.sourceVersion,
-				Target:    version.targetVersion,
-				OSVersion: version.osVersion,
-			}})
+		if version.SpecialJobs || (version.Source == version.Target) {
+			acceptanceJobs = append(acceptanceJobs, AcceptanceJob{Job{Version: version}})
+			multihostAcceptanceJobs = append(multihostAcceptanceJobs, MultihostAcceptanceJob{Job{Version: version}})
 		}
 
 		upgradeJobs = append(upgradeJobs, UpgradeJob{Job: Job{
-			Source:    version.sourceVersion,
-			Target:    version.targetVersion,
-			OSVersion: version.osVersion,
-			Mode:      copy,
+			Version: version,
+			Mode:    copy,
 		}})
 
 		if version.SpecialJobs {
-			pgupgradeJobs = append(pgupgradeJobs, PgUpgradeJob{Job{
-				Source:    version.sourceVersion,
-				Target:    version.targetVersion,
-				OSVersion: version.osVersion,
-			}})
+			pgupgradeJobs = append(pgupgradeJobs, PgUpgradeJob{Job{Version: version}})
 		}
 	}
 
@@ -156,11 +141,8 @@ func init() {
 				continue
 			}
 
-			job.Source = version.sourceVersion
-			job.Target = version.targetVersion
-			job.OSVersion = version.osVersion
+			job.Version = version
 			job.Mode = link
-
 			upgradeJobs = append(upgradeJobs, job)
 		}
 	}
@@ -177,11 +159,8 @@ func init() {
 				continue
 			}
 
-			job.Source = version.sourceVersion
-			job.Target = version.targetVersion
-			job.OSVersion = version.osVersion
+			job.Version = version
 			job.Mode = link
-
 			functionalJobs = append(functionalJobs, job)
 		}
 	}
