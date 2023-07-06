@@ -18,7 +18,7 @@ require (
 	github.com/vbauerster/mpb/v8 v8.4.0
 	golang.org/x/sys v0.10.0
 	golang.org/x/term v0.10.0
-	golang.org/x/text v0.7.0
+	golang.org/x/text v0.11.0
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	google.golang.org/grpc v1.24.0
 )
@@ -40,9 +40,9 @@ require (
 	github.com/onsi/gomega v1.17.0 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	golang.org/x/crypto v0.6.0 // indirect
-	golang.org/x/mod v0.7.0 // indirect
+	golang.org/x/mod v0.8.0 // indirect
 	golang.org/x/net v0.7.0 // indirect
-	golang.org/x/tools v0.5.0 // indirect
+	golang.org/x/tools v0.6.0 // indirect
 	google.golang.org/genproto v0.0.0-20191108220845-16a3f7862a1a // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 )
