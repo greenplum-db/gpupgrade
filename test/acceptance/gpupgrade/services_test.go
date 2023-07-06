@@ -4,11 +4,10 @@
 package gpupgrade_test
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"testing"
-
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/testutils"
 )
@@ -93,7 +92,7 @@ func processRunning(t *testing.T, process string) (bool, error) {
 	cmd := exec.Command("pgrep", "-f", process)
 	err := cmd.Run()
 	var exitErr *exec.ExitError
-	if xerrors.As(err, &exitErr) {
+	if errors.As(err, &exitErr) {
 		if exitErr.ExitCode() == 1 {
 			// No processes were matched
 			return false, nil

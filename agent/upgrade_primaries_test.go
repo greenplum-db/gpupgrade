@@ -15,8 +15,6 @@ import (
 	"strings"
 	"testing"
 
-	"golang.org/x/xerrors"
-
 	"github.com/greenplum-db/gpupgrade/agent"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -215,7 +213,7 @@ func TestUpgradePrimaries(t *testing.T) {
 
 		_, err := agentServer.UpgradePrimaries(context.Background(), &idl.UpgradePrimariesRequest{Opts: opts})
 		var errs errorlist.Errors
-		if !xerrors.As(err, &errs) {
+		if !errors.As(err, &errs) {
 			t.Errorf("error %T does not contain type %T", err, errs)
 		}
 

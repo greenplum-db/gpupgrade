@@ -359,7 +359,7 @@ func (c *Cluster) IsCoordinatorRunning(stream step.OutStreams) (bool, error) {
 	log.Printf("Executing: %q", cmd.String())
 	err = cmd.Run()
 	var exitErr *exec.ExitError
-	if xerrors.As(err, &exitErr) {
+	if errors.As(err, &exitErr) {
 		if exitErr.ExitCode() == 1 {
 			// No processes were matched
 			return false, nil

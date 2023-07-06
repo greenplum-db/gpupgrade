@@ -116,7 +116,7 @@ Cannot revert and restore the source cluster. Please contact support.`)
 	st.RunConditionally(idl.Substep_start_source_cluster, configCreated, func(streams step.OutStreams) error {
 		err = s.Source.Start(streams)
 		var exitErr *exec.ExitError
-		if xerrors.As(err, &exitErr) {
+		if errors.As(err, &exitErr) {
 			if exitErr.ExitCode() == 1 && shouldHandle5XMirrorFailure {
 				return nil
 			}

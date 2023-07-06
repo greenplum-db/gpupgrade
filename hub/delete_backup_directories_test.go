@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/config/backupdir"
 	"github.com/greenplum-db/gpupgrade/greenplum"
@@ -143,7 +142,7 @@ func TestDeleteBackupDirectories(t *testing.T) {
 
 		err := hub.DeleteBackupDirectories(step.DevNullStream, agentConns, backupDirs)
 		var errs errorlist.Errors
-		if !xerrors.As(err, &errs) {
+		if !errors.As(err, &errs) {
 			t.Fatalf("error %#v does not contain type %T", err, errs)
 		}
 

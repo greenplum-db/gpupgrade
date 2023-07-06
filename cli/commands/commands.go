@@ -320,7 +320,7 @@ func connTimeout() time.Duration {
 func hubPort() (int, error) {
 	conf, err := config.Read()
 	var pathError *os.PathError
-	if xerrors.As(err, &pathError) {
+	if errors.As(err, &pathError) {
 		return upgrade.DefaultHubPort, nil
 	}
 

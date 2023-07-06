@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
@@ -154,7 +153,7 @@ func TestAddReplicationEntriesOnPrimaries(t *testing.T) {
 
 		err := hub.AddReplicationEntriesOnPrimaries(agentConns, intermediate, false)
 		var errs errorlist.Errors
-		if !xerrors.As(err, &errs) {
+		if !errors.As(err, &errs) {
 			t.Fatalf("error %#v does not contain type %T", err, errs)
 		}
 
@@ -203,7 +202,7 @@ func TestAddReplicationEntriesOnPrimaries(t *testing.T) {
 
 		err := hub.AddReplicationEntriesOnPrimaries(agentConns, intermediate, true)
 		var errs errorlist.Errors
-		if !xerrors.As(err, &errs) {
+		if !errors.As(err, &errs) {
 			t.Fatalf("error %#v does not contain type %T", err, errs)
 		}
 

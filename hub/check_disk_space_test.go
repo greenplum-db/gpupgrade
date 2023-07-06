@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
@@ -255,7 +254,7 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 		}
 
 		var spaceUsageErr *disk.SpaceUsageErr
-		if xerrors.As(err, &spaceUsageErr) {
+		if errors.As(err, &spaceUsageErr) {
 			if !reflect.DeepEqual(spaceUsageErr.Table(), expected) {
 				t.Errorf("returned %v want %v", spaceUsageErr.Table(), expected)
 			}

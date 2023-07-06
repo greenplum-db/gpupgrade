@@ -13,7 +13,6 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/golang/mock/gomock"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/config/backupdir"
 	"github.com/greenplum-db/gpupgrade/greenplum"
@@ -224,7 +223,7 @@ func TestUpgradePrimaries(t *testing.T) {
 
 			err := hub.UpgradePrimaries(agentConns, backupDirs.AgentHostsToBackupDir, false, false, 1, source, intermediate, c.Action, idl.Mode_link)
 			var errs errorlist.Errors
-			if !xerrors.As(err, &errs) {
+			if !errors.As(err, &errs) {
 				t.Fatalf("error %#v does not contain type %T", err, errs)
 			}
 

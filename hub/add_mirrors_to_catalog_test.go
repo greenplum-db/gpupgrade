@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
@@ -120,7 +119,7 @@ func TestAddMirrorsToCatalog(t *testing.T) {
 		},
 		verifications: func(t *testing.T, err error) {
 			var errs errorlist.Errors
-			if !xerrors.As(err, &errs) {
+			if !errors.As(err, &errs) {
 				t.Fatalf("error %#v does not contain type %T", err, errs)
 			}
 			if !errors.Is(errs[0], expected) {

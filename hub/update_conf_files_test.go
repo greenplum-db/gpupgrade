@@ -13,7 +13,6 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/golang/mock/gomock"
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/hub"
@@ -146,7 +145,7 @@ func TestUpdatePostgresqlConfOnSegments(t *testing.T) {
 
 		err := hub.UpdatePostgresqlConfOnSegments(agentConns, intermediate, target)
 		var errs errorlist.Errors
-		if !xerrors.As(err, &errs) {
+		if !errors.As(err, &errs) {
 			t.Fatalf("error %#v does not contain type %T", err, errs)
 		}
 
@@ -294,7 +293,7 @@ func TestUpdateRecoveryConfOnSegments(t *testing.T) {
 
 		err := hub.UpdateRecoveryConfOnSegments(agentConns, semver.MustParse("6.0.0"), intermediate, target)
 		var errs errorlist.Errors
-		if !xerrors.As(err, &errs) {
+		if !errors.As(err, &errs) {
 			t.Fatalf("error %#v does not contain type %T", err, errs)
 		}
 
@@ -519,7 +518,7 @@ primary_slot_name = 'internal_wal_replication_slot'
 
 		err := hub.UpdateConfigurationFile(opts)
 		var errs errorlist.Errors
-		if !xerrors.As(err, &errs) {
+		if !errors.As(err, &errs) {
 			t.Fatalf("error %#v does not contain type %T", err, errs)
 		}
 

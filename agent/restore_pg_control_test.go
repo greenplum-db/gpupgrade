@@ -5,12 +5,11 @@ package agent_test
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/agent"
 	"github.com/greenplum-db/gpupgrade/idl"
@@ -29,7 +28,7 @@ func TestServer_RestorePrimariesPgControl(t *testing.T) {
 		_, err := agentServer.RestorePrimariesPgControl(context.Background(), &idl.RestorePgControlRequest{Datadirs: dirs})
 
 		var errs errorlist.Errors
-		if !xerrors.As(err, &errs) {
+		if !errors.As(err, &errs) {
 			t.Fatalf("error %#v does not contain type %T", err, errs)
 		}
 
