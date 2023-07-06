@@ -8,7 +8,7 @@ require (
 	github.com/cloudfoundry/gosigar v1.3.6
 	github.com/fatih/color v1.15.0
 	github.com/golang/mock v1.6.0
-	github.com/golang/protobuf v1.5.2
+	github.com/golang/protobuf v1.5.3
 	github.com/google/renameio v1.0.1
 	github.com/jackc/pgx/v4 v4.14.1
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
