@@ -384,3 +384,14 @@ func MustGetLog(t *testing.T, process string) string {
 
 	return logger.LogPath(logDir, process)
 }
+
+func MustConvertStringToInt(t *testing.T, input string) int {
+	t.Helper()
+
+	num, err := strconv.Atoi(input)
+	if err != nil {
+		t.Fatalf("parse %q", input)
+	}
+
+	return num
+}

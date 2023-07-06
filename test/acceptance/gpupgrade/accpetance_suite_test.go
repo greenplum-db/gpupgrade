@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"testing"
 
@@ -190,4 +191,13 @@ func MustGetPgUpgradeLog(t *testing.T, contentID int32) string {
 	}
 
 	return filepath.Join(dir, "pg_upgrade_internal.log")
+}
+
+func GetStatUtility() string {
+	utility := "stat"
+	if runtime.GOOS == "darwin" {
+		utility = "gstat"
+	}
+
+	return utility
 }
