@@ -1,7 +1,7 @@
 // Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
-// +build tools
+//go:build tools
 
 // The tools pseudo-package is used to explicitly record Go tool dependencies in
 // a module-aware world. It replaces the dep "required" flow. Tools declared
@@ -14,5 +14,5 @@ package tools
 
 import (
 	_ "github.com/golang/mock/mockgen"
-	_ "github.com/golang/protobuf/protoc-gen-go"
+	_ "google.golang.org/grpc/cmd/protoc-gen-go-grpc"
 )
