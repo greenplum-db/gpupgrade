@@ -44,9 +44,6 @@ SELECT COUNT(*) AS AOCOColumns FROM information_schema.columns
 SELECT COUNT(DISTINCT parrelid) AS RootPartitions FROM pg_catalog.pg_partition;
 SELECT COUNT(DISTINCT parchildrelid) AS ChildPartitions FROM pg_catalog.pg_partition_rule;
 
--- No. of Views
-SELECT COUNT(*) AS Views FROM pg_catalog.pg_views;
-
 -- No. of Indexes
 SELECT COUNT(*) AS Indexes FROM pg_catalog.pg_index;
 
