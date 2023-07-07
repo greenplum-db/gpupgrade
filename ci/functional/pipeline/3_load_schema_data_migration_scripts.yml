@@ -97,7 +97,9 @@
                     TOTAL_MEM=\$(grep MemTotal /proc/meminfo | awk '{print \$2}')
                     MAX_STATEMENT_MEM=\$((\${TOTAL_MEM}/2))
                     STATEMENT_MEM=\$((\${MAX_STATEMENT_MEM}/16))
+                    GP_VMEM_PROTECT_LIMIT=\$((\${MAX_STATEMENT_MEM}/1000))
 
+                    gpconfig -c gp_vmem_protect_limit -v \${GP_VMEM_PROTECT_LIMIT}
                     gpconfig -c max_statement_mem -v \${MAX_STATEMENT_MEM}kB
                     gpconfig -c statement_mem -v \${STATEMENT_MEM}kB
                     gpconfig -c max_locks_per_transaction -v 512
