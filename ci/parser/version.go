@@ -36,9 +36,11 @@ type GPDBVersion struct {
 
 type GPDBVersions []GPDBVersion
 
-func (v GPDBVersions) contains(needle GPDBVersion) bool {
-	for _, version := range v {
-		if needle == version {
+func (g GPDBVersions) contains(needle GPDBVersion) bool {
+	for _, gpdbVersion := range g {
+		if (needle.GPDBVersion == gpdbVersion.GPDBVersion) &&
+			(needle.Platform == gpdbVersion.Platform) &&
+			(needle.RpmVersion == gpdbVersion.RpmVersion) {
 			return true
 		}
 	}

@@ -42,7 +42,7 @@ resources:
     {{- end -}}
 
 {{range .GPDBVersions}}
-  {{- if and (.SpecialJobs) (eq .Platform "centos7") }}
+  {{- if .SpecialJobs }}
   - name: gpdb{{.GPDBVersion}}_{{.Platform}}_rpm
     type: gcs
     source:

@@ -188,7 +188,7 @@ resources:
 {{range .GPDBVersions}}
 # To avoid too many jobs we only run extensions on when SpecialJobs is true for
 # select operating systems.
-{{- if or (eq .Platform "centos7") (eq .Platform "rocky8") }}
+{{- if .SpecialJobs }}
 - name: postgis_2.x_gpdb{{.GPDBVersion}}_{{.Platform}}_gppkg
   type: gcs
   source:
