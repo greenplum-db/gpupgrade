@@ -30,7 +30,7 @@ func revert() *cobra.Command {
 		Short: "reverts the upgrade and returns the cluster to its original state",
 		Long:  RevertHelp,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			var response idl.RevertResponse
+			var response *idl.RevertResponse
 
 			logdir, err := utils.GetLogDir()
 			if err != nil {

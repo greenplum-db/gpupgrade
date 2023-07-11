@@ -32,7 +32,7 @@ func finalize() *cobra.Command {
 		Short: "finalizes the cluster after upgrade execution",
 		Long:  FinalizeHelp,
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
-			var response idl.FinalizeResponse
+			var response *idl.FinalizeResponse
 
 			logdir, err := utils.GetLogDir()
 			if err != nil {

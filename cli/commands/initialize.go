@@ -285,7 +285,7 @@ func initialize() *cobra.Command {
 				return nil
 			})
 
-			var response idl.InitializeResponse
+			var response *idl.InitializeResponse
 			st.RunHubSubstep(func(streams step.OutStreams) error {
 				if stopBeforeClusterCreation {
 					return step.Skip

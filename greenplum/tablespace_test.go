@@ -45,13 +45,13 @@ func TestGetTablespaces(t *testing.T) {
 				DbId: 1,
 				Oid:  1234,
 				Name: "pg_default",
-				Info: idl.TablespaceInfo{Location: "/tmp/pg_default_tablespace", UserDefined: false},
+				Info: &idl.TablespaceInfo{Location: "/tmp/pg_default_tablespace", UserDefined: false},
 			},
 			greenplum.Tablespace{
 				DbId: 2,
 				Oid:  1235,
 				Name: "my_tablespace",
-				Info: idl.TablespaceInfo{Location: "/tmp/my_tablespace", UserDefined: true},
+				Info: &idl.TablespaceInfo{Location: "/tmp/my_tablespace", UserDefined: true},
 			},
 		}
 
@@ -116,7 +116,7 @@ func TestNewTablespaces(t *testing.T) {
 					DbId: 1,
 					Oid:  1663,
 					Name: "pg_default",
-					Info: idl.TablespaceInfo{
+					Info: &idl.TablespaceInfo{
 						Location:    "/tmp/coordinator/gpseg-1",
 						UserDefined: false,
 					},
@@ -125,7 +125,7 @@ func TestNewTablespaces(t *testing.T) {
 					DbId: 2,
 					Oid:  1663,
 					Name: "pg_default",
-					Info: idl.TablespaceInfo{
+					Info: &idl.TablespaceInfo{
 						Location:    "/tmp/primary/gpseg-1",
 						UserDefined: false,
 					},
@@ -153,7 +153,7 @@ func TestNewTablespaces(t *testing.T) {
 					DbId: 1,
 					Oid:  1663,
 					Name: "pg_default",
-					Info: idl.TablespaceInfo{
+					Info: &idl.TablespaceInfo{
 						Location:    "/tmp/coordinator/gpseg-1",
 						UserDefined: false,
 					},
@@ -162,7 +162,7 @@ func TestNewTablespaces(t *testing.T) {
 					DbId: 1,
 					Oid:  1664,
 					Name: "my_tablespace",
-					Info: idl.TablespaceInfo{
+					Info: &idl.TablespaceInfo{
 						Location:    "/tmp/coordinator/1664",
 						UserDefined: true,
 					},
@@ -171,7 +171,7 @@ func TestNewTablespaces(t *testing.T) {
 					DbId: 2,
 					Oid:  1663,
 					Name: "pg_default",
-					Info: idl.TablespaceInfo{
+					Info: &idl.TablespaceInfo{
 						Location:    "/tmp/primary/gpseg0",
 						UserDefined: false,
 					},
@@ -180,7 +180,7 @@ func TestNewTablespaces(t *testing.T) {
 					DbId: 2,
 					Oid:  1664,
 					Name: "my_tablespace",
-					Info: idl.TablespaceInfo{
+					Info: &idl.TablespaceInfo{
 						Location:    "/tmp/primary/1664",
 						UserDefined: true,
 					},
@@ -371,7 +371,7 @@ func TestWrite(t *testing.T) {
 					DbId: 1,
 					Oid:  1663,
 					Name: "default",
-					Info: idl.TablespaceInfo{
+					Info: &idl.TablespaceInfo{
 						Location:    "/tmp/coordinator/gpseg-1",
 						UserDefined: false,
 					},
@@ -380,7 +380,7 @@ func TestWrite(t *testing.T) {
 					DbId: 2,
 					Oid:  1664,
 					Name: "my_tablespace",
-					Info: idl.TablespaceInfo{
+					Info: &idl.TablespaceInfo{
 						Location:    "/tmp/coordinator/gpseg-1",
 						UserDefined: true,
 					},

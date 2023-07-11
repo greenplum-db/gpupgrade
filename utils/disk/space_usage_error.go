@@ -27,8 +27,8 @@ func NewSpaceUsageError(usageMap map[FilesystemHost]*idl.CheckDiskSpaceReply_Dis
 	return &SpaceUsageErr{usage: totalUsage}
 }
 
-func NewSpaceUsageErrorFromUsage(usage idl.CheckDiskSpaceReply_DiskUsage) *SpaceUsageErr {
-	return &SpaceUsageErr{usage: FileSystemDiskUsage{&usage}}
+func NewSpaceUsageErrorFromUsage(usage *idl.CheckDiskSpaceReply_DiskUsage) *SpaceUsageErr {
+	return &SpaceUsageErr{usage: FileSystemDiskUsage{usage}}
 }
 
 func (d SpaceUsageErr) Error() string {

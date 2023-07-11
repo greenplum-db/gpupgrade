@@ -43,80 +43,80 @@ func Initialize(client idl.CliToHubClient, request *idl.InitializeRequest, verbo
 	return nil
 }
 
-func InitializeCreateCluster(client idl.CliToHubClient, request *idl.InitializeCreateClusterRequest, verbose bool) (idl.InitializeResponse, error) {
+func InitializeCreateCluster(client idl.CliToHubClient, request *idl.InitializeCreateClusterRequest, verbose bool) (*idl.InitializeResponse, error) {
 	stream, err := client.InitializeCreateCluster(context.Background(), request)
 	if err != nil {
-		return idl.InitializeResponse{}, err
+		return &idl.InitializeResponse{}, err
 	}
 
 	response, err := UILoop(stream, verbose)
 	if err != nil {
-		return idl.InitializeResponse{}, err
+		return &idl.InitializeResponse{}, err
 	}
 
 	initializeResponse := response.GetInitializeResponse()
 	if initializeResponse == nil {
-		return idl.InitializeResponse{}, xerrors.Errorf("Initialize response is nil")
+		return &idl.InitializeResponse{}, xerrors.Errorf("Initialize response is nil")
 	}
 
-	return *initializeResponse, nil
+	return initializeResponse, nil
 }
 
-func Execute(client idl.CliToHubClient, request *idl.ExecuteRequest, verbose bool) (idl.ExecuteResponse, error) {
+func Execute(client idl.CliToHubClient, request *idl.ExecuteRequest, verbose bool) (*idl.ExecuteResponse, error) {
 	stream, err := client.Execute(context.Background(), request)
 	if err != nil {
-		return idl.ExecuteResponse{}, err
+		return &idl.ExecuteResponse{}, err
 	}
 
 	response, err := UILoop(stream, verbose)
 	if err != nil {
-		return idl.ExecuteResponse{}, err
+		return &idl.ExecuteResponse{}, err
 	}
 
 	executeResponse := response.GetExecuteResponse()
 	if executeResponse == nil {
-		return idl.ExecuteResponse{}, xerrors.Errorf("Execute response is nil")
+		return &idl.ExecuteResponse{}, xerrors.Errorf("Execute response is nil")
 	}
 
-	return *executeResponse, nil
+	return executeResponse, nil
 }
 
-func Finalize(client idl.CliToHubClient, verbose bool) (idl.FinalizeResponse, error) {
+func Finalize(client idl.CliToHubClient, verbose bool) (*idl.FinalizeResponse, error) {
 	stream, err := client.Finalize(context.Background(), &idl.FinalizeRequest{})
 	if err != nil {
-		return idl.FinalizeResponse{}, err
+		return &idl.FinalizeResponse{}, err
 	}
 
 	response, err := UILoop(stream, verbose)
 	if err != nil {
-		return idl.FinalizeResponse{}, err
+		return &idl.FinalizeResponse{}, err
 	}
 
 	finalizeResponse := response.GetFinalizeResponse()
 	if finalizeResponse == nil {
-		return idl.FinalizeResponse{}, xerrors.Errorf("Finalize response is nil")
+		return &idl.FinalizeResponse{}, xerrors.Errorf("Finalize response is nil")
 	}
 
-	return *finalizeResponse, nil
+	return finalizeResponse, nil
 }
 
-func Revert(client idl.CliToHubClient, verbose bool) (idl.RevertResponse, error) {
+func Revert(client idl.CliToHubClient, verbose bool) (*idl.RevertResponse, error) {
 	stream, err := client.Revert(context.Background(), &idl.RevertRequest{})
 	if err != nil {
-		return idl.RevertResponse{}, err
+		return &idl.RevertResponse{}, err
 	}
 
 	response, err := UILoop(stream, verbose)
 	if err != nil {
-		return idl.RevertResponse{}, err
+		return &idl.RevertResponse{}, err
 	}
 
 	revertResponse := response.GetRevertResponse()
 	if revertResponse == nil {
-		return idl.RevertResponse{}, xerrors.Errorf("Revert response is nil")
+		return &idl.RevertResponse{}, xerrors.Errorf("Revert response is nil")
 	}
 
-	return *revertResponse, nil
+	return revertResponse, nil
 }
 
 func UILoop(stream receiver, verbose bool) (*idl.Response, error) {

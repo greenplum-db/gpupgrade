@@ -47,7 +47,7 @@ type Tablespace struct {
 	DbId int32
 	Oid  int32
 	Name string
-	Info idl.TablespaceInfo
+	Info *idl.TablespaceInfo
 }
 
 func (t Tablespaces) GetCoordinatorTablespaces() SegmentTablespaces {
@@ -85,6 +85,7 @@ func GetTablespaceTuples(db *sql.DB) (TablespaceTuples, error) {
 	results := make([]Tablespace, 0)
 	for rows.Next() {
 		var ts Tablespace
+		ts.Info = &idl.TablespaceInfo{}
 		if err := rows.Scan(&ts.DbId, &ts.Oid, &ts.Name, &ts.Info.Location, &ts.Info.UserDefined); err != nil {
 			return nil, xerrors.Errorf("scanning pg_tablespace: %w", err)
 

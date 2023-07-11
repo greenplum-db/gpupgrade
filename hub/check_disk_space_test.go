@@ -66,13 +66,13 @@ func TestCheckDiskSpace_OnCoordinator(t *testing.T) {
 	})
 
 	t.Run("returns usage when checking disk usage on coordinator", func(t *testing.T) {
-		usage := idl.CheckDiskSpaceReply_DiskUsage{
+		usage := &idl.CheckDiskSpaceReply_DiskUsage{
 			Fs:        "/",
 			Host:      "mdw",
 			Available: 1024,
 			Required:  2048,
 		}
-		hub.SetCheckDiskUsage(CoordinatorHostReturnsUsage(disk.FileSystemDiskUsage{&usage}))
+		hub.SetCheckDiskUsage(CoordinatorHostReturnsUsage(disk.FileSystemDiskUsage{usage}))
 		defer hub.ResetCheckDiskUsage()
 
 		err := hub.CheckDiskSpace(step.DevNullStream, []*idl.Connection{}, 0, source, tablespaces)
@@ -168,7 +168,7 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
-		usage := idl.CheckDiskSpaceReply_DiskUsage{
+		usage := &idl.CheckDiskSpaceReply_DiskUsage{
 			Fs:        "/",
 			Host:      "smdw",
 			Available: 1024,
@@ -179,7 +179,7 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 		failedClient.EXPECT().CheckDiskSpace(
 			gomock.Any(),
 			gomock.Any(),
-		).Return(&idl.CheckDiskSpaceReply{Usages: disk.FileSystemDiskUsage{&usage}}, nil)
+		).Return(&idl.CheckDiskSpaceReply{Usages: disk.FileSystemDiskUsage{usage}}, nil)
 
 		agentConns := []*idl.Connection{
 			{AgentClient: failedClient, Hostname: "smdw"},
