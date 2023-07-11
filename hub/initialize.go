@@ -11,7 +11,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
-	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
 func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_InitializeServer) (err error) {
@@ -19,16 +18,6 @@ func (s *Server) Initialize(req *idl.InitializeRequest, stream idl.CliToHub_Init
 	if err != nil {
 		return err
 	}
-
-	defer func() {
-		if ferr := st.Finish(); ferr != nil {
-			err = errorlist.Append(err, ferr)
-		}
-
-		if err != nil {
-			log.Printf("%s: %s", idl.Step_initialize, err)
-		}
-	}()
 
 	// Since the agents might not be up if gpupgrade is not properly installed, check it early on using ssh.
 	st.Run(idl.Substep_verify_gpupgrade_is_installed_across_all_hosts, func(streams step.OutStreams) error {
@@ -93,16 +82,6 @@ func (s *Server) InitializeCreateCluster(req *idl.InitializeCreateClusterRequest
 	if err != nil {
 		return err
 	}
-
-	defer func() {
-		if ferr := st.Finish(); ferr != nil {
-			err = errorlist.Append(err, ferr)
-		}
-
-		if err != nil {
-			log.Printf("%s: %s", idl.Step_initialize, err)
-		}
-	}()
 
 	st.Run(idl.Substep_generate_target_config, func(_ step.OutStreams) error {
 		return s.GenerateInitsystemConfig(s.Source)

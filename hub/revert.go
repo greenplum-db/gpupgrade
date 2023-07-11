@@ -5,7 +5,6 @@ package hub
 
 import (
 	"context"
-	"log"
 	"os/exec"
 	"time"
 
@@ -15,7 +14,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
-	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
 func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) (err error) {
@@ -23,16 +21,6 @@ func (s *Server) Revert(_ *idl.RevertRequest, stream idl.CliToHub_RevertServer) 
 	if err != nil {
 		return err
 	}
-
-	defer func() {
-		if ferr := st.Finish(); ferr != nil {
-			err = errorlist.Append(err, ferr)
-		}
-
-		if err != nil {
-			log.Printf("%s: %s", idl.Step_revert, err)
-		}
-	}()
 
 	hasExecuteStarted, err := step.HasStarted(idl.Step_execute)
 	if err != nil {

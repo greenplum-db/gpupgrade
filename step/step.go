@@ -11,7 +11,6 @@ import (
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-
 	"golang.org/x/xerrors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -19,7 +18,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
-	"github.com/greenplum-db/gpupgrade/utils/logger"
 	"github.com/greenplum-db/gpupgrade/utils/stopwatch"
 )
 
@@ -29,11 +27,11 @@ type Step struct {
 	name         idl.Step
 	sender       idl.MessageSender // sends substep status messages
 	substepStore SubstepStore      // persistent substep status storage
-	streams      OutStreamsCloser  // writes substep stdout/err
+	streams      OutStreams        // writes substep stdout/err
 	err          error
 }
 
-func New(name idl.Step, sender idl.MessageSender, substepStore SubstepStore, streams OutStreamsCloser) *Step {
+func New(name idl.Step, sender idl.MessageSender, substepStore SubstepStore, streams OutStreams) *Step {
 	return &Step{
 		name:         name,
 		sender:       sender,
@@ -43,22 +41,17 @@ func New(name idl.Step, sender idl.MessageSender, substepStore SubstepStore, str
 }
 
 func Begin(step idl.Step, sender idl.MessageSender) (*Step, error) {
-	logFile, err := logger.OpenFile("hub")
-	if err != nil {
-		return nil, xerrors.Errorf(`getting log file for step "%s": %w`, step, err)
-	}
-
-	_, err = fmt.Fprintf(logFile, "\n%s in progress.\n", cases.Title(language.English).String(step.String()))
-	if err != nil {
-		return nil, xerrors.Errorf(`logging step "%s": %w`, step, err)
-	}
-
 	substepStore, err := NewSubstepFileStore()
 	if err != nil {
 		return nil, err
 	}
 
-	streams := newMultiplexedStream(sender, logFile)
+	streams := newLogMessageSender(sender)
+
+	_, err = fmt.Fprintf(streams.Stdout(), "\n%s in progress.\n", cases.Title(language.English).String(step.String()))
+	if err != nil {
+		return nil, err
+	}
 
 	return New(step, sender, substepStore, streams), nil
 }
@@ -109,14 +102,6 @@ func hasStatus(step idl.Step, substep idl.Substep, check func(status idl.Status)
 
 func (s *Step) Streams() OutStreams {
 	return s.streams
-}
-
-func (s *Step) Finish() error {
-	if err := s.streams.Close(); err != nil {
-		return xerrors.Errorf(`step "%s": %w`, s.name, err)
-	}
-
-	return nil
 }
 
 func (s *Step) Err() error {

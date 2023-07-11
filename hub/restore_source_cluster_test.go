@@ -76,7 +76,7 @@ func TestRsyncCoordinatorAndPrimaries(t *testing.T) {
 			}
 		}))
 
-		err := hub.RsyncCoordinator(&testutils.DevNullWithClose{}, cluster.Standby(), cluster.Coordinator())
+		err := hub.RsyncCoordinator(step.DevNullStream, cluster.Standby(), cluster.Coordinator())
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -107,7 +107,7 @@ func TestRsyncCoordinatorAndPrimaries(t *testing.T) {
 			}
 		}))
 
-		err := hub.RsyncCoordinatorTablespaces(&testutils.DevNullWithClose{}, cluster.StandbyHostname(), tablespaces[int32(cluster.Coordinator().DbID)], tablespaces[int32(cluster.Standby().DbID)])
+		err := hub.RsyncCoordinatorTablespaces(step.DevNullStream, cluster.StandbyHostname(), tablespaces[int32(cluster.Coordinator().DbID)], tablespaces[int32(cluster.Standby().DbID)])
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -209,7 +209,7 @@ func TestRsyncCoordinatorAndPrimaries(t *testing.T) {
 		rsync.SetRsyncCommand(exectest.NewCommand(hub.Failure))
 		defer rsync.ResetRsyncCommand()
 
-		err := hub.RsyncCoordinator(&testutils.DevNullWithClose{}, cluster.Standby(), cluster.Coordinator())
+		err := hub.RsyncCoordinator(step.DevNullStream, cluster.Standby(), cluster.Coordinator())
 		if err == nil {
 			t.Error("unexpected nil error")
 		}
@@ -219,14 +219,14 @@ func TestRsyncCoordinatorAndPrimaries(t *testing.T) {
 		rsync.SetRsyncCommand(exectest.NewCommand(hub.Failure))
 		defer rsync.ResetRsyncCommand()
 
-		err := hub.RsyncCoordinatorTablespaces(&testutils.DevNullWithClose{}, cluster.CoordinatorHostname(), tablespaces[int32(greenplum.CoordinatorDbid)], tablespaces[int32(cluster.Standby().DbID)])
+		err := hub.RsyncCoordinatorTablespaces(step.DevNullStream, cluster.CoordinatorHostname(), tablespaces[int32(greenplum.CoordinatorDbid)], tablespaces[int32(cluster.Standby().DbID)])
 		if err == nil {
 			t.Error("unexpected nil error")
 		}
 	})
 
 	t.Run("errors when restoring the mirrors fails in copy mode on GPDB5", func(t *testing.T) {
-		err := hub.Recoverseg(&testutils.DevNullWithClose{}, cluster, false)
+		err := hub.Recoverseg(step.DevNullStream, cluster, false)
 		var exitErr *exec.ExitError
 		if !errors.As(err, &exitErr) || exitErr.ExitCode() != 1 {
 			t.Errorf("returned error %#v, want exit code %d", err, 1)

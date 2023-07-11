@@ -94,9 +94,9 @@ func Begin(currentStep idl.Step, verbose bool, nonInteractive bool, confirmation
 
 	stepName := cases.Title(language.English).String(currentStep.String())
 
-	fmt.Println()
-	fmt.Println(stepName + " in progress.")
-	fmt.Println()
+	msg := stepName + " in progress."
+	fmt.Printf("\n%s\n\n", msg)
+	log.Print(msg)
 
 	return NewStep(currentStep, stepName, stepStore, substepStore, step.StdStreams, verbose)
 }

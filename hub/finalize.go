@@ -5,14 +5,12 @@ package hub
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
-	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
 func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_FinalizeServer) (err error) {
@@ -20,16 +18,6 @@ func (s *Server) Finalize(req *idl.FinalizeRequest, stream idl.CliToHub_Finalize
 	if err != nil {
 		return err
 	}
-
-	defer func() {
-		if ferr := st.Finish(); ferr != nil {
-			err = errorlist.Append(err, ferr)
-		}
-
-		if err != nil {
-			log.Printf("%s: %s", idl.Step_finalize, err)
-		}
-	}()
 
 	st.AlwaysRun(idl.Substep_ensure_gpupgrade_agents_are_running, func(_ step.OutStreams) error {
 		_, err := RestartAgents(context.Background(), nil, AgentHosts(s.Source), s.AgentPort, utils.GetStateDir())

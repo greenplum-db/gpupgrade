@@ -6,13 +6,11 @@ package hub
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/greenplum-db/gpupgrade/config/backupdir"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
-	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
 func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteServer) (err error) {
@@ -20,16 +18,6 @@ func (s *Server) Execute(req *idl.ExecuteRequest, stream idl.CliToHub_ExecuteSer
 	if err != nil {
 		return err
 	}
-
-	defer func() {
-		if ferr := st.Finish(); ferr != nil {
-			err = errorlist.Append(err, ferr)
-		}
-
-		if err != nil {
-			log.Printf("%s: %s", idl.Step_execute, err)
-		}
-	}()
 
 	st.AlwaysRun(idl.Substep_ensure_gpupgrade_agents_are_running, func(_ step.OutStreams) error {
 		_, err := RestartAgents(context.Background(), nil, AgentHosts(s.Source), s.AgentPort, utils.GetStateDir())

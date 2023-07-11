@@ -4,11 +4,15 @@
 package step
 
 import (
+	"bufio"
 	"bytes"
 	"io"
 	"log"
 	"os"
+	"strings"
 	"sync"
+
+	"golang.org/x/xerrors"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 )
@@ -16,11 +20,6 @@ import (
 type OutStreams interface {
 	Stdout() io.Writer
 	Stderr() io.Writer
-}
-
-type OutStreamsCloser interface {
-	OutStreams
-	Close() error
 }
 
 // DevNullStream provides an implementation of OutStreams that drops
@@ -65,86 +64,78 @@ func (m *stdStreams) Stderr() io.Writer {
 	return os.Stderr
 }
 
-// multiplexedStream provides an implementation of OutStreams that safely
-// serializes any simultaneous writes to an underlying messageSender. A fallback
-// io.Writer (in case the gRPC stream closes) also receives any output that is
-// written to the streams.
-type multiplexedStream struct {
-	stream idl.MessageSender
-	writer io.Writer
-	mutex  sync.Mutex
-
+// logMessageSender is a type of OutStreams that writes to both a gRPC MessageSender
+// and a log file. Writing to stdout/stderr will also write to the log file.
+type logMessageSender struct {
 	stdout io.Writer
 	stderr io.Writer
+
+	sender idl.MessageSender
+	mutex  sync.Mutex
 }
 
-func newMultiplexedStream(stream idl.MessageSender, writer io.Writer) *multiplexedStream {
-	m := &multiplexedStream{
-		stream: stream,
-		writer: writer,
+func newLogMessageSender(stream idl.MessageSender) *logMessageSender {
+	lms := &logMessageSender{sender: stream}
+
+	lms.stdout = &logMessageSenderWriter{
+		logMessageSender: lms,
+		cType:            idl.Chunk_stdout,
 	}
 
-	m.stdout = &streamWriter{
-		multiplexedStream: m,
-		cType:             idl.Chunk_stdout,
-	}
-	m.stderr = &streamWriter{
-		multiplexedStream: m,
-		cType:             idl.Chunk_stderr,
+	lms.stderr = &logMessageSenderWriter{
+		logMessageSender: lms,
+		cType:            idl.Chunk_stderr,
 	}
 
-	return m
+	return lms
 }
 
-func (m *multiplexedStream) Stdout() io.Writer {
-	return m.stdout
+func (l *logMessageSender) Stdout() io.Writer {
+	return l.stdout
 }
 
-func (m *multiplexedStream) Stderr() io.Writer {
-	return m.stderr
+func (l *logMessageSender) Stderr() io.Writer {
+	return l.stderr
 }
 
-// Close closes the stream's io.Writer if that writer also provides a Close
-// method (i.e. it also implements io.WriteCloser). If not, Close is a no-op.
-func (m *multiplexedStream) Close() error {
-	if closer, ok := m.writer.(io.WriteCloser); ok {
-		return closer.Close()
-	}
-
-	return nil
-}
-
-type streamWriter struct {
-	*multiplexedStream
+// logMessageSenderWriter is an internal type used by logMessageSender to send stdout and
+// stderr to both a gRPC MessageSender and log file.
+type logMessageSenderWriter struct {
+	*logMessageSender
 	cType idl.Chunk_Type
 }
 
-func (w *streamWriter) Write(p []byte) (int, error) {
-	w.multiplexedStream.mutex.Lock()
-	defer w.multiplexedStream.mutex.Unlock()
+func (l *logMessageSenderWriter) Write(p []byte) (int, error) {
+	l.logMessageSender.mutex.Lock()
+	defer l.logMessageSender.mutex.Unlock()
 
-	n, err := w.writer.Write(p)
-	if err != nil {
-		return n, err
+	scanner := bufio.NewScanner(bytes.NewReader(p))
+	for scanner.Scan() {
+		line := scanner.Text()
+		log.Print(strings.TrimSpace(line)) // avoid awkward newlines in the log file
 	}
 
-	if w.stream != nil {
+	if err := scanner.Err(); err != nil {
+		return 0, xerrors.Errorf("scanning: %w", err)
+	}
+
+	if l.logMessageSender.sender != nil {
 		// Attempt to send the chunk to the client. Since the client may close
 		// the connection at any point, errors here are logged and otherwise
 		// ignored. After the first send error, no more attempts are made.
 
 		chunk := &idl.Chunk{
 			Buffer: p,
-			Type:   w.cType,
+			Type:   l.cType,
 		}
 
-		err = w.stream.Send(&idl.Message{
+		err := l.logMessageSender.sender.Send(&idl.Message{
 			Contents: &idl.Message_Chunk{Chunk: chunk},
 		})
 
 		if err != nil {
-			log.Printf("halting client stream: %v", err)
-			w.stream = nil
+			log.Printf("halting client sender: %v", err)
+			l.logMessageSender.sender = nil
 		}
 	}
 

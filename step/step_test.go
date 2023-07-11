@@ -42,7 +42,7 @@ func TestStepRun(t *testing.T) {
 				Status: idl.Status_complete,
 			}}})
 
-		s := step.New(idl.Step_initialize, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_initialize, server, &TestSubstepStore{}, step.DevNullStream)
 
 		var called bool
 		s.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
@@ -75,7 +75,7 @@ func TestStepRun(t *testing.T) {
 		)
 
 		substepStore := &TestSubstepStore{}
-		s := step.New(idl.Step_initialize, server, substepStore, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_initialize, server, substepStore, step.DevNullStream)
 
 		s.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
 			return step.Skip
@@ -103,7 +103,7 @@ func TestStepRun(t *testing.T) {
 			}}})
 
 		substepStore := &TestSubstepStore{}
-		s := step.New(idl.Step_initialize, server, substepStore, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_initialize, server, substepStore, step.DevNullStream)
 
 		var status idl.Status
 		s.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
@@ -140,7 +140,7 @@ func TestStepRun(t *testing.T) {
 			}}})
 
 		substepStore := &TestSubstepStore{Status: idl.Status_complete}
-		s := step.New(idl.Step_initialize, server, substepStore, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_initialize, server, substepStore, step.DevNullStream)
 
 		var called bool
 		s.AlwaysRun(idl.Substep_check_upgrade, func(streams step.OutStreams) error {
@@ -164,7 +164,7 @@ func TestStepRun(t *testing.T) {
 				Status: idl.Status_running,
 			}}}).Times(0)
 
-		s := step.New(idl.Step_initialize, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_initialize, server, &TestSubstepStore{}, step.DevNullStream)
 
 		var called bool
 		s.RunConditionally(idl.Substep_check_upgrade, false, func(streams step.OutStreams) error {
@@ -199,7 +199,7 @@ func TestStepRun(t *testing.T) {
 				Status: idl.Status_complete,
 			}}})
 
-		s := step.New(idl.Step_initialize, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_initialize, server, &TestSubstepStore{}, step.DevNullStream)
 
 		var called bool
 		s.RunConditionally(idl.Substep_check_upgrade, true, func(streams step.OutStreams) error {
@@ -228,7 +228,7 @@ func TestStepRun(t *testing.T) {
 				Status: idl.Status_failed,
 			}}})
 
-		s := step.New(idl.Step_initialize, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_initialize, server, &TestSubstepStore{}, step.DevNullStream)
 
 		var called bool
 		s.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
@@ -248,7 +248,7 @@ func TestStepRun(t *testing.T) {
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 
 		failingSubstepStore := &TestSubstepStore{WriteErr: errors.New("oops")}
-		s := step.New(idl.Step_initialize, server, failingSubstepStore, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_initialize, server, failingSubstepStore, step.DevNullStream)
 
 		var called bool
 		s.Run(idl.Substep_check_upgrade, func(streams step.OutStreams) error {
@@ -277,7 +277,7 @@ func TestStepRun(t *testing.T) {
 			}}})
 
 		substepStore := &TestSubstepStore{Status: idl.Status_complete}
-		s := step.New(idl.Step_initialize, server, substepStore, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_initialize, server, substepStore, step.DevNullStream)
 
 		var called bool
 		s.Run(idl.Substep_check_upgrade, func(streams step.OutStreams) error {
@@ -297,7 +297,7 @@ func TestStepRun(t *testing.T) {
 		server := mock_idl.NewMockCliToHub_ExecuteServer(ctrl)
 		server.EXPECT().Send(gomock.Any()).AnyTimes()
 
-		s := step.New(idl.Step_initialize, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_initialize, server, &TestSubstepStore{}, step.DevNullStream)
 
 		expected := errors.New("oops")
 		s.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
@@ -327,7 +327,7 @@ func TestStepRun(t *testing.T) {
 		server.EXPECT().Send(gomock.Any()).AnyTimes()
 
 		substepStore := &TestSubstepStore{Status: idl.Status_running}
-		s := step.New(idl.Step_initialize, server, substepStore, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_initialize, server, substepStore, step.DevNullStream)
 
 		var called bool
 		s.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
@@ -660,33 +660,6 @@ func TestHasCompleted(t *testing.T) {
 	})
 }
 
-func TestStepFinish(t *testing.T) {
-	t.Run("closes the output streams", func(t *testing.T) {
-		streams := &testutils.DevNullWithClose{}
-		s := step.New(idl.Step_initialize, nil, nil, streams)
-
-		err := s.Finish()
-		if err != nil {
-			t.Errorf("unexpected error %#v", err)
-		}
-
-		if !streams.Closed {
-			t.Errorf("stream was not closed")
-		}
-	})
-
-	t.Run("returns an error when failing to close the output streams", func(t *testing.T) {
-		expected := errors.New("oops")
-		streams := &testutils.DevNullWithClose{CloseErr: expected}
-		s := step.New(idl.Step_initialize, nil, nil, streams)
-
-		err := s.Finish()
-		if !errors.Is(err, expected) {
-			t.Errorf("got error %#v, want %#v", err, expected)
-		}
-	})
-}
-
 func TestStepErr(t *testing.T) {
 	t.Run("returns nil when substep did not fail", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
@@ -704,7 +677,7 @@ func TestStepErr(t *testing.T) {
 				Status: idl.Status_complete,
 			}}})
 
-		s := step.New(idl.Step_initialize, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_initialize, server, &TestSubstepStore{}, step.DevNullStream)
 
 		s.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
 			return nil
@@ -732,7 +705,7 @@ func TestStepErr(t *testing.T) {
 				Status: idl.Status_failed,
 			}}})
 
-		s := step.New(idl.Step_initialize, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_initialize, server, &TestSubstepStore{}, step.DevNullStream)
 
 		expected := os.ErrPermission
 		s.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
@@ -762,7 +735,7 @@ func TestStepErr(t *testing.T) {
 				Status: idl.Status_failed,
 			}}})
 
-		s := step.New(idl.Step_initialize, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_initialize, server, &TestSubstepStore{}, step.DevNullStream)
 
 		expected := utils.NewNextActionErr(os.ErrPermission, "change permissions to gpadmin")
 		s.Run(idl.Substep_saving_source_cluster_config, func(streams step.OutStreams) error {
@@ -803,7 +776,7 @@ func TestStepErr(t *testing.T) {
 				Status: idl.Status_failed,
 			}}})
 
-		s := step.New(idl.Step_initialize, server, &TestSubstepStore{}, &testutils.DevNullWithClose{})
+		s := step.New(idl.Step_initialize, server, &TestSubstepStore{}, step.DevNullStream)
 
 		expected1 := utils.NewNextActionErr(os.ErrPermission, "change permissions to gpadmin")
 		expected2 := utils.NewNextActionErr(os.ErrDeadlineExceeded, "stop and rerun")
