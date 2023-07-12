@@ -99,7 +99,7 @@ message DeleteTablespaceRequest {
 message DeleteTablespaceReply {}
 
 message ArchiveLogDirectoryRequest {
-    string logArchiveDir = 1;
+  string logArchiveDir = 1;
 }
 message ArchiveLogDirectoryReply {}
 
@@ -118,31 +118,31 @@ message StopAgentRequest {}
 message StopAgentReply {}
 
 message CheckSegmentDiskSpaceRequest {
-    double diskFreeRatio = 1;
-    repeated string dirs = 2;
+  double diskFreeRatio = 1;
+  repeated string dirs = 2;
 }
 
 message CheckDiskSpaceReply {
-    message DiskUsage {
-      string fs = 1;
-      string host = 2;
-      uint64 available = 3;
-      uint64 required = 4;
-    }
+  message DiskUsage {
+    string fs = 1;
+    string host = 2;
+    uint64 available = 3;
+    uint64 required = 4;
+  }
 
-    repeated DiskUsage usage = 1;
+  repeated DiskUsage usage = 1;
 }
 
 message RsyncRequest {
-    message RsyncOptions {
-      repeated string sources = 1;
-      string destinationHost = 2;
-      string destination = 3;
-      repeated string options = 4;
-      repeated string excludedFiles = 5;
-    }
+  message RsyncOptions {
+    repeated string sources = 1;
+    string destinationHost = 2;
+    string destination = 3;
+    repeated string options = 4;
+    repeated string excludedFiles = 5;
+  }
 
-    repeated RsyncOptions options = 1;
+  repeated RsyncOptions options = 1;
 }
 
 message RsyncReply {}

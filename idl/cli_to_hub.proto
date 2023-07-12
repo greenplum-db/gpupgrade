@@ -7,19 +7,19 @@ package idl;
 option go_package = "github.com/greenplum-db/gpupgrade/idl";
 
 service CliToHub {
-    rpc Initialize(InitializeRequest) returns (stream Message) {}
-    rpc InitializeCreateCluster(InitializeCreateClusterRequest) returns (stream Message) {}
-    rpc Execute(ExecuteRequest) returns (stream Message) {}
-    rpc Finalize(FinalizeRequest) returns (stream Message) {}
-    rpc Revert(RevertRequest) returns (stream Message) {}
-    rpc GetConfig (GetConfigRequest) returns (GetConfigReply) {}
-    rpc RestartAgents(RestartAgentsRequest) returns (RestartAgentsReply) {}
-    rpc StopServices(StopServicesRequest) returns (StopServicesReply) {}
+  rpc Initialize(InitializeRequest) returns (stream Message) {}
+  rpc InitializeCreateCluster(InitializeCreateClusterRequest) returns (stream Message) {}
+  rpc Execute(ExecuteRequest) returns (stream Message) {}
+  rpc Finalize(FinalizeRequest) returns (stream Message) {}
+  rpc Revert(RevertRequest) returns (stream Message) {}
+  rpc GetConfig (GetConfigRequest) returns (GetConfigReply) {}
+  rpc RestartAgents(RestartAgentsRequest) returns (RestartAgentsReply) {}
+  rpc StopServices(StopServicesRequest) returns (StopServicesReply) {}
 }
 
 message InitializeRequest {
-    double diskFreeRatio = 1;
-    string parentBackupDirs = 2;
+  double diskFreeRatio = 1;
+  string parentBackupDirs = 2;
 }
 
 message InitializeCreateClusterRequest {
@@ -40,7 +40,7 @@ message RevertRequest {}
 
 message RestartAgentsRequest {}
 message RestartAgentsReply {
-    repeated string agentHosts = 1;
+  repeated string agentHosts = 1;
 }
 
 message StopServicesRequest {}
@@ -61,65 +61,65 @@ enum Step {
 }
 
 enum Substep {
-    unknown_substep = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
-    saving_source_cluster_config = 1;
-    start_hub = 2;
-    start_agents = 3;
-    check_environment = 4;
-    check_disk_space = 5;
-    generate_target_config = 6;
-    init_target_cluster = 7;
-    shutdown_target_cluster = 8;
-    backup_target_master = 9;
-    check_upgrade = 10;
-    shutdown_source_cluster = 11;
-    upgrade_master = 12;
-    copy_master = 13;
-    upgrade_primaries = 14;
-    start_target_cluster = 15;
-    update_target_catalog = 16;
-    update_data_directories = 17;
-    update_target_conf_files = 18;
-    upgrade_standby = 19;
-    upgrade_mirrors = 20;
-    delete_tablespaces = 21;
-    delete_target_cluster_datadirs = 22;
-    delete_segment_statedirs = 23;
-    stop_hub_and_agents = 24;
-    delete_master_statedir = 25;
-    archive_log_directories = 26;
-    restore_source_cluster = 27;
-    start_source_cluster = 28;
-    restore_pgcontrol = 29;
-    recoverseg_source_cluster = 30;
-    step_status = 31;
-    wait_for_cluster_to_be_ready_after_adding_mirrors_and_standby = 32;
-    wait_for_cluster_to_be_ready_after_updating_catalog = 33;
-    setting_dynamic_library_path_on_target_cluster = 34;
-    check_active_connections_on_source_cluster = 35;
-    check_active_connections_on_target_cluster = 36;
-    generate_data_migration_scripts = 37;
-    execute_stats_data_migration_scripts = 38;
-    execute_initialize_data_migration_scripts = 39;
-    execute_finalize_data_migration_scripts = 40;
-    execute_revert_data_migration_scripts = 41;
-    create_backupdirs = 42;
-    delete_backupdir = 43;
-    analyze_target_cluster = 44;
-    ensure_gpupgrade_agents_are_running = 45;
-    verify_gpdb_versions = 46;
-    verify_gpupgrade_is_installed_across_all_hosts = 47;
-    initialize_wait_for_cluster_to_be_ready = 48;
-    wait_for_cluster_to_be_ready_before_upgrade_master = 49;
+  unknown_substep = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
+  saving_source_cluster_config = 1;
+  start_hub = 2;
+  start_agents = 3;
+  check_environment = 4;
+  check_disk_space = 5;
+  generate_target_config = 6;
+  init_target_cluster = 7;
+  shutdown_target_cluster = 8;
+  backup_target_master = 9;
+  check_upgrade = 10;
+  shutdown_source_cluster = 11;
+  upgrade_master = 12;
+  copy_master = 13;
+  upgrade_primaries = 14;
+  start_target_cluster = 15;
+  update_target_catalog = 16;
+  update_data_directories = 17;
+  update_target_conf_files = 18;
+  upgrade_standby = 19;
+  upgrade_mirrors = 20;
+  delete_tablespaces = 21;
+  delete_target_cluster_datadirs = 22;
+  delete_segment_statedirs = 23;
+  stop_hub_and_agents = 24;
+  delete_master_statedir = 25;
+  archive_log_directories = 26;
+  restore_source_cluster = 27;
+  start_source_cluster = 28;
+  restore_pgcontrol = 29;
+  recoverseg_source_cluster = 30;
+  step_status = 31;
+  wait_for_cluster_to_be_ready_after_adding_mirrors_and_standby = 32;
+  wait_for_cluster_to_be_ready_after_updating_catalog = 33;
+  setting_dynamic_library_path_on_target_cluster = 34;
+  check_active_connections_on_source_cluster = 35;
+  check_active_connections_on_target_cluster = 36;
+  generate_data_migration_scripts = 37;
+  execute_stats_data_migration_scripts = 38;
+  execute_initialize_data_migration_scripts = 39;
+  execute_finalize_data_migration_scripts = 40;
+  execute_revert_data_migration_scripts = 41;
+  create_backupdirs = 42;
+  delete_backupdir = 43;
+  analyze_target_cluster = 44;
+  ensure_gpupgrade_agents_are_running = 45;
+  verify_gpdb_versions = 46;
+  verify_gpupgrade_is_installed_across_all_hosts = 47;
+  initialize_wait_for_cluster_to_be_ready = 48;
+  wait_for_cluster_to_be_ready_before_upgrade_master = 49;
 }
 
 enum Status {
-    unknown_status = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
-    running = 1;
-    complete = 2;
-    failed = 3;
-    skipped = 4;
-    quit = 5;
+  unknown_status = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
+  running = 1;
+  complete = 2;
+  failed = 3;
+  skipped = 4;
+  quit = 5;
 }
 
 message PrepareInitClusterRequest {}
@@ -173,10 +173,10 @@ message RevertResponse {
 }
 
 message GetConfigRequest {
-    string name = 1;
+  string name = 1;
 }
 message GetConfigReply {
-    string value = 1;
+  string value = 1;
 }
 
 // Used to set the gRPC status details that the CLI converts to a NextActions
