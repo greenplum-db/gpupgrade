@@ -6,6 +6,7 @@ syntax = "proto3";
 import "common.proto";
 
 package idl;
+option go_package = "github.com/greenplum-db/gpupgrade/idl";
 
 service Agent {
   rpc CreateBackupDirectory (CreateBackupDirectoryRequest) returns (CreateBackupDirectoryReply) {}

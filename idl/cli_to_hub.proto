@@ -4,6 +4,7 @@
 syntax = "proto3";
 
 package idl;
+option go_package = "github.com/greenplum-db/gpupgrade/idl";
 
 service CliToHub {
     rpc Initialize(InitializeRequest) returns (stream Message) {}
