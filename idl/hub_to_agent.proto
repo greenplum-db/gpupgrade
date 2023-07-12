@@ -2,11 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 syntax = "proto3";
-
-import "common.proto";
-
 package idl;
 option go_package = "github.com/greenplum-db/gpupgrade/idl";
+import "common.proto";
 
 service Agent {
   rpc CreateBackupDirectory (CreateBackupDirectoryRequest) returns (CreateBackupDirectoryReply) {}
