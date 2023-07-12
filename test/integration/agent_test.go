@@ -12,6 +12,7 @@ import (
 
 	"golang.org/x/sys/unix"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/upgrade"
@@ -63,7 +64,7 @@ func TestAgent(t *testing.T) {
 			defer cancel()
 
 			address := "localhost" + ":" + strconv.Itoa(c.expected)
-			_, err = grpc.DialContext(ctx, address, grpc.WithInsecure(), grpc.WithBlock())
+			_, err = grpc.DialContext(ctx, address, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 			if err != nil {
 				t.Fatalf("failed to connect to address %s %+v", address, err)
 			}

@@ -45,6 +45,7 @@ import (
 	"golang.org/x/xerrors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	grpcStatus "google.golang.org/grpc/status"
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
@@ -276,7 +277,7 @@ func connectToHubOnPort(port int) (idl.CliToHubClient, error) {
 
 	// Attempt a connection.
 	address := "localhost:" + strconv.Itoa(port)
-	conn, err := grpc.DialContext(ctx, address, grpc.WithInsecure(), grpc.WithBlock())
+	conn, err := grpc.DialContext(ctx, address, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 	if err != nil {
 		err = xerrors.Errorf("connecting to hub on port %d: %w", port, err)
 		if ctx.Err() == context.DeadlineExceeded {

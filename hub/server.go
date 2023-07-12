@@ -19,6 +19,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/connectivity"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 	grpcStatus "google.golang.org/grpc/status"
 
@@ -191,7 +192,7 @@ func RestartAgents(ctx context.Context,
 			timeoutCtx, cancelFunc := context.WithTimeout(ctx, 3*time.Second)
 			opts := []grpc.DialOption{
 				grpc.WithBlock(),
-				grpc.WithInsecure(),
+				grpc.WithTransportCredentials(insecure.NewCredentials()),
 				grpc.FailOnNonTempDialError(true),
 			}
 			if dialer != nil {
@@ -278,7 +279,7 @@ func (s *Server) AgentConns() ([]*idl.Connection, error) {
 		ctx, cancelFunc := context.WithTimeout(context.Background(), DialTimeout)
 		conn, err := gRPCDialer(ctx,
 			host+":"+strconv.Itoa(s.AgentPort),
-			grpc.WithInsecure(), grpc.WithBlock())
+			grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
 		if err != nil {
 			cancelFunc()
 			return nil, xerrors.Errorf("agent connections: %w", err)
