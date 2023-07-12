@@ -119,10 +119,11 @@ func (s *Server) StopAgents() error {
 			return xerrors.Errorf("failed to stop agent on host: %s", conn.Hostname)
 		}
 
-		// XXX: "transport is closing" is not documented but is needed to uniquely interpret codes.Unavailable
-		// https://github.com/grpc/grpc/blob/v1.24.0/doc/statuscodes.md
+		// XXX: "error reading from server: EOF" is not documented but is
+		// needed to uniquely interpret codes.Unavailable
+		// https://github.com/grpc/grpc/blob/v1.52.0/doc/statuscodes.md
 		errStatus := grpcStatus.Convert(err)
-		if errStatus.Code() != codes.Unavailable || errStatus.Message() != "transport is closing" {
+		if errStatus.Code() != codes.Unavailable || errStatus.Message() != "error reading from server: EOF" {
 			return xerrors.Errorf("failed to stop agent on host %s : %w", conn.Hostname, err)
 		}
 

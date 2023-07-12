@@ -243,11 +243,11 @@ func stopHubAndAgents() error {
 
 	_, err = client.StopServices(context.Background(), &idl.StopServicesRequest{})
 	if err != nil {
-		errCode := grpcStatus.Code(err)
-		errMsg := grpcStatus.Convert(err).Message()
-		// XXX: "transport is closing" is not documented but is needed to uniquely interpret codes.Unavailable
-		// https://github.com/grpc/grpc/blob/v1.24.0/doc/statuscodes.md
-		if errCode != codes.Unavailable || errMsg != "transport is closing" {
+		// XXX: "error reading from server: EOF" is not documented but is
+		// needed to uniquely interpret codes.Unavailable
+		// https://github.com/grpc/grpc/blob/v1.52.0/doc/statuscodes.md
+		errStatus := grpcStatus.Convert(err)
+		if errStatus.Code() != codes.Unavailable || errStatus.Message() != "error reading from server: EOF" {
 			return err
 		}
 	}
