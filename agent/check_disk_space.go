@@ -20,5 +20,5 @@ func (s *Server) CheckDiskSpace(ctx context.Context, in *idl.CheckSegmentDiskSpa
 		return nil, err
 	}
 
-	return &idl.CheckDiskSpaceReply{Usage: usage}, nil
+	return &idl.CheckDiskSpaceReply{Usages: usage}, nil
 }

@@ -98,7 +98,7 @@ func checkDiskSpaceOnStandbyAndSegments(agentConns []*idl.Connection, errs chan<
 			reply, err := conn.AgentClient.CheckDiskSpace(context.Background(), req)
 			errs <- err
 			if reply != nil {
-				usages <- reply.GetUsage()
+				usages <- reply.GetUsages()
 			}
 		}()
 	}

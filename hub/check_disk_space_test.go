@@ -179,7 +179,7 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 		failedClient.EXPECT().CheckDiskSpace(
 			gomock.Any(),
 			gomock.Any(),
-		).Return(&idl.CheckDiskSpaceReply{Usage: disk.FileSystemDiskUsage{&usage}}, nil)
+		).Return(&idl.CheckDiskSpaceReply{Usages: disk.FileSystemDiskUsage{&usage}}, nil)
 
 		agentConns := []*idl.Connection{
 			{AgentClient: failedClient, Hostname: "smdw"},
@@ -217,7 +217,7 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 		primary.EXPECT().CheckDiskSpace(
 			gomock.Any(),
 			gomock.Any(),
-		).Return(&idl.CheckDiskSpaceReply{Usage: primaryUsage}, nil)
+		).Return(&idl.CheckDiskSpaceReply{Usages: primaryUsage}, nil)
 
 		mirrorUsage := disk.FileSystemDiskUsage{
 			&idl.CheckDiskSpaceReply_DiskUsage{
@@ -230,7 +230,7 @@ func TestCheckDiskSpace_OnSegments(t *testing.T) {
 		mirror.EXPECT().CheckDiskSpace(
 			gomock.Any(),
 			gomock.Any(),
-		).Return(&idl.CheckDiskSpaceReply{Usage: mirrorUsage}, nil)
+		).Return(&idl.CheckDiskSpaceReply{Usages: mirrorUsage}, nil)
 
 		agentConns := []*idl.Connection{
 			{AgentClient: primary, Hostname: "primary"},

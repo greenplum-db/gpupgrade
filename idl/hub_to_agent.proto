@@ -128,7 +128,7 @@ message CheckDiskSpaceReply {
     uint64 required = 4;
   }
 
-  repeated DiskUsage usage = 1;
+  repeated DiskUsage usages = 1;
 }
 
 message RsyncRequest {
