@@ -35,11 +35,11 @@ func init() {
 
 	initializeSubsteps = commanders.Substeps{
 		idl.Substep_verify_gpdb_versions,
+		idl.Substep_saving_source_cluster_config,
+		idl.Substep_start_hub,
 		idl.Substep_generate_data_migration_scripts,
 		idl.Substep_execute_stats_data_migration_scripts,
 		idl.Substep_execute_initialize_data_migration_scripts,
-		idl.Substep_start_hub,
-		idl.Substep_saving_source_cluster_config,
 		idl.Substep_verify_gpupgrade_is_installed_across_all_hosts,
 		idl.Substep_start_agents,
 		idl.Substep_check_environment,
@@ -77,15 +77,17 @@ func init() {
 		idl.Substep_update_target_conf_files,
 		idl.Substep_start_target_cluster,
 		idl.Substep_wait_for_cluster_to_be_ready_after_updating_catalog,
-		idl.Substep_analyze_target_cluster,
 		idl.Substep_archive_log_directories,
 		idl.Substep_delete_backupdir,
 		idl.Substep_delete_segment_statedirs,
 		idl.Substep_stop_hub_and_agents,
 		idl.Substep_execute_finalize_data_migration_scripts,
+		idl.Substep_analyze_target_cluster,
+		idl.Substep_delete_master_statedir,
 	}
 
 	revertSubsteps = commanders.Substeps{
+		idl.Substep_ensure_gpupgrade_agents_are_running,
 		idl.Substep_check_active_connections_on_target_cluster,
 		idl.Substep_shutdown_target_cluster,
 		idl.Substep_delete_target_cluster_datadirs,
@@ -99,6 +101,7 @@ func init() {
 		idl.Substep_delete_segment_statedirs,
 		idl.Substep_stop_hub_and_agents,
 		idl.Substep_execute_revert_data_migration_scripts,
+		idl.Substep_delete_master_statedir,
 	}
 
 	InitializeHelp = fmt.Sprintf(initializeHelpText, cases.Title(language.English).String(idl.Step_initialize.String()), initializeSubsteps, logDir)
