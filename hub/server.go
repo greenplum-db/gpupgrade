@@ -17,11 +17,9 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/xerrors"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
-	grpcStatus "google.golang.org/grpc/status"
 
 	"github.com/greenplum-db/gpupgrade/config"
 	"github.com/greenplum-db/gpupgrade/greenplum"
@@ -120,11 +118,11 @@ func (s *Server) StopAgents() error {
 			return xerrors.Errorf("failed to stop agent on host: %s", conn.Hostname)
 		}
 
-		// XXX: "error reading from server: EOF" is not documented but is
-		// needed to uniquely interpret codes.Unavailable
-		// https://github.com/grpc/grpc/blob/v1.52.0/doc/statuscodes.md
-		errStatus := grpcStatus.Convert(err)
-		if errStatus.Code() != codes.Unavailable || errStatus.Message() != "error reading from server: EOF" {
+		if idl.ServerAlreadyStopped(err) {
+			return nil
+		}
+
+		if err != nil {
 			return xerrors.Errorf("failed to stop agent on host %s : %w", conn.Hostname, err)
 		}
 

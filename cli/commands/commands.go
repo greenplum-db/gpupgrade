@@ -44,9 +44,7 @@ import (
 	"github.com/spf13/pflag"
 	"golang.org/x/xerrors"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
-	grpcStatus "google.golang.org/grpc/status"
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/config"
@@ -243,15 +241,14 @@ func stopHubAndAgents() error {
 	}
 
 	_, err = client.StopServices(context.Background(), &idl.StopServicesRequest{})
-	if err != nil {
-		// XXX: "error reading from server: EOF" is not documented but is
-		// needed to uniquely interpret codes.Unavailable
-		// https://github.com/grpc/grpc/blob/v1.52.0/doc/statuscodes.md
-		errStatus := grpcStatus.Convert(err)
-		if errStatus.Code() != codes.Unavailable || errStatus.Message() != "error reading from server: EOF" {
-			return err
-		}
+	if idl.ServerAlreadyStopped(err) {
+		return nil
 	}
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
