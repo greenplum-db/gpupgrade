@@ -60,6 +60,11 @@ func NewStep(currentStep idl.Step, stepName string, stepStore StepStore, substep
 }
 
 func Begin(currentStep idl.Step, verbose bool, nonInteractive bool, confirmationText string) (*Step, error) {
+	// NOTE: only use streams within the substeps since they do not write to
+	// stdout/stderr when verbose is false. Thus, for general output write to
+	// stdout as usual such that it appears when verbose is not set.
+	streams := step.NewLogStdStreams(verbose)
+
 	stepStore, err := NewStepFileStore()
 	if err != nil {
 		context := fmt.Sprintf("Note: If commands were issued in order, ensure gpupgrade can write to %s", utils.GetStateDir())
@@ -98,7 +103,7 @@ func Begin(currentStep idl.Step, verbose bool, nonInteractive bool, confirmation
 	fmt.Printf("\n%s\n\n", msg)
 	log.Print(msg)
 
-	return NewStep(currentStep, stepName, stepStore, substepStore, step.StdStreams, verbose)
+	return NewStep(currentStep, stepName, stepStore, substepStore, streams, verbose)
 }
 
 func (s *Step) Err() error {

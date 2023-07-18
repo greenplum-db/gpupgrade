@@ -64,6 +64,60 @@ func (m *stdStreams) Stderr() io.Writer {
 	return os.Stderr
 }
 
+// LogStdStreams is a type of OutStreams that writes to both a stdout/stderr
+// and a log file. Writing to stdout/stderr will also write to the log file.
+// When verbose is false the streams are "not" written to stdout/stderr to match
+// the behavior of the Hub streams.
+type LogStdStreams struct {
+	stdout io.Writer
+	stderr io.Writer
+}
+
+func NewLogStdStreams(verbose bool) *LogStdStreams {
+	return &LogStdStreams{
+		stdout: &logStdStreamsWriter{stream: os.Stdout, verbose: verbose},
+		stderr: &logStdStreamsWriter{stream: os.Stderr, verbose: verbose},
+	}
+}
+
+func (s *LogStdStreams) Stdout() io.Writer {
+	return s.stdout
+}
+
+func (s *LogStdStreams) Stderr() io.Writer {
+	return s.stderr
+}
+
+// logMessageSenderWriter is an internal type used by logMessageSender to send stdout and
+// stderr to both a gRPC MessageSender and log file.
+type logStdStreamsWriter struct {
+	stream  io.Writer
+	mutex   sync.Mutex
+	verbose bool
+}
+
+func (s *logStdStreamsWriter) Write(p []byte) (int, error) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	scanner := bufio.NewScanner(bytes.NewReader(p))
+	for scanner.Scan() {
+		line := scanner.Text()
+		log.Print(strings.TrimSpace(line)) // avoid awkward newlines in the log file
+	}
+
+	if err := scanner.Err(); err != nil {
+		return len(p), xerrors.Errorf("scanning: %w", err)
+	}
+
+	// To match the hub only print to stdout and stderr in verbose mode.
+	if s.verbose {
+		return s.stream.Write(p)
+	}
+
+	return len(p), nil
+}
+
 // logMessageSender is a type of OutStreams that writes to both a gRPC MessageSender
 // and a log file. Writing to stdout/stderr will also write to the log file.
 type logMessageSender struct {
