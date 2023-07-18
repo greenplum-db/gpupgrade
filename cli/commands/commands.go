@@ -179,7 +179,7 @@ var restartServices = &cobra.Command{
 	Short: "restarts hub/agents that are not currently running",
 	Long:  "restarts hub/agents that are not currently running",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		err := commanders.StartHub()
+		err := commanders.StartHub(step.StdStreams)
 		if err != nil && !errors.Is(err, step.Skip) {
 			return err
 		}

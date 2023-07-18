@@ -12,6 +12,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
@@ -36,7 +37,7 @@ func dataMigrationGenerate() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			outputDir = filepath.Clean(outputDir)
 			seedDir = filepath.Clean(seedDir)
-			return commanders.GenerateDataMigrationScripts(nonInteractive, filepath.Clean(gphome), port, seedDir, outputDir, utils.System.DirFS(outputDir))
+			return commanders.GenerateDataMigrationScripts(step.StdStreams, nonInteractive, filepath.Clean(gphome), port, seedDir, outputDir, utils.System.DirFS(outputDir))
 		},
 	}
 
@@ -77,7 +78,7 @@ func dataMigrationApply() *cobra.Command {
 			}
 
 			currentDir := filepath.Join(filepath.Clean(inputDir), "current")
-			err = commanders.ApplyDataMigrationScripts(nonInteractive, filepath.Clean(gphome), port, logDir, utils.System.DirFS(currentDir), currentDir, parsedPhase)
+			err = commanders.ApplyDataMigrationScripts(step.StdStreams, nonInteractive, filepath.Clean(gphome), port, logDir, utils.System.DirFS(currentDir), currentDir, parsedPhase)
 			if err != nil {
 				return err
 			}

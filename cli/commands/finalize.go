@@ -86,7 +86,7 @@ func finalize() *cobra.Command {
 				fmt.Println()
 
 				currentDir := filepath.Join(response.GetLogArchiveDirectory(), "data-migration-scripts", "current")
-				return commanders.ApplyDataMigrationScripts(nonInteractive, target.GPHome, target.CoordinatorPort(),
+				return commanders.ApplyDataMigrationScripts(streams, nonInteractive, target.GPHome, target.CoordinatorPort(),
 					response.GetLogArchiveDirectory(), utils.System.DirFS(currentDir), currentDir, idl.Step_finalize)
 			})
 

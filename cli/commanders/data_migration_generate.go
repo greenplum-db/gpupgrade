@@ -31,7 +31,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-func GenerateDataMigrationScripts(nonInteractive bool, gphome string, port int, seedDir string, outputDir string, outputDirFS fs.FS) error {
+func GenerateDataMigrationScripts(streams step.OutStreams, nonInteractive bool, gphome string, port int, seedDir string, outputDir string, outputDirFS fs.FS) error {
 	version, err := greenplum.Version(gphome)
 	if err != nil {
 		return err
@@ -63,7 +63,7 @@ func GenerateDataMigrationScripts(nonInteractive bool, gphome string, port int, 
 		return err
 	}
 
-	err = ArchiveDataMigrationScriptsPrompt(nonInteractive, bufio.NewReader(os.Stdin), outputDirFS, outputDir)
+	err = ArchiveDataMigrationScriptsPrompt(streams, nonInteractive, bufio.NewReader(os.Stdin), outputDirFS, outputDir)
 	if err != nil {
 		if errors.Is(err, step.Skip) {
 			return nil
@@ -77,7 +77,11 @@ func GenerateDataMigrationScripts(nonInteractive bool, gphome string, port int, 
 		return err
 	}
 
-	fmt.Printf("\nGenerating data migration scripts for %d databases...\n", len(databases))
+	_, err = fmt.Fprintf(streams.Stdout(), "\nGenerating data migration scripts for %d databases...\n", len(databases))
+	if err != nil {
+		return err
+	}
+
 	progressBar := mpb.New()
 	var wg sync.WaitGroup
 	errChan := make(chan error, len(databases))
@@ -89,17 +93,17 @@ func GenerateDataMigrationScripts(nonInteractive bool, gphome string, port int, 
 			mpb.PrependDecorators(decor.Name("  "+database.Datname, decor.WCSyncSpaceR)),
 			mpb.AppendDecorators(decor.NewPercentage("%d")))
 
-		go func(database DatabaseInfo, gphome string, port int, seedDir string, outputDir string, bar *mpb.Bar) {
+		go func(streams step.OutStreams, database DatabaseInfo, gphome string, port int, seedDir string, outputDir string, bar *mpb.Bar) {
 			defer wg.Done()
 
-			err = GenerateScriptsPerDatabase(database, gphome, port, seedDir, outputDir, bar)
+			err = GenerateScriptsPerDatabase(streams, database, gphome, port, seedDir, outputDir, bar)
 			if err != nil {
 				errChan <- err
 				bar.Abort(false)
 				return
 			}
 
-		}(database, gphome, port, seedDir, outputDir, bar)
+		}(streams, database, gphome, port, seedDir, outputDir, bar)
 	}
 
 	progressBar.Wait()
@@ -144,7 +148,7 @@ func ResetBootstrapConnectionFunction() {
 	bootstrapConnectionFunc = connection.Bootstrap
 }
 
-func ArchiveDataMigrationScriptsPrompt(nonInteractive bool, reader *bufio.Reader, outputDirFS fs.FS, outputDir string) error {
+func ArchiveDataMigrationScriptsPrompt(streams step.OutStreams, nonInteractive bool, reader *bufio.Reader, outputDirFS fs.FS, outputDir string) error {
 	outputDirEntries, err := utils.System.ReadDirFS(outputDirFS, ".")
 	if err != nil {
 		return err
@@ -156,9 +160,9 @@ func ArchiveDataMigrationScriptsPrompt(nonInteractive bool, reader *bufio.Reader
 	for _, entry := range outputDirEntries {
 		if entry.IsDir() && entry.Name() == "current" {
 			currentDirExists = true
-			info, err := entry.Info()
-			if err != nil {
-				return err
+			info, eErr := entry.Info()
+			if eErr != nil {
+				return eErr
 			}
 
 			currentDirModTime = info.ModTime()
@@ -194,9 +198,10 @@ to detect the newly added objects.`, currentDirModTime.Format(time.RFC1123Z), ut
   [q]uit
 
 Select: `)
-			rawInput, err := reader.ReadString('\n')
-			if err != nil {
-				return err
+
+			rawInput, rErr := reader.ReadString('\n')
+			if rErr != nil {
+				return rErr
 			}
 
 			input = strings.ToLower(strings.TrimSpace(rawInput))
@@ -205,9 +210,9 @@ Select: `)
 		switch input {
 		case "a":
 			archiveDir := filepath.Join(outputDir, "archive", currentDirModTime.Format("20060102T1504"))
-			exist, err := upgrade.PathExist(archiveDir)
-			if err != nil {
-				return err
+			exist, pErr := upgrade.PathExist(archiveDir)
+			if pErr != nil {
+				return pErr
 			}
 
 			if exist {
@@ -239,13 +244,13 @@ Select: `)
 	}
 }
 
-func GenerateScriptsPerDatabase(database DatabaseInfo, gphome string, port int, seedDir string, outputDir string, bar *mpb.Bar) error {
+func GenerateScriptsPerDatabase(streams step.OutStreams, database DatabaseInfo, gphome string, port int, seedDir string, outputDir string, bar *mpb.Bar) error {
 	output, err := executeSQLCommand(gphome, port, database.Datname, `CREATE LANGUAGE plpythonu;`)
 	if err != nil && !strings.Contains(err.Error(), "already exists") {
 		return err
 	}
 
-	log.Println(string(output))
+	log.Print(string(output))
 
 	// Create a schema to use while generating the scripts. However, the generated scripts cannot depend on this
 	// schema as its dropped at the end of the generation process. If necessary, the generated scripts can use their
@@ -255,21 +260,24 @@ func GenerateScriptsPerDatabase(database DatabaseInfo, gphome string, port int, 
 		return err
 	}
 
-	log.Println(string(output))
+	log.Print(string(output))
 
 	output, err = applySQLFile(gphome, port, database.Datname, filepath.Join(seedDir, "create_find_view_dep_function.sql"))
 	if err != nil {
 		return err
 	}
 
-	log.Println(string(output))
+	log.Print(string(output))
 
 	var wg sync.WaitGroup
 	errChan := make(chan error, len(MigrationScriptPhases))
 
 	for _, phase := range MigrationScriptPhases {
 		wg.Add(1)
-		log.Printf("  Generating %q scripts for %s\n", phase, database.Datname)
+		_, fErr := fmt.Fprintf(streams.Stdout(), "  Generating %q scripts for %s\n", phase, database.Datname)
+		if fErr != nil {
+			return fErr
+		}
 
 		go func(phase idl.Step, database DatabaseInfo, gphome string, port int, seedDir string, outputDir string, bar *mpb.Bar) {
 			defer wg.Done()
@@ -319,9 +327,9 @@ func GenerateScriptsPerPhase(phase idl.Step, database DatabaseInfo, gphome strin
 	}
 
 	for _, scriptDir := range scriptDirs {
-		scripts, err := utils.System.ReadDirFS(seedDirFS, filepath.Join(phase.String(), scriptDir.Name()))
-		if err != nil {
-			return err
+		scripts, rErr := utils.System.ReadDirFS(seedDirFS, filepath.Join(phase.String(), scriptDir.Name()))
+		if rErr != nil {
+			return rErr
 		}
 
 		for _, script := range scripts {
@@ -354,24 +362,24 @@ func GenerateScriptsPerPhase(phase idl.Step, database DatabaseInfo, gphome strin
 			var contents bytes.Buffer
 			contents.WriteString(`\c ` + database.QuotedDatname + "\n")
 
-			headerOutput, err := utils.System.ReadFileFS(seedDirFS, filepath.Join(phase.String(), scriptDir.Name(), strings.TrimSuffix(script.Name(), path.Ext(script.Name()))+".header"))
-			if err != nil && !errors.Is(err, fs.ErrNotExist) {
-				return err
+			headerOutput, fErr := utils.System.ReadFileFS(seedDirFS, filepath.Join(phase.String(), scriptDir.Name(), strings.TrimSuffix(script.Name(), path.Ext(script.Name()))+".header"))
+			if fErr != nil && !errors.Is(fErr, fs.ErrNotExist) {
+				return fErr
 			}
 
 			contents.Write(headerOutput)
 			contents.Write(scriptOutput)
 
 			outputPath := filepath.Join(outputDir, "current", phase.String(), scriptDir.Name())
-			err = utils.System.MkdirAll(outputPath, 0700)
-			if err != nil {
-				return err
+			mErr := utils.System.MkdirAll(outputPath, 0700)
+			if mErr != nil {
+				return mErr
 			}
 
 			outputFile := "migration_" + database.QuotedDatname + "_" + strings.TrimSuffix(script.Name(), filepath.Ext(script.Name())) + ".sql"
-			err = utils.System.WriteFile(filepath.Join(outputPath, outputFile), contents.Bytes(), 0644)
-			if err != nil {
-				return err
+			wErr := utils.System.WriteFile(filepath.Join(outputPath, outputFile), contents.Bytes(), 0644)
+			if wErr != nil {
+				return wErr
 			}
 
 			bar.Increment()
@@ -402,9 +410,9 @@ func GetDatabases(db *sql.DB, seedDirFS fs.FS) ([]DatabaseInfo, error) {
 			return nil, xerrors.Errorf("pg_database: %w", err)
 		}
 
-		numSeedScripts, err := countSeedScripts(database.Datname, seedDirFS)
-		if err != nil {
-			return nil, err
+		numSeedScripts, cErr := countSeedScripts(database.Datname, seedDirFS)
+		if cErr != nil {
+			return nil, cErr
 		}
 
 		database.NumSeedScripts = numSeedScripts
@@ -433,15 +441,15 @@ func countSeedScripts(database string, seedDirFS fs.FS) (int, error) {
 			continue
 		}
 
-		seedScriptDirs, err := fs.ReadDir(seedDirFS, phaseEntry.Name())
-		if err != nil {
-			return 0, err
+		seedScriptDirs, rErr := fs.ReadDir(seedDirFS, phaseEntry.Name())
+		if rErr != nil {
+			return 0, rErr
 		}
 
 		for _, seedScriptDir := range seedScriptDirs {
-			seedScripts, err := utils.System.ReadDirFS(seedDirFS, filepath.Join(phaseEntry.Name(), seedScriptDir.Name()))
-			if err != nil {
-				return 0, err
+			seedScripts, fErr := utils.System.ReadDirFS(seedDirFS, filepath.Join(phaseEntry.Name(), seedScriptDir.Name()))
+			if fErr != nil {
+				return 0, fErr
 			}
 
 			for _, seedScript := range seedScripts {

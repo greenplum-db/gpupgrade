@@ -84,8 +84,7 @@ func revert() *cobra.Command {
 				fmt.Println()
 
 				currentDir := filepath.Join(response.GetLogArchiveDirectory(), "data-migration-scripts", "current")
-				return commanders.ApplyDataMigrationScripts(nonInteractive, source.GPHome, source.CoordinatorPort(),
-					response.GetLogArchiveDirectory(), utils.System.DirFS(currentDir), currentDir, idl.Step_revert)
+				return commanders.ApplyDataMigrationScripts(streams, nonInteractive, source.GPHome, source.CoordinatorPort(), response.GetLogArchiveDirectory(), utils.System.DirFS(currentDir), currentDir, idl.Step_revert)
 			})
 
 			st.Run(idl.Substep_delete_master_statedir, func(streams step.OutStreams) error {

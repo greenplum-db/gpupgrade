@@ -53,7 +53,7 @@ func TestGenerateDataMigrationScripts(t *testing.T) {
 		}
 		defer utils.ResetSystemFunctions()
 
-		err := commanders.GenerateDataMigrationScripts(false, "", 0, "", "", fstest.MapFS{})
+		err := commanders.GenerateDataMigrationScripts(step.DevNullStream, false, "", 0, "", "", fstest.MapFS{})
 		if !errors.Is(err, os.ErrPermission) {
 			t.Errorf("got error %#v want %#v", err, os.ErrPermission)
 		}
@@ -70,7 +70,7 @@ func TestGenerateDataMigrationScripts(t *testing.T) {
 
 		outputDirFS := fstest.MapFS{"current": {Mode: os.ModeDir}}
 
-		err := commanders.GenerateDataMigrationScripts(false, "", 0, "", "", outputDirFS)
+		err := commanders.GenerateDataMigrationScripts(step.DevNullStream, false, "", 0, "", "", outputDirFS)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -88,7 +88,7 @@ func TestGenerateDataMigrationScripts(t *testing.T) {
 		}
 		defer utils.ResetSystemFunctions()
 
-		err := commanders.GenerateDataMigrationScripts(false, "", 0, "", "", fstest.MapFS{})
+		err := commanders.GenerateDataMigrationScripts(step.DevNullStream, false, "", 0, "", "", fstest.MapFS{})
 		if !errors.Is(err, expected) {
 			t.Errorf("got %v want %v", err, expected)
 		}
@@ -100,7 +100,7 @@ func TestGenerateDataMigrationScripts(t *testing.T) {
 		}
 		defer utils.ResetSystemFunctions()
 
-		err := commanders.GenerateDataMigrationScripts(false, "", 0, "", "", fstest.MapFS{})
+		err := commanders.GenerateDataMigrationScripts(step.DevNullStream, false, "", 0, "", "", fstest.MapFS{})
 		expected := "invalid port"
 		if !strings.Contains(err.Error(), expected) {
 			t.Errorf("got %+v, want %+v", err, expected)
@@ -120,14 +120,14 @@ func TestArchiveDataMigrationScriptsPrompt(t *testing.T) {
 		}
 		defer utils.ResetSystemFunctions()
 
-		err := commanders.ArchiveDataMigrationScriptsPrompt(false, nil, fsys, "")
+		err := commanders.ArchiveDataMigrationScriptsPrompt(step.DevNullStream, false, nil, fsys, "")
 		if !errors.Is(err, expected) {
 			t.Errorf("got %v want %v", err, expected)
 		}
 	})
 
 	t.Run("returns if scripts are 'not' already generated and there is nothing to archive", func(t *testing.T) {
-		err := commanders.ArchiveDataMigrationScriptsPrompt(false, nil, fstest.MapFS{}, "")
+		err := commanders.ArchiveDataMigrationScriptsPrompt(step.DevNullStream, false, nil, fstest.MapFS{}, "")
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -135,7 +135,7 @@ func TestArchiveDataMigrationScriptsPrompt(t *testing.T) {
 
 	t.Run("errors when failing to read input", func(t *testing.T) {
 		reader := bufio.NewReader(strings.NewReader(""))
-		err := commanders.ArchiveDataMigrationScriptsPrompt(false, reader, fsys, "")
+		err := commanders.ArchiveDataMigrationScriptsPrompt(step.DevNullStream, false, reader, fsys, "")
 		expected := io.EOF
 		if !errors.Is(err, expected) {
 			t.Errorf("got error %#v, want %#v", err, expected)
@@ -149,7 +149,7 @@ func TestArchiveDataMigrationScriptsPrompt(t *testing.T) {
 		testutils.MustCreateDir(t, filepath.Join(outputDir, "current"))
 
 		reader := bufio.NewReader(strings.NewReader("a\n"))
-		err := commanders.ArchiveDataMigrationScriptsPrompt(false, reader, fsys, outputDir)
+		err := commanders.ArchiveDataMigrationScriptsPrompt(step.DevNullStream, false, reader, fsys, outputDir)
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -166,7 +166,7 @@ func TestArchiveDataMigrationScriptsPrompt(t *testing.T) {
 		defer utils.ResetSystemFunctions()
 
 		reader := bufio.NewReader(strings.NewReader("a\n"))
-		err := commanders.ArchiveDataMigrationScriptsPrompt(false, reader, fsys, "")
+		err := commanders.ArchiveDataMigrationScriptsPrompt(step.DevNullStream, false, reader, fsys, "")
 		if !errors.Is(err, os.ErrPermission) {
 			t.Errorf("got error %#v want %#v", err, os.ErrPermission)
 		}
@@ -179,7 +179,7 @@ func TestArchiveDataMigrationScriptsPrompt(t *testing.T) {
 		defer utils.ResetSystemFunctions()
 
 		reader := bufio.NewReader(strings.NewReader("a\n"))
-		err := commanders.ArchiveDataMigrationScriptsPrompt(false, reader, fsys, "")
+		err := commanders.ArchiveDataMigrationScriptsPrompt(step.DevNullStream, false, reader, fsys, "")
 		var exitError *exec.ExitError
 		if !errors.As(err, &exitError) {
 			t.Errorf("got %T, want %T", err, exitError)
@@ -188,7 +188,7 @@ func TestArchiveDataMigrationScriptsPrompt(t *testing.T) {
 
 	t.Run("returns skip error when user selects 'c'ontinue", func(t *testing.T) {
 		reader := bufio.NewReader(strings.NewReader("c\n"))
-		err := commanders.ArchiveDataMigrationScriptsPrompt(false, reader, fsys, "")
+		err := commanders.ArchiveDataMigrationScriptsPrompt(step.DevNullStream, false, reader, fsys, "")
 		expected := step.Skip
 		if !errors.Is(err, expected) {
 			t.Errorf("got error %#v, want %#v", err, expected)
@@ -197,7 +197,7 @@ func TestArchiveDataMigrationScriptsPrompt(t *testing.T) {
 
 	t.Run("returns canceled error when user selects 'q'uit", func(t *testing.T) {
 		reader := bufio.NewReader(strings.NewReader("q\n"))
-		err := commanders.ArchiveDataMigrationScriptsPrompt(false, reader, fsys, "")
+		err := commanders.ArchiveDataMigrationScriptsPrompt(step.DevNullStream, false, reader, fsys, "")
 		expected := step.Quit
 		if !errors.Is(err, expected) {
 			t.Errorf("got error %#v, want %#v", err, expected)
@@ -208,7 +208,7 @@ func TestArchiveDataMigrationScriptsPrompt(t *testing.T) {
 		d := BufferStandardDescriptors(t)
 
 		reader := bufio.NewReader(strings.NewReader("b\nq\n"))
-		err := commanders.ArchiveDataMigrationScriptsPrompt(false, reader, fsys, "")
+		err := commanders.ArchiveDataMigrationScriptsPrompt(step.StdStreams, false, reader, fsys, "")
 		if !errors.Is(err, step.Quit) {
 			t.Errorf("got error %#v, want %#v", err, step.Quit)
 		}
@@ -307,7 +307,7 @@ func TestGenerateScriptsPerDatabase(t *testing.T) {
 		}
 		defer utils.ResetSystemFunctions()
 
-		err = commanders.GenerateDataMigrationScripts(true, "/usr/local/gpdb5", 0, "", outputDir, fstest.MapFS{})
+		err = commanders.GenerateDataMigrationScripts(step.DevNullStream, true, "/usr/local/gpdb5", 0, "", outputDir, fstest.MapFS{})
 		if err != nil {
 			t.Errorf("unexpected error: %#v", err)
 		}
@@ -340,7 +340,7 @@ func TestGenerateScriptsPerDatabase(t *testing.T) {
 		commanders.SetPsqlCommand(exectest.NewCommand(FailedMain))
 		defer commanders.ResetPsqlCommand()
 
-		err = commanders.GenerateDataMigrationScripts(false, "", 0, "", "", fstest.MapFS{})
+		err = commanders.GenerateDataMigrationScripts(step.DevNullStream, false, "", 0, "", "", fstest.MapFS{})
 		var exitError *exec.ExitError
 		if !errors.As(err, &exitError) {
 			t.Errorf("got %T, want %T", err, exitError)
@@ -377,7 +377,7 @@ func TestGenerateScriptsPerDatabase(t *testing.T) {
 		commanders.SetPsqlFileCommand(exectest.NewCommand(FailedMain))
 		defer commanders.ResetPsqlFileCommand()
 
-		err = commanders.GenerateDataMigrationScripts(false, "", 0, "", "", fstest.MapFS{})
+		err = commanders.GenerateDataMigrationScripts(step.DevNullStream, false, "", 0, "", "", fstest.MapFS{})
 		var exitError *exec.ExitError
 		if !errors.As(err, &exitError) {
 			t.Errorf("got %T, want %T", err, exitError)
@@ -414,7 +414,7 @@ func TestGenerateScriptsPerDatabase(t *testing.T) {
 		commanders.SetPsqlFileCommand(exectest.NewCommand(Success))
 		defer commanders.ResetPsqlFileCommand()
 
-		err = commanders.GenerateDataMigrationScripts(false, "", 0, "", "", fstest.MapFS{})
+		err = commanders.GenerateDataMigrationScripts(step.DevNullStream, false, "", 0, "", "", fstest.MapFS{})
 		var errs errorlist.Errors
 		if !errors.As(err, &errs) {
 			t.Fatalf("got error %#v, want type %T", err, errs)

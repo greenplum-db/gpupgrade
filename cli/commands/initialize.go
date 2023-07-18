@@ -7,7 +7,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -172,8 +171,6 @@ func initialize() *cobra.Command {
 				initializeSubsteps, logdir, configPath,
 				sourcePort, sourceGPHome, targetGPHome, mode, diskFreeRatio, pgUpgradeJobs, useHbaHostnames, dynamicLibraryPath, ports, hubPort, agentPort)
 
-			log.Print(confirmationText)
-
 			st, err := clistep.Begin(idl.Step_initialize, verbose, nonInteractive, confirmationText)
 			if err != nil {
 				return err
@@ -213,7 +210,7 @@ func initialize() *cobra.Command {
 			})
 
 			st.Run(idl.Substep_start_hub, func(streams step.OutStreams) error {
-				return commanders.StartHub()
+				return commanders.StartHub(streams)
 			})
 
 			generatedScriptsOutputDir, err := utils.GetDefaultGeneratedDataMigrationScriptsDir()
@@ -229,8 +226,7 @@ func initialize() *cobra.Command {
 				fmt.Println()
 				fmt.Println()
 
-				return commanders.GenerateDataMigrationScripts(nonInteractive, sourceGPHome, sourcePort,
-					filepath.Clean(dataMigrationSeedDir), generatedScriptsOutputDir, utils.System.DirFS(generatedScriptsOutputDir))
+				return commanders.GenerateDataMigrationScripts(streams, nonInteractive, sourceGPHome, sourcePort, filepath.Clean(dataMigrationSeedDir), generatedScriptsOutputDir, utils.System.DirFS(generatedScriptsOutputDir))
 			})
 
 			st.AlwaysRun(idl.Substep_execute_stats_data_migration_scripts, func(streams step.OutStreams) error {
@@ -242,8 +238,7 @@ func initialize() *cobra.Command {
 				fmt.Println()
 
 				currentDir := filepath.Join(generatedScriptsOutputDir, "current")
-				return commanders.ApplyDataMigrationScripts(nonInteractive, sourceGPHome, sourcePort,
-					logdir, utils.System.DirFS(currentDir), currentDir, idl.Step_stats)
+				return commanders.ApplyDataMigrationScripts(streams, nonInteractive, sourceGPHome, sourcePort, logdir, utils.System.DirFS(currentDir), currentDir, idl.Step_stats)
 			})
 
 			st.AlwaysRun(idl.Substep_execute_initialize_data_migration_scripts, func(streams step.OutStreams) error {
@@ -255,7 +250,7 @@ func initialize() *cobra.Command {
 				fmt.Println()
 
 				currentDir := filepath.Join(filepath.Clean(generatedScriptsOutputDir), "current")
-				err = commanders.ApplyDataMigrationScripts(nonInteractive, sourceGPHome, sourcePort,
+				err = commanders.ApplyDataMigrationScripts(streams, nonInteractive, sourceGPHome, sourcePort,
 					logdir, utils.System.DirFS(currentDir), currentDir, idl.Step_initialize)
 				if err != nil {
 					return err

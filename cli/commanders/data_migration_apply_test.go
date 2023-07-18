@@ -41,7 +41,7 @@ func TestApplyDataMigrationScripts(t *testing.T) {
 	}
 
 	t.Run("returns when there are no scripts to apply", func(t *testing.T) {
-		err := commanders.ApplyDataMigrationScripts(false, "", 0, logDir, currentDirFS, "", idl.Step_revert)
+		err := commanders.ApplyDataMigrationScripts(step.DevNullStream, false, "", 0, logDir, currentDirFS, "", idl.Step_revert)
 		if err != nil {
 			t.Fatalf("unexpected error %#v", err)
 		}
@@ -66,7 +66,7 @@ func TestApplyDataMigrationScripts(t *testing.T) {
 		commanders.SetPsqlFileCommand(exectest.NewCommand(SuccessScript))
 		defer commanders.ResetPsqlFileCommand()
 
-		err := commanders.ApplyDataMigrationScripts(false, "", 0, logDir, currentDirFS, currentScriptDir, idl.Step_stats)
+		err := commanders.ApplyDataMigrationScripts(step.DevNullStream, false, "", 0, logDir, currentDirFS, currentScriptDir, idl.Step_stats)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -90,7 +90,7 @@ func TestApplyDataMigrationScripts(t *testing.T) {
 		resetStdin := testutils.SetStdin(t, "n\n")
 		defer resetStdin()
 
-		err := commanders.ApplyDataMigrationScripts(false, "", 0, logDir, currentDirFS, currentScriptDir, idl.Step_stats)
+		err := commanders.ApplyDataMigrationScripts(step.DevNullStream, false, "", 0, logDir, currentDirFS, currentScriptDir, idl.Step_stats)
 		if err != nil {
 			t.Fatalf("unexpected error %#v", err)
 		}
@@ -103,7 +103,7 @@ func TestApplyDataMigrationScripts(t *testing.T) {
 		}
 		defer utils.ResetSystemFunctions()
 
-		err := commanders.ApplyDataMigrationScripts(false, "", 0, logDir, currentDirFS, currentScriptDir, idl.Step_stats)
+		err := commanders.ApplyDataMigrationScripts(step.DevNullStream, false, "", 0, logDir, currentDirFS, currentScriptDir, idl.Step_stats)
 		if !errors.Is(err, expected) {
 			t.Errorf("got error %#v want %#v", err, expected)
 		}
@@ -129,7 +129,7 @@ func TestApplyDataMigrationScripts(t *testing.T) {
 		resetStdin := testutils.SetStdin(t, "a\n")
 		defer resetStdin()
 
-		err := commanders.ApplyDataMigrationScripts(false, "", 0, logDir, currentDirFS, currentScriptDir, idl.Step_stats)
+		err := commanders.ApplyDataMigrationScripts(step.DevNullStream, false, "", 0, logDir, currentDirFS, currentScriptDir, idl.Step_stats)
 		var exitError *exec.ExitError
 		if !errors.As(err, &exitError) {
 			t.Errorf("got %T, want %T", err, exitError)
@@ -153,7 +153,7 @@ func TestApplyDataMigrationScripts(t *testing.T) {
 		resetStdin := testutils.SetStdin(t, "a\n")
 		defer resetStdin()
 
-		err := commanders.ApplyDataMigrationScripts(false, "", 0, logDir, currentDirFS, currentScriptDir, idl.Step_stats)
+		err := commanders.ApplyDataMigrationScripts(step.DevNullStream, false, "", 0, logDir, currentDirFS, currentScriptDir, idl.Step_stats)
 		if !errors.Is(err, os.ErrPermission) {
 			t.Errorf("got error %#v want %#v", err, os.ErrPermission)
 		}

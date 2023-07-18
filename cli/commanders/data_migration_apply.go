@@ -26,18 +26,25 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
-func ApplyDataMigrationScripts(nonInteractive bool, gphome string, port int, logDir string, currentScriptDirFS fs.FS, currentScriptDir string, phase idl.Step) error {
+func ApplyDataMigrationScripts(streams step.OutStreams, nonInteractive bool, gphome string, port int, logDir string, currentScriptDirFS fs.FS, currentScriptDir string, phase idl.Step) error {
 	_, err := currentScriptDirFS.Open(phase.String())
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			fmt.Printf("No %q data migration scripts to apply in %s.\n", phase, utils.Bold.Sprint(filepath.Join(currentScriptDir, phase.String())))
+			_, fErr := fmt.Fprintf(streams.Stdout(), "No %q data migration scripts to apply in %s.\n", phase, utils.Bold.Sprint(filepath.Join(currentScriptDir, phase.String())))
+			if fErr != nil {
+				return fErr
+			}
+
 			return nil
 		}
 
 		return err
 	}
 
-	fmt.Printf("Inspect the %q data migration SQL scripts in\n%s\n", phase, utils.Bold.Sprint(filepath.Join(currentScriptDir, phase.String())))
+	_, err = fmt.Fprintf(streams.Stdout(), "Inspect the %q data migration SQL scripts in\n%s\n", phase, utils.Bold.Sprint(filepath.Join(currentScriptDir, phase.String())))
+	if err != nil {
+		return err
+	}
 
 	scriptDirsToRun, err := ApplyDataMigrationScriptsPrompt(nonInteractive, bufio.NewReader(os.Stdin), currentScriptDir, currentScriptDirFS, phase)
 	if err != nil {
@@ -65,13 +72,17 @@ func ApplyDataMigrationScripts(nonInteractive bool, gphome string, port int, log
 	errChan := make(chan error, len(scriptDirsToRun))
 	outputChan := make(chan []byte, len(scriptDirsToRun))
 
-	fmt.Printf("\nApplying data migration scripts...\n")
+	_, err = fmt.Fprintf(streams.Stdout(), "\nApplying data migration scripts...\n")
+	if err != nil {
+		return err
+	}
+
 	for _, scriptDir := range scriptDirsToRun {
 		wg.Add(1)
 
-		scriptDirEntries, err := utils.System.ReadDirFS(utils.System.DirFS(scriptDir), ".")
-		if err != nil {
-			return err
+		scriptDirEntries, rErr := utils.System.ReadDirFS(utils.System.DirFS(scriptDir), ".")
+		if rErr != nil {
+			return rErr
 		}
 
 		bar := progressBar.New(int64(countScripts(scriptDirEntries)),
@@ -83,9 +94,9 @@ func ApplyDataMigrationScripts(nonInteractive bool, gphome string, port int, log
 		go func(gphome string, port int, scriptDir string, bar *mpb.Bar) {
 			defer wg.Done()
 
-			output, err := ApplyDataMigrationScriptSubDir(gphome, port, utils.System.DirFS(scriptDir), scriptDir, bar)
-			if err != nil {
-				errChan <- err
+			output, aErr := ApplyDataMigrationScriptSubDir(gphome, port, utils.System.DirFS(scriptDir), scriptDir, bar)
+			if aErr != nil {
+				errChan <- aErr
 				bar.Abort(false)
 				return
 			}
@@ -218,20 +229,21 @@ Select: `, phase, warning)
 			}
 
 			fmt.Print(prompt)
-			rawinput, err := reader.ReadString('\n')
-			if err != nil {
-				return nil, err
+
+			rawInput, rErr := reader.ReadString('\n')
+			if rErr != nil {
+				return nil, rErr
 			}
 
-			input = strings.ToLower(strings.TrimSpace(rawinput))
+			input = strings.ToLower(strings.TrimSpace(rawInput))
 		}
 
 		switch input {
 		case "a":
 			fmt.Printf("\nApplying 'all' of the %q data migration scripts.\n\n", phase)
-			entries, err := utils.System.ReadDirFS(currentScriptDirFS, phase.String())
-			if err != nil {
-				return nil, err
+			entries, rErr := utils.System.ReadDirFS(currentScriptDirFS, phase.String())
+			if rErr != nil {
+				return nil, rErr
 			}
 
 			var scriptDirs []string

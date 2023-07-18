@@ -114,7 +114,7 @@ func TestStartHub_Succeeds(t *testing.T) {
 
 	execCommandHubCount = exectest.NewCommand(IsHubRunning_False)
 	execCommandHubStart = exectest.NewCommand(GpupgradeHub_good_Main)
-	err := StartHub()
+	err := StartHub(step.DevNullStream)
 	if err != nil {
 		t.Errorf("unexpected error %#v", err)
 	}
@@ -126,7 +126,7 @@ func TestStartHub_FailsToStartWhenHubIsRunningErrors(t *testing.T) {
 
 	execCommandHubCount = exectest.NewCommand(IsHubRunning_Error)
 	execCommandHubStart = exectest.NewCommand(GpupgradeHub_good_Main) // should not hit this, but fail it we do
-	err := StartHub()
+	err := StartHub(step.DevNullStream)
 	var expected *exec.ExitError
 	if !errors.As(err, &expected) {
 		t.Errorf("returned error %#v want %#v", err, expected)
@@ -139,7 +139,7 @@ func TestStartHub_IsSkippedWhenHubIsRunning(t *testing.T) {
 
 	execCommandHubCount = exectest.NewCommand(IsHubRunning_True)
 	execCommandHubStart = exectest.NewCommand(GpupgradeHub_bad_Main) // should not hit this, but fail if we do
-	err := StartHub()
+	err := StartHub(step.DevNullStream)
 
 	if !errors.Is(err, step.Skip) {
 		t.Errorf("unexpected error %#v", err)
@@ -152,7 +152,7 @@ func TestStartHub_FailsWhenStartingTheHubErrors(t *testing.T) {
 
 	execCommandHubCount = exectest.NewCommand(IsHubRunning_False)
 	execCommandHubStart = exectest.NewCommand(GpupgradeHub_bad_Main)
-	err := StartHub()
+	err := StartHub(step.DevNullStream)
 	if err == nil {
 		t.Errorf("expected error %#v got nil", err)
 	}

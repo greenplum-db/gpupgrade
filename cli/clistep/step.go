@@ -77,6 +77,8 @@ func Begin(currentStep idl.Step, verbose bool, nonInteractive bool, confirmation
 		return nil, err
 	}
 
+	log.Print(confirmationText)
+
 	if !nonInteractive {
 		fmt.Println(confirmationText)
 
@@ -99,9 +101,9 @@ func Begin(currentStep idl.Step, verbose bool, nonInteractive bool, confirmation
 
 	stepName := cases.Title(language.English).String(currentStep.String())
 
-	msg := stepName + " in progress."
-	fmt.Printf("\n%s\n\n", msg)
-	log.Print(msg)
+	text := stepName + " in progress."
+	fmt.Printf("\n%s\n\n", text)
+	log.Print(text)
 
 	return NewStep(currentStep, stepName, stepStore, substepStore, streams, verbose)
 }

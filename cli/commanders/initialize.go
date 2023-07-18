@@ -4,6 +4,7 @@
 package commanders
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -35,14 +36,14 @@ func CreateStateDir() (err error) {
 	return nil
 }
 
-func StartHub() (err error) {
+func StartHub(streams step.OutStreams) (err error) {
 	running, err := IsHubRunning()
 	if err != nil {
 		return xerrors.Errorf("is hub running: %w", err)
 	}
 
 	if running {
-		log.Printf("Hub already running. Skipping.")
+		fmt.Fprint(streams.Stdout(), "Hub already running. Skipping.")
 		return step.Skip
 	}
 
@@ -53,7 +54,11 @@ func StartHub() (err error) {
 		return xerrors.Errorf("%q failed with %q: %w", cmd.String(), string(output), err)
 	}
 
-	log.Printf("%s", output)
+	_, err = streams.Stdout().Write(output)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
