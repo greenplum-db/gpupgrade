@@ -17,6 +17,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/substeps"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
@@ -66,10 +67,10 @@ func TestSubstep(t *testing.T) {
 		}
 
 		expected := "\nInitialize in progress.\n\n"
-		expected += commanders.Format(commanders.SubstepDescriptions[idl.Substep_check_disk_space].OutputText, idl.Status_running) + "\r"
-		expected += commanders.Format(commanders.SubstepDescriptions[idl.Substep_check_disk_space].OutputText, idl.Status_complete) + "\n"
-		expected += commanders.Format(commanders.SubstepDescriptions[idl.Substep_saving_source_cluster_config].OutputText, idl.Status_running) + "\r"
-		expected += commanders.Format(commanders.SubstepDescriptions[idl.Substep_saving_source_cluster_config].OutputText, idl.Status_failed) + "\n"
+		expected += commanders.Format(substeps.SubstepDescriptions[idl.Substep_check_disk_space].OutputText, idl.Status_running) + "\r"
+		expected += commanders.Format(substeps.SubstepDescriptions[idl.Substep_check_disk_space].OutputText, idl.Status_complete) + "\n"
+		expected += commanders.Format(substeps.SubstepDescriptions[idl.Substep_saving_source_cluster_config].OutputText, idl.Status_running) + "\r"
+		expected += commanders.Format(substeps.SubstepDescriptions[idl.Substep_saving_source_cluster_config].OutputText, idl.Status_failed) + "\n"
 		expected += "\n"
 
 		actual := string(stdout)
@@ -81,7 +82,7 @@ func TestSubstep(t *testing.T) {
 	})
 
 	t.Run("there is no error when a hub substep is skipped", func(t *testing.T) {
-		st, err := clistep.NewStep(idl.Step_initialize, idl.Step_initialize.String(), &MockStepStore{}, &MockSubstepStore{}, &step.BufferedStreams{}, false)
+		st, err := clistep.NewStep(idl.Step_initialize, idl.Step_initialize.String(), &MockStepStore{}, &MockSubstepStore{}, step.NewLogStdStreams(false), false)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -104,7 +105,7 @@ func TestSubstep(t *testing.T) {
 	t.Run("when a CLI substep is skipped its status is printed without error", func(t *testing.T) {
 		d := BufferStandardDescriptors(t)
 
-		st, err := clistep.NewStep(idl.Step_initialize, idl.Step_initialize.String(), &MockStepStore{}, &MockSubstepStore{}, &step.BufferedStreams{}, false)
+		st, err := clistep.NewStep(idl.Step_initialize, idl.Step_initialize.String(), &MockStepStore{}, &MockSubstepStore{}, step.NewLogStdStreams(false), false)
 		if err != nil {
 			d.Close()
 			t.Errorf("unexpected err %#v", err)
@@ -130,8 +131,9 @@ func TestSubstep(t *testing.T) {
 			t.Errorf("unexpected stderr %#v", string(stderr))
 		}
 
-		expected := commanders.Format(commanders.SubstepDescriptions[idl.Substep_saving_source_cluster_config].OutputText, idl.Status_running) + "\r"
-		expected += commanders.Format(commanders.SubstepDescriptions[idl.Substep_saving_source_cluster_config].OutputText, idl.Status_skipped) + "\n\n"
+		expected := commanders.Format(substeps.SubstepDescriptions[idl.Substep_saving_source_cluster_config].OutputText, idl.Status_running) + "\r"
+		expected += commanders.Format(substeps.SubstepDescriptions[idl.Substep_saving_source_cluster_config].OutputText, idl.Status_skipped) + "\n\n"
+		expected += idl.Step_initialize.String() + " completed successfully.\n\n"
 
 		actual := string(stdout)
 		if actual != expected {
@@ -143,7 +145,7 @@ func TestSubstep(t *testing.T) {
 
 	t.Run("skips completed substeps", func(t *testing.T) {
 		substepStore := &MockSubstepStore{Status: idl.Status_complete}
-		st, err := clistep.NewStep(idl.Step_initialize, "initialize", &MockStepStore{}, substepStore, &step.BufferedStreams{}, false)
+		st, err := clistep.NewStep(idl.Step_initialize, "initialize", &MockStepStore{}, substepStore, step.NewLogStdStreams(false), false)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -161,7 +163,7 @@ func TestSubstep(t *testing.T) {
 
 	t.Run("AlwaysRun re-runs a completed substep", func(t *testing.T) {
 		substepStore := &MockSubstepStore{Status: idl.Status_complete}
-		st, err := clistep.NewStep(idl.Step_initialize, "initialize", &MockStepStore{}, substepStore, &step.BufferedStreams{}, false)
+		st, err := clistep.NewStep(idl.Step_initialize, "initialize", &MockStepStore{}, substepStore, step.NewLogStdStreams(false), false)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -179,7 +181,7 @@ func TestSubstep(t *testing.T) {
 
 	t.Run("errors when a substep was previously running", func(t *testing.T) {
 		substepStore := &MockSubstepStore{Status: idl.Status_running}
-		st, err := clistep.NewStep(idl.Step_initialize, "initialize", &MockStepStore{}, substepStore, &step.BufferedStreams{}, false)
+		st, err := clistep.NewStep(idl.Step_initialize, "initialize", &MockStepStore{}, substepStore, step.NewLogStdStreams(false), false)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -198,7 +200,7 @@ func TestSubstep(t *testing.T) {
 	t.Run("when a CLI substep is quit by the user its status is printed without the generic next action error", func(t *testing.T) {
 		d := BufferStandardDescriptors(t)
 
-		st, err := clistep.NewStep(idl.Step_initialize, idl.Step_initialize.String(), &MockStepStore{}, &MockSubstepStore{}, &step.BufferedStreams{}, false)
+		st, err := clistep.NewStep(idl.Step_initialize, idl.Step_initialize.String(), &MockStepStore{}, &MockSubstepStore{}, step.NewLogStdStreams(false), false)
 		if err != nil {
 			d.Close()
 			t.Errorf("unexpected err %#v", err)
@@ -224,8 +226,8 @@ func TestSubstep(t *testing.T) {
 			t.Errorf("unexpected stderr %#v", string(stderr))
 		}
 
-		expected := commanders.Format(commanders.SubstepDescriptions[idl.Substep_generate_data_migration_scripts].OutputText, idl.Status_running) + "\r"
-		expected += commanders.Format(commanders.SubstepDescriptions[idl.Substep_generate_data_migration_scripts].OutputText, idl.Status_quit) + "\n\n"
+		expected := commanders.Format(substeps.SubstepDescriptions[idl.Substep_generate_data_migration_scripts].OutputText, idl.Status_running) + "\r"
+		expected += commanders.Format(substeps.SubstepDescriptions[idl.Substep_generate_data_migration_scripts].OutputText, idl.Status_quit) + "\n\n"
 
 		actual := string(stdout)
 		if actual != expected {
@@ -236,7 +238,7 @@ func TestSubstep(t *testing.T) {
 	})
 
 	t.Run("substeps are not run when a hub substep errors", func(t *testing.T) {
-		st, err := clistep.NewStep(idl.Step_initialize, idl.Step_initialize.String(), &MockStepStore{}, &MockSubstepStore{}, &step.BufferedStreams{}, false)
+		st, err := clistep.NewStep(idl.Step_initialize, idl.Step_initialize.String(), &MockStepStore{}, &MockSubstepStore{}, step.NewLogStdStreams(false), false)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -275,7 +277,7 @@ func TestSubstep(t *testing.T) {
 		d := BufferStandardDescriptors(t)
 
 		verbose := true
-		st, err := clistep.NewStep(idl.Step_initialize, idl.Step_initialize.String(), &MockStepStore{}, &MockSubstepStore{}, &step.BufferedStreams{}, verbose)
+		st, err := clistep.NewStep(idl.Step_initialize, idl.Step_initialize.String(), &MockStepStore{}, &MockSubstepStore{}, step.NewLogStdStreams(verbose), verbose)
 		if err != nil {
 			d.Close()
 			t.Errorf("unexpected err %#v", err)
@@ -298,19 +300,20 @@ func TestSubstep(t *testing.T) {
 			t.Errorf("unexpected err %#v", err)
 		}
 
-		expectedStdout := commanders.Format(commanders.SubstepDescriptions[idl.Substep_saving_source_cluster_config].OutputText, idl.Status_running) + "\n"
+		substepOutputText := substeps.SubstepDescriptions[idl.Substep_saving_source_cluster_config].OutputText
+
+		expectedStdout := commanders.Format(substepOutputText, idl.Status_running) + "\n"
 		expectedStdout += substepStdout + "\r"
-		expectedStdout += commanders.Format(commanders.SubstepDescriptions[idl.Substep_saving_source_cluster_config].OutputText, idl.Status_complete) + "\n"
-		expectedStdout += fmt.Sprintf("%s took 0s\n", idl.Substep_saving_source_cluster_config)
-		expectedStdout += "\n-----------------------------------------------------------------------------\n"
-		expectedStdout += fmt.Sprintf("\n%s took 0s\n", idl.Step_initialize)
-		expectedStdout += "\n-----------------------------------------------------------------------------"
+		expectedStdout += commanders.Format(substepOutputText, idl.Status_complete) + "\n"
+		expectedStdout += fmt.Sprintf("%-67s[%s]", substepOutputText, "0s")
+		expectedStdout += "\n\n" + substeps.Divider + "\n\n"
+		expectedStdout += fmt.Sprintf("%-67s[%s]", idl.Step_initialize, "0s")
+		expectedStdout += "\n\n" + idl.Step_initialize.String() + " completed successfully.\n\n"
 
 		stdout, stderr := d.Collect()
 		d.Close()
 		actualStdout := string(stdout)
-		// Use HasPrefix since we don't know the actualStdout step duration.
-		if !strings.HasPrefix(actualStdout, expectedStdout) {
+		if actualStdout != expectedStdout {
 			t.Errorf("stdout %#v want %#v", actualStdout, expectedStdout)
 			t.Logf("actualStdout:   %s", actualStdout)
 			t.Logf("expectedStdout: %s", expectedStdout)
@@ -326,7 +329,7 @@ func TestSubstep(t *testing.T) {
 		d := BufferStandardDescriptors(t)
 
 		verbose := false
-		st, err := clistep.NewStep(idl.Step_initialize, idl.Step_initialize.String(), &MockStepStore{}, &MockSubstepStore{}, &step.BufferedStreams{}, verbose)
+		st, err := clistep.NewStep(idl.Step_initialize, idl.Step_initialize.String(), &MockStepStore{}, &MockSubstepStore{}, step.NewLogStdStreams(verbose), verbose)
 		if err != nil {
 			d.Close()
 			t.Errorf("unexpected err %#v", err)
@@ -349,8 +352,8 @@ func TestSubstep(t *testing.T) {
 			t.Errorf("unexpected err %#v", err)
 		}
 
-		expectedStdout := commanders.Format(commanders.SubstepDescriptions[idl.Substep_saving_source_cluster_config].OutputText, idl.Status_running) + "\r"
-		expectedStdout += commanders.Format(commanders.SubstepDescriptions[idl.Substep_saving_source_cluster_config].OutputText, idl.Status_complete) + "\n\n"
+		expectedStdout := commanders.Format(substeps.SubstepDescriptions[idl.Substep_saving_source_cluster_config].OutputText, idl.Status_running) + "\r"
+		expectedStdout += commanders.Format(substeps.SubstepDescriptions[idl.Substep_saving_source_cluster_config].OutputText, idl.Status_complete) + "\n\n"
 
 		stdout, stderr := d.Collect()
 		d.Close()
@@ -370,7 +373,7 @@ func TestSubstep(t *testing.T) {
 	})
 
 	t.Run("cli substeps are not run when there is an error", func(t *testing.T) {
-		st, err := clistep.NewStep(idl.Step_initialize, idl.Step_initialize.String(), &MockStepStore{}, &MockSubstepStore{}, &step.BufferedStreams{}, false)
+		st, err := clistep.NewStep(idl.Step_initialize, idl.Step_initialize.String(), &MockStepStore{}, &MockSubstepStore{}, step.NewLogStdStreams(false), false)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -401,7 +404,7 @@ func TestSubstep(t *testing.T) {
 	})
 
 	t.Run("hub substeps are not run when there is an error", func(t *testing.T) {
-		st, err := clistep.NewStep(idl.Step_initialize, idl.Step_initialize.String(), &MockStepStore{}, &MockSubstepStore{}, &step.BufferedStreams{}, false)
+		st, err := clistep.NewStep(idl.Step_initialize, idl.Step_initialize.String(), &MockStepStore{}, &MockSubstepStore{}, step.NewLogStdStreams(false), false)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -447,7 +450,7 @@ func TestSubstep(t *testing.T) {
 	})
 
 	t.Run("substeps can override the default next actions error", func(t *testing.T) {
-		st, err := clistep.NewStep(idl.Step_initialize, idl.Step_initialize.String(), &MockStepStore{}, &MockSubstepStore{}, &step.BufferedStreams{}, false)
+		st, err := clistep.NewStep(idl.Step_initialize, idl.Step_initialize.String(), &MockStepStore{}, &MockSubstepStore{}, step.NewLogStdStreams(false), false)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -473,7 +476,7 @@ func TestSubstep(t *testing.T) {
 	t.Run("substep duration is printed", func(t *testing.T) {
 		d := BufferStandardDescriptors(t)
 
-		st, err := clistep.NewStep(idl.Step_initialize, idl.Step_initialize.String(), &MockStepStore{}, &MockSubstepStore{}, &step.BufferedStreams{}, true)
+		st, err := clistep.NewStep(idl.Step_initialize, idl.Step_initialize.String(), &MockStepStore{}, &MockSubstepStore{}, step.NewLogStdStreams(true), true)
 		if err != nil {
 			d.Close()
 			t.Errorf("unexpected err %#v", err)
@@ -495,10 +498,18 @@ func TestSubstep(t *testing.T) {
 			t.Errorf("unexpected stderr %#v", string(stderr))
 		}
 
+		substepOutputText := substeps.SubstepDescriptions[idl.Substep_saving_source_cluster_config].OutputText
+
+		expected := commanders.Format(substepOutputText, idl.Status_running) + "\n"
+		expected += "\r"
+		expected += commanders.Format(substepOutputText, idl.Status_complete) + "\n"
+		expected += fmt.Sprintf("%-67s[%s]", substepOutputText, "0s")
+		expected += "\n\n" + substeps.Divider + "\n\n"
+		expected += fmt.Sprintf("%-67s[%s]", idl.Step_initialize, "0s")
+		expected += "\n\n" + idl.Step_initialize.String() + " completed successfully.\n\n"
+
 		actual := string(stdout)
-		expected := fmt.Sprintf("\n%s took", idl.Substep_saving_source_cluster_config)
-		// Use Contains since we don't know the actual step duration.
-		if !strings.Contains(actual, expected) {
+		if actual != expected {
 			t.Errorf("expected output %#v to end with %#v", actual, expected)
 			t.Logf("actual: %s", actual)
 			t.Logf("expected: %s", expected)
@@ -506,7 +517,7 @@ func TestSubstep(t *testing.T) {
 	})
 
 	t.Run("the step returns next actions when a substep fails", func(t *testing.T) {
-		st, err := clistep.NewStep(idl.Step_initialize, idl.Step_initialize.String(), &MockStepStore{}, &MockSubstepStore{}, &step.BufferedStreams{}, false)
+		st, err := clistep.NewStep(idl.Step_initialize, idl.Step_initialize.String(), &MockStepStore{}, &MockSubstepStore{}, step.NewLogStdStreams(false), false)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}

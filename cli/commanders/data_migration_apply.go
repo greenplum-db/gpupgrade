@@ -41,7 +41,7 @@ func ApplyDataMigrationScripts(streams step.OutStreams, nonInteractive bool, gph
 		return err
 	}
 
-	_, err = fmt.Fprintf(streams.Stdout(), "Inspect the %q data migration SQL scripts in\n%s\n", phase, utils.Bold.Sprint(filepath.Join(currentScriptDir, phase.String())))
+	_, err = fmt.Fprintf(streams.Stdout(), "Inspect the %q data migration SQL scripts in\n%s", phase, utils.Bold.Sprint(filepath.Join(currentScriptDir, phase.String())))
 	if err != nil {
 		return err
 	}
@@ -132,12 +132,7 @@ func ApplyDataMigrationScripts(streams step.OutStreams, nonInteractive bool, gph
 		fmt.Print(color.YellowString("\nTo receive an upgrade time estimate send the stats output:\n%s\n", utils.Bold.Sprint(filepath.Join(logDir, "apply_"+phase.String()+".log"))))
 	}
 
-	fmt.Printf(`
-Logs:
-%s
-
-`, utils.Bold.Sprint(logDir))
-
+	fmt.Printf("\nLogs: %s\n\n", utils.Bold.Sprint(logDir))
 	return nil
 }
 
@@ -195,6 +190,7 @@ func ApplyDataMigrationScriptsPrompt(nonInteractive bool, reader *bufio.Reader, 
 		allScripts = append(allScripts, Script{Num: uint64(i), Name: script.Name()})
 	}
 
+	fmt.Println()
 	fmt.Println()
 	fmt.Printf(`Scripts to apply:
 %s`, allScripts.Description())

@@ -80,9 +80,6 @@ func revert() *cobra.Command {
 					return nil
 				}
 
-				fmt.Println()
-				fmt.Println()
-
 				currentDir := filepath.Join(response.GetLogArchiveDirectory(), "data-migration-scripts", "current")
 				return commanders.ApplyDataMigrationScripts(streams, nonInteractive, source.GPHome, source.CoordinatorPort(), response.GetLogArchiveDirectory(), utils.System.DirFS(currentDir), currentDir, idl.Step_revert)
 			})
@@ -96,8 +93,6 @@ func revert() *cobra.Command {
 			})
 
 			return st.Complete(fmt.Sprintf(`
-Revert completed successfully.
-
 The source cluster is now running version %s.
 source %s
 export MASTER_DATA_DIRECTORY=%s

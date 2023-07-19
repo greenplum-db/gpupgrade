@@ -16,6 +16,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/substeps"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 	"github.com/greenplum-db/gpupgrade/utils/stopwatch"
@@ -146,7 +147,7 @@ func (s *Step) AlwaysRun(substep idl.Substep, f func(OutStreams) error) {
 
 func (s *Step) RunConditionally(substep idl.Substep, shouldRun bool, f func(OutStreams) error) {
 	if !shouldRun {
-		log.Printf("skipping %s", substep)
+		log.Printf("%s skipped. Run condition not met.", substeps.SubstepDescriptions[substep].HelpText)
 		return
 	}
 
@@ -160,8 +161,12 @@ func (s *Step) Run(substep idl.Substep, f func(OutStreams) error) {
 func (s *Step) run(substep idl.Substep, f func(OutStreams) error, alwaysRun bool) {
 	var err error
 	defer func() {
+		if _, pErr := fmt.Fprintf(s.Streams().Stdout(), "\n\n%s\n\n", substeps.Divider); pErr != nil {
+			err = errorlist.Append(err, pErr)
+		}
+
 		if err != nil {
-			s.err = xerrors.Errorf(`substep "%s": %w`, substep, err)
+			s.err = xerrors.Errorf("substep %q: %w", substep, err)
 		}
 	}()
 
@@ -194,11 +199,6 @@ func (s *Step) run(substep idl.Substep, f func(OutStreams) error, alwaysRun bool
 			err = errorlist.Append(err, pErr)
 		}
 	}()
-
-	_, err = fmt.Fprintf(s.streams.Stdout(), "\nStarting %s...\n\n", substep)
-	if err != nil {
-		return
-	}
 
 	err = s.write(substep, idl.Status_running)
 	if err != nil {
@@ -252,8 +252,7 @@ func (s *Step) sendStatus(substep idl.Substep, status idl.Status) {
 }
 
 func (s *Step) printDuration(substep idl.Substep, duration string) error {
-	divider := "-----------------------------------------------------------------------------"
-	_, err := fmt.Fprintf(s.streams.Stdout(), "\n%s took %s\n\n%s\n", substep, duration, divider)
+	_, err := fmt.Fprintf(s.streams.Stdout(), "%-67s[%s]", substeps.SubstepDescriptions[substep].OutputText, duration)
 	return err
 }
 

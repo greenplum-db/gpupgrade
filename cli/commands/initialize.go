@@ -223,9 +223,6 @@ func initialize() *cobra.Command {
 					return nil
 				}
 
-				fmt.Println()
-				fmt.Println()
-
 				return commanders.GenerateDataMigrationScripts(streams, nonInteractive, sourceGPHome, sourcePort, filepath.Clean(dataMigrationSeedDir), generatedScriptsOutputDir, utils.System.DirFS(generatedScriptsOutputDir))
 			})
 
@@ -233,9 +230,6 @@ func initialize() *cobra.Command {
 				if nonInteractive {
 					return nil
 				}
-
-				fmt.Println()
-				fmt.Println()
 
 				currentDir := filepath.Join(generatedScriptsOutputDir, "current")
 				return commanders.ApplyDataMigrationScripts(streams, nonInteractive, sourceGPHome, sourcePort, logdir, utils.System.DirFS(currentDir), currentDir, idl.Step_stats)
@@ -246,9 +240,6 @@ func initialize() *cobra.Command {
 					return nil
 				}
 
-				fmt.Println()
-				fmt.Println()
-
 				currentDir := filepath.Join(filepath.Clean(generatedScriptsOutputDir), "current")
 				err = commanders.ApplyDataMigrationScripts(streams, nonInteractive, sourceGPHome, sourcePort,
 					logdir, utils.System.DirFS(currentDir), currentDir, idl.Step_initialize)
@@ -256,7 +247,6 @@ func initialize() *cobra.Command {
 					return err
 				}
 
-				fmt.Println()
 				prompt := fmt.Sprintf("Continue with gpupgrade %s?  Yy|Nn: ", idl.Step_initialize)
 				return clistep.Prompt(bufio.NewReader(os.Stdin), prompt)
 			})
@@ -305,7 +295,6 @@ func initialize() *cobra.Command {
 			}
 
 			return st.Complete(fmt.Sprintf(`
-Initialize completed successfully.
 %s
 NEXT ACTIONS
 ------------

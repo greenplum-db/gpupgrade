@@ -5,7 +5,7 @@ package commands
 
 import "github.com/fatih/color"
 
-const initializeConfirmationText = `
+var initializeConfirmationText = `
 You are about to initialize a major-version upgrade of Greenplum.
 
 %s will carry out the following steps:
@@ -27,9 +27,9 @@ agent_port:           %d
 
 You will still have the opportunity to revert the cluster to its original state 
 after this step.
-
+` + color.RedString(`
 WARNING: Do not perform operations on the cluster until gpupgrade is 
-finalized or reverted.
+finalized or reverted.`) + `
 
 Before proceeding, ensure the following have occurred:
  - Take a backup of the source Greenplum cluster
@@ -37,7 +37,7 @@ Before proceeding, ensure the following have occurred:
  - Run gpstate -e to ensure the source cluster's segments are up and in preferred roles
 `
 
-const executeConfirmationText = `
+var executeConfirmationText = `
 You are about to run the "execute" command for a major-version upgrade of Greenplum.
 This should be done only during a downtime window.
 %s
@@ -47,38 +47,38 @@ gpupgrade log files can be found on all hosts in %s
 
 You will still have the opportunity to revert the cluster to its original state
 after this step.
-
+` + color.RedString(`
 WARNING: Do not perform operations on the source cluster until gpupgrade is
 finalized or reverted.
-`
+`)
 
-const finalizeConfirmationText = `
+var finalizeConfirmationText = `
 You are about to finalize a major-version upgrade of Greenplum.
 This should be done only during a downtime window.
 
 %s will carry out the following steps:
 %s
 gpupgrade log files can be found on all hosts in %s
-
+` + color.RedString(`
 WARNING: You will not be able to revert the cluster to its original state after this step.
 
 WARNING: Do not perform operations on the source and target clusters until gpupgrade is 
 finalized or reverted.
-`
+`)
 
-const revertConfirmationText = `
+var revertConfirmationText = `
 You are about to revert this upgrade.
 This should be done only during a downtime window.
 
 %s will carry out the following steps:
 %s
 gpupgrade log files can be found on all hosts in %s
-
+` + color.RedString(`
 WARNING: You cannot revert if you do not have mirrors & standby configured, and execute has started.
 
 WARNING: Do not perform operations on the source and target clusters until gpupgrade revert
 has completed.
-`
+`)
 
 var revertWarningText = color.RedString(`
 WARNING

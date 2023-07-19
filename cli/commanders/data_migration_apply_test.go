@@ -333,7 +333,7 @@ func TestApplyDataMigrationScriptsPrompt(t *testing.T) {
 			t.Errorf("unexpected stderr %#v", string(stderr))
 		}
 
-		expected := "\nScripts to apply:\n"
+		expected := "\n\nScripts to apply:\n"
 		expected += "  parent_partitions_with_seg_entries\n"
 		expected += "  - Fixes non-empty segment relfiles for AO and AOCO parent partitions\n\n"
 		expected += "  unique_primary_foreign_key_constraint\n"
@@ -406,7 +406,7 @@ func TestApplyDataMigrationScriptsPrompt(t *testing.T) {
 			t.Errorf("unexpected stderr %#v", string(stderr))
 		}
 
-		expected := "\nScripts to apply:\n"
+		expected := "\n\nScripts to apply:\n"
 		expected += "  parent_partitions_with_seg_entries\n"
 		expected += "  - Fixes non-empty segment relfiles for AO and AOCO parent partitions\n\n"
 		expected += "  unique_primary_foreign_key_constraint\n"
@@ -460,7 +460,7 @@ func TestApplyDataMigrationScriptsPrompt(t *testing.T) {
 			t.Errorf("unexpected stderr %#v", string(stderr))
 		}
 
-		expected := "\nScripts to apply:\n"
+		expected := "\n\nScripts to apply:\n"
 		expected += "  parent_partitions_with_seg_entries\n"
 		expected += "  - Fixes non-empty segment relfiles for AO and AOCO parent partitions\n\n"
 		expected += "  unique_primary_foreign_key_constraint\n"
@@ -514,7 +514,7 @@ func TestApplyDataMigrationScriptsPrompt(t *testing.T) {
 			t.Errorf("unexpected stderr %#v", string(stderr))
 		}
 
-		expected := "\nScripts to apply:\n"
+		expected := "\n\nScripts to apply:\n"
 		expected += "  partitioned_tables_indexes\n"
 		expected += "  - Drops partition indexes\n\n"
 		expected += "Which \"finalize\" data migration SQL scripts to apply?\n"

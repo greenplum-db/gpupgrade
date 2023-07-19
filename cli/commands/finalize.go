@@ -82,9 +82,6 @@ func finalize() *cobra.Command {
 					return nil
 				}
 
-				fmt.Println()
-				fmt.Println()
-
 				currentDir := filepath.Join(response.GetLogArchiveDirectory(), "data-migration-scripts", "current")
 				return commanders.ApplyDataMigrationScripts(streams, nonInteractive, target.GPHome, target.CoordinatorPort(),
 					response.GetLogArchiveDirectory(), utils.System.DirFS(currentDir), currentDir, idl.Step_finalize)
@@ -121,8 +118,6 @@ If you postpone creating statistics then after the upgrade run "vacuumdb --all -
 			})
 
 			return st.Complete(fmt.Sprintf(`
-Finalize completed successfully.
-
 The target cluster has been upgraded to Greenplum %s
 
 The source cluster is not running. If copy mode was used you may start 

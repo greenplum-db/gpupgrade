@@ -19,6 +19,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/substeps"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 	"github.com/greenplum-db/gpupgrade/utils/stopwatch"
@@ -80,7 +81,7 @@ func Begin(currentStep idl.Step, verbose bool, nonInteractive bool, confirmation
 	log.Print(confirmationText)
 
 	if !nonInteractive {
-		fmt.Println(confirmationText)
+		fmt.Print(confirmationText)
 
 		prompt := fmt.Sprintf("Continue with gpupgrade %s?  Yy|Nn: ", currentStep)
 		err := Prompt(bufio.NewReader(os.Stdin), prompt)
@@ -101,8 +102,8 @@ func Begin(currentStep idl.Step, verbose bool, nonInteractive bool, confirmation
 
 	stepName := cases.Title(language.English).String(currentStep.String())
 
-	text := stepName + " in progress."
-	fmt.Printf("\n%s\n\n", text)
+	text := fmt.Sprintf("\n%s in progress.\n\n", stepName)
+	fmt.Print(text)
 	log.Print(text)
 
 	return NewStep(currentStep, stepName, stepStore, substepStore, streams, verbose)
@@ -133,7 +134,7 @@ func (s *Step) AlwaysRun(substep idl.Substep, f func(streams step.OutStreams) er
 
 func (s *Step) RunConditionally(substep idl.Substep, shouldRun bool, f func(streams step.OutStreams) error) {
 	if !shouldRun {
-		log.Printf("skipping %s", substep)
+		log.Printf("%s skipped. Run condition not met.", substeps.SubstepDescriptions[substep].HelpText)
 		return
 	}
 
@@ -147,6 +148,12 @@ func (s *Step) Run(substep idl.Substep, f func(streams step.OutStreams) error) {
 func (s *Step) run(substep idl.Substep, f func(streams step.OutStreams) error, alwaysRun bool) {
 	var err error
 	defer func() {
+		if s.err == nil {
+			if _, pErr := fmt.Fprintf(s.streams.Stdout(), "\n\n%s\n\n", substeps.Divider); pErr != nil {
+				err = errorlist.Append(err, pErr)
+			}
+		}
+
 		if err != nil {
 			s.err = xerrors.Errorf("substep %q: %w", substep, err)
 		}
@@ -184,7 +191,11 @@ func (s *Step) run(substep idl.Substep, f func(streams step.OutStreams) error, a
 
 	substepTimer := stopwatch.Start()
 	defer func() {
-		logDuration(substep.String(), s.verbose, substepTimer.Stop().String())
+		pErr := s.printDuration(substeps.SubstepDescriptions[substep].OutputText, substepTimer.Stop().String())
+		if pErr != nil {
+			err = errorlist.Append(err, pErr)
+			return
+		}
 	}()
 
 	if pErr := s.printStatus(substep, idl.Status_running); pErr != nil {
@@ -225,7 +236,9 @@ func (s *Step) DisableStore() {
 }
 
 func (s *Step) Complete(completedText string) error {
-	logDuration(s.stepName, s.verbose, s.stepTimer.Stop().String())
+	if pErr := s.printDuration(s.stepName, s.stepTimer.Stop().String()); pErr != nil {
+		s.err = errorlist.Append(s.err, pErr)
+	}
 
 	status := idl.Status_complete
 	if s.Err() != nil {
@@ -240,6 +253,9 @@ func (s *Step) Complete(completedText string) error {
 
 	if s.Err() != nil {
 		fmt.Println() // Separate the step status from the error text
+		if s.verbose {
+			fmt.Println()
+		}
 
 		if errors.Is(s.Err(), step.Quit) {
 			return s.Err()
@@ -254,6 +270,14 @@ func (s *Step) Complete(completedText string) error {
 
 		return utils.NewNextActionErr(s.Err(), genericNextAction)
 	}
+
+	if s.verbose {
+		fmt.Println()
+	}
+
+	text := fmt.Sprintf("\n%s completed successfully.\n", s.stepName)
+	fmt.Print(text)
+	log.Print(text)
 
 	fmt.Println(completedText)
 	return nil
@@ -278,9 +302,9 @@ func (s *Step) printStatus(substep idl.Substep, status idl.Status) error {
 		}
 	}
 
-	text := commanders.SubstepDescriptions[substep]
-	fmt.Print(commanders.Format(text.OutputText, status))
-	log.Println(commanders.Format(text.OutputText, status))
+	text := substeps.SubstepDescriptions[substep].OutputText
+	fmt.Print(commanders.Format(text, status))
+	log.Print(commanders.Format(text, status))
 
 	// Reset the cursor if the final status has been written. This prevents the
 	// status from a hub step from being on the same line as a CLI step.
@@ -292,18 +316,13 @@ func (s *Step) printStatus(substep idl.Substep, status idl.Status) error {
 	return nil
 }
 
-func logDuration(operation string, verbose bool, duration string) {
-	msg := operation + " took " + duration
-	if verbose {
-		fmt.Println(msg)
-		fmt.Println()
-		fmt.Println("-----------------------------------------------------------------------------")
-		fmt.Println()
-	}
-	log.Print(msg)
+func (s *Step) printDuration(operation string, duration string) error {
+	_, err := fmt.Fprintf(s.streams.Stdout(), "%-67s[%s]", operation, duration)
+	return err
 }
 
 func Prompt(reader *bufio.Reader, prompt string) error {
+	fmt.Println()
 	for {
 		fmt.Print(prompt)
 		input, err := reader.ReadString('\n')

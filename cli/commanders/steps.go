@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"strings"
 
@@ -14,6 +15,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/substeps"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
@@ -160,6 +162,7 @@ func UILoop(stream receiver, verbose bool) (*idl.Response, error) {
 			lastStep = x.Status.Step
 
 			fmt.Print(FormatStatus(x.Status))
+			log.Print(FormatStatus(x.Status))
 			if verbose {
 				fmt.Println()
 			}
@@ -201,7 +204,7 @@ func UILoop(stream receiver, verbose bool) (*idl.Response, error) {
 // FormatStatus panics if it doesn't have a string representation for a given
 // protobuf code.
 func FormatStatus(status *idl.SubstepStatus) string {
-	line, ok := SubstepDescriptions[status.Step]
+	line, ok := substeps.SubstepDescriptions[status.Step]
 	if !ok {
 		panic(fmt.Sprintf("unexpected step %#v", status.Step))
 	}

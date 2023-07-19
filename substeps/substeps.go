@@ -1,13 +1,15 @@
 // Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
-package commanders
+package substeps
 
 import (
 	"fmt"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 )
+
+const Divider = "-----------------------------------------------------------------------------"
 
 type Substeps []idl.Substep
 

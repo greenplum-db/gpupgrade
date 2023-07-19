@@ -17,6 +17,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/idl/mock_idl"
 	"github.com/greenplum-db/gpupgrade/step"
+	"github.com/greenplum-db/gpupgrade/substeps"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/testlog"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -177,7 +178,7 @@ func TestStepRun(t *testing.T) {
 		}
 
 		contents := string(logOutput.Bytes())
-		expected := "skipping " + idl.Substep_check_upgrade.String()
+		expected := substeps.SubstepDescriptions[idl.Substep_check_upgrade].HelpText + " skipped"
 		if !strings.Contains(contents, expected) {
 			t.Errorf("expected %q in log file: %q", expected, contents)
 		}

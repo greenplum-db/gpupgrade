@@ -11,15 +11,15 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
-	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/substeps"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
-var initializeSubsteps commanders.Substeps
-var executeSubsteps commanders.Substeps
-var finalizeSubsteps commanders.Substeps
-var revertSubsteps commanders.Substeps
+var initializeSubsteps substeps.Substeps
+var executeSubsteps substeps.Substeps
+var finalizeSubsteps substeps.Substeps
+var revertSubsteps substeps.Substeps
 var InitializeHelp string
 var ExecuteHelp string
 var FinalizeHelp string
@@ -33,7 +33,7 @@ func init() {
 		panic(fmt.Sprintf("failed to get log directory: %v", err))
 	}
 
-	initializeSubsteps = commanders.Substeps{
+	initializeSubsteps = substeps.Substeps{
 		idl.Substep_verify_gpdb_versions,
 		idl.Substep_saving_source_cluster_config,
 		idl.Substep_start_hub,
@@ -54,7 +54,7 @@ func init() {
 		idl.Substep_check_upgrade,
 	}
 
-	executeSubsteps = commanders.Substeps{
+	executeSubsteps = substeps.Substeps{
 		idl.Substep_ensure_gpupgrade_agents_are_running,
 		idl.Substep_check_active_connections_on_source_cluster,
 		idl.Substep_wait_for_cluster_to_be_ready_before_upgrade_master,
@@ -65,7 +65,7 @@ func init() {
 		idl.Substep_start_target_cluster,
 	}
 
-	finalizeSubsteps = commanders.Substeps{
+	finalizeSubsteps = substeps.Substeps{
 		idl.Substep_ensure_gpupgrade_agents_are_running,
 		idl.Substep_check_active_connections_on_target_cluster,
 		idl.Substep_upgrade_mirrors,
@@ -86,7 +86,7 @@ func init() {
 		idl.Substep_delete_master_statedir,
 	}
 
-	revertSubsteps = commanders.Substeps{
+	revertSubsteps = substeps.Substeps{
 		idl.Substep_ensure_gpupgrade_agents_are_running,
 		idl.Substep_check_active_connections_on_target_cluster,
 		idl.Substep_shutdown_target_cluster,

@@ -124,14 +124,7 @@ func GenerateDataMigrationScripts(streams step.OutStreams, nonInteractive bool, 
 		return err
 	}
 
-	fmt.Printf(`
-Generated scripts:
-%s
-
-Logs:
-%s
-
-`, utils.Bold.Sprint(filepath.Join(outputDir, "current")), utils.Bold.Sprint(logDir))
+	fmt.Printf("\nGenerated scripts:%s\nLogs: %s\n\n", utils.Bold.Sprint(filepath.Join(outputDir, "current")), utils.Bold.Sprint(logDir))
 
 	return nil
 }
@@ -174,6 +167,7 @@ func ArchiveDataMigrationScriptsPrompt(streams step.OutStreams, nonInteractive b
 	}
 
 	for {
+		fmt.Println()
 		fmt.Printf(`Previously generated data migration scripts found from
 %s located in
 %s
@@ -220,7 +214,7 @@ Select: `)
 				return step.Skip
 			}
 
-			fmt.Printf("\nArchiving previously generated scripts under\n%s\n", utils.Bold.Sprint(archiveDir))
+			fmt.Printf("\nArchiving previously generated scripts under\n%s\n\n", utils.Bold.Sprint(archiveDir))
 			err = utils.System.MkdirAll(filepath.Dir(archiveDir), 0700)
 			if err != nil {
 				return fmt.Errorf("make directory: %w", err)

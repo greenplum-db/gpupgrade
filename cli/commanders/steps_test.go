@@ -16,6 +16,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/substeps"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
@@ -388,9 +389,9 @@ func TestFormatStatus(t *testing.T) {
 		ignoreInternalStepStatus := 1
 		numberOfSubsteps := len(idl.Substep_name) - ignoreUnknownStep - ignoreInternalStepStatus
 
-		if numberOfSubsteps != len(commanders.SubstepDescriptions) {
+		if numberOfSubsteps != len(substeps.SubstepDescriptions) {
 			t.Errorf("got %q, expected FormatStatus to be able to format all %d statuses %q. Formatted only %d",
-				commanders.SubstepDescriptions, len(idl.Substep_name), idl.Substep_name, len(commanders.SubstepDescriptions))
+				substeps.SubstepDescriptions, len(idl.Substep_name), idl.Substep_name, len(substeps.SubstepDescriptions))
 		}
 	})
 }
