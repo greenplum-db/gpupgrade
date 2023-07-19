@@ -104,7 +104,8 @@ tarball:
 	cp open_source_licenses.txt tarball
 	cp -r data-migration-scripts/ tarball/data-migration-scripts/
 	# remove test files
-	rm -r tarball/data-migration-scripts/5-to-6-seed-scripts/test
+	rm -r tarball/data-migration-scripts/README.md
+	find -path "./tarball/data-migration-scripts/*/test" -type d -exec rm -r {} +
 	# create tarball
 	( cd tarball; tar czf ../$(TARBALL_NAME) . )
 	sha256sum $(TARBALL_NAME) > CHECKSUM
