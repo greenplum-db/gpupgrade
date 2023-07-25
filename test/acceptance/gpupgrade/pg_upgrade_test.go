@@ -17,8 +17,6 @@ func TestPgUpgrade(t *testing.T) {
 	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 	defer resetEnv()
 
-	killServices(t)
-
 	t.Run("gpupgrade initialize runs pg_upgrade --check on coordinator and primaries", func(t *testing.T) {
 		initialize(t)
 		defer revert(t)

@@ -19,8 +19,8 @@ func TestServices(t *testing.T) {
 	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 	defer resetEnv()
 
-	killServices(t)
 	initialize_stopBeforeClusterCreation(t)
+	defer revert(t)
 
 	t.Run("kill-services stops hub and agents", func(t *testing.T) {
 		restartServices(t)

@@ -21,8 +21,6 @@ func TestArgs(t *testing.T) {
 	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 	defer resetEnv()
 
-	killServices(t)
-
 	t.Run("gpupgrade initialize fails when passed insufficient arguments", func(t *testing.T) {
 		cmd := exec.Command("gpupgrade", "initialize",
 			"--non-interactive",
@@ -96,6 +94,7 @@ stop-before-cluster-creation = true
 		if err != nil {
 			t.Fatalf("unexpected err: %v stderr: %q", err, output)
 		}
+		defer revert(t)
 
 		actual := configShow(t, "--source-gphome")
 		if actual != GPHOME_SOURCE {
@@ -121,6 +120,7 @@ stop-before-cluster-creation = true
 		if err != nil {
 			t.Fatalf("unexpected err: %v stderr: %q", err, output)
 		}
+		defer revert(t)
 
 		actual := configShow(t, "--source-gphome")
 		if actual != GPHOME_SOURCE {
@@ -144,6 +144,7 @@ stop-before-cluster-creation = true
 		if err == nil {
 			t.Errorf("expected error got nil")
 		}
+		defer revert(t)
 
 		expected := "Error: expected --verbose when using --pg-upgrade-verbose\n"
 		if string(output) != expected {

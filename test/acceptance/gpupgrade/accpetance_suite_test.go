@@ -9,7 +9,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"testing"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
@@ -146,21 +145,11 @@ func restartServices(t *testing.T) string {
 }
 
 func GetSourceCluster(t *testing.T) greenplum.Cluster {
-	port, err := strconv.Atoi(PGPORT)
-	if err != nil {
-		t.Fatalf("parsing PGPORT %q: %v", PGPORT, err)
-	}
-
-	return getCluster(t, GPHOME_SOURCE, port, idl.ClusterDestination_source)
+	return getCluster(t, GPHOME_SOURCE, testutils.MustConvertStringToInt(t, PGPORT), idl.ClusterDestination_source)
 }
 
 func GetIntermediateCluster(t *testing.T) greenplum.Cluster {
-	port, err := strconv.Atoi(TARGET_PGPORT)
-	if err != nil {
-		t.Fatalf("parsing PGPORT %q: %v", PGPORT, err)
-	}
-
-	return getCluster(t, GPHOME_TARGET, port, idl.ClusterDestination_intermediate)
+	return getCluster(t, GPHOME_TARGET, testutils.MustConvertStringToInt(t, TARGET_PGPORT), idl.ClusterDestination_intermediate)
 }
 
 func getCluster(t *testing.T, gphome string, port int, destination idl.ClusterDestination) greenplum.Cluster {
@@ -176,7 +165,7 @@ func getCluster(t *testing.T, gphome string, port int, destination idl.ClusterDe
 
 	cluster, err := greenplum.ClusterFromDB(db, gphome, destination)
 	if err != nil {
-		t.Fatalf("retrieve source configuration: %v", err)
+		t.Fatalf("retrieve %s cluster configuration: %v", destination, err)
 	}
 
 	return cluster

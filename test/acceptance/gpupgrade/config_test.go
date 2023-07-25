@@ -19,8 +19,8 @@ func TestConfig(t *testing.T) {
 	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 	defer resetEnv()
 
-	killServices(t)
 	initialize_stopBeforeClusterCreation(t)
+	defer revert(t)
 
 	t.Run("configuration can be read piece by piece", func(t *testing.T) {
 		actual := configShow(t, "--source-gphome")

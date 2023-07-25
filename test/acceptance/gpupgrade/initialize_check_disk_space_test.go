@@ -25,8 +25,6 @@ func TestCheckDiskSpace(t *testing.T) {
 	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 	defer resetEnv()
 
-	killServices(t)
-
 	t.Run("initialize fails with disk space error", func(t *testing.T) {
 		cmd := exec.Command("gpupgrade", "initialize",
 			"--non-interactive", "--verbose",
@@ -102,6 +100,8 @@ func expectedDiskUsage(t *testing.T) map[disk.FilesystemHost]*idl.CheckDiskSpace
 }
 
 func availableDiskSpaceInKb(t *testing.T, host string, path string) uint64 {
+	// Use the external stat utility rather than os.stat to test using a different
+	// implementation than the code itself.
 	cmd := exec.Command("ssh", host, GetStatUtility(), "-f -c '%S %a'", path)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -117,6 +117,8 @@ func availableDiskSpaceInKb(t *testing.T, host string, path string) uint64 {
 }
 
 func totalDiskSpaceInKb(t *testing.T, host string, path string) uint64 {
+	// Use the external stat utility rather than os.stat to test using a different
+	// implementation than the code itself.
 	cmd := exec.Command("ssh", host, GetStatUtility(), "-f -c '%S %a %f %b'", path)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
