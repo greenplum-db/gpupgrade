@@ -4,6 +4,7 @@
 package gpupgrade_test
 
 import (
+	"database/sql"
 	"log"
 	"os"
 	"os/exec"
@@ -76,11 +77,12 @@ func initialize_stopBeforeClusterCreation(t *testing.T) string {
 	return string(output)
 }
 
-func initialize(t *testing.T) string {
+func initialize(t *testing.T, mode idl.Mode) string {
 	t.Helper()
 
 	cmd := exec.Command("gpupgrade", "initialize",
 		"--non-interactive", "--verbose",
+		"--mode", mode.String(),
 		"--source-gphome", GPHOME_SOURCE,
 		"--target-gphome", GPHOME_TARGET,
 		"--source-master-port", PGPORT,
@@ -169,6 +171,23 @@ func getCluster(t *testing.T, gphome string, port int, destination idl.ClusterDe
 	}
 
 	return cluster
+}
+
+func executeSQL(t *testing.T, connection string, query string) {
+	db, err := sql.Open("pgx", connection)
+	if err != nil {
+		t.Fatalf("opening sql connection %q: %v", connection, err)
+	}
+	defer func() {
+		if cErr := db.Close(); cErr != nil {
+			err = errorlist.Append(err, cErr)
+		}
+	}()
+
+	_, err = db.Exec(query)
+	if err != nil {
+		t.Fatalf("executing sql %q: %v", query, err)
+	}
 }
 
 func MustGetPgUpgradeLog(t *testing.T, contentID int32) string {

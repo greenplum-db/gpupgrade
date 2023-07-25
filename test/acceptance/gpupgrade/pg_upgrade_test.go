@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 )
 
@@ -18,7 +19,7 @@ func TestPgUpgrade(t *testing.T) {
 	defer resetEnv()
 
 	t.Run("gpupgrade initialize runs pg_upgrade --check on coordinator and primaries", func(t *testing.T) {
-		initialize(t)
+		initialize(t, idl.Mode_copy)
 		defer revert(t)
 
 		logs := []string{
@@ -41,7 +42,7 @@ func TestPgUpgrade(t *testing.T) {
 	t.Run("upgrade maintains separate DBID for each segment", func(t *testing.T) {
 		source := GetSourceCluster(t)
 
-		initialize(t)
+		initialize(t, idl.Mode_copy)
 		execute(t)
 		defer revert(t)
 
