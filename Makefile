@@ -45,7 +45,7 @@ integration:
 
 .PHONY: acceptance
 acceptance:
-	go test --cover -count=1 -v ./test/acceptance/gpupgrade
+	go test --cover -count=1 -timeout 1h15m -v ./test/acceptance/gpupgrade
 	bats -r ./test/acceptance/gpupgrade
 
 # test runs all tests against the locally built gpupgrade binaries. Use -k to

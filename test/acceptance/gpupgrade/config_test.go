@@ -35,7 +35,13 @@ func TestConfig(t *testing.T) {
 	})
 
 	t.Run("configuration can be dumped as a whole", func(t *testing.T) {
-		expected := []string{GPHOME_SOURCE, readConfig(t, `.Intermediate.Primaries."-1".DataDir`), GPHOME_TARGET, TARGET_PGPORT, readConfig(t, ".UpgradeID")}
+		expected := []string{
+			GPHOME_SOURCE,
+			jq(t, config.GetConfigFile(), `.Intermediate.Primaries."-1".DataDir`),
+			GPHOME_TARGET,
+			TARGET_PGPORT,
+			jq(t, config.GetConfigFile(), ".UpgradeID"),
+		}
 
 		output := configShow(t, "")
 		lines := strings.Split(strings.TrimSpace(output), "\n")
@@ -52,18 +58,6 @@ func configShow(t *testing.T, parameter string) string {
 	t.Helper()
 
 	cmd := exec.Command("gpupgrade", "config", "show", parameter)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("unexpected err: %v stderr: %q", err, output)
-	}
-
-	return strings.TrimSpace(string(output))
-}
-
-func readConfig(t *testing.T, filter string) string {
-	t.Helper()
-
-	cmd := exec.Command("jq", "--raw-output", filter, config.GetConfigFile())
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("unexpected err: %v stderr: %q", err, output)

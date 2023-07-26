@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
@@ -188,6 +189,18 @@ func executeSQL(t *testing.T, connection string, query string) {
 	if err != nil {
 		t.Fatalf("executing sql %q: %v", query, err)
 	}
+}
+
+func jq(t *testing.T, file string, args ...string) string {
+	t.Helper()
+
+	cmd := exec.Command("jq", append(args, "--raw-output", file)...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("unexpected err: %v stderr: %q", err, output)
+	}
+
+	return strings.TrimSpace(string(output))
 }
 
 func MustGetPgUpgradeLog(t *testing.T, contentID int32) string {

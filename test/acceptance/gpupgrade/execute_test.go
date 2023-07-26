@@ -5,15 +5,21 @@ package gpupgrade_test
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"syscall"
 	"testing"
 
 	"github.com/blang/semver/v4"
 
+	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
+	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
 
@@ -52,9 +58,69 @@ func TestExecute(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("gpupgrade execute step to upgrade coordinator should always rsync the coordinator data dir from backup", func(t *testing.T) {
+		initialize(t, idl.Mode_link)
+
+		// For substep idempotence initialize creates a backup of the
+		// intermediate coordinator data directory. During execute before
+		// upgrading the coordinator the intermediate coordinator data directory
+		// is refreshed with the backup. Remove the intermediate coordinator
+		// data directory to ensure that initialize created the backup and
+		// execute correctly utilizes it.
+		intermediateCoordinatorDataDir := configShow(t, "--target-datadir")
+		testutils.MustRemoveAll(t, intermediateCoordinatorDataDir)
+
+		// create an extra file to ensure that it's deleted during rsync
+		path := filepath.Join(intermediateCoordinatorDataDir, "base_extra")
+		testutils.MustCreateDir(t, path)
+		testutils.MustWriteToFile(t, filepath.Join(path, "1101"), "extra_relfilenode")
+
+		execute(t)
+		defer revert(t)
+
+		testutils.PathMustNotExist(t, path)
+	})
+
+	t.Run("all substeps can be re-run after completion", func(t *testing.T) {
+		source := GetSourceCluster(t)
+
+		initialize(t, idl.Mode_copy)
+		execute(t)
+		defer revert(t)
+
+		// undo the upgrade so that we can re-run execute
+		err := source.Start(step.DevNullStream)
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			// see comment in revert.go on why we ignore gpstart failures
+			if !(exitErr.ExitCode() == 1 && len(exitErr.Stderr) == 0 && source.Version.Major == 5) {
+				t.Fatal(err)
+			}
+		}
+
+		err = hub.Recoverseg(step.DevNullStream, &source, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		intermediate := GetIntermediateCluster(t)
+		err = intermediate.Stop(step.DevNullStream)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// As a hacky way of testing substep idempotence mark all execute substeps as failed and re-run.
+		replaced := jq(t, filepath.Join(utils.GetStateDir(), step.SubstepsFileName), `(.execute | values[]) |= "failed"`)
+		testutils.MustWriteToFile(t, filepath.Join(utils.GetStateDir(), step.SubstepsFileName), replaced)
+
+		execute(t)
+	})
 }
 
 func getRelfilenodes(t *testing.T, connection string, version semver.Version, tableName string) []string {
+	t.Helper()
+
 	db, err := sql.Open("pgx", connection)
 	if err != nil {
 		t.Fatalf("opening sql connection %q: %v", connection, err)
@@ -150,6 +216,8 @@ CREATE FUNCTION pg_temp.gp_relation_filepath(tbl text)
 }
 
 func getNumHardLinks(t *testing.T, relfilenode string) uint64 {
+	t.Helper()
+
 	fileInfo, err := os.Stat(relfilenode)
 	if err != nil {
 		t.Fatalf("os.stat: %v", err)
