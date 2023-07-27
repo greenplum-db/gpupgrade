@@ -43,11 +43,11 @@ func TestPgUpgrade(t *testing.T) {
 		source := GetSourceCluster(t)
 
 		initialize(t, idl.Mode_copy)
-		execute(t)
 		defer revert(t)
 
-		intermediate := GetIntermediateCluster(t)
+		execute(t)
 
+		intermediate := GetIntermediateCluster(t)
 		if len(source.Primaries) != len(intermediate.Primaries) {
 			t.Fatalf("got %d want %d", len(source.Primaries), len(intermediate.Primaries))
 		}

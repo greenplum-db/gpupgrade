@@ -46,8 +46,9 @@ func TestExecute(t *testing.T) {
 		}
 
 		initialize(t, idl.Mode_link)
-		execute(t)
 		defer revert(t)
+
+		execute(t)
 
 		intermediate := GetIntermediateCluster(t)
 		intermediateRelfilenodes := getRelfilenodes(t, intermediate.Connection(), intermediate.Version, table)
@@ -61,6 +62,7 @@ func TestExecute(t *testing.T) {
 
 	t.Run("gpupgrade execute step to upgrade coordinator should always rsync the coordinator data dir from backup", func(t *testing.T) {
 		initialize(t, idl.Mode_link)
+		defer revert(t)
 
 		// For substep idempotence initialize creates a backup of the
 		// intermediate coordinator data directory. During execute before
@@ -77,7 +79,6 @@ func TestExecute(t *testing.T) {
 		testutils.MustWriteToFile(t, filepath.Join(path, "1101"), "extra_relfilenode")
 
 		execute(t)
-		defer revert(t)
 
 		testutils.PathMustNotExist(t, path)
 	})
@@ -86,8 +87,9 @@ func TestExecute(t *testing.T) {
 		source := GetSourceCluster(t)
 
 		initialize(t, idl.Mode_copy)
-		execute(t)
 		defer revert(t)
+
+		execute(t)
 
 		// undo the upgrade so that we can re-run execute
 		err := source.Start(step.DevNullStream)
