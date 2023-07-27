@@ -439,6 +439,10 @@ test_revert_after_execute_pg_upgrade_failure() {
     # Revert
     gpupgrade revert --non-interactive --verbose
 
+    # Reindex to fix the following issue where the pg_attribute table is corrupted.
+    # ERROR:  catalog is missing 1 attribute(s) for relid 17553 (relcache.c:1007)  (seg0 slice1 10.80.0.26:25432 pid=261134) (cdbdisp.c:254)
+    "$GPHOME_SOURCE"/bin/reindexdb --port "$PGPORT" --dbname postgres --table pg_attribute
+
     # Verify the table is untouched
     rows=$($PSQL -v ON_ERROR_STOP=1 -d postgres -Atc "SELECT COUNT(*) FROM ${TABLE}")
     if (( rows != 3 )); then
