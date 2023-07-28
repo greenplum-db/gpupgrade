@@ -74,7 +74,6 @@
           - name: cluster_env_files
           - name: gpupgrade_src
           - name: enterprise_rpm
-          - name: bats
         run:
           path: gpupgrade_src/ci/main/scripts/acceptance-multihost-tests.bash
       params:

@@ -245,6 +245,25 @@ func (c *Cluster) PrimaryHostnames() []string {
 	return list
 }
 
+// Hosts returns all hosts including the coordinator and standby
+func (c *Cluster) Hosts() []string {
+	uniqueHosts := make(map[string]bool)
+
+	for _, seg := range c.Primaries {
+		uniqueHosts[seg.Hostname] = true
+	}
+
+	for _, seg := range c.Mirrors {
+		uniqueHosts[seg.Hostname] = true
+	}
+
+	var hosts []string
+	for host := range uniqueHosts {
+		hosts = append(hosts, host)
+	}
+	return hosts
+}
+
 // SelectSegments returns a list of all segments that match the given selector
 // function.
 func (c Cluster) SelectSegments(selector func(*SegConfig) bool) SegConfigs {

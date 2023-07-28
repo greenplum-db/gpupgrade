@@ -34,8 +34,8 @@ func TestExecute(t *testing.T) {
 		table := "public.test_linking"
 
 		source := GetSourceCluster(t)
-		executeSQL(t, source.Connection(), fmt.Sprintf(`CREATE TABLE %s (a int);`, table))
-		defer executeSQL(t, source.Connection(), fmt.Sprintf(`DROP TABLE IF EXISTS %s;`, table))
+		testutils.MustExecuteSQL(t, source.Connection(), fmt.Sprintf(`CREATE TABLE %s (a int);`, table))
+		defer testutils.MustExecuteSQL(t, source.Connection(), fmt.Sprintf(`DROP TABLE IF EXISTS %s;`, table))
 
 		sourceRelfilenodes := getRelfilenodes(t, source.Connection(), source.Version, table)
 		for _, relfilenode := range sourceRelfilenodes {

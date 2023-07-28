@@ -4,7 +4,6 @@
 package gpupgrade_test
 
 import (
-	"database/sql"
 	"log"
 	"os"
 	"os/exec"
@@ -12,9 +11,11 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/greenplum/connection"
+	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/utils"
@@ -148,14 +149,18 @@ func restartServices(t *testing.T) string {
 }
 
 func GetSourceCluster(t *testing.T) greenplum.Cluster {
+	t.Helper()
 	return getCluster(t, GPHOME_SOURCE, testutils.MustConvertStringToInt(t, PGPORT), idl.ClusterDestination_source)
 }
 
 func GetIntermediateCluster(t *testing.T) greenplum.Cluster {
+	t.Helper()
 	return getCluster(t, GPHOME_TARGET, testutils.MustConvertStringToInt(t, TARGET_PGPORT), idl.ClusterDestination_intermediate)
 }
 
 func getCluster(t *testing.T, gphome string, port int, destination idl.ClusterDestination) greenplum.Cluster {
+	t.Helper()
+
 	db, err := connection.Bootstrap(destination, gphome, port)
 	if err != nil {
 		t.Fatalf("bootstraping db connection to %q %q %q: %v", destination, gphome, port, err)
@@ -172,23 +177,6 @@ func getCluster(t *testing.T, gphome string, port int, destination idl.ClusterDe
 	}
 
 	return cluster
-}
-
-func executeSQL(t *testing.T, connection string, query string) {
-	db, err := sql.Open("pgx", connection)
-	if err != nil {
-		t.Fatalf("opening sql connection %q: %v", connection, err)
-	}
-	defer func() {
-		if cErr := db.Close(); cErr != nil {
-			err = errorlist.Append(err, cErr)
-		}
-	}()
-
-	_, err = db.Exec(query)
-	if err != nil {
-		t.Fatalf("executing sql %q: %v", query, err)
-	}
 }
 
 func jq(t *testing.T, file string, args ...string) string {
@@ -221,4 +209,15 @@ func GetStatUtility() string {
 	}
 
 	return utility
+}
+
+func MustGetLogArchiveDir(t *testing.T, upgradeID string) string {
+	t.Helper()
+
+	logDir, err := utils.GetLogDir()
+	if err != nil {
+		t.Fatalf("get log dir: %v", err)
+	}
+
+	return hub.GetLogArchiveDir(logDir, upgradeID, time.Now())
 }

@@ -5,9 +5,12 @@ package testutils
 
 import (
 	"bufio"
+	"database/sql"
+	"errors"
 	"log"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -16,8 +19,10 @@ import (
 	"github.com/blang/semver/v4"
 
 	"github.com/greenplum-db/gpupgrade/greenplum"
+	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
+	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 	"github.com/greenplum-db/gpupgrade/utils/logger"
 )
 
@@ -382,4 +387,95 @@ func MustConvertStringToInt(t *testing.T, input string) int {
 	}
 
 	return num
+}
+
+func MustExecuteSQL(t *testing.T, connection string, query string) int {
+	t.Helper()
+
+	db, err := sql.Open("pgx", connection)
+	if err != nil {
+		t.Fatalf("opening sql connection %q: %v", connection, err)
+	}
+	defer func() {
+		if cErr := db.Close(); cErr != nil {
+			err = errorlist.Append(err, cErr)
+		}
+	}()
+
+	result, err := db.Exec(query)
+	if err != nil {
+		t.Fatalf("executing sql %q: %v", query, err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return int(rows)
+}
+
+func MustQueryRow(t *testing.T, connection string, query string) int {
+	t.Helper()
+
+	db, err := sql.Open("pgx", connection)
+	if err != nil {
+		t.Fatalf("opening sql connection %q: %v", connection, err)
+	}
+	defer func() {
+		if cErr := db.Close(); cErr != nil {
+			err = errorlist.Append(err, cErr)
+		}
+	}()
+
+	var result int
+	row := db.QueryRow(query)
+	if err = row.Scan(&result); err != nil {
+		t.Fatalf("querying %q: %v", query, err)
+	}
+
+	return result
+}
+
+func MustQuery(t *testing.T, connection string, query string) interface{} {
+	t.Helper()
+
+	db, err := sql.Open("pgx", connection)
+	if err != nil {
+		t.Fatalf("opening sql connection %q: %v", connection, err)
+	}
+	defer func() {
+		if cErr := db.Close(); cErr != nil {
+			err = errorlist.Append(err, cErr)
+		}
+	}()
+
+	var result interface{}
+	row := db.QueryRow(query)
+	if err = row.Scan(&result); err != nil {
+		t.Fatalf("querying %q: %v", query, err)
+	}
+
+	return result
+}
+
+func VerifyClusterIsStopped(t *testing.T, cluster greenplum.Cluster) {
+	t.Helper()
+
+	running, err := cluster.IsCoordinatorRunning(step.DevNullStream)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if running {
+		t.Fatalf("expected cluster to be stopped")
+	}
+
+	err = cluster.RunGreenplumCmd(step.DevNullStream, "pg_isready", "-q", "-p", strconv.Itoa(cluster.CoordinatorPort()))
+	var exitError *exec.ExitError
+	if errors.As(err, &exitError) {
+		if exitError.ProcessState.ExitCode() != 2 {
+			t.Fatalf("expected cluster to be stopped")
+		}
+	}
 }
