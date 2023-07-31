@@ -294,15 +294,7 @@ func initialize() *cobra.Command {
 				revertWarning = revertWarningText
 			}
 
-			return st.Complete(fmt.Sprintf(`
-%s
-NEXT ACTIONS
-------------
-To proceed with the upgrade, run "gpupgrade execute --verbose"
-followed by "gpupgrade finalize --verbose".
-
-To return the cluster to its original state, run "gpupgrade revert --verbose".`,
-				revertWarning))
+			return st.Complete(fmt.Sprintf(InitializeCompletedText, revertWarning))
 		},
 	}
 

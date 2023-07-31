@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -95,22 +94,7 @@ func execute() *cobra.Command {
 				return nil
 			})
 
-			return st.Complete(fmt.Sprintf(`
-The target cluster is now running. You may now run queries against the target 
-database and perform any other validation desired prior to finalizing your upgrade.
-source %s
-export MASTER_DATA_DIRECTORY=%s
-export PGPORT=%d
-`+color.RedString(`
-WARNING: If any queries modify the target database prior to gpupgrade finalize, 
-it will be inconsistent with the source database.`)+`
-
-NEXT ACTIONS
-------------
-If you are satisfied with the state of the cluster, run "gpupgrade finalize --verbose" 
-to proceed with the upgrade.
-
-To return the cluster to its original state, run "gpupgrade revert --verbose".`,
+			return st.Complete(fmt.Sprintf(ExecuteCompletedText,
 				filepath.Join(intermediate.GPHome, "greenplum_path.sh"),
 				intermediate.CoordinatorDataDir(),
 				intermediate.CoordinatorPort()))

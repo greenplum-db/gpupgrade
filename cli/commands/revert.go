@@ -92,21 +92,7 @@ func revert() *cobra.Command {
 				return upgrade.DeleteDirectories([]string{utils.GetStateDir()}, upgrade.StateDirectoryFiles, streams)
 			})
 
-			return st.Complete(fmt.Sprintf(`
-The source cluster is now running version %s.
-source %s
-export MASTER_DATA_DIRECTORY=%s
-export PGPORT=%d
-
-The gpupgrade logs can be found on the master and segment hosts in
-%s
-
-NEXT ACTIONS
-------------
-If you have not already, execute the “%s” data migration scripts with
-"gpupgrade apply --gphome %s --port %d --input-dir %s --phase %s"
-
-To restart the upgrade, run "gpupgrade initialize --verbose" again.`,
+			return st.Complete(fmt.Sprintf(RevertCompletedText,
 				source.Version,
 				filepath.Join(source.GPHome, "greenplum_path.sh"), source.CoordinatorDataDir(), source.CoordinatorPort(),
 				response.GetLogArchiveDirectory(),

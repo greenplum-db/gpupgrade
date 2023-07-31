@@ -117,38 +117,7 @@ If you postpone creating statistics then after the upgrade run "vacuumdb --all -
 				return upgrade.DeleteDirectories([]string{utils.GetStateDir()}, upgrade.StateDirectoryFiles, streams)
 			})
 
-			return st.Complete(fmt.Sprintf(`
-The target cluster has been upgraded to Greenplum %s
-
-The source cluster is not running. If copy mode was used you may start 
-the source cluster, but not at the same time as the target cluster. 
-To do so configure different ports to avoid conflicts. 
-
-You may delete the source cluster to recover space from all hosts. 
-All source cluster data directories end in "%s".
-MASTER_DATA_DIRECTORY=%s
-
-The gpupgrade logs can be found on the master and segment hosts in
-%s
-
-NEXT ACTIONS
-------------
-To use the upgraded cluster:
-1. Update any scripts to source %s
-2. If applicable, update the greenplum-db symlink to point to the target 
-   install location: %s -> %s
-3. In a new shell:
-   source %s
-   export MASTER_DATA_DIRECTORY=%s
-   export PGPORT=%d
-   
-   And connect to the database
-
-If you have not already, execute the “%s” data migration scripts with
-"gpupgrade apply --gphome %s --port %d --input-dir %s --phase %s"
-
-If you postponed creating optimizer statistics run
-"vacuumdb --all --analyze-in-stages"`,
+			return st.Complete(fmt.Sprintf(FinalizeCompletedText,
 				target.Version,
 				fmt.Sprintf("%s.<contentID>%s", response.GetUpgradeID(), upgrade.OldSuffix),
 				response.GetArchivedSourceCoordinatorDataDirectory(),
