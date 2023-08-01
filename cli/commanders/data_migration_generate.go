@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io/fs"
 	"log"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -63,7 +62,7 @@ func GenerateDataMigrationScripts(streams step.OutStreams, nonInteractive bool, 
 		return err
 	}
 
-	err = ArchiveDataMigrationScriptsPrompt(streams, nonInteractive, bufio.NewReader(os.Stdin), outputDirFS, outputDir)
+	err = ArchiveDataMigrationScriptsPrompt(streams, nonInteractive, utils.StdinReader, outputDirFS, outputDir)
 	if err != nil {
 		if errors.Is(err, step.Skip) {
 			return nil

@@ -4,10 +4,8 @@
 package commands
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
@@ -97,7 +95,7 @@ If you postpone creating statistics then after the upgrade run "vacuumdb --all -
 					fmt.Println()
 
 					prompt := "Create optimizer statistics now?  Yy|Nn: "
-					err = clistep.Prompt(bufio.NewReader(os.Stdin), prompt)
+					err = clistep.Prompt(utils.StdinReader, prompt)
 					if err != nil {
 						if errors.Is(err, step.Quit) {
 							return nil // Continue with upgrade even if user skips creating statistics

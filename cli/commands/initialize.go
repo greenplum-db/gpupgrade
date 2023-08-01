@@ -4,7 +4,6 @@
 package commands
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"os"
@@ -248,7 +247,7 @@ func initialize() *cobra.Command {
 				}
 
 				prompt := fmt.Sprintf("Continue with gpupgrade %s?  Yy|Nn: ", idl.Step_initialize)
-				return clistep.Prompt(bufio.NewReader(os.Stdin), prompt)
+				return clistep.Prompt(utils.StdinReader, prompt)
 			})
 
 			var client idl.CliToHubClient

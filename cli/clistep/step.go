@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"os"
 	"strings"
 
 	"golang.org/x/text/cases"
@@ -84,7 +83,7 @@ func Begin(currentStep idl.Step, verbose bool, nonInteractive bool, confirmation
 		fmt.Print(confirmationText)
 
 		prompt := fmt.Sprintf("Continue with gpupgrade %s?  Yy|Nn: ", currentStep)
-		err := Prompt(bufio.NewReader(os.Stdin), prompt)
+		err := Prompt(utils.StdinReader, prompt)
 		if err != nil {
 			return &Step{}, err
 		}

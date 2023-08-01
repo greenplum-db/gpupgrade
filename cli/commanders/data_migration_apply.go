@@ -46,7 +46,7 @@ func ApplyDataMigrationScripts(streams step.OutStreams, nonInteractive bool, gph
 		return err
 	}
 
-	scriptDirsToRun, err := ApplyDataMigrationScriptsPrompt(nonInteractive, bufio.NewReader(os.Stdin), currentScriptDir, currentScriptDirFS, phase)
+	scriptDirsToRun, err := ApplyDataMigrationScriptsPrompt(nonInteractive, utils.StdinReader, currentScriptDir, currentScriptDirFS, phase)
 	if err != nil {
 		if errors.Is(err, step.Skip) {
 			return nil
@@ -249,7 +249,7 @@ Select: `, phase, warning)
 
 			return scriptDirs, nil
 		case "s":
-			scriptDirs, err := SelectDataMigrationScriptsPrompt(bufio.NewReader(os.Stdin), currentScriptDir, currentScriptDirFS, phase)
+			scriptDirs, err := SelectDataMigrationScriptsPrompt(utils.StdinReader, currentScriptDir, currentScriptDirFS, phase)
 			if err != nil {
 				return nil, err
 			}

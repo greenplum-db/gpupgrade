@@ -4,6 +4,7 @@
 package utils
 
 import (
+	"bufio"
 	"fmt"
 	"io/fs"
 	"net"
@@ -23,6 +24,8 @@ import (
 var (
 	System = InitializeSystemFunctions()
 	Bold   = color.New(color.Bold)
+
+	StdinReader = bufio.NewReader(os.Stdin)
 )
 
 /*

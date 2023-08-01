@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -671,20 +670,8 @@ func TestStepStatus(t *testing.T) {
 	})
 
 	t.Run("confirmation text is printed when not in non-interactive mode", func(t *testing.T) {
-		dir := testutils.GetTempDir(t, "")
-		defer testutils.MustRemoveAll(t, dir)
-
-		stdinFile := filepath.Join(dir, "stdin.txt")
-		testutils.MustWriteToFile(t, stdinFile, "y\n")
-
-		stdin, err := os.Open(stdinFile)
-		if err != nil {
-			t.Errorf("opening %q: %v", stdinFile, err)
-		}
-
-		oldStdin := os.Stdin
-		os.Stdin = stdin
-		defer func() { os.Stdin = oldStdin }()
+		resetStdin := testutils.SetStdin(t, "y\n")
+		defer resetStdin()
 
 		d := BufferStandardDescriptors(t)
 

@@ -4,11 +4,13 @@
 package testutils
 
 import (
+	"bufio"
 	"log"
 	"net"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/blang/semver/v4"
@@ -354,23 +356,9 @@ func MustGetExecutablePath(t *testing.T) string {
 func SetStdin(t *testing.T, input string) func() {
 	t.Helper()
 
-	stdinReader, stdinWriter, err := os.Pipe()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	origStdin := os.Stdin
-	os.Stdin = stdinReader
-
-	_, err = stdinWriter.WriteString(input)
-	if err != nil {
-		stdinWriter.Close()
-		os.Stdin = origStdin
-		t.Fatal(err)
-	}
-
+	utils.StdinReader = bufio.NewReader(strings.NewReader(input))
 	return func() {
-		os.Stdin = origStdin
+		utils.StdinReader = bufio.NewReader(os.Stdin)
 	}
 }
 
