@@ -75,7 +75,7 @@ func initialize_stopBeforeClusterCreation(t *testing.T) string {
 		t.Fatalf("unexpected err: %#v stderr %q", err, output)
 	}
 
-	return string(output)
+	return strings.TrimSpace(string(output))
 }
 
 func initialize(t *testing.T, mode idl.Mode) string {
@@ -94,7 +94,7 @@ func initialize(t *testing.T, mode idl.Mode) string {
 		t.Fatalf("unexpected err: %#v stderr %q", err, output)
 	}
 
-	return string(output)
+	return strings.TrimSpace(string(output))
 }
 
 func execute(t *testing.T) string {
@@ -107,7 +107,7 @@ func execute(t *testing.T) string {
 		t.Fatalf("unexpected err: %#v stderr %q", err, output)
 	}
 
-	return string(output)
+	return strings.TrimSpace(string(output))
 }
 
 func revert(t *testing.T) string {
@@ -120,7 +120,7 @@ func revert(t *testing.T) string {
 		t.Fatalf("unexpected err: %#v stderr %q", err, output)
 	}
 
-	return string(output)
+	return strings.TrimSpace(string(output))
 }
 
 func killServices(t *testing.T) string {
@@ -132,7 +132,7 @@ func killServices(t *testing.T) string {
 		t.Fatalf("unexpected err: %v stderr: %q", err, output)
 	}
 
-	return string(output)
+	return strings.TrimSpace(string(output))
 }
 
 func restartServices(t *testing.T) string {
@@ -144,7 +144,7 @@ func restartServices(t *testing.T) string {
 		t.Fatalf("unexpected err: %v stderr: %q", err, output)
 	}
 
-	return string(output)
+	return strings.TrimSpace(string(output))
 }
 
 func GetSourceCluster(t *testing.T) greenplum.Cluster {
