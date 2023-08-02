@@ -36,6 +36,21 @@ func TestConnection(t *testing.T) {
 			"postgresql://localhost:12345/template1?search_path=",
 		},
 		{
+			"defaults to template1 database",
+			semver.MustParse("5.0.0"),
+			[]greenplum.Option{},
+			"postgresql://localhost:15432/template1?search_path=",
+		},
+		{
+			"uses specified database value",
+			semver.MustParse("5.0.0"),
+			[]greenplum.Option{
+				greenplum.Database("another_database"),
+			},
+			"postgresql://localhost:15432/another_database?search_path=",
+		},
+
+		{
 			"uses correct utility mode parameter when connecting to a 5X cluster",
 			semver.MustParse("5.0.0"),
 			[]greenplum.Option{

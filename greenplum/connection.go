@@ -19,7 +19,12 @@ func (c *Cluster) Connection(options ...Option) string {
 		port = opts.port
 	}
 
-	connURI := fmt.Sprintf("postgresql://localhost:%d/template1?search_path=", port)
+	database := "template1"
+	if opts.database != "" {
+		database = opts.database
+	}
+
+	connURI := fmt.Sprintf("postgresql://localhost:%d/%s?search_path=", port, database)
 
 	if opts.utilityMode {
 		mode := "&gp_role=utility"
@@ -47,6 +52,13 @@ func Port(port int) Option {
 	}
 }
 
+// Database defaults to template1
+func Database(database string) Option {
+	return func(options *optionList) {
+		options.database = database
+	}
+}
+
 func UtilityMode() Option {
 	return func(options *optionList) {
 		options.utilityMode = true
@@ -61,6 +73,7 @@ func AllowSystemTableMods() Option {
 
 type optionList struct {
 	port                 int
+	database             string
 	utilityMode          bool
 	allowSystemTableMods bool
 }
