@@ -2,10 +2,10 @@
 # Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 # SPDX-License-Identifier: Apache-2.0
 
-load ../helpers/helpers
-load ../helpers/teardown_helpers
+load helpers/helpers
+load helpers/teardown_helpers
 
-SEED_DIR=$BATS_TEST_DIRNAME/../../../data-migration-scripts
+SEED_DIR=$BATS_TEST_DIRNAME/../../data-migration-scripts
 
 setup() {
     # FIXME: We should support testing the migration scripts.

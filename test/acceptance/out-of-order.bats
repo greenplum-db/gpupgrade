@@ -5,7 +5,7 @@
 # This file provides negative test cases for when the user does not execute
 # upgrade steps in the correct order after starting the hub.
 
-load ../helpers/helpers
+load helpers/helpers
 
 setup() {
     STATE_DIR=`mktemp -d`

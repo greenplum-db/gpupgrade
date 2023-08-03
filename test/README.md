@@ -62,7 +62,7 @@ Set the following environment variables:
 - `GPHOME_SOURCE`: The source cluster's installation path such as `/usr/local/gpdb5`.
 - `GPHOME_TARGET`: The target cluster's installation path such as `/usr/local/gpdb6`.
 
-And then run: `bats -f "test name" test/acceptance/gpupgrade`
+And then run: `bats -f "test name" test/acceptance`
 
 ---
 
@@ -107,19 +107,19 @@ substitutions used to perform a "smart" diff.
 - `ISOLATION2_PATH`: The path to the target gpdb version's pg_isolation2 binary
   such as `~/workspace/gpdb6/src/test/isolation2`.
 2. Run the tests:
-   * **Entire suite**: `bats test/acceptance/pg_upgrade/pg_upgrade.bats`
-   * **Non-upgradeable tests**: `bats -f "pg_upgrade --check detects non-upgradeable objects" test/acceptance/pg_upgrade/pg_upgrade.bats`
-   * **Upgradeable tests**: `bats -f "pg_upgrade upgradeable tests" test/acceptance/pg_upgrade/pg_upgrade.bats`
+   * **Entire suite**: `bats test/acceptance/pg_upgrade.bats`
+   * **Non-upgradeable tests**: `bats -f "pg_upgrade --check detects non-upgradeable objects" test/acceptance/pg_upgrade.bats`
+   * **Upgradeable tests**: `bats -f "pg_upgrade upgradeable tests" test/acceptance/pg_upgrade.bats`
    * **Focused non-upgradeable tests**: Set the environment variable
      `NON_UPGRADEABLE_TESTS` to a space separated list of tests before running
      bats. For instance:
      ```
-     NON_UPGRADEABLE_TESTS="indexes large_objects" bats -f "pg_upgrade --check detects non-upgradeable objects" test/acceptance/pg_upgrade/pg_upgrade.bats
+     NON_UPGRADEABLE_TESTS="indexes large_objects" bats -f "pg_upgrade --check detects non-upgradeable objects" test/acceptance/pg_upgrade.bats
      ```
    * **Focused upgradeable tests**: Set the environment variable `UPGRADEABLE_TESTS`
      to a space separated list of tests before running bats. For instance:
      ```
-     UPGRADEABLE_TESTS="ao_table aoco_table" bats -f "pg_upgrade upgradeable tests" test/acceptance/pg_upgrade/pg_upgrade.bats
+     UPGRADEABLE_TESTS="ao_table aoco_table" bats -f "pg_upgrade upgradeable tests" test/acceptance/pg_upgrade.bats
      ```
 ### pg_upgrade: non-upgradeable tests (negative tests)
 

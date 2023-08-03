@@ -20,7 +20,7 @@ function run_migration_scripts_and_tests() {
         gpupgrade apply    --non-interactive --gphome "$GPHOME_SOURCE" --port "$PGPORT" --phase initialize
 
         cd gpupgrade_src
-        go test --cover -count=1 -timeout 30m -v -run "^TestRevert$" ./test/acceptance/gpupgrade
+        go test --cover -count=1 -timeout 30m -v -run "^TestRevert$" ./test/acceptance
   '
 }
 

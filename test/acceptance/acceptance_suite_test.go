@@ -57,7 +57,7 @@ func MustGetRepoRoot(t *testing.T) string {
 		t.Fatalf("failed to get current directory: %v", err)
 	}
 
-	return filepath.Dir(filepath.Dir(filepath.Dir(currentDir)))
+	return filepath.Dir(filepath.Dir(currentDir))
 }
 
 func initialize_stopBeforeClusterCreation(t *testing.T) string {
