@@ -72,7 +72,7 @@ func initialize_stopBeforeClusterCreation(t *testing.T) string {
 		"--disk-free-ratio", "0")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatalf("unexpected err: %#v stderr %q", err, output)
+		t.Fatalf("unexpected err: %#v stderr %q", err, output)
 	}
 
 	return string(output)
@@ -91,7 +91,7 @@ func initialize(t *testing.T, mode idl.Mode) string {
 		"--disk-free-ratio", "0")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatalf("unexpected err: %#v stderr %q", err, output)
+		t.Fatalf("unexpected err: %#v stderr %q", err, output)
 	}
 
 	return string(output)
@@ -104,7 +104,7 @@ func execute(t *testing.T) string {
 		"--non-interactive", "--verbose")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatalf("unexpected err: %#v stderr %q", err, output)
+		t.Fatalf("unexpected err: %#v stderr %q", err, output)
 	}
 
 	return string(output)
@@ -117,7 +117,7 @@ func revert(t *testing.T) string {
 		"--non-interactive", "--verbose")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatalf("unexpected err: %#v stderr %q", err, output)
+		t.Fatalf("unexpected err: %#v stderr %q", err, output)
 	}
 
 	return string(output)
