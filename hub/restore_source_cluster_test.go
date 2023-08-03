@@ -53,8 +53,8 @@ func TestRsyncCoordinatorAndPrimaries(t *testing.T) {
 			}
 
 			options := args[:3]
-			if !reflect.DeepEqual(options, hub.Options) {
-				t.Errorf("got options %q want %q", options, hub.Options)
+			if !reflect.DeepEqual(options, rsync.Options) {
+				t.Errorf("got options %q want %q", options, rsync.Options)
 			}
 
 			source := args[3]
@@ -70,7 +70,7 @@ func TestRsyncCoordinatorAndPrimaries(t *testing.T) {
 			}
 
 			excludes := strings.Join(args[6:], " ")
-			expected = strings.Join(hub.Excludes, " --exclude ")
+			expected = strings.Join(rsync.Excludes, " --exclude ")
 			if !reflect.DeepEqual(excludes, expected) {
 				t.Errorf("got exclusions %q want %q", excludes, expected)
 			}
@@ -90,8 +90,8 @@ func TestRsyncCoordinatorAndPrimaries(t *testing.T) {
 			}
 
 			options := args[:3]
-			if !reflect.DeepEqual(options, hub.Options) {
-				t.Errorf("got options %q want %q", options, hub.Options)
+			if !reflect.DeepEqual(options, rsync.Options) {
+				t.Errorf("got options %q want %q", options, rsync.Options)
 			}
 
 			source := args[3]
@@ -125,8 +125,8 @@ func TestRsyncCoordinatorAndPrimaries(t *testing.T) {
 					Sources:         []string{"/data/dbfast_mirror1/seg1" + string(os.PathSeparator)},
 					DestinationHost: "sdw1",
 					Destination:     "/data/dbfast1/seg1",
-					Options:         hub.Options,
-					ExcludedFiles:   hub.Excludes,
+					Options:         rsync.Options,
+					ExcludedFiles:   rsync.Excludes,
 				}},
 			},
 		).Return(&idl.RsyncReply{}, nil)
@@ -139,8 +139,8 @@ func TestRsyncCoordinatorAndPrimaries(t *testing.T) {
 					Sources:         []string{"/data/dbfast_mirror2/seg2" + string(os.PathSeparator)},
 					DestinationHost: "sdw2",
 					Destination:     "/data/dbfast2/seg2",
-					Options:         hub.Options,
-					ExcludedFiles:   hub.Excludes,
+					Options:         rsync.Options,
+					ExcludedFiles:   rsync.Excludes,
 				}},
 			},
 		).Return(&idl.RsyncReply{}, nil)
@@ -171,8 +171,8 @@ func TestRsyncCoordinatorAndPrimaries(t *testing.T) {
 					Sources:         []string{"/tmp/user_ts/m1/16384" + string(os.PathSeparator)},
 					DestinationHost: "sdw1",
 					Destination:     "/tmp/user_ts/p1/16384",
-					Options:         hub.Options,
-					ExcludedFiles:   hub.Excludes,
+					Options:         rsync.Options,
+					ExcludedFiles:   rsync.Excludes,
 				}},
 			},
 		).Return(&idl.RsyncReply{}, nil)
@@ -185,8 +185,8 @@ func TestRsyncCoordinatorAndPrimaries(t *testing.T) {
 					Sources:         []string{"/tmp/user_ts/m2/16384" + string(os.PathSeparator)},
 					DestinationHost: "sdw2",
 					Destination:     "/tmp/user_ts/p2/16384",
-					Options:         hub.Options,
-					ExcludedFiles:   hub.Excludes,
+					Options:         rsync.Options,
+					ExcludedFiles:   rsync.Excludes,
 				}},
 			},
 		).Return(&idl.RsyncReply{}, nil)

@@ -17,7 +17,6 @@ import (
 	"testing/fstest"
 
 	"github.com/greenplum-db/gpupgrade/agent"
-	"github.com/greenplum-db/gpupgrade/hub"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
@@ -57,8 +56,8 @@ func TestRsync(t *testing.T) {
 			}
 
 			options := args[:3]
-			if !reflect.DeepEqual(options, hub.Options) {
-				t.Errorf("got options %q want %q", options, hub.Options)
+			if !reflect.DeepEqual(options, rsync.Options) {
+				t.Errorf("got options %q want %q", options, rsync.Options)
 			}
 
 			src := args[3]
@@ -222,8 +221,8 @@ func TestRsyncTablespaceDirectories(t *testing.T) {
 			}
 
 			options := args[:3]
-			if !reflect.DeepEqual(options, hub.Options) {
-				t.Errorf("got options %q want %q", options, hub.Options)
+			if !reflect.DeepEqual(options, rsync.Options) {
+				t.Errorf("got options %q want %q", options, rsync.Options)
 			}
 
 			src := args[3]

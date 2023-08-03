@@ -16,13 +16,6 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
 
-var Options = []string{"--archive", "--compress", "--stats"}
-
-var Excludes = []string{
-	"pg_hba.conf", "postmaster.opts", "postgresql.auto.conf", "internal.auto.conf",
-	"gp_dbid", "postgresql.conf", "backup_label.old", "postmaster.pid", "recovery.conf",
-}
-
 func RsyncCoordinatorAndPrimaries(stream step.OutStreams, agentConns []*idl.Connection, source *greenplum.Cluster) error {
 	var wg sync.WaitGroup
 	errs := make(chan error, 2)
@@ -83,8 +76,8 @@ func RsyncCoordinator(stream step.OutStreams, standby greenplum.SegConfig, coord
 		rsync.WithSources(standby.DataDir + string(os.PathSeparator)),
 		rsync.WithSourceHost(standby.Hostname),
 		rsync.WithDestination(coordinator.DataDir),
-		rsync.WithOptions(Options...),
-		rsync.WithExcludedFiles(Excludes...),
+		rsync.WithOptions(rsync.Options...),
+		rsync.WithExcludedFiles(rsync.Excludes...),
 		rsync.WithStream(stream),
 	}
 
@@ -101,7 +94,7 @@ func RsyncCoordinatorTablespaces(stream step.OutStreams, standbyHostname string,
 			rsync.WithSourceHost(standbyHostname),
 			rsync.WithSources(standbyTablespaces[oid].GetLocation() + string(os.PathSeparator)),
 			rsync.WithDestination(coordinatorTsInfo.GetLocation()),
-			rsync.WithOptions(Options...),
+			rsync.WithOptions(rsync.Options...),
 			rsync.WithStream(stream),
 		}
 
@@ -130,8 +123,8 @@ func RsyncPrimaries(agentConns []*idl.Connection, source *greenplum.Cluster) err
 				Sources:         []string{mirror.DataDir + string(os.PathSeparator)},
 				DestinationHost: source.Primaries[mirror.ContentID].Hostname,
 				Destination:     source.Primaries[mirror.ContentID].DataDir,
-				Options:         Options,
-				ExcludedFiles:   Excludes,
+				Options:         rsync.Options,
+				ExcludedFiles:   rsync.Excludes,
 			}
 			opts = append(opts, opt)
 		}
@@ -169,8 +162,8 @@ func RsyncPrimariesTablespaces(agentConns []*idl.Connection, source *greenplum.C
 					Sources:         []string{mirrorTsInfo.GetLocation() + string(os.PathSeparator)},
 					DestinationHost: primary.Hostname,
 					Destination:     primaryTablespaces[oid].GetLocation(),
-					Options:         Options,
-					ExcludedFiles:   Excludes,
+					Options:         rsync.Options,
+					ExcludedFiles:   rsync.Excludes,
 				}
 				opts = append(opts, opt)
 			}

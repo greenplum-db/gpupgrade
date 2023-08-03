@@ -14,6 +14,12 @@ import (
 	"github.com/greenplum-db/gpupgrade/testutils/exectest"
 )
 
+var Options = []string{"--archive", "--compress", "--stats"}
+
+var Excludes = []string{
+	"pg_hba.conf", "postmaster.opts", "postgresql.auto.conf", "internal.auto.conf",
+	"gp_dbid", "postgresql.conf", "backup_label.old", "postmaster.pid", "recovery.conf",
+}
 var rsyncCommand = exec.Command
 
 // ErrInvalidRsyncSourcePath is returned when there are multiple source path
