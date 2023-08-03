@@ -45,8 +45,13 @@ integration:
 
 .PHONY: acceptance
 acceptance:
-	go test --cover -count=1 -timeout 1h15m -v ./test/acceptance/gpupgrade
-	bats -r ./test/acceptance/gpupgrade
+	go test --cover -count=1 -timeout 1h15m -v ./test/acceptance
+	bats ./test/acceptance/helpers/teardown_helpers.bats
+	bats ./test/acceptance/initialize.bats
+	bats ./test/acceptance/finalize.bats
+	bats ./test/acceptance/gpinitsystem.bats
+	bats ./test/acceptance/migration_scripts.bats
+	bats ./test/acceptance/out-of-order.bats
 
 # test runs all tests against the locally built gpupgrade binaries. Use -k to
 # continue after failures.
@@ -55,7 +60,7 @@ test check: unit integration acceptance
 
 .PHONY: pg-upgrade-tests
 pg-upgrade-tests:
-	bats -r ./test/acceptance/pg_upgrade
+	bats ./test/acceptance/pg_upgrade.bats
 
 .PHONY: coverage
 coverage:
