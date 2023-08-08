@@ -52,7 +52,7 @@ func ResetPsqlFileCommand() {
 	psqlFileCommand = exec.Command
 }
 
-func applySQLFile(gphome string, port int, database string, path string, args ...string) ([]byte, error) {
+func ApplySQLFile(gphome string, port int, database string, path string, args ...string) ([]byte, error) {
 	args = append(args,
 		"--no-psqlrc", "--quiet",
 		"-d", database,

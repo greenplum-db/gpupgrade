@@ -255,7 +255,7 @@ func GenerateScriptsPerDatabase(streams step.OutStreams, database DatabaseInfo, 
 
 	log.Print(string(output))
 
-	output, err = applySQLFile(gphome, port, database.Datname, filepath.Join(seedDir, "create_find_view_dep_function.sql"))
+	output, err = ApplySQLFile(gphome, port, database.Datname, filepath.Join(seedDir, "create_find_view_dep_function.sql"))
 	if err != nil {
 		return err
 	}
@@ -332,7 +332,7 @@ func GenerateScriptsPerPhase(phase idl.Step, database DatabaseInfo, gphome strin
 
 			var scriptOutput []byte
 			if strings.HasSuffix(script.Name(), ".sql") {
-				scriptOutput, err = applySQLFile(gphome, port, database.Datname, filepath.Join(seedDir, phase.String(), scriptDir.Name(), script.Name()),
+				scriptOutput, err = ApplySQLFile(gphome, port, database.Datname, filepath.Join(seedDir, phase.String(), scriptDir.Name(), script.Name()),
 					"-v", "ON_ERROR_STOP=1", "--no-align", "--tuples-only")
 				if err != nil {
 					return err
