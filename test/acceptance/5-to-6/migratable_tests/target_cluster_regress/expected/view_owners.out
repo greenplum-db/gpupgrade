@@ -1,0 +1,12 @@
+-- Copyright (c) 2017-2023 VMware, Inc. or its affiliates
+-- SPDX-License-Identifier: Apache-2.0
+
+--------------------------------------------------------------------------------
+-- Create and setup migratable objects
+--------------------------------------------------------------------------------
+
+SELECT schemaname, viewname, viewowner FROM pg_views WHERE schemaname NOT IN ('pg_catalog', 'information_schema', 'gp_toolkit') ORDER BY 1,2,3;
+ schemaname | viewname                 | viewowner  
+------------+--------------------------+------------
+ public     | preserve_view_owner_view | test_role1 
+(1 row)
