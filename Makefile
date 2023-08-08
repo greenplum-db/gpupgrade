@@ -45,7 +45,7 @@ integration:
 
 .PHONY: acceptance
 acceptance:
-	go test -count=1 -timeout 1h15m -v ./test/acceptance
+	go test -count=1 -timeout 1h15m -v ./test/acceptance -skip TestMigrationScripts
 	bats ./test/acceptance/helpers/teardown_helpers.bats
 	bats ./test/acceptance/finalize.bats
 	bats ./test/acceptance/migration_scripts.bats
@@ -58,6 +58,7 @@ test check: unit integration acceptance
 
 .PHONY: pg-upgrade-tests
 pg-upgrade-tests:
+	go test -count=1 -v ./test/acceptance/ -run TestMigrationScripts
 	bats ./test/acceptance/pg_upgrade.bats
 
 .PHONY: coverage

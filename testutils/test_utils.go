@@ -18,6 +18,7 @@ import (
 
 	"github.com/blang/semver/v4"
 
+	"github.com/greenplum-db/gpupgrade/cli/commanders"
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/upgrade"
@@ -522,6 +523,15 @@ func VerifyClusterIsRunning(t *testing.T, cluster greenplum.Cluster) {
 	}
 
 	err = cluster.RunGreenplumCmd(step.DevNullStream, "pg_isready", "-q", "-p", strconv.Itoa(cluster.CoordinatorPort()))
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func MustApplySQLFile(t *testing.T, gphome string, port string, path string) {
+	t.Helper()
+
+	_, err := commanders.ApplySQLFile(gphome, MustConvertStringToInt(t, port), "postgres", path, "-v", "ON_ERROR_STOP=1")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -35,6 +35,8 @@ run_pg_upgrade_tests() {
         set -eux -o pipefail
 
         export TERM=linux
+        export PATH=$PATH:/usr/local/go/bin
+        export GOFLAGS="-mod=readonly" # do not update dependencies during build
         export ISOLATION2_PATH=$(readlink -e gpdb_src/src/test/isolation2)
 
         cd gpupgrade_src

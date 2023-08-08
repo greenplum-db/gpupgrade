@@ -6,7 +6,6 @@ package testutils
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os/exec"
 	"path/filepath"
 	"testing"
@@ -117,7 +116,7 @@ func MustWriteToRemoteFile(t *testing.T, host string, path string, contents stri
 	}
 	err := rsync.Rsync(options...)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 }
 
