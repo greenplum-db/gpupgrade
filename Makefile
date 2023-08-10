@@ -47,7 +47,6 @@ integration:
 acceptance:
 	go test --cover -count=1 -timeout 1h15m -v ./test/acceptance
 	bats ./test/acceptance/helpers/teardown_helpers.bats
-	bats ./test/acceptance/initialize.bats
 	bats ./test/acceptance/finalize.bats
 	bats ./test/acceptance/migration_scripts.bats
 	bats ./test/acceptance/out-of-order.bats

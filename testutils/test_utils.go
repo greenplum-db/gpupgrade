@@ -145,6 +145,21 @@ func MustGetPort(t *testing.T) int {
 	return port
 }
 
+// MustListenOnPort listens on the specified port and returns a cleanup function
+// that can be used in a defer clause.
+func MustListenOnPort(t *testing.T, port int) func() {
+	listener, err := net.Listen("tcp", ":"+strconv.Itoa(port))
+	if err != nil {
+		t.Fatalf("failed to listen on port %d: %v", port, err)
+	}
+
+	t.Logf("listening on port %d...", port)
+
+	return func() {
+		listener.Close()
+	}
+}
+
 func GetTempDir(t *testing.T, prefix string) string {
 	t.Helper()
 
@@ -219,6 +234,15 @@ func MustWriteToFile(t *testing.T, path string, contents string) {
 	err := os.WriteFile(path, []byte(contents), 0600)
 	if err != nil {
 		t.Fatalf("error writing file %q: %v", path, err)
+	}
+}
+
+func MustRename(t *testing.T, oldPath string, newPath string) {
+	t.Helper()
+
+	err := os.Rename(oldPath, newPath)
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -477,5 +501,28 @@ func VerifyClusterIsStopped(t *testing.T, cluster greenplum.Cluster) {
 		if exitError.ProcessState.ExitCode() != 2 {
 			t.Fatalf("expected cluster to be stopped")
 		}
+	}
+}
+
+func VerifyClusterIsRunning(t *testing.T, cluster greenplum.Cluster) {
+	t.Helper()
+
+	running, err := cluster.IsCoordinatorRunning(step.DevNullStream)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !running {
+		t.Fatalf("expected cluster to be running")
+	}
+
+	if cluster.Version.Major == 5 {
+		MustExecuteSQL(t, cluster.Connection(), `SELECT 1`)
+		return
+	}
+
+	err = cluster.RunGreenplumCmd(step.DevNullStream, "pg_isready", "-q", "-p", strconv.Itoa(cluster.CoordinatorPort()))
+	if err != nil {
+		t.Fatal(err)
 	}
 }

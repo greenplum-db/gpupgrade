@@ -6,6 +6,7 @@ package gpupgrade_test
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"math"
 	"os/exec"
 	"strconv"
@@ -25,6 +26,43 @@ func TestCheckDiskSpace(t *testing.T) {
 	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 	defer resetEnv()
 
+	t.Run("initialize fails when passed invalid --disk-free-ratio values", func(t *testing.T) {
+		opts := []string{
+			"1.5",
+			"-0.5",
+			"abcd",
+		}
+
+		for _, opt := range opts {
+			cmd := exec.Command("gpupgrade", "initialize",
+				"--non-interactive", "--verbose",
+				"--source-gphome", GPHOME_SOURCE,
+				"--target-gphome", GPHOME_TARGET,
+				"--source-master-port", PGPORT,
+				"--temp-port-range", TARGET_PGPORT+"-6040",
+				"--stop-before-cluster-creation",
+				"--disk-free-ratio", opt)
+			output, err := cmd.CombinedOutput()
+			if err == nil {
+				t.Errorf("expected nil got error %v", err)
+			}
+
+			initializeOutput := strings.ReplaceAll(string(output), `"`, ``)
+			expected := fmt.Sprintf("Error: invalid argument %s for --disk-free-ratio flag", opt)
+			if !strings.HasPrefix(initializeOutput, expected) {
+				t.Fatalf("got %q want %q", initializeOutput, expected)
+			}
+		}
+	})
+
+	t.Run("initialize skips disk space check when --disk-free-ratio is 0", func(t *testing.T) {
+		output := initialize(t, idl.Mode_copy)
+
+		if strings.Contains(output, idl.Substep_check_disk_space.String()) {
+			t.Fatalf("expected output %q to not contain %q", output, idl.Substep_check_disk_space)
+		}
+	})
+
 	t.Run("initialize fails with disk space error", func(t *testing.T) {
 		cmd := exec.Command("gpupgrade", "initialize",
 			"--non-interactive", "--verbose",
@@ -36,7 +74,7 @@ func TestCheckDiskSpace(t *testing.T) {
 			"--disk-free-ratio", "1.0")
 		output, err := cmd.CombinedOutput()
 		if err == nil {
-			t.Error("expected nil got error")
+			t.Errorf("expected nil got error %v", err)
 		}
 		defer revert(t)
 
