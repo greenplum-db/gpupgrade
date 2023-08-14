@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os/exec"
 	"strings"
 
 	"golang.org/x/text/cases"
@@ -129,6 +130,11 @@ func (s *Step) Err() error {
 	}
 
 	if text == "" {
+		var exitErr *exec.ExitError
+		if errors.As(s.err, &exitErr) {
+			return status.Errorf(codes.Unknown, "%v: %s", s.err, exitErr.Stderr)
+		}
+
 		return s.err
 	}
 
@@ -217,6 +223,15 @@ func (s *Step) run(substep idl.Substep, f func(OutStreams) error, alwaysRun bool
 		if werr := s.write(substep, idl.Status_failed); werr != nil {
 			err = errorlist.Append(err, werr)
 		}
+
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			_, wErr := s.Streams().Stderr().Write(exitErr.Stderr)
+			if wErr != nil {
+				err = errorlist.Append(err, wErr)
+			}
+		}
+
 		return
 	}
 
