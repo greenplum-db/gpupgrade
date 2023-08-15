@@ -37,15 +37,15 @@ unit integration acceptance test: export PATH := $(CURDIR):$(PATH)
 
 .PHONY: unit
 unit:
-	go test --cover -count=1 $(shell go list ./... | grep -v test/integration$$ | grep -v test/acceptance$$ )
+	go test -count=1 $(shell go list ./... | grep -v test/integration$$ | grep -v test/acceptance$$ )
 
 .PHONY: integration
 integration:
-	go test --cover -count=1 ./test/integration
+	go test -count=1 ./test/integration
 
 .PHONY: acceptance
 acceptance:
-	go test --cover -count=1 -timeout 1h15m -v ./test/acceptance
+	go test -count=1 -timeout 1h15m -v ./test/acceptance
 	bats ./test/acceptance/helpers/teardown_helpers.bats
 	bats ./test/acceptance/initialize.bats
 	bats ./test/acceptance/finalize.bats
