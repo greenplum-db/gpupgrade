@@ -76,7 +76,7 @@ func TestRevert(t *testing.T) {
 
 		// Since the logArchiveDir has a timestamp we need to do a partial check
 		logArchiveDir := MustGetLogArchiveDir(t, conf.UpgradeID)
-		logArchiveDir = logArchiveDir[:len(logArchiveDir)-4] + "*"
+		logArchiveDir = logArchiveDir[:len(logArchiveDir)-5] + "*"
 
 		testutils.RemotePathMustExist(t, conf.Intermediate.CoordinatorHostname(), logArchiveDir)
 
@@ -245,14 +245,14 @@ func verifyRevert(t *testing.T, source greenplum.Cluster, intermediate *greenplu
 	t.Helper()
 
 	// Since the logArchiveDir has a timestamp we need to do a partial check
-	logArchiveDir = logArchiveDir[:len(logArchiveDir)-4]
+	logArchiveDir = logArchiveDir[:len(logArchiveDir)-5]
 
 	match := fmt.Sprintf(commands.RevertCompletedText,
 		source.Version,
 		filepath.Join(source.GPHome, "greenplum_path.sh"), source.CoordinatorDataDir(), source.CoordinatorPort(),
-		logArchiveDir+`\d{4}`,
+		logArchiveDir+`\d{5}`,
 		idl.Step_revert,
-		source.GPHome, source.CoordinatorPort(), filepath.Join(logArchiveDir+`\d{4}`, "data-migration-scripts"), idl.Step_revert)
+		source.GPHome, source.CoordinatorPort(), filepath.Join(logArchiveDir+`\d{5}`, "data-migration-scripts"), idl.Step_revert)
 	expected := regexp.MustCompile(match)
 	if !expected.MatchString(revertOutput) {
 		t.Fatalf("expected %q to contain %v", revertOutput, expected)
