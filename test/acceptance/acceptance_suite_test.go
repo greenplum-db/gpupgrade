@@ -74,7 +74,7 @@ func generate(t *testing.T, outputDir string) string {
 		"--output-dir", filepath.Join(outputDir, "generated-scripts"))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("unexpected err: %#v stderr %q", err, output)
+		t.Fatalf("unexpected err: %#v stderr %s", err, output)
 	}
 
 	return strings.TrimSpace(string(output))
@@ -91,7 +91,7 @@ func apply(t *testing.T, gphome string, port string, phase idl.Step, inputDir st
 		"--input-dir", filepath.Join(inputDir, "generated-scripts"))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("unexpected err: %#v stderr %q", err, output)
+		t.Fatalf("unexpected err: %#v stderr %s", err, output)
 	}
 
 	return strings.TrimSpace(string(output))
@@ -110,7 +110,7 @@ func initialize_stopBeforeClusterCreation(t *testing.T) string {
 		"--disk-free-ratio", "0")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("unexpected err: %#v stderr %q", err, output)
+		t.Fatalf("unexpected err: %#v stderr %s", err, output)
 	}
 
 	return strings.TrimSpace(string(output))
@@ -129,7 +129,7 @@ func initialize(t *testing.T, mode idl.Mode) string {
 		"--disk-free-ratio", "0")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("unexpected err: %#v stderr %q", err, output)
+		t.Fatalf("unexpected err: %#v stderr %s", err, output)
 	}
 
 	return strings.TrimSpace(string(output))
@@ -142,7 +142,7 @@ func execute(t *testing.T) string {
 		"--non-interactive", "--verbose")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("unexpected err: %#v stderr %q", err, output)
+		t.Fatalf("unexpected err: %#v stderr %s", err, output)
 	}
 
 	return strings.TrimSpace(string(output))
@@ -155,7 +155,7 @@ func finalize(t *testing.T) string {
 		"--non-interactive", "--verbose")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("unexpected err: %#v stderr %q", err, output)
+		t.Fatalf("unexpected err: %#v stderr %s", err, output)
 	}
 
 	return strings.TrimSpace(string(output))
@@ -168,7 +168,7 @@ func revert(t *testing.T) string {
 		"--non-interactive", "--verbose")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("unexpected err: %#v stderr %q", err, output)
+		t.Fatalf("unexpected err: %#v stderr %s", err, output)
 	}
 
 	return strings.TrimSpace(string(output))
