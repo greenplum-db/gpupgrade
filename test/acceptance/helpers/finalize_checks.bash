@@ -161,7 +161,7 @@ contents_without_mirror() {
     "
 }
 
-# |     step                        | mdw         | smdw        | sdw-p   | sdw-m   |
+# |     step                        | cdw         | cmdw        | sdw-p   | sdw-m   |
 # |---------------------------------|-------------|-------------|---------|---------|
 # | 1:  initial                     | coordinator |   standby   | primary | mirror  |
 # | 2a: failover stop               |     -       |   standby   |   -     | mirror  |
@@ -176,7 +176,7 @@ contents_without_mirror() {
 # https://gpdb.docs.pivotal.io/6-4/admin_guide/highavail/topics/g-restoring-master-mirroring-after-a-recovery.html#topic17
 #
 # NOTE: when in a given step of this test, keep in mind that the coordinator
-#  switches back and forth between the mdw host("COORDINATOR") and the smdw host("standby").
+#  switches back and forth between the cdw host("COORDINATOR") and the cmdw host("standby").
 
 validate_mirrors_and_standby() {
     GPHOME_NEW=$1

@@ -229,12 +229,12 @@ make pg-upgrade-tests
 
 To run all tests in a suite:
 ```
-bats test/acceptance/finalize.bats
+go test -v ./test/acceptance/ -run TestFinalize
 ```
 
 To run a single test or set of tests:
 ```
-bats -f "gpupgrade finalize should" test/acceptance/finalize.bats
+go test -v ./test/acceptance/ -run "gpupgrade finalize should"
 ```
 
 #### All local tests

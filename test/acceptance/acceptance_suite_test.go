@@ -213,6 +213,27 @@ func GetTargetCluster(t *testing.T) greenplum.Cluster {
 	return getCluster(t, GPHOME_TARGET, testutils.MustConvertStringToInt(t, PGPORT), idl.ClusterDestination_target)
 }
 
+// GetTempTargetCluster creates a target cluster from the source cluster. It is
+// used in a defer clause when a target cluster is needed for cleanup before
+// the upgrade can be run to create the actual target cluster.
+func GetTempTargetCluster(t *testing.T) greenplum.Cluster {
+	t.Helper()
+
+	source := GetSourceCluster(t)
+
+	targetVersion, err := greenplum.Version(GPHOME_TARGET)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tmpTarget := &source
+	tmpTarget.Destination = idl.ClusterDestination_target
+	tmpTarget.GPHome = GPHOME_TARGET
+	tmpTarget.Version = targetVersion
+
+	return *tmpTarget
+}
+
 func getCluster(t *testing.T, gphome string, port int, destination idl.ClusterDestination) greenplum.Cluster {
 	t.Helper()
 
@@ -255,11 +276,10 @@ func backupDemoCluster(t *testing.T, backupDir string, source greenplum.Cluster)
 }
 
 // restoreDemoCluster restores the cluster after finalize has been run.
-func restoreDemoCluster(t *testing.T, backupDir string, source greenplum.Cluster) {
+func restoreDemoCluster(t *testing.T, backupDir string, source greenplum.Cluster, target greenplum.Cluster) {
 	// Depending on where we failed we need to stop either the source or target cluster.
 	err := source.Stop(step.DevNullStream)
 	if err != nil {
-		target := GetTargetCluster(t)
 		err = target.Stop(step.DevNullStream)
 		if err != nil {
 			t.Fatal(err)

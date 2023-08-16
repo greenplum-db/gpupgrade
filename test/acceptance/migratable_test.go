@@ -42,7 +42,7 @@ func TestMigrationScripts(t *testing.T) {
 
 	t.Run("migration scripts generate sql to modify non-upgradeable objects and fix pg_upgrade check errors", func(t *testing.T) {
 		backupDemoCluster(t, backupDir, source)
-		defer restoreDemoCluster(t, backupDir, source)
+		defer restoreDemoCluster(t, backupDir, source, GetTempTargetCluster(t))
 
 		// Remove any default non-upgradeable objects such as GPDB 5X gphdfs role.
 		generate(t, migrationDir)

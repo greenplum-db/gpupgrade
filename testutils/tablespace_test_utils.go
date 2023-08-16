@@ -104,35 +104,38 @@ func MustCreateFilespaceAndTablespace(t *testing.T, cluster greenplum.Cluster, t
 	MustExecuteSQL(t, cluster.Connection(greenplum.Database("postgres")), `CREATE TABLESPACE batsTbsp FILESPACE batsFS;`)
 }
 
-func MustDeleteTablespaces(t *testing.T, cluster greenplum.Cluster) {
+// MustDeleteTablespaces deletes tablespaces from the target cluster. However,
+// since we do not yet support upgrading tablespaces from version GPDB 6+ we do
+// not need to delete them as they do not exist.
+func MustDeleteTablespaces(t *testing.T, source greenplum.Cluster, target greenplum.Cluster) {
 	t.Helper()
 
-	if cluster.Version.Major >= 6 {
+	if source.Version.Major >= 6 {
 		return
 	}
 
-	conn := cluster.Connection(greenplum.Database("foodb"))
+	conn := target.Connection(greenplum.Database("foodb"))
 	MustExecuteSQL(t, conn, `DROP TABLE IF EXISTS public.tablespace_table_0;`)
 
-	conn = cluster.Connection(greenplum.Database("eatdb"))
+	conn = target.Connection(greenplum.Database("eatdb"))
 	MustExecuteSQL(t, conn, `DROP TABLE IF EXISTS public.tablespace_table_0;`)
 
-	MustExecuteSQL(t, cluster.Connection(), `DROP DATABASE foodb;`)
-	MustExecuteSQL(t, cluster.Connection(), `DROP DATABASE eatdb;`)
+	MustExecuteSQL(t, target.Connection(), `DROP DATABASE foodb;`)
+	MustExecuteSQL(t, target.Connection(), `DROP DATABASE eatdb;`)
 
 	sql := `
 DROP TABLE IF EXISTS public.tablespace_table_0;
 DROP TABLE IF EXISTS public.tablespace_table_1;
 DROP TABLE IF EXISTS public.tablespace_table_2;
 DROP TABLE IF EXISTS public.tablespace_table_3;`
-	MustExecuteSQL(t, cluster.Connection(greenplum.Database("postgres")), sql)
+	MustExecuteSQL(t, target.Connection(greenplum.Database("postgres")), sql)
 
 	sql = `DROP TABLESPACE IF EXISTS batsTbsp;`
-	if cluster.Version.Major == 5 {
+	if target.Version.Major == 5 {
 		sql += `DROP FILESPACE IF EXISTS batsFS;`
 	}
 
-	MustExecuteSQL(t, cluster.Connection(greenplum.Database("postgres")), sql)
+	MustExecuteSQL(t, target.Connection(greenplum.Database("postgres")), sql)
 }
 
 func MustTruncateTablespaces(t *testing.T, cluster greenplum.Cluster) {

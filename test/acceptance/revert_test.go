@@ -180,7 +180,7 @@ func testRevertAfterExecute(t *testing.T, mode idl.Mode, upgradeFailure UpgradeF
 
 	// add tablespace
 	testutils.MustAddTablespace(t, source, tempDir)
-	defer testutils.MustDeleteTablespaces(t, source)
+	defer testutils.MustDeleteTablespaces(t, source, source) // since we revert we need to remove tablespaces from the source cluster and not the target
 
 	// dump all databases before the upgrade
 	err := source.RunGreenplumCmd(step.NewLogStdStreams(false), "pg_dumpall", "--schema-only", "-f", filepath.Join(tempDir, "before.sql"))
