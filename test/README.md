@@ -110,6 +110,7 @@ substitutions used to perform a "smart" diff.
    * **Entire suite**: `bats test/acceptance/pg_upgrade.bats`
    * **Non-upgradeable tests**: `bats -f "pg_upgrade --check detects non-upgradeable objects" test/acceptance/pg_upgrade.bats`
    * **Upgradeable tests**: `bats -f "pg_upgrade upgradeable tests" test/acceptance/pg_upgrade.bats`
+   * **Migratable tests**: `go test -count=1 -v ./test/acceptance -run TestMigrationScripts`
    * **Focused non-upgradeable tests**: Set the environment variable
      `NON_UPGRADEABLE_TESTS` to a space separated list of tests before running
      bats. For instance:
@@ -120,6 +121,11 @@ substitutions used to perform a "smart" diff.
      to a space separated list of tests before running bats. For instance:
      ```
      UPGRADEABLE_TESTS="ao_table aoco_table" bats -f "pg_upgrade upgradeable tests" test/acceptance/pg_upgrade.bats
+     ```
+   * **Focused migratable tests**: Set the environment variable `FOCUS_TESTS`
+     to a space separated list of tests before running bats. For instance:
+     ```
+     FOCUS_TESTS="partition_index view_owner" go test -count=1 -v ./test/acceptance -run TestMigrationScripts
      ```
 ### pg_upgrade: non-upgradeable tests (negative tests)
 
@@ -175,3 +181,24 @@ been upgraded successfully in the target cluster.
 Notes:
 - The majority of the upgradeable tests *can* be run in  parallel as opposed to
 non-upgradeable tests.
+
+### pg_upgrade: migratable tests (positive tests)
+
+The migratable acceptance tests are positive tests. They contain objects that are
+not directly upgradable by pg_upgrade unless modified by migrations scripts.
+This can include:
+- Dropping non-upgradable objects before upgrade and recreating them post-upgrade.
+- Modifying the object such as column type to a more upgrade friendly format.
+
+The test framework executes the following steps:
+- Runs all the tests in `source_cluster_regress/migratable_source_schedule`
+to create all the upgradeable objects in the source cluster.
+- Runs the `initialize` data migration scripts.
+- Upgrades the cluster with `gpupgrade initialize`, `gpupgrade execute`, `gpupgrade finalize`.
+- Runs the `finalize` data migration scripts.
+- Runs all the tests in `target_cluster_regress/migratable_target_schedule` to
+validate that all the migratable objects created in the source cluster have
+been upgraded successfully in the target cluster.
+
+Notes:
+- The majority of the migratable tests *can* be run in parallel.
