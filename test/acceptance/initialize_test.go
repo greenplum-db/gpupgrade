@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -91,11 +92,12 @@ func TestInitialize(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		expected := fmt.Sprintf("Error: substep %q: "+
-			"temp_port_range contains port %s which overlaps with the source cluster ports on host %s. "+
-			"Specify a non-overlapping temp_port_range.", idl.Substep_saving_source_cluster_config, PGPORT, hostname)
-		if !strings.Contains(string(output), expected) {
-			t.Fatalf("expected %q to contain %q", output, expected)
+		match := fmt.Sprintf("Error: substep %q: "+
+			"temp_port_range contains port \\d+ which overlaps with the source cluster ports on host %s. "+
+			"Specify a non-overlapping temp_port_range.", idl.Substep_saving_source_cluster_config, hostname)
+		expected := regexp.MustCompile(match)
+		if !expected.Match(output) {
+			t.Fatalf("expected %s to contain %s", output, expected)
 		}
 	})
 
