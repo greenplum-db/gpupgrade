@@ -40,7 +40,7 @@ Optimize the review experience for others. The goal is to make reviewing PRs eas
 
 ## Contributing
 
-- Sign our [Contributor License Agreement](https://cla.pivotal.io/sign/greenplum).
+- Sign our [Contributor License Agreement](https://cla.vmware.com/cla/1/preview).
 
 - Fork the gpupgrade repository on GitHub.
 
