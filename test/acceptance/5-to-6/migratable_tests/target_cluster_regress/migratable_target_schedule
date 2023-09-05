@@ -1,1 +1,1 @@
-test: tables_using_tsquery_type unique_primary_foreign_key_constraint
+test: tables_using_tsquery_type unique_primary_foreign_key_constraint heterogeneous_partition_tables

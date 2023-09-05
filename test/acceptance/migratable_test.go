@@ -41,6 +41,8 @@ func TestMigrationScripts(t *testing.T) {
 	testDir := filepath.Join(MustGetRepoRoot(t), "test", "acceptance", dir, "migratable_tests")
 
 	t.Run("migration scripts generate sql to modify non-upgradeable objects and fix pg_upgrade check errors", func(t *testing.T) {
+		killServices(t)
+
 		backupDemoCluster(t, backupDir, source)
 		defer restoreDemoCluster(t, backupDir, source, GetTempTargetCluster(t))
 
