@@ -1,0 +1,160 @@
+-- Copyright (c) 2017-2023 VMware, Inc. or its affiliates
+-- SPDX-License-Identifier: Apache-2.0
+
+--------------------------------------------------------------------------------
+-- Create and setup migratable objects
+--------------------------------------------------------------------------------
+
+-- check data
+SELECT * FROM test_scores ORDER BY 1, 2;
+ student_id | score 
+------------+-------
+ 1          | 50    
+ 2          | 60    
+ 3          | 70    
+ 4          | 80    
+ 5          | 90    
+(5 rows)
+SELECT * FROM sales ORDER BY 1, 2, 3;
+ trans_id | office_id | region 
+----------+-----------+--------
+ 1        | 1         | asia   
+ 1        | 2         | asia   
+ 1        | 3         | asia   
+ 2        | 1         | europe 
+ 2        | 2         | europe 
+ 2        | 3         | europe 
+(6 rows)
+
+-- check root partition index
+SELECT indrelid::regclass AS table_name, unnest(indkey) AS column_num FROM pg_index pi JOIN pg_partition pp ON pi.indrelid = pp.parrelid JOIN pg_class pc ON pc.oid = pp.parrelid WHERE pc.relname = 'test_scores' OR pc.relname = 'sales' ORDER BY 1, 2;
+ table_name  | column_num 
+-------------+------------
+ test_scores | 2          
+ sales       | 1          
+ sales       | 1          
+ sales       | 1          
+ sales       | 2          
+ sales       | 2          
+ sales       | 2          
+ sales       | 2          
+ sales       | 2          
+ sales       | 2          
+(10 rows)
+
+-- check child partition indexes
+SELECT indrelid::regclass AS table_name, unnest(indkey) AS column_num FROM pg_index pi JOIN pg_partition_rule pp ON pi.indrelid=pp.parchildrelid JOIN pg_class pc ON pc.oid=pp.parchildrelid WHERE pc.relname LIKE 'test_scores%' OR pc.relname LIKE 'sales%' AND pc.relhassubclass='f' ORDER by 1, 2;
+ table_name                                     | column_num 
+------------------------------------------------+------------
+ test_scores_1_prt_1                            | 2          
+ test_scores_1_prt_2                            | 2          
+ test_scores_1_prt_3                            | 2          
+ test_scores_1_prt_4                            | 2          
+ test_scores_1_prt_5                            | 2          
+ sales_1_prt_outlying_dates_2_prt_usa           | 1          
+ sales_1_prt_outlying_dates_2_prt_usa           | 2          
+ sales_1_prt_outlying_dates_2_prt_usa           | 2          
+ sales_1_prt_outlying_dates_2_prt_asia          | 1          
+ sales_1_prt_outlying_dates_2_prt_asia          | 2          
+ sales_1_prt_outlying_dates_2_prt_asia          | 2          
+ sales_1_prt_outlying_dates_2_prt_europe        | 1          
+ sales_1_prt_outlying_dates_2_prt_europe        | 2          
+ sales_1_prt_outlying_dates_2_prt_europe        | 2          
+ sales_1_prt_outlying_dates_2_prt_other_regions | 1          
+ sales_1_prt_outlying_dates_2_prt_other_regions | 2          
+ sales_1_prt_outlying_dates_2_prt_other_regions | 2          
+ sales_1_prt_2_2_prt_usa                        | 1          
+ sales_1_prt_2_2_prt_usa                        | 2          
+ sales_1_prt_2_2_prt_usa                        | 2          
+ sales_1_prt_2_2_prt_asia                       | 1          
+ sales_1_prt_2_2_prt_asia                       | 2          
+ sales_1_prt_2_2_prt_asia                       | 2          
+ sales_1_prt_2_2_prt_europe                     | 1          
+ sales_1_prt_2_2_prt_europe                     | 2          
+ sales_1_prt_2_2_prt_europe                     | 2          
+ sales_1_prt_2_2_prt_other_regions              | 1          
+ sales_1_prt_2_2_prt_other_regions              | 2          
+ sales_1_prt_2_2_prt_other_regions              | 2          
+ sales_1_prt_3_2_prt_usa                        | 1          
+ sales_1_prt_3_2_prt_usa                        | 2          
+ sales_1_prt_3_2_prt_usa                        | 2          
+ sales_1_prt_3_2_prt_asia                       | 1          
+ sales_1_prt_3_2_prt_asia                       | 2          
+ sales_1_prt_3_2_prt_asia                       | 2          
+ sales_1_prt_3_2_prt_asia                       | 3          
+ sales_1_prt_3_2_prt_europe                     | 1          
+ sales_1_prt_3_2_prt_europe                     | 2          
+ sales_1_prt_3_2_prt_europe                     | 2          
+ sales_1_prt_3_2_prt_other_regions              | 1          
+ sales_1_prt_3_2_prt_other_regions              | 2          
+ sales_1_prt_3_2_prt_other_regions              | 2          
+ sales_1_prt_4_2_prt_usa                        | 1          
+ sales_1_prt_4_2_prt_usa                        | 2          
+ sales_1_prt_4_2_prt_usa                        | 2          
+ sales_1_prt_4_2_prt_asia                       | 1          
+ sales_1_prt_4_2_prt_asia                       | 2          
+ sales_1_prt_4_2_prt_asia                       | 2          
+ sales_1_prt_4_2_prt_europe                     | 1          
+ sales_1_prt_4_2_prt_europe                     | 2          
+ sales_1_prt_4_2_prt_europe                     | 2          
+ sales_1_prt_4_2_prt_other_regions              | 1          
+ sales_1_prt_4_2_prt_other_regions              | 2          
+ sales_1_prt_4_2_prt_other_regions              | 2          
+(54 rows)
+
+-- insert data
+INSERT INTO test_scores VALUES (6, 51);
+INSERT 1
+INSERT INTO test_scores VALUES (7, 61);
+INSERT 1
+INSERT INTO test_scores VALUES (8, 71);
+INSERT 1
+INSERT INTO test_scores VALUES (9, 81);
+INSERT 1
+INSERT INTO test_scores VALUES (10, 91);
+INSERT 1
+
+INSERT INTO sales VALUES (3, 1, 'usa');
+INSERT 1
+INSERT INTO sales VALUES (3, 2, 'usa');
+INSERT 1
+INSERT INTO sales VALUES (3, 3, 'usa');
+INSERT 1
+INSERT INTO sales VALUES (4, 1, 'zzz');
+INSERT 1
+INSERT INTO sales VALUES (4, 2, 'zzz');
+INSERT 1
+INSERT INTO sales VALUES (4, 3, 'zzz');
+INSERT 1
+
+-- check data
+SELECT * FROM test_scores ORDER BY 1, 2;
+ student_id | score 
+------------+-------
+ 1          | 50    
+ 2          | 60    
+ 3          | 70    
+ 4          | 80    
+ 5          | 90    
+ 6          | 51    
+ 7          | 61    
+ 8          | 71    
+ 9          | 81    
+ 10         | 91    
+(10 rows)
+SELECT * FROM sales ORDER BY 1, 2, 3;
+ trans_id | office_id | region 
+----------+-----------+--------
+ 1        | 1         | asia   
+ 1        | 2         | asia   
+ 1        | 3         | asia   
+ 2        | 1         | europe 
+ 2        | 2         | europe 
+ 2        | 3         | europe 
+ 3        | 1         | usa    
+ 3        | 2         | usa    
+ 3        | 3         | usa    
+ 4        | 1         | zzz    
+ 4        | 2         | zzz    
+ 4        | 3         | zzz    
+(12 rows)

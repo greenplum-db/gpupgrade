@@ -1,0 +1,150 @@
+-- Copyright (c) 2017-2023 VMware, Inc. or its affiliates
+-- SPDX-License-Identifier: Apache-2.0
+
+--------------------------------------------------------------------------------
+-- Create and setup migratable objects
+--------------------------------------------------------------------------------
+
+-- simple partition tables with indexes
+CREATE TABLE test_scores (student_id int, score int) PARTITION BY RANGE (score) ( START (0) INCLUSIVE END (60) EXCLUSIVE, START (60) INCLUSIVE END (70) EXCLUSIVE, START (70) INCLUSIVE END (80) EXCLUSIVE, START (80) INCLUSIVE END (90) EXCLUSIVE, START (90) INCLUSIVE END (101) EXCLUSIVE );
+CREATE
+CREATE INDEX test_scores_idx ON test_scores(score);
+CREATE
+
+INSERT INTO test_scores VALUES (1, 50);
+INSERT 1
+INSERT INTO test_scores VALUES (2, 60);
+INSERT 1
+INSERT INTO test_scores VALUES (3, 70);
+INSERT 1
+INSERT INTO test_scores VALUES (4, 80);
+INSERT 1
+INSERT INTO test_scores VALUES (5, 90);
+INSERT 1
+
+-- create multi level partitioned table with indexes
+CREATE TABLE sales ( trans_id int, office_id int, region text ) DISTRIBUTED BY (trans_id) PARTITION BY RANGE (office_id) SUBPARTITION BY LIST (region) SUBPARTITION TEMPLATE ( SUBPARTITION usa VALUES ('usa'), SUBPARTITION asia VALUES ('asia'), SUBPARTITION europe VALUES ('europe'), DEFAULT SUBPARTITION other_regions ) ( START (1) END (4) EVERY (1), DEFAULT PARTITION outlying_dates );
+CREATE
+
+CREATE INDEX sales_idx on sales(office_id);
+CREATE
+CREATE INDEX sales_idx_bitmap on sales using bitmap(office_id);
+CREATE
+CREATE INDEX sales_1_prt_2_idx on sales_1_prt_2(office_id, region);
+CREATE
+CREATE INDEX sales_1_prt_3_2_prt_asia_idx on sales_1_prt_3_2_prt_asia(region);
+CREATE
+CREATE INDEX sales_1_prt_outlying_dates_idx on sales_1_prt_outlying_dates(trans_id);
+CREATE
+CREATE UNIQUE INDEX sales_unique_idx on sales(trans_id);
+CREATE
+
+INSERT INTO sales VALUES (1, 1, 'asia');
+INSERT 1
+INSERT INTO sales VALUES (1, 2, 'asia');
+INSERT 1
+INSERT INTO sales VALUES (1, 3, 'asia');
+INSERT 1
+INSERT INTO sales VALUES (2, 1, 'europe');
+INSERT 1
+INSERT INTO sales VALUES (2, 2, 'europe');
+INSERT 1
+INSERT INTO sales VALUES (2, 3, 'europe');
+INSERT 1
+
+-- check root partition index
+SELECT indrelid::regclass AS table_name, unnest(indkey) AS column_num FROM pg_index pi JOIN pg_partition pp ON pi.indrelid = pp.parrelid JOIN pg_class pc ON pc.oid = pp.parrelid WHERE pc.relname = 'test_scores' OR pc.relname = 'sales' ORDER BY 1, 2;
+ table_name  | column_num 
+-------------+------------
+ test_scores | 2          
+ sales       | 1          
+ sales       | 1          
+ sales       | 1          
+ sales       | 2          
+ sales       | 2          
+ sales       | 2          
+ sales       | 2          
+ sales       | 2          
+ sales       | 2          
+(10 rows)
+
+-- check child partition indexes
+SELECT indrelid::regclass AS table_name, unnest(indkey) AS column_num FROM pg_index pi JOIN pg_partition_rule pp ON pi.indrelid=pp.parchildrelid JOIN pg_class pc ON pc.oid=pp.parchildrelid WHERE pc.relname LIKE 'test_scores%' OR pc.relname LIKE 'sales%' AND pc.relhassubclass='f' ORDER by 1, 2;
+ table_name                                     | column_num 
+------------------------------------------------+------------
+ test_scores_1_prt_1                            | 2          
+ test_scores_1_prt_2                            | 2          
+ test_scores_1_prt_3                            | 2          
+ test_scores_1_prt_4                            | 2          
+ test_scores_1_prt_5                            | 2          
+ sales_1_prt_outlying_dates_2_prt_usa           | 1          
+ sales_1_prt_outlying_dates_2_prt_usa           | 2          
+ sales_1_prt_outlying_dates_2_prt_usa           | 2          
+ sales_1_prt_outlying_dates_2_prt_asia          | 1          
+ sales_1_prt_outlying_dates_2_prt_asia          | 2          
+ sales_1_prt_outlying_dates_2_prt_asia          | 2          
+ sales_1_prt_outlying_dates_2_prt_europe        | 1          
+ sales_1_prt_outlying_dates_2_prt_europe        | 2          
+ sales_1_prt_outlying_dates_2_prt_europe        | 2          
+ sales_1_prt_outlying_dates_2_prt_other_regions | 1          
+ sales_1_prt_outlying_dates_2_prt_other_regions | 2          
+ sales_1_prt_outlying_dates_2_prt_other_regions | 2          
+ sales_1_prt_2_2_prt_usa                        | 1          
+ sales_1_prt_2_2_prt_usa                        | 2          
+ sales_1_prt_2_2_prt_usa                        | 2          
+ sales_1_prt_2_2_prt_asia                       | 1          
+ sales_1_prt_2_2_prt_asia                       | 2          
+ sales_1_prt_2_2_prt_asia                       | 2          
+ sales_1_prt_2_2_prt_europe                     | 1          
+ sales_1_prt_2_2_prt_europe                     | 2          
+ sales_1_prt_2_2_prt_europe                     | 2          
+ sales_1_prt_2_2_prt_other_regions              | 1          
+ sales_1_prt_2_2_prt_other_regions              | 2          
+ sales_1_prt_2_2_prt_other_regions              | 2          
+ sales_1_prt_3_2_prt_usa                        | 1          
+ sales_1_prt_3_2_prt_usa                        | 2          
+ sales_1_prt_3_2_prt_usa                        | 2          
+ sales_1_prt_3_2_prt_asia                       | 1          
+ sales_1_prt_3_2_prt_asia                       | 2          
+ sales_1_prt_3_2_prt_asia                       | 2          
+ sales_1_prt_3_2_prt_asia                       | 3          
+ sales_1_prt_3_2_prt_europe                     | 1          
+ sales_1_prt_3_2_prt_europe                     | 2          
+ sales_1_prt_3_2_prt_europe                     | 2          
+ sales_1_prt_3_2_prt_other_regions              | 1          
+ sales_1_prt_3_2_prt_other_regions              | 2          
+ sales_1_prt_3_2_prt_other_regions              | 2          
+ sales_1_prt_4_2_prt_usa                        | 1          
+ sales_1_prt_4_2_prt_usa                        | 2          
+ sales_1_prt_4_2_prt_usa                        | 2          
+ sales_1_prt_4_2_prt_asia                       | 1          
+ sales_1_prt_4_2_prt_asia                       | 2          
+ sales_1_prt_4_2_prt_asia                       | 2          
+ sales_1_prt_4_2_prt_europe                     | 1          
+ sales_1_prt_4_2_prt_europe                     | 2          
+ sales_1_prt_4_2_prt_europe                     | 2          
+ sales_1_prt_4_2_prt_other_regions              | 1          
+ sales_1_prt_4_2_prt_other_regions              | 2          
+ sales_1_prt_4_2_prt_other_regions              | 2          
+(54 rows)
+
+-- check data
+SELECT * FROM test_scores ORDER BY 1, 2;
+ student_id | score 
+------------+-------
+ 1          | 50    
+ 2          | 60    
+ 3          | 70    
+ 4          | 80    
+ 5          | 90    
+(5 rows)
+SELECT * FROM sales ORDER BY 1, 2, 3;
+ trans_id | office_id | region 
+----------+-----------+--------
+ 1        | 1         | asia   
+ 1        | 2         | asia   
+ 1        | 3         | asia   
+ 2        | 1         | europe 
+ 2        | 2         | europe 
+ 2        | 3         | europe 
+(6 rows)
