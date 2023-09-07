@@ -1,0 +1,46 @@
+-- Copyright (c) 2017-2023 VMware, Inc. or its affiliates
+-- SPDX-License-Identifier: Apache-2.0
+
+--------------------------------------------------------------------------------
+-- Create and setup migratable objects
+--------------------------------------------------------------------------------
+
+-- check data
+SELECT * from ao_root_partition ORDER BY 1, 2;
+ a | b 
+---+---
+ 1 | 1 
+ 1 | 2 
+ 1 | 3 
+(3 rows)
+SELECT * FROM aoco_root_partition ORDER BY 1, 2;
+ a | b 
+---+---
+ 1 | 1 
+ 1 | 2 
+ 1 | 3 
+(3 rows)
+
+-- exercise object
+INSERT INTO ao_root_partition VALUES(1, 4);
+INSERT 1
+INSERT INTO aoco_root_partition VALUES(1, 4);
+INSERT 1
+
+-- check data
+SELECT * from ao_root_partition ORDER BY 1, 2;
+ a | b 
+---+---
+ 1 | 1 
+ 1 | 2 
+ 1 | 3 
+ 1 | 4 
+(4 rows)
+SELECT * FROM aoco_root_partition ORDER BY 1, 2;
+ a | b 
+---+---
+ 1 | 1 
+ 1 | 2 
+ 1 | 3 
+ 1 | 4 
+(4 rows)
