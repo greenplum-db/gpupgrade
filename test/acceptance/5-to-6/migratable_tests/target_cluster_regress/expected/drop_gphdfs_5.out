@@ -1,0 +1,24 @@
+-- Copyright (c) 2017-2023 VMware, Inc. or its affiliates
+-- SPDX-License-Identifier: Apache-2.0
+
+--------------------------------------------------------------------------------
+-- Create and setup migratable objects
+--------------------------------------------------------------------------------
+
+-- check gphdfs
+SELECT proname FROM pg_proc WHERE proname='noop';
+ proname 
+---------
+ noop    
+(1 row)
+SELECT relname FROM pg_class WHERE relname LIKE '%gphdfs' AND relstorage='x';
+ relname    
+------------
+ ext gphdfs 
+ ext_gphdfs 
+(2 rows)
+SELECT ptcname FROM pg_extprotocol where ptcname='gphdfs';
+ ptcname 
+---------
+ gphdfs  
+(1 row)

@@ -41,3 +41,4 @@ $$ LANGUAGE plpgsql;
 
 SELECT drop_gphdfs();
 DROP FUNCTION drop_gphdfs();
+DROP PROTOCOL IF EXISTS gphdfs CASCADE;

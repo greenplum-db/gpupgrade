@@ -1,0 +1,36 @@
+-- Copyright (c) 2017-2023 VMware, Inc. or its affiliates
+-- SPDX-License-Identifier: Apache-2.0
+
+--------------------------------------------------------------------------------
+-- Create and setup migratable objects
+--------------------------------------------------------------------------------
+
+-- create external gphdfs table fake the gphdfs protocol so that it doesn't
+-- actually have to be installed
+CREATE FUNCTION noop() RETURNS integer AS 'select 0' LANGUAGE SQL;
+CREATE
+CREATE PROTOCOL gphdfs (writefunc=noop, readfunc=noop);
+CREATE
+
+CREATE EXTERNAL TABLE ext_gphdfs (name text) LOCATION ('gphdfs://example.com/data/filename.txt') FORMAT 'TEXT' (DELIMITER '|');
+CREATE
+CREATE EXTERNAL TABLE "ext gphdfs" (name text) LOCATION ('gphdfs://example.com/data/filename.txt') FORMAT 'TEXT' (DELIMITER '|');
+CREATE
+
+-- check gphdfs
+SELECT proname FROM pg_proc WHERE proname='noop';
+ proname 
+---------
+ noop    
+(1 row)
+SELECT relname FROM pg_class WHERE relname LIKE '%gphdfs' AND relstorage='x';
+ relname    
+------------
+ ext gphdfs 
+ ext_gphdfs 
+(2 rows)
+SELECT ptcname FROM pg_extprotocol where ptcname='gphdfs';
+ ptcname 
+---------
+ gphdfs  
+(1 row)

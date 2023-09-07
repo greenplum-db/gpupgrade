@@ -1,0 +1,10 @@
+-- Copyright (c) 2017-2023 VMware, Inc. or its affiliates
+-- SPDX-License-Identifier: Apache-2.0
+
+-- Since we test data migration scripts both 1) after upgrading and 2) reverting
+-- after initialize and execute we reuse the same expected file to avoid code
+-- duplication. We have one file for 5X named _5.out and another for 6X named
+-- _6.out. A base file name.out is needed to prevent pg_isolation_regress from
+-- failing with missing expected output. The isolation2 framework first compares
+-- the base expected file name.out, and then any subsequent files such as _5.out,
+-- and _6.out. If any of them match the test passes.
