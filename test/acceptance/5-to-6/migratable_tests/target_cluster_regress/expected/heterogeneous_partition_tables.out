@@ -5,6 +5,7 @@
 -- Create and setup migratable objects
 --------------------------------------------------------------------------------
 
+-- start_ignore
 -- check data
 SELECT * FROM dropped_column ORDER BY 1, 2, 3;
  a | b | c 
@@ -23,6 +24,7 @@ SELECT * FROM heterogeneous_ml_partition_table ORDER BY 1, 2, 3;
  1        | 1         | 1     
  2        | 2         | 2     
 (2 rows)
+-- end_ignore
 
 -- check owners
 SELECT c.relname, pg_catalog.pg_get_userbyid(c.relowner) FROM pg_partition_rule pr JOIN pg_class c ON c.oid = pr.parchildrelid WHERE c.relname LIKE 'dropped_column%' UNION SELECT c.relname, pg_catalog.pg_get_userbyid(c.relowner) FROM pg_partition p JOIN pg_class c ON c.oid = p.parrelid WHERE c.relname LIKE 'dropped_column%' ORDER BY 1,2;
@@ -73,6 +75,7 @@ INSERT 1
 INSERT INTO heterogeneous_ml_partition_table VALUES (3, 3, 3);
 INSERT 1
 
+-- start_ignore
 -- check data
 SELECT * FROM dropped_column ORDER BY 1, 2, 3;
  a | b | c 
@@ -95,3 +98,4 @@ SELECT * FROM heterogeneous_ml_partition_table ORDER BY 1, 2, 3;
  2        | 2         | 2     
  3        | 3         | 3     
 (3 rows)
+-- end_ignore

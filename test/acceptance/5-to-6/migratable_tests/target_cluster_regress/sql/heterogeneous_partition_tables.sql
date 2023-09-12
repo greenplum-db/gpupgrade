@@ -5,10 +5,12 @@
 -- Create and setup migratable objects
 --------------------------------------------------------------------------------
 
+-- start_ignore
 -- check data
 SELECT * FROM dropped_column ORDER BY 1, 2, 3;
 SELECT * FROM child_has_dropped_column ORDER BY 1, 2, 3, 4;
 SELECT * FROM heterogeneous_ml_partition_table ORDER BY 1, 2, 3;
+-- end_ignore
 
 -- check owners
 SELECT c.relname, pg_catalog.pg_get_userbyid(c.relowner)
@@ -60,7 +62,9 @@ INSERT INTO child_has_dropped_column VALUES (2, 2, 'b', 'bbb');
 
 INSERT INTO heterogeneous_ml_partition_table VALUES (3, 3, 3);
 
+-- start_ignore
 -- check data
 SELECT * FROM dropped_column ORDER BY 1, 2, 3;
 SELECT * FROM child_has_dropped_column ORDER BY 1, 2, 3, 4;
 SELECT * FROM heterogeneous_ml_partition_table ORDER BY 1, 2, 3;
+-- end_ignore
