@@ -63,7 +63,7 @@ func TestMigrationScripts(t *testing.T) {
 
 		apply(t, GPHOME_TARGET, PGPORT, idl.Step_finalize, migrationDir)
 
-		target_isolation2_regress(t, source.Version, testDir, "migratable_source_schedule")
+		target_isolation2_regress(t, source.Version, testDir, "migratable_target_schedule")
 	})
 }
 
@@ -126,7 +126,7 @@ func target_isolation2_regress(t *testing.T, sourceVersion semver.Version, testD
 		binDir = "--bindir"
 	}
 
-	tests := "--schedule=" + filepath.Join(testDir, "source_cluster_regress", schedule)
+	tests := "--schedule=" + filepath.Join(testDir, "target_cluster_regress", schedule)
 	focus := os.Getenv("FOCUS_TESTS")
 	if focus != "" {
 		tests = focus
