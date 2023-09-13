@@ -1,0 +1,205 @@
+-- Copyright (c) 2017-2023 VMware, Inc. or its affiliates
+-- SPDX-License-Identifier: Apache-2.0
+
+--------------------------------------------------------------------------------
+-- Create and setup migratable objects
+--------------------------------------------------------------------------------
+CREATE SCHEMA tsquery_schema;
+CREATE
+SET search_path to tsquery_schema;
+SET
+
+-- partition table with columns of tsquery datatype
+CREATE TABLE tsquery_pt_table ( a int, b tsquery, c tsquery, d tsquery ) PARTITION BY RANGE (a) ( START (1) END (4) EVERY (1) );
+CREATE
+INSERT INTO tsquery_pt_table VALUES (1, 'b & c'::tsquery, 'b & c'::tsquery, 'b & c'::tsquery);
+INSERT 1
+INSERT INTO tsquery_pt_table VALUES (2, 'e & f'::tsquery, 'e & f'::tsquery, 'e & f'::tsquery);
+INSERT 1
+INSERT INTO tsquery_pt_table VALUES (3, 'x & y'::tsquery, 'x & y'::tsquery, 'x & y'::tsquery);
+INSERT 1
+
+-- composite index
+CREATE TABLE tsquery_composite(i int, j tsquery, k tsquery);
+CREATE
+CREATE INDEX tsquery_composite_idx ON tsquery_composite(j, k);
+CREATE
+INSERT INTO tsquery_composite VALUES (1, 'b & c'::tsquery, 'b & c'::tsquery);
+INSERT 1
+INSERT INTO tsquery_composite VALUES (2, 'e & f'::tsquery, 'e & f'::tsquery);
+INSERT 1
+INSERT INTO tsquery_composite VALUES (3, 'x & y'::tsquery, 'x & y'::tsquery);
+INSERT 1
+
+-- gist index
+CREATE TABLE tsquery_gist(i int, j tsquery, k tsquery);
+CREATE
+CREATE INDEX tsquery_gist_idx ON tsquery_gist using gist(j) ;
+CREATE
+INSERT INTO tsquery_gist VALUES (1, 'b & c'::tsquery, 'b & c'::tsquery);
+INSERT 1
+INSERT INTO tsquery_gist VALUES (2, 'e & f'::tsquery, 'e & f'::tsquery);
+INSERT 1
+INSERT INTO tsquery_gist VALUES (3, 'x & y'::tsquery, 'x & y'::tsquery);
+INSERT 1
+
+-- clustered index with comment
+CREATE TABLE tsquery_cluster_comment(i int, j tsquery, k tsquery);
+CREATE
+CREATE INDEX tsquery_cluster_comment_idx ON tsquery_cluster_comment(j);
+CREATE
+ALTER TABLE tsquery_cluster_comment CLUSTER ON tsquery_cluster_comment_idx;
+ALTER
+COMMENT ON INDEX tsquery_cluster_comment_idx IS 'hello world';
+COMMENT
+INSERT INTO tsquery_cluster_comment VALUES (1, 'b & c'::tsquery, 'b & c'::tsquery);
+INSERT 1
+INSERT INTO tsquery_cluster_comment VALUES (2, 'e & f'::tsquery, 'e & f'::tsquery);
+INSERT 1
+INSERT INTO tsquery_cluster_comment VALUES (3, 'x & y'::tsquery, 'x & y'::tsquery);
+INSERT 1
+
+-- inherits with tsquery column
+CREATE TABLE tsquery_inherits (e tsquery) INHERITS (tsquery_pt_table);
+CREATE
+INSERT INTO tsquery_inherits VALUES (1, 'b & c'::tsquery, 'b & c'::tsquery, 'b & c'::tsquery, 'a & a'::tsquery);
+INSERT 1
+INSERT INTO tsquery_inherits VALUES (2, 'e & f'::tsquery, 'e & f'::tsquery, 'e & f'::tsquery, 'b & b'::tsquery);
+INSERT 1
+INSERT INTO tsquery_inherits VALUES (3, 'x & y'::tsquery, 'x & y'::tsquery, 'x & y'::tsquery, 'c & c'::tsquery);
+INSERT 1
+
+-- extra tables for views that depend on tables using tsquery
+CREATE TABLE tsquery_table1 ( name     text, altitude tsquery );
+CREATE
+CREATE INDEX tsquery_table1_idx ON tsquery_table1(altitude);
+CREATE
+
+CREATE TABLE tsquery_table2 ( b tsquery );
+CREATE
+
+-- view dependency tests on deprecated tsquery
+-- view on tsquery from a table
+CREATE VIEW view_on_tsquery AS SELECT * FROM tsquery_table1;
+CREATE
+
+-- view on tsquery from multiple tables
+CREATE VIEW view_on_tsquery_mult_tables AS SELECT t1.name, t2.b FROM tsquery_table1 t1, tsquery_table2 t2;
+CREATE
+
+-- view on tsquery from a table and a view
+CREATE VIEW view_on_tsquery_table_view AS SELECT t1.name, v1.altitude FROM tsquery_table1 t1, view_on_tsquery v1;
+CREATE
+
+-- view on tsquery from multiple views
+CREATE VIEW view_on_tsquery_mult_views AS SELECT v1.name, v2.altitude FROM view_on_tsquery v1, view_on_tsquery_table_view v2;
+CREATE
+
+-- view on tsquery from a table and multiple views
+CREATE VIEW view_on_tsquery_table_mult_views AS SELECT t2.b, v1.name, v2.altitude FROM tsquery_table2 t2, view_on_tsquery v1, view_on_tsquery_table_view v2;
+CREATE
+
+-- view on tsquery from a table to make sure that the creation order of the views does not affect drop order
+CREATE VIEW view_on_tsquery_creation_order AS SELECT * FROM tsquery_table1;
+CREATE
+
+-- view on tsquery from multiple tables and multiple views
+CREATE VIEW view_on_tsquery_mult_tables_mult_views AS SELECT t1.name, t2.b, v1.altitude FROM tsquery_table1 t1, tsquery_table2 t2, view_on_tsquery v1, view_on_tsquery_mult_tables v2;
+CREATE
+ALTER TABLE view_on_tsquery_mult_tables_mult_views OWNER TO test_role1;
+ALTER
+
+-- check tsquery data
+SELECT * FROM tsquery_pt_table ORDER BY a;
+ a | b         | c         | d         
+---+-----------+-----------+-----------
+ 1 | 'b' & 'c' | 'b' & 'c' | 'b' & 'c' 
+ 2 | 'e' & 'f' | 'e' & 'f' | 'e' & 'f' 
+ 3 | 'x' & 'y' | 'x' & 'y' | 'x' & 'y' 
+(3 rows)
+SELECT * FROM tsquery_composite ORDER BY i;
+ i | j         | k         
+---+-----------+-----------
+ 1 | 'b' & 'c' | 'b' & 'c' 
+ 2 | 'e' & 'f' | 'e' & 'f' 
+ 3 | 'x' & 'y' | 'x' & 'y' 
+(3 rows)
+SELECT * FROM tsquery_gist ORDER BY i;
+ i | j         | k         
+---+-----------+-----------
+ 1 | 'b' & 'c' | 'b' & 'c' 
+ 2 | 'e' & 'f' | 'e' & 'f' 
+ 3 | 'x' & 'y' | 'x' & 'y' 
+(3 rows)
+SELECT * FROM tsquery_cluster_comment ORDER BY i;
+ i | j         | k         
+---+-----------+-----------
+ 1 | 'b' & 'c' | 'b' & 'c' 
+ 2 | 'e' & 'f' | 'e' & 'f' 
+ 3 | 'x' & 'y' | 'x' & 'y' 
+(3 rows)
+SELECT * FROM tsquery_inherits ORDER BY a;
+ a | b         | c         | d         | e         
+---+-----------+-----------+-----------+-----------
+ 1 | 'b' & 'c' | 'b' & 'c' | 'b' & 'c' | 'a' & 'a' 
+ 2 | 'e' & 'f' | 'e' & 'f' | 'e' & 'f' | 'b' & 'b' 
+ 3 | 'x' & 'y' | 'x' & 'y' | 'x' & 'y' | 'c' & 'c' 
+(3 rows)
+
+-- check tsquery relations
+SELECT n.nspname, c.relname, a.attname FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON c.relnamespace = n.oid JOIN pg_catalog.pg_attribute a ON c.oid = a.attrelid WHERE c.relkind = 'r' AND NOT a.attisdropped AND a.atttypid = 'pg_catalog.tsquery'::pg_catalog.regtype AND n.nspname !~ '^pg_temp_' AND n.nspname !~ '^pg_toast_temp_' AND n.nspname NOT IN ('pg_catalog', 'information_schema') AND c.oid NOT IN ( SELECT DISTINCT parchildrelid FROM pg_catalog.pg_partition_rule ) ORDER BY 1, 2, 3;
+ nspname        | relname                 | attname  
+----------------+-------------------------+----------
+ tsquery_schema | tsquery_cluster_comment | j        
+ tsquery_schema | tsquery_cluster_comment | k        
+ tsquery_schema | tsquery_composite       | j        
+ tsquery_schema | tsquery_composite       | k        
+ tsquery_schema | tsquery_gist            | j        
+ tsquery_schema | tsquery_gist            | k        
+ tsquery_schema | tsquery_inherits        | b        
+ tsquery_schema | tsquery_inherits        | c        
+ tsquery_schema | tsquery_inherits        | d        
+ tsquery_schema | tsquery_inherits        | e        
+ tsquery_schema | tsquery_pt_table        | b        
+ tsquery_schema | tsquery_pt_table        | c        
+ tsquery_schema | tsquery_pt_table        | d        
+ tsquery_schema | tsquery_table1          | altitude 
+ tsquery_schema | tsquery_table2          | b        
+(15 rows)
+
+-- check indexes
+SELECT c.relname AS index_name FROM pg_index i JOIN pg_class c ON i.indexrelid = c.oid JOIN pg_class t ON i.indrelid = t.oid WHERE t.relname LIKE 'tsquery%';
+ index_name                  
+-----------------------------
+ tsquery_cluster_comment_idx 
+ tsquery_composite_idx       
+ tsquery_gist_idx            
+ tsquery_table1_idx          
+(4 rows)
+
+-- check comment
+SELECT c.relname AS index_name, d.description AS index_comment FROM pg_index i JOIN pg_class c ON i.indexrelid = c.oid LEFT JOIN pg_description d ON c.oid = d.objoid WHERE c.relname = 'tsquery_cluster_comment_idx' AND d.objsubid = 0;
+ index_name                  | index_comment 
+-----------------------------+---------------
+ tsquery_cluster_comment_idx | hello world   
+(1 row)
+
+-- check views
+SELECT schemaname, viewname FROM pg_views WHERE schemaname NOT IN ('pg_catalog', 'information_schema', 'gp_toolkit') AND schemaname = 'tsquery_schema' ORDER BY 1, 2;
+ schemaname     | viewname                               
+----------------+----------------------------------------
+ tsquery_schema | view_on_tsquery                        
+ tsquery_schema | view_on_tsquery_creation_order         
+ tsquery_schema | view_on_tsquery_mult_tables            
+ tsquery_schema | view_on_tsquery_mult_tables_mult_views 
+ tsquery_schema | view_on_tsquery_mult_views             
+ tsquery_schema | view_on_tsquery_table_mult_views       
+ tsquery_schema | view_on_tsquery_table_view             
+(7 rows)
+
+-- check view owners
+SELECT schemaname, viewname, viewowner FROM pg_views WHERE schemaname NOT IN ('pg_catalog', 'information_schema', 'gp_toolkit') AND schemaname = 'tsquery_schema' AND viewowner = 'test_role1' ORDER BY 1, 2, 3;
+ schemaname     | viewname                               | viewowner  
+----------------+----------------------------------------+------------
+ tsquery_schema | view_on_tsquery_mult_tables_mult_views | test_role1 
+(1 row)
