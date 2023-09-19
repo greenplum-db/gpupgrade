@@ -4,6 +4,7 @@
 package gpupgrade_test
 
 import (
+	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
@@ -21,6 +22,16 @@ func TestPgUpgrade(t *testing.T) {
 
 	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 	defer resetEnv()
+
+	source := GetSourceCluster(t)
+	dir := "6-to-7"
+	if source.Version.Major == 5 {
+		dir = "5-to-6"
+	}
+
+	testDir := filepath.Join(MustGetRepoRoot(t), "test", "acceptance", dir)
+	testutils.MustApplySQLFile(t, GPHOME_SOURCE, PGPORT, filepath.Join(testDir, "setup_globals.sql"))
+	defer testutils.MustApplySQLFile(t, GPHOME_SOURCE, PGPORT, filepath.Join(testDir, "teardown_globals.sql"))
 
 	t.Run("gpupgrade initialize runs pg_upgrade --check on coordinator and primaries", func(t *testing.T) {
 		initialize(t, idl.Mode_copy)
@@ -44,8 +55,6 @@ func TestPgUpgrade(t *testing.T) {
 	})
 
 	t.Run("upgrade maintains separate DBID for each segment and initialize runs gpinitsystem based on the source cluster", func(t *testing.T) {
-		source := GetSourceCluster(t)
-
 		initialize(t, idl.Mode_copy)
 		defer revert(t)
 

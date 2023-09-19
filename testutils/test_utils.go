@@ -531,7 +531,7 @@ func VerifyClusterIsRunning(t *testing.T, cluster greenplum.Cluster) {
 func MustApplySQLFile(t *testing.T, gphome string, port string, path string) {
 	t.Helper()
 
-	_, err := commanders.ApplySQLFile(gphome, MustConvertStringToInt(t, port), "postgres", path, "-v", "ON_ERROR_STOP=1")
+	_, err := commanders.ApplySQLFile(gphome, MustConvertStringToInt(t, port), "template1", path, "-v", "ON_ERROR_STOP=1")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -6,11 +6,6 @@
 --------------------------------------------------------------------------------
 -- Create and setup upgradeable objects
 --------------------------------------------------------------------------------
-CREATE RESOURCE QUEUE test_queue WITH (ACTIVE_STATEMENTS=2, MIN_COST=1700, MAX_COST=2000, COST_OVERCOMMIT=false, PRIORITY=MIN, MEMORY_LIMIT ='10MB');
-
-CREATE RESOURCE GROUP test_group WITH (CONCURRENCY=5, CPU_RATE_LIMIT=5, MEMORY_LIMIT=5, MEMORY_SHARED_QUOTA=5, MEMORY_SPILL_RATIO=5);
-
-CREATE ROLE test_role resource group test_group resource queue test_queue;
 
 -- Ensure overridden attributes of the default queue and default groups are upgraded
 ALTER RESOURCE QUEUE pg_default WITH (ACTIVE_STATEMENTS=2, MIN_COST=1700, MAX_COST=2000, COST_OVERCOMMIT=false, PRIORITY=MIN, MEMORY_LIMIT ='10MB');

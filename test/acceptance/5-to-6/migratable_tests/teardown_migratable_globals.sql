@@ -1,2 +1,0 @@
-DROP DATABASE IF EXISTS isolation2test;
-DROP ROLE IF EXISTS test_role1;

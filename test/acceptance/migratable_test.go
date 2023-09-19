@@ -38,7 +38,11 @@ func TestMigrationScripts(t *testing.T) {
 		dir = "5-to-6"
 	}
 
-	testDir := filepath.Join(MustGetRepoRoot(t), "test", "acceptance", dir, "migratable_tests")
+	testDir := filepath.Join(MustGetRepoRoot(t), "test", "acceptance", dir)
+	migratableTestDir := filepath.Join(testDir, "migratable_tests")
+
+	testutils.MustApplySQLFile(t, GPHOME_SOURCE, PGPORT, filepath.Join(testDir, "setup_globals.sql"))
+	defer testutils.MustApplySQLFile(t, GPHOME_SOURCE, PGPORT, filepath.Join(testDir, "teardown_globals.sql"))
 
 	t.Run("migration scripts generate sql to modify non-upgradeable objects and fix pg_upgrade check errors", func(t *testing.T) {
 		killServices(t)
@@ -46,14 +50,8 @@ func TestMigrationScripts(t *testing.T) {
 		backupDemoCluster(t, backupDir, source)
 		defer restoreDemoCluster(t, backupDir, source, GetTempTargetCluster(t))
 
-		// Remove any default non-upgradeable objects such as GPDB 5X gphdfs role.
-		generate(t, migrationDir)
-		apply(t, GPHOME_SOURCE, PGPORT, idl.Step_initialize, migrationDir)
-
-		testutils.MustApplySQLFile(t, GPHOME_SOURCE, PGPORT, filepath.Join(testDir, "setup_migratable_globals.sql"))
-		defer testutils.MustApplySQLFile(t, GPHOME_SOURCE, PGPORT, filepath.Join(testDir, "teardown_migratable_globals.sql"))
-
-		source_isolation2_regress(t, source.Version, testDir, "migratable_source_schedule")
+		sourceTestDir := filepath.Join(migratableTestDir, "source_cluster_regress")
+		isolation2_regress(t, source.Version, GPHOME_SOURCE, PGPORT, sourceTestDir, "migratable_source_schedule")
 
 		generate(t, migrationDir)
 		apply(t, GPHOME_SOURCE, PGPORT, idl.Step_initialize, migrationDir)
@@ -65,7 +63,8 @@ func TestMigrationScripts(t *testing.T) {
 
 		apply(t, GPHOME_TARGET, PGPORT, idl.Step_finalize, migrationDir)
 
-		target_isolation2_regress(t, source.Version, testDir, "migratable_target_schedule")
+		targetTestDir := filepath.Join(migratableTestDir, "target_cluster_regress")
+		isolation2_regress(t, source.Version, GPHOME_TARGET, PGPORT, targetTestDir, "migratable_target_schedule")
 	})
 }
 
