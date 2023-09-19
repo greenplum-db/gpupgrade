@@ -4,13 +4,8 @@
 package gpupgrade_test
 
 import (
-	"os"
-	"os/exec"
 	"path/filepath"
-	"strings"
 	"testing"
-
-	"github.com/blang/semver/v4"
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
@@ -29,10 +24,9 @@ func TestMigrationScripts(t *testing.T) {
 	defer testutils.MustRemoveAll(t, backupDir)
 
 	migrationDir := testutils.GetTempDir(t, "migration")
-	defer testutils.MustRemoveAll(t, backupDir)
+	defer testutils.MustRemoveAll(t, migrationDir)
 
 	source := GetSourceCluster(t)
-
 	dir := "6-to-7"
 	if source.Version.Major == 5 {
 		dir = "5-to-6"
@@ -45,8 +39,6 @@ func TestMigrationScripts(t *testing.T) {
 	defer testutils.MustApplySQLFile(t, GPHOME_SOURCE, PGPORT, filepath.Join(testDir, "teardown_globals.sql"))
 
 	t.Run("migration scripts generate sql to modify non-upgradeable objects and fix pg_upgrade check errors", func(t *testing.T) {
-		killServices(t)
-
 		backupDemoCluster(t, backupDir, source)
 		defer restoreDemoCluster(t, backupDir, source, GetTempTargetCluster(t))
 
@@ -57,7 +49,6 @@ func TestMigrationScripts(t *testing.T) {
 		apply(t, GPHOME_SOURCE, PGPORT, idl.Step_initialize, migrationDir)
 
 		initialize(t, idl.Mode_link)
-		defer revertIgnoreFailures(t) // cleanup in case we fail part way through
 		execute(t)
 		finalize(t)
 
@@ -66,88 +57,4 @@ func TestMigrationScripts(t *testing.T) {
 		targetTestDir := filepath.Join(migratableTestDir, "target_cluster_regress")
 		isolation2_regress(t, source.Version, GPHOME_TARGET, PGPORT, targetTestDir, "migratable_target_schedule")
 	})
-}
-
-func source_isolation2_regress(t *testing.T, sourceVersion semver.Version, testDir string, schedule string) string {
-	env := []string{"PGOPTIONS=-c optimizer=off"}
-	var binDir string
-
-	switch sourceVersion.Major {
-	case 5:
-		binDir = "--psqldir"
-		// Set PYTHONPATH directly since it is needed when running the
-		// pg_upgrade tests locally. Normally one would source
-		// greenplum_path.sh, but that causes the following issues:
-		// https://web.archive.org/web/20220506055918/https://groups.google.com/a/greenplum.org/g/gpdb-dev/c/JN-YwjCCReY/m/0L9wBOvlAQAJ
-		env = append(env, "PYTHONPATH="+filepath.Join(GPHOME_SOURCE, "lib/python"))
-	case 6:
-		binDir = "--psqldir"
-	default:
-		binDir = "--bindir"
-	}
-
-	tests := "--schedule=" + filepath.Join(testDir, "source_cluster_regress", schedule)
-	focus := os.Getenv("FOCUS_TESTS")
-	if focus != "" {
-		tests = focus
-	}
-
-	cmd := exec.Command("./pg_isolation2_regress",
-		"--init-file", "init_file_isolation2",
-		"--inputdir", filepath.Join(testDir, "source_cluster_regress"),
-		"--outputdir", filepath.Join(testDir, "source_cluster_regress"),
-		binDir, filepath.Join(GPHOME_SOURCE, "bin"),
-		"--port", PGPORT,
-		tests)
-	cmd.Dir = testutils.MustGetEnv("ISOLATION2_PATH")
-	cmd.Env = append(os.Environ(), env...)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("unexpected err: %#v stderr %s", err, output)
-	}
-
-	return strings.TrimSpace(string(output))
-}
-
-func target_isolation2_regress(t *testing.T, sourceVersion semver.Version, testDir string, schedule string) string {
-	env := []string{"PGOPTIONS=-c optimizer=off"}
-	var binDir string
-
-	switch sourceVersion.Major {
-	case 5:
-		binDir = "--psqldir"
-		// Set PYTHONPATH directly since it is needed when running the
-		// pg_upgrade tests locally. Normally one would source
-		// greenplum_path.sh, but that causes the following issues:
-		// https://web.archive.org/web/20220506055918/https://groups.google.com/a/greenplum.org/g/gpdb-dev/c/JN-YwjCCReY/m/0L9wBOvlAQAJ
-		env = append(env, "PYTHONPATH="+filepath.Join(GPHOME_SOURCE, "lib/python"))
-	case 6:
-		binDir = "--psqldir"
-	default:
-		binDir = "--bindir"
-	}
-
-	tests := "--schedule=" + filepath.Join(testDir, "target_cluster_regress", schedule)
-	focus := os.Getenv("FOCUS_TESTS")
-	if focus != "" {
-		tests = focus
-	}
-
-	cmd := exec.Command("./pg_isolation2_regress",
-		"--init-file", "init_file_isolation2",
-		"--inputdir", filepath.Join(testDir, "target_cluster_regress"),
-		"--outputdir", filepath.Join(testDir, "target_cluster_regress"),
-		binDir, filepath.Join(GPHOME_TARGET, "bin"),
-		"--port", PGPORT,
-		"--use-existing",
-		tests)
-	cmd.Dir = testutils.MustGetEnv("ISOLATION2_PATH")
-	cmd.Env = append(os.Environ(), env...)
-
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("unexpected err: %#v stderr %s", err, output)
-	}
-
-	return strings.TrimSpace(string(output))
 }

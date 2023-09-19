@@ -13,6 +13,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/blang/semver/v4"
+
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/greenplum/connection"
 	"github.com/greenplum-db/gpupgrade/hub"
@@ -304,6 +306,55 @@ func restoreDemoCluster(t *testing.T, backupDir string, source greenplum.Cluster
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+func isolation2_regress(t *testing.T, sourceVersion semver.Version, gphome string, port string, testDir string, schedule string) string {
+	var cmdArgs []string
+	if gphome == GPHOME_TARGET {
+		cmdArgs = append(cmdArgs, "--use-existing")
+	}
+
+	env := []string{"PGOPTIONS=-c optimizer=off"}
+	var binDir string
+	switch sourceVersion.Major {
+	case 5:
+		binDir = "--psqldir"
+		// Set PYTHONPATH directly since it is needed when running the
+		// pg_upgrade tests locally. Normally one would source
+		// greenplum_path.sh, but that causes the following issues:
+		// https://web.archive.org/web/20220506055918/https://groups.google.com/a/greenplum.org/g/gpdb-dev/c/JN-YwjCCReY/m/0L9wBOvlAQAJ
+		env = append(env, "PYTHONPATH="+filepath.Join(GPHOME_SOURCE, "lib/python"))
+	case 6:
+		binDir = "--psqldir"
+	default:
+		binDir = "--bindir"
+	}
+
+	tests := "--schedule=" + filepath.Join(testDir, schedule)
+	focus := os.Getenv("FOCUS_TESTS")
+	if focus != "" {
+		tests = focus
+	}
+
+	cmdArgs = append(cmdArgs,
+		"--init-file", "init_file_isolation2",
+		"--inputdir", testDir,
+		"--outputdir", testDir,
+		binDir, filepath.Join(gphome, "bin"),
+		"--port", port,
+		tests,
+	)
+
+	cmd := exec.Command("./pg_isolation2_regress", cmdArgs...)
+	cmd.Dir = testutils.MustGetEnv("ISOLATION2_PATH")
+	cmd.Env = append(os.Environ(), env...)
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("unexpected err: %#v stderr %s", err, output)
+	}
+
+	return strings.TrimSpace(string(output))
 }
 
 func jq(t *testing.T, file string, args ...string) string {
