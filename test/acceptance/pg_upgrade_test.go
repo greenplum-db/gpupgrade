@@ -17,8 +17,6 @@ import (
 )
 
 func TestPgUpgrade(t *testing.T) {
-	killServices(t)
-
 	// Since finalize archives the stateDir (GPUPGRADE_HOME) backups and
 	// migration scripts cannot be stored here.
 	stateDir := testutils.GetTempDir(t, "stateDir")
@@ -38,8 +36,6 @@ func TestPgUpgrade(t *testing.T) {
 	defer testutils.MustApplySQLFile(t, GPHOME_SOURCE, PGPORT, filepath.Join(testDir, "teardown_globals.sql"))
 
 	t.Run("gpupgrade initialize runs pg_upgrade --check on coordinator and primaries", func(t *testing.T) {
-		defer killServices(t)
-
 		initialize(t, idl.Mode_copy)
 		defer revert(t)
 
@@ -61,8 +57,6 @@ func TestPgUpgrade(t *testing.T) {
 	})
 
 	t.Run("upgrade maintains separate DBID for each segment and initialize runs gpinitsystem based on the source cluster", func(t *testing.T) {
-		defer killServices(t)
-
 		initialize(t, idl.Mode_copy)
 		defer revert(t)
 
@@ -119,8 +113,6 @@ func TestPgUpgrade(t *testing.T) {
 	})
 
 	t.Run("pg_upgrade upgradeable tests", func(t *testing.T) {
-		defer killServices(t)
-
 		sourceTestDir := filepath.Join(testDir, "upgradeable_tests", "source_cluster_regress")
 		isolation2_regress(t, source.Version, GPHOME_SOURCE, PGPORT, sourceTestDir, "upgradeable_source_schedule")
 
@@ -133,10 +125,10 @@ func TestPgUpgrade(t *testing.T) {
 	})
 
 	t.Run("pg_upgrade --check detects non-upgradeable objects", func(t *testing.T) {
-		defer killServices(t)
-
 		nonUpgradeableTestDir := filepath.Join(testDir, "non_upgradeable_tests")
 		isolation2_regress(t, source.Version, GPHOME_SOURCE, PGPORT, nonUpgradeableTestDir, "non_upgradeable_schedule")
+
+		revert(t)
 	})
 
 }
