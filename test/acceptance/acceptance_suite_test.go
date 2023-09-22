@@ -308,9 +308,9 @@ func restoreDemoCluster(t *testing.T, backupDir string, source greenplum.Cluster
 	}
 }
 
-func isolation2_regress(t *testing.T, sourceVersion semver.Version, gphome string, port string, testDir string, schedule string) string {
+func isolation2_regress(t *testing.T, sourceVersion semver.Version, gphome string, port string, testDir string, outputTestDir string, schedule string, useExisting bool) string {
 	var cmdArgs []string
-	if gphome == GPHOME_TARGET {
+	if useExisting {
 		cmdArgs = append(cmdArgs, "--use-existing")
 	}
 
@@ -339,7 +339,7 @@ func isolation2_regress(t *testing.T, sourceVersion semver.Version, gphome strin
 	cmdArgs = append(cmdArgs,
 		"--init-file", "init_file_isolation2",
 		"--inputdir", testDir,
-		"--outputdir", testDir,
+		"--outputdir", outputTestDir,
 		binDir, filepath.Join(gphome, "bin"),
 		"--port", port,
 		tests,

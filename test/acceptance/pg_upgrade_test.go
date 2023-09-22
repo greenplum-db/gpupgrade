@@ -114,19 +114,19 @@ func TestPgUpgrade(t *testing.T) {
 
 	t.Run("pg_upgrade upgradeable tests", func(t *testing.T) {
 		sourceTestDir := filepath.Join(testDir, "upgradeable_tests", "source_cluster_regress")
-		isolation2_regress(t, source.Version, GPHOME_SOURCE, PGPORT, sourceTestDir, "upgradeable_source_schedule")
+		isolation2_regress(t, source.Version, GPHOME_SOURCE, PGPORT, sourceTestDir, sourceTestDir, "upgradeable_source_schedule", false)
 
 		initialize(t, idl.Mode_link)
 		defer revert(t)
 		execute(t)
 
 		targetTestDir := filepath.Join(testDir, "upgradeable_tests", "target_cluster_regress")
-		isolation2_regress(t, source.Version, GPHOME_TARGET, TARGET_PGPORT, targetTestDir, "upgradeable_target_schedule")
+		isolation2_regress(t, source.Version, GPHOME_TARGET, TARGET_PGPORT, targetTestDir, targetTestDir, "upgradeable_target_schedule", true)
 	})
 
 	t.Run("pg_upgrade --check detects non-upgradeable objects", func(t *testing.T) {
 		nonUpgradeableTestDir := filepath.Join(testDir, "non_upgradeable_tests")
-		isolation2_regress(t, source.Version, GPHOME_SOURCE, PGPORT, nonUpgradeableTestDir, "non_upgradeable_schedule")
+		isolation2_regress(t, source.Version, GPHOME_SOURCE, PGPORT, nonUpgradeableTestDir, nonUpgradeableTestDir, "non_upgradeable_schedule", false)
 
 		revert(t)
 	})
