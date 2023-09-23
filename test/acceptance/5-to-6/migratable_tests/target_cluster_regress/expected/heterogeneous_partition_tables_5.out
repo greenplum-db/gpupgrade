@@ -1,0 +1,96 @@
+-- Copyright (c) 2017-2023 VMware, Inc. or its affiliates
+-- SPDX-License-Identifier: Apache-2.0
+
+--------------------------------------------------------------------------------
+-- Create and setup migratable objects
+--------------------------------------------------------------------------------
+
+-- check data
+SELECT * FROM dropped_column ORDER BY 1, 2, 3;
+ a | b | c 
+---+---+---
+ 1 | 1 | a 
+ 5 | 1 | a 
+(2 rows)
+SELECT * FROM child_has_dropped_column ORDER BY 1, 2, 3, 4;
+ a | b | c | d   
+---+---+---+-----
+ 1 | 1 | a | aaa 
+(1 row)
+SELECT * FROM heterogeneous_ml_partition_table ORDER BY 1, 2, 3;
+ trans_id | office_id | dummy 
+----------+-----------+-------
+ 1        | 1         | 1     
+ 2        | 2         | 2     
+(2 rows)
+
+-- check owners
+SELECT c.relname, pg_catalog.pg_get_userbyid(c.relowner) FROM pg_partition_rule pr JOIN pg_class c ON c.oid = pr.parchildrelid WHERE c.relname LIKE 'dropped_column%' UNION SELECT c.relname, pg_catalog.pg_get_userbyid(c.relowner) FROM pg_partition p JOIN pg_class c ON c.oid = p.parrelid WHERE c.relname LIKE 'dropped_column%' ORDER BY 1,2;
+ relname                           | pg_get_userbyid 
+-----------------------------------+-----------------
+ dropped_column                    | test_role1      
+ dropped_column_1_prt_part_2       | test_role1      
+ dropped_column_1_prt_split_part_1 | test_role1      
+ dropped_column_1_prt_split_part_2 | test_role1      
+(4 rows)
+
+-- check constraints
+SELECT c.relname, con.conname FROM pg_partition_rule pr JOIN pg_class c ON c.oid = pr.parchildrelid JOIN pg_constraint con ON con.conrelid = c.oid WHERE c.relname LIKE 'dropped_column%' UNION SELECT c.relname, con.conname FROM pg_partition p JOIN pg_class c ON c.oid = p.parrelid JOIN pg_constraint con ON con.conrelid = c.oid WHERE c.relname LIKE 'dropped_column%' ORDER BY 1,2;
+ relname                           | conname                                 
+-----------------------------------+-----------------------------------------
+ dropped_column                    | positive_int                            
+ dropped_column_1_prt_part_2       | dropped_column_1_prt_part_2_check       
+ dropped_column_1_prt_part_2       | positive_int                            
+ dropped_column_1_prt_split_part_1 | dropped_column_1_prt_split_part_1_check 
+ dropped_column_1_prt_split_part_1 | positive_int                            
+ dropped_column_1_prt_split_part_2 | dropped_column_1_prt_split_part_2_check 
+ dropped_column_1_prt_split_part_2 | positive_int                            
+(7 rows)
+
+-- check defaults
+SELECT c.relname, att.attname, ad.adnum, ad.adsrc FROM pg_partition_rule pr JOIN pg_class c ON c.oid = pr.parchildrelid JOIN pg_attrdef ad ON ad.adrelid = pr.parchildrelid JOIN pg_attribute att ON att.attrelid = c.oid AND att.attnum = ad.adnum UNION SELECT c.relname, att.attname, ad.adnum, ad.adsrc FROM pg_partition p JOIN pg_class c ON c.oid = p.parrelid JOIN pg_attrdef ad ON ad.adrelid = p.parrelid JOIN pg_attribute att ON att.attrelid = c.oid AND att.attnum = ad.adnum ORDER BY 1, 2, 3, 4;
+ relname                           | attname | adnum | adsrc 
+-----------------------------------+---------+-------+-------
+ dropped_column                    | b       | 2     | 1     
+ dropped_column_1_prt_part_2       | b       | 2     | 1     
+ dropped_column_1_prt_split_part_1 | b       | 2     | 1     
+ dropped_column_1_prt_split_part_2 | b       | 2     | 1     
+(4 rows)
+
+-- insert data and exercise constraint
+INSERT INTO dropped_column VALUES (2, 2, 'b');
+INSERT 1
+INSERT INTO dropped_column VALUES (3, 2, 'b');
+INSERT 1
+-- insert should fail due to constraint
+INSERT INTO dropped_column VALUES (4, -1, 'b');
+ERROR:  new row for relation "dropped_column_1_prt_split_part_2" violates check constraint "positive_int"
+
+INSERT INTO child_has_dropped_column VALUES (2, 2, 'b', 'bbb');
+INSERT 1
+
+INSERT INTO heterogeneous_ml_partition_table VALUES (3, 3, 3);
+INSERT 1
+
+-- check data
+SELECT * FROM dropped_column ORDER BY 1, 2, 3;
+ a | b | c 
+---+---+---
+ 1 | 1 | a 
+ 2 | 2 | b 
+ 3 | 2 | b 
+ 5 | 1 | a 
+(4 rows)
+SELECT * FROM child_has_dropped_column ORDER BY 1, 2, 3, 4;
+ a | b | c | d   
+---+---+---+-----
+ 1 | 1 | a | aaa 
+ 2 | 2 | b | bbb 
+(2 rows)
+SELECT * FROM heterogeneous_ml_partition_table ORDER BY 1, 2, 3;
+ trans_id | office_id | dummy 
+----------+-----------+-------
+ 1        | 1         | 1     
+ 2        | 2         | 2     
+ 3        | 3         | 3     
+(3 rows)
