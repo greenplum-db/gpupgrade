@@ -97,6 +97,7 @@ if res1 is not None:
         swap_sql = swap_sql + """
 CREATE TABLE __gpupgrade_tmp_executor.scratch_table (LIKE {schemaname}.{childrelname} INCLUDING CONSTRAINTS INCLUDING DEFAULTS);
 ALTER TABLE __gpupgrade_tmp_executor.scratch_table OWNER TO {childrelowner};
+INSERT INTO __gpupgrade_tmp_executor.scratch_table SELECT * FROM {schemaname}.{childrelname};
 ALTER TABLE {schemaname}.{parrelname} {partition_sql} {exchange_sql} WITH TABLE __gpupgrade_tmp_executor.scratch_table;
 DROP TABLE __gpupgrade_tmp_executor.scratch_table;
 """.format(**locals())
