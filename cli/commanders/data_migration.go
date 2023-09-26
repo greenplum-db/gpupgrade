@@ -65,7 +65,7 @@ func ApplySQLFile(gphome string, port int, database string, path string, args ..
 	log.Printf("Executing: %q", cmd.String())
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, fmt.Errorf("%q failed with %q: %w", cmd.String(), string(output), err)
+		return nil, fmt.Errorf("%s failed with %s: %w", cmd.String(), string(output), err)
 	}
 
 	return output, nil
