@@ -308,15 +308,25 @@ func restoreDemoCluster(t *testing.T, backupDir string, source greenplum.Cluster
 	}
 }
 
-func isolation2_regress(t *testing.T, sourceVersion semver.Version, gphome string, port string, testDir string, outputTestDir string, schedule string, useExisting bool) string {
+type isolationOptions struct {
+	sourceVersion semver.Version
+	gphome        string
+	port          string
+	inputDir      string
+	outputDir     string
+	schedule      string
+	useExisting   bool
+}
+
+func isolation2_regress(t *testing.T, opts isolationOptions) string {
 	var cmdArgs []string
-	if useExisting {
+	if opts.useExisting {
 		cmdArgs = append(cmdArgs, "--use-existing")
 	}
 
 	env := []string{"PGOPTIONS=-c optimizer=off"}
 	var binDir string
-	switch sourceVersion.Major {
+	switch opts.sourceVersion.Major {
 	case 5:
 		binDir = "--psqldir"
 		// Set PYTHONPATH directly since it is needed when running the
@@ -330,7 +340,7 @@ func isolation2_regress(t *testing.T, sourceVersion semver.Version, gphome strin
 		binDir = "--bindir"
 	}
 
-	tests := "--schedule=" + filepath.Join(testDir, schedule)
+	tests := "--schedule=" + filepath.Join(opts.inputDir, opts.schedule)
 	focus := os.Getenv("FOCUS_TESTS")
 	if focus != "" {
 		tests = focus
@@ -338,10 +348,10 @@ func isolation2_regress(t *testing.T, sourceVersion semver.Version, gphome strin
 
 	cmdArgs = append(cmdArgs,
 		"--init-file", "init_file_isolation2",
-		"--inputdir", testDir,
-		"--outputdir", outputTestDir,
-		binDir, filepath.Join(gphome, "bin"),
-		"--port", port,
+		"--inputdir", opts.inputDir,
+		"--outputdir", opts.outputDir,
+		binDir, filepath.Join(opts.gphome, "bin"),
+		"--port", opts.port,
 		tests,
 	)
 
