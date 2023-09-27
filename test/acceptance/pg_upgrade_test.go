@@ -120,8 +120,7 @@ func TestPgUpgrade(t *testing.T) {
 			port:          PGPORT,
 			inputDir:      sourceTestDir,
 			outputDir:     sourceTestDir,
-			schedule:      "upgradeable_source_schedule",
-			useExisting:   false,
+			schedule:      idl.Schedule_upgradeable_source_schedule,
 		}
 		isolation2_regress(t, opts)
 
@@ -136,8 +135,7 @@ func TestPgUpgrade(t *testing.T) {
 			port:          TARGET_PGPORT,
 			inputDir:      targetTestDir,
 			outputDir:     targetTestDir,
-			schedule:      "upgradeable_target_schedule",
-			useExisting:   true,
+			schedule:      idl.Schedule_upgradeable_target_schedule,
 		}
 		isolation2_regress(t, opts)
 	})
@@ -150,8 +148,7 @@ func TestPgUpgrade(t *testing.T) {
 			port:          PGPORT,
 			inputDir:      nonUpgradeableTestDir,
 			outputDir:     nonUpgradeableTestDir,
-			schedule:      "non_upgradeable_schedule",
-			useExisting:   false,
+			schedule:      idl.Schedule_non_upgradeable_schedule,
 		}
 		isolation2_regress(t, opts)
 

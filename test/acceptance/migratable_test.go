@@ -49,8 +49,7 @@ func TestMigrationScripts(t *testing.T) {
 			port:          PGPORT,
 			inputDir:      sourceTestDir,
 			outputDir:     sourceTestDir,
-			schedule:      "migratable_source_schedule",
-			useExisting:   false,
+			schedule:      idl.Schedule_migratable_source_schedule,
 		}
 		isolation2_regress(t, opts)
 
@@ -72,8 +71,7 @@ func TestMigrationScripts(t *testing.T) {
 			port:          PGPORT,
 			inputDir:      targetTestDir,
 			outputDir:     outputTestDir,
-			schedule:      "migratable_target_schedule",
-			useExisting:   true,
+			schedule:      idl.Schedule_migratable_target_schedule,
 		}
 		isolation2_regress(t, opts)
 	})
@@ -85,8 +83,7 @@ func TestMigrationScripts(t *testing.T) {
 			port:          PGPORT,
 			inputDir:      sourceTestDir,
 			outputDir:     sourceTestDir,
-			schedule:      "migratable_source_schedule",
-			useExisting:   false,
+			schedule:      idl.Schedule_migratable_source_schedule,
 		}
 		isolation2_regress(t, opts)
 
@@ -107,8 +104,7 @@ func TestMigrationScripts(t *testing.T) {
 			port:          PGPORT,
 			inputDir:      targetTestDir,
 			outputDir:     outputTestDir,
-			schedule:      "migratable_target_schedule",
-			useExisting:   true,
+			schedule:      idl.Schedule_migratable_target_schedule,
 		}
 		isolation2_regress(t, opts)
 	})
@@ -120,8 +116,7 @@ func TestMigrationScripts(t *testing.T) {
 			port:          PGPORT,
 			inputDir:      sourceTestDir,
 			outputDir:     sourceTestDir,
-			schedule:      "migratable_source_schedule",
-			useExisting:   false,
+			schedule:      idl.Schedule_migratable_source_schedule,
 		}
 		isolation2_regress(t, opts)
 
@@ -143,8 +138,7 @@ func TestMigrationScripts(t *testing.T) {
 			port:          PGPORT,
 			inputDir:      targetTestDir,
 			outputDir:     outputTestDir,
-			schedule:      "migratable_target_schedule",
-			useExisting:   true,
+			schedule:      idl.Schedule_migratable_target_schedule,
 		}
 		isolation2_regress(t, opts)
 	})

@@ -314,13 +314,12 @@ type isolationOptions struct {
 	port          string
 	inputDir      string
 	outputDir     string
-	schedule      string
-	useExisting   bool
+	schedule      idl.Schedule
 }
 
 func isolation2_regress(t *testing.T, opts isolationOptions) string {
 	var cmdArgs []string
-	if opts.useExisting {
+	if opts.schedule != idl.Schedule_non_upgradeable_schedule && strings.Contains(opts.schedule.String(), "target") {
 		cmdArgs = append(cmdArgs, "--use-existing")
 	}
 
@@ -340,7 +339,7 @@ func isolation2_regress(t *testing.T, opts isolationOptions) string {
 		binDir = "--bindir"
 	}
 
-	tests := "--schedule=" + filepath.Join(opts.inputDir, opts.schedule)
+	tests := "--schedule=" + filepath.Join(opts.inputDir, opts.schedule.String())
 	focus := os.Getenv("FOCUS_TESTS")
 	if focus != "" {
 		tests = focus

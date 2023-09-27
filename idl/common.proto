@@ -17,3 +17,12 @@ enum ClusterDestination {
   intermediate = 2;
   target = 3;
 }
+
+enum Schedule {
+  unknown_schedule = 0; // http://androiddevblog.com/protocol-buffers-pitfall-adding-enum-values/
+  upgradeable_source_schedule  = 1;
+  upgradeable_target_schedule = 2;
+  non_upgradeable_schedule = 3;
+  migratable_source_schedule  = 4;
+  migratable_target_schedule  = 5;
+}

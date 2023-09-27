@@ -24,6 +24,7 @@ depend-dev: export GOBIN := $(CURDIR)/dev-bin
 depend-dev: export GOFLAGS := -mod=readonly # do not update dependencies during installation
 depend-dev:
 	mkdir -p $(GOBIN)
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.31
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
 	go install github.com/golang/mock/mockgen
 
