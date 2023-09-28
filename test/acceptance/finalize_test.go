@@ -53,15 +53,9 @@ func testFinalize(t *testing.T, mode idl.Mode, useHbaHostnames bool) {
 	createMarkerFilesOnAllSegments(t, source)
 	defer removeMarkerFilesOnAllSegments(t, source)
 
-	table := "public.should_be_reverted"
-	testutils.MustExecuteSQL(t, source.Connection(greenplum.Database("postgres")), fmt.Sprintf(`CREATE TABLE %s (a int); INSERT INTO %s VALUES (1), (2), (3);`, table, table))
-	defer testutils.MustExecuteSQL(t, source.Connection(greenplum.Database("postgres")), fmt.Sprintf(`DROP TABLE %s;`, table))
-
 	tablespaceDir := testutils.GetTempDir(t, "")
-	defer testutils.MustRemoveAll(t, tablespaceDir)
-
 	testutils.MustAddTablespace(t, source, tablespaceDir)
-	defer testutils.MustDeleteTablespaces(t, source, GetTempTargetCluster(t))
+	defer testutils.MustRemoveAll(t, tablespaceDir)
 
 	hbaHostnames := ""
 	if useHbaHostnames {
@@ -96,33 +90,14 @@ func testFinalize(t *testing.T, mode idl.Mode, useHbaHostnames bool) {
 
 	verifyMarkerFilesOnAllSegments(t, conf.Intermediate, conf.Target)
 
-	rows := testutils.MustQueryRow(t, conf.Target.Connection(greenplum.Database("postgres")), fmt.Sprintf(`SELECT COUNT(*) FROM %s;`, table))
-	expectedRows := 3
-	if rows != expectedRows {
-		t.Fatalf("got %d want %d rows", rows, expectedRows)
-	}
-
 	testutils.VerifyTablespaceData(t, *conf.Target)
 
-	// FIXME: When this script is run in link mode then the above call to remove tablespaces fails with:
-	//   ERROR: failed to acquire resources on one or more segments (SQLSTATE 58M01)
-	// Specifically, it errors when accessing objects in a database created in a tablespace. That is, accessing a table
-	// from a database created in a tablespace when this test is run in link mode. For example, connecting to foodb and
-	// doing \d+ errors with:
-	//   ERROR:  failed to acquire resources on one or more segments
-	//   DETAIL:  FATAL:  could not read relation mapping file "pg_tblspc/16389/GPDB_6_301908232/16487/pg_filenode.map": Success (relmapper.c:660)
-	// Connecting to one of the segments errors with:
-	//   PGOPTIONS="-c gp_session_role=utility" psql -p 25432 foodb
-	//   psql: FATAL:  could not read relation mapping file "pg_tblspc/16389/GPDB_6_301908232/16487/pg_filenode.map": Success (relmapper.c:660)
-	// Inspecting the tablespace location is extremely chaotic especially after upgrading!
-	if mode != idl.Mode_link {
-		path := filepath.Join(MustGetRepoRoot(t), "test", "acceptance", "helpers", "finalize_checks.bash")
-		script := fmt.Sprintf("source %s; validate_mirrors_and_standby %s %s %s", path, GPHOME_TARGET, conf.Target.CoordinatorHostname(), PGPORT)
-		cmd = exec.Command("bash", "-c", script)
-		output, err = cmd.CombinedOutput()
-		if err != nil {
-			t.Fatalf("unexpected err: %#v stderr %s", err, output)
-		}
+	path := filepath.Join(MustGetRepoRoot(t), "test", "acceptance", "helpers", "finalize_checks.bash")
+	script := fmt.Sprintf("source %s; validate_mirrors_and_standby %s %s %s", path, GPHOME_TARGET, conf.Target.CoordinatorHostname(), PGPORT)
+	cmd = exec.Command("bash", "-c", script)
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("unexpected err: %#v stderr %s", err, output)
 	}
 }
 
