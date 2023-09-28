@@ -566,7 +566,7 @@ func TestGenerateScriptsPerPhase(t *testing.T) {
 		}
 	})
 
-	t.Run("executes sql scripts with correct arguments for the correct database", func(t *testing.T) {
+	t.Run("executes sql scripts with correct arguments including --no-psqlrc for the correct database", func(t *testing.T) {
 		commanders.SetPsqlFileCommand(exectest.NewCommandWithVerifier(SuccessScript, func(utility string, args ...string) {
 			expectedUtility := "/usr/local/gpdb5/bin/psql"
 			if utility != expectedUtility {
