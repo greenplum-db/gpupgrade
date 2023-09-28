@@ -5,6 +5,13 @@
 -- Create and setup migratable objects
 --------------------------------------------------------------------------------
 
+-- This is a workaround because the setup to drop this protocol in template1
+-- does not persist when when running in the CI for unknown reasons. It is in
+-- an ignore because it is not needed locally and produces different output.
+-- start_ignore
+DROP PROTOCOL IF EXISTS gphdfs CASCADE;
+-- end_ignore
+
 -- create external gphdfs table fake the gphdfs protocol so that it doesn't
 -- actually have to be installed
 CREATE FUNCTION noop() RETURNS integer AS 'select 0' LANGUAGE SQL;
