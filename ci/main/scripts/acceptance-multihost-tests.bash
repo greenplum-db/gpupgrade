@@ -21,6 +21,7 @@ function run_migration_scripts_and_tests() {
 
         cd gpupgrade_src
         go test --cover -count=1 -timeout 30m -v -run "^TestRevert$" ./test/acceptance
+        go test --cover -count=1 -timeout 30m -v -run "^TestFinalize$" ./test/acceptance
   '
 }
 
