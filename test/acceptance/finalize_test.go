@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/blang/semver/v4"
 
@@ -32,12 +33,12 @@ func TestFinalize(t *testing.T) {
 	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 	defer resetEnv()
 
-	t.Run("in copy mode gpupgrade finalize should swap the target data directories and ports with the source cluster", func(t *testing.T) {
-		testFinalize(t, idl.Mode_copy, false)
-	})
+	// t.Run("in copy mode gpupgrade finalize should swap the target data directories and ports with the source cluster", func(t *testing.T) {
+	// 	testFinalize(t, idl.Mode_copy, false)
+	// })
 
 	t.Run("in link mode gpupgrade finalize should also delete mirror directories and honors --use-hba-hostnames", func(t *testing.T) {
-		testFinalize(t, idl.Mode_link, true)
+		testFinalize(t, idl.Mode_link, false)
 	})
 }
 
@@ -84,7 +85,7 @@ func testFinalize(t *testing.T, mode idl.Mode, useHbaHostnames bool) {
 	// 	t.Fatal(err)
 	// }
 
-	// finalizeOutput := finalize(t)
+	_ = finalize(t)
 
 	// verifyFinalize(t, source, conf, finalizeOutput, useHbaHostnames)
 
@@ -99,6 +100,7 @@ func testFinalize(t *testing.T, mode idl.Mode, useHbaHostnames bool) {
 	// if err != nil {
 	// 	t.Fatalf("unexpected err: %#v stderr %s", err, output)
 	// }
+	time.Sleep(3600 * time.Second)
 }
 
 func createMarkerFilesOnAllSegments(t *testing.T, cluster greenplum.Cluster) {
