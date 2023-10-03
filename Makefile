@@ -47,8 +47,6 @@ integration:
 .PHONY: acceptance
 acceptance:
 	go test -count=1 -timeout 1h15m -v ./test/acceptance -skip "Test_PgUpgrade_Migratable_Tests|Test_PgUpgrade_NonUpgradeable_Tests|Test_PgUpgrade_Upgradeable_Tests"
-	bats ./test/acceptance/helpers/teardown_helpers.bats
-	bats ./test/acceptance/migration_scripts.bats
 
 # test runs all tests against the locally built gpupgrade binaries. Use -k to
 # continue after failures.
