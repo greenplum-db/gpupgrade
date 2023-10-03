@@ -35,8 +35,7 @@ WHERE
             SELECT 1 FROM pg_catalog.pg_attribute
             WHERE attrelid = c.oid
               AND attnum = ANY(x.indkey)
-              AND (atttypid = 'pg_catalog.tsquery'::pg_catalog.regtype OR
-                   atttypid = 'pg_catalog.name'::pg_catalog.regtype)
+              AND atttypid = 'pg_catalog.tsquery'::pg_catalog.regtype
               AND NOT attisdropped
         )
     AND c.relkind = 'r'
