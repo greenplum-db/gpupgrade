@@ -117,7 +117,7 @@ func testFinalize(t *testing.T, mode idl.Mode, useHbaHostnames bool) {
 	//   psql: FATAL:  could not read relation mapping file "pg_tblspc/16389/GPDB_6_301908232/16487/pg_filenode.map": Success (relmapper.c:660)
 	// Inspecting the tablespace location is extremely chaotic especially after upgrading!
 	if mode != idl.Mode_link {
-		path := filepath.Join(acceptance.MustGetRepoRoot(t), "test", "acceptance", "helpers", "finalize_checks.bash")
+		path := filepath.Join(acceptance.MustGetRepoRoot(t), "testutils", "validate_mirrors_and_standby", "validate_mirrors_and_standby.bash")
 		script := fmt.Sprintf("source %s; validate_mirrors_and_standby %s %s %s", path, acceptance.GPHOME_TARGET, conf.Target.CoordinatorHostname(), acceptance.PGPORT)
 		cmd = exec.Command("bash", "-c", script)
 		output, err = cmd.CombinedOutput()
