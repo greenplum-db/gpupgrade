@@ -1,7 +1,7 @@
 // Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
-package gpupgrade_test
+package acceptance
 
 import (
 	"log"
@@ -65,7 +65,7 @@ func MustGetRepoRoot(t *testing.T) string {
 	return filepath.Dir(filepath.Dir(currentDir))
 }
 
-func generate(t *testing.T, outputDir string) string {
+func Generate(t *testing.T, outputDir string) string {
 	t.Helper()
 
 	cmd := exec.Command("gpupgrade", "generate",
@@ -82,7 +82,7 @@ func generate(t *testing.T, outputDir string) string {
 	return strings.TrimSpace(string(output))
 }
 
-func apply(t *testing.T, gphome string, port string, phase idl.Step, inputDir string) string {
+func Apply(t *testing.T, gphome string, port string, phase idl.Step, inputDir string) string {
 	t.Helper()
 
 	cmd := exec.Command("gpupgrade", "apply",
@@ -99,7 +99,7 @@ func apply(t *testing.T, gphome string, port string, phase idl.Step, inputDir st
 	return strings.TrimSpace(string(output))
 }
 
-func initialize_stopBeforeClusterCreation(t *testing.T) string {
+func Initialize_stopBeforeClusterCreation(t *testing.T) string {
 	t.Helper()
 
 	cmd := exec.Command("gpupgrade", "initialize",
@@ -118,7 +118,7 @@ func initialize_stopBeforeClusterCreation(t *testing.T) string {
 	return strings.TrimSpace(string(output))
 }
 
-func initialize(t *testing.T, mode idl.Mode) string {
+func Initialize(t *testing.T, mode idl.Mode) string {
 	t.Helper()
 
 	cmd := exec.Command("gpupgrade", "initialize",
@@ -137,7 +137,7 @@ func initialize(t *testing.T, mode idl.Mode) string {
 	return strings.TrimSpace(string(output))
 }
 
-func execute(t *testing.T) string {
+func Execute(t *testing.T) string {
 	t.Helper()
 
 	cmd := exec.Command("gpupgrade", "execute",
@@ -150,7 +150,7 @@ func execute(t *testing.T) string {
 	return strings.TrimSpace(string(output))
 }
 
-func finalize(t *testing.T) string {
+func Finalize(t *testing.T) string {
 	t.Helper()
 
 	cmd := exec.Command("gpupgrade", "finalize",
@@ -163,7 +163,7 @@ func finalize(t *testing.T) string {
 	return strings.TrimSpace(string(output))
 }
 
-func revert(t *testing.T) string {
+func Revert(t *testing.T) string {
 	t.Helper()
 
 	cmd := exec.Command("gpupgrade", "revert",
@@ -176,7 +176,7 @@ func revert(t *testing.T) string {
 	return strings.TrimSpace(string(output))
 }
 
-func killServices(t *testing.T) string {
+func KillServices(t *testing.T) string {
 	t.Helper()
 
 	cmd := exec.Command("gpupgrade", "kill-services")
@@ -188,7 +188,7 @@ func killServices(t *testing.T) string {
 	return strings.TrimSpace(string(output))
 }
 
-func restartServices(t *testing.T) string {
+func RestartServices(t *testing.T) string {
 	t.Helper()
 
 	cmd := exec.Command("gpupgrade", "restart-services")
@@ -259,7 +259,7 @@ func getCluster(t *testing.T, gphome string, port int, destination idl.ClusterDe
 
 // backupDemoCluster is used with restoreDemoCluster to restore a cluster after
 // finalize.
-func backupDemoCluster(t *testing.T, backupDir string, source greenplum.Cluster) {
+func BackupDemoCluster(t *testing.T, backupDir string, source greenplum.Cluster) {
 	src := filepath.Dir(filepath.Dir(source.CoordinatorDataDir())) + string(os.PathSeparator)
 	dest := backupDir + string(os.PathSeparator)
 
@@ -278,7 +278,7 @@ func backupDemoCluster(t *testing.T, backupDir string, source greenplum.Cluster)
 }
 
 // restoreDemoCluster restores the cluster after finalize has been run.
-func restoreDemoCluster(t *testing.T, backupDir string, source greenplum.Cluster, target greenplum.Cluster) {
+func RestoreDemoCluster(t *testing.T, backupDir string, source greenplum.Cluster, target greenplum.Cluster) {
 	// Depending on where we failed we need to stop either the source or target cluster.
 	err := source.Stop(step.DevNullStream)
 	if err != nil {
@@ -308,7 +308,7 @@ func restoreDemoCluster(t *testing.T, backupDir string, source greenplum.Cluster
 	}
 }
 
-func isolation2_regress(t *testing.T, sourceVersion semver.Version, gphome string, port string, inputDir string, outputDir string, schedule idl.Schedule) string {
+func Isolation2_regress(t *testing.T, sourceVersion semver.Version, gphome string, port string, inputDir string, outputDir string, schedule idl.Schedule) string {
 	var cmdArgs []string
 	if schedule != idl.Schedule_non_upgradeable_schedule && strings.Contains(schedule.String(), "target") {
 		cmdArgs = append(cmdArgs, "--use-existing")
@@ -357,7 +357,7 @@ func isolation2_regress(t *testing.T, sourceVersion semver.Version, gphome strin
 	return strings.TrimSpace(string(output))
 }
 
-func jq(t *testing.T, file string, args ...string) string {
+func Jq(t *testing.T, file string, args ...string) string {
 	t.Helper()
 
 	cmd := exec.Command("jq", append(args, "--raw-output", file)...)

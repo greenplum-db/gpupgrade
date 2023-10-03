@@ -14,6 +14,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/config"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/testutils/acceptance"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 )
 
@@ -24,12 +25,12 @@ func TestServices(t *testing.T) {
 	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 	defer resetEnv()
 
-	initialize_stopBeforeClusterCreation(t)
-	defer revert(t)
+	acceptance.Initialize_stopBeforeClusterCreation(t)
+	defer acceptance.Revert(t)
 
 	// TODO: Move to integration/hub_test.go
 	t.Run("hub daemonizes and prints the PID when passed the --daemonize option", func(t *testing.T) {
-		killServices(t)
+		acceptance.KillServices(t)
 
 		cmd := exec.Command("gpupgrade", "hub", "--daemonize")
 		output, err := cmd.CombinedOutput()
@@ -43,12 +44,12 @@ func TestServices(t *testing.T) {
 			t.Fatalf("got %q want %q", hubOutput, expected)
 		}
 
-		killServices(t)
+		acceptance.KillServices(t)
 	})
 
 	// TODO: Move to integration/hub_test.go
 	t.Run("hub does not start if the configuration hasn't been initialized", func(t *testing.T) {
-		killServices(t)
+		acceptance.KillServices(t)
 
 		testutils.MustRename(t, config.GetConfigFile(), config.GetConfigFile()+".old")
 		defer testutils.MustRename(t, config.GetConfigFile()+".old", config.GetConfigFile())
@@ -63,7 +64,7 @@ func TestServices(t *testing.T) {
 
 	// TODO: Move to integration/hub_test.go
 	t.Run("subcommands return an error if the hub is not started", func(t *testing.T) {
-		killServices(t)
+		acceptance.KillServices(t)
 
 		commands := [][]string{
 			{"config", "show"},
@@ -83,17 +84,17 @@ func TestServices(t *testing.T) {
 	})
 
 	t.Run("kill-services stops hub and agents", func(t *testing.T) {
-		restartServices(t)
+		acceptance.RestartServices(t)
 		processMustBeRunning(t, "gpupgrade hub")
 		processMustBeRunning(t, "gpupgrade agent")
 
-		killServices(t)
+		acceptance.KillServices(t)
 		processMustNotBeRunning(t, "gpupgrade hub")
 		processMustNotBeRunning(t, "gpupgrade agent")
 	})
 
 	t.Run("kill-services stops hub and agents on default port if config file does not exist", func(t *testing.T) {
-		restartServices(t)
+		acceptance.RestartServices(t)
 		processMustBeRunning(t, "gpupgrade hub")
 		processMustBeRunning(t, "gpupgrade agent")
 
@@ -110,37 +111,37 @@ func TestServices(t *testing.T) {
 			}
 		}()
 
-		killServices(t)
+		acceptance.KillServices(t)
 		processMustNotBeRunning(t, "gpupgrade hub")
 		processMustNotBeRunning(t, "gpupgrade agent")
 	})
 
 	t.Run("restart-services actually starts hub and agents", func(t *testing.T) {
-		killServices(t)
+		acceptance.KillServices(t)
 		processMustNotBeRunning(t, "gpupgrade hub")
 		processMustNotBeRunning(t, "gpupgrade agent")
 
-		restartServices(t)
+		acceptance.RestartServices(t)
 		processMustBeRunning(t, "gpupgrade hub")
 		processMustBeRunning(t, "gpupgrade agent")
 	})
 
 	t.Run("kill services can be run multiple times without issue", func(t *testing.T) {
-		killServices(t)
+		acceptance.KillServices(t)
 		processMustNotBeRunning(t, "gpupgrade hub")
 		processMustNotBeRunning(t, "gpupgrade agent")
 
-		killServices(t)
+		acceptance.KillServices(t)
 		processMustNotBeRunning(t, "gpupgrade hub")
 		processMustNotBeRunning(t, "gpupgrade agent")
 	})
 
 	t.Run("restart services can be run multiple times without issue", func(t *testing.T) {
-		restartServices(t)
+		acceptance.RestartServices(t)
 		processMustBeRunning(t, "gpupgrade hub")
 		processMustBeRunning(t, "gpupgrade agent")
 
-		restartServices(t)
+		acceptance.RestartServices(t)
 		processMustBeRunning(t, "gpupgrade hub")
 		processMustBeRunning(t, "gpupgrade agent")
 	})

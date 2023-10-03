@@ -22,6 +22,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/substeps"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/testutils/acceptance"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
@@ -39,13 +40,13 @@ func TestInitialize(t *testing.T) {
 		cmd := exec.Command("gpupgrade", "initialize",
 			"--non-interactive", "--verbose",
 			"--mode", idl.Mode_copy.String(),
-			"--source-gphome", GPHOME_SOURCE,
-			"--target-gphome", GPHOME_TARGET,
-			"--source-master-port", PGPORT,
+			"--source-gphome", acceptance.GPHOME_SOURCE,
+			"--target-gphome", acceptance.GPHOME_TARGET,
+			"--source-master-port", acceptance.PGPORT,
 			"--temp-port-range", expectedPortRange,
 			"--disk-free-ratio", "0")
 		output, err := cmd.CombinedOutput()
-		defer revert(t)
+		defer acceptance.Revert(t)
 		if err != nil {
 			t.Fatalf("unexpected err: %#v stderr %q", err, output)
 		}
@@ -78,10 +79,10 @@ func TestInitialize(t *testing.T) {
 		cmd := exec.Command("gpupgrade", "initialize",
 			"--non-interactive", "--verbose",
 			"--mode", idl.Mode_copy.String(),
-			"--source-gphome", GPHOME_SOURCE,
-			"--target-gphome", GPHOME_TARGET,
-			"--source-master-port", PGPORT,
-			"--temp-port-range", PGPORT+"-"+strconv.Itoa(testutils.MustConvertStringToInt(t, PGPORT)+20),
+			"--source-gphome", acceptance.GPHOME_SOURCE,
+			"--target-gphome", acceptance.GPHOME_TARGET,
+			"--source-master-port", acceptance.PGPORT,
+			"--temp-port-range", acceptance.PGPORT+"-"+strconv.Itoa(testutils.MustConvertStringToInt(t, acceptance.PGPORT)+20),
 			"--disk-free-ratio", "0")
 		output, err := cmd.CombinedOutput()
 		if err == nil {
@@ -109,14 +110,14 @@ func TestInitialize(t *testing.T) {
 
 		cmd := exec.Command("gpupgrade", "initialize",
 			"--non-interactive", "--verbose",
-			"--source-gphome", GPHOME_SOURCE,
-			"--target-gphome", GPHOME_TARGET,
-			"--source-master-port", PGPORT,
-			"--temp-port-range", TARGET_PGPORT+"-6040",
+			"--source-gphome", acceptance.GPHOME_SOURCE,
+			"--target-gphome", acceptance.GPHOME_TARGET,
+			"--source-master-port", acceptance.PGPORT,
+			"--temp-port-range", acceptance.TARGET_PGPORT+"-6040",
 			"--stop-before-cluster-creation",
 			"--disk-free-ratio", "0")
 		output, err := cmd.CombinedOutput()
-		defer revert(t)
+		defer acceptance.Revert(t)
 		if err == nil {
 			t.Errorf("expected nil got error %v", err)
 		}
@@ -129,11 +130,11 @@ func TestInitialize(t *testing.T) {
 
 	t.Run("the check upgrade substep always runs", func(t *testing.T) {
 		// run initialize
-		initialize(t, idl.Mode_copy)
-		defer revert(t)
+		acceptance.Initialize(t, idl.Mode_copy)
+		defer acceptance.Revert(t)
 
 		// create a non-upgradeable object to assert pg_upgrade --check is always run
-		source := GetSourceCluster(t)
+		source := acceptance.GetSourceCluster(t)
 		testutils.MustExecuteSQL(t, source.Connection(), `CREATE TABLE public.test_pg_upgrade(a int) DISTRIBUTED BY (a) PARTITION BY RANGE (a)(start (1) end(4) every(1)); CREATE UNIQUE INDEX fomo ON public.test_pg_upgrade (a);`)
 		defer testutils.MustExecuteSQL(t, source.Connection(), `DROP TABLE IF EXISTS public.test_pg_upgrade CASCADE;`)
 
@@ -141,10 +142,10 @@ func TestInitialize(t *testing.T) {
 		cmd := exec.Command("gpupgrade", "initialize",
 			"--non-interactive", "--verbose",
 			"--mode", idl.Mode_copy.String(),
-			"--source-gphome", GPHOME_SOURCE,
-			"--target-gphome", GPHOME_TARGET,
-			"--source-master-port", PGPORT,
-			"--temp-port-range", TARGET_PGPORT+"-6040",
+			"--source-gphome", acceptance.GPHOME_SOURCE,
+			"--target-gphome", acceptance.GPHOME_TARGET,
+			"--source-master-port", acceptance.PGPORT,
+			"--temp-port-range", acceptance.TARGET_PGPORT+"-6040",
 			"--disk-free-ratio", "0")
 		output, err := cmd.CombinedOutput()
 		if err == nil {
@@ -159,22 +160,22 @@ func TestInitialize(t *testing.T) {
 	})
 
 	t.Run("the source cluster is running at the end of initialize", func(t *testing.T) {
-		initialize(t, idl.Mode_copy)
-		defer revert(t)
+		acceptance.Initialize(t, idl.Mode_copy)
+		defer acceptance.Revert(t)
 
-		testutils.VerifyClusterIsRunning(t, GetSourceCluster(t))
+		testutils.VerifyClusterIsRunning(t, acceptance.GetSourceCluster(t))
 	})
 
 	t.Run("gpupgrade initialize runs pg_upgrade --check on coordinator and primaries", func(t *testing.T) {
-		initialize(t, idl.Mode_copy)
-		defer revert(t)
+		acceptance.Initialize(t, idl.Mode_copy)
+		defer acceptance.Revert(t)
 
 		logs := []string{
 			testutils.MustGetLog(t, "hub"),
-			MustGetPgUpgradeLog(t, -1),
-			MustGetPgUpgradeLog(t, 0),
-			MustGetPgUpgradeLog(t, 1),
-			MustGetPgUpgradeLog(t, 2),
+			acceptance.MustGetPgUpgradeLog(t, -1),
+			acceptance.MustGetPgUpgradeLog(t, 0),
+			acceptance.MustGetPgUpgradeLog(t, 1),
+			acceptance.MustGetPgUpgradeLog(t, 2),
 		}
 
 		for _, log := range logs {
@@ -187,19 +188,19 @@ func TestInitialize(t *testing.T) {
 	})
 
 	t.Run("upgrade maintains separate DBID for each segment and initialize runs gpinitsystem based on the source cluster", func(t *testing.T) {
-		source := GetSourceCluster(t)
+		source := acceptance.GetSourceCluster(t)
 
-		initialize(t, idl.Mode_copy)
-		defer revert(t)
+		acceptance.Initialize(t, idl.Mode_copy)
+		defer acceptance.Revert(t)
 
-		execute(t)
+		acceptance.Execute(t)
 
 		conf, err := config.Read()
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		intermediate := GetIntermediateCluster(t)
+		intermediate := acceptance.GetIntermediateCluster(t)
 		if len(source.Primaries) != len(intermediate.Primaries) {
 			t.Fatalf("got %d want %d", len(source.Primaries), len(intermediate.Primaries))
 		}
@@ -245,8 +246,8 @@ func TestInitialize(t *testing.T) {
 	})
 
 	t.Run("init target cluster is idempotent", func(t *testing.T) {
-		initialize(t, idl.Mode_copy)
-		defer revert(t)
+		acceptance.Initialize(t, idl.Mode_copy)
+		defer acceptance.Revert(t)
 
 		conf, err := config.Read()
 		if err != nil {
@@ -258,21 +259,21 @@ func TestInitialize(t *testing.T) {
 		testutils.MustRemoveAll(t, seg.DataDir)
 
 		// simulate a gpinitsystem cluster failure by marking that substep as failed
-		replaced := jq(t, filepath.Join(utils.GetStateDir(), step.SubstepsFileName), `.initialize.init_target_cluster = "failed"`)
+		replaced := acceptance.Jq(t, filepath.Join(utils.GetStateDir(), step.SubstepsFileName), `.initialize.init_target_cluster = "failed"`)
 		testutils.MustWriteToFile(t, filepath.Join(utils.GetStateDir(), step.SubstepsFileName), replaced)
 
 		// re-run initialize
-		initialize(t, idl.Mode_copy)
+		acceptance.Initialize(t, idl.Mode_copy)
 	})
 
 	t.Run("all substeps can be re-run after completion", func(t *testing.T) {
-		initialize(t, idl.Mode_copy)
-		defer revert(t)
+		acceptance.Initialize(t, idl.Mode_copy)
+		defer acceptance.Revert(t)
 
 		// As a hacky way of testing substep idempotence mark all initialize substeps as failed and re-run.
-		replaced := jq(t, filepath.Join(utils.GetStateDir(), step.SubstepsFileName), `(.initialize | values[]) |= "failed"`)
+		replaced := acceptance.Jq(t, filepath.Join(utils.GetStateDir(), step.SubstepsFileName), `(.initialize | values[]) |= "failed"`)
 		testutils.MustWriteToFile(t, filepath.Join(utils.GetStateDir(), step.SubstepsFileName), replaced)
 
-		initialize(t, idl.Mode_copy)
+		acceptance.Initialize(t, idl.Mode_copy)
 	})
 }

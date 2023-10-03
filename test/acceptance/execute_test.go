@@ -19,6 +19,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/testutils/acceptance"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 )
@@ -33,7 +34,7 @@ func TestExecute(t *testing.T) {
 	t.Run("gpupgrade execute should remember that link mode was specified in initialize", func(t *testing.T) {
 		table := "public.test_linking"
 
-		source := GetSourceCluster(t)
+		source := acceptance.GetSourceCluster(t)
 		testutils.MustExecuteSQL(t, source.Connection(), fmt.Sprintf(`CREATE TABLE %s (a int);`, table))
 		defer testutils.MustExecuteSQL(t, source.Connection(), fmt.Sprintf(`DROP TABLE IF EXISTS %s;`, table))
 
@@ -45,12 +46,12 @@ func TestExecute(t *testing.T) {
 			}
 		}
 
-		initialize(t, idl.Mode_link)
-		defer revert(t)
+		acceptance.Initialize(t, idl.Mode_link)
+		defer acceptance.Revert(t)
 
-		execute(t)
+		acceptance.Execute(t)
 
-		intermediate := GetIntermediateCluster(t)
+		intermediate := acceptance.GetIntermediateCluster(t)
 		intermediateRelfilenodes := getRelfilenodes(t, intermediate.Connection(), intermediate.Version, table)
 		for _, relfilenode := range intermediateRelfilenodes {
 			hardlinks := getNumHardLinks(t, relfilenode)
@@ -61,8 +62,8 @@ func TestExecute(t *testing.T) {
 	})
 
 	t.Run("gpupgrade execute step to upgrade coordinator should always rsync the coordinator data dir from backup", func(t *testing.T) {
-		initialize(t, idl.Mode_link)
-		defer revert(t)
+		acceptance.Initialize(t, idl.Mode_link)
+		defer acceptance.Revert(t)
 
 		// For substep idempotence initialize creates a backup of the
 		// intermediate coordinator data directory. During execute before
@@ -78,18 +79,18 @@ func TestExecute(t *testing.T) {
 		testutils.MustCreateDir(t, path)
 		testutils.MustWriteToFile(t, filepath.Join(path, "1101"), "extra_relfilenode")
 
-		execute(t)
+		acceptance.Execute(t)
 
 		testutils.PathMustNotExist(t, path)
 	})
 
 	t.Run("all substeps can be re-run after completion", func(t *testing.T) {
-		source := GetSourceCluster(t)
+		source := acceptance.GetSourceCluster(t)
 
-		initialize(t, idl.Mode_copy)
-		defer revert(t)
+		acceptance.Initialize(t, idl.Mode_copy)
+		defer acceptance.Revert(t)
 
-		execute(t)
+		acceptance.Execute(t)
 
 		// undo the upgrade so that we can re-run execute
 		err := source.Start(step.DevNullStream)
@@ -106,17 +107,17 @@ func TestExecute(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		intermediate := GetIntermediateCluster(t)
+		intermediate := acceptance.GetIntermediateCluster(t)
 		err = intermediate.Stop(step.DevNullStream)
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// As a hacky way of testing substep idempotence mark all execute substeps as failed and re-run.
-		replaced := jq(t, filepath.Join(utils.GetStateDir(), step.SubstepsFileName), `(.execute | values[]) |= "failed"`)
+		replaced := acceptance.Jq(t, filepath.Join(utils.GetStateDir(), step.SubstepsFileName), `(.execute | values[]) |= "failed"`)
 		testutils.MustWriteToFile(t, filepath.Join(utils.GetStateDir(), step.SubstepsFileName), replaced)
 
-		execute(t)
+		acceptance.Execute(t)
 	})
 }
 

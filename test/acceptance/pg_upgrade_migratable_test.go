@@ -9,6 +9,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/testutils/acceptance"
 )
 
 func Test_PgUpgrade_Migratable_Tests(t *testing.T) {
@@ -26,71 +27,71 @@ func Test_PgUpgrade_Migratable_Tests(t *testing.T) {
 	migrationDir := testutils.GetTempDir(t, "migration")
 	defer testutils.MustRemoveAll(t, migrationDir)
 
-	source := GetSourceCluster(t)
+	source := acceptance.GetSourceCluster(t)
 	dir := "6-to-7"
 	if source.Version.Major == 5 {
 		dir = "5-to-6"
 	}
 
-	testDir := filepath.Join(MustGetRepoRoot(t), "test", "acceptance", dir)
+	testDir := filepath.Join(acceptance.MustGetRepoRoot(t), "test", "acceptance", dir)
 	sourceTestDir := filepath.Join(testDir, "migratable_tests", "source_cluster_regress")
 	targetTestDir := filepath.Join(testDir, "migratable_tests", "target_cluster_regress")
 
-	testutils.MustApplySQLFile(t, GPHOME_SOURCE, PGPORT, filepath.Join(testDir, "setup_globals.sql"))
-	defer testutils.MustApplySQLFile(t, GPHOME_SOURCE, PGPORT, filepath.Join(testDir, "teardown_globals.sql"))
+	testutils.MustApplySQLFile(t, acceptance.GPHOME_SOURCE, acceptance.PGPORT, filepath.Join(testDir, "setup_globals.sql"))
+	defer testutils.MustApplySQLFile(t, acceptance.GPHOME_SOURCE, acceptance.PGPORT, filepath.Join(testDir, "teardown_globals.sql"))
 
 	t.Run("migration scripts generate sql to modify non-upgradeable objects and fix pg_upgrade check errors", func(t *testing.T) {
-		backupDemoCluster(t, backupDir, source)
-		defer restoreDemoCluster(t, backupDir, source, GetTempTargetCluster(t))
-		isolation2_regress(t, source.Version, GPHOME_SOURCE, PGPORT, sourceTestDir, sourceTestDir, idl.Schedule_migratable_source_schedule)
+		acceptance.BackupDemoCluster(t, backupDir, source)
+		defer acceptance.RestoreDemoCluster(t, backupDir, source, acceptance.GetTempTargetCluster(t))
+		acceptance.Isolation2_regress(t, source.Version, acceptance.GPHOME_SOURCE, acceptance.PGPORT, sourceTestDir, sourceTestDir, idl.Schedule_migratable_source_schedule)
 
-		generate(t, migrationDir)
-		apply(t, GPHOME_SOURCE, PGPORT, idl.Step_initialize, migrationDir)
+		acceptance.Generate(t, migrationDir)
+		acceptance.Apply(t, acceptance.GPHOME_SOURCE, acceptance.PGPORT, idl.Step_initialize, migrationDir)
 
-		initialize(t, idl.Mode_link)
+		acceptance.Initialize(t, idl.Mode_link)
 		defer revertIgnoreFailures(t) // cleanup in case we fail part way through
-		execute(t)
-		finalize(t)
+		acceptance.Execute(t)
+		acceptance.Finalize(t)
 
-		apply(t, GPHOME_TARGET, PGPORT, idl.Step_finalize, migrationDir)
+		acceptance.Apply(t, acceptance.GPHOME_TARGET, acceptance.PGPORT, idl.Step_finalize, migrationDir)
 
 		outputTestDir := filepath.Join(targetTestDir, "finalize")
 		testutils.MustCreateDir(t, outputTestDir)
-		isolation2_regress(t, source.Version, GPHOME_TARGET, PGPORT, targetTestDir, outputTestDir, idl.Schedule_migratable_target_schedule)
+		acceptance.Isolation2_regress(t, source.Version, acceptance.GPHOME_TARGET, acceptance.PGPORT, targetTestDir, outputTestDir, idl.Schedule_migratable_target_schedule)
 	})
 
 	t.Run("recreate scripts restore migratable objects when reverting after initialize", func(t *testing.T) {
-		isolation2_regress(t, source.Version, GPHOME_SOURCE, PGPORT, sourceTestDir, sourceTestDir, idl.Schedule_migratable_source_schedule)
+		acceptance.Isolation2_regress(t, source.Version, acceptance.GPHOME_SOURCE, acceptance.PGPORT, sourceTestDir, sourceTestDir, idl.Schedule_migratable_source_schedule)
 
-		generate(t, migrationDir)
-		apply(t, GPHOME_SOURCE, PGPORT, idl.Step_initialize, migrationDir)
+		acceptance.Generate(t, migrationDir)
+		acceptance.Apply(t, acceptance.GPHOME_SOURCE, acceptance.PGPORT, idl.Step_initialize, migrationDir)
 
-		initialize(t, idl.Mode_link)
+		acceptance.Initialize(t, idl.Mode_link)
 		defer revertIgnoreFailures(t) // cleanup in case we fail part way through
-		revert(t)
+		acceptance.Revert(t)
 
-		apply(t, GPHOME_TARGET, PGPORT, idl.Step_revert, migrationDir)
+		acceptance.Apply(t, acceptance.GPHOME_TARGET, acceptance.PGPORT, idl.Step_revert, migrationDir)
 
 		outputTestDir := filepath.Join(targetTestDir, "revert_initialize")
 		testutils.MustCreateDir(t, outputTestDir)
-		isolation2_regress(t, source.Version, GPHOME_SOURCE, PGPORT, targetTestDir, outputTestDir, idl.Schedule_migratable_target_schedule)
+		acceptance.Isolation2_regress(t, source.Version, acceptance.GPHOME_SOURCE, acceptance.PGPORT, targetTestDir, outputTestDir, idl.Schedule_migratable_target_schedule)
 	})
 
 	t.Run("recreate scripts restore migratable objects when reverting after execute", func(t *testing.T) {
-		isolation2_regress(t, source.Version, GPHOME_SOURCE, PGPORT, sourceTestDir, sourceTestDir, idl.Schedule_migratable_source_schedule)
+		acceptance.Isolation2_regress(t, source.Version, acceptance.GPHOME_SOURCE, acceptance.PGPORT, sourceTestDir, sourceTestDir, idl.Schedule_migratable_source_schedule)
 
-		generate(t, migrationDir)
-		apply(t, GPHOME_SOURCE, PGPORT, idl.Step_initialize, migrationDir)
+		acceptance.Generate(t, migrationDir)
+		acceptance.Apply(t, acceptance.GPHOME_SOURCE, acceptance.PGPORT, idl.Step_initialize, migrationDir)
 
-		initialize(t, idl.Mode_link)
+		acceptance.Initialize(t, idl.Mode_link)
 		defer revertIgnoreFailures(t) // cleanup in case we fail part way through
-		execute(t)
-		revert(t)
+		acceptance.Execute(t)
+		acceptance.Revert(t)
 
-		apply(t, GPHOME_TARGET, PGPORT, idl.Step_revert, migrationDir)
+		acceptance.Apply(t, acceptance.GPHOME_TARGET, acceptance.PGPORT, idl.Step_revert, migrationDir)
 
 		outputTestDir := filepath.Join(targetTestDir, "revert_execute")
 		testutils.MustCreateDir(t, outputTestDir)
-		isolation2_regress(t, source.Version, GPHOME_SOURCE, PGPORT, targetTestDir, outputTestDir, idl.Schedule_migratable_target_schedule)
+		acceptance.Isolation2_regress(t, source.Version, acceptance.GPHOME_SOURCE, acceptance.PGPORT, targetTestDir, outputTestDir, idl.Schedule_migratable_target_schedule)
 	})
 }

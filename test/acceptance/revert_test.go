@@ -23,6 +23,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/substeps"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/testutils/acceptance"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
 
@@ -34,9 +35,9 @@ func TestRevert(t *testing.T) {
 	defer resetEnv()
 
 	t.Run("reverting after initialize succeeds", func(t *testing.T) {
-		source := GetSourceCluster(t)
+		source := acceptance.GetSourceCluster(t)
 
-		initialize(t, idl.Mode_copy)
+		acceptance.Initialize(t, idl.Mode_copy)
 		defer revertIgnoreFailures(t) // cleanup in case we fail part way through
 
 		conf, err := config.Read()
@@ -44,9 +45,9 @@ func TestRevert(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		output := revert(t)
+		output := acceptance.Revert(t)
 
-		logArchiveDir := MustGetLogArchiveDir(t, conf.UpgradeID)
+		logArchiveDir := acceptance.MustGetLogArchiveDir(t, conf.UpgradeID)
 		verifyRevert(t, source, conf.Intermediate, output, logArchiveDir)
 	})
 
@@ -54,12 +55,12 @@ func TestRevert(t *testing.T) {
 		cmd := exec.Command("gpupgrade", "initialize",
 			"--verbose",
 			"--mode", idl.Mode_copy.String(),
-			"--source-gphome", GPHOME_SOURCE,
-			"--target-gphome", GPHOME_TARGET,
-			"--source-master-port", PGPORT,
-			"--temp-port-range", TARGET_PGPORT+"-6040",
+			"--source-gphome", acceptance.GPHOME_SOURCE,
+			"--target-gphome", acceptance.GPHOME_TARGET,
+			"--source-master-port", acceptance.PGPORT,
+			"--temp-port-range", acceptance.TARGET_PGPORT+"-6040",
 			"--disk-free-ratio", "0",
-			"--seed-dir", filepath.Join(MustGetRepoRoot(t), "data-migration-scripts"))
+			"--seed-dir", filepath.Join(acceptance.MustGetRepoRoot(t), "data-migration-scripts"))
 		cmd.Stdin = strings.NewReader("y\nq\n") // cause initialize to exit early
 		output, err := cmd.CombinedOutput()
 		defer revertIgnoreFailures(t) // cleanup in case we fail part way through
@@ -72,10 +73,10 @@ func TestRevert(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		revert(t)
+		acceptance.Revert(t)
 
 		// Since the logArchiveDir has a timestamp we need to do a partial check
-		logArchiveDir := MustGetLogArchiveDir(t, conf.UpgradeID)
+		logArchiveDir := acceptance.MustGetLogArchiveDir(t, conf.UpgradeID)
 		logArchiveDir = logArchiveDir[:len(logArchiveDir)-5] + "*"
 
 		testutils.RemotePathMustExist(t, conf.Intermediate.CoordinatorHostname(), logArchiveDir)
@@ -149,18 +150,18 @@ func TestRevert(t *testing.T) {
 	})
 
 	t.Run("can successfully run gpupgrade after a revert", func(t *testing.T) {
-		initialize(t, idl.Mode_copy)
-		execute(t)
-		revert(t)
+		acceptance.Initialize(t, idl.Mode_copy)
+		acceptance.Execute(t)
+		acceptance.Revert(t)
 
-		initialize(t, idl.Mode_link)
-		execute(t)
-		revert(t)
+		acceptance.Initialize(t, idl.Mode_link)
+		acceptance.Execute(t)
+		acceptance.Revert(t)
 	})
 }
 
 func testRevertAfterExecute(t *testing.T, mode idl.Mode, upgradeFailure UpgradeFailure) {
-	source := GetSourceCluster(t)
+	source := acceptance.GetSourceCluster(t)
 
 	// setup upgrade failure
 	path := upgradeFailure.setup(t, source)
@@ -189,12 +190,12 @@ func testRevertAfterExecute(t *testing.T, mode idl.Mode, upgradeFailure UpgradeF
 	}
 
 	// run initialize and execute
-	initialize(t, mode)
+	acceptance.Initialize(t, mode)
 	defer revertIgnoreFailures(t) // cleanup in case we fail part way through
 	upgradeSucceeded := verifyExecute(t, upgradeFailure.failedSubstep)
 
 	if upgradeSucceeded {
-		intermediate := GetIntermediateCluster(t)
+		intermediate := acceptance.GetIntermediateCluster(t)
 
 		// modify a table on the intermediate cluster to ensure it is properly reverted
 		testutils.MustExecuteSQL(t, intermediate.Connection(greenplum.Database("postgres")), fmt.Sprintf(`TRUNCATE TABLE %s;`, table))
@@ -209,9 +210,9 @@ func testRevertAfterExecute(t *testing.T, mode idl.Mode, upgradeFailure UpgradeF
 	}
 
 	// revert
-	revertOutput := revert(t)
+	revertOutput := acceptance.Revert(t)
 
-	logArchiveDir := MustGetLogArchiveDir(t, conf.UpgradeID)
+	logArchiveDir := acceptance.MustGetLogArchiveDir(t, conf.UpgradeID)
 	verifyRevert(t, source, conf.Intermediate, revertOutput, logArchiveDir)
 
 	// verify that the mirror marker files were restored to the primaries after reverting
@@ -274,10 +275,10 @@ func verifyRevert(t *testing.T, source greenplum.Cluster, intermediate *greenplu
 	testutils.VerifyClusterIsStopped(t, *intermediate)
 
 	// verify configuration matches before and after reverting
-	if !reflect.DeepEqual(source, GetSourceCluster(t)) {
+	if !reflect.DeepEqual(source, acceptance.GetSourceCluster(t)) {
 		t.Errorf("expected source cluster to match before and after upgrading.")
 		t.Errorf("got: %v", source)
-		t.Errorf("want: %v", GetSourceCluster(t))
+		t.Errorf("want: %v", acceptance.GetSourceCluster(t))
 	}
 
 	err := source.WaitForClusterToBeReady()

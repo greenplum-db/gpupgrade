@@ -57,9 +57,9 @@ test check: unit integration acceptance
 
 .PHONY: pg-upgrade-tests
 pg-upgrade-tests:
-	go test -count=1 -v ./test/acceptance/ -run Test_PgUpgrade_Migratable_Tests
-	go test -count=1 -v ./test/acceptance/ -run Test_PgUpgrade_NonUpgradeable_Tests
-	go test -count=1 -v ./test/acceptance/ -run Test_PgUpgrade_Upgradeable_Tests
+	go test -count=1 -timeout 35m -v ./test/acceptance/ -run Test_PgUpgrade_Migratable_Tests
+	go test -count=1 -timeout 35m -v ./test/acceptance/ -run Test_PgUpgrade_NonUpgradeable_Tests
+	go test -count=1 -timeout 35m -v ./test/acceptance/ -run Test_PgUpgrade_Upgradeable_Tests
 
 .PHONY: coverage
 coverage:
