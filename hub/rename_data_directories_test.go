@@ -26,7 +26,7 @@ func TestRenameSegmentDataDirs(t *testing.T) {
 	testlog.SetupTestLogger()
 
 	m := hub.RenameMap{
-		"sdw1": {
+		"sdw1": []*idl.RenameDirectories{
 			{
 				Source: "/data/dbfast1/seg1_123ABC",
 				Target: "/data/dbfast1/seg1",
@@ -36,7 +36,7 @@ func TestRenameSegmentDataDirs(t *testing.T) {
 				Target: "/data/dbfast1/seg3",
 			},
 		},
-		"sdw2": {
+		"sdw2": []*idl.RenameDirectories{
 			{
 				Source: "/data/dbfast2/seg2_123ABC",
 				Target: "/data/dbfast2/seg2",
