@@ -12,6 +12,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/cli/commands"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/testutils/acceptance"
 )
 
 func TestArgs(t *testing.T) {
@@ -56,9 +57,9 @@ func TestArgs(t *testing.T) {
 	t.Run("gpupgrade initialize fails when --pg-upgrade-verbose is used without --verbose", func(t *testing.T) {
 		cmd := exec.Command("gpupgrade", "initialize",
 			"--non-interactive",
-			"--source-gphome", GPHOME_SOURCE,
-			"--target-gphome", GPHOME_TARGET,
-			"--source-master-port", PGPORT,
+			"--source-gphome", acceptance.GPHOME_SOURCE,
+			"--target-gphome", acceptance.GPHOME_TARGET,
+			"--source-master-port", acceptance.PGPORT,
 			"--stop-before-cluster-creation",
 			"--disk-free-ratio", "0",
 			"--pg-upgrade-verbose",
@@ -81,7 +82,7 @@ target-gphome = %s
 source-master-port = %s
 disk-free-ratio = 0
 stop-before-cluster-creation = true
-`, GPHOME_SOURCE, GPHOME_TARGET, PGPORT)
+`, acceptance.GPHOME_SOURCE, acceptance.GPHOME_TARGET, acceptance.PGPORT)
 		testutils.MustWriteToFile(t, configFile, contents)
 
 		cmd := exec.Command("gpupgrade", "initialize",
@@ -94,25 +95,25 @@ stop-before-cluster-creation = true
 		if err != nil {
 			t.Fatalf("unexpected err: %v stderr: %q", err, output)
 		}
-		defer revert(t)
+		defer acceptance.Revert(t)
 
 		actual := configShow(t, "--source-gphome")
-		if actual != GPHOME_SOURCE {
-			t.Errorf("got %q want %q", actual, GPHOME_SOURCE)
+		if actual != acceptance.GPHOME_SOURCE {
+			t.Errorf("got %q want %q", actual, acceptance.GPHOME_SOURCE)
 		}
 
 		actual = configShow(t, "--target-gphome")
-		if actual != GPHOME_TARGET {
-			t.Errorf("got %q want %q", actual, GPHOME_TARGET)
+		if actual != acceptance.GPHOME_TARGET {
+			t.Errorf("got %q want %q", actual, acceptance.GPHOME_TARGET)
 		}
 	})
 
 	t.Run("initialize sanitizes source-gphome and target-gphome", func(t *testing.T) {
 		cmd := exec.Command("gpupgrade", "initialize",
 			"--non-interactive",
-			"--source-gphome", GPHOME_SOURCE+string(os.PathSeparator),
-			"--target-gphome", GPHOME_TARGET+string(os.PathSeparator)+string(os.PathSeparator),
-			"--source-master-port", PGPORT,
+			"--source-gphome", acceptance.GPHOME_SOURCE+string(os.PathSeparator),
+			"--target-gphome", acceptance.GPHOME_TARGET+string(os.PathSeparator)+string(os.PathSeparator),
+			"--source-master-port", acceptance.PGPORT,
 			"--stop-before-cluster-creation",
 			"--disk-free-ratio", "0",
 		)
@@ -120,21 +121,21 @@ stop-before-cluster-creation = true
 		if err != nil {
 			t.Fatalf("unexpected err: %v stderr: %q", err, output)
 		}
-		defer revert(t)
+		defer acceptance.Revert(t)
 
 		actual := configShow(t, "--source-gphome")
-		if actual != GPHOME_SOURCE {
-			t.Errorf("got %q want %q", actual, GPHOME_SOURCE)
+		if actual != acceptance.GPHOME_SOURCE {
+			t.Errorf("got %q want %q", actual, acceptance.GPHOME_SOURCE)
 		}
 
 		actual = configShow(t, "--target-gphome")
-		if actual != GPHOME_TARGET {
-			t.Errorf("got %q want %q", actual, GPHOME_TARGET)
+		if actual != acceptance.GPHOME_TARGET {
+			t.Errorf("got %q want %q", actual, acceptance.GPHOME_TARGET)
 		}
 	})
 
 	t.Run("gpupgrade execute fails when --pg-upgrade-verbose is used without --verbose", func(t *testing.T) {
-		initialize_stopBeforeClusterCreation(t)
+		acceptance.Initialize_stopBeforeClusterCreation(t)
 
 		cmd := exec.Command("gpupgrade", "execute",
 			"--non-interactive",
@@ -144,7 +145,7 @@ stop-before-cluster-creation = true
 		if err == nil {
 			t.Errorf("expected error got nil")
 		}
-		defer revert(t)
+		defer acceptance.Revert(t)
 
 		expected := "Error: expected --verbose when using --pg-upgrade-verbose\n"
 		if string(output) != expected {

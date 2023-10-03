@@ -21,6 +21,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/testutils/acceptance"
 	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 )
@@ -42,13 +43,13 @@ func TestFinalize(t *testing.T) {
 }
 
 func testFinalize(t *testing.T, mode idl.Mode, useHbaHostnames bool) {
-	source := GetSourceCluster(t)
+	source := acceptance.GetSourceCluster(t)
 
 	backupDir := testutils.GetTempDir(t, "backup")
 	defer testutils.MustRemoveAll(t, backupDir)
 
-	backupDemoCluster(t, backupDir, source)
-	defer restoreDemoCluster(t, backupDir, source, GetTempTargetCluster(t))
+	acceptance.BackupDemoCluster(t, backupDir, source)
+	defer acceptance.RestoreDemoCluster(t, backupDir, source, acceptance.GetTempTargetCluster(t))
 
 	createMarkerFilesOnAllSegments(t, source)
 	defer removeMarkerFilesOnAllSegments(t, source)
@@ -61,7 +62,7 @@ func testFinalize(t *testing.T, mode idl.Mode, useHbaHostnames bool) {
 	defer testutils.MustRemoveAll(t, tablespaceDir)
 
 	testutils.MustAddTablespace(t, source, tablespaceDir)
-	defer testutils.MustDeleteTablespaces(t, source, GetTempTargetCluster(t))
+	defer testutils.MustDeleteTablespaces(t, source, acceptance.GetTempTargetCluster(t))
 
 	hbaHostnames := ""
 	if useHbaHostnames {
@@ -71,10 +72,10 @@ func testFinalize(t *testing.T, mode idl.Mode, useHbaHostnames bool) {
 	cmd := exec.Command("gpupgrade", "initialize",
 		"--non-interactive", "--verbose",
 		"--mode", mode.String(),
-		"--source-gphome", GPHOME_SOURCE,
-		"--target-gphome", GPHOME_TARGET,
-		"--source-master-port", PGPORT,
-		"--temp-port-range", TARGET_PGPORT+"-6040",
+		"--source-gphome", acceptance.GPHOME_SOURCE,
+		"--target-gphome", acceptance.GPHOME_TARGET,
+		"--source-master-port", acceptance.PGPORT,
+		"--temp-port-range", acceptance.TARGET_PGPORT+"-6040",
 		"--disk-free-ratio", "0",
 		hbaHostnames)
 	output, err := cmd.CombinedOutput()
@@ -83,14 +84,14 @@ func testFinalize(t *testing.T, mode idl.Mode, useHbaHostnames bool) {
 		t.Fatalf("unexpected err: %#v stderr %s", err, output)
 	}
 
-	execute(t)
+	acceptance.Execute(t)
 
 	conf, err := config.Read()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	finalizeOutput := finalize(t)
+	finalizeOutput := acceptance.Finalize(t)
 
 	verifyFinalize(t, source, conf, finalizeOutput, useHbaHostnames)
 
@@ -116,8 +117,8 @@ func testFinalize(t *testing.T, mode idl.Mode, useHbaHostnames bool) {
 	//   psql: FATAL:  could not read relation mapping file "pg_tblspc/16389/GPDB_6_301908232/16487/pg_filenode.map": Success (relmapper.c:660)
 	// Inspecting the tablespace location is extremely chaotic especially after upgrading!
 	if mode != idl.Mode_link {
-		path := filepath.Join(MustGetRepoRoot(t), "test", "acceptance", "helpers", "finalize_checks.bash")
-		script := fmt.Sprintf("source %s; validate_mirrors_and_standby %s %s %s", path, GPHOME_TARGET, conf.Target.CoordinatorHostname(), PGPORT)
+		path := filepath.Join(acceptance.MustGetRepoRoot(t), "test", "acceptance", "helpers", "finalize_checks.bash")
+		script := fmt.Sprintf("source %s; validate_mirrors_and_standby %s %s %s", path, acceptance.GPHOME_TARGET, conf.Target.CoordinatorHostname(), acceptance.PGPORT)
 		cmd = exec.Command("bash", "-c", script)
 		output, err = cmd.CombinedOutput()
 		if err != nil {
@@ -183,7 +184,7 @@ func verifyFinalize(t *testing.T, source greenplum.Cluster, conf *config.Config,
 	t.Helper()
 
 	// Since the logArchiveDir has a timestamp we need to do a partial check
-	logArchiveDir := MustGetLogArchiveDir(t, conf.UpgradeID)
+	logArchiveDir := acceptance.MustGetLogArchiveDir(t, conf.UpgradeID)
 	logArchiveDir = logArchiveDir[:len(logArchiveDir)-5]
 
 	match := fmt.Sprintf(commands.FinalizeCompletedText,
@@ -244,7 +245,7 @@ func verifyFinalize(t *testing.T, source greenplum.Cluster, conf *config.Config,
 	testutils.VerifyClusterIsRunning(t, *conf.Target)
 
 	// verify configuration matches before and after upgrading
-	compareFinalizedCluster(t, *conf.Target, GetTargetCluster(t))
+	compareFinalizedCluster(t, *conf.Target, acceptance.GetTargetCluster(t))
 
 	err := conf.Target.WaitForClusterToBeReady()
 	if err != nil {

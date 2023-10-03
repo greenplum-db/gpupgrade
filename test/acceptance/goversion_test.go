@@ -13,6 +13,8 @@ import (
 	"testing"
 
 	"github.com/blang/semver/v4"
+
+	"github.com/greenplum-db/gpupgrade/testutils/acceptance"
 )
 
 func TestGoVersion(t *testing.T) {
@@ -28,7 +30,7 @@ func TestGoVersion(t *testing.T) {
 func compiledVersion(t *testing.T) semver.Version {
 	t.Helper()
 
-	cmd := exec.Command("go", "version", filepath.Join(MustGetRepoRoot(t), "gpupgrade"))
+	cmd := exec.Command("go", "version", filepath.Join(acceptance.MustGetRepoRoot(t), "gpupgrade"))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("unexpected err: %#v stderr %q", err, output)
@@ -42,7 +44,7 @@ func compiledVersion(t *testing.T) semver.Version {
 func goModVersion(t *testing.T) semver.Version {
 	t.Helper()
 
-	contents, err := os.ReadFile(filepath.Join(MustGetRepoRoot(t), "go.mod"))
+	contents, err := os.ReadFile(filepath.Join(acceptance.MustGetRepoRoot(t), "go.mod"))
 	if err != nil {
 		t.Fatalf("reading go.mod: %#v", err)
 	}

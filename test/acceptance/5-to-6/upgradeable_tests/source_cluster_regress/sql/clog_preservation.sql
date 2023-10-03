@@ -18,14 +18,14 @@ CREATE TABLE foo(i int);
 -- These tuples would contain xmins that refer to CLOG that should not be
 -- truncated. We ensure that all tuples inserted end up in seg 0.
 
-!\retcode (/bin/bash -c "source ${GPHOME_SOURCE}/greenplum_path.sh && ${GPHOME_SOURCE}/bin/gpconfig -c debug_burn_xids -v on --skipvalidation");
-!\retcode (/bin/bash -c "source ${GPHOME_SOURCE}/greenplum_path.sh && ${GPHOME_SOURCE}/bin/gpstop -au");
+!\retcode (/bin/bash -c "source ${testutils.GPHOME_SOURCE}/greenplum_path.sh && ${testutils.GPHOME_SOURCE}/bin/gpconfig -c debug_burn_xids -v on --skipvalidation");
+!\retcode (/bin/bash -c "source ${testutils.GPHOME_SOURCE}/greenplum_path.sh && ${testutils.GPHOME_SOURCE}/bin/gpstop -au");
 !\retcode echo "INSERT INTO foo VALUES(1);" > /tmp/clog_preservation.sql;
 
-!\retcode $GPHOME_SOURCE/bin/pgbench -n -f /tmp/clog_preservation.sql -c 8 -t 512 isolation2test;
+!\retcode $testutils.GPHOME_SOURCE/bin/pgbench -n -f /tmp/clog_preservation.sql -c 8 -t 512 isolation2test;
 
-!\retcode (/bin/bash -c "source ${GPHOME_SOURCE}/greenplum_path.sh && ${GPHOME_SOURCE}/bin/gpconfig -r debug_burn_xids --skipvalidation");
-!\retcode (/bin/bash -c "source ${GPHOME_SOURCE}/greenplum_path.sh && ${GPHOME_SOURCE}/bin/gpstop -au");
+!\retcode (/bin/bash -c "source ${testutils.GPHOME_SOURCE}/greenplum_path.sh && ${testutils.GPHOME_SOURCE}/bin/gpconfig -r debug_burn_xids --skipvalidation");
+!\retcode (/bin/bash -c "source ${testutils.GPHOME_SOURCE}/greenplum_path.sh && ${testutils.GPHOME_SOURCE}/bin/gpstop -au");
 !\retcode rm /tmp/clog_preservation.sql;
 
 -- NOTE: Do not scan the table here, as it will prevent CLOG lookups when we

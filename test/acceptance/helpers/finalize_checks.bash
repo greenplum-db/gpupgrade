@@ -230,7 +230,7 @@ validate_mirrors_and_standby() {
     # step 2b: failover promote...
     ssh -n "${standby_host}" "
         source ${GPHOME_NEW}/greenplum_path.sh
-        export PGPORT=$standby_port
+        export testutils.PGPORT=$standby_port
         gpactivatestandby -a -d $standby_data_dir
     "
     wait_can_start_transactions "${standby_host}" "${standby_port}"
@@ -243,8 +243,8 @@ validate_mirrors_and_standby() {
     ssh -n "${standby_host}" "
         source ${GPHOME_NEW}/greenplum_path.sh
         export MASTER_DATA_DIRECTORY=${standby_data_dir}
-        export PGPORT=$standby_port
-        gprecoverseg -a       # TODO..why is PGPORT not actually needed here?
+        export testutils.PGPORT=$standby_port
+        gprecoverseg -a       # TODO..why is testutils.PGPORT not actually needed here?
     "
     wait_can_start_transactions $standby_host "${standby_port}"  #TODO: is this necessary?
 
@@ -257,7 +257,7 @@ validate_mirrors_and_standby() {
 
     ssh -n "${standby_host}" "
         source ${GPHOME_NEW}/greenplum_path.sh
-        export PGPORT=$standby_port; gpinitstandby -a -s $coordinator_host -P $coordinator_port -S $coordinator_data_dir
+        export testutils.PGPORT=$standby_port; gpinitstandby -a -s $coordinator_host -P $coordinator_port -S $coordinator_data_dir
     "
     check_replication_connections "${standby_host}" "${standby_port}"
     check_synchronized_cluster "${standby_host}" "${standby_port}"
@@ -271,7 +271,7 @@ validate_mirrors_and_standby() {
     ssh -n "${standby_host}" "
         source ${GPHOME_NEW}/greenplum_path.sh
         export MASTER_DATA_DIRECTORY=${standby_data_dir}
-        export PGPORT=$standby_port
+        export testutils.PGPORT=$standby_port
         gprecoverseg -ra
     "
     check_replication_connections "${standby_host}" "${standby_port}"
@@ -284,7 +284,7 @@ validate_mirrors_and_standby() {
     # 4c: rebalance standby
     ssh -n "${coordinator_host}" "
         source ${GPHOME_NEW}/greenplum_path.sh
-        export PGPORT=$coordinator_port
+        export testutils.PGPORT=$coordinator_port
         gpactivatestandby -a -d $coordinator_data_dir
     "
 
@@ -299,7 +299,7 @@ validate_mirrors_and_standby() {
 
     ssh -n "${coordinator_host}" "
         source ${GPHOME_NEW}/greenplum_path.sh
-        export PGPORT=$coordinator_port; gpinitstandby -a -s $standby_host -P $standby_port -S $standby_data_dir
+        export testutils.PGPORT=$coordinator_port; gpinitstandby -a -s $standby_host -P $standby_port -S $standby_data_dir
     "
     check_replication_connections "${coordinator_host}" "${coordinator_port}"
     check_synchronized_cluster "${coordinator_host}" "${coordinator_port}"

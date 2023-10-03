@@ -16,6 +16,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/greenplum"
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/testutils/acceptance"
 	"github.com/greenplum-db/gpupgrade/utils/disk"
 )
 
@@ -36,10 +37,10 @@ func TestCheckDiskSpace(t *testing.T) {
 		for _, opt := range opts {
 			cmd := exec.Command("gpupgrade", "initialize",
 				"--non-interactive", "--verbose",
-				"--source-gphome", GPHOME_SOURCE,
-				"--target-gphome", GPHOME_TARGET,
-				"--source-master-port", PGPORT,
-				"--temp-port-range", TARGET_PGPORT+"-6040",
+				"--source-gphome", acceptance.GPHOME_SOURCE,
+				"--target-gphome", acceptance.GPHOME_TARGET,
+				"--source-master-port", acceptance.PGPORT,
+				"--temp-port-range", acceptance.TARGET_PGPORT+"-6040",
 				"--stop-before-cluster-creation",
 				"--disk-free-ratio", opt)
 			output, err := cmd.CombinedOutput()
@@ -56,7 +57,7 @@ func TestCheckDiskSpace(t *testing.T) {
 	})
 
 	t.Run("initialize skips disk space check when --disk-free-ratio is 0", func(t *testing.T) {
-		output := initialize(t, idl.Mode_copy)
+		output := acceptance.Initialize(t, idl.Mode_copy)
 
 		if strings.Contains(output, idl.Substep_check_disk_space.String()) {
 			t.Fatalf("expected output %q to not contain %q", output, idl.Substep_check_disk_space)
@@ -66,17 +67,17 @@ func TestCheckDiskSpace(t *testing.T) {
 	t.Run("initialize fails with disk space error", func(t *testing.T) {
 		cmd := exec.Command("gpupgrade", "initialize",
 			"--non-interactive", "--verbose",
-			"--source-gphome", GPHOME_SOURCE,
-			"--target-gphome", GPHOME_TARGET,
-			"--source-master-port", PGPORT,
-			"--temp-port-range", TARGET_PGPORT+"-6040",
+			"--source-gphome", acceptance.GPHOME_SOURCE,
+			"--target-gphome", acceptance.GPHOME_TARGET,
+			"--source-master-port", acceptance.PGPORT,
+			"--temp-port-range", acceptance.TARGET_PGPORT+"-6040",
 			"--stop-before-cluster-creation",
 			"--disk-free-ratio", "1.0")
 		output, err := cmd.CombinedOutput()
 		if err == nil {
 			t.Errorf("expected nil got error %v", err)
 		}
-		defer revert(t)
+		defer acceptance.Revert(t)
 
 		expected := "You currently do not have enough disk space to run an upgrade"
 		if !strings.Contains(string(output), expected) {
@@ -111,7 +112,7 @@ func withinTolerance(actual uint64, expected uint64) bool {
 }
 
 func expectedDiskUsage(t *testing.T) map[disk.FilesystemHost]*idl.CheckDiskSpaceReply_DiskUsage {
-	source := GetSourceCluster(t)
+	source := acceptance.GetSourceCluster(t)
 	segments := source.SelectSegments(func(seg *greenplum.SegConfig) bool {
 		return !seg.IsMirror()
 	})
@@ -140,7 +141,7 @@ func expectedDiskUsage(t *testing.T) map[disk.FilesystemHost]*idl.CheckDiskSpace
 func availableDiskSpaceInKb(t *testing.T, host string, path string) uint64 {
 	// Use the external stat utility rather than os.stat to test using a different
 	// implementation than the code itself.
-	cmd := exec.Command("ssh", host, GetStatUtility(), "-f -c '%S %a'", path)
+	cmd := exec.Command("ssh", host, acceptance.GetStatUtility(), "-f -c '%S %a'", path)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("unexpected err: %v stderr: %q", err, output)
@@ -157,7 +158,7 @@ func availableDiskSpaceInKb(t *testing.T, host string, path string) uint64 {
 func totalDiskSpaceInKb(t *testing.T, host string, path string) uint64 {
 	// Use the external stat utility rather than os.stat to test using a different
 	// implementation than the code itself.
-	cmd := exec.Command("ssh", host, GetStatUtility(), "-f -c '%S %a %f %b'", path)
+	cmd := exec.Command("ssh", host, acceptance.GetStatUtility(), "-f -c '%S %a %f %b'", path)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("unexpected err: %v stderr: %q", err, output)

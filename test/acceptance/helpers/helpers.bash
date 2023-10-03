@@ -3,8 +3,8 @@
 
 # Default to GPHOME for both the source and target installations. These may be
 # overridden manually for cross-version testing.
-GPHOME_SOURCE=${GPHOME_SOURCE:-$GPHOME}
-GPHOME_TARGET=${GPHOME_TARGET:-$GPHOME}
+testutils.GPHOME_SOURCE=${testutils.GPHOME_SOURCE:-$GPHOME}
+testutils.GPHOME_TARGET=${testutils.GPHOME_TARGET:-$GPHOME}
 
 # log() prints its arguments to stdout.
 #
@@ -36,15 +36,15 @@ abort() {
 
 # skip_if_no_gpdb() will skip a test if a cluster's environment is not set up.
 skip_if_no_gpdb() {
-    [ -n "${GPHOME_SOURCE}" ] || skip "this test requires an active GPDB source cluster (set GPHOME or GPHOME_SOURCE)"
-    [ -n "${GPHOME_TARGET}" ] || skip "this test requires an active GPDB target cluster (set GPHOME or GPHOME_TARGET)"
-    [ -n "${PGPORT}" ] || skip "this test requires an active GPDB source cluster (set PGPORT)"
+    [ -n "${testutils.GPHOME_SOURCE}" ] || skip "this test requires an active GPDB source cluster (set GPHOME or testutils.GPHOME_SOURCE)"
+    [ -n "${testutils.GPHOME_TARGET}" ] || skip "this test requires an active GPDB target cluster (set GPHOME or testutils.GPHOME_TARGET)"
+    [ -n "${testutils.PGPORT}" ] || skip "this test requires an active GPDB source cluster (set testutils.PGPORT)"
 }
 
 # isready abstracts pg_isready semantics across postgres versions
 isready() {
-    local gphome=${1:-$GPHOME_SOURCE}
-    local port=${2:-$PGPORT}
+    local gphome=${1:-$testutils.GPHOME_SOURCE}
+    local port=${2:-$testutils.PGPORT}
 
     if command -v "$gphome"/bin/pg_isready > /dev/null; then
         "$gphome"/bin/pg_isready -q -p "$port"
@@ -57,7 +57,7 @@ isready() {
 # start_source_cluster() ensures that database is up before returning
 start_source_cluster() {
     # unset LD_LIBRARY_PATH due to https://web.archive.org/web/20220506055918/https://groups.google.com/a/greenplum.org/g/gpdb-dev/c/JN-YwjCCReY/m/0L9wBOvlAQAJ
-    isready || (unset LD_LIBRARY_PATH; source "$GPHOME_SOURCE"/greenplum_path.sh && "${GPHOME_SOURCE}"/bin/gpstart -a)
+    isready || (unset LD_LIBRARY_PATH; source "$testutils.GPHOME_SOURCE"/greenplum_path.sh && "${testutils.GPHOME_SOURCE}"/bin/gpstart -a)
 }
 
 # stop_any_cluster will attempt to stop the cluster defined by MASTER_DATA_DIRECTORY.
@@ -112,7 +112,7 @@ __gpdeletesystem() {
     # XXX gpdeletesystem returns 1 if there are warnings. There are always
     # warnings. So we ignore the exit code...
     # unset LD_LIBRARY_PATH due to https://web.archive.org/web/20220506055918/https://groups.google.com/a/greenplum.org/g/gpdb-dev/c/JN-YwjCCReY/m/0L9wBOvlAQAJ
-    (unset LD_LIBRARY_PATH; source $gphome/greenplum_path.sh && yes | PGPORT="$port" "$gpdeletesystem" -fd "$coordinator_dir") || true
+    (unset LD_LIBRARY_PATH; source $gphome/greenplum_path.sh && yes | testutils.PGPORT="$port" "$gpdeletesystem" -fd "$coordinator_dir") || true
 }
 
 delete_target_datadirs() {
@@ -192,7 +192,7 @@ is_GPDB6() {
 }
 
 # query_datadirs returns the datadirs across various version of GPDB.
-# Arguments are GPHOME, PGPORT, and the WHERE clause to use when querying
+# Arguments are GPHOME, testutils.PGPORT, and the WHERE clause to use when querying
 # gp_segment_configuration.
 query_datadirs() {
     local gphome=$1
@@ -240,7 +240,7 @@ query_tablespace_dirs(){
 # contents of the mirror back to the primary.
 get_rsync_pairs() {
     local gphome=$1
-    local port=${2:-$PGPORT}
+    local port=${2:-$testutils.PGPORT}
 
     local sql="
     WITH cte AS (select role, content, fselocation datadir FROM pg_filespace_entry INNER JOIN gp_segment_configuration on dbid=fsedbid)
@@ -258,15 +258,15 @@ get_rsync_pairs() {
 setup_restore_cluster() {
     local mode=$1
 
-    if is_GPDB5 "$GPHOME_SOURCE"; then
-        RSYNC_PAIRS=($(get_rsync_pairs $GPHOME_SOURCE))
+    if is_GPDB5 "$testutils.GPHOME_SOURCE"; then
+        RSYNC_PAIRS=($(get_rsync_pairs $testutils.GPHOME_SOURCE))
     fi
 
     # In link mode we must bring the datadirs back to a good state, whereas in
     # copy mode we can discard the duplicate copy of the datadir after the
     # test. Specifically, in link mode we undo the rename of pg_control file.
     if [ "$mode" == "--mode=link" ]; then
-        COORDINATOR_AND_PRIMARY_DATADIRS=($(query_datadirs $GPHOME_SOURCE $PGPORT "role = 'p'"))
+        COORDINATOR_AND_PRIMARY_DATADIRS=($(query_datadirs $testutils.GPHOME_SOURCE $testutils.PGPORT "role = 'p'"))
     else
         COORDINATOR_AND_PRIMARY_DATADIRS=
     fi
@@ -283,7 +283,7 @@ restore_cluster() {
         abort "restore_cluster was invoked on a live source cluster (stop it first)"
     fi
 
-    if is_GPDB5 "$GPHOME_SOURCE"; then
+    if is_GPDB5 "$testutils.GPHOME_SOURCE"; then
         for var in "${RSYNC_PAIRS[@]}"; do IFS="|"; set -- $var;
             rsync -r "$1/" "$2/" \
                 --exclude=internal.auto.conf \
@@ -308,7 +308,7 @@ restore_cluster() {
 # the same across upgrade, one segment per line, sorted by content ID.
 get_segment_configuration() {
     local gphome=$1
-    local port=${2:-$PGPORT}
+    local port=${2:-$testutils.PGPORT}
 
     if is_GPDB5 "$gphome"; then
         "$gphome"/bin/psql -v ON_ERROR_STOP=1 -AXtF$'\t' -p "$port" -d postgres -c "
@@ -333,7 +333,7 @@ all_hosts() {
     # Use GROUP BY/ORDER BY MIN() rather than SELECT DISTINCT so that results
     # are ordered by dbid; that's the host order most devs are used to for test
     # clusters.
-    "$GPHOME_SOURCE"/bin/psql -v ON_ERROR_STOP=1 -At -d postgres -c "
+    "$testutils.GPHOME_SOURCE"/bin/psql -v ON_ERROR_STOP=1 -At -d postgres -c "
         SELECT hostname
           FROM gp_segment_configuration
          GROUP BY hostname
@@ -360,14 +360,14 @@ backup_source_cluster() {
     local datadir_root
     datadir_root="$(realpath "$MASTER_DATA_DIRECTORY"/../..)"
 
-    (source "$GPHOME_SOURCE"/greenplum_path.sh && "$GPHOME_SOURCE"/bin/gpstop -af)
+    (source "$testutils.GPHOME_SOURCE"/greenplum_path.sh && "$testutils.GPHOME_SOURCE"/bin/gpstop -af)
     register_teardown start_source_cluster
 
 
     rsync --archive "${datadir_root:?}"/ "${backup_dir:?}"/
     register_teardown rsync --archive -I --delete "${backup_dir:?}"/ "${datadir_root:?}"/
 
-    (source "$GPHOME_SOURCE"/greenplum_path.sh && "$GPHOME_SOURCE"/bin/gpstart -a)
+    (source "$testutils.GPHOME_SOURCE"/greenplum_path.sh && "$testutils.GPHOME_SOURCE"/bin/gpstart -a)
     register_teardown stop_any_cluster
 }
 

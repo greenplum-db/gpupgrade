@@ -10,6 +10,7 @@ import (
 
 	"github.com/greenplum-db/gpupgrade/config"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/testutils/acceptance"
 )
 
 func TestConfig(t *testing.T) {
@@ -19,28 +20,28 @@ func TestConfig(t *testing.T) {
 	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 	defer resetEnv()
 
-	initialize_stopBeforeClusterCreation(t)
-	defer revert(t)
+	acceptance.Initialize_stopBeforeClusterCreation(t)
+	defer acceptance.Revert(t)
 
 	t.Run("configuration can be read piece by piece", func(t *testing.T) {
 		actual := configShow(t, "--source-gphome")
-		if actual != GPHOME_SOURCE {
-			t.Errorf("got %q want %q", actual, GPHOME_SOURCE)
+		if actual != acceptance.GPHOME_SOURCE {
+			t.Errorf("got %q want %q", actual, acceptance.GPHOME_SOURCE)
 		}
 
 		actual = configShow(t, "--target-gphome")
-		if actual != GPHOME_TARGET {
-			t.Errorf("got %q want %q", actual, GPHOME_TARGET)
+		if actual != acceptance.GPHOME_TARGET {
+			t.Errorf("got %q want %q", actual, acceptance.GPHOME_TARGET)
 		}
 	})
 
 	t.Run("configuration can be dumped as a whole", func(t *testing.T) {
 		expected := []string{
-			GPHOME_SOURCE,
-			jq(t, config.GetConfigFile(), `.Intermediate.Primaries."-1".DataDir`),
-			GPHOME_TARGET,
-			TARGET_PGPORT,
-			jq(t, config.GetConfigFile(), ".UpgradeID"),
+			acceptance.GPHOME_SOURCE,
+			acceptance.Jq(t, config.GetConfigFile(), `.Intermediate.Primaries."-1".DataDir`),
+			acceptance.GPHOME_TARGET,
+			acceptance.TARGET_PGPORT,
+			acceptance.Jq(t, config.GetConfigFile(), ".UpgradeID"),
 		}
 
 		output := configShow(t, "")

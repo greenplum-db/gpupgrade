@@ -8,7 +8,7 @@
 # Prints a line for each segment containing the hostname, dbid, and datadir,
 # separated by tabs.
 _query_5X_host_dbid_datadirs() {
-    "$GPHOME_SOURCE"/bin/psql -v ON_ERROR_STOP=1 -AtF$'\t' postgres -c "
+    "$testutils.GPHOME_SOURCE"/bin/psql -v ON_ERROR_STOP=1 -AtF$'\t' postgres -c "
         SELECT s.hostname,
                s.dbid,
                e.fselocation
@@ -50,10 +50,10 @@ create_tablespace_with_tables() {
     cat "$TABLESPACE_CONFIG"
 
     # unset LD_LIBRARY_PATH due to https://web.archive.org/web/20220506055918/https://groups.google.com/a/greenplum.org/g/gpdb-dev/c/JN-YwjCCReY/m/0L9wBOvlAQAJ
-    (unset LD_LIBRARY_PATH; source "${GPHOME_SOURCE}"/greenplum_path.sh && gpfilespace --config "${TABLESPACE_CONFIG}")
+    (unset LD_LIBRARY_PATH; source "${testutils.GPHOME_SOURCE}"/greenplum_path.sh && gpfilespace --config "${TABLESPACE_CONFIG}")
 
     # create a tablespace in said filespace and some databases in that tablespace
-    "${GPHOME_SOURCE}"/bin/psql -v ON_ERROR_STOP=1 -d postgres <<- EOF
+    "${testutils.GPHOME_SOURCE}"/bin/psql -v ON_ERROR_STOP=1 -d postgres <<- EOF
         CREATE TABLESPACE batsTbsp FILESPACE batsFS;
 
         CREATE DATABASE foodb TABLESPACE batsTbsp;
@@ -61,7 +61,7 @@ create_tablespace_with_tables() {
 EOF
 
     # create various tables in the tablespace
-    "${GPHOME_SOURCE}"/bin/psql -v ON_ERROR_STOP=1 -d postgres <<- EOF
+    "${testutils.GPHOME_SOURCE}"/bin/psql -v ON_ERROR_STOP=1 -d postgres <<- EOF
         CREATE TABLE "${tablespace_table_prefix}_0" (a int) TABLESPACE batsTbsp;
         INSERT INTO "${tablespace_table_prefix}_0" SELECT i from generate_series(1,100)i;
 
@@ -77,13 +77,13 @@ EOF
 EOF
 
     # add a table to the database within the tablespace
-    "${GPHOME_SOURCE}"/bin/psql -v ON_ERROR_STOP=1 -d foodb <<- EOF
+    "${testutils.GPHOME_SOURCE}"/bin/psql -v ON_ERROR_STOP=1 -d foodb <<- EOF
         CREATE TABLE "${tablespace_table_prefix}_0" (a int);
         INSERT INTO "${tablespace_table_prefix}_0" SELECT i from generate_series(1,100)i;
 EOF
 
     # add a table to the database within the tablespace
-    "${GPHOME_SOURCE}"/bin/psql -v ON_ERROR_STOP=1 -d eatdb <<- EOF
+    "${testutils.GPHOME_SOURCE}"/bin/psql -v ON_ERROR_STOP=1 -d eatdb <<- EOF
         CREATE TABLE "${tablespace_table_prefix}_0" (a int);
         INSERT INTO "${tablespace_table_prefix}_0" SELECT i from generate_series(1,100)i;
 EOF
@@ -93,15 +93,15 @@ EOF
 delete_tablespace_data() {
    local tablespace_table_prefix=${1:-batsTable}
 
-    "${GPHOME_SOURCE}"/bin/psql -v ON_ERROR_STOP=1 -d foodb <<- EOF
+    "${testutils.GPHOME_SOURCE}"/bin/psql -v ON_ERROR_STOP=1 -d foodb <<- EOF
         DROP TABLE IF EXISTS "${tablespace_table_prefix}_0";
 EOF
 
-    "${GPHOME_SOURCE}"/bin/psql -v ON_ERROR_STOP=1 -d eatdb <<- EOF
+    "${testutils.GPHOME_SOURCE}"/bin/psql -v ON_ERROR_STOP=1 -d eatdb <<- EOF
         DROP TABLE IF EXISTS "${tablespace_table_prefix}_0";
 EOF
 
-    "${GPHOME_SOURCE}"/bin/psql -v ON_ERROR_STOP=1 -d postgres <<- EOF
+    "${testutils.GPHOME_SOURCE}"/bin/psql -v ON_ERROR_STOP=1 -d postgres <<- EOF
         DROP TABLE IF EXISTS "${tablespace_table_prefix}_0";
         DROP TABLE IF EXISTS "${tablespace_table_prefix}_1";
         DROP TABLE IF EXISTS "${tablespace_table_prefix}_2";
@@ -117,18 +117,18 @@ truncate_tablespace_data() {
        local tablespace_table_prefix=${1:-batsTable}
        local port=$2
 
-    "${GPHOME_SOURCE}"/bin/psql -v ON_ERROR_STOP=1 -p "$port" -d postgres <<- EOF
+    "${testutils.GPHOME_SOURCE}"/bin/psql -v ON_ERROR_STOP=1 -p "$port" -d postgres <<- EOF
         TRUNCATE "${tablespace_table_prefix}_0";
         TRUNCATE "${tablespace_table_prefix}_1";
         TRUNCATE "${tablespace_table_prefix}_2";
         TRUNCATE "${tablespace_table_prefix}_3";
 EOF
 
-    "${GPHOME_SOURCE}"/bin/psql -v ON_ERROR_STOP=1 -p "$port" -d foodb <<- EOF
+    "${testutils.GPHOME_SOURCE}"/bin/psql -v ON_ERROR_STOP=1 -p "$port" -d foodb <<- EOF
         TRUNCATE "${tablespace_table_prefix}_0";
 EOF
 
-    "${GPHOME_SOURCE}"/bin/psql -v ON_ERROR_STOP=1 -p "$port" -d eatdb <<- EOF
+    "${testutils.GPHOME_SOURCE}"/bin/psql -v ON_ERROR_STOP=1 -p "$port" -d eatdb <<- EOF
         TRUNCATE "${tablespace_table_prefix}_0";
 EOF
 }
@@ -138,7 +138,7 @@ check_tablespace_data() {
 
     local rows
     for table in "${tablespace_table_prefix}_0" "${tablespace_table_prefix}_1" "${tablespace_table_prefix}_2" "${tablespace_table_prefix}_3"; do
-        rows=$("$GPHOME_TARGET"/bin/psql -v ON_ERROR_STOP=1 -d postgres -Atc "SELECT COUNT(*) FROM \"$table\";")
+        rows=$("$testutils.GPHOME_TARGET"/bin/psql -v ON_ERROR_STOP=1 -d postgres -Atc "SELECT COUNT(*) FROM \"$table\";")
         if (( rows != 100 )); then
             fail "failed verifying tablespaces. $table got $rows want 100"
         fi
@@ -146,14 +146,14 @@ check_tablespace_data() {
 
     local rows table
     table="${tablespace_table_prefix}_0"
-    rows=$("$GPHOME_TARGET"/bin/psql -v ON_ERROR_STOP=1 -d foodb -Atc "SELECT COUNT(*) FROM \"$table\";")
+    rows=$("$testutils.GPHOME_TARGET"/bin/psql -v ON_ERROR_STOP=1 -d foodb -Atc "SELECT COUNT(*) FROM \"$table\";")
     if (( rows != 100 )); then
         fail "failed verifying tablespaces. $table got $rows want 100"
     fi
 
     local rows table
     table="${tablespace_table_prefix}_0"
-    rows=$("$GPHOME_TARGET"/bin/psql -v ON_ERROR_STOP=1 -d eatdb -Atc "SELECT COUNT(*) FROM \"$table\";")
+    rows=$("$testutils.GPHOME_TARGET"/bin/psql -v ON_ERROR_STOP=1 -d eatdb -Atc "SELECT COUNT(*) FROM \"$table\";")
     if (( rows != 100 )); then
         fail "failed verifying tablespaces. $table got $rows want 100"
     fi
