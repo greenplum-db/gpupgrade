@@ -11,7 +11,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/testutils"
 )
 
-func TestMigrationScripts(t *testing.T) {
+func Test_PgUpgrade_Migratable_Tests(t *testing.T) {
 	// Since finalize archives the stateDir (GPUPGRADE_HOME) backups and
 	// migration scripts cannot be stored here.
 	stateDir := testutils.GetTempDir(t, "stateDir")
