@@ -308,24 +308,15 @@ func restoreDemoCluster(t *testing.T, backupDir string, source greenplum.Cluster
 	}
 }
 
-type isolationOptions struct {
-	sourceVersion semver.Version
-	gphome        string
-	port          string
-	inputDir      string
-	outputDir     string
-	schedule      idl.Schedule
-}
-
-func isolation2_regress(t *testing.T, opts isolationOptions) string {
+func isolation2_regress(t *testing.T, sourceVersion semver.Version, gphome string, port string, inputDir string, outputDir string, schedule idl.Schedule) string {
 	var cmdArgs []string
-	if opts.schedule != idl.Schedule_non_upgradeable_schedule && strings.Contains(opts.schedule.String(), "target") {
+	if schedule != idl.Schedule_non_upgradeable_schedule && strings.Contains(schedule.String(), "target") {
 		cmdArgs = append(cmdArgs, "--use-existing")
 	}
 
 	env := []string{"PGOPTIONS=-c optimizer=off"}
 	var binDir string
-	switch opts.sourceVersion.Major {
+	switch sourceVersion.Major {
 	case 5:
 		binDir = "--psqldir"
 		// Set PYTHONPATH directly since it is needed when running the
@@ -339,7 +330,7 @@ func isolation2_regress(t *testing.T, opts isolationOptions) string {
 		binDir = "--bindir"
 	}
 
-	tests := "--schedule=" + filepath.Join(opts.inputDir, opts.schedule.String())
+	tests := "--schedule=" + filepath.Join(inputDir, schedule.String())
 	focus := os.Getenv("FOCUS_TESTS")
 	if focus != "" {
 		tests = focus
@@ -347,10 +338,10 @@ func isolation2_regress(t *testing.T, opts isolationOptions) string {
 
 	cmdArgs = append(cmdArgs,
 		"--init-file", "init_file_isolation2",
-		"--inputdir", opts.inputDir,
-		"--outputdir", opts.outputDir,
-		binDir, filepath.Join(opts.gphome, "bin"),
-		"--port", opts.port,
+		"--inputdir", inputDir,
+		"--outputdir", outputDir,
+		binDir, filepath.Join(gphome, "bin"),
+		"--port", port,
 		tests,
 	)
 

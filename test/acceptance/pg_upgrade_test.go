@@ -114,43 +114,19 @@ func TestPgUpgrade(t *testing.T) {
 
 	t.Run("pg_upgrade upgradeable tests", func(t *testing.T) {
 		sourceTestDir := filepath.Join(testDir, "upgradeable_tests", "source_cluster_regress")
-		opts := isolationOptions{
-			sourceVersion: source.Version,
-			gphome:        GPHOME_SOURCE,
-			port:          PGPORT,
-			inputDir:      sourceTestDir,
-			outputDir:     sourceTestDir,
-			schedule:      idl.Schedule_upgradeable_source_schedule,
-		}
-		isolation2_regress(t, opts)
+		isolation2_regress(t, source.Version, GPHOME_SOURCE, PGPORT, sourceTestDir, sourceTestDir, idl.Schedule_upgradeable_source_schedule)
 
 		initialize(t, idl.Mode_link)
 		defer revert(t)
 		execute(t)
 
 		targetTestDir := filepath.Join(testDir, "upgradeable_tests", "target_cluster_regress")
-		opts = isolationOptions{
-			sourceVersion: source.Version,
-			gphome:        GPHOME_TARGET,
-			port:          TARGET_PGPORT,
-			inputDir:      targetTestDir,
-			outputDir:     targetTestDir,
-			schedule:      idl.Schedule_upgradeable_target_schedule,
-		}
-		isolation2_regress(t, opts)
+		isolation2_regress(t, source.Version, GPHOME_TARGET, TARGET_PGPORT, targetTestDir, targetTestDir, idl.Schedule_upgradeable_target_schedule)
 	})
 
 	t.Run("pg_upgrade --check detects non-upgradeable objects", func(t *testing.T) {
 		nonUpgradeableTestDir := filepath.Join(testDir, "non_upgradeable_tests")
-		opts := isolationOptions{
-			sourceVersion: source.Version,
-			gphome:        GPHOME_SOURCE,
-			port:          PGPORT,
-			inputDir:      nonUpgradeableTestDir,
-			outputDir:     nonUpgradeableTestDir,
-			schedule:      idl.Schedule_non_upgradeable_schedule,
-		}
-		isolation2_regress(t, opts)
+		isolation2_regress(t, source.Version, GPHOME_SOURCE, PGPORT, nonUpgradeableTestDir, nonUpgradeableTestDir, idl.Schedule_non_upgradeable_schedule)
 
 		revert(t)
 	})

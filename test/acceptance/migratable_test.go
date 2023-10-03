@@ -42,16 +42,7 @@ func TestMigrationScripts(t *testing.T) {
 	t.Run("migration scripts generate sql to modify non-upgradeable objects and fix pg_upgrade check errors", func(t *testing.T) {
 		backupDemoCluster(t, backupDir, source)
 		defer restoreDemoCluster(t, backupDir, source, GetTempTargetCluster(t))
-
-		opts := isolationOptions{
-			sourceVersion: source.Version,
-			gphome:        GPHOME_SOURCE,
-			port:          PGPORT,
-			inputDir:      sourceTestDir,
-			outputDir:     sourceTestDir,
-			schedule:      idl.Schedule_migratable_source_schedule,
-		}
-		isolation2_regress(t, opts)
+		isolation2_regress(t, source.Version, GPHOME_SOURCE, PGPORT, sourceTestDir, sourceTestDir, idl.Schedule_migratable_source_schedule)
 
 		generate(t, migrationDir)
 		apply(t, GPHOME_SOURCE, PGPORT, idl.Step_initialize, migrationDir)
@@ -65,27 +56,11 @@ func TestMigrationScripts(t *testing.T) {
 
 		outputTestDir := filepath.Join(targetTestDir, "finalize")
 		testutils.MustCreateDir(t, outputTestDir)
-		opts = isolationOptions{
-			sourceVersion: source.Version,
-			gphome:        GPHOME_TARGET,
-			port:          PGPORT,
-			inputDir:      targetTestDir,
-			outputDir:     outputTestDir,
-			schedule:      idl.Schedule_migratable_target_schedule,
-		}
-		isolation2_regress(t, opts)
+		isolation2_regress(t, source.Version, GPHOME_TARGET, PGPORT, targetTestDir, outputTestDir, idl.Schedule_migratable_target_schedule)
 	})
 
 	t.Run("recreate scripts restore migratable objects when reverting after initialize", func(t *testing.T) {
-		opts := isolationOptions{
-			sourceVersion: source.Version,
-			gphome:        GPHOME_SOURCE,
-			port:          PGPORT,
-			inputDir:      sourceTestDir,
-			outputDir:     sourceTestDir,
-			schedule:      idl.Schedule_migratable_source_schedule,
-		}
-		isolation2_regress(t, opts)
+		isolation2_regress(t, source.Version, GPHOME_SOURCE, PGPORT, sourceTestDir, sourceTestDir, idl.Schedule_migratable_source_schedule)
 
 		generate(t, migrationDir)
 		apply(t, GPHOME_SOURCE, PGPORT, idl.Step_initialize, migrationDir)
@@ -98,27 +73,11 @@ func TestMigrationScripts(t *testing.T) {
 
 		outputTestDir := filepath.Join(targetTestDir, "revert_initialize")
 		testutils.MustCreateDir(t, outputTestDir)
-		opts = isolationOptions{
-			sourceVersion: source.Version,
-			gphome:        GPHOME_SOURCE,
-			port:          PGPORT,
-			inputDir:      targetTestDir,
-			outputDir:     outputTestDir,
-			schedule:      idl.Schedule_migratable_target_schedule,
-		}
-		isolation2_regress(t, opts)
+		isolation2_regress(t, source.Version, GPHOME_SOURCE, PGPORT, targetTestDir, outputTestDir, idl.Schedule_migratable_target_schedule)
 	})
 
 	t.Run("recreate scripts restore migratable objects when reverting after execute", func(t *testing.T) {
-		opts := isolationOptions{
-			sourceVersion: source.Version,
-			gphome:        GPHOME_SOURCE,
-			port:          PGPORT,
-			inputDir:      sourceTestDir,
-			outputDir:     sourceTestDir,
-			schedule:      idl.Schedule_migratable_source_schedule,
-		}
-		isolation2_regress(t, opts)
+		isolation2_regress(t, source.Version, GPHOME_SOURCE, PGPORT, sourceTestDir, sourceTestDir, idl.Schedule_migratable_source_schedule)
 
 		generate(t, migrationDir)
 		apply(t, GPHOME_SOURCE, PGPORT, idl.Step_initialize, migrationDir)
@@ -132,14 +91,6 @@ func TestMigrationScripts(t *testing.T) {
 
 		outputTestDir := filepath.Join(targetTestDir, "revert_execute")
 		testutils.MustCreateDir(t, outputTestDir)
-		opts = isolationOptions{
-			sourceVersion: source.Version,
-			gphome:        GPHOME_SOURCE,
-			port:          PGPORT,
-			inputDir:      targetTestDir,
-			outputDir:     outputTestDir,
-			schedule:      idl.Schedule_migratable_target_schedule,
-		}
-		isolation2_regress(t, opts)
+		isolation2_regress(t, source.Version, GPHOME_SOURCE, PGPORT, targetTestDir, outputTestDir, idl.Schedule_migratable_target_schedule)
 	})
 }
