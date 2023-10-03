@@ -3,5 +3,4 @@
 
 -- CREATE global objects
 CREATE DATABASE testdb;
-CREATE ROLE test_role1;
-CREATE ROLE test_role2;
+CREATE ROLE nonupgradeable_objects_role;

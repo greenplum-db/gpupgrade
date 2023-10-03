@@ -106,7 +106,7 @@ CREATE
 -- view on tsquery from multiple tables and multiple views
 CREATE VIEW view_on_tsquery_mult_tables_mult_views AS SELECT t1.name, t2.b, v1.altitude FROM tsquery_table1 t1, tsquery_table2 t2, view_on_tsquery v1, view_on_tsquery_mult_tables v2;
 CREATE
-ALTER TABLE view_on_tsquery_mult_tables_mult_views OWNER TO test_role1;
+ALTER TABLE view_on_tsquery_mult_tables_mult_views OWNER TO migratable_objects_role;
 ALTER
 
 -- check tsquery data
@@ -171,9 +171,9 @@ SELECT n.nspname, c.relname, a.attname FROM pg_catalog.pg_class c JOIN pg_catalo
 SELECT c.relname AS index_name FROM pg_index i JOIN pg_class c ON i.indexrelid = c.oid JOIN pg_class t ON i.indrelid = t.oid WHERE t.relname LIKE 'tsquery%';
  index_name                  
 -----------------------------
- tsquery_cluster_comment_idx 
  tsquery_composite_idx       
  tsquery_gist_idx            
+ tsquery_cluster_comment_idx 
  tsquery_table1_idx          
 (4 rows)
 
@@ -198,8 +198,8 @@ SELECT schemaname, viewname FROM pg_views WHERE schemaname NOT IN ('pg_catalog',
 (7 rows)
 
 -- check view owners
-SELECT schemaname, viewname, viewowner FROM pg_views WHERE schemaname NOT IN ('pg_catalog', 'information_schema', 'gp_toolkit') AND schemaname = 'tsquery_schema' AND viewowner = 'test_role1' ORDER BY 1, 2, 3;
- schemaname     | viewname                               | viewowner  
-----------------+----------------------------------------+------------
- tsquery_schema | view_on_tsquery_mult_tables_mult_views | test_role1 
+SELECT schemaname, viewname, viewowner FROM pg_views WHERE schemaname NOT IN ('pg_catalog', 'information_schema', 'gp_toolkit') AND schemaname = 'tsquery_schema' AND viewowner = 'migratable_objects_role' ORDER BY 1, 2, 3;
+ schemaname     | viewname                               | viewowner               
+----------------+----------------------------------------+-------------------------
+ tsquery_schema | view_on_tsquery_mult_tables_mult_views | migratable_objects_role 
 (1 row)

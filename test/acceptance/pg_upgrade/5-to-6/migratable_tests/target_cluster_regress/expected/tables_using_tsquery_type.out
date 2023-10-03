@@ -96,10 +96,10 @@ SELECT schemaname, viewname FROM pg_views WHERE schemaname NOT IN ('pg_catalog',
 (7 rows)
 
 -- check view owners
-SELECT schemaname, viewname, viewowner FROM pg_views WHERE schemaname NOT IN ('pg_catalog', 'information_schema', 'gp_toolkit') AND schemaname = 'tsquery_schema' AND viewowner = 'test_role1' ORDER BY 1, 2, 3;
- schemaname     | viewname                               | viewowner  
-----------------+----------------------------------------+------------
- tsquery_schema | view_on_tsquery_mult_tables_mult_views | test_role1 
+SELECT schemaname, viewname, viewowner FROM pg_views WHERE schemaname NOT IN ('pg_catalog', 'information_schema', 'gp_toolkit') AND schemaname = 'tsquery_schema' AND viewowner = 'migratable_objects_role' ORDER BY 1, 2, 3;
+ schemaname     | viewname                               | viewowner               
+----------------+----------------------------------------+-------------------------
+ tsquery_schema | view_on_tsquery_mult_tables_mult_views | migratable_objects_role 
 (1 row)
 
 INSERT INTO tsquery_pt_table VALUES (1, 'b & c'::tsquery, 'b & c'::tsquery, 'b & c'::tsquery);

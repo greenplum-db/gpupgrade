@@ -2,8 +2,9 @@
 -- SPDX-License-Identifier: Apache-2.0
 
 DROP DATABASE IF EXISTS isolation2test;
-CREATE ROLE testrole;
-CREATE ROLE test_role1;
+CREATE ROLE upgradable_objects_role;
+CREATE ROLE nonupgradeable_objects_role;
+CREATE ROLE migratable_objects_role;
 
 CREATE RESOURCE QUEUE test_queue WITH (
     ACTIVE_STATEMENTS = 2,
@@ -20,7 +21,7 @@ CREATE RESOURCE GROUP test_group WITH (
     MEMORY_SHARED_QUOTA = 5,
     MEMORY_SPILL_RATIO = 5
 );
-CREATE ROLE test_role resource group test_group resource queue test_queue;
+CREATE ROLE resource_group_queue_role resource group test_group resource queue test_queue;
 
 CREATE FUNCTION drop_gphdfs() RETURNS VOID AS $$
 DECLARE

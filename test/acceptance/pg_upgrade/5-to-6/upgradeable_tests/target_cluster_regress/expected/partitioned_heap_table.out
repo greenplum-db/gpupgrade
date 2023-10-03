@@ -103,11 +103,11 @@ SELECT c, d FROM dropped_and_added_column WHERE a=10;
 (2 rows)
 
 SELECT c.relname, pg_catalog.pg_get_userbyid(c.relowner) as owner FROM pg_class c WHERE relname like 'p_alter_owner%';
- relname               | owner    
------------------------+----------
- p_alter_owner         | testrole 
- p_alter_owner_1_prt_1 | testrole 
- p_alter_owner_1_prt_2 | testrole 
+ relname               | owner                   
+-----------------------+-------------------------
+ p_alter_owner         | upgradable_objects_role 
+ p_alter_owner_1_prt_1 | upgradable_objects_role 
+ p_alter_owner_1_prt_2 | upgradable_objects_role 
 (3 rows)
 
 INSERT INTO equal_operator_not_in_search_path_table VALUES (1, '(1,1)');

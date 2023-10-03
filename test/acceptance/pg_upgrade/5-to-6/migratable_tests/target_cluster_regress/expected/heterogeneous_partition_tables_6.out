@@ -26,12 +26,12 @@ SELECT * FROM heterogeneous_ml_partition_table ORDER BY 1, 2, 3;
 
 -- check owners
 SELECT c.relname, pg_catalog.pg_get_userbyid(c.relowner) FROM pg_partition_rule pr JOIN pg_class c ON c.oid = pr.parchildrelid WHERE c.relname LIKE 'dropped_column%' UNION SELECT c.relname, pg_catalog.pg_get_userbyid(c.relowner) FROM pg_partition p JOIN pg_class c ON c.oid = p.parrelid WHERE c.relname LIKE 'dropped_column%' ORDER BY 1,2;
- relname                           | pg_get_userbyid 
------------------------------------+-----------------
- dropped_column                    | test_role1      
- dropped_column_1_prt_part_2       | test_role1      
- dropped_column_1_prt_split_part_1 | test_role1      
- dropped_column_1_prt_split_part_2 | test_role1      
+ relname                           | pg_get_userbyid        
+-----------------------------------+------------------------
+ dropped_column                    | migratable_objects_role
+ dropped_column_1_prt_part_2       | migratable_objects_role
+ dropped_column_1_prt_split_part_1 | migratable_objects_role
+ dropped_column_1_prt_split_part_2 | migratable_objects_role
 (4 rows)
 
 -- check constraints

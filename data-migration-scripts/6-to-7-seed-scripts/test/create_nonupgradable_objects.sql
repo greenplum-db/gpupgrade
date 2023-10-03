@@ -188,7 +188,7 @@ CREATE TABLE dropped_column (a int CONSTRAINT positive_int CHECK (b > 0), b int 
         (PARTITION part_1 START(1) END(5),
         PARTITION part_2 START(5));
 ALTER TABLE dropped_column DROP COLUMN d;
-ALTER TABLE dropped_column OWNER TO test_role1;
+ALTER TABLE dropped_column OWNER TO nonupgradeable_objects_role;
 
 -- Splitting the subpartition leads to its rewrite, eliminating its dropped column
 -- reference. So, after this, only part_2 and the root partition will have a

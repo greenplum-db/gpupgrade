@@ -20,7 +20,7 @@ PARTITION BY RANGE (a)
 );
 
 ALTER TABLE dropped_column DROP COLUMN d;
-ALTER TABLE dropped_column OWNER TO test_role1;
+ALTER TABLE dropped_column OWNER TO migratable_objects_role;
 
 -- Splitting the subpartition leads to its rewrite, eliminating its dropped column
 -- reference. So, after this, only part_2 and the root partition will have a

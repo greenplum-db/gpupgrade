@@ -57,7 +57,7 @@ SELECT schemaname, viewname, viewowner
 FROM pg_views
 WHERE schemaname NOT IN ('pg_catalog', 'information_schema', 'gp_toolkit')
 AND schemaname = 'tsquery_schema'
-AND viewowner = 'test_role1'
+AND viewowner = 'migratable_objects_role'
 ORDER BY 1, 2, 3;
 
 INSERT INTO tsquery_pt_table VALUES (1, 'b & c'::tsquery, 'b & c'::tsquery, 'b & c'::tsquery);

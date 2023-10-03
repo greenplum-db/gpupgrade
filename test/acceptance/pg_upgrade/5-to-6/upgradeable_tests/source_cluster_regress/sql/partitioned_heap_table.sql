@@ -107,7 +107,7 @@ INSERT INTO dropped_and_added_column SELECT i, i, i, i FROM generate_series(10, 
 ---
 
 CREATE TABLE p_alter_owner (id INTEGER, name TEXT) DISTRIBUTED BY (id) PARTITION BY RANGE(id) (START(1) END(3) EVERY(1));
-ALTER TABLE p_alter_owner OWNER TO testrole;
+ALTER TABLE p_alter_owner OWNER TO upgradable_objects_role;
 
 --
 -- list partitioned by custom type where equality operator is in different schema

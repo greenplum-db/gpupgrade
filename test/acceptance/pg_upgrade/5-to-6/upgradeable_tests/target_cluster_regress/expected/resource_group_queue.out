@@ -24,9 +24,9 @@ SELECT groupname, concurrency, cpu_rate_limit, memory_limit, memory_shared_quota
  test_group    | 5           | 5              | 5            | 5                   | 5                  | 5                  | vmtracker      | -1     
 (3 rows)
 
--- Validate resource queue and group assignment to test_role
-SELECT rolname, rsqname, rsgname FROM pg_roles, pg_resgroup, pg_resqueue WHERE pg_roles.rolresgroup=pg_resgroup.oid AND pg_roles.rolresqueue=pg_resqueue.oid AND rolname='test_role';
- rolname   | rsqname    | rsgname    
------------+------------+------------
- test_role | test_queue | test_group 
+-- Validate resource queue and group assignment to resource_group_queue_role
+SELECT rolname, rsqname, rsgname FROM pg_roles, pg_resgroup, pg_resqueue WHERE pg_roles.rolresgroup=pg_resgroup.oid AND pg_roles.rolresqueue=pg_resqueue.oid AND rolname='resource_group_queue_role';
+ rolname                   | rsqname    | rsgname    
+---------------------------+------------+------------
+ resource_group_queue_role | test_queue | test_group 
 (1 row)

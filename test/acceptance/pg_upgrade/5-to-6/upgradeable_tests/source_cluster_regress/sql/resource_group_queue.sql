@@ -36,8 +36,8 @@ SELECT groupname, concurrency, proposed_concurrency, cpu_rate_limit,
     FROM gp_toolkit.gp_resgroup_config
     ORDER BY groupname;
 
--- Validate resource queue and group assignment to test_role
+-- Validate resource queue and group assignment to resource_group_queue_role
 SELECT rolname, rsqname, rsgname FROM pg_roles, pg_resgroup, pg_resqueue
     WHERE pg_roles.rolresgroup=pg_resgroup.oid
     AND pg_roles.rolresqueue=pg_resqueue.oid
-    AND rolname='test_role';
+    AND rolname='resource_group_queue_role';

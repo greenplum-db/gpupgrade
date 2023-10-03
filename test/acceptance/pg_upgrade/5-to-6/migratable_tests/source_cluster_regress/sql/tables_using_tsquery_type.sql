@@ -81,7 +81,7 @@ CREATE VIEW view_on_tsquery_creation_order AS SELECT * FROM tsquery_table1;
 
 -- view on tsquery from multiple tables and multiple views
 CREATE VIEW view_on_tsquery_mult_tables_mult_views AS SELECT t1.name, t2.b, v1.altitude FROM tsquery_table1 t1, tsquery_table2 t2, view_on_tsquery v1, view_on_tsquery_mult_tables v2;
-ALTER TABLE view_on_tsquery_mult_tables_mult_views OWNER TO test_role1;
+ALTER TABLE view_on_tsquery_mult_tables_mult_views OWNER TO migratable_objects_role;
 
 -- check tsquery data
 SELECT * FROM tsquery_pt_table ORDER BY a;
@@ -134,5 +134,5 @@ SELECT schemaname, viewname, viewowner
 FROM pg_views
 WHERE schemaname NOT IN ('pg_catalog', 'information_schema', 'gp_toolkit')
 AND schemaname = 'tsquery_schema'
-AND viewowner = 'test_role1'
+AND viewowner = 'migratable_objects_role'
 ORDER BY 1, 2, 3;

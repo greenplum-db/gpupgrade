@@ -3,5 +3,4 @@
 
 -- DROP global objects
 DROP DATABASE IF EXISTS testdb;
-DROP ROLE IF EXISTS test_role1;
-DROP ROLE IF EXISTS test_role2;
+DROP ROLE IF EXISTS nonupgradeable_objects_role;
