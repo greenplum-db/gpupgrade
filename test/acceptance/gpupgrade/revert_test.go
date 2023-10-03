@@ -38,7 +38,7 @@ func TestRevert(t *testing.T) {
 		source := acceptance.GetSourceCluster(t)
 
 		acceptance.Initialize(t, idl.Mode_copy)
-		defer revertIgnoreFailures(t) // cleanup in case we fail part way through
+		defer acceptance.RevertIgnoreFailures(t) // cleanup in case we fail part way through
 
 		conf, err := config.Read()
 		if err != nil {
@@ -63,7 +63,7 @@ func TestRevert(t *testing.T) {
 			"--seed-dir", filepath.Join(acceptance.MustGetRepoRoot(t), "data-migration-scripts"))
 		cmd.Stdin = strings.NewReader("y\nq\n") // cause initialize to exit early
 		output, err := cmd.CombinedOutput()
-		defer revertIgnoreFailures(t) // cleanup in case we fail part way through
+		defer acceptance.RevertIgnoreFailures(t) // cleanup in case we fail part way through
 		if err != nil && strings.HasSuffix(err.Error(), step.Quit.Error()) {
 			log.Fatalf("unexpected err: %#v stderr %q", err, output)
 		}
@@ -168,8 +168,8 @@ func testRevertAfterExecute(t *testing.T, mode idl.Mode, upgradeFailure UpgradeF
 	defer upgradeFailure.revert(t, source, path)
 
 	// place marker files on source cluster mirrors to ensure primaries are correctly reverted using the mirrors
-	createMarkerFilesOnMirrors(t, source.Mirrors)
-	defer removeMarkerFilesOnMirrors(t, source.Mirrors)
+	acceptance.CreateMarkerFilesOnMirrors(t, source.Mirrors)
+	defer acceptance.RemoveMarkerFilesOnMirrors(t, source.Mirrors)
 
 	// add a table
 	table := "public.should_be_reverted"
@@ -191,7 +191,7 @@ func testRevertAfterExecute(t *testing.T, mode idl.Mode, upgradeFailure UpgradeF
 
 	// run initialize and execute
 	acceptance.Initialize(t, mode)
-	defer revertIgnoreFailures(t) // cleanup in case we fail part way through
+	defer acceptance.RevertIgnoreFailures(t) // cleanup in case we fail part way through
 	upgradeSucceeded := verifyExecute(t, upgradeFailure.failedSubstep)
 
 	if upgradeSucceeded {
@@ -216,7 +216,7 @@ func testRevertAfterExecute(t *testing.T, mode idl.Mode, upgradeFailure UpgradeF
 	verifyRevert(t, source, conf.Intermediate, revertOutput, logArchiveDir)
 
 	// verify that the mirror marker files were restored to the primaries after reverting
-	verifyMarkerFilesOnPrimaries(t, source.Primaries, mode)
+	acceptance.VerifyMarkerFilesOnPrimaries(t, source.Primaries, mode)
 
 	// verify the table modifications were reverted
 	rows := testutils.MustQueryRow(t, source.Connection(greenplum.Database("postgres")), fmt.Sprintf(`SELECT COUNT(*) FROM %s;`, table))
@@ -284,53 +284,6 @@ func verifyRevert(t *testing.T, source greenplum.Cluster, intermediate *greenplu
 	err := source.WaitForClusterToBeReady()
 	if err != nil {
 		t.Fatal(err)
-	}
-}
-
-// revertIgnoreFailures ignores failures since revert is part of the actual test
-// calling revert a second time within a defer will fail. We call revert with a
-// defer to clean up if the test fails part way through.
-func revertIgnoreFailures(t *testing.T) string {
-	t.Helper()
-
-	cmd := exec.Command("gpupgrade", "revert",
-		"--non-interactive", "--verbose")
-	output, _ := cmd.CombinedOutput()
-
-	return strings.TrimSpace(string(output))
-}
-
-func createMarkerFilesOnMirrors(t *testing.T, mirrors greenplum.ContentToSegConfig) {
-	t.Helper()
-
-	for _, seg := range mirrors {
-		testutils.MustWriteToRemoteFile(t, seg.Hostname, filepath.Join(seg.DataDir, "source-cluster.marker"), "")
-	}
-}
-
-func removeMarkerFilesOnMirrors(t *testing.T, mirrors greenplum.ContentToSegConfig) {
-	t.Helper()
-
-	for _, seg := range mirrors {
-		testutils.MustRemoveAllRemotely(t, seg.Hostname, filepath.Join(seg.DataDir, "source-cluster.marker"))
-	}
-}
-
-func verifyMarkerFilesOnPrimaries(t *testing.T, primaries greenplum.ContentToSegConfig, mode idl.Mode) {
-	t.Helper()
-
-	for _, seg := range primaries {
-		if mode == idl.Mode_link {
-			// in link mode revert uses rsync which copies over and retains the marker file
-			testutils.RemotePathMustExist(t, seg.Hostname, filepath.Join(seg.DataDir, "source-cluster.marker"))
-		}
-
-		if mode == idl.Mode_copy {
-			// in copy mode revert uses gprecoverseg which removes the marker file
-			testutils.RemotePathMustNotExist(t, seg.Hostname, filepath.Join(seg.DataDir, "source-cluster.marker"))
-		}
-
-		testutils.MustRemoveAllRemotely(t, seg.Hostname, filepath.Join(seg.DataDir, "source-cluster.marker"))
 	}
 }
 

@@ -1,7 +1,7 @@
 // Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
-package gpupgrade_test
+package pg_upgrade_test
 
 import (
 	"path/filepath"
@@ -48,7 +48,7 @@ func Test_PgUpgrade_Upgradeable_Tests(t *testing.T) {
 		acceptance.Apply(t, acceptance.GPHOME_SOURCE, acceptance.PGPORT, idl.Step_initialize, migrationDir)
 
 		acceptance.Initialize(t, idl.Mode_link)
-		defer revertIgnoreFailures(t)
+		defer acceptance.RevertIgnoreFailures(t)
 		acceptance.Execute(t)
 		acceptance.Finalize(t)
 

@@ -51,8 +51,8 @@ func testFinalize(t *testing.T, mode idl.Mode, useHbaHostnames bool) {
 	acceptance.BackupDemoCluster(t, backupDir, source)
 	defer acceptance.RestoreDemoCluster(t, backupDir, source, acceptance.GetTempTargetCluster(t))
 
-	createMarkerFilesOnAllSegments(t, source)
-	defer removeMarkerFilesOnAllSegments(t, source)
+	acceptance.CreateMarkerFilesOnAllSegments(t, source)
+	defer acceptance.RemoveMarkerFilesOnAllSegments(t, source)
 
 	table := "public.should_be_reverted"
 	testutils.MustExecuteSQL(t, source.Connection(greenplum.Database("postgres")), fmt.Sprintf(`CREATE TABLE %s (a int); INSERT INTO %s VALUES (1), (2), (3);`, table, table))
@@ -79,7 +79,7 @@ func testFinalize(t *testing.T, mode idl.Mode, useHbaHostnames bool) {
 		"--disk-free-ratio", "0",
 		hbaHostnames)
 	output, err := cmd.CombinedOutput()
-	defer revertIgnoreFailures(t) // cleanup in case we fail part way through
+	defer acceptance.RevertIgnoreFailures(t) // cleanup in case we fail part way through
 	if err != nil {
 		t.Fatalf("unexpected err: %#v stderr %s", err, output)
 	}
@@ -95,7 +95,7 @@ func testFinalize(t *testing.T, mode idl.Mode, useHbaHostnames bool) {
 
 	verifyFinalize(t, source, conf, finalizeOutput, useHbaHostnames)
 
-	verifyMarkerFilesOnAllSegments(t, conf.Intermediate, conf.Target)
+	acceptance.VerifyMarkerFilesOnAllSegments(t, conf.Intermediate, conf.Target)
 
 	rows := testutils.MustQueryRow(t, conf.Target.Connection(greenplum.Database("postgres")), fmt.Sprintf(`SELECT COUNT(*) FROM %s;`, table))
 	expectedRows := 3
@@ -124,59 +124,6 @@ func testFinalize(t *testing.T, mode idl.Mode, useHbaHostnames bool) {
 		if err != nil {
 			t.Fatalf("unexpected err: %#v stderr %s", err, output)
 		}
-	}
-}
-
-func createMarkerFilesOnAllSegments(t *testing.T, cluster greenplum.Cluster) {
-	t.Helper()
-
-	for _, seg := range cluster.Primaries {
-		testutils.MustWriteToRemoteFile(t, seg.Hostname, filepath.Join(seg.DataDir, "source-cluster.marker"), "")
-	}
-
-	for _, seg := range cluster.Mirrors {
-		testutils.MustWriteToRemoteFile(t, seg.Hostname, filepath.Join(seg.DataDir, "source-cluster.marker"), "")
-	}
-}
-
-func removeMarkerFilesOnAllSegments(t *testing.T, cluster greenplum.Cluster) {
-	t.Helper()
-
-	for _, seg := range cluster.Primaries {
-		testutils.MustRemoveAllRemotely(t, seg.Hostname, filepath.Join(seg.DataDir, "source-cluster.marker"))
-	}
-
-	for _, seg := range cluster.Mirrors {
-		testutils.MustRemoveAllRemotely(t, seg.Hostname, filepath.Join(seg.DataDir, "source-cluster.marker"))
-	}
-}
-
-func verifyMarkerFilesOnAllSegments(t *testing.T, intermediate *greenplum.Cluster, target *greenplum.Cluster) {
-	t.Helper()
-
-	// Verify the source cluster has the marker files. Since the source cluster
-	// got archived after finalize we take the intermediate cluster data
-	// directories appended with the .old suffix as the archived source cluster
-	// directories.
-	for _, seg := range intermediate.Primaries {
-		testutils.RemotePathMustExist(t, seg.Hostname, filepath.Join(seg.DataDir+upgrade.OldSuffix, "source-cluster.marker"))
-		testutils.MustRemoveAllRemotely(t, seg.Hostname, filepath.Join(seg.DataDir+upgrade.OldSuffix, "source-cluster.marker"))
-	}
-
-	for _, seg := range intermediate.Mirrors {
-		testutils.RemotePathMustExist(t, seg.Hostname, filepath.Join(seg.DataDir+upgrade.OldSuffix, "source-cluster.marker"))
-		testutils.MustRemoveAllRemotely(t, seg.Hostname, filepath.Join(seg.DataDir+upgrade.OldSuffix, "source-cluster.marker"))
-	}
-
-	// Verify the target cluster does not have the marker files.
-	for _, seg := range target.Primaries {
-		testutils.RemotePathMustNotExist(t, seg.Hostname, filepath.Join(seg.DataDir, "source-cluster.marker"))
-		testutils.MustRemoveAllRemotely(t, seg.Hostname, filepath.Join(seg.DataDir, "source-cluster.marker"))
-	}
-
-	for _, seg := range target.Mirrors {
-		testutils.RemotePathMustNotExist(t, seg.Hostname, filepath.Join(seg.DataDir, "source-cluster.marker"))
-		testutils.MustRemoveAllRemotely(t, seg.Hostname, filepath.Join(seg.DataDir, "source-cluster.marker"))
 	}
 }
 

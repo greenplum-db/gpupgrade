@@ -21,6 +21,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 	"github.com/greenplum-db/gpupgrade/step"
 	"github.com/greenplum-db/gpupgrade/testutils"
+	"github.com/greenplum-db/gpupgrade/upgrade"
 	"github.com/greenplum-db/gpupgrade/utils"
 	"github.com/greenplum-db/gpupgrade/utils/errorlist"
 	"github.com/greenplum-db/gpupgrade/utils/rsync"
@@ -172,6 +173,19 @@ func Revert(t *testing.T) string {
 	if err != nil {
 		t.Fatalf("unexpected err: %#v stderr %s", err, output)
 	}
+
+	return strings.TrimSpace(string(output))
+}
+
+// RevertIgnoreFailures ignores failures since revert is part of the actual test
+// calling revert a second time within a defer will fail. We call revert with a
+// defer to clean up if the test fails part way through.
+func RevertIgnoreFailures(t *testing.T) string {
+	t.Helper()
+
+	cmd := exec.Command("gpupgrade", "revert",
+		"--non-interactive", "--verbose")
+	output, _ := cmd.CombinedOutput()
 
 	return strings.TrimSpace(string(output))
 }
@@ -398,4 +412,91 @@ func MustGetLogArchiveDir(t *testing.T, upgradeID string) string {
 	}
 
 	return hub.GetLogArchiveDir(logDir, upgradeID, time.Now())
+}
+
+func CreateMarkerFilesOnMirrors(t *testing.T, mirrors greenplum.ContentToSegConfig) {
+	t.Helper()
+
+	for _, seg := range mirrors {
+		testutils.MustWriteToRemoteFile(t, seg.Hostname, filepath.Join(seg.DataDir, "source-cluster.marker"), "")
+	}
+}
+
+func RemoveMarkerFilesOnMirrors(t *testing.T, mirrors greenplum.ContentToSegConfig) {
+	t.Helper()
+
+	for _, seg := range mirrors {
+		testutils.MustRemoveAllRemotely(t, seg.Hostname, filepath.Join(seg.DataDir, "source-cluster.marker"))
+	}
+}
+
+func VerifyMarkerFilesOnPrimaries(t *testing.T, primaries greenplum.ContentToSegConfig, mode idl.Mode) {
+	t.Helper()
+
+	for _, seg := range primaries {
+		if mode == idl.Mode_link {
+			// in link mode revert uses rsync which copies over and retains the marker file
+			testutils.RemotePathMustExist(t, seg.Hostname, filepath.Join(seg.DataDir, "source-cluster.marker"))
+		}
+
+		if mode == idl.Mode_copy {
+			// in copy mode revert uses gprecoverseg which removes the marker file
+			testutils.RemotePathMustNotExist(t, seg.Hostname, filepath.Join(seg.DataDir, "source-cluster.marker"))
+		}
+
+		testutils.MustRemoveAllRemotely(t, seg.Hostname, filepath.Join(seg.DataDir, "source-cluster.marker"))
+	}
+}
+
+func CreateMarkerFilesOnAllSegments(t *testing.T, cluster greenplum.Cluster) {
+	t.Helper()
+
+	for _, seg := range cluster.Primaries {
+		testutils.MustWriteToRemoteFile(t, seg.Hostname, filepath.Join(seg.DataDir, "source-cluster.marker"), "")
+	}
+
+	for _, seg := range cluster.Mirrors {
+		testutils.MustWriteToRemoteFile(t, seg.Hostname, filepath.Join(seg.DataDir, "source-cluster.marker"), "")
+	}
+}
+
+func RemoveMarkerFilesOnAllSegments(t *testing.T, cluster greenplum.Cluster) {
+	t.Helper()
+
+	for _, seg := range cluster.Primaries {
+		testutils.MustRemoveAllRemotely(t, seg.Hostname, filepath.Join(seg.DataDir, "source-cluster.marker"))
+	}
+
+	for _, seg := range cluster.Mirrors {
+		testutils.MustRemoveAllRemotely(t, seg.Hostname, filepath.Join(seg.DataDir, "source-cluster.marker"))
+	}
+}
+
+func VerifyMarkerFilesOnAllSegments(t *testing.T, intermediate *greenplum.Cluster, target *greenplum.Cluster) {
+	t.Helper()
+
+	// Verify the source cluster has the marker files. Since the source cluster
+	// got archived after finalize we take the intermediate cluster data
+	// directories appended with the .old suffix as the archived source cluster
+	// directories.
+	for _, seg := range intermediate.Primaries {
+		testutils.RemotePathMustExist(t, seg.Hostname, filepath.Join(seg.DataDir+upgrade.OldSuffix, "source-cluster.marker"))
+		testutils.MustRemoveAllRemotely(t, seg.Hostname, filepath.Join(seg.DataDir+upgrade.OldSuffix, "source-cluster.marker"))
+	}
+
+	for _, seg := range intermediate.Mirrors {
+		testutils.RemotePathMustExist(t, seg.Hostname, filepath.Join(seg.DataDir+upgrade.OldSuffix, "source-cluster.marker"))
+		testutils.MustRemoveAllRemotely(t, seg.Hostname, filepath.Join(seg.DataDir+upgrade.OldSuffix, "source-cluster.marker"))
+	}
+
+	// Verify the target cluster does not have the marker files.
+	for _, seg := range target.Primaries {
+		testutils.RemotePathMustNotExist(t, seg.Hostname, filepath.Join(seg.DataDir, "source-cluster.marker"))
+		testutils.MustRemoveAllRemotely(t, seg.Hostname, filepath.Join(seg.DataDir, "source-cluster.marker"))
+	}
+
+	for _, seg := range target.Mirrors {
+		testutils.RemotePathMustNotExist(t, seg.Hostname, filepath.Join(seg.DataDir, "source-cluster.marker"))
+		testutils.MustRemoveAllRemotely(t, seg.Hostname, filepath.Join(seg.DataDir, "source-cluster.marker"))
+	}
 }

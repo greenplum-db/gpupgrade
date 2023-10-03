@@ -1,7 +1,7 @@
 // Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
-package gpupgrade_test
+package pg_upgrade_test
 
 import (
 	"path/filepath"
@@ -49,7 +49,7 @@ func Test_PgUpgrade_Migratable_Tests(t *testing.T) {
 		acceptance.Apply(t, acceptance.GPHOME_SOURCE, acceptance.PGPORT, idl.Step_initialize, migrationDir)
 
 		acceptance.Initialize(t, idl.Mode_link)
-		defer revertIgnoreFailures(t) // cleanup in case we fail part way through
+		defer acceptance.RevertIgnoreFailures(t) // cleanup in case we fail part way through
 		acceptance.Execute(t)
 		acceptance.Finalize(t)
 
@@ -67,7 +67,7 @@ func Test_PgUpgrade_Migratable_Tests(t *testing.T) {
 		acceptance.Apply(t, acceptance.GPHOME_SOURCE, acceptance.PGPORT, idl.Step_initialize, migrationDir)
 
 		acceptance.Initialize(t, idl.Mode_link)
-		defer revertIgnoreFailures(t) // cleanup in case we fail part way through
+		defer acceptance.RevertIgnoreFailures(t) // cleanup in case we fail part way through
 		acceptance.Revert(t)
 
 		acceptance.Apply(t, acceptance.GPHOME_TARGET, acceptance.PGPORT, idl.Step_revert, migrationDir)
@@ -84,7 +84,7 @@ func Test_PgUpgrade_Migratable_Tests(t *testing.T) {
 		acceptance.Apply(t, acceptance.GPHOME_SOURCE, acceptance.PGPORT, idl.Step_initialize, migrationDir)
 
 		acceptance.Initialize(t, idl.Mode_link)
-		defer revertIgnoreFailures(t) // cleanup in case we fail part way through
+		defer acceptance.RevertIgnoreFailures(t) // cleanup in case we fail part way through
 		acceptance.Execute(t)
 		acceptance.Revert(t)
 

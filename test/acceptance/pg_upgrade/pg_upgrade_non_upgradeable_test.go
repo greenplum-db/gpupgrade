@@ -1,7 +1,7 @@
 // Copyright (c) 2017-2023 VMware, Inc. or its affiliates
 // SPDX-License-Identifier: Apache-2.0
 
-package gpupgrade_test
+package pg_upgrade_test
 
 import (
 	"path/filepath"
