@@ -33,7 +33,7 @@ func Test_PgUpgrade_Migratable_Tests(t *testing.T) {
 		dir = "5-to-6"
 	}
 
-	testDir := filepath.Join(acceptance.MustGetRepoRoot(t), "test", "acceptance", dir)
+	testDir := filepath.Join(acceptance.MustGetRepoRoot(t), "test", "acceptance", "pg_upgrade", dir)
 	sourceTestDir := filepath.Join(testDir, "migratable_tests", "source_cluster_regress")
 	targetTestDir := filepath.Join(testDir, "migratable_tests", "target_cluster_regress")
 

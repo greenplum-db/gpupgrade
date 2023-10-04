@@ -108,14 +108,14 @@ substitutions used to perform a "smart" diff.
   such as `~/workspace/gpdb6/src/test/isolation2`.
 2. Run the tests:
    * **Entire suite**: `make pg-upgrade-tests`
-   * **Non-upgradeable tests**: `go test -count=1 -timeout 35m -v ./test/acceptance/ -run Test_PgUpgrade_NonUpgradeable_Tests`
-   * **Upgradeable tests**: `go test -count=1 -timeout 35m -v ./test/acceptance/ -run Test_PgUpgrade_Upgradeable_Tests`
-   * **Migratable tests**: `go test -count=1 -timeout 35m -v ./test/acceptance/ -run Test_PgUpgrade_Migratable_Tests`
+   * **Non-upgradeable tests**: `go test -count=1 -timeout 35m -v ./test/acceptance/pg_upgrade -run Test_PgUpgrade_NonUpgradeable_Tests`
+   * **Upgradeable tests**: `go test -count=1 -timeout 35m -v ./test/acceptance/pg_upgrade -run Test_PgUpgrade_Upgradeable_Tests`
+   * **Migratable tests**: `go test -count=1 -timeout 35m -v ./test/acceptance/pg_upgrade -run Test_PgUpgrade_Migratable_Tests`
    * **Focused pg_upgrade tests**: Set the environment variable
      `FOCUS_TESTS` to a space separated list of tests before running
      pg_upgrade tests. For instance:
      ```
-     FOCUS_TESTS="partition_index view_owner" go test -count=1 -v ./test/acceptance -run Test_PgUpgrade_Migratable_Tests
+     FOCUS_TESTS="partition_index view_owner" go test -count=1 -v ./test/acceptance/pg_upgrade -run Test_PgUpgrade_Migratable_Tests
      ```
 ### pg_upgrade: non-upgradeable tests (negative tests)
 

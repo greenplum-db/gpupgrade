@@ -38,7 +38,7 @@ unit integration acceptance test: export PATH := $(CURDIR):$(PATH)
 
 .PHONY: unit
 unit:
-	go test -count=1 $(shell go list ./... | grep -v test/integration$$ | grep -v test/acceptance$$ )
+	go test -count=1 $(shell go list ./... | grep -v test/integration$$ | grep -v test/acceptance/gpupgrade$$ | grep -v test/acceptance/pg_upgrade$$)
 
 .PHONY: integration
 integration:
@@ -46,7 +46,7 @@ integration:
 
 .PHONY: acceptance
 acceptance:
-	go test -count=1 -timeout 1h15m -v ./test/acceptance -skip "Test_PgUpgrade_Migratable_Tests|Test_PgUpgrade_NonUpgradeable_Tests|Test_PgUpgrade_Upgradeable_Tests"
+	go test -count=1 -timeout 1h15m -v ./test/acceptance/gpupgrade
 
 # test runs all tests against the locally built gpupgrade binaries. Use -k to
 # continue after failures.

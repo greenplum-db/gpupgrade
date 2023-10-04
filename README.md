@@ -228,12 +228,12 @@ make pg-upgrade-tests
 
 To run all tests in a suite:
 ```
-go test -v ./test/acceptance/ -run TestFinalize
+go test -v ./test/acceptance/gpupgrade -run TestFinalize
 ```
 
 To run a single test or set of tests:
 ```
-go test -v ./test/acceptance/ -run "gpupgrade finalize should"
+go test -v ./test/acceptance/gpupgrade -run "gpupgrade finalize should"
 ```
 
 #### All local tests

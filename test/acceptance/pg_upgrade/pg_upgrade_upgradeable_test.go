@@ -33,7 +33,7 @@ func Test_PgUpgrade_Upgradeable_Tests(t *testing.T) {
 		dir = "5-to-6"
 	}
 
-	testDir := filepath.Join(acceptance.MustGetRepoRoot(t), "test", "acceptance", dir)
+	testDir := filepath.Join(acceptance.MustGetRepoRoot(t), "test", "acceptance", "pg_upgrade", dir)
 	testutils.MustApplySQLFile(t, acceptance.GPHOME_SOURCE, acceptance.PGPORT, filepath.Join(testDir, "setup_globals.sql"))
 	defer testutils.MustApplySQLFile(t, acceptance.GPHOME_SOURCE, acceptance.PGPORT, filepath.Join(testDir, "teardown_globals.sql"))
 
