@@ -28,21 +28,21 @@ func MustAddTablespace(t *testing.T, cluster greenplum.Cluster, tablespaceDir st
 	}
 
 	// create databases in the tablespace
-	MustExecuteSQL(t, cluster.Connection(greenplum.Database("postgres")), `CREATE DATABASE foodb TABLESPACE batsTbsp;`)
-	MustExecuteSQL(t, cluster.Connection(greenplum.Database("postgres")), `CREATE DATABASE eatdb TABLESPACE batsTbsp;`)
+	MustExecuteSQL(t, cluster.Connection(greenplum.Database("postgres")), `CREATE DATABASE foodb TABLESPACE test_tablespace;`)
+	MustExecuteSQL(t, cluster.Connection(greenplum.Database("postgres")), `CREATE DATABASE eatdb TABLESPACE test_tablespace;`)
 
 	// create tables in the tablespace
 	sql := `
-CREATE TABLE public.tablespace_table_0 (a int) TABLESPACE batsTbsp;
+CREATE TABLE public.tablespace_table_0 (a int) TABLESPACE test_tablespace;
 INSERT INTO public.tablespace_table_0 SELECT i from generate_series(1,100)i;
 
-CREATE TABLE public.tablespace_table_1 (a int) WITH(appendonly=true, orientation=row) TABLESPACE batsTbsp;
+CREATE TABLE public.tablespace_table_1 (a int) WITH(appendonly=true, orientation=row) TABLESPACE test_tablespace;
 INSERT INTO public.tablespace_table_1 SELECT i from generate_series(1,100)i;
 
-CREATE TABLE public.tablespace_table_2 (a int) WITH(appendonly=true, orientation=column) TABLESPACE batsTbsp;
+CREATE TABLE public.tablespace_table_2 (a int) WITH(appendonly=true, orientation=column) TABLESPACE test_tablespace;
 INSERT INTO public.tablespace_table_2 SELECT i from generate_series(1,100)i;
 
-CREATE TABLE  public.tablespace_table_3 (a int, b int) WITH(appendonly=true, orientation=column) TABLESPACE batsTbsp
+CREATE TABLE  public.tablespace_table_3 (a int, b int) WITH(appendonly=true, orientation=column) TABLESPACE test_tablespace
 PARTITION BY RANGE(b) (START(1) END(4) EVERY(1));
 INSERT INTO public.tablespace_table_3 SELECT i, (i%3)+1 FROM generate_series(1,100)i;`
 	MustExecuteSQL(t, cluster.Connection(greenplum.Database("postgres")), sql)
@@ -67,14 +67,14 @@ func MustCreateTablespace(t *testing.T, cluster greenplum.Cluster, tablespaceDir
 
 	path := filepath.Join(tablespaceDir, "testfs")
 	MustCreateDir(t, path)
-	MustExecuteSQL(t, cluster.Connection(greenplum.Database("postgres")), fmt.Sprintf(`CREATE TABLESPACE batsTbsp LOCATION '%s';`, path))
+	MustExecuteSQL(t, cluster.Connection(greenplum.Database("postgres")), fmt.Sprintf(`CREATE TABLESPACE test_tablespace LOCATION '%s';`, path))
 }
 
 func MustCreateFilespaceAndTablespace(t *testing.T, cluster greenplum.Cluster, tablespaceDir string) {
 	t.Helper()
 
 	var sb strings.Builder
-	sb.WriteString("filespace:batsFS\n")
+	sb.WriteString("filespace:test_FS\n")
 	for _, seg := range cluster.Primaries {
 		// Keep symlinks short otherwise they get trimmed and result in an invalid symlink when pg_basebackup copies
 		// the coordinator to standby.
@@ -101,7 +101,7 @@ func MustCreateFilespaceAndTablespace(t *testing.T, cluster greenplum.Cluster, t
 	}
 
 	// create a tablespace in the filespace
-	MustExecuteSQL(t, cluster.Connection(greenplum.Database("postgres")), `CREATE TABLESPACE batsTbsp FILESPACE batsFS;`)
+	MustExecuteSQL(t, cluster.Connection(greenplum.Database("postgres")), `CREATE TABLESPACE test_tablespace FILESPACE test_FS;`)
 }
 
 // MustDeleteTablespaces deletes tablespaces from the target cluster. However,
@@ -130,9 +130,9 @@ DROP TABLE IF EXISTS public.tablespace_table_2;
 DROP TABLE IF EXISTS public.tablespace_table_3;`
 	MustExecuteSQL(t, target.Connection(greenplum.Database("postgres")), sql)
 
-	sql = `DROP TABLESPACE IF EXISTS batsTbsp;`
+	sql = `DROP TABLESPACE IF EXISTS test_tablespace;`
 	if target.Version.Major == 5 {
-		sql += `DROP FILESPACE IF EXISTS batsFS;`
+		sql += `DROP FILESPACE IF EXISTS test_FS;`
 	}
 
 	MustExecuteSQL(t, target.Connection(greenplum.Database("postgres")), sql)
