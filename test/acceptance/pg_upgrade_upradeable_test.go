@@ -21,6 +21,12 @@ func Test_PgUpgrade_Upgradeable_Tests(t *testing.T) {
 	resetEnv := testutils.SetEnv(t, "GPUPGRADE_HOME", stateDir)
 	defer resetEnv()
 
+	backupDir := testutils.GetTempDir(t, "backup")
+	defer testutils.MustRemoveAll(t, backupDir)
+
+	migrationDir := testutils.GetTempDir(t, "migration")
+	defer testutils.MustRemoveAll(t, migrationDir)
+
 	source := acceptance.GetSourceCluster(t)
 	dir := "6-to-7"
 	if source.Version.Major == 5 {
@@ -32,14 +38,23 @@ func Test_PgUpgrade_Upgradeable_Tests(t *testing.T) {
 	defer testutils.MustApplySQLFile(t, acceptance.GPHOME_SOURCE, acceptance.PGPORT, filepath.Join(testDir, "teardown_globals.sql"))
 
 	t.Run("pg_upgrade upgradeable tests", func(t *testing.T) {
+		acceptance.BackupDemoCluster(t, backupDir, source)
+		defer acceptance.RestoreDemoCluster(t, backupDir, source, acceptance.GetTempTargetCluster(t))
+
 		sourceTestDir := filepath.Join(testDir, "upgradeable_tests", "source_cluster_regress")
 		acceptance.Isolation2_regress(t, source.Version, acceptance.GPHOME_SOURCE, acceptance.PGPORT, sourceTestDir, sourceTestDir, idl.Schedule_upgradeable_source_schedule)
 
+		acceptance.Generate(t, migrationDir)
+		acceptance.Apply(t, acceptance.GPHOME_SOURCE, acceptance.PGPORT, idl.Step_initialize, migrationDir)
+
 		acceptance.Initialize(t, idl.Mode_link)
-		defer acceptance.Revert(t)
+		defer revertIgnoreFailures(t)
 		acceptance.Execute(t)
+		acceptance.Finalize(t)
+
+		acceptance.Apply(t, acceptance.GPHOME_TARGET, acceptance.PGPORT, idl.Step_finalize, migrationDir)
 
 		targetTestDir := filepath.Join(testDir, "upgradeable_tests", "target_cluster_regress")
-		acceptance.Isolation2_regress(t, source.Version, acceptance.GPHOME_TARGET, acceptance.TARGET_PGPORT, targetTestDir, targetTestDir, idl.Schedule_upgradeable_target_schedule)
+		acceptance.Isolation2_regress(t, source.Version, acceptance.GPHOME_SOURCE, acceptance.PGPORT, targetTestDir, targetTestDir, idl.Schedule_upgradeable_target_schedule)
 	})
 }

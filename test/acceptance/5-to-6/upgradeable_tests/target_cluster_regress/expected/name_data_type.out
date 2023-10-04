@@ -28,13 +28,11 @@ SET
 EXPLAIN (COSTS off) SELECT * FROM table_with_name_columns WHERE b = 'bbb8';
  QUERY PLAN                                                   
 --------------------------------------------------------------
- Gather Motion 3:1  (slice1; segments: 3)                     
-   ->  Bitmap Heap Scan on table_with_name_columns            
-         Recheck Cond: (b = 'bbb8'::name)                     
-         ->  Bitmap Index Scan on table_with_name_columns_idx 
-               Index Cond: (b = 'bbb8'::name)                 
- Optimizer: Postgres query optimizer                          
-(6 rows)
+ Gather Motion 3:1  (slice1; segments: 3)                                      
+   ->  Index Scan using table_with_name_columns_idx on table_with_name_columns 
+         Index Cond: (b = 'bbb8'::name)                                        
+ Optimizer: Postgres query optimizer                                           
+(4 rows)
 SELECT * FROM table_with_name_columns WHERE b = 'bbb8';
  a | b    | c    | d    
 ---+------+------+------
