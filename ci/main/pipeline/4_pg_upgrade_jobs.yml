@@ -11,7 +11,6 @@
           resource: gpdb{{.Source}}_src
         - get: gpdb_src_target
           resource: gpdb{{.Target}}_src
-        - get: bats
         - get: rpm_gpdb_source
           resource: gpdb{{.Source}}_{{.Platform}}_rpm
           trigger: true
@@ -35,7 +34,6 @@
           # Rename gpdb_src_target to gpdb_src since external scripts used within rely on that.
           - name: gpdb_src_target
             path: gpdb_src
-          - name: bats
           - name: rpm_gpdb_source
           - name: rpm_gpdb_target
         run:

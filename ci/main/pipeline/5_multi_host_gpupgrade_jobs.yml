@@ -19,7 +19,6 @@
         - get: terraform.d
           params:
             unpack: true
-        - get: bats
     - put: terraform
       params:
         <<: *ccp_default_params

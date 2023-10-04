@@ -33,9 +33,6 @@ function run_migration_scripts_and_tests() {
 }
 
 main() {
-    echo "Installing BATS..."
-    ./bats/install.sh /usr/local
-
     echo "Setting up gpadmin user..."
     mkdir -p gpdb_src
     ./gpdb_src_source/concourse/scripts/setup_gpadmin_user.bash "centos"

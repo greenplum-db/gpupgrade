@@ -72,17 +72,6 @@ install_yum_packages() {
         wget
 }
 
-install_bats() {
-    #
-    # Download from Github because centos only
-    # has v0.4.0 available via yum
-    #
-    wget https://github.com/bats-core/bats-core/archive/v1.1.0.tar.gz
-    tar xvzf v1.1.0.tar.gz
-    rm v1.1.0.tar.gz
-    ./bats-core-1.1.0/install.sh /usr/local
-}
-
 install_greenplum() {
     # assumes that the gpdb rpm has been manually downloaded
     # and has been placed in the multihost directory
@@ -118,7 +107,6 @@ add_hosts_entries() {
 
 install_dependencies() {
     install_yum_packages
-    install_bats
     install_greenplum
     install_gpupgrade
 }

@@ -105,13 +105,6 @@ resources:
     json_key: ((upgrade/cm-gcs-service-account-key))
     regexp: release-candidates/enterprise/gpupgrade-(.*).rpm
 
-- name: bats
-  type: git
-  source:
-    uri: https://github.com/bats-core/bats-core
-    branch: master
-    tag_filter: v1.*
-
 - name: slack-alert
   type: slack-notification
   source:

@@ -45,9 +45,6 @@ run_pg_upgrade_tests() {
 }
 
 main() {
-    echo "Installing BATS..."
-    ./bats/install.sh /usr/local
-
     echo "Installing gpupgrade rpm..."
     yum install -y enterprise_rpm/gpupgrade-*.rpm
 
