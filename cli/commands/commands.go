@@ -216,12 +216,12 @@ var killServices = &cobra.Command{
 
 		if !running {
 			// FIXME: Returning early if the hub is not running, means that we
-			//  cannot kill spurious agents.
-			// We cannot simply start the hub in order to kill spurious agents
-			// since this requires initialize to have been run and the source
-			// cluster config to exist. The main use case for kill-services is
-			// at the start of BATS testing where we do not want to make any
-			// assumption about the state of the cluster or environment.
+			// cannot kill spurious agents. We cannot simply start the hub in
+			// order to kill spurious agents since this requires initialize to
+			// have been run and the source cluster config to exist. The main
+			// use case for kill-services is at the start of acceptance testing
+			// where we do not want to make any assumption about the state of
+			// the cluster or environment.
 			return nil
 		}
 

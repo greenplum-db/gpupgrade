@@ -217,9 +217,8 @@ make integration
 ```
 
 #### Acceptance tests
-Tests more end-to-end acceptance-level behavior between components. Tests are 
-located in the `test` directory and use the [BATS (Bash Automated Testing System)](https://github.com/bats-core/bats-core) 
-framework which can be installed on macOS with `brew install bats-core`.
+Tests more end-to-end acceptance-level behavior between components. Tests are
+located in the `test` directory and use the isolation2 framework.
 Please review the [integration/README](https://github.com/greenplum-db/gpupgrade/blob/main/test/integration/README.md).
 ```
 # Requires a GPDB cluster installed and running

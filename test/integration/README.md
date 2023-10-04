@@ -26,7 +26,7 @@ boundaries. Prefer them for the majority of test coverage, but understand that
 they don't provide any confidence that the units actually do anything useful
 when put together.
 
-The BATS end-to-end tests are more expensive, but provide true acceptance-level
+The end-to-end tests are more expensive, but provide true acceptance-level
 testing. I.e. they can help answer the question, "Did we put all the units
 together correctly?" Many of the old integration tests were much better suited
 for the end-to-end style, because they were just calling the binaries anyway.

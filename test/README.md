@@ -62,7 +62,7 @@ Set the following environment variables:
 - `GPHOME_SOURCE`: The source cluster's installation path such as `/usr/local/gpdb5`.
 - `GPHOME_TARGET`: The target cluster's installation path such as `/usr/local/gpdb6`.
 
-And then run: `bats -f "test name" test/acceptance`
+And then run: `make acceptance`
 
 ---
 
@@ -107,25 +107,15 @@ substitutions used to perform a "smart" diff.
 - `ISOLATION2_PATH`: The path to the target gpdb version's pg_isolation2 binary
   such as `~/workspace/gpdb6/src/test/isolation2`.
 2. Run the tests:
-   * **Entire suite**: `bats test/acceptance/pg_upgrade.bats`
-   * **Non-upgradeable tests**: `bats -f "pg_upgrade --check detects non-upgradeable objects" test/acceptance/pg_upgrade.bats`
-   * **Upgradeable tests**: `bats -f "pg_upgrade upgradeable tests" test/acceptance/pg_upgrade.bats`
-   * **Migratable tests**: `go test -count=1 -v ./test/acceptance -run TestMigrationScripts`
-   * **Focused non-upgradeable tests**: Set the environment variable
-     `NON_UPGRADEABLE_TESTS` to a space separated list of tests before running
-     bats. For instance:
+   * **Entire suite**: `make pg-upgrade-tests`
+   * **Non-upgradeable tests**: `go test -count=1 -timeout 35m -v ./test/acceptance/ -run Test_PgUpgrade_NonUpgradeable_Tests`
+   * **Upgradeable tests**: `go test -count=1 -timeout 35m -v ./test/acceptance/ -run Test_PgUpgrade_Upgradeable_Tests`
+   * **Migratable tests**: `go test -count=1 -timeout 35m -v ./test/acceptance/ -run Test_PgUpgrade_Migratable_Tests`
+   * **Focused pg_upgrade tests**: Set the environment variable
+     `FOCUS_TESTS` to a space separated list of tests before running
+     pg_upgrade tests. For instance:
      ```
-     NON_UPGRADEABLE_TESTS="indexes large_objects" bats -f "pg_upgrade --check detects non-upgradeable objects" test/acceptance/pg_upgrade.bats
-     ```
-   * **Focused upgradeable tests**: Set the environment variable `UPGRADEABLE_TESTS`
-     to a space separated list of tests before running bats. For instance:
-     ```
-     UPGRADEABLE_TESTS="ao_table aoco_table" bats -f "pg_upgrade upgradeable tests" test/acceptance/pg_upgrade.bats
-     ```
-   * **Focused migratable tests**: Set the environment variable `FOCUS_TESTS`
-     to a space separated list of tests before running bats. For instance:
-     ```
-     FOCUS_TESTS="partition_index view_owner" go test -count=1 -v ./test/acceptance -run TestMigrationScripts
+     FOCUS_TESTS="partition_index view_owner" go test -count=1 -v ./test/acceptance -run Test_PgUpgrade_Migratable_Tests
      ```
 ### pg_upgrade: non-upgradeable tests (negative tests)
 
