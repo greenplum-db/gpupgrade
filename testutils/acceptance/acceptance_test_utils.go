@@ -58,12 +58,20 @@ func init() {
 func MustGetRepoRoot(t *testing.T) string {
 	t.Helper()
 
-	currentDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("failed to get current directory: %v", err)
+	_, err := exec.LookPath("git")
+	if err == nil {
+		output, err := exec.Command("git", "rev-parse", "--show-toplevel").CombinedOutput()
+		if err != nil {
+			t.Fatalf("failed to get repository root: %v", err)
+		}
+		return strings.TrimSpace(string(output))
+	} else {
+		currentDir, err := os.Getwd()
+		if err != nil {
+			t.Fatalf("failed to get current directory: %v", err)
+		}
+		return filepath.Dir(filepath.Dir(currentDir))
 	}
-
-	return filepath.Dir(filepath.Dir(currentDir))
 }
 
 func Generate(t *testing.T, outputDir string) string {
