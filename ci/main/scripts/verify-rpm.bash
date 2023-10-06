@@ -35,7 +35,7 @@ verify_license_files() {
   local license_file="/usr/local/bin/greenplum/gpupgrade/open_source_licenses.txt"
   [ -s "$license_file" ]
 
-  [[ $(head -1 "$license_file") =~ open_source_license.txt ]]
+  [[ $(head -1 "$license_file") =~ open_source_licenses.txt ]]
   [[ $(head -3 "$license_file" | tail -1) == *"VMware Greenplum Upgrade ${VERSION}"* ]]
   [[ $(tail -1 "$license_file") =~ "GREENPLUMUPGRADE" ]]
 }
