@@ -6,6 +6,7 @@ set -eux -o pipefail
 
 cd gpupgrade_src
 export GOFLAGS="-mod=readonly" # do not update dependencies during build
+git fetch --tags
 
 make oss-rpm
 ci/main/scripts/verify-rpm.bash gpupgrade-*.rpm "Open Source"
