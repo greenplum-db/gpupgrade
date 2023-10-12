@@ -331,6 +331,8 @@ func RestoreDemoCluster(t *testing.T, backupDir string, source greenplum.Cluster
 }
 
 func Isolation2_regress(t *testing.T, sourceVersion semver.Version, gphome string, port string, inputDir string, outputDir string, schedule idl.Schedule) string {
+	t.Helper()
+
 	var cmdArgs []string
 	if schedule != idl.Schedule_non_upgradeable_schedule && strings.Contains(schedule.String(), "target") {
 		cmdArgs = append(cmdArgs, "--use-existing")

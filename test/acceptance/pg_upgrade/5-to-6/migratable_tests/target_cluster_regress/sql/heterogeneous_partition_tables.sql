@@ -4,10 +4,6 @@
 --------------------------------------------------------------------------------
 -- Create and setup migratable objects
 --------------------------------------------------------------------------------
--- start_matchsubs
--- m/^DETAIL:  Failing row contains \(.*\).$/
--- s/.//gs
--- end_matchsubs
 
 -- check data
 SELECT * FROM dropped_column ORDER BY 1, 2, 3;
