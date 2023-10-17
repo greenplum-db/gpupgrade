@@ -41,8 +41,9 @@ func GenerateDataMigrationScripts(streams step.OutStreams, nonInteractive bool, 
 		seedDir = filepath.Join(seedDir, "5-to-6-seed-scripts")
 	case version.Major == 6:
 		seedDir = filepath.Join(seedDir, "6-to-7-seed-scripts")
-	//case version.Major == 7:
-	//	seedDir = filepath.Join(seedDir, "7-to-8-seed-scripts") // Need to add 7-8 seed scripts for 7-to-7 jobs.
+	case version.Major == 7:
+		// seedDir = filepath.Join(seedDir, "7-to-8-seed-scripts")
+		return nil // TODO: Remove once there are 7 > 8 data migration scripts
 	default:
 		return fmt.Errorf("failed to find seed scripts for Greenplum version %s under %q", version, seedDir)
 	}
