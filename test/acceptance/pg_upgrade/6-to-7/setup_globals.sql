@@ -22,24 +22,3 @@ CREATE RESOURCE GROUP test_group WITH (
     MEMORY_SPILL_RATIO = 5
 );
 CREATE ROLE resource_group_queue_role resource group test_group resource queue test_queue;
-
-CREATE FUNCTION drop_gphdfs() RETURNS VOID AS $$
-DECLARE
-    rolerow RECORD;
-BEGIN
-    RAISE NOTICE 'Dropping gphdfs users...';
-    FOR rolerow IN SELECT * FROM pg_catalog.pg_roles LOOP
-            EXECUTE 'alter role '
-                        || quote_ident(rolerow.rolname) || ' '
-                || 'NOCREATEEXTTABLE(protocol=''gphdfs'',type=''readable'')';
-            EXECUTE 'alter role '
-                        || quote_ident(rolerow.rolname) || ' '
-                || 'NOCREATEEXTTABLE(protocol=''gphdfs'',type=''writable'')';
-            RAISE NOTICE 'dropping gphdfs from role % ...', quote_ident(rolerow.rolname);
-        END LOOP;
-END;
-$$ LANGUAGE plpgsql;
-
-SELECT drop_gphdfs();
-DROP FUNCTION drop_gphdfs();
-DROP PROTOCOL IF EXISTS gphdfs CASCADE;
