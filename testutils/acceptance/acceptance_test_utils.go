@@ -340,17 +340,14 @@ func Isolation2_regress(t *testing.T, sourceVersion semver.Version, gphome strin
 
 	env := []string{"PGOPTIONS=-c optimizer=off"}
 	var binDir string
-	switch sourceVersion.Major {
-	case 5:
+	if sourceVersion.Major == 5 {
 		binDir = "--psqldir"
 		// Set PYTHONPATH directly since it is needed when running the
 		// pg_upgrade tests locally. Normally one would source
 		// greenplum_path.sh, but that causes the following issues:
 		// https://web.archive.org/web/20220506055918/https://groups.google.com/a/greenplum.org/g/gpdb-dev/c/JN-YwjCCReY/m/0L9wBOvlAQAJ
 		env = append(env, "PYTHONPATH="+filepath.Join(GPHOME_SOURCE, "lib/python"))
-	case 6:
-		binDir = "--psqldir"
-	default:
+	} else {
 		binDir = "--bindir"
 	}
 
