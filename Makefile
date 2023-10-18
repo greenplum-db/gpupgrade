@@ -194,19 +194,19 @@ FLY_TARGET ?= cm
 # environment variable JOB_TYPE is used to determine whether a dev or prod
 # pipeline is generated. It is used when go generate runs our yaml parser.
 ifeq ($(FLY_TARGET),prod)
-pipeline functional-pipeline: export JOB_TYPE=prod
+pipeline pipeline7 functional-pipeline: export JOB_TYPE=prod
 else
-pipeline functional-pipeline: export JOB_TYPE=dev
+pipeline pipeline7 functional-pipeline: export JOB_TYPE=dev
 endif
 
-.PHONY: pipeline functional-pipeline expose-pipeline
-pipeline functional-pipeline: export DUMP_PATH=${DUMP_PATH:-}
-pipeline functional-pipeline: export 5X_GIT_USER=${5X_GIT_USER:-}
-pipeline functional-pipeline: export 5X_GIT_BRANCH=${5X_GIT_BRANCH:-}
-pipeline functional-pipeline: export 6X_GIT_USER=${6X_GIT_USER:-}
-pipeline functional-pipeline: export 6X_GIT_BRANCH=${6X_GIT_BRANCH:-}
-pipeline functional-pipeline: export 7X_GIT_USER=${7X_GIT_USER:-}
-pipeline functional-pipeline: export 7X_GIT_BRANCH=${7X_GIT_BRANCH:-}
+.PHONY: pipeline pipeline7 functional-pipeline expose-pipeline
+pipeline pipeline7 functional-pipeline: export DUMP_PATH=${DUMP_PATH:-}
+pipeline pipeline7 functional-pipeline: export 5X_GIT_USER=${5X_GIT_USER:-}
+pipeline pipeline7 functional-pipeline: export 5X_GIT_BRANCH=${5X_GIT_BRANCH:-}
+pipeline pipeline7 functional-pipeline: export 6X_GIT_USER=${6X_GIT_USER:-}
+pipeline pipeline7 functional-pipeline: export 6X_GIT_BRANCH=${6X_GIT_BRANCH:-}
+pipeline pipeline7 functional-pipeline: export 7X_GIT_USER=${7X_GIT_USER:-}
+pipeline pipeline7 functional-pipeline: export 7X_GIT_BRANCH=${7X_GIT_BRANCH:-}
 pipeline:
 	mkdir -p ci/main/generated
 	cat ci/main/pipeline/1_resources_anchors_groups.yml \
@@ -216,7 +216,24 @@ pipeline:
 		ci/main/pipeline/5_multi_host_gpupgrade_jobs.yml \
 		ci/main/pipeline/6_upgrade_and_functional_jobs.yml \
 		ci/main/pipeline/7_publish_rc.yml > ci/main/generated/template.yml
-	go generate ./ci/main
+	PIPELINE_VERSION="6" go generate ./ci/main
+	#NOTE-- make sure your gpupgrade-git-remote uses an https style git"
+	#NOTE-- such as https://github.com/greenplum-db/gpupgrade.git"
+	fly -t $(FLY_TARGET) set-pipeline -p $(PIPELINE_NAME) \
+		-c ci/main/generated/pipeline.yml \
+		-v gpupgrade-git-remote=$(GIT_URI) \
+		-v gpupgrade-git-branch=$(BRANCH)
+
+pipeline7:
+	mkdir -p ci/main/generated
+	cat ci/main/pipeline/1_resources_anchors_groups.yml \
+		ci/main/pipeline/2_build_lint.yml \
+		ci/main/pipeline/3_gpupgrade_jobs.yml  \
+		ci/main/pipeline/4_pg_upgrade_jobs.yml  \
+		ci/main/pipeline/5_multi_host_gpupgrade_jobs.yml \
+		ci/main/pipeline/6_upgrade_and_functional_jobs.yml \
+		ci/main/pipeline/7_publish_rc.yml > ci/main/generated/template.yml
+	PIPELINE_VERSION="7" go generate ./ci/main
 	#NOTE-- make sure your gpupgrade-git-remote uses an https style git"
 	#NOTE-- such as https://github.com/greenplum-db/gpupgrade.git"
 	fly -t $(FLY_TARGET) set-pipeline -p $(PIPELINE_NAME) \

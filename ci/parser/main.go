@@ -25,43 +25,7 @@ import (
 	"unicode"
 )
 
-var versions = []Version{
-	{
-		Source:          "5",
-		Target:          "6",
-		Platform:        "centos6",
-		RpmVersion:      "rhel6",
-		AppendImageName: "-golang",
-	},
-	{
-		Source:          "5",
-		Target:          "6",
-		Platform:        "centos7",
-		RpmVersion:      "rhel7",
-		SpecialJobs:     true, // To avoid exploding the test matrix set specialJobs for 5->6 for only a single OS.
-		AppendImageName: "-golang",
-	},
-	{
-		Source:          "6",
-		Target:          "6",
-		Platform:        "centos7", // To avoid exploding the test matrix have 6->6 for only a single OS.
-		RpmVersion:      "rhel7",
-		AppendImageName: "-golang",
-	},
-	// {
-	// 	Source:      "6",
-	// 	Target:      "7",
-	// 	Platform:    "rocky8",
-	// 	RpmVersion:  "el8",
-	// 	SpecialJobs: true,
-	// },
-	// {
-	// 	Source:     "7",
-	// 	Target:     "7",
-	// 	Platform:   "rocky8",
-	// 	RpmVersion: "el8",
-	// },
-}
+var versions []Version
 
 type Data struct {
 	JobType                 string
@@ -78,6 +42,7 @@ type Data struct {
 var data Data
 
 func init() {
+	setJobs()
 	var majorVersions MajorVersions
 	var gpdbVersions GPDBVersions
 	var acceptanceJobs AcceptanceJobs
@@ -230,5 +195,53 @@ func main() {
 	}
 	if closeErr != nil {
 		log.Fatalf("error closing %s: %+v", pipelineFilepath, closeErr)
+	}
+}
+
+func setJobs() {
+	pipelineVersion := os.Getenv("PIPELINE_VERSION")
+	if pipelineVersion == "6" {
+		versions = []Version{
+			{
+				Source:          "5",
+				Target:          "6",
+				Platform:        "centos6",
+				RpmVersion:      "rhel6",
+				AppendImageName: "-golang",
+			},
+			{
+				Source:          "5",
+				Target:          "6",
+				Platform:        "centos7",
+				RpmVersion:      "rhel7",
+				SpecialJobs:     true, // To avoid exploding the test matrix set specialJobs for 5->6 for only a single OS.
+				AppendImageName: "-golang",
+			},
+			{
+				Source:          "6",
+				Target:          "6",
+				Platform:        "centos7", // To avoid exploding the test matrix have 6->6 for only a single OS.
+				RpmVersion:      "rhel7",
+				AppendImageName: "-golang",
+			},
+		}
+	} else if pipelineVersion == "7" {
+		versions = []Version{
+			{
+				Source:      "6",
+				Target:      "7",
+				Platform:    "rocky8",
+				RpmVersion:  "el8",
+				SpecialJobs: true,
+			},
+			{
+				Source:     "7",
+				Target:     "7",
+				Platform:   "rocky8",
+				RpmVersion: "el8",
+			},
+		}
+	} else {
+		log.Fatalf("unknown pipeline version")
 	}
 }
