@@ -54,7 +54,7 @@
           resource: plr_gpdb{{.Source}}_{{.Platform}}_gppkg
         - get: plr_gppkg_target
           resource: plr_gpdb{{.Target}}_{{.Platform}}_gppkg
-        {{- if ne .Platform "centos6" }}
+        {{- if eq .Platform "centos7" }}
         - get: pxf_rpm_source
           resource: pxf_6_gpdb{{.Source}}_{{.Platform}}_rpm
         - get: pxf_rpm_target

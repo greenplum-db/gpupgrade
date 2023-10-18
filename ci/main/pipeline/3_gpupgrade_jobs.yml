@@ -1,17 +1,19 @@
+{{range .AcceptanceJobs}}
+{{- if and (.SpecialJobs) (ne .Source .Target) }}
 - name: unit-and-integration-tests
   plan:
     - in_parallel:
         - get: gpupgrade_src
           trigger: true
         - get: gpdb_src_source
-          resource: gpdb5_src
+          resource: gpdb{{.Source}}_src
     - task: unit-and-integration-tests
       config:
         platform: linux
         image_resource:
           type: registry-image
           source:
-            repository: gcr.io/data-gpdb-public-images/gpdb6-centos7-test-golang
+            repository: gcr.io/data-gpdb-public-images/gpdb{{.Target}}-{{.Platform}}-test{{.AppendImageName}}
             tag: latest
         inputs:
           - name: gpupgrade_src
@@ -21,8 +23,8 @@
   on_failure:
     do:
       - <<: *slack_alert
+{{- end }}
 
-{{range .AcceptanceJobs}}
 - name: {{.Name}}
   plan:
     - in_parallel:
@@ -42,7 +44,7 @@
         image_resource:
           type: registry-image
           source:
-            repository: gcr.io/data-gpdb-public-images/gpdb{{.Target}}-{{.Platform}}-test-golang
+            repository: gcr.io/data-gpdb-public-images/gpdb{{.Target}}-{{.Platform}}-test{{.AppendImageName}}
             tag: latest
         inputs:
           - name: gpupgrade_src

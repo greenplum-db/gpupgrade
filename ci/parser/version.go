@@ -9,11 +9,12 @@ import (
 )
 
 type Version struct {
-	Source      string
-	Target      string
-	Platform    string
-	RpmVersion  string
-	SpecialJobs bool
+	Source          string
+	Target          string
+	Platform        string
+	RpmVersion      string
+	SpecialJobs     bool
+	AppendImageName string
 }
 
 type MajorVersions []string

@@ -27,37 +27,40 @@ import (
 
 var versions = []Version{
 	{
-		Source:     "5",
-		Target:     "6",
-		Platform:   "centos6",
-		RpmVersion: "rhel6",
+		Source:          "5",
+		Target:          "6",
+		Platform:        "centos6",
+		RpmVersion:      "rhel6",
+		AppendImageName: "-golang",
 	},
 	{
-		Source:      "5",
-		Target:      "6",
-		Platform:    "centos7",
-		RpmVersion:  "rhel7",
-		SpecialJobs: true, // To avoid exploding the test matrix set specialJobs for 5->6 for only a single OS.
+		Source:          "5",
+		Target:          "6",
+		Platform:        "centos7",
+		RpmVersion:      "rhel7",
+		SpecialJobs:     true, // To avoid exploding the test matrix set specialJobs for 5->6 for only a single OS.
+		AppendImageName: "-golang",
 	},
 	{
-		Source:     "6",
-		Target:     "6",
-		Platform:   "centos7", // To avoid exploding the test matrix have 6->6 for only a single OS.
-		RpmVersion: "rhel7",
+		Source:          "6",
+		Target:          "6",
+		Platform:        "centos7", // To avoid exploding the test matrix have 6->6 for only a single OS.
+		RpmVersion:      "rhel7",
+		AppendImageName: "-golang",
 	},
-	//{
-	//	Source:      "6",
-	//	Target:      "7",
-	//	Platform:    "rocky8",
-	//	RpmVersion:  "rhel8",
-	//	SpecialJobs: true,
-	//},
-	//{
-	//	Source:     "7",
-	//	Target:     "7",
-	//	Platform:   "rocky8",
-	//	RpmVersion: "rhel8",
-	//},
+	// {
+	// 	Source:      "6",
+	// 	Target:      "7",
+	// 	Platform:    "rocky8",
+	// 	RpmVersion:  "el8",
+	// 	SpecialJobs: true,
+	// },
+	// {
+	// 	Source:     "7",
+	// 	Target:     "7",
+	// 	Platform:   "rocky8",
+	// 	RpmVersion: "el8",
+	// },
 }
 
 type Data struct {

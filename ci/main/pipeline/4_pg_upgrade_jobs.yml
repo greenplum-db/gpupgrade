@@ -25,7 +25,7 @@
           source:
             # NOTE: Since we build isolation2 the build image OS needs to match
             # the GPDB target version we are testing.
-            repository: gcr.io/data-gpdb-public-images/gpdb{{.Target}}-{{.Platform}}-test-golang
+            repository: gcr.io/data-gpdb-public-images/gpdb{{.Target}}-{{.Platform}}-test{{.AppendImageName}}
             tag: latest
         inputs:
           - name: enterprise_rpm

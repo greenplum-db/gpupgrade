@@ -33,8 +33,13 @@ resources:
   type: git
   source:
     uri: https://github.com/greenplum-db/gpdb
+    {{if eq . "7"}}
+    branch: main
+    {{else}}
     branch: {{.}}X_STABLE
+    {{end}}
 {{end}}
+
 
 - name: retail_demo_src
   type: git
@@ -64,6 +69,18 @@ resources:
       bucket: pivotal-gpdb-concourse-resources-prod
       json_key: ((concourse-gcs-resources-service-account-key))
       regexp: server/published/gpdb{{.GPDBVersion}}/greenplum-db-{{.TestRCIdentifier}}({{escapeVersion .GPDBVersion}}.*)-{{.RpmVersion}}-x86_64.debug.rpm
+    {{ continue }}
+    {{- end }}
+    {{- if and (eq .GPDBVersion "6") (eq .Platform "rocky8") }}
+      bucket: pivotal-gpdb-concourse-resources-prod
+      json_key: ((concourse-gcs-resources-service-account-key))
+      regexp: server/published/gpdb6/greenplum-db-(.*)-rhel8-x86_64.debug.rpm
+    {{ continue }}
+    {{end}}
+    {{- if eq .GPDBVersion "7" }}
+      bucket: pivotal-gpdb-concourse-resources-prod
+      json_key: ((concourse-gcs-resources-service-account-key))
+      regexp: server/published/main/greenplum-db-(.*)-el8-x86_64.debug.rpm
     {{ continue }}
     {{- end }}
       # Releng cannot produce a release candidate RPM that once tagged produces a corresponding RPM with the correct
@@ -144,6 +161,8 @@ resources:
     versioned_file: plugin-cache.tgz
   type: s3
 
+{{range .GPDBVersions}}
+{{- if and (eq .GPDBVersion "5") (eq .Platform "centos6") }}
 - name: icw_planner_gpdb5_centos6_dump
   type: gcs
   source:
@@ -155,6 +174,8 @@ resources:
     bucket: pivotal-gpdb-concourse-resources-intermediates-prod
     json_key: ((concourse-gcs-resources-service-account-key))
     versioned_file: 5X_STABLE/icw_planner_centos6_dump/dump.sql.xz
+{{- end }}
+{{end}}
 
 - name: icw_gporca_gpdb6_centos6_dump
   type: gcs
@@ -212,12 +233,14 @@ resources:
 # supported for centos6. Thus, we can only test pxf upgrades on centos7.
 # NOTE: The resource name is _rpm even though the artifact is a tar.gz since
 # pxf SNAPSHOT builds are only available as an rpm inside a tar.gz.
+{{- if ne .Platform "rocky8" }}
 - name: pxf_6_gpdb{{.GPDBVersion}}_{{.Platform}}_rpm
   type: gcs
   source:
     json_key: ((ud/pxf/secrets/pxf-storage-service-account-key))
     bucket: data-gpdb-ud-pxf-build
     versioned_file: prod/snapshots/pxf6/pxf-gp{{.GPDBVersion}}.el{{RpmVersionNumber .RpmVersion}}.tar.gz
+{{- end }}
 
 - name: plr_gpdb{{.GPDBVersion}}_{{.Platform}}_gppkg
   type: gcs
@@ -237,7 +260,7 @@ resources:
 {{- end }}
 
 # NOTE: plcontainer is only supported for centos7. And plcontainer 2.x is only for GPDB 6X.
-{{- if eq .GPDBVersion "6" }}
+{{- if and (eq .GPDBVersion "6") (ne .Platform "rocky8") }}
 - name: plcontainer_2.x_gpdb{{.GPDBVersion}}_{{.Platform}}_gppkg
   type: gcs
   source:
