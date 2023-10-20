@@ -4,6 +4,7 @@
 package acceptance
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -505,5 +506,70 @@ func VerifyMarkerFilesOnAllSegments(t *testing.T, intermediate *greenplum.Cluste
 	for _, seg := range target.Mirrors {
 		testutils.RemotePathMustNotExist(t, seg.Hostname, filepath.Join(seg.DataDir, "source-cluster.marker"))
 		testutils.MustRemoveAllRemotely(t, seg.Hostname, filepath.Join(seg.DataDir, "source-cluster.marker"))
+	}
+}
+
+// This is a dummy extension for allowing 7X's pg_isolation2_regress to run on a
+// 6X cluster. This is needed because as of 7X, gp_toolkit is an extension that
+// pg_regress attempts to install and load on startup. To prevent this failure,
+// when running 7X's pg_isolation2_regress on a 6X cluster, we setup a dummy
+// gp_toolkit to satisfy this condition.
+func SetupDummyGpToolKit(t *testing.T, sourceVersion semver.Version) {
+	t.Helper()
+
+	if sourceVersion.Major != 6 {
+		return
+	}
+
+	content := `# Dummy gp_toolkit extension
+
+comment = 'dummy gp_toolkit for running 7X pg_isolation2_regress on 6X clusters'
+default_version = '1.0'
+schema = dummy_gp_toolkit`
+
+	dummyToolkitControlFile := fmt.Sprintf("%s/share/postgresql/extension/gp_toolkit.control", GPHOME_SOURCE)
+
+	controlFile, err := os.Create(dummyToolkitControlFile)
+	if err != nil {
+		t.Fatalf("failed to create dummy gp_toolkit control file: %v", err)
+	}
+	defer controlFile.Close()
+
+	_, err = controlFile.WriteString(content)
+	if err != nil {
+		t.Fatalf("failed to write contents of dummy gp_toolkit control file: %v", err)
+	}
+
+	err = controlFile.Sync()
+	if err != nil {
+		t.Fatalf("failed to flush contents of dummy gp_toolkit control file: %v", err)
+	}
+
+	// Attempt to create or open the file (touch the file)
+	dummyToolkitSQLFile := fmt.Sprintf("%s/share/postgresql/extension/gp_toolkit--1.0.sql", GPHOME_SOURCE)
+	sqlFile, err := os.Create(dummyToolkitSQLFile)
+	if err != nil {
+		t.Fatalf("failed to create dummy gp_toolkit sql file: %v", err)
+	}
+	defer sqlFile.Close()
+}
+
+func TeardownDummyGpToolKit(t *testing.T, sourceVersion semver.Version) {
+	t.Helper()
+
+	if sourceVersion.Major != 6 {
+		return
+	}
+
+	dummyToolkitControlFile := fmt.Sprintf("%s/share/postgresql/extension/gp_toolkit.control", GPHOME_SOURCE)
+	err := os.Remove(dummyToolkitControlFile)
+	if err != nil {
+		t.Fatalf("failed to remove dummy gp_toolkit control file: %v", err)
+	}
+
+	dummyToolkitSQLFile := fmt.Sprintf("%s/share/postgresql/extension/gp_toolkit--1.0.sql", GPHOME_SOURCE)
+	err = os.Remove(dummyToolkitSQLFile)
+	if err != nil {
+		t.Fatalf("failed to remove dummy gp_toolkit sql file: %v", err)
 	}
 }

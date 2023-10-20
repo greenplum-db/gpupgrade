@@ -5,9 +5,9 @@
 -- Create and setup non-upgradeable objects
 --------------------------------------------------------------------------------
 CREATE TABLE sample (a int);
-CREATE
+CREATE TABLE
 INSERT INTO sample SELECT i FROM generate_series(1,5) i;
-INSERT 5
+INSERT 0 5
 
 --------------------------------------------------------------------------------
 -- Assert that pg_upgrade --check correctly detects the non-upgradeable objects
@@ -19,4 +19,4 @@ INSERT 5
 -- Workaround to unblock upgrade
 --------------------------------------------------------------------------------
 DROP TABLE sample;
-DROP
+DROP TABLE

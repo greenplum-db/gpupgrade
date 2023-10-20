@@ -40,6 +40,9 @@ func Test_PgUpgrade_Migratable_Tests(t *testing.T) {
 	testutils.MustApplySQLFile(t, acceptance.GPHOME_SOURCE, acceptance.PGPORT, filepath.Join(testDir, "setup_globals.sql"))
 	defer testutils.MustApplySQLFile(t, acceptance.GPHOME_SOURCE, acceptance.PGPORT, filepath.Join(testDir, "teardown_globals.sql"))
 
+	acceptance.SetupDummyGpToolKit(t, source.Version)
+	defer acceptance.TeardownDummyGpToolKit(t, source.Version)
+
 	t.Run("migration scripts generate sql to modify non-upgradeable objects and fix pg_upgrade check errors", func(t *testing.T) {
 		acceptance.BackupDemoCluster(t, backupDir, source)
 		defer acceptance.RestoreDemoCluster(t, backupDir, source, acceptance.GetTempTargetCluster(t))
