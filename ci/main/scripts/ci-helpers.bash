@@ -107,6 +107,7 @@ install_source_GPDB_rpm_and_symlink() {
     ln -s /usr/local/greenplum-db-${version} "$GPHOME_SOURCE"
 
     chown -R gpadmin:gpadmin "$GPHOME_SOURCE"
+    chown -R gpadmin:gpadmin /usr/local/greenplum-db-${version}
 }
 
 # XXX: Setup target cluster before sourcing greenplum_path otherwise there are
@@ -121,6 +122,7 @@ install_target_GPDB_rpm_and_symlink() {
     ln -s /usr/local/greenplum-db-${version} "$GPHOME_TARGET"
 
     chown -R gpadmin:gpadmin "$GPHOME_TARGET"
+    chown -R gpadmin:gpadmin /usr/local/greenplum-db-${version}
 }
 
 create_source_cluster() {
