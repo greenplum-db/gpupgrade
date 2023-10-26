@@ -236,7 +236,7 @@ pipeline7:
 	PIPELINE_VERSION="7" go generate ./ci/main
 	#NOTE-- make sure your gpupgrade-git-remote uses an https style git"
 	#NOTE-- such as https://github.com/greenplum-db/gpupgrade.git"
-	fly -t $(FLY_TARGET) set-pipeline -p $(PIPELINE_NAME) \
+	fly -t $(FLY_TARGET) set-pipeline -p 7-$(PIPELINE_NAME) \
 		-c ci/main/generated/pipeline.yml \
 		-v gpupgrade-git-remote=$(GIT_URI) \
 		-v gpupgrade-git-branch=$(BRANCH)
