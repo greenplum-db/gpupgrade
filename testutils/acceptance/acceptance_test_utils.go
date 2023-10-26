@@ -349,6 +349,9 @@ func Isolation2_regress(t *testing.T, sourceVersion semver.Version, gphome strin
 		// https://web.archive.org/web/20220506055918/https://groups.google.com/a/greenplum.org/g/gpdb-dev/c/JN-YwjCCReY/m/0L9wBOvlAQAJ
 		env = append(env, "PYTHONPATH="+filepath.Join(GPHOME_SOURCE, "lib/python"))
 	} else {
+		MustUnsetenv(t, "PYTHONHOME")
+		MustUnsetenv(t, "PYTHONPATH")
+		MustUnsetenv(t, "LD_LIBRARY_PATH")
 		binDir = "--bindir"
 	}
 
@@ -571,5 +574,12 @@ func TeardownDummyGpToolKit(t *testing.T, sourceVersion semver.Version) {
 	err = os.Remove(dummyToolkitSQLFile)
 	if err != nil {
 		t.Fatalf("failed to remove dummy gp_toolkit sql file: %v", err)
+	}
+}
+
+func MustUnsetenv(t *testing.T, envVar string) {
+	err := os.Unsetenv(envVar)
+	if err != nil {
+		t.Fatalf("must unset environment variable $%s: %v", envVar, err)
 	}
 }
