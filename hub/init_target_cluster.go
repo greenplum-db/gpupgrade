@@ -88,6 +88,7 @@ func InitTargetCluster(stream step.OutStreams, intermediate *greenplum.Cluster) 
 		"HOME",
 		"USER",
 		"LOGNAME",
+		"LANG",
 	})
 
 	args := []string{"-a", "-I", utils.GetInitsystemConfig()}
