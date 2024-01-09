@@ -1,1 +1,3 @@
-test: sample system_defined_types
+test: sample 
+test: system_defined_types
+test: reg_data_types
