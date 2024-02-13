@@ -3,3 +3,4 @@ test: system_defined_types
 test: reg_data_types
 test: sql_identifier_types
 test: unknown_types
+test: views_with_removed_operators
