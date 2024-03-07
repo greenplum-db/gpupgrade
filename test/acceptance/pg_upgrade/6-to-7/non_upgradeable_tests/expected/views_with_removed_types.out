@@ -1,0 +1,107 @@
+-- Copyright (c) 2017-2024 VMware, Inc. or its affiliates
+-- SPDX-License-Identifier: Apache-2.0
+
+--------------------------------------------------------------------------------
+-- Create and setup non-upgradeable objects
+--------------------------------------------------------------------------------
+
+DROP SCHEMA IF EXISTS removed_types CASCADE;
+DROP SCHEMA
+CREATE SCHEMA removed_types;
+CREATE SCHEMA
+SET search_path to removed_types;
+SET
+
+CREATE VIEW v01 AS SELECT NULL::gp_toolkit.gp_size_of_partition_and_indexes_disk;
+CREATE VIEW
+CREATE VIEW v02 AS SELECT NULL::gp_toolkit.__gp_user_data_tables;
+CREATE VIEW
+CREATE VIEW v03 AS SELECT NULL::pg_catalog._abstime;
+CREATE VIEW
+CREATE VIEW v04 AS SELECT NULL::pg_catalog.abstime;
+CREATE VIEW
+CREATE VIEW v05 AS SELECT NULL::pg_catalog.pg_partition;
+CREATE VIEW
+CREATE VIEW v06 AS SELECT NULL::pg_catalog.pg_partition_columns;
+CREATE VIEW
+CREATE VIEW v07 AS SELECT NULL::pg_catalog.pg_partition_encoding;
+CREATE VIEW
+CREATE VIEW v08 AS SELECT NULL::pg_catalog.pg_partition_rule;
+CREATE VIEW
+CREATE VIEW v09 AS SELECT NULL::pg_catalog.pg_partitions;
+CREATE VIEW
+CREATE VIEW v10 AS SELECT NULL::pg_catalog.pg_partition_templates;
+CREATE VIEW
+CREATE VIEW v11 AS SELECT NULL::pg_catalog.pg_stat_partition_operations;
+CREATE VIEW
+CREATE VIEW v12 AS SELECT NULL::pg_catalog._reltime;
+CREATE VIEW
+CREATE VIEW v13 AS SELECT NULL::pg_catalog.reltime;
+CREATE VIEW
+CREATE VIEW v14 AS SELECT NULL::pg_catalog.smgr;
+CREATE VIEW
+CREATE VIEW v15 AS SELECT NULL::pg_catalog._tinterval;
+CREATE VIEW
+CREATE VIEW v16 AS SELECT NULL::pg_catalog.tinterval;
+CREATE VIEW
+
+---------------------------------------------------------------------------------
+--- Assert that pg_upgrade --check correctly detects the non-upgradeable objects
+---------------------------------------------------------------------------------
+!\retcode gpupgrade initialize --source-gphome="${GPHOME_SOURCE}" --target-gphome=${GPHOME_TARGET} --source-master-port=${PGPORT} --disk-free-ratio 0 --non-interactive;
+(exited with code 1)
+! cat ~/gpAdminLogs/gpupgrade/pg_upgrade/p-1/views_with_removed_types.txt;
+Database: isolation2test
+  removed_types.v01
+  removed_types.v02
+  removed_types.v03
+  removed_types.v04
+  removed_types.v05
+  removed_types.v06
+  removed_types.v07
+  removed_types.v08
+  removed_types.v09
+  removed_types.v10
+  removed_types.v11
+  removed_types.v12
+  removed_types.v13
+  removed_types.v14
+  removed_types.v15
+  removed_types.v16
+
+
+---------------------------------------------------------------------------------
+--- Cleanup
+---------------------------------------------------------------------------------
+DROP VIEW v16;
+DROP VIEW
+DROP VIEW v15;
+DROP VIEW
+DROP VIEW v14;
+DROP VIEW
+DROP VIEW v13;
+DROP VIEW
+DROP VIEW v12;
+DROP VIEW
+DROP VIEW v11;
+DROP VIEW
+DROP VIEW v10;
+DROP VIEW
+DROP VIEW v09;
+DROP VIEW
+DROP VIEW v08;
+DROP VIEW
+DROP VIEW v07;
+DROP VIEW
+DROP VIEW v06;
+DROP VIEW
+DROP VIEW v05;
+DROP VIEW
+DROP VIEW v04;
+DROP VIEW
+DROP VIEW v03;
+DROP VIEW
+DROP VIEW v02;
+DROP VIEW
+DROP VIEW v01;
+DROP VIEW
