@@ -6,3 +6,4 @@ test: unknown_types
 test: views_with_removed_operators
 test: views_with_removed_functions
 test: views_with_removed_types
+test: disallowed_pg_operator
