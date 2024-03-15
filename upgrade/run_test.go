@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -64,7 +65,7 @@ func TestRun(t *testing.T) {
 		utils.System.MkdirAll = func(path string, perms os.FileMode) error {
 			called = true
 
-			expected, err := utils.GetPgUpgradeDir(greenplum.MirrorRole, 3)
+			expected, err := utils.GetPgUpgradeDir(greenplum.MirrorRole, 3, "RandomTimestamp")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -82,9 +83,10 @@ func TestRun(t *testing.T) {
 		defer upgrade.ResetPgUpgradeCommand()
 
 		opts := &idl.PgOptions{
-			Role:          greenplum.MirrorRole,
-			ContentID:     3,
-			TargetVersion: "6.20.0",
+			Role:               greenplum.MirrorRole,
+			ContentID:          3,
+			TargetVersion:      "6.20.0",
+			PgUpgradeTimestamp: "RandomTimestamp",
 		}
 
 		err := upgrade.Run(nil, nil, opts)
@@ -98,7 +100,7 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("does not fail if the pg_upgrade working directory already exists", func(t *testing.T) {
-		expected, err := utils.GetPgUpgradeDir(greenplum.MirrorRole, 3)
+		expected, err := utils.GetPgUpgradeDir(greenplum.MirrorRole, 3, "RandomTimestamp")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -109,9 +111,10 @@ func TestRun(t *testing.T) {
 		defer upgrade.ResetPgUpgradeCommand()
 
 		opts := &idl.PgOptions{
-			Role:          greenplum.MirrorRole,
-			ContentID:     3,
-			TargetVersion: "6.20.0",
+			Role:               greenplum.MirrorRole,
+			ContentID:          3,
+			TargetVersion:      "6.20.0",
+			PgUpgradeTimestamp: "RandomTimestamp",
 		}
 
 		err = upgrade.Run(nil, nil, opts)
@@ -160,9 +163,10 @@ func TestRun(t *testing.T) {
 		stderr := new(bytes.Buffer)
 
 		opts := &idl.PgOptions{
-			Role:          greenplum.MirrorRole,
-			ContentID:     3,
-			TargetVersion: "6.20.0",
+			Role:               greenplum.MirrorRole,
+			ContentID:          3,
+			TargetVersion:      "6.20.0",
+			PgUpgradeTimestamp: "RandomTimestamp",
 		}
 		err := upgrade.Run(stdout, stderr, opts)
 		if err != nil {
@@ -188,16 +192,17 @@ func TestRun(t *testing.T) {
 		stdout := new(bytes.Buffer)
 
 		opts := &idl.PgOptions{
-			Role:          greenplum.MirrorRole,
-			ContentID:     3,
-			TargetVersion: "6.20.0",
+			Role:               greenplum.MirrorRole,
+			ContentID:          3,
+			TargetVersion:      "6.20.0",
+			PgUpgradeTimestamp: "RandomTimestamp",
 		}
 		err := upgrade.Run(stdout, nil, opts)
 		if err != nil {
 			t.Fatalf("unexpected error %+v", err)
 		}
 
-		expected, err := utils.GetPgUpgradeDir(greenplum.MirrorRole, 3)
+		expected, err := utils.GetPgUpgradeDir(greenplum.MirrorRole, 3, "RandomTimestamp")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -223,9 +228,10 @@ func TestRun(t *testing.T) {
 		stdout := new(bytes.Buffer)
 
 		opts := &idl.PgOptions{
-			Role:          greenplum.MirrorRole,
-			ContentID:     3,
-			TargetVersion: "6.20.0",
+			Role:               greenplum.MirrorRole,
+			ContentID:          3,
+			TargetVersion:      "6.20.0",
+			PgUpgradeTimestamp: "RandomTimestamp",
 		}
 		err := upgrade.Run(stdout, nil, opts)
 		if err != nil {
@@ -253,9 +259,10 @@ func TestRun(t *testing.T) {
 		defer upgrade.ResetPgUpgradeCommand()
 
 		opts := &idl.PgOptions{
-			Role:          greenplum.MirrorRole,
-			ContentID:     3,
-			TargetVersion: "6.20.0",
+			Role:               greenplum.MirrorRole,
+			ContentID:          3,
+			TargetVersion:      "6.20.0",
+			PgUpgradeTimestamp: "RandomTimestamp",
 		}
 
 		err := upgrade.Run(nil, nil, opts)
@@ -270,6 +277,10 @@ func TestRun(t *testing.T) {
 	})
 
 	backupDir := "/data/.gpupgrade"
+	logDir, err := utils.GetLogDir()
+	if err != nil {
+		t.Errorf("got error when retrieving log directory: %s", err)
+	}
 
 	cases := []struct {
 		name         string
@@ -289,12 +300,14 @@ func TestRun(t *testing.T) {
 				"--new-port", "7890",
 				"--mode", "dispatcher",
 				"--jobs", "",
+				"--output-dir", filepath.Join(logDir, "pg_upgrade_RandomTimestamp", "p3"),
 				"--verbose",
 				"--check", "--continue-check-on-fatal",
 				"--link",
 				"--old-options", "-x 2",
 				"--old-gp-dbid", "88",
-				"--new-gp-dbid", "99"},
+				"--new-gp-dbid", "99",
+			},
 			opts: &idl.PgOptions{
 				BackupDir:        backupDir,
 				PgUpgradeVerbose: true,
@@ -316,6 +329,7 @@ func TestRun(t *testing.T) {
 				Tablespaces: map[int32]*idl.TablespaceInfo{
 					1663: {Location: "/tmp/primary1/1663", UserDefined: false},
 					1664: {Location: "/tmp/primary1/1664", UserDefined: true}},
+				PgUpgradeTimestamp: "RandomTimestamp",
 			},
 		},
 		{
@@ -330,16 +344,19 @@ func TestRun(t *testing.T) {
 				"--new-port", "",
 				"--mode", "unknown_pgUpgradeMode",
 				"--jobs", "",
+				"--output-dir", filepath.Join(logDir, "pg_upgrade_RandomTimestamp", "p3"),
 				"--verbose",
 				"--old-tablespaces-file", utils.GetOldTablespacesFile(backupDir),
 				"--old-gp-dbid", "",
-				"--new-gp-dbid", ""},
+				"--new-gp-dbid", "",
+			},
 			opts: &idl.PgOptions{
-				BackupDir:        backupDir,
-				PgUpgradeVerbose: true,
-				Role:             greenplum.PrimaryRole,
-				ContentID:        3,
-				TargetVersion:    "6.20.0",
+				BackupDir:          backupDir,
+				PgUpgradeVerbose:   true,
+				Role:               greenplum.PrimaryRole,
+				ContentID:          3,
+				TargetVersion:      "6.20.0",
+				PgUpgradeTimestamp: "RandomTimestamp",
 			},
 		},
 		{
@@ -354,14 +371,17 @@ func TestRun(t *testing.T) {
 				"--new-port", "",
 				"--mode", "unknown_pgUpgradeMode",
 				"--jobs", "",
+				"--output-dir", filepath.Join(logDir, "pg_upgrade_RandomTimestamp", "p3"),
 				"--old-tablespaces-file", utils.GetOldTablespacesFile(backupDir),
 				"--old-gp-dbid", "",
-				"--new-gp-dbid", ""},
+				"--new-gp-dbid", "",
+			},
 			opts: &idl.PgOptions{
-				BackupDir:     backupDir,
-				Role:          greenplum.PrimaryRole,
-				ContentID:     3,
-				TargetVersion: "6.20.0",
+				BackupDir:          backupDir,
+				Role:               greenplum.PrimaryRole,
+				ContentID:          3,
+				TargetVersion:      "6.20.0",
+				PgUpgradeTimestamp: "RandomTimestamp",
 			},
 		},
 		{
@@ -376,15 +396,18 @@ func TestRun(t *testing.T) {
 				"--new-port", "",
 				"--mode", "unknown_pgUpgradeMode",
 				"--jobs", "",
+				"--output-dir", filepath.Join(logDir, "pg_upgrade_RandomTimestamp", "p3"),
 				"--old-tablespaces-file", utils.GetOldTablespacesFile(backupDir),
 				"--old-gp-dbid", "",
-				"--new-gp-dbid", ""},
+				"--new-gp-dbid", "",
+			},
 			opts: &idl.PgOptions{
-				BackupDir:        backupDir,
-				PgUpgradeVerbose: false,
-				Role:             greenplum.PrimaryRole,
-				ContentID:        3,
-				TargetVersion:    "6.20.0",
+				BackupDir:          backupDir,
+				PgUpgradeVerbose:   false,
+				Role:               greenplum.PrimaryRole,
+				ContentID:          3,
+				TargetVersion:      "6.20.0",
+				PgUpgradeTimestamp: "RandomTimestamp",
 			},
 		},
 		{
@@ -399,11 +422,13 @@ func TestRun(t *testing.T) {
 				"--new-port", "",
 				"--mode", "unknown_pgUpgradeMode",
 				"--jobs", "",
+				"--output-dir", filepath.Join(logDir, "pg_upgrade_RandomTimestamp", "p3"),
 				"--verbose",
 				"--skip-checks",
 				"--old-tablespaces-file", utils.GetOldTablespacesFile(backupDir),
 				"--old-gp-dbid", "",
-				"--new-gp-dbid", ""},
+				"--new-gp-dbid", "",
+			},
 			opts: &idl.PgOptions{
 				BackupDir:           backupDir,
 				PgUpgradeVerbose:    true,
@@ -411,6 +436,7 @@ func TestRun(t *testing.T) {
 				Role:                greenplum.PrimaryRole,
 				ContentID:           3,
 				TargetVersion:       "6.20.0",
+				PgUpgradeTimestamp:  "RandomTimestamp",
 			},
 		},
 		{
@@ -425,14 +451,17 @@ func TestRun(t *testing.T) {
 				"--new-port", "",
 				"--mode", "unknown_pgUpgradeMode",
 				"--jobs", "",
+				"--output-dir", filepath.Join(logDir, "pg_upgrade_RandomTimestamp", "p3"),
 				"--old-tablespaces-file", utils.GetOldTablespacesFile(backupDir),
 				"--old-gp-dbid", "",
-				"--new-gp-dbid", ""},
+				"--new-gp-dbid", "",
+			},
 			opts: &idl.PgOptions{
-				BackupDir:     backupDir,
-				Role:          greenplum.PrimaryRole,
-				ContentID:     3,
-				TargetVersion: "6.20.0",
+				BackupDir:          backupDir,
+				Role:               greenplum.PrimaryRole,
+				ContentID:          3,
+				TargetVersion:      "6.20.0",
+				PgUpgradeTimestamp: "RandomTimestamp",
 			},
 		},
 		{
@@ -447,9 +476,11 @@ func TestRun(t *testing.T) {
 				"--new-port", "",
 				"--mode", "unknown_pgUpgradeMode",
 				"--jobs", "",
+				"--output-dir", filepath.Join(logDir, "pg_upgrade_RandomTimestamp", "p3"),
 				"--old-tablespaces-file", utils.GetOldTablespacesFile(backupDir),
 				"--old-gp-dbid", "",
-				"--new-gp-dbid", ""},
+				"--new-gp-dbid", "",
+			},
 			opts: &idl.PgOptions{
 				BackupDir:           backupDir,
 				PgUpgradeVerbose:    false,
@@ -457,6 +488,7 @@ func TestRun(t *testing.T) {
 				Role:                greenplum.PrimaryRole,
 				ContentID:           3,
 				TargetVersion:       "6.20.0",
+				PgUpgradeTimestamp:  "RandomTimestamp",
 			},
 		},
 		{
@@ -471,15 +503,18 @@ func TestRun(t *testing.T) {
 				"--new-port", "",
 				"--mode", "unknown_pgUpgradeMode",
 				"--jobs", "",
+				"--output-dir", filepath.Join(logDir, "pg_upgrade_RandomTimestamp", "p3"),
 				"--check", "--continue-check-on-fatal",
 				"--old-gp-dbid", "",
-				"--new-gp-dbid", ""},
+				"--new-gp-dbid", "",
+			},
 			opts: &idl.PgOptions{
-				BackupDir:     backupDir,
-				Role:          greenplum.PrimaryRole,
-				ContentID:     3,
-				Action:        idl.PgOptions_check,
-				TargetVersion: "6.20.0",
+				BackupDir:          backupDir,
+				Role:               greenplum.PrimaryRole,
+				ContentID:          3,
+				Action:             idl.PgOptions_check,
+				TargetVersion:      "6.20.0",
+				PgUpgradeTimestamp: "RandomTimestamp",
 			},
 		},
 		{
@@ -494,15 +529,18 @@ func TestRun(t *testing.T) {
 				"--new-port", "",
 				"--mode", "unknown_pgUpgradeMode",
 				"--jobs", "",
+				"--output-dir", filepath.Join(logDir, "pg_upgrade_RandomTimestamp", "p3"),
 				"--old-tablespaces-file", utils.GetOldTablespacesFile(backupDir),
 				"--old-gp-dbid", "",
-				"--new-gp-dbid", ""},
+				"--new-gp-dbid", "",
+			},
 			opts: &idl.PgOptions{
-				BackupDir:     backupDir,
-				Role:          greenplum.PrimaryRole,
-				ContentID:     3,
-				Action:        idl.PgOptions_upgrade,
-				TargetVersion: "6.20.0",
+				BackupDir:          backupDir,
+				Role:               greenplum.PrimaryRole,
+				ContentID:          3,
+				Action:             idl.PgOptions_upgrade,
+				TargetVersion:      "6.20.0",
+				PgUpgradeTimestamp: "RandomTimestamp",
 			},
 		},
 		{
@@ -517,16 +555,19 @@ func TestRun(t *testing.T) {
 				"--new-port", "",
 				"--mode", "unknown_pgUpgradeMode",
 				"--jobs", "",
+				"--output-dir", filepath.Join(logDir, "pg_upgrade_RandomTimestamp", "p3"),
 				"--link",
 				"--old-tablespaces-file", utils.GetOldTablespacesFile(backupDir),
 				"--old-gp-dbid", "",
-				"--new-gp-dbid", ""},
+				"--new-gp-dbid", "",
+			},
 			opts: &idl.PgOptions{
-				BackupDir:     backupDir,
-				Role:          greenplum.PrimaryRole,
-				ContentID:     3,
-				Mode:          idl.Mode_link,
-				TargetVersion: "6.20.0",
+				BackupDir:          backupDir,
+				Role:               greenplum.PrimaryRole,
+				ContentID:          3,
+				Mode:               idl.Mode_link,
+				TargetVersion:      "6.20.0",
+				PgUpgradeTimestamp: "RandomTimestamp",
 			},
 		},
 		{
@@ -541,15 +582,18 @@ func TestRun(t *testing.T) {
 				"--new-port", "",
 				"--mode", "unknown_pgUpgradeMode",
 				"--jobs", "",
+				"--output-dir", filepath.Join(logDir, "pg_upgrade_RandomTimestamp", "p3"),
 				"--old-tablespaces-file", utils.GetOldTablespacesFile(backupDir),
 				"--old-gp-dbid", "",
-				"--new-gp-dbid", ""},
+				"--new-gp-dbid", "",
+			},
 			opts: &idl.PgOptions{
-				BackupDir:     backupDir,
-				Role:          greenplum.PrimaryRole,
-				ContentID:     3,
-				Mode:          idl.Mode_copy,
-				TargetVersion: "6.20.0",
+				BackupDir:          backupDir,
+				Role:               greenplum.PrimaryRole,
+				ContentID:          3,
+				Mode:               idl.Mode_copy,
+				TargetVersion:      "6.20.0",
+				PgUpgradeTimestamp: "RandomTimestamp",
 			},
 		},
 		{
@@ -564,15 +608,18 @@ func TestRun(t *testing.T) {
 				"--new-port", "",
 				"--mode", "unknown_pgUpgradeMode",
 				"--jobs", "",
+				"--output-dir", filepath.Join(logDir, "pg_upgrade_RandomTimestamp", "p-1"),
 				"--check", "--continue-check-on-fatal",
 				"--old-gp-dbid", "",
-				"--new-gp-dbid", ""},
+				"--new-gp-dbid", "",
+			},
 			opts: &idl.PgOptions{
-				BackupDir:     backupDir,
-				Role:          greenplum.PrimaryRole,
-				ContentID:     -1,
-				Action:        idl.PgOptions_check,
-				TargetVersion: "6.20.0",
+				BackupDir:          backupDir,
+				Role:               greenplum.PrimaryRole,
+				ContentID:          -1,
+				Action:             idl.PgOptions_check,
+				TargetVersion:      "6.20.0",
+				PgUpgradeTimestamp: "RandomTimestamp",
 			},
 		},
 		{
@@ -587,15 +634,18 @@ func TestRun(t *testing.T) {
 				"--new-port", "",
 				"--mode", "unknown_pgUpgradeMode",
 				"--jobs", "",
+				"--output-dir", filepath.Join(logDir, "pg_upgrade_RandomTimestamp", "p3"),
 				"--old-tablespaces-file", utils.GetOldTablespacesFile(backupDir),
 				"--old-gp-dbid", "",
-				"--new-gp-dbid", ""},
+				"--new-gp-dbid", "",
+			},
 			opts: &idl.PgOptions{
-				BackupDir:     backupDir,
-				Role:          greenplum.PrimaryRole,
-				ContentID:     3,
-				Action:        idl.PgOptions_upgrade,
-				TargetVersion: "6.20.0",
+				BackupDir:          backupDir,
+				Role:               greenplum.PrimaryRole,
+				ContentID:          3,
+				Action:             idl.PgOptions_upgrade,
+				TargetVersion:      "6.20.0",
+				PgUpgradeTimestamp: "RandomTimestamp",
 			},
 		},
 		{
@@ -610,17 +660,20 @@ func TestRun(t *testing.T) {
 				"--new-port", "",
 				"--mode", "unknown_pgUpgradeMode",
 				"--jobs", "",
+				"--output-dir", filepath.Join(logDir, "pg_upgrade_RandomTimestamp", "p3"),
 				"--old-tablespaces-file", utils.GetOldTablespacesFile(backupDir),
 				"--old-gp-dbid", "0",
-				"--new-gp-dbid", "1"},
+				"--new-gp-dbid", "1",
+			},
 			opts: &idl.PgOptions{
-				BackupDir:     backupDir,
-				Role:          greenplum.PrimaryRole,
-				ContentID:     3,
-				Mode:          idl.Mode_copy,
-				TargetVersion: "6.20.0",
-				OldDBID:       "0",
-				NewDBID:       "1",
+				BackupDir:          backupDir,
+				Role:               greenplum.PrimaryRole,
+				ContentID:          3,
+				Mode:               idl.Mode_copy,
+				TargetVersion:      "6.20.0",
+				OldDBID:            "0",
+				NewDBID:            "1",
+				PgUpgradeTimestamp: "RandomTimestamp",
 			},
 		},
 		{
@@ -634,15 +687,18 @@ func TestRun(t *testing.T) {
 				"--old-port", "",
 				"--new-port", "",
 				"--mode", "unknown_pgUpgradeMode",
-				"--jobs", ""},
+				"--jobs", "",
+				"--output-dir", filepath.Join(logDir, "pg_upgrade_RandomTimestamp", "p3"),
+			},
 			opts: &idl.PgOptions{
-				BackupDir:     backupDir,
-				Role:          greenplum.PrimaryRole,
-				ContentID:     3,
-				Mode:          idl.Mode_copy,
-				TargetVersion: "7.1.0",
-				OldDBID:       "0",
-				NewDBID:       "1",
+				BackupDir:          backupDir,
+				Role:               greenplum.PrimaryRole,
+				ContentID:          3,
+				Mode:               idl.Mode_copy,
+				TargetVersion:      "7.1.0",
+				OldDBID:            "0",
+				NewDBID:            "1",
+				PgUpgradeTimestamp: "RandomTimestamp",
 			},
 		},
 		{
@@ -657,14 +713,17 @@ func TestRun(t *testing.T) {
 				"--new-port", "",
 				"--mode", "unknown_pgUpgradeMode",
 				"--jobs", "",
+				"--output-dir", filepath.Join(logDir, "pg_upgrade_RandomTimestamp", "p3"),
 				"--old-tablespaces-file", utils.GetOldTablespacesFile(backupDir),
 				"--old-gp-dbid", "",
-				"--new-gp-dbid", ""},
+				"--new-gp-dbid", "",
+			},
 			opts: &idl.PgOptions{
-				BackupDir:     backupDir,
-				Role:          greenplum.PrimaryRole,
-				ContentID:     3,
-				TargetVersion: "6.20.0",
+				BackupDir:          backupDir,
+				Role:               greenplum.PrimaryRole,
+				ContentID:          3,
+				TargetVersion:      "6.20.0",
+				PgUpgradeTimestamp: "RandomTimestamp",
 			},
 		},
 		{
@@ -679,15 +738,18 @@ func TestRun(t *testing.T) {
 				"--new-port", "",
 				"--mode", "unknown_pgUpgradeMode",
 				"--jobs", "123",
+				"--output-dir", filepath.Join(logDir, "pg_upgrade_RandomTimestamp", "p3"),
 				"--old-tablespaces-file", utils.GetOldTablespacesFile(backupDir),
 				"--old-gp-dbid", "",
-				"--new-gp-dbid", ""},
+				"--new-gp-dbid", "",
+			},
 			opts: &idl.PgOptions{
-				BackupDir:     backupDir,
-				Role:          greenplum.PrimaryRole,
-				ContentID:     3,
-				TargetVersion: "6.20.0",
-				PgUpgradeJobs: "123",
+				BackupDir:          backupDir,
+				Role:               greenplum.PrimaryRole,
+				ContentID:          3,
+				TargetVersion:      "6.20.0",
+				PgUpgradeJobs:      "123",
+				PgUpgradeTimestamp: "RandomTimestamp",
 			},
 		},
 	}

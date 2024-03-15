@@ -30,7 +30,7 @@ CREATE VIEW v16 AS SELECT NULL::pg_catalog.tinterval;
 --- Assert that pg_upgrade --check correctly detects the non-upgradeable objects
 ---------------------------------------------------------------------------------
 !\retcode gpupgrade initialize --source-gphome="${GPHOME_SOURCE}" --target-gphome=${GPHOME_TARGET} --source-master-port=${PGPORT} --disk-free-ratio 0 --non-interactive;
-! cat ~/gpAdminLogs/gpupgrade/pg_upgrade/p-1/views_with_removed_types.txt;
+! find $(ls -dt ~/gpAdminLogs/gpupgrade/pg_upgrade_*/ | head -1) -name "views_with_removed_types.txt" -exec cat {} +;
 
 ---------------------------------------------------------------------------------
 --- Cleanup

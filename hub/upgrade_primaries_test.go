@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"sort"
 	"testing"
+	"time"
 
 	"github.com/blang/semver/v4"
 	"github.com/golang/mock/gomock"
@@ -57,6 +58,9 @@ func TestUpgradePrimaries(t *testing.T) {
 	intermediate.GPHome = "/usr/local/gpdb6"
 	intermediate.Version = semver.MustParse("6.0.0")
 
+	now := time.Now()
+	pgUpgradeTimestamp := now.Format(hub.TimeStringFormat)
+
 	backupDirs, err := backupdir.ParseParentBackupDirs("", *source)
 	if err != nil {
 		t.Fatal(err)
@@ -92,6 +96,7 @@ func TestUpgradePrimaries(t *testing.T) {
 						NewPort:             "60434",
 						NewDBID:             "3",
 						Tablespaces:         nil,
+						PgUpgradeTimestamp:  pgUpgradeTimestamp,
 					},
 					{
 						BackupDir:           backupDirs.AgentHostsToBackupDir["sdw1"],
@@ -113,6 +118,7 @@ func TestUpgradePrimaries(t *testing.T) {
 						NewPort:             "60438",
 						NewDBID:             "7",
 						Tablespaces:         nil,
+						PgUpgradeTimestamp:  pgUpgradeTimestamp,
 					},
 				},
 			}),
@@ -144,6 +150,7 @@ func TestUpgradePrimaries(t *testing.T) {
 						NewPort:             "60436",
 						NewDBID:             "5",
 						Tablespaces:         nil,
+						PgUpgradeTimestamp:  pgUpgradeTimestamp,
 					},
 					{
 						BackupDir:           backupDirs.AgentHostsToBackupDir["sdw2"],
@@ -165,6 +172,7 @@ func TestUpgradePrimaries(t *testing.T) {
 						NewPort:             "60440",
 						NewDBID:             "9",
 						Tablespaces:         nil,
+						PgUpgradeTimestamp:  pgUpgradeTimestamp,
 					},
 				},
 			}),
@@ -175,7 +183,7 @@ func TestUpgradePrimaries(t *testing.T) {
 			{AgentClient: sdw2, Hostname: "sdw2"},
 		}
 
-		err := hub.UpgradePrimaries(agentConns, backupDirs.AgentHostsToBackupDir, true, true, 1, source, intermediate, idl.PgOptions_check, idl.Mode_copy)
+		err := hub.UpgradePrimaries(agentConns, backupDirs.AgentHostsToBackupDir, true, true, 1, source, intermediate, idl.PgOptions_check, idl.Mode_copy, pgUpgradeTimestamp)
 		if err != nil {
 			t.Errorf("unexpected err %#v", err)
 		}
@@ -221,7 +229,7 @@ func TestUpgradePrimaries(t *testing.T) {
 				{AgentClient: sdw2, Hostname: "sdw2"},
 			}
 
-			err := hub.UpgradePrimaries(agentConns, backupDirs.AgentHostsToBackupDir, false, false, 1, source, intermediate, c.Action, idl.Mode_link)
+			err := hub.UpgradePrimaries(agentConns, backupDirs.AgentHostsToBackupDir, false, false, 1, source, intermediate, c.Action, idl.Mode_link, pgUpgradeTimestamp)
 			var errs errorlist.Errors
 			if !errors.As(err, &errs) {
 				t.Fatalf("error %#v does not contain type %T", err, errs)

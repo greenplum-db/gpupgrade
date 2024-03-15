@@ -59,6 +59,7 @@ message PgOptions {
   string newPort = 18;
   string newDBID = 19;
   map<int32, TablespaceInfo> Tablespaces = 20;
+  string pgUpgradeTimeStamp = 21;
 }
 
 message TablespaceInfo {

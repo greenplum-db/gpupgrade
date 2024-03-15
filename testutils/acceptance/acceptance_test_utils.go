@@ -397,7 +397,7 @@ func Jq(t *testing.T, file string, args ...string) string {
 func MustGetPgUpgradeLog(t *testing.T, contentID int32) string {
 	t.Helper()
 
-	dir, err := utils.GetPgUpgradeDir(greenplum.PrimaryRole, contentID)
+	dir, err := utils.GetPgUpgradeDir(greenplum.PrimaryRole, contentID, "RandomTimestamp")
 	if err != nil {
 		t.Fatalf("unexpected err: %v", err)
 	}

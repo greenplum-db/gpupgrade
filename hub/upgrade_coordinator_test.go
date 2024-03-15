@@ -14,6 +14,7 @@ import (
 	"strings"
 	"syscall"
 	"testing"
+	"time"
 
 	"github.com/blang/semver/v4"
 
@@ -90,7 +91,9 @@ func init() {
 func TestUpgradeCoordinator(t *testing.T) {
 	testlog.SetupTestLogger()
 
-	pgUpgradeDir, err := utils.GetPgUpgradeDir(greenplum.PrimaryRole, -1)
+	now := time.Now()
+	pgUpgradeTimestamp := now.Format(hub.TimeStringFormat)
+	pgUpgradeDir, err := utils.GetPgUpgradeDir(greenplum.PrimaryRole, -1, pgUpgradeTimestamp)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +123,7 @@ func TestUpgradeCoordinator(t *testing.T) {
 		defer rsync.ResetRsyncCommand()
 
 		streams := new(step.BufferedStreams)
-		err := hub.UpgradeCoordinator(streams, backupDirs.CoordinatorBackupDir, false, false, 1, source, intermediate, idl.PgOptions_check, idl.Mode_copy)
+		err := hub.UpgradeCoordinator(streams, backupDirs.CoordinatorBackupDir, false, false, 1, source, intermediate, idl.PgOptions_check, idl.Mode_copy, pgUpgradeTimestamp)
 		if err != nil {
 			t.Fatalf("unexpected error %+v", err)
 		}
@@ -150,7 +153,7 @@ func TestUpgradeCoordinator(t *testing.T) {
 
 		source.Version = semver.MustParse("5.28.0")
 
-		err := hub.UpgradeCoordinator(step.DevNullStream, backupDirs.CoordinatorBackupDir, false, false, 1, source, intermediate, idl.PgOptions_check, idl.Mode_copy)
+		err := hub.UpgradeCoordinator(step.DevNullStream, backupDirs.CoordinatorBackupDir, false, false, 1, source, intermediate, idl.PgOptions_check, idl.Mode_copy, pgUpgradeTimestamp)
 		if err != nil {
 			t.Fatalf("unexpected error %+v", err)
 		}
@@ -171,7 +174,7 @@ func TestUpgradeCoordinator(t *testing.T) {
 
 		source.Version = semver.MustParse("6.10.0")
 
-		err := hub.UpgradeCoordinator(step.DevNullStream, backupDirs.CoordinatorBackupDir, false, false, 1, source, intermediate, idl.PgOptions_check, idl.Mode_copy)
+		err := hub.UpgradeCoordinator(step.DevNullStream, backupDirs.CoordinatorBackupDir, false, false, 1, source, intermediate, idl.PgOptions_check, idl.Mode_copy, pgUpgradeTimestamp)
 		if err != nil {
 			t.Fatalf("unexpected error %+v", err)
 		}
@@ -187,7 +190,7 @@ func TestUpgradeCoordinator(t *testing.T) {
 		}))
 		defer rsync.ResetRsyncCommand()
 
-		err := hub.UpgradeCoordinator(step.DevNullStream, backupDirs.CoordinatorBackupDir, false, false, 1, source, intermediate, idl.PgOptions_check, idl.Mode_copy)
+		err := hub.UpgradeCoordinator(step.DevNullStream, backupDirs.CoordinatorBackupDir, false, false, 1, source, intermediate, idl.PgOptions_check, idl.Mode_copy, pgUpgradeTimestamp)
 		if err != nil {
 			t.Fatalf("unexpected error %+v", err)
 		}
@@ -204,7 +207,7 @@ func TestUpgradeCoordinator(t *testing.T) {
 		rsync.SetRsyncCommand(exectest.NewCommand(hub.Failure))
 		defer rsync.ResetRsyncCommand()
 
-		err := hub.UpgradeCoordinator(step.DevNullStream, backupDirs.CoordinatorBackupDir, false, false, 1, source, intermediate, idl.PgOptions_upgrade, idl.Mode_copy)
+		err := hub.UpgradeCoordinator(step.DevNullStream, backupDirs.CoordinatorBackupDir, false, false, 1, source, intermediate, idl.PgOptions_upgrade, idl.Mode_copy, pgUpgradeTimestamp)
 		var actual *exec.ExitError
 		if !errors.As(err, &actual) {
 			t.Fatalf("got %#v want ExitError", err)
@@ -255,7 +258,7 @@ func TestUpgradeCoordinator(t *testing.T) {
 		}))
 		defer rsync.ResetRsyncCommand()
 
-		err := hub.UpgradeCoordinator(step.DevNullStream, backupDirs.CoordinatorBackupDir, false, false, 1, source, intermediate, idl.PgOptions_upgrade, idl.Mode_copy)
+		err := hub.UpgradeCoordinator(step.DevNullStream, backupDirs.CoordinatorBackupDir, false, false, 1, source, intermediate, idl.PgOptions_upgrade, idl.Mode_copy, pgUpgradeTimestamp)
 		if err != nil {
 			t.Fatalf("unexpected error %+v", err)
 		}
@@ -268,7 +271,7 @@ func TestUpgradeCoordinator(t *testing.T) {
 		upgrade.SetPgUpgradeCommand(exectest.NewCommand(hub.Failure))
 		defer upgrade.ResetPgUpgradeCommand()
 
-		err := hub.UpgradeCoordinator(new(step.BufferedStreams), backupDirs.CoordinatorBackupDir, false, false, 1, source, intermediate, idl.PgOptions_upgrade, idl.Mode_copy)
+		err := hub.UpgradeCoordinator(new(step.BufferedStreams), backupDirs.CoordinatorBackupDir, false, false, 1, source, intermediate, idl.PgOptions_upgrade, idl.Mode_copy, pgUpgradeTimestamp)
 		expected := "upgrade master: exit status 1"
 		if err.Error() != expected {
 			t.Errorf("got %q want %q", err.Error(), expected)
@@ -276,6 +279,9 @@ func TestUpgradeCoordinator(t *testing.T) {
 	})
 
 	t.Run("returns next actions error when pg_upgrade check fails with context", func(t *testing.T) {
+		utils.System.Now = func() time.Time {
+			return now
+		}
 		utils.System.MkdirAll = func(path string, perms os.FileMode) error {
 			if path != pgUpgradeDir {
 				t.Fatalf("got pg_upgrade working directory %q want %q", path, pgUpgradeDir)
@@ -298,7 +304,7 @@ func TestUpgradeCoordinator(t *testing.T) {
 		upgrade.SetPgUpgradeCommand(exectest.NewCommand(PgCheckFailure))
 		defer upgrade.ResetPgUpgradeCommand()
 
-		err := hub.UpgradeCoordinator(new(step.BufferedStreams), backupDirs.CoordinatorBackupDir, false, false, 1, source, intermediate, idl.PgOptions_check, idl.Mode_copy)
+		err := hub.UpgradeCoordinator(new(step.BufferedStreams), backupDirs.CoordinatorBackupDir, false, false, 1, source, intermediate, idl.PgOptions_check, idl.Mode_copy, pgUpgradeTimestamp)
 		var nextActionsErr utils.NextActionErr
 		if !errors.As(err, &nextActionsErr) {
 			t.Fatalf("got type %T want %T", err, nextActionsErr)
@@ -328,7 +334,7 @@ func TestUpgradeCoordinator(t *testing.T) {
 		upgrade.SetPgUpgradeCommand(exectest.NewCommand(BlindlyWritingMain))
 		defer upgrade.ResetPgUpgradeCommand()
 
-		err := hub.UpgradeCoordinator(testutils.FailingStreams{Err: errors.New("write failed")}, backupDirs.CoordinatorBackupDir, false, false, 1, source, intermediate, idl.PgOptions_upgrade, idl.Mode_copy)
+		err := hub.UpgradeCoordinator(testutils.FailingStreams{Err: errors.New("write failed")}, backupDirs.CoordinatorBackupDir, false, false, 1, source, intermediate, idl.PgOptions_upgrade, idl.Mode_copy, pgUpgradeTimestamp)
 		expected := "upgrade master: write failed"
 		if err.Error() != expected {
 			t.Errorf("got %q want %q", err.Error(), expected)

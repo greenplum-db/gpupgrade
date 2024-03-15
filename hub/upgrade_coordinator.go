@@ -20,7 +20,10 @@ import (
 	"github.com/greenplum-db/gpupgrade/utils/rsync"
 )
 
-func UpgradeCoordinator(streams step.OutStreams, backupDir string, pgUpgradeVerbose bool, skipPgUpgradeChecks bool, pgUpgradeJobs uint, source *greenplum.Cluster, intermediate *greenplum.Cluster, action idl.PgOptions_Action, mode idl.Mode) error {
+// format of yyyyMMddTHHmmss
+const TimeStringFormat = "20060102T150405"
+
+func UpgradeCoordinator(streams step.OutStreams, backupDir string, pgUpgradeVerbose bool, skipPgUpgradeChecks bool, pgUpgradeJobs uint, source *greenplum.Cluster, intermediate *greenplum.Cluster, action idl.PgOptions_Action, mode idl.Mode, pgUpgradeTimestamp string) error {
 	oldOptions := ""
 	// When upgrading from 5 the coordinator must be provided with its standby's dbid to allow WAL to sync.
 	if source.Version.Major == 5 && source.HasStandby() {
@@ -47,6 +50,7 @@ func UpgradeCoordinator(streams step.OutStreams, backupDir string, pgUpgradeVerb
 		NewDataDir:          intermediate.CoordinatorDataDir(),
 		NewPort:             strconv.Itoa(intermediate.CoordinatorPort()),
 		NewDBID:             strconv.Itoa(intermediate.Coordinator().DbID),
+		PgUpgradeTimestamp:  pgUpgradeTimestamp,
 	}
 
 	err := RsyncCoordinatorDataDir(streams, utils.GetCoordinatorPreUpgradeBackupDir(backupDir), intermediate.CoordinatorDataDir())
@@ -60,7 +64,7 @@ func UpgradeCoordinator(streams step.OutStreams, backupDir string, pgUpgradeVerb
 			return xerrors.Errorf("%s master: %v", action, err)
 		}
 
-		dir, dirErr := utils.GetPgUpgradeDir(opts.GetRole(), opts.GetContentID())
+		pgUpgradeDir, dirErr := utils.GetPgUpgradeDir(opts.GetRole(), opts.GetContentID(), opts.GetPgUpgradeTimeStamp())
 		if dirErr != nil {
 			err = errorlist.Append(err, dirErr)
 		}
@@ -79,7 +83,7 @@ If you haven't already run the "initialize" data migration scripts with
 To connect to the intermediate target cluster:
 source %s
 MASTER_DATA_DIRECTORY=%s
-PGPORT=%d`, dir,
+PGPORT=%d`, pgUpgradeDir,
 			source.GPHome, source.CoordinatorPort(), generatedScriptsOutputDir,
 			filepath.Join(intermediate.GPHome, "greenplum_path.sh"), intermediate.CoordinatorDataDir(), intermediate.CoordinatorPort())
 

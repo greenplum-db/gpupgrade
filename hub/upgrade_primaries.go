@@ -15,7 +15,7 @@ import (
 	"github.com/greenplum-db/gpupgrade/idl"
 )
 
-func UpgradePrimaries(agentConns []*idl.Connection, agentHostToBackupDir backupdir.AgentHostsToBackupDir, pgUpgradeVerbose bool, skipPgUpgradeChecks bool, pgUpgradeJobs uint, source *greenplum.Cluster, intermediate *greenplum.Cluster, action idl.PgOptions_Action, mode idl.Mode) error {
+func UpgradePrimaries(agentConns []*idl.Connection, agentHostToBackupDir backupdir.AgentHostsToBackupDir, pgUpgradeVerbose bool, skipPgUpgradeChecks bool, pgUpgradeJobs uint, source *greenplum.Cluster, intermediate *greenplum.Cluster, action idl.PgOptions_Action, mode idl.Mode, pgUpgradeTimestamp string) error {
 	request := func(conn *idl.Connection) error {
 		intermediatePrimaries := intermediate.SelectSegments(func(seg *greenplum.SegConfig) bool {
 			return seg.IsOnHost(conn.Hostname) && seg.IsPrimary() && !seg.IsCoordinator()
@@ -45,8 +45,8 @@ func UpgradePrimaries(agentConns []*idl.Connection, agentHostToBackupDir backupd
 				NewPort:             strconv.Itoa(intermediatePrimary.Port),
 				NewDBID:             strconv.Itoa(intermediatePrimary.DbID),
 				Tablespaces:         source.Tablespaces[int32(intermediatePrimary.DbID)],
+				PgUpgradeTimestamp:  pgUpgradeTimestamp,
 			}
-
 			opts = append(opts, opt)
 		}
 

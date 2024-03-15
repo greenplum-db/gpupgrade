@@ -58,7 +58,7 @@ CREATE TABLE table_using_system_defined_domain (
 --- Assert that pg_upgrade --check correctly detects the non-upgradeable objects
 ---------------------------------------------------------------------------------
 !\retcode gpupgrade initialize --source-gphome="${GPHOME_SOURCE}" --target-gphome=${GPHOME_TARGET} --source-master-port=${PGPORT} --disk-free-ratio 0 --non-interactive;
-! cat ~/gpAdminLogs/gpupgrade/pg_upgrade/p-1/tables_using_composite.txt;
+! find $(ls -dt ~/gpAdminLogs/gpupgrade/pg_upgrade_*/ | head -1) -name "tables_using_composite.txt" -exec cat {} +;
 
 ---------------------------------------------------------------------------------
 --- Workaround to unblock upgrade

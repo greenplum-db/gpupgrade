@@ -49,7 +49,7 @@ CREATE VIEW
 ---------------------------------------------------------------------------------
 !\retcode gpupgrade initialize --source-gphome="${GPHOME_SOURCE}" --target-gphome=${GPHOME_TARGET} --source-master-port=${PGPORT} --disk-free-ratio 0 --non-interactive;
 (exited with code 1)
-! cat ~/gpAdminLogs/gpupgrade/pg_upgrade/p-1/views_with_removed_functions.txt;
+! find $(ls -dt ~/gpAdminLogs/gpupgrade/pg_upgrade_*/ | head -1) -name "views_with_removed_functions.txt" -exec cat {} +;
 Database: isolation2test
   removed_functions.v01
   removed_functions.v02

@@ -134,13 +134,13 @@ func GetInitsystemConfig() string {
 	return filepath.Join(GetStateDir(), "gpinitsystem_config")
 }
 
-func GetPgUpgradeDir(role string, contentID int32) (string, error) {
+func GetPgUpgradeDir(role string, contentID int32, pgUpgradeTimeStamp string) (string, error) {
 	logDir, err := GetLogDir()
 	if err != nil {
 		return "", err
 	}
 
-	return filepath.Join(logDir, "pg_upgrade", fmt.Sprintf(role+"%d", contentID)), nil
+	return filepath.Join(logDir, fmt.Sprintf("pg_upgrade_%s", pgUpgradeTimeStamp), fmt.Sprintf(role+"%d", contentID)), nil
 }
 
 func GetAddMirrorsConfig() string {

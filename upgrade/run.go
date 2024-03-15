@@ -23,7 +23,11 @@ const DefaultDynamicLibraryPath = "$libdir"
 var pgupgradeCmd = exec.Command
 
 func Run(stdout, stderr io.Writer, opts *idl.PgOptions) error {
-	upgradeDir, err := utils.GetPgUpgradeDir(opts.GetRole(), opts.GetContentID())
+	upgradeDir, err := utils.GetPgUpgradeDir(
+		opts.GetRole(),
+		opts.GetContentID(),
+		opts.GetPgUpgradeTimeStamp(),
+	)
 	if err != nil {
 		return err
 	}
@@ -44,6 +48,7 @@ func Run(stdout, stderr io.Writer, opts *idl.PgOptions) error {
 		"--new-port", opts.GetNewPort(),
 		"--mode", opts.GetPgUpgradeMode().String(),
 		"--jobs", opts.GetPgUpgradeJobs(),
+		"--output-dir", upgradeDir,
 	}
 
 	if opts.GetPgUpgradeVerbose() {
