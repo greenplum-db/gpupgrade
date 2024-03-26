@@ -421,6 +421,63 @@ _gpupgrade_apply()
     noun_aliases=()
 }
 
+_gpupgrade_check_help()
+{
+    last_command="gpupgrade_check_help"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_gpupgrade_check()
+{
+    last_command="gpupgrade_check"
+
+    command_aliases=()
+
+    commands=()
+    commands+=("help")
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--?")
+    flags+=("-?")
+    local_nonpersistent_flags+=("--?")
+    local_nonpersistent_flags+=("-?")
+    flags+=("--source-gphome=")
+    two_word_flags+=("--source-gphome")
+    local_nonpersistent_flags+=("--source-gphome")
+    local_nonpersistent_flags+=("--source-gphome=")
+    flags+=("--source-master-port=")
+    two_word_flags+=("--source-master-port")
+    local_nonpersistent_flags+=("--source-master-port")
+    local_nonpersistent_flags+=("--source-master-port=")
+    flags+=("--target-gphome=")
+    two_word_flags+=("--target-gphome")
+    local_nonpersistent_flags+=("--target-gphome")
+    local_nonpersistent_flags+=("--target-gphome=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _gpupgrade_config_show_help()
 {
     last_command="gpupgrade_config_show_help"
@@ -902,6 +959,7 @@ _gpupgrade_root_command()
 
     commands=()
     commands+=("apply")
+    commands+=("check")
     commands+=("config")
     commands+=("execute")
     commands+=("finalize")
